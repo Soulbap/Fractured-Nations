@@ -33,10 +33,12 @@ const JUNCTION_ARM_M := 16.0
 @export var terrain: Terrain3D
 @export var road_parent: Node3D
 
+@warning_ignore_start("unused_private_class_variable")
 @export_tool_button("Regenerate terrain (destructive)", "Warning") var _btn_terrain = regenerate_terrain
 @export_tool_button("Rebuild roads + flatten", "Path3D") var _btn_roads = rebuild_roads
 @export_tool_button("Rescatter vegetation", "MultiMeshInstance3D") var _btn_veg = rescatter_vegetation
 @export_tool_button("Save terrain data", "Save") var _btn_save = save_terrain
+@warning_ignore_restore("unused_private_class_variable")
 
 var _gen: WorldTerrainGenerator
 ## Road centerlines as arrays of Vector3 (world space), filled by build_roads.
@@ -96,7 +98,7 @@ func backup_terrain_data() -> void:
 
 ## Applies config dimensions, texture/mesh assets and material settings to the terrain.
 func setup_terrain() -> void:
-	terrain.region_size = config.region_size
+	terrain.region_size = config.region_size as Terrain3D.RegionSize
 	terrain.vertex_spacing = config.vertex_spacing
 	# Assets first, so instance data loaded from the directory finds its meshes.
 	terrain.assets = make_assets()
@@ -397,8 +399,10 @@ func scatter_vegetation() -> void:
 	var road_index := _RoadIndex.new(road_polylines, 32.0)
 	var gen := _generator()
 	var rng := RandomNumberGenerator.new()
-	rng.seed = config.seed + 100
+	rng.seed = config.world_seed + 100
 	var hs := config.half_size() - 4.0
+	if config.vegetation_extent_m > 0.0:
+		hs = minf(hs, config.vegetation_extent_m * 0.5)
 	var data := terrain.data
 	var counts := {}
 	var max_slope := cos(deg_to_rad(config.max_tree_slope_deg))
@@ -496,13 +500,14 @@ func scatter_vegetation() -> void:
 	var grass: Array[Transform3D] = []
 	var grass_col := PackedColorArray()
 	var patch := FastNoiseLite.new()
-	patch.seed = config.seed + 7
+	patch.seed = config.world_seed + 7
 	patch.frequency = 0.02
 	s = config.grass_spacing_m
-	z = -hs
-	while z < hs:
-		var x := -hs
-		while x < hs:
+	var ghs := hs if config.grass_extent_m <= 0.0 else minf(hs, config.grass_extent_m * 0.5)
+	z = -ghs
+	while z < ghs:
+		var x := -ghs
+		while x < ghs:
 			var p := Vector3(x + rng.randf_range(-0.5, 0.5) * s, 0, z + rng.randf_range(-0.5, 0.5) * s)
 			x += s
 			if patch.get_noise_2d(p.x, p.z) < -0.15:

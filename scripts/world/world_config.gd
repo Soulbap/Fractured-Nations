@@ -21,7 +21,7 @@ extends Resource
 @export_range(0.25, 4.0, 0.25, "suffix:m") var vertex_spacing: float = 1.0
 ## Terrain3D region size in vertices (power of two, 64..2048).
 @export_enum("256:256", "512:512", "1024:1024", "2048:2048") var region_size: int = 1024
-@export var seed: int = 20261019
+@export var world_seed: int = 20261019
 
 @export_group("Relief")
 @export var base_height: float = 40.0
@@ -82,6 +82,12 @@ extends Resource
 @export var tree_spacing_m: float = 7.0
 @export var bush_spacing_m: float = 9.0
 @export var grass_spacing_m: float = 2.4
+## Grass cards are only stored within this centered square (meters). 0 = whole map.
+## Stored grass instances scale with map area; very large maps should use a
+## camera-following GPU grass layer instead (see WORLD-TECH-01 report).
+@export var grass_extent_m: float = 0.0
+## Trees, bushes and rocks are only scattered within this centered square. 0 = whole map.
+@export var vegetation_extent_m: float = 0.0
 @export var rock_spacing_m: float = 22.0
 ## Trees and bushes are kept this far from road centerlines.
 @export var road_clearance_m: float = 9.0

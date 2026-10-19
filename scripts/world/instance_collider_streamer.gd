@@ -97,9 +97,9 @@ func _rebuild(c: Vector3) -> void:
 
 func _place(i: int, mesh_id: int, g: Transform3D) -> void:
 	if i >= _pool.size():
-		var cs := CollisionShape3D.new()
-		_body.add_child(cs)
-		_pool.append(cs)
+		var new_shape := CollisionShape3D.new()
+		_body.add_child(new_shape)
+		_pool.append(new_shape)
 	var cs := _pool[i]
 	var spec: Vector3 = shapes[mesh_id]
 	var s := g.basis.get_scale().y

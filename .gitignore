@@ -32,3 +32,9 @@ desktop.ini
 # Windows locked-file replacement temp files (e.g. GDExtension DLL swaps)
 ~*.TMP
 *.TMP
+
+# Scalability test worlds (regenerate with tools/build_world.gd, several hundred MB)
+/worlds/scale_*/
+/worlds/*_backup/
+/worlds/*/terrain_backup/
+/scenes/world/scale_*.tscn

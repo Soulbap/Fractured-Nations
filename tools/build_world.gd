@@ -3,7 +3,9 @@
 ##
 ## Usage (after "--"):
 ##   --config=res://worlds/test_2km/world_config.tres   build from an existing config
-##   --name=scale_8km --size=8192 [--spacing=1.0]       create a config from defaults
+##   --name=scale_8km --size=8192 [--spacing=1.0] [--region=1024]
+##        [--grass-extent=2048] [--veg-extent=8192]
+##                                                      create a config from defaults
 ##   --no-roads  --no-vegetation                        skip stages
 ##   --no-scene                                         only rebuild terrain data
 ##
@@ -69,8 +71,12 @@ func _run() -> void:
 	terrain.data.save_directory(dir)
 	print("BUILD saved terrain data to %s in %d ms" % [dir, Time.get_ticks_msec() - t_save])
 	var world_dir := dir.get_base_dir()
-	ResourceSaver.save(terrain.assets, world_dir + "/terrain_assets.tres", ResourceSaver.FLAG_CHANGE_PATH)
-	ResourceSaver.save(terrain.material, world_dir + "/terrain_material.tres", ResourceSaver.FLAG_CHANGE_PATH)
+	# Save as standalone resources and make the scene reference them instead of
+	# embedding copies, so they can be edited (and shared) independently.
+	for pair in [[terrain.assets, "terrain_assets.tres"], [terrain.material, "terrain_material.tres"]]:
+		var path: String = world_dir + "/" + pair[1]
+		ResourceSaver.save(pair[0], path)
+		pair[0].take_over_path(path)
 
 	if not opts.has("no-scene"):
 		_add_gameplay_nodes(root, cfg, terrain)
@@ -102,6 +108,9 @@ func _load_or_create_config(opts: Dictionary) -> WorldConfig:
 	cfg.world_name = opts.get("name", "test_2km")
 	cfg.world_size_m = float(opts.get("size", 2048))
 	cfg.vertex_spacing = float(opts.get("spacing", 1.0))
+	cfg.grass_extent_m = float(opts.get("grass-extent", 0.0))
+	cfg.vegetation_extent_m = float(opts.get("veg-extent", 0.0))
+	cfg.region_size = int(opts.get("region", 1024))
 	var path := "res://worlds/%s/world_config.tres" % cfg.world_name
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(path.get_base_dir()))
 	ResourceSaver.save(cfg, path, ResourceSaver.FLAG_CHANGE_PATH)

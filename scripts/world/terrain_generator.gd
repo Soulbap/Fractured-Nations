@@ -73,18 +73,18 @@ func _init(config: WorldConfig) -> void:
 		_site_c.append(Vector2(site.x, site.y) * _hs)
 		_site_r.append(site.z)
 
-	_hills.seed = cfg.seed
+	_hills.seed = cfg.world_seed
 	_hills.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	_hills.frequency = cfg.hills_frequency
 	_hills.fractal_octaves = 4
-	_detail.seed = cfg.seed + 1
+	_detail.seed = cfg.world_seed + 1
 	_detail.frequency = cfg.detail_frequency
 	_detail.fractal_octaves = 3
-	_ridge.seed = cfg.seed + 2
+	_ridge.seed = cfg.world_seed + 2
 	_ridge.frequency = cfg.mountain_frequency
 	_ridge.fractal_type = FastNoiseLite.FRACTAL_RIDGED
 	_ridge.fractal_octaves = 5
-	_forest.seed = cfg.seed + 3
+	_forest.seed = cfg.world_seed + 3
 	_forest.frequency = cfg.forest_frequency
 	_forest.fractal_octaves = 3
 	# Base sites are flattened to the height the unflattened terrain has at their center.

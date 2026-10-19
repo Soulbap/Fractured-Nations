@@ -4,6 +4,7 @@
 ##   --benchmark          fly a fixed route and write res://benchmarks/raw/<world>_<time>.json
 ##   --screenshots        capture named viewpoints to res://docs/screenshots/<world>_<name>.png
 ##   --quit-after-load    record load time and memory, then quit
+##   --fps-test           scripted controller checks (see FPSSelfTest)
 ## Nothing here is gameplay code; it exists to produce real measurements from Godot.
 class_name WorldDiagnostics
 extends CanvasLayer
@@ -40,7 +41,7 @@ func _ready() -> void:
 	_label.add_theme_constant_override("shadow_offset_y", 1)
 	add_child(_label)
 	var args := OS.get_cmdline_user_args()
-	if "--benchmark" in args or "--screenshots" in args or "--quit-after-load" in args:
+	if "--benchmark" in args or "--screenshots" in args or "--quit-after-load" in args or "--fps-test" in args:
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 		_label.visible = "--benchmark" in args
 		_run_automation.call_deferred(args)
@@ -87,12 +88,17 @@ func _snapshot() -> Dictionary:
 
 
 func _run_automation(args: PackedStringArray) -> void:
+	var spawn := player.global_position
 	player.player_controlled = false
 	player.set_flying(true)
 	for i in 10:
 		await get_tree().process_frame
 	var load_info := {"first_frame_msec_since_start": _first_frame_msec, "after_10_frames": _snapshot()}
 	print("DIAG load: ", JSON.stringify(load_info))
+	if "--fps-test" in args:
+		var report := await FPSSelfTest.new(player, terrain, collider_streamer).run(spawn)
+		print("DIAG fps-test: ", JSON.stringify(report))
+		player.set_flying(true)
 	if "--screenshots" in args:
 		await _capture_screenshots()
 	if "--benchmark" in args:
@@ -142,7 +148,8 @@ func _benchmark(load_info: Dictionary) -> void:
 		"gpu": RenderingServer.get_video_adapter_name(),
 		"gpu_driver": RenderingServer.get_video_adapter_api_version(),
 		"cpu": OS.get_processor_name(),
-		"resolution": get_viewport().get_visible_rect().size,
+		"window_size": DisplayServer.window_get_size(),
+		"render_size": get_viewport().get_texture().get_size(),
 		"load": load_info,
 		"phases": [],
 	}
