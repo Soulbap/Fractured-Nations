@@ -1,0 +1,28 @@
+{
+  "finished": "2026-10-19T19:53:52",
+  "road": {
+    "connector_auto_refresh": true,
+    "height_after_move": 43.0277824401855,
+    "height_after_move_1": 42.938060760498,
+    "height_after_move_2": 43.0277824401855,
+    "height_after_undo": 41.443920135498,
+    "height_before": 41.443920135498,
+    "note": "Terrain restore on undo depends on Road Generator 0.9.5's connector undo support",
+    "point_restored": true,
+    "terrain_changed_by_connector": true,
+    "terrain_restored_by_undo": true,
+    "undo_action": "Probe: move RoadPoint 2"
+  },
+  "save_err": 0,
+  "sculpt": {
+    "height_after_redo": 43.8053512573242,
+    "height_after_sculpt": 43.8053512573242,
+    "height_after_undo": 41.6359634399414,
+    "height_before": 41.6359634399414,
+    "pass": true,
+    "region_modified": true,
+    "undo_action": "Terrain3D Add Sculpt",
+    "undo_history_advanced": true
+  },
+  "started": "2026-10-19T19:53:37"
+}

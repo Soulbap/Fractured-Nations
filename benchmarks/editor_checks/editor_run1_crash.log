@@ -1,0 +1,80 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.351 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3070
+
+MCP | using uvx (godot-ai==4.3.0)
+MCP | plugin loaded
+MCP | Probing the configured server endpoint.
+MCP | adopted external server
+MCP | connecting to server (attempt 1)
+MCP | connected to server; authenticating
+MCP | authenticated with server
+WARNING: instance_reset_physics_interpolation() is deprecated.
+MCP | [event] scene_changed -> res://scenes/world/test_2km.tscn
+MCP | [event] scene_changed -> res://scenes/world/edit_test_2km.tscn
+MCP | [event] scene_changed -> res://scenes/world/real_20km.tscn
+MCP | [recv] get_editor_state({})
+MCP | [send] get_editor_state -> ok
+MCP | [recv] open_scene({"path":"res://scenes/world/edit_test_2km.tscn"})
+MCP | [defer] open_scene (request 0c0dffd9c6a84bfab89dfa9781734f3c)
+MCP | [event] scene_changed -> res://scenes/world/edit_test_2km.tscn
+MCP | [recv] take_screenshot({"elevation":35.0,"max_resolution":1000.0,"source":"viewport","view_target":"/World_edit_test_2km/Roads/RoadManager/RoadNetwork/RP_005"})
+MCP | [send] take_screenshot -> ok
+MCP | [recv] set_property({"path":"/World_edit_test_2km/EditorProbe","property":"run","value":true})
+MCP | [send] set_property -> ok
+Terrain3DRegion#0780:save:226: Writing region (-1, -1) to res://worlds/edit_test_2km/terrain/terrain3d-01-01.res
+Terrain3DRegion#0318:save:226: Writing region (-1, 0) to res://worlds/edit_test_2km/terrain/terrain3d-01_00.res
+Terrain3DRegion#9537:save:226: Writing region (0, -1) to res://worlds/edit_test_2km/terrain/terrain3d_00-01.res
+Terrain3DRegion#8916:save:226: Writing region (0, 0) to res://worlds/edit_test_2km/terrain/terrain3d_00_00.res
+EDITOR_PROBE {"finished":"2026-10-19T19:50:18","road":{"connector_auto_refresh":true,"height_after_move":41.443920135498,"height_after_undo":41.443920135498,"height_before":41.443920135498,"note":"Terrain restore on undo depends on Road Generator 0.9.5's connector undo support","point_restored":true,"terrain_changed_by_connector":false,"terrain_restored_by_undo":true,"undo_action":"Probe: move RoadPoint"},"save_err":0,"sculpt":{"height_after_redo":39.4667663574219,"height_after_sculpt":39.4667663574219,"height_after_undo":39.4567985534668,"height_before":39.4567985534668,"pass":false,"region_modified":true,"undo_action":"Terrain3D Add Region","undo_history_advanced":true},"started":"2026-10-19T19:50:07"}
+MCP | [recv] scan_filesystem({})
+MCP | [defer] scan_filesystem (request 17e02b1a8a5e4583a78566ad570e1acb)
+MCP | [recv] open_scene({"force_reload":true,"path":"res://scenes/world/edit_test_2km.tscn"})
+MCP | [defer] open_scene (request f644d85f7c3240f5b9b6457f189a866b)
+MCP | [recv] set_property({"path":"/World_edit_test_2km/EditorProbe","property":"run","value":true})
+MCP | [send] set_property -> ok
+Terrain3DRegion#8057:save:226: Writing region (-1, 0) to res://worlds/edit_test_2km/terrain/terrain3d-01_00.res
+
+================================================================
+CrashHandlerException: Program crashed with signal 11
+Engine version: Godot Engine v4.7.2.stable.official (ed1daf0bf001b61586d9930840f2f1394092c079)
+Dumping the backtrace. Please include this when reporting the bug on: https://github.com/godotengine/godot/issues
+Load address: 7ff4d7fa0000
+
+[1] 7ff61c074d61 (main+40d4d61) - no debug info in PE/COFF executable
+[2] 7ff9ab7df846 (ntdll.dll+8f846) - no debug info in PE/COFF executable
+[3] 7ff9ab7f5e9e (ntdll.dll+a5e9e) - no debug info in PE/COFF executable
+[4] 7ff9ab76e8c5 (ntdll.dll+1e8c5) - no debug info in PE/COFF executable
+[5] 7ff9ab7f4e9d (ntdll.dll+a4e9d) - no debug info in PE/COFF executable
+[6] 7ff61bad9c3b (main+3b39c3b) - no debug info in PE/COFF executable
+[7] 7ff61bd01e6b (main+3d61e6b) - no debug info in PE/COFF executable
+[8] 7ff6185f7b58 (main+657b58) - no debug info in PE/COFF executable
+[9] 7ff618591551 (main+5f1551) - no debug info in PE/COFF executable
+[10] 7ff618591ac7 (main+5f1ac7) - no debug info in PE/COFF executable
+[11] 7ff61df9d282 (main+5ffd282) - no debug info in PE/COFF executable
+[12] 7ff61bdb810f (main+3e1810f) - no debug info in PE/COFF executable
+[13] 7ff61bacd0dd (main+3b2d0dd) - no debug info in PE/COFF executable
+[14] 7ff61bace4b2 (main+3b2e4b2) - no debug info in PE/COFF executable
+[15] 7ff61bdc519a (main+3e2519a) - no debug info in PE/COFF executable
+[16] 7ff6185f461d (main+65461d) - no debug info in PE/COFF executable
+[17] 7ff618591551 (main+5f1551) - no debug info in PE/COFF executable
+[18] 7ff618591ac7 (main+5f1ac7) - no debug info in PE/COFF executable
+[19] 7ff61df9d282 (main+5ffd282) - no debug info in PE/COFF executable
+[20] 7ff61bdb810f (main+3e1810f) - no debug info in PE/COFF executable
+[21] 7ff61bacd0dd (main+3b2d0dd) - no debug info in PE/COFF executable
+[22] 7ff61bace4b2 (main+3b2e4b2) - no debug info in PE/COFF executable
+[23] 7ff61bdc519a (main+3e2519a) - no debug info in PE/COFF executable
+[24] 7ff61a432714 (main+2492714) - no debug info in PE/COFF executable
+[25] 7ff617ffda9c (main+5da9c) - no debug info in PE/COFF executable
+[26] 7ff617fa2ef0 (main+2ef0) - no debug info in PE/COFF executable
+[27] 7ff617ff2b41 (main+52b41) - no debug info in PE/COFF executable
+[28] 7ff617ff2b7d (main+52b7d) - no debug info in PE/COFF executable
+[29] 7ff617fa10c8 (main+10c8) - no debug info in PE/COFF executable
+[30] 7ff617fa13f5 (main+13f5) - no debug info in PE/COFF executable
+[31] 7ff9ab16259c (kernel32.dll+1259c) - no debug info in PE/COFF executable
+[32] 7ff9ab7aaf77 (ntdll.dll+5af77) - no debug info in PE/COFF executable
+[33] -1 (main+-7ff617fa0001) - no debug info in PE/COFF executable
+-- END OF C++ BACKTRACE --
+================================================================
+GDScript backtrace (most recent call first):
+    [0]  (res://tools/editor_probe.gd:31)
+    [1]  (res://tools/editor_probe.gd:128)

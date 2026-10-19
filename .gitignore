@@ -50,3 +50,5 @@ override.cfg
 
 # Locked-DLL copies created when the editor reloads a GDExtension
 addons/*/bin/~*
+/worlds/edit_test_*/
+/scenes/world/edit_test_*.tscn
