@@ -28,3 +28,7 @@ desktop.ini
 *~
 .vscode/
 .idea/
+
+# Windows locked-file replacement temp files (e.g. GDExtension DLL swaps)
+~*.TMP
+*.TMP

@@ -1,2 +1,11 @@
 # Normalize EOL for all files that Git considers text files.
 * text=auto eol=lf
+
+# Binary Godot / asset files
+*.res binary
+*.png binary
+*.glb binary
+*.exr binary
+*.r16 binary
+*.dll binary
+*.so binary

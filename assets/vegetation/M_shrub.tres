@@ -1,0 +1,7 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "shrub"
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.24, 0.33, 0.15, 1)
+roughness = 0.9

@@ -1,0 +1,137 @@
+[gd_resource type="Terrain3DAssets" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/vegetation/grass_blades.png" id="1_7frqb"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/conifer.tscn" id="2_umvti"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/broadleaf.tscn" id="3_icd21"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/bush.tscn" id="4_83i1p"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/rocka.tscn" id="5_3658u"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/rockb.tscn" id="6_nr27l"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/rockc.tscn" id="7_ak2a2"]
+[ext_resource type="Texture2D" path="res://assets/terrain/textures/ground037_alb_ht.png" id="8_51gbs"]
+[ext_resource type="Texture2D" path="res://assets/terrain/textures/ground037_nrm_rgh.png" id="9_1iv8h"]
+[ext_resource type="Texture2D" path="res://assets/terrain/textures/rock023_alb_ht.png" id="10_w6lo6"]
+[ext_resource type="Texture2D" path="res://assets/terrain/textures/rock023_nrm_rgh.png" id="11_mrcqx"]
+[ext_resource type="Texture2D" path="res://assets/terrain/textures/dirt_proc_alb_ht.png" id="12_ot1dg"]
+[ext_resource type="Texture2D" path="res://assets/terrain/textures/dirt_proc_nrm_rgh.png" id="13_6dx4b"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2ck6b"]
+transparency = 2
+alpha_scissor_threshold = 0.4
+alpha_antialiasing_mode = 0
+cull_mode = 2
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_7frqb")
+backlight_enabled = true
+backlight = Color(0.5, 0.5, 0.5, 1)
+distance_fade_mode = 2
+distance_fade_min_distance = 70.0
+distance_fade_max_distance = 55.0
+
+[sub_resource type="Terrain3DMeshAsset" id="Terrain3DMeshAsset_8e2d8"]
+name = "Grass card"
+generated_type = 1
+height_offset = 0.24
+cast_shadows = 0
+material_override = SubResource("StandardMaterial3D_2ck6b")
+generated_size = Vector2(1.1, 0.7)
+last_lod = 0
+last_shadow_lod = 0
+lod0_range = 70.0
+
+[sub_resource type="Terrain3DMeshAsset" id="Terrain3DMeshAsset_04v3l"]
+name = "Conifer"
+id = 1
+scene_file = ExtResource("2_umvti")
+density = 0.027598698
+last_lod = 2
+last_shadow_lod = 1
+lod0_range = 60.0
+lod1_range = 260.0
+lod2_range = 1500.0
+fade_margin = 8.0
+
+[sub_resource type="Terrain3DMeshAsset" id="Terrain3DMeshAsset_7mqkn"]
+name = "Broadleaf"
+id = 2
+scene_file = ExtResource("3_icd21")
+density = 0.01980755
+last_lod = 2
+last_shadow_lod = 1
+lod0_range = 60.0
+lod1_range = 260.0
+lod2_range = 1500.0
+fade_margin = 8.0
+
+[sub_resource type="Terrain3DMeshAsset" id="Terrain3DMeshAsset_lc5nm"]
+name = "Bush"
+id = 3
+scene_file = ExtResource("4_83i1p")
+density = 1.5357459
+last_lod = 1
+last_shadow_lod = 0
+lod0_range = 45.0
+lod1_range = 250.0
+fade_margin = 8.0
+
+[sub_resource type="Terrain3DMeshAsset" id="Terrain3DMeshAsset_sf8n5"]
+name = "Rock A"
+id = 4
+scene_file = ExtResource("5_3658u")
+density = 0.036441512
+last_lod = 0
+last_shadow_lod = 0
+lod0_range = 600.0
+
+[sub_resource type="Terrain3DMeshAsset" id="Terrain3DMeshAsset_e87te"]
+name = "Rock B"
+id = 5
+scene_file = ExtResource("6_nr27l")
+density = 0.029499011
+last_lod = 0
+last_shadow_lod = 0
+lod0_range = 600.0
+
+[sub_resource type="Terrain3DMeshAsset" id="Terrain3DMeshAsset_em3lv"]
+name = "Rock C"
+id = 6
+scene_file = ExtResource("7_ak2a2")
+density = 0.014639318
+last_lod = 0
+last_shadow_lod = 0
+lod0_range = 600.0
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_uin1p"]
+name = "Grass"
+albedo_color = Color(0.72, 0.9, 0.55, 1)
+albedo_texture = ExtResource("8_51gbs")
+normal_texture = ExtResource("9_1iv8h")
+uv_scale = 0.12
+detiling_rotation = 0.15
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_c8r76"]
+name = "Rock"
+id = 1
+albedo_texture = ExtResource("10_w6lo6")
+normal_texture = ExtResource("11_mrcqx")
+uv_scale = 0.08
+detiling_rotation = 0.15
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_kc88b"]
+name = "Dirt"
+id = 2
+albedo_texture = ExtResource("12_ot1dg")
+normal_texture = ExtResource("13_6dx4b")
+uv_scale = 0.15
+detiling_rotation = 0.15
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_86kjn"]
+name = "Dry grass"
+id = 3
+albedo_color = Color(1.15, 1, 0.62, 1)
+albedo_texture = ExtResource("8_51gbs")
+normal_texture = ExtResource("9_1iv8h")
+detiling_rotation = 0.15
+
+[resource]
+mesh_list = Array[Terrain3DMeshAsset]([SubResource("Terrain3DMeshAsset_8e2d8"), SubResource("Terrain3DMeshAsset_04v3l"), SubResource("Terrain3DMeshAsset_7mqkn"), SubResource("Terrain3DMeshAsset_lc5nm"), SubResource("Terrain3DMeshAsset_sf8n5"), SubResource("Terrain3DMeshAsset_e87te"), SubResource("Terrain3DMeshAsset_em3lv")])
+texture_list = Array[Terrain3DTextureAsset]([SubResource("Terrain3DTextureAsset_uin1p"), SubResource("Terrain3DTextureAsset_c8r76"), SubResource("Terrain3DTextureAsset_kc88b"), SubResource("Terrain3DTextureAsset_86kjn")])

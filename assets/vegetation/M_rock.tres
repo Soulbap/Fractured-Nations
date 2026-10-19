@@ -1,0 +1,12 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/terrain/textures/rock023_alb_ht.png" id="1_4r38s"]
+
+[resource]
+resource_name = "rock"
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_4r38s")
+roughness = 0.9
+uv1_scale = Vector3(0.25, 0.25, 0.25)
+uv1_triplanar = true
+uv1_world_triplanar = true
