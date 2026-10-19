@@ -11,7 +11,7 @@ vegetation, FPS exploration, scalability measurements). See
 
 | Dependency | Version | Notes |
 |---|---|---|
-| Godot | **4.7.2-stable** (standard, not .NET) | Forward+ renderer, D3D12 on Windows |
+| Godot | **4.7.2-stable** (standard, not .NET) | Forward+ renderer, **Vulkan** (D3D12 only as automatic fallback) |
 | Physics | Jolt (built into Godot 4.7) | Set in Project Settings → Physics → 3D |
 | Terrain3D | 1.0.2-stable (MIT) | Bundled in `addons/terrain_3d` (Windows + Linux x86_64 binaries) |
 | Godot Road Generator | 0.9.5 (MIT) | Bundled in `addons/road-generator` |
@@ -72,14 +72,38 @@ Options: `--spacing=<m>`, `--region=<256|512|1024|2048>`, `--grass-extent=<m>`,
 `--veg-extent=<m>`, `--no-roads`, `--no-vegetation`, `--no-scene`.
 Scale-test worlds (`worlds/scale_*`) are git-ignored.
 
-### Measurements and screenshots
+### Measurements (fast workflow, routine use)
+
+One process per map, fixed FPS, RTS and strategic camera stations, and layer scenarios. Runs
+abort automatically on render errors or memory pressure. Results go to
+`benchmarks/raw/bench_<tag>.json`.
+
+```bash
+Godot_v4.7.2-stable_win64.exe --path . --resolution 1600x900 --log-file bench.log --script res://tools/bench_world.gd -- --scene=res://scenes/world/test_2km.tscn --tag=my_run
+```
+
+Use the GUI executable with `--log-file`. The console wrapper throttles the process when
+there is heavy error output. Add `--rendering-driver d3d12` to compare backends.
+`tools/measure_run.ps1` wraps a run and records peak RAM and GPU memory from Windows counters.
+
+Synthetic stress-test maps (mirror-tiled from the 2 km world, **not** representative
+terrain):
+
+```bash
+Godot_v4.7.2-stable_win64_console.exe --headless --path . --script res://tools/tile_world.gd -- --name=tile_8km --regions=8 --veg=trees
+```
+
+Optional longer regression benchmark (camera routes) and the scripted FPS controller test:
 
 ```bash
 Godot_v4.7.2-stable_win64_console.exe --path . --resolution 1600x900 res://scenes/world/test_2km.tscn -- --benchmark
 ```
 
-Also `--screenshots` (writes `docs/screenshots/`), `--fps-test` (scripted controller
-checks) and `--quit-after-load`.
+```bash
+Godot_v4.7.2-stable_win64_console.exe --path . res://scenes/world/test_2km.tscn -- --fps-test
+```
+
+Also `--screenshots` (writes `docs/screenshots/`) and `--quit-after-load`.
 
 ## Repository layout
 
@@ -90,8 +114,9 @@ scenes/          world and player scenes
 scripts/world/   WorldConfig, terrain generator, WorldBuilder, collider streaming
 scripts/player/  FPS controller
 scripts/debug/   diagnostics overlay, benchmark, FPS self-test
-tools/           headless build scripts
+tools/           build, tiling, benchmark and editor-probe tools
 worlds/<name>/   per-world config, Terrain3D assets/material and region data
+benchmarks/      committed benchmark evidence (raw/ is git-ignored)
 docs/            reports and screenshots
 ```
 
