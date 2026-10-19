@@ -3,8 +3,9 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **WORLD-TECH-01** world-technology prototype (terrain, roads,
-vegetation, FPS exploration, scalability measurements). See
+Current state: **WORLD-TECH-02** scalable vegetation foundation on top of the
+WORLD-TECH-01 world-technology prototype (terrain, roads, FPS exploration, scalability
+measurements). See [docs/WORLD-TECH-02_REPORT.md](docs/WORLD-TECH-02_REPORT.md) and
 [docs/WORLD-TECH-01_REPORT.md](docs/WORLD-TECH-01_REPORT.md).
 
 ## Requirements
@@ -45,15 +46,22 @@ Press **F5** or run `scenes/world/test_2km.tscn`, which is the main scene.
 
 Open `scenes/world/test_2km.tscn` in the editor.
 
-- **Terrain:** select `Terrain3D` and use the Terrain3D toolbar to sculpt, paint
-  textures and paint instanced vegetation. Save the scene to write the region files in
-  `worlds/test_2km/terrain/`.
+- **Terrain:** select `Terrain3D` and use the Terrain3D toolbar to sculpt and paint
+  textures. Save the scene to write the region files in `worlds/test_2km/terrain/`.
+- **Vegetation:** trees, bushes and rocks live in `worlds/<name>/vegetation/veg_<x>_<z>.res`
+  (1024 m chunks of 128 m cells) and are streamed around the camera by the `Vegetation`
+  node (`VegetationStreamer`, also in the editor viewport). Grass is camera-local GPU
+  particles (`Grass` node, `GrassLayer`) masked by `worlds/<name>/vegetation/mask.res`
+  (roads, base pads). You can still paint trees with Terrain3D's instancer brush; the
+  `WorldBuilder` button **Bake painted instances into cells** moves them into the chunk
+  files (otherwise they stay as Terrain3D MultiMeshes for the whole map).
 - **Roads:** select a `RoadPoint` under `Roads/RoadManager/RoadNetwork` and move it, or
   use the Road Generator toolbar to add roads and intersections.
   `Roads/Terrain3DRoadConnector` flattens the terrain under the roads.
 - **Regeneration:** the `WorldBuilder` node has inspector buttons to regenerate the
-  terrain, rebuild the roads or rescatter vegetation from its `WorldConfig`. These
-  overwrite hand edits in that layer. A copy of the terrain data is written to
+  terrain, rebuild the roads or rescatter vegetation (chunks, grass mask and the forest
+  tint baked into the Terrain3D color map) from its `WorldConfig`. These overwrite hand
+  edits in that layer. A copy of the terrain data is written to
   `worlds/<name>/terrain_backup/` first.
 
 ### Building a world from the command line
@@ -71,6 +79,13 @@ Godot_v4.7.2-stable_win64_console.exe --headless --path . --script res://tools/b
 Options: `--spacing=<m>`, `--region=<256|512|1024|2048>`, `--grass-extent=<m>`,
 `--veg-extent=<m>`, `--no-roads`, `--no-vegetation`, `--no-scene`.
 Scale-test worlds (`worlds/scale_*`) are git-ignored.
+
+Rebuild only the vegetation of an existing world (chunks, mask, forest tint; adds the
+`Vegetation` and `Grass` nodes if the scene lacks them):
+
+```bash
+Godot_v4.7.2-stable_win64_console.exe --headless --path . --script res://tools/rebuild_vegetation.gd -- --scene=res://scenes/world/test_2km.tscn --veg-extent=0
+```
 
 ### Measurements (fast workflow, routine use)
 
@@ -105,6 +120,15 @@ Godot_v4.7.2-stable_win64_console.exe --path . res://scenes/world/test_2km.tscn 
 
 Also `--screenshots` (writes `docs/screenshots/`) and `--quit-after-load`.
 
+Targeted vegetation checks (mask, tree clearance, determinism, streamer activation,
+camera jumps and FPS/RTS switching, grass altitude cutoff, colliders; about 20 s):
+
+```bash
+Godot_v4.7.2-stable_win64.exe --path . --resolution 1600x900 --log-file vegtest.log --script res://tools/test_vegetation.gd -- --scene=res://scenes/world/test_2km.tscn --shots
+```
+
+`benchmarks/wt02_suite/run_wt02.sh <out_dir>` runs the whole WORLD-TECH-02 validation.
+
 ## Repository layout
 
 ```
@@ -112,10 +136,12 @@ addons/          third-party editor plugins (Terrain3D, Road Generator, Godot AI
 assets/          textures, placeholder vegetation, rock models
 scenes/          world and player scenes
 scripts/world/   WorldConfig, terrain generator, WorldBuilder, collider streaming
+scripts/vegetation/  VegetationChunk data, VegetationStreamer, GrassLayer, exclusion mask
+shaders/vegetation/  GPU grass placement and blade shaders
 scripts/player/  FPS controller
 scripts/debug/   diagnostics overlay, benchmark, FPS self-test
 tools/           build, tiling, benchmark and editor-probe tools
-worlds/<name>/   per-world config, Terrain3D assets/material and region data
+worlds/<name>/   per-world config, Terrain3D assets/material, region data, vegetation chunks
 benchmarks/      committed benchmark evidence (raw/ is git-ignored)
 docs/            reports and screenshots
 ```
@@ -127,3 +153,4 @@ docs/            reports and screenshots
   ambientCG CC0 (`assets/terrain/textures/asset_licenses.txt`).
 - Trees, bushes, the grass card and the dirt texture are procedurally generated
   placeholders (`tools/make_vegetation_assets.gd`).
+- The GPU grass shaders derive from Terrain3D's `extras/particle_example` (MIT).
