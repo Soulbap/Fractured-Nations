@@ -62,7 +62,7 @@ func _process(delta: float) -> void:
 
 func _overlay_text() -> String:
 	var p := player.global_position if player else Vector3.ZERO
-	return "FPS %d  (%.2f ms)\nDraw calls %d  Primitives %.2fM\nVRAM %.0f MB  Tex %.0f MB  RAM %.0f MB\nPos %.0f, %.0f, %.0f  %s\nInstance colliders %d  Regions indexed %d\nWASD move, Shift sprint, Space jump, F fly, F3 overlay" % [
+	return "FPS %d  (%.2f ms)\nDraw calls %d  Primitives %.2fM\nVRAM %.0f MB  Tex %.0f MB  RAM %.0f MB\nPos %.0f, %.0f, %.0f  %s\nInstance colliders %d  Cells indexed %d\nWASD move, Shift sprint, Space jump, F fly, F3 overlay" % [
 		Engine.get_frames_per_second(), 1000.0 / maxf(Engine.get_frames_per_second(), 1),
 		Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
 		Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1e6,

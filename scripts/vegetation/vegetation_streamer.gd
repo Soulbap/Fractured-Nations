@@ -1,0 +1,362 @@
+## Camera-local activation of stored vegetation (trees, bushes, rocks).
+##
+## Vegetation is stored as VegetationChunk files (1024 m chunks of 128 m cells, see
+## worlds/<name>/vegetation/). Nothing exists in the scene for the whole map. Each frame
+## the streamer looks at the active camera (and optional extra observers), loads the
+## chunks around them on a background thread, and keeps one MultiMeshInstance3D per
+## (cell, mesh type) within that mesh type's range. Cells beyond the range are freed.
+## Two LODs: the full mesh inside near_range, the cheapest mesh of the asset beyond it,
+## switched by swapping the MultiMesh mesh (no re-upload). Activations are spread over
+## frames (activations_per_frame, nearest first) so camera jumps do not stall.
+##
+## Not a general streaming framework: it only knows vegetation chunks and observers.
+## Runs in the editor too, following the editor camera.
+@tool
+class_name VegetationStreamer
+extends Node3D
+
+@export var enabled := true:
+	set(v):
+		enabled = v
+		if not v:
+			_deactivate_all()
+		_dirty = true
+## Directory with veg_<x>_<z>.res chunk files.
+@export var data_directory := "res://worlds/test_2km/vegetation"
+@export var library: VegetationLibrary
+## Must match the chunk data (WorldBuilder writes the same values).
+@export var chunk_size_m := 1024.0
+@export var cell_size_m := 128.0
+## Observers besides the current camera (e.g. a selected unit).
+@export var extra_observers: Array[Node3D] = []
+## Re-evaluate cells after an observer moved this far.
+@export var observer_move_threshold_m := 8.0
+## (cell, mesh) activations per frame; the rest waits in a nearest-first queue.
+@export var activations_per_frame := 24
+## Loaded chunks are kept this far beyond the activation range before unloading.
+@export var chunk_keep_margin_m := 600.0
+## Relative hysteresis for the near/far LOD switch.
+@export var lod_hysteresis := 0.15
+
+## Vector3i(cell.x, cell.y, mesh_id) -> MultiMeshInstance3D
+var active := {}
+var active_lod := {}
+## Vector2i chunk location -> VegetationChunk
+var chunks := {}
+
+var _missing := {}
+var _loading := {}
+var _queue: Array = []
+var _queue_pos := 0
+var _last_obs: Array[Vector3] = []
+var _dirty := true
+## Worst CPU time spent activating cells in one frame since the last get_stats().
+var _worst_drain_ms := 0.0
+
+
+func _ready() -> void:
+	top_level = true
+	# Instantiate the mesh assets now, not during the first activation.
+	if library:
+		for d in library.meshes:
+			d.lod_count()
+
+
+func _process(_delta: float) -> void:
+	if not enabled or library == null:
+		return
+	_poll_loading()
+	var obs := _observer_positions()
+	if obs.is_empty():
+		return
+	if _dirty or _moved(obs):
+		_last_obs = obs
+		_dirty = false
+		_update_sets(obs)
+	_drain_queue()
+
+
+## Forces a full re-evaluation on the next frame (e.g. after data changed).
+func refresh() -> void:
+	_dirty = true
+
+
+func get_stats() -> Dictionary:
+	var inst := 0
+	var cells := {}
+	for key in active:
+		var mmi: MultiMeshInstance3D = active[key]
+		inst += mmi.multimesh.instance_count
+		cells[Vector2i(key.x, key.y)] = true
+	var out := {"active_mmis": active.size(), "active_cells": cells.size(), "active_instances": inst,
+		"loaded_chunks": chunks.size(), "loading_chunks": _loading.size(),
+		"queued": maxi(_queue.size() - _queue_pos, 0), "worst_activation_ms": snappedf(_worst_drain_ms, 0.01)}
+	_worst_drain_ms = 0.0
+	return out
+
+
+func is_settled() -> bool:
+	return _loading.is_empty() and _queue_pos >= _queue.size()
+
+
+## Instances of one cell as [mesh_id, Transform3D] pairs; loads the chunk synchronously.
+## Used by InstanceColliderStreamer, which needs data immediately around the player.
+func get_cell_instances(cell: Vector2i, mesh_ids: Array) -> Array:
+	var out := []
+	var loc := Vector2i(floori(cell.x * cell_size_m / chunk_size_m), floori(cell.y * cell_size_m / chunk_size_m))
+	var ch := get_chunk_sync(loc)
+	if ch == null or not ch.cells.has(cell):
+		return out
+	var by_mesh: Dictionary = ch.cells[cell]
+	for mesh_id in mesh_ids:
+		if not by_mesh.has(mesh_id):
+			continue
+		var buf: PackedFloat32Array = by_mesh[mesh_id]
+		for i in buf.size() / VegetationChunk.FLOATS_PER_INSTANCE:
+			out.append([mesh_id, VegetationChunk.instance_transform(buf, i)])
+	return out
+
+
+func get_chunk_sync(loc: Vector2i) -> VegetationChunk:
+	if chunks.has(loc):
+		return chunks[loc]
+	if _missing.has(loc):
+		return null
+	var path := _chunk_path(loc)
+	if _loading.has(loc):
+		_store_chunk(loc, ResourceLoader.load_threaded_get(path))
+		_loading.erase(loc)
+		return chunks.get(loc)
+	if not ResourceLoader.exists(path):
+		_missing[loc] = true
+		return null
+	_store_chunk(loc, ResourceLoader.load(path))
+	return chunks.get(loc)
+
+
+# ------------------------------------------------------------------------------
+
+func _observer_positions() -> Array[Vector3]:
+	var out: Array[Vector3] = []
+	var cam: Camera3D = null
+	if Engine.is_editor_hint():
+		var ei: Object = Engine.get_singleton("EditorInterface")
+		if ei:
+			var vp: SubViewport = ei.get_editor_viewport_3d(0)
+			if vp:
+				cam = vp.get_camera_3d()
+	elif is_inside_tree():
+		cam = get_viewport().get_camera_3d()
+	if cam:
+		out.append(cam.global_position)
+	for o in extra_observers:
+		if o and o.is_inside_tree():
+			out.append(o.global_position)
+	return out
+
+
+func _moved(obs: Array[Vector3]) -> bool:
+	if obs.size() != _last_obs.size():
+		return true
+	var t2 := observer_move_threshold_m * observer_move_threshold_m
+	for i in obs.size():
+		if obs[i].distance_squared_to(_last_obs[i]) > t2:
+			return true
+	return false
+
+
+func _chunk_path(loc: Vector2i) -> String:
+	return data_directory.path_join(VegetationChunk.file_name(loc))
+
+
+func _store_chunk(loc: Vector2i, res: Resource) -> void:
+	var ch := res as VegetationChunk
+	if ch == null:
+		_missing[loc] = true
+		return
+	if not is_equal_approx(ch.cell_size_m, cell_size_m) or not is_equal_approx(ch.chunk_size_m, chunk_size_m):
+		push_warning("VegetationStreamer: chunk %s has cell %.0f m / chunk %.0f m, streamer expects %.0f / %.0f" % [
+			loc, ch.cell_size_m, ch.chunk_size_m, cell_size_m, chunk_size_m])
+		cell_size_m = ch.cell_size_m
+		chunk_size_m = ch.chunk_size_m
+	chunks[loc] = ch
+	_dirty = true
+
+
+func _request_chunk(loc: Vector2i) -> void:
+	if chunks.has(loc) or _missing.has(loc) or _loading.has(loc):
+		return
+	var path := _chunk_path(loc)
+	if not ResourceLoader.exists(path):
+		_missing[loc] = true
+		return
+	if ResourceLoader.load_threaded_request(path) != OK:
+		_missing[loc] = true
+		return
+	_loading[loc] = path
+
+
+func _poll_loading() -> void:
+	for loc in _loading.keys():
+		var path: String = _loading[loc]
+		match ResourceLoader.load_threaded_get_status(path):
+			ResourceLoader.THREAD_LOAD_LOADED:
+				_loading.erase(loc)
+				_store_chunk(loc, ResourceLoader.load_threaded_get(path))
+			ResourceLoader.THREAD_LOAD_FAILED, ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+				_loading.erase(loc)
+				_missing[loc] = true
+				push_warning("VegetationStreamer: failed to load " + path)
+
+
+func _update_sets(obs: Array[Vector3]) -> void:
+	var r := library.max_range()
+	var cs := cell_size_m
+	# Chunks around the observers; unload the ones that drifted far away.
+	var wanted := {}
+	for o in obs:
+		var c0 := VegetationChunk.chunk_of(o - Vector3(r, 0, r), chunk_size_m)
+		var c1 := VegetationChunk.chunk_of(o + Vector3(r, 0, r), chunk_size_m)
+		for cx in range(c0.x, c1.x + 1):
+			for cz in range(c0.y, c1.y + 1):
+				wanted[Vector2i(cx, cz)] = true
+	for loc in wanted:
+		_request_chunk(loc)
+	for loc in chunks.keys():
+		if not wanted.has(loc) and _square_distance(obs, Vector2(loc) * chunk_size_m, chunk_size_m) > r + chunk_keep_margin_m:
+			for key in active.keys():
+				if VegetationChunk.chunk_of(Vector3(key.x * cs, 0, key.y * cs), chunk_size_m) == loc:
+					_deactivate(key)
+			chunks.erase(loc)
+
+	# Desired (cell, mesh) set with distances.
+	var desired := {}
+	for loc in chunks:
+		var ch: VegetationChunk = chunks[loc]
+		for cell: Vector2i in ch.cells:
+			var by_mesh: Dictionary = ch.cells[cell]
+			var d := _cell_distance(obs, cell, by_mesh)
+			if d > r:
+				continue
+			for mesh_id in by_mesh:
+				var def := library.get_def(mesh_id)
+				if def == null or d > def.max_range + def.fade_m:
+					continue
+				desired[Vector3i(cell.x, cell.y, mesh_id)] = d
+
+	for key in active.keys():
+		if not desired.has(key):
+			_deactivate(key)
+	_queue.clear()
+	_queue_pos = 0
+	for key in desired:
+		if active.has(key):
+			_update_lod(key, desired[key])
+		else:
+			_queue.append([desired[key], key])
+	_queue.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+
+
+## Distance from the nearest observer to a cell: horizontal distance to the cell square
+## plus the height difference to the cell's first instance.
+func _cell_distance(obs: Array[Vector3], cell: Vector2i, by_mesh: Dictionary) -> float:
+	var cs := cell_size_m
+	var y := 0.0
+	for mesh_id in by_mesh:
+		y = by_mesh[mesh_id][7]
+		break
+	var best := INF
+	for o in obs:
+		var dx := maxf(absf(o.x - (cell.x + 0.5) * cs) - cs * 0.5, 0.0)
+		var dz := maxf(absf(o.z - (cell.y + 0.5) * cs) - cs * 0.5, 0.0)
+		var dy := o.y - y
+		best = minf(best, sqrt(dx * dx + dz * dz + dy * dy))
+	return best
+
+
+func _square_distance(obs: Array[Vector3], min_corner: Vector2, size: float) -> float:
+	var best := INF
+	for o in obs:
+		var dx := maxf(absf(o.x - (min_corner.x + size * 0.5)) - size * 0.5, 0.0)
+		var dz := maxf(absf(o.z - (min_corner.y + size * 0.5)) - size * 0.5, 0.0)
+		best = minf(best, sqrt(dx * dx + dz * dz))
+	return best
+
+
+func _drain_queue() -> void:
+	var n := 0
+	var t0 := Time.get_ticks_usec()
+	while _queue_pos < _queue.size() and n < activations_per_frame:
+		var item: Array = _queue[_queue_pos]
+		_queue_pos += 1
+		if not active.has(item[1]):
+			_activate(item[1], item[0])
+		n += 1
+	if _queue_pos >= _queue.size():
+		_queue.clear()
+		_queue_pos = 0
+	if n > 0:
+		_worst_drain_ms = maxf(_worst_drain_ms, (Time.get_ticks_usec() - t0) / 1000.0)
+
+
+func _activate(key: Vector3i, dist: float) -> void:
+	var cell := Vector2i(key.x, key.y)
+	var loc := VegetationChunk.chunk_of(Vector3(cell.x * cell_size_m, 0, cell.y * cell_size_m), chunk_size_m)
+	var ch: VegetationChunk = chunks.get(loc)
+	if ch == null or not ch.cells.has(cell) or not ch.cells[cell].has(key.z):
+		return
+	var def := library.get_def(key.z)
+	var buf: PackedFloat32Array = ch.cells[cell][key.z]
+	var lod := 0 if dist < def.near_range else 1
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	mm.mesh = def.get_mesh(lod)
+	mm.instance_count = buf.size() / VegetationChunk.FLOATS_PER_INSTANCE
+	mm.buffer = buf
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	mmi.visibility_range_end = def.max_range
+	mmi.visibility_range_end_margin = def.fade_m
+	mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	_apply_lod(mmi, def, lod)
+	add_child(mmi, false, Node.INTERNAL_MODE_BACK)
+	active[key] = mmi
+	active_lod[key] = lod
+
+
+func _update_lod(key: Vector3i, dist: float) -> void:
+	var def := library.get_def(key.z)
+	var cur: int = active_lod[key]
+	var want := cur
+	if cur == 0 and dist > def.near_range * (1.0 + lod_hysteresis):
+		want = 1
+	elif cur == 1 and dist < def.near_range * (1.0 - lod_hysteresis):
+		want = 0
+	if want == cur:
+		return
+	var mmi: MultiMeshInstance3D = active[key]
+	mmi.multimesh.mesh = def.get_mesh(want)
+	_apply_lod(mmi, def, want)
+	active_lod[key] = want
+
+
+func _apply_lod(mmi: MultiMeshInstance3D, def: VegetationMeshDef, lod: int) -> void:
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if lod == 0 and def.cast_shadows \
+		else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mmi.material_override = def.get_material_override(lod)
+
+
+func _deactivate(key: Vector3i) -> void:
+	var mmi: MultiMeshInstance3D = active[key]
+	active.erase(key)
+	active_lod.erase(key)
+	if is_instance_valid(mmi):
+		mmi.free()
+
+
+func _deactivate_all() -> void:
+	for key in active.keys():
+		_deactivate(key)
+	_queue.clear()
+	_queue_pos = 0

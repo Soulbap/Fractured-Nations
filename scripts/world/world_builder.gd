@@ -1,4 +1,4 @@
-## Builds the WORLD-TECH-01 prototype world from a WorldConfig.
+## Builds the prototype world from a WorldConfig.
 ##
 ## Lives in the world scene as an editor tool. Its buttons regenerate the parts of the
 ## world that are generated (terrain relief, road layout, vegetation scatter); everything
@@ -7,6 +7,12 @@
 ##
 ## Regeneration is destructive to hand edits in the regenerated layer, so the terrain
 ## data directory is copied to <data_dir>_backup before any terrain-changing step.
+##
+## Vegetation (WORLD-TECH-02): trees, bushes and rocks are scattered deterministically
+## per 128 m cell into VegetationChunk files (worlds/<name>/vegetation/), a grass
+## exclusion mask is built from roads and base pads, and forest density is baked into
+## the Terrain3D color map so forests read at RTS distances without geometry. Grass
+## itself is camera-local GPU particles (GrassLayer) and is not stored.
 @tool
 class_name WorldBuilder
 extends Node
@@ -17,7 +23,11 @@ const RoadContainerScript := preload("res://addons/road-generator/nodes/road_con
 const RoadManagerScript := preload("res://addons/road-generator/nodes/road_manager.gd")
 const ConnectorScript := preload("res://addons/road-generator/connectors/terrain3d_road_connector.gd")
 
-## Terrain3D mesh asset slots used by the scatter.
+const GRASS_LAYER_SCENE := "res://scenes/vegetation/grass_layer.tscn"
+const LIBRARY_PATH := "res://assets/vegetation/vegetation_library.tres"
+
+## Terrain3D mesh asset slots (kept for hand painting in the editor) and the ids used
+## in the vegetation chunks. Grass (0) is no longer stored.
 const MESH_GRASS := 0
 const MESH_CONIFER := 1
 const MESH_BROADLEAF := 2
@@ -26,29 +36,60 @@ const MESH_ROCKS: Array[int] = [4, 5, 6]
 ## Mesh ids whose instances need physics colliders (see InstanceColliderStreamer).
 const SOLID_MESHES: Array[int] = [1, 2, 4, 5, 6]
 
+## Vegetation storage layout. VegetationStreamer must use the same values.
+const CHUNK_M := 1024.0
+const CELL_M := 128.0
+## Grass mask: extra width beyond the road edge, and the soft edge beyond that.
+const MASK_ROAD_MARGIN_M := 1.0
+const MASK_EDGE_M := 2.5
+## Albedo multipliers baked into the Terrain3D color map.
+const FOREST_TINT := Color(0.50, 0.55, 0.38)
+const DRY_TINT := Color(1.08, 1.0, 0.70)
+
 ## Distance from an intersection center to its edge RoadPoints, in meters.
 const JUNCTION_ARM_M := 16.0
 
 @export var config: WorldConfig
 @export var terrain: Terrain3D
 @export var road_parent: Node3D
+@export var vegetation: VegetationStreamer
+@export var grass: GrassLayer
+## Scatter cells on the WorkerThreadPool (reads terrain data concurrently).
+@export var threaded_scatter := true
 
 @warning_ignore_start("unused_private_class_variable")
 @export_tool_button("Regenerate terrain (destructive)", "Warning") var _btn_terrain = regenerate_terrain
 @export_tool_button("Rebuild roads + flatten", "Path3D") var _btn_roads = rebuild_roads
-@export_tool_button("Rescatter vegetation", "MultiMeshInstance3D") var _btn_veg = rescatter_vegetation
+@export_tool_button("Rescatter vegetation + bake tint", "MultiMeshInstance3D") var _btn_veg = rescatter_vegetation
+@export_tool_button("Bake painted instances into cells", "MeshInstance3D") var _btn_bake = bake_painted_instances
 @export_tool_button("Save terrain data", "Save") var _btn_save = save_terrain
 @warning_ignore_restore("unused_private_class_variable")
 
 var _gen: WorldTerrainGenerator
 ## Road centerlines as arrays of Vector3 (world space), filled by build_roads.
 var road_polylines: Array = []
+## Full road width in meters per polyline (same indices as road_polylines).
+var road_widths := PackedFloat32Array()
+
+# Scatter job state shared with worker threads (read-only there).
+var _sc_cells: Array[Vector2i] = []
+var _sc_results: Array = []
+var _sc_lock := Mutex.new()
+var _sc_road: _RoadIndex
+var _sc_mask: VegetationMask
+var _sc_max_slope := 0.0
+var _sc_hs := 0.0
+var _sc_cfg := {}
 
 
 func _generator() -> WorldTerrainGenerator:
 	if _gen == null or _gen.cfg != config:
 		_gen = WorldTerrainGenerator.new(config)
 	return _gen
+
+
+func vegetation_directory() -> String:
+	return "res://worlds/%s/vegetation" % config.world_name
 
 
 # ------------------------------------------------------------------------------
@@ -144,15 +185,15 @@ func make_assets() -> Terrain3DAssets:
 	a.set_texture(WorldTerrainGenerator.TEX_DRY_GRASS, _tex(WorldTerrainGenerator.TEX_DRY_GRASS, "Dry grass", tex_dir + "ground037", Color(1.15, 1.0, 0.62), 0.1))
 
 	var veg := "res://assets/vegetation/"
-	var grass := Terrain3DMeshAsset.new()
-	grass.name = "Grass card"
-	grass.id = MESH_GRASS
-	grass.generated_type = Terrain3DMeshAsset.TYPE_TEXTURE_CARD
-	grass.generated_faces = 2
-	grass.generated_size = Vector2(1.1, 0.7)
-	grass.height_offset = 0.24
-	grass.cast_shadows = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var gm: StandardMaterial3D = grass.material_override
+	var grass_card := Terrain3DMeshAsset.new()
+	grass_card.name = "Grass card"
+	grass_card.id = MESH_GRASS
+	grass_card.generated_type = Terrain3DMeshAsset.TYPE_TEXTURE_CARD
+	grass_card.generated_faces = 2
+	grass_card.generated_size = Vector2(1.1, 0.7)
+	grass_card.height_offset = 0.24
+	grass_card.cast_shadows = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var gm: StandardMaterial3D = grass_card.material_override
 	gm.albedo_texture = load(veg + "grass_blades.png")
 	gm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 	gm.alpha_scissor_threshold = 0.4
@@ -162,8 +203,8 @@ func make_assets() -> Terrain3DAssets:
 	gm.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_DITHER
 	gm.distance_fade_min_distance = 70.0
 	gm.distance_fade_max_distance = 55.0
-	grass.lod0_range = 70.0
-	a.set_mesh_asset(MESH_GRASS, grass)
+	grass_card.lod0_range = 70.0
+	a.set_mesh_asset(MESH_GRASS, grass_card)
 
 	a.set_mesh_asset(MESH_CONIFER, _mesh_asset(MESH_CONIFER, "Conifer", veg + "conifer.tscn", [60.0, 260.0, 1500.0], 1))
 	a.set_mesh_asset(MESH_BROADLEAF, _mesh_asset(MESH_BROADLEAF, "Broadleaf", veg + "broadleaf.tscn", [60.0, 260.0, 1500.0], 1))
@@ -269,6 +310,7 @@ func build_roads(scene_owner: Node) -> void:
 	await get_tree().process_frame
 	_connect_chain(main_nodes)
 	road_polylines = [_line3(main_line)]
+	road_widths = PackedFloat32Array([3.75 * 2.0 + 2.0 * 2.0])
 
 	for idx in junctions:
 		for path: Array[Vector2] in junctions[idx]:
@@ -290,6 +332,7 @@ func build_roads(scene_owner: Node) -> void:
 			_connect_chain(nodes)
 			inters[idx].add_branch(nodes[0])
 			road_polylines.append(_line3(line))
+			road_widths.append(3.25 * 2.0 + 1.0 * 2.0)
 
 	var connector: Node = ConnectorScript.new()
 	connector.name = "Terrain3DRoadConnector"
@@ -371,10 +414,11 @@ func _line3(line: Array) -> PackedVector3Array:
 	return out
 
 
-## Rebuilds road_polylines from the RoadPoints in the scene (used when roads were
-## hand-edited and vegetation is rescattered).
+## Rebuilds road_polylines (and widths) from the road nodes in the scene, so hand-edited
+## roads are respected when vegetation is rescattered.
 func _collect_road_polylines() -> void:
 	road_polylines.clear()
+	road_widths.clear()
 	if not road_parent:
 		return
 	for container in road_parent.find_children("*", "Node3D", true, false):
@@ -382,163 +426,367 @@ func _collect_road_polylines() -> void:
 			continue
 		# Each connected pair of road nodes becomes a two-point polyline.
 		for rp in container.get_roadpoints():
+			var w: float = rp.lane_width * rp.lanes.size() + rp.shoulder_width_l + rp.shoulder_width_r
 			for nxt in [rp.get_next_road_node(), rp.get_prior_road_node()]:
 				if nxt:
 					road_polylines.append(PackedVector3Array([rp.global_position, nxt.global_position]))
+					road_widths.append(w)
 
 
 # ------------------------------------------------------------------------------
-# Vegetation (Terrain3D instancer)
+# Vegetation (chunk files + exclusion mask + forest tint)
 # ------------------------------------------------------------------------------
 
+## Scatters trees, bushes and rocks into VegetationChunk files, builds the grass
+## exclusion mask, removes stored Terrain3D instances (the old storage) and bakes the
+## forest tint into the color map. Deterministic per cell: the RNG of a cell is seeded
+## from the world seed and the cell coordinates, so any cell can be regenerated alone.
 func scatter_vegetation() -> void:
 	var t0 := Time.get_ticks_msec()
-	var inst := terrain.instancer
-	for id in [MESH_GRASS, MESH_CONIFER, MESH_BROADLEAF, MESH_BUSH] + MESH_ROCKS:
-		inst.clear_by_mesh(id)
-	var road_index := _RoadIndex.new(road_polylines, 32.0)
-	var gen := _generator()
-	var rng := RandomNumberGenerator.new()
-	rng.seed = config.world_seed + 100
+	if road_polylines.is_empty():
+		_collect_road_polylines()
+	var dir := vegetation_directory()
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir))
+
+	var mask := build_mask()
+	ResourceSaver.save(mask, dir + "/mask.res")
+	# Scenes must reference the mask file, not embed a copy of the image.
+	mask.take_over_path(dir + "/mask.res")
+	var t1 := Time.get_ticks_msec()
+
 	var hs := config.half_size() - 4.0
 	if config.vegetation_extent_m > 0.0:
 		hs = minf(hs, config.vegetation_extent_m * 0.5)
-	var data := terrain.data
+	_sc_cells.clear()
+	var c0 := floori(-hs / CELL_M)
+	var c1 := floori((hs - 0.001) / CELL_M)
+	for cz in range(c0, c1 + 1):
+		for cx in range(c0, c1 + 1):
+			_sc_cells.append(Vector2i(cx, cz))
+	_sc_results.clear()
+	_sc_results.resize(_sc_cells.size())
+	_sc_road = _RoadIndex.new(road_polylines, 32.0)
+	_sc_mask = mask
+	_sc_max_slope = cos(deg_to_rad(config.max_tree_slope_deg))
+	_sc_hs = hs
+	# Plain copies: reading Resource properties from worker threads is slow and contends.
+	_sc_cfg = {"seed": config.world_seed, "tree_s": config.tree_spacing_m, "bush_s": config.bush_spacing_m,
+		"rock_s": config.rock_spacing_m, "thr": config.forest_threshold, "clear": config.road_clearance_m,
+		"base_h": config.base_height, "sites": config.base_sites.size()}
+	_generator()
+	if threaded_scatter:
+		var task := WorkerThreadPool.add_group_task(_scatter_cell_task, _sc_cells.size(), -1, true, "vegetation cells")
+		WorkerThreadPool.wait_for_group_task_completion(task)
+	else:
+		for i in _sc_cells.size():
+			_scatter_cell_task(i)
+	var t2 := Time.get_ticks_msec()
+
+	var chunks := {}
 	var counts := {}
-	var max_slope := cos(deg_to_rad(config.max_tree_slope_deg))
+	for i in _sc_cells.size():
+		var by_mesh: Dictionary = _sc_results[i]
+		if by_mesh == null or by_mesh.is_empty():
+			continue
+		var cell := _sc_cells[i]
+		var loc := Vector2i(floori(cell.x * CELL_M / CHUNK_M), floori(cell.y * CELL_M / CHUNK_M))
+		var ch: VegetationChunk = chunks.get(loc)
+		if ch == null:
+			ch = VegetationChunk.new()
+			ch.location = loc
+			ch.chunk_size_m = CHUNK_M
+			ch.cell_size_m = CELL_M
+			chunks[loc] = ch
+		ch.cells[cell] = by_mesh
+		for mesh_id in by_mesh:
+			counts[mesh_id] = counts.get(mesh_id, 0) + by_mesh[mesh_id].size() / VegetationChunk.FLOATS_PER_INSTANCE
+	_sc_results.clear()
+	_save_chunks(chunks, true)
+
+	# Stored Terrain3D instances are the old storage; remove them so no MultiMeshes are
+	# built for the whole map on load.
+	if terrain and terrain.instancer:
+		for id in [MESH_GRASS, MESH_CONIFER, MESH_BROADLEAF, MESH_BUSH] + MESH_ROCKS:
+			terrain.instancer.clear_by_mesh(id)
+	var t3 := Time.get_ticks_msec()
+	bake_forest_tint(mask)
+	_apply_to_nodes(mask)
+	print("WorldBuilder: vegetation in %d ms (mask %d, scatter %d cells %d, chunks+save %d, tint %d): %d chunks, %s" % [
+		Time.get_ticks_msec() - t0, t1 - t0, _sc_cells.size(), t2 - t1, t3 - t2, Time.get_ticks_msec() - t3,
+		chunks.size(), counts])
+
+
+## Grass exclusion mask from roads (with their widths) and base pads.
+func build_mask() -> VegetationMask:
+	var hs := config.half_size()
+	# Keep the mask at or below 4096 texels per side (16 MB at 20 km, 5 m texels).
+	var texel := maxf(2.0, ceilf(hs * 2.0 / 4096.0))
+	var discs := []
+	for site in config.base_sites:
+		discs.append([Vector2(site.x, site.y) * hs, site.z + config.base_blend_m * 0.6])
+	return VegetationMask.build(hs, texel, road_polylines, road_widths, discs, MASK_ROAD_MARGIN_M, MASK_EDGE_M)
+
+
+## One cell of scatter. Runs on worker threads: only reads shared data.
+func _scatter_cell_task(i: int) -> void:
+	var cell := _sc_cells[i]
+	var gen := _gen
+	var data := terrain.data
+	var cfg := _sc_cfg
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([cfg.seed, cell.x, cell.y])
+	var by_mesh := {}
+	var x0 := cell.x * CELL_M
+	var z0 := cell.y * CELL_M
+	var x1 := x0 + CELL_M
+	var z1 := z0 + CELL_M
+	var lim := _sc_hs
 
 	# Trees and forest-edge bushes.
-	var trees: Array[Transform3D] = []
-	var tree_col := PackedColorArray()
-	var broad: Array[Transform3D] = []
-	var broad_col := PackedColorArray()
-	var bushes: Array[Transform3D] = []
-	var bush_col := PackedColorArray()
-	var s := config.tree_spacing_m
-	var z := -hs
-	while z < hs:
-		var x := -hs
-		while x < hs:
+	var s: float = cfg.tree_s
+	var z := ceilf(z0 / s) * s
+	while z < z1:
+		var x := ceilf(x0 / s) * s
+		while x < x1:
 			var p := Vector3(x + rng.randf_range(-0.45, 0.45) * s, 0, z + rng.randf_range(-0.45, 0.45) * s)
 			x += s
-			var f := gen.forest_value(p.x, p.z)
-			if f < config.forest_threshold - 0.15:
+			if absf(p.x) > lim or absf(p.z) > lim:
 				continue
-			if _in_base(gen, p) or road_index.distance(p) < config.road_clearance_m:
+			var f := gen.forest_value(p.x, p.z)
+			if f < cfg.thr - 0.15:
+				continue
+			if _in_base_n(gen, p, cfg.sites) or _sc_road.distance(p) < cfg.clear:
 				continue
 			var n := data.get_normal(p)
-			if not n.is_finite() or n.y < max_slope:
+			if not n.is_finite() or n.y < _sc_max_slope:
 				continue
 			p.y = data.get_height(p)
-			var density := clampf((f - config.forest_threshold) * 4.0 + 0.5, 0.0, 1.0)
+			var density := clampf((f - cfg.thr) * 4.0 + 0.5, 0.0, 1.0)
 			if rng.randf() > density:
 				# Sparse forest edge: occasional bush.
 				if rng.randf() < 0.25:
-					bushes.append(_xf(rng, p, 0.7, 1.4, Vector3.UP))
-					bush_col.append(_tint(rng, 0.08))
+					VegetationChunk.append_to(by_mesh, MESH_BUSH, _xf(rng, p, 0.7, 1.4, Vector3.UP), _tint(rng, 0.08))
 				continue
 			# Conifers dominate higher ground, broadleaf the lowlands.
-			var conifer_bias := clampf((p.y - config.base_height) / 60.0 + 0.45, 0.1, 0.9)
+			var conifer_bias := clampf((p.y - cfg.base_h) / 60.0 + 0.45, 0.1, 0.9)
 			if rng.randf() < conifer_bias:
-				trees.append(_xf(rng, p, 0.75, 1.35, Vector3.UP))
-				tree_col.append(_tint(rng, 0.12))
+				VegetationChunk.append_to(by_mesh, MESH_CONIFER, _xf(rng, p, 0.75, 1.35, Vector3.UP), _tint(rng, 0.12))
 			else:
-				broad.append(_xf(rng, p, 0.8, 1.3, Vector3.UP))
-				broad_col.append(_tint(rng, 0.12))
+				VegetationChunk.append_to(by_mesh, MESH_BROADLEAF, _xf(rng, p, 0.8, 1.3, Vector3.UP), _tint(rng, 0.12))
 		z += s
 
 	# Roadside vegetation and scattered bushes.
-	s = config.bush_spacing_m
-	z = -hs
-	while z < hs:
-		var x := -hs
-		while x < hs:
+	s = cfg.bush_s
+	z = ceilf(z0 / s) * s
+	while z < z1:
+		var x := ceilf(x0 / s) * s
+		while x < x1:
 			var p := Vector3(x + rng.randf_range(-0.5, 0.5) * s, 0, z + rng.randf_range(-0.5, 0.5) * s)
 			x += s
-			if _in_base(gen, p):
+			if absf(p.x) > lim or absf(p.z) > lim or _in_base_n(gen, p, cfg.sites):
 				continue
-			var d := road_index.distance(p)
+			var d := _sc_road.distance(p)
 			var chance := 0.06
-			if d > config.road_clearance_m - 2.0 and d < config.road_clearance_m + 10.0:
+			if d > cfg.clear - 2.0 and d < cfg.clear + 10.0:
 				chance = 0.55
-			elif d < config.road_clearance_m - 2.0:
+			elif d < cfg.clear - 2.0:
 				continue
 			if rng.randf() > chance:
 				continue
 			var n := data.get_normal(p)
-			if not n.is_finite() or n.y < max_slope:
+			if not n.is_finite() or n.y < _sc_max_slope:
 				continue
 			p.y = data.get_height(p)
-			bushes.append(_xf(rng, p, 0.6, 1.5, Vector3.UP))
-			bush_col.append(_tint(rng, 0.1))
+			VegetationChunk.append_to(by_mesh, MESH_BUSH, _xf(rng, p, 0.6, 1.5, Vector3.UP), _tint(rng, 0.1))
 		z += s
 
 	# Rocks on slopes and in the mountains.
-	var rocks: Array = [[], [], []]
-	var rock_cols: Array = [PackedColorArray(), PackedColorArray(), PackedColorArray()]
-	s = config.rock_spacing_m
-	z = -hs
-	while z < hs:
-		var x := -hs
-		while x < hs:
+	s = cfg.rock_s
+	z = ceilf(z0 / s) * s
+	while z < z1:
+		var x := ceilf(x0 / s) * s
+		while x < x1:
 			var p := Vector3(x + rng.randf_range(-0.5, 0.5) * s, 0, z + rng.randf_range(-0.5, 0.5) * s)
 			x += s
+			if absf(p.x) > lim or absf(p.z) > lim:
+				continue
 			var n := data.get_normal(p)
 			if not n.is_finite():
 				continue
 			var steep := 1.0 - n.y
 			var chance := 0.03 + steep * 2.5 + gen.mountain_mask(p.x, p.z) * 0.2
-			if rng.randf() > chance or road_index.distance(p) < 7.0 or _in_base(gen, p):
+			if rng.randf() > chance or _sc_road.distance(p) < 7.0 or _in_base_n(gen, p, cfg.sites):
 				continue
 			p.y = data.get_height(p) - 0.3
 			var k := rng.randi_range(0, 2)
-			rocks[k].append(_xf(rng, p, 0.25, 1.6, n))
-			rock_cols[k].append(_tint(rng, 0.06))
+			VegetationChunk.append_to(by_mesh, MESH_ROCKS[k], _xf(rng, p, 0.25, 1.6, n), _tint(rng, 0.06))
 		z += s
 
-	# Grass cards in patches, kept off steep rock, roads and base pads.
-	var grass: Array[Transform3D] = []
-	var grass_col := PackedColorArray()
-	var patch := FastNoiseLite.new()
-	patch.seed = config.world_seed + 7
-	patch.frequency = 0.02
-	s = config.grass_spacing_m
-	var ghs := hs if config.grass_extent_m <= 0.0 else minf(hs, config.grass_extent_m * 0.5)
-	z = -ghs
-	while z < ghs:
-		var x := -ghs
-		while x < ghs:
-			var p := Vector3(x + rng.randf_range(-0.5, 0.5) * s, 0, z + rng.randf_range(-0.5, 0.5) * s)
-			x += s
-			if patch.get_noise_2d(p.x, p.z) < -0.15:
-				continue
-			var n := data.get_normal(p)
-			if not n.is_finite() or n.y < 0.9:
-				continue
-			if road_index.distance(p) < 5.5 or _in_base(gen, p):
-				continue
-			p.y = data.get_height(p)
-			grass.append(_xf(rng, p, 0.7, 1.3, n))
-			var dry := gen.field_mask(p.x, p.z)
-			grass_col.append(Color(0.95, 1.0, 0.8).lerp(Color(1.25, 1.05, 0.55), dry) * rng.randf_range(0.85, 1.1))
-		z += s
+	_sc_lock.lock()
+	_sc_results[i] = by_mesh
+	_sc_lock.unlock()
 
-	inst.add_transforms(MESH_CONIFER, trees, tree_col, false)
-	inst.add_transforms(MESH_BROADLEAF, broad, broad_col, false)
-	inst.add_transforms(MESH_BUSH, bushes, bush_col, false)
-	for k in 3:
-		var arr: Array[Transform3D] = []
-		arr.assign(rocks[k])
-		inst.add_transforms(MESH_ROCKS[k], arr, rock_cols[k], false)
-	inst.add_transforms(MESH_GRASS, grass, grass_col, false)
-	inst.update_mmis(true)
-	counts = {"conifer": trees.size(), "broadleaf": broad.size(), "bush": bushes.size(),
-		"rocks": rocks[0].size() + rocks[1].size() + rocks[2].size(), "grass": grass.size()}
-	print("WorldBuilder: scattered vegetation in %d ms: %s" % [Time.get_ticks_msec() - t0, counts])
+
+func _save_chunks(chunks: Dictionary, remove_others: bool) -> void:
+	var dir := vegetation_directory()
+	var gdir := ProjectSettings.globalize_path(dir)
+	DirAccess.make_dir_recursive_absolute(gdir)
+	if remove_others:
+		for f in DirAccess.get_files_at(gdir):
+			if f.begins_with("veg_") and f.ends_with(".res"):
+				DirAccess.remove_absolute(gdir.path_join(f))
+	for loc in chunks:
+		var err := ResourceSaver.save(chunks[loc], dir + "/" + VegetationChunk.file_name(loc))
+		if err != OK:
+			push_error("WorldBuilder: failed to save chunk %s (%d)" % [loc, err])
+
+
+func _load_chunks() -> Dictionary:
+	var out := {}
+	var dir := vegetation_directory()
+	var gdir := ProjectSettings.globalize_path(dir)
+	if not DirAccess.dir_exists_absolute(gdir):
+		return out
+	for f in DirAccess.get_files_at(gdir):
+		if f.begins_with("veg_") and f.ends_with(".res"):
+			var ch: VegetationChunk = ResourceLoader.load(dir + "/" + f, "", ResourceLoader.CACHE_MODE_IGNORE)
+			if ch:
+				out[ch.location] = ch
+	return out
+
+
+## Moves instances painted with Terrain3D's instancer brush (all mesh ids except the
+## grass card) into the vegetation chunks and clears them from the terrain regions.
+func bake_painted_instances() -> void:
+	var chunks := _load_chunks()
+	var moved := 0
+	var region_m := terrain.region_size * terrain.vertex_spacing
+	for region: Terrain3DRegion in terrain.data.get_regions_active():
+		var offset := Vector3(region.location.x * region_m, 0, region.location.y * region_m)
+		var inst: Dictionary = region.get_instances()
+		for mesh_id in inst:
+			if mesh_id == MESH_GRASS:
+				continue
+			for cell in inst[mesh_id]:
+				var xforms: Array = inst[mesh_id][cell][0]
+				var colors: PackedColorArray = inst[mesh_id][cell][1]
+				for k in xforms.size():
+					var xf: Transform3D = xforms[k]
+					var g := Transform3D(xf.basis, xf.origin + offset)
+					var loc := VegetationChunk.chunk_of(g.origin, CHUNK_M)
+					var ch: VegetationChunk = chunks.get(loc)
+					if ch == null:
+						ch = VegetationChunk.new()
+						ch.location = loc
+						ch.chunk_size_m = CHUNK_M
+						ch.cell_size_m = CELL_M
+						chunks[loc] = ch
+					ch.add_instance(mesh_id, g, colors[k] if k < colors.size() else Color.WHITE)
+					moved += 1
+	_save_chunks(chunks, false)
+	for id in [MESH_GRASS, MESH_CONIFER, MESH_BROADLEAF, MESH_BUSH] + MESH_ROCKS:
+		terrain.instancer.clear_by_mesh(id)
+	if vegetation:
+		vegetation.chunks.clear()
+		vegetation.refresh()
+	print("WorldBuilder: baked %d painted instances into %d chunks" % [moved, chunks.size()])
+
+
+## Bakes forest density (where trees are scattered), slope and the dry fields into the
+## Terrain3D color map at 1/8 vertex resolution, so forests remain recognizable from
+## RTS distances without rendering trees. Hand-painted color is overwritten.
+func bake_forest_tint(mask: VegetationMask = null) -> void:
+	var t0 := Time.get_ticks_msec()
+	if mask == null:
+		mask = load(vegetation_directory() + "/mask.res") if ResourceLoader.exists(vegetation_directory() + "/mask.res") else null
+	var gen := _generator()
+	var rs := terrain.region_size
+	var step := 8
+	var n := rs / step
+	var spacing := terrain.vertex_spacing
+	var region_m := rs * spacing
+	var max_slope := cos(deg_to_rad(config.max_tree_slope_deg))
+	var inv_run := 1.0 / (2.0 * step * spacing)
+	for region: Terrain3DRegion in terrain.data.get_regions_active():
+		var ox := region.location.x * region_m
+		var oz := region.location.y * region_m
+		var hm: Image = region.get_height_map()
+		var img := Image.create_empty(n, n, false, Image.FORMAT_RGBA8)
+		for pz in n:
+			var vz := pz * step
+			for px in n:
+				var vx := px * step
+				var x := ox + (vx + step * 0.5) * spacing
+				var z := oz + (vz + step * 0.5) * spacing
+				var f := gen.forest_value(x, z)
+				var d := clampf((f - config.forest_threshold) * 4.0 + 0.5, 0.0, 1.0)
+				if d > 0.0:
+					var gx := (hm.get_pixel(mini(vx + step, rs - 1), vz).r - hm.get_pixel(maxi(vx - step, 0), vz).r) * inv_run
+					var gz := (hm.get_pixel(vx, mini(vz + step, rs - 1)).r - hm.get_pixel(vx, maxi(vz - step, 0)).r) * inv_run
+					var ny := 1.0 / sqrt(1.0 + gx * gx + gz * gz)
+					d *= smoothstep(max_slope - 0.08, max_slope + 0.02, ny)
+					if mask:
+						d *= 1.0 - mask.value(x, z)
+				var dry := gen.field_mask(x, z) * (1.0 - d)
+				var c := Color.WHITE.lerp(FOREST_TINT, d).lerp(DRY_TINT, dry * 0.6)
+				c.a = 0.5
+				img.set_pixel(px, pz, c)
+		img.resize(rs, rs, Image.INTERPOLATE_CUBIC)
+		img.generate_mipmaps()
+		region.set_color_map(img)
+		region.set_modified(true)
+	terrain.data.update_maps(Terrain3DRegion.TYPE_COLOR, true, true)
+	print("WorldBuilder: baked forest tint into %d regions in %d ms" % [
+		terrain.data.get_region_count(), Time.get_ticks_msec() - t0])
+
+
+## Creates the VegetationStreamer and GrassLayer nodes in the world scene if they are
+## missing and wires them to this builder and the collider streamer.
+func ensure_vegetation_nodes(scene_owner: Node) -> void:
+	var root := scene_owner
+	if vegetation == null:
+		vegetation = root.get_node_or_null("Vegetation")
+	if vegetation == null:
+		vegetation = VegetationStreamer.new()
+		vegetation.name = "Vegetation"
+		root.add_child(vegetation)
+		vegetation.owner = scene_owner
+	vegetation.library = load(LIBRARY_PATH)
+	vegetation.data_directory = vegetation_directory()
+	vegetation.chunk_size_m = CHUNK_M
+	vegetation.cell_size_m = CELL_M
+	if grass == null:
+		grass = root.get_node_or_null("Grass")
+	if grass == null:
+		grass = load(GRASS_LAYER_SCENE).instantiate()
+		grass.name = "Grass"
+		root.add_child(grass)
+		grass.owner = scene_owner
+	grass.terrain = terrain
+	var mask_path := vegetation_directory() + "/mask.res"
+	if ResourceLoader.exists(mask_path):
+		grass.mask = load(mask_path)
+	var streamer: InstanceColliderStreamer = root.get_node_or_null("InstanceColliderStreamer")
+	if streamer:
+		streamer.vegetation = vegetation
+
+
+func _apply_to_nodes(mask: VegetationMask) -> void:
+	if vegetation:
+		vegetation.data_directory = vegetation_directory()
+		vegetation.chunks.clear()
+		vegetation.refresh()
+	if grass:
+		grass.mask = mask
+		grass.apply_mask()
 
 
 func _in_base(gen: WorldTerrainGenerator, p: Vector3) -> bool:
-	for i in config.base_sites.size():
+	return _in_base_n(gen, p, config.base_sites.size())
+
+
+func _in_base_n(gen: WorldTerrainGenerator, p: Vector3, sites: int) -> bool:
+	for i in sites:
 		if gen.base_mask(i, p.x, p.z) > 0.3:
 			return true
 	return false

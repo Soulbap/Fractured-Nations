@@ -1,19 +1,23 @@
-## Streams physics colliders for Terrain3D instancer meshes around a target.
+## Streams physics colliders for stored vegetation around a target.
 ##
-## Terrain3D 1.0 instances are GPU MultiMeshes with no collision. Trees and rocks
-## must block the player (and later vehicles and bullets), so this node keeps a small
-## pool of simple shapes (trunk capsules, rock spheres) around the target, built from
-## the instance transforms stored in the terrain regions. Region data is indexed lazily
-## the first time the target comes near a region, so cost scales with the area visited,
-## not with map size. Instances painted by hand with Terrain3D's brushes are included.
+## Trees and rocks are GPU MultiMeshes with no collision. They must block the player
+## (and later vehicles and bullets), so this node keeps a small pool of simple shapes
+## (trunk capsules, rock spheres) around the target, built from the instance data in
+## the VegetationChunk cells (via VegetationStreamer.get_cell_instances). Cells are
+## indexed lazily the first time the target comes near them, so cost scales with the
+## area visited, not with map size.
 class_name InstanceColliderStreamer
 extends Node3D
 
+## Unused since WORLD-TECH-02 (instances no longer live in Terrain3D regions); kept so
+## existing scenes load without warnings.
 @export var terrain: Terrain3D
+@export var vegetation: VegetationStreamer
 @export var target: Node3D
 @export var radius := 40.0
 ## Rebuild after the target moves this far.
 @export var rebuild_distance := 10.0
+## Fallback shapes when the vegetation library has no collider for a mesh id:
 ## mesh_id -> Vector3(shape_type 0=capsule 1=sphere, radius, height) at instance scale 1.
 @export var shapes := {
 	1: Vector3(0, 0.35, 8.0), 2: Vector3(0, 0.45, 6.0),
@@ -22,12 +26,13 @@ extends Node3D
 @export var bucket_size := 32.0
 
 var active_count := 0
+## Number of vegetation cells indexed so far.
 var indexed_regions := 0
 
 var _body: StaticBody3D
 var _pool: Array[CollisionShape3D] = []
 var _last_center := Vector3(INF, INF, INF)
-var _indexed := {} # region location -> true
+var _indexed := {} # cell -> true
 var _buckets := {} # Vector2i -> Array of [mesh_id, Transform3D]
 
 
@@ -38,7 +43,7 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	if not terrain or not target or not terrain.data:
+	if not vegetation or not target:
 		return
 	var c := target.global_position
 	if c.distance_to(_last_center) < rebuild_distance:
@@ -48,31 +53,43 @@ func _physics_process(_delta: float) -> void:
 	_rebuild(c)
 
 
+func _solid_ids() -> Array:
+	var ids := []
+	if vegetation.library:
+		for d in vegetation.library.meshes:
+			if d.collider.x >= 0.0:
+				ids.append(d.id)
+	else:
+		ids = shapes.keys()
+	return ids
+
+
+func _shape_spec(mesh_id: int) -> Vector3:
+	if vegetation.library:
+		var d := vegetation.library.get_def(mesh_id)
+		if d and d.collider.x >= 0.0:
+			return d.collider
+	return shapes.get(mesh_id, Vector3(-1, 0, 0))
+
+
 func _index_near(c: Vector3) -> void:
-	var region_m := terrain.region_size * terrain.vertex_spacing
-	for dx in [-radius, 0.0, radius]:
-		for dz in [-radius, 0.0, radius]:
-			var p := c + Vector3(dx, 0, dz)
-			var loc: Vector2i = terrain.data.get_region_location(p)
-			if _indexed.has(loc) or not terrain.data.has_region(loc):
+	var cs := vegetation.cell_size_m
+	var ids := _solid_ids()
+	var c0 := VegetationChunk.cell_of(c - Vector3(radius, 0, radius), cs)
+	var c1 := VegetationChunk.cell_of(c + Vector3(radius, 0, radius), cs)
+	for cx in range(c0.x, c1.x + 1):
+		for cz in range(c0.y, c1.y + 1):
+			var cell := Vector2i(cx, cz)
+			if _indexed.has(cell):
 				continue
-			_indexed[loc] = true
+			_indexed[cell] = true
 			indexed_regions += 1
-			var region: Terrain3DRegion = terrain.data.get_region(loc)
-			var offset := Vector3(loc.x * region_m, 0, loc.y * region_m)
-			var inst: Dictionary = region.get_instances()
-			for mesh_id in inst:
-				if not shapes.has(mesh_id):
-					continue
-				for cell in inst[mesh_id]:
-					var xforms: Array = inst[mesh_id][cell][0]
-					for xf: Transform3D in xforms:
-						# Instance transforms are stored relative to the region origin.
-						var g := Transform3D(xf.basis, xf.origin + offset)
-						var key := Vector2i(floori(g.origin.x / bucket_size), floori(g.origin.z / bucket_size))
-						if not _buckets.has(key):
-							_buckets[key] = []
-						_buckets[key].append([mesh_id, g])
+			for entry in vegetation.get_cell_instances(cell, ids):
+				var g: Transform3D = entry[1]
+				var key := Vector2i(floori(g.origin.x / bucket_size), floori(g.origin.z / bucket_size))
+				if not _buckets.has(key):
+					_buckets[key] = []
+				_buckets[key].append(entry)
 
 
 func _rebuild(c: Vector3) -> void:
@@ -101,7 +118,7 @@ func _place(i: int, mesh_id: int, g: Transform3D) -> void:
 		_body.add_child(new_shape)
 		_pool.append(new_shape)
 	var cs := _pool[i]
-	var spec: Vector3 = shapes[mesh_id]
+	var spec := _shape_spec(mesh_id)
 	var s := g.basis.get_scale().y
 	if spec.x == 0:
 		var cap := cs.shape as CapsuleShape3D

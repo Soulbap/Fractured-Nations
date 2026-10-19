@@ -1,0 +1,20 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/vegetation/grass_layer.gd" id="1_script"]
+[ext_resource type="Material" path="res://assets/vegetation/grass_process_material.tres" id="2_process"]
+[ext_resource type="Material" path="res://assets/vegetation/grass_blade_material.tres" id="3_blade"]
+
+[sub_resource type="RibbonTrailMesh" id="RibbonTrailMesh_blade"]
+shape = 0
+section_length = 0.18
+section_segments = 1
+
+[node name="GrassLayer" type="Node3D"]
+script = ExtResource("1_script")
+instance_spacing = 0.5
+cell_width = 24.0
+grid_width = 5
+process_material = ExtResource("2_process")
+mesh = SubResource("RibbonTrailMesh_blade")
+mesh_material_override = ExtResource("3_blade")
+max_camera_height = 90.0

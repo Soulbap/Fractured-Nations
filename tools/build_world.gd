@@ -1,5 +1,5 @@
-## Headless world build: terrain relief -> roads + terrain flattening -> vegetation,
-## then saves terrain data and writes the world scene.
+## Headless world build: terrain relief -> roads + terrain flattening -> vegetation
+## (chunk files, grass mask, forest tint), then saves terrain data and writes the world scene.
 ##
 ## Usage (after "--"):
 ##   --config=res://worlds/test_2km/world_config.tres   build from an existing config
@@ -63,7 +63,6 @@ func _run() -> void:
 		print("BUILD roads + flatten: %d ms" % (Time.get_ticks_msec() - t))
 	if not opts.has("no-vegetation"):
 		builder.scatter_vegetation()
-		_report_instance_format(terrain)
 
 	var dir := cfg.data_directory()
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir))
@@ -171,6 +170,9 @@ func _add_gameplay_nodes(root: Node3D, cfg: WorldConfig, terrain: Terrain3D) -> 
 	streamer.owner = root
 	streamer.terrain = terrain
 	streamer.target = player
+	# Vegetation streamer and camera-local grass (WORLD-TECH-02).
+	var builder: WorldBuilder = root.get_node("WorldBuilder")
+	builder.ensure_vegetation_nodes(root)
 
 	var diag := WorldDiagnostics.new()
 	diag.name = "WorldDiagnostics"
@@ -188,22 +190,6 @@ func _strip_generated_owners(root: Node) -> void:
 		if n.owner == root and n.get_parent() and n.get_parent().has_method("is_road_container") \
 				and not (n.has_method("is_road_point") or n.has_method("is_road_intersection")):
 			n.owner = null
-
-
-func _report_instance_format(terrain: Terrain3D) -> void:
-	var regions := terrain.data.get_regions_active()
-	if regions.is_empty():
-		return
-	var region: Terrain3DRegion = regions[0]
-	var inst: Dictionary = region.get_instances()
-	for mesh_id in inst:
-		var cells: Dictionary = inst[mesh_id]
-		var key = cells.keys()[0]
-		var entry: Array = cells[key]
-		var xf: Transform3D = entry[0][0] if entry[0].size() else Transform3D()
-		print("BUILD instance format: region=%s mesh=%d cells=%d first_cell=%s entry_len=%d first_xf_origin=%s" % [
-			region.location, mesh_id, cells.size(), key, entry.size(), xf.origin])
-		break
 
 
 func _ensure_player_scene() -> void:

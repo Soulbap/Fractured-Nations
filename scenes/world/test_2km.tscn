@@ -25,6 +25,10 @@
 [ext_resource type="Script" path="res://scripts/player/fps_controller.gd" id="23_voxii"]
 [ext_resource type="Script" path="res://scripts/world/instance_collider_streamer.gd" id="24_pklql"]
 [ext_resource type="Script" path="res://scripts/debug/world_diagnostics.gd" id="25_asbec"]
+[ext_resource type="Script" path="res://scripts/vegetation/vegetation_streamer.gd" id="26_vegst"]
+[ext_resource type="Resource" path="res://assets/vegetation/vegetation_library.tres" id="27_veglb"]
+[ext_resource type="PackedScene" path="res://scenes/vegetation/grass_layer.tscn" id="28_grass"]
+[ext_resource type="Resource" path="res://worlds/test_2km/vegetation/mask.res" id="29_vmask"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_b10e5"]
 sky_top_color = Color(0.32, 0.47, 0.7, 1)
@@ -869,11 +873,22 @@ road_manager = NodePath("../RoadManager")
 edge_margin = 1.5
 edge_falloff = 6.0
 
-[node name="WorldBuilder" type="Node" parent="." unique_id=1988436503 node_paths=PackedStringArray("terrain", "road_parent")]
+[node name="WorldBuilder" type="Node" parent="." unique_id=1988436503 node_paths=PackedStringArray("terrain", "road_parent", "vegetation", "grass")]
 script = ExtResource("20_v4mph")
 config = ExtResource("21_8txic")
 terrain = NodePath("../Terrain3D")
 road_parent = NodePath("../Roads")
+vegetation = NodePath("../Vegetation")
+grass = NodePath("../Grass")
+
+[node name="Vegetation" type="Node3D" parent="." unique_id=1704210201]
+script = ExtResource("26_vegst")
+data_directory = "res://worlds/test_2km/vegetation"
+library = ExtResource("27_veglb")
+
+[node name="Grass" parent="." unique_id=1704210202 node_paths=PackedStringArray("terrain") instance=ExtResource("28_grass")]
+terrain = NodePath("../Terrain3D")
+mask = ExtResource("29_vmask")
 
 [node name="Player" type="CharacterBody3D" parent="." unique_id=1763413249 instance=ExtResource("22_11ni5")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -716.8, 47.7475, 143.36)
@@ -882,9 +897,10 @@ floor_max_angle = 0.80285144
 floor_snap_length = 0.6
 script = ExtResource("23_voxii")
 
-[node name="InstanceColliderStreamer" type="Node3D" parent="." unique_id=1193788445 node_paths=PackedStringArray("terrain", "target")]
+[node name="InstanceColliderStreamer" type="Node3D" parent="." unique_id=1193788445 node_paths=PackedStringArray("terrain", "vegetation", "target")]
 script = ExtResource("24_pklql")
 terrain = NodePath("../Terrain3D")
+vegetation = NodePath("../Vegetation")
 target = NodePath("../Player")
 
 [node name="WorldDiagnostics" type="CanvasLayer" parent="." unique_id=898749513 node_paths=PackedStringArray("terrain", "player", "collider_streamer")]

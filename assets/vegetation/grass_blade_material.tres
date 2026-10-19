@@ -1,0 +1,11 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://shaders/vegetation/grass_blade.gdshader" id="1_shader"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/wind_direction = Vector2(1, 1)
+shader_parameter/base_color = Color(0.21, 0.24, 0.06, 1)
+shader_parameter/tip_color = Color(0.4, 0.42, 0.14, 1)
+shader_parameter/tint_strength = 0.5
