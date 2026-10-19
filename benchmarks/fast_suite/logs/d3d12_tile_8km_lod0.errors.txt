@@ -1,0 +1,14 @@
+# descriptor-heap errors: 3136
+  69451 ERROR: Uniforms were never supplied for set (1) at the time of drawing, which are required by the pipeline.
+   3129 ERROR: Condition "!driver_uniform_set" is true. Returning: RID()
+   3129 ERROR: Cannot create uniform set because there's not enough room in the RESOURCES descriptor heap.
+    340 ERROR: Parameter "uniform_set" is null.
+    334 ERROR: Condition "rid.is_null()" is true. Returning: rid
+    140 ERROR: Uniforms were never supplied for set (0) at the time of drawing, which are required by the pipeline.
+      7 ERROR: Uniforms were never supplied for set (2) at the time of drawing, which are required by the pipeline.
+      7 ERROR: Condition "shader_visible_descriptor_allocation.virtual_alloc_handle == 0" is true.
+      7 ERROR: Cannot allocate per frame descriptor because there's not enough room in the RESOURCES descriptor heap.
+      1 BENCH tile_8km_lod0/full {"aborted":"render errors: 11624","mmi":68232,"render_errors":11624,"vram":5357.0}
+      1 BENCH stage scenario full
+      1 BENCH stage loaded 6052 ms
+      1 BENCH done res://benchmarks/raw/bench_tile_8km_lod0.json

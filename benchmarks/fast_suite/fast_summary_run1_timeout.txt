@@ -1,0 +1,3 @@
+18:55:46 == bench tile_4km [full,trees,particles,roads,terrain] 
+19:05:47 rc=124 wall=601s descriptor_errors=28846 device_lost=0
+19:05:47 == bench tile_8km [full,particles,roads,terrain] 

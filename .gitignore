@@ -38,3 +38,15 @@ desktop.ini
 /worlds/*_backup/
 /worlds/*/terrain_backup/
 /scenes/world/scale_*.tscn
+
+# Temporary per-run engine overrides (benchmark experiments)
+override.cfg
+
+# Synthetic tiled stress-test maps and large validation worlds (regenerate with tools/)
+/worlds/tile_*/
+/scenes/world/tile_*.tscn
+/worlds/real_*/
+/scenes/world/real_*.tscn
+
+# Locked-DLL copies created when the editor reloads a GDExtension
+addons/*/bin/~*

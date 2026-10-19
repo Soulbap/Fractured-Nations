@@ -1,0 +1,17 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.351 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3070
+
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
+WARNING: instance_reset_physics_interpolation() is deprecated.
+   at: _instance_reset_physics_interpolation_bind_compat_104269 (servers/rendering/rendering_server.compat.inc:62)
+   GDScript backtrace (most recent call first):
+       [0] _run (res://tools/bench_world.gd:102)
+WARNING: Terrain3D#9457:_notification:869: free_editor_textures requires `Assets` be saved to a file. Do so, or disable the former to turn off this warning
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _run (res://tools/bench_world.gd:102)
+BENCH stage loaded 7042 ms
+BENCH stage scenario terrain
+BENCH vulkan_churn_tile_15km/terrain {"aborted":"","fps_center":"1.4ms p99 1.8 gpu 1.1","fps_far_corner":"1.4ms p99 1.7 gpu 1.1","jump_max_ms":7.8,"mmi":0,"render_errors":0,"rts_150m":"2.0ms p99 2.3 gpu 1.7","rts_600m":"1.8ms p99 2.1 gpu 1.5","strategic":"1.4ms p99 1.7 gpu 1.1","vram":3217.0}
+BENCH region-churn {"region":"(7, 7)","regions_total":225,"runs":[{"frame_after_load_ms":28.783,"frame_after_remove_ms":1.053,"load_call_ms":1906.693,"regions_now":225,"remove_call_ms":430.339},{"frame_after_load_ms":140.087,"frame_after_remove_ms":1.047,"load_call_ms":452.744,"regions_now":225,"remove_call_ms":462.656},{"frame_after_load_ms":22.852,"frame_after_remove_ms":1.051,"load_call_ms":722.515,"regions_now":225,"remove_call_ms":428.076}]}
+BENCH done res://benchmarks/raw/bench_vulkan_churn_tile_15km.json

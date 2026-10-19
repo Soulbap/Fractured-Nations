@@ -1,0 +1,16 @@
+# descriptor-heap errors: 182769
+ 182761 ERROR: Condition "!driver_uniform_set" is true. Returning: RID()
+ 182761 ERROR: Cannot create uniform set because there's not enough room in the RESOURCES descriptor heap.
+  80898 ERROR: Uniforms were never supplied for set (1) at the time of drawing, which are required by the pipeline.
+    575 ERROR: Parameter "uniform_set" is null.
+    368 ERROR: Condition "rid.is_null()" is true. Returning: rid
+    178 ERROR: Uniforms were never supplied for set (0) at the time of drawing, which are required by the pipeline.
+      8 ERROR: Uniforms were never supplied for set (2) at the time of drawing, which are required by the pipeline.
+      8 ERROR: Condition "shader_visible_descriptor_allocation.virtual_alloc_handle == 0" is true.
+      8 ERROR: Cannot allocate per frame descriptor because there's not enough room in the RESOURCES descriptor heap.
+      2 ERROR: Parameter "us" is null.
+      1 BENCH tile_4km/trees {"aborted":"render errors: 88799","mmi":77218,"render_errors":88799,"vram":11199.0}
+      1 BENCH tile_4km/terrain {"aborted":"","fps_center":"1.2ms p99 1.4 gpu 1.1","fps_far_corner":"1.1ms p99 1.5 gpu 1.0","jump_max_ms":32.0,"mmi":0,"render_errors":0,"rts_150m":"1.8ms p99 2.1 gpu 1.7","rts_600m":"1.4ms p99 1.7 gpu 1.3","strategic":"1.0ms p99 1.7 gpu 0.9","vram":542.0}
+      1 BENCH tile_4km/roads {"aborted":"","fps_center":"1.0ms p99 1.3 gpu 0.9","fps_far_corner":"1.1ms p99 1.4 gpu 1.1","jump_max_ms":8.5,"mmi":0,"render_errors":0,"rts_150m":"1.8ms p99 2.4 gpu 1.7","rts_600m":"2.2ms p99 31.7 gpu 1.4","strategic":"1.0ms p99 1.5 gpu 0.9","vram":551.0}
+      1 BENCH tile_4km/particles {"aborted":"render errors: 89177","mmi":77218,"render_errors":89177,"vram":10219.0}
+      1 BENCH tile_4km/full {"aborted":"render errors: 11591","mmi":93160,"render_errors":11591,"vram":6373.0}

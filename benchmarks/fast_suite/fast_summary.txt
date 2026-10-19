@@ -1,0 +1,70 @@
+19:23:33 == bench tile_4km_trees [trees,roads,terrain]  
+19:23:47 rc=0 wall=14s descriptor_errors=0 device_lost=0 log_mb=0
+BENCH tile_4km_trees/trees {"aborted":"","fps_center":"7.6ms p99 13.2 gpu 1.5","fps_far_corner":"5.8ms p99 6.6 gpu 2.0","jump_max_ms":17.6,"mmi":51162,"render_errors":0,"rts_150m":"2.0ms p99 2.5 gpu 1.6","rts_600m":"7.8ms p99 9.3 gpu 1.9","strategic":"1.1ms p99 1.6 gpu 1.0","vram":3643.0}
+BENCH tile_4km_trees/roads {"aborted":"","fps_center":"0.9ms p99 1.2 gpu 0.8","fps_far_corner":"1.2ms p99 1.4 gpu 1.0","jump_max_ms":8.1,"mmi":0,"render_errors":0,"rts_150m":"1.8ms p99 2.2 gpu 1.6","rts_600m":"1.5ms p99 1.9 gpu 1.3","strategic":"1.0ms p99 1.2 gpu 0.9","vram":445.0}
+BENCH tile_4km_trees/terrain {"aborted":"","fps_center":"1.2ms p99 1.4 gpu 1.0","fps_far_corner":"1.1ms p99 1.4 gpu 1.0","jump_max_ms":8.0,"mmi":0,"render_errors":0,"rts_150m":"1.8ms p99 2.0 gpu 1.6","rts_600m":"1.4ms p99 1.6 gpu 1.3","strategic":"1.0ms p99 1.0 gpu 0.9","vram":436.0}
+BENCH done res://benchmarks/raw/bench_tile_4km_trees.json
+19:23:47 == bench tile_4km_trees_lod0 [trees,particles]  --max-lod=0
+19:24:01 rc=0 wall=14s descriptor_errors=0 device_lost=0 log_mb=0
+BENCH tile_4km_trees_lod0/trees {"aborted":"","fps_center":"6.0ms p99 6.6 gpu 2.5","fps_far_corner":"5.0ms p99 5.6 gpu 2.5","jump_max_ms":18.4,"mmi":17054,"render_errors":0,"rts_150m":"2.1ms p99 2.3 gpu 1.9","rts_600m":"6.3ms p99 6.9 gpu 3.1","strategic":"1.0ms p99 1.2 gpu 0.9","vram":1496.0}
+BENCH tile_4km_trees_lod0/particles {"aborted":"","fps_center":"6.3ms p99 6.8 gpu 2.5","fps_far_corner":"5.1ms p99 5.5 gpu 2.4","jump_max_ms":14.8,"mmi":17054,"render_errors":0,"rts_150m":"2.3ms p99 2.7 gpu 2.0","rts_600m":"6.6ms p99 7.6 gpu 3.3","strategic":"1.3ms p99 1.5 gpu 1.1","vram":1510.0}
+BENCH done res://benchmarks/raw/bench_tile_4km_trees_lod0.json
+19:24:01 == bench tile_8km [full,roads,terrain]  
+19:24:49 rc=0 wall=48s descriptor_errors=139636 device_lost=0 log_mb=66
+BENCH tile_8km/full {"aborted":"render errors: 11172","mmi":204696,"render_errors":11172,"vram":13945.0}
+BENCH tile_8km/roads {"aborted":"render errors: 206","mmi":0,"render_errors":206,"vram":13945.0}
+BENCH tile_8km/terrain {"aborted":"","fps_center":"1.2ms p99 1.8 gpu 1.1","fps_far_corner":"1.2ms p99 1.7 gpu 1.1","jump_max_ms":8.4,"mmi":0,"render_errors":190,"rts_150m":"1.8ms p99 2.3 gpu 1.7","rts_600m":"1.5ms p99 2.1 gpu 1.3","strategic":"1.2ms p99 1.7 gpu 1.1","vram":1143.0}
+BENCH done res://benchmarks/raw/bench_tile_8km.json
+19:24:50 == bench tile_8km_lod0 [full]  --max-lod=0
+19:24:58 rc=0 wall=8s descriptor_errors=3136 device_lost=0 log_mb=13
+BENCH tile_8km_lod0/full {"aborted":"render errors: 11624","mmi":68232,"render_errors":11624,"vram":5357.0}
+BENCH done res://benchmarks/raw/bench_tile_8km_lod0.json
+19:24:58 == bench tile_15km [full,particles,roads,terrain]  --shots
+19:25:26 rc=0 wall=28s descriptor_errors=0 device_lost=0 log_mb=0
+BENCH tile_15km/full {"aborted":"","fps_center":"4.9ms p99 5.4 gpu 1.6","fps_far_corner":"1.9ms p99 2.1 gpu 1.1","jump_max_ms":12.2,"mmi":23276,"render_errors":0,"rts_150m":"2.9ms p99 3.3 gpu 1.6","rts_600m":"7.3ms p99 8.2 gpu 2.1","strategic":"1.8ms p99 2.6 gpu 1.6","vram":4698.0}
+BENCH tile_15km/particles {"aborted":"","fps_center":"5.8ms p99 6.8 gpu 1.4","fps_far_corner":"1.9ms p99 2.3 gpu 1.3","jump_max_ms":11.8,"mmi":19291,"render_errors":0,"rts_150m":"2.9ms p99 3.2 gpu 1.7","rts_600m":"7.5ms p99 8.4 gpu 2.1","strategic":"2.1ms p99 2.4 gpu 1.8","vram":4462.0}
+BENCH tile_15km/roads {"aborted":"","fps_center":"1.2ms p99 1.4 gpu 1.0","fps_far_corner":"1.5ms p99 1.6 gpu 1.1","jump_max_ms":8.4,"mmi":0,"render_errors":0,"rts_150m":"1.7ms p99 2.0 gpu 1.6","rts_600m":"1.4ms p99 1.7 gpu 1.3","strategic":"1.6ms p99 1.8 gpu 1.5","vram":3243.0}
+BENCH tile_15km/terrain {"aborted":"","fps_center":"1.3ms p99 1.5 gpu 1.2","fps_far_corner":"1.4ms p99 1.6 gpu 1.1","jump_max_ms":8.3,"mmi":0,"render_errors":0,"rts_150m":"1.8ms p99 2.0 gpu 1.6","rts_600m":"1.5ms p99 1.7 gpu 1.3","strategic":"1.7ms p99 2.0 gpu 1.6","vram":3234.0}
+BENCH done res://benchmarks/raw/bench_tile_15km.json
+19:25:26 == bench tile_20km [full,particles,roads,terrain]  --shots
+19:25:38 rc=132 wall=12s descriptor_errors=0 device_lost=0 log_mb=0
+19:25:39 == bench tile_4km_heap262k [full]  
+19:25:54 rc=0 wall=14s descriptor_errors=0 device_lost=0 log_mb=0
+BENCH tile_4km_heap262k/full {"aborted":"","fps_center":"7.9ms p99 8.8 gpu 1.6","fps_far_corner":"6.5ms p99 7.5 gpu 2.3","jump_max_ms":16.4,"mmi":93160,"render_errors":0,"rts_150m":"2.4ms p99 2.8 gpu 1.7","rts_600m":"8.2ms p99 9.1 gpu 2.1","strategic":"1.2ms p99 1.6 gpu 1.0","vram":6373.0}
+BENCH done res://benchmarks/raw/bench_tile_4km_heap262k.json
+19:25:54 == bench tile_4km_trees_heap262k [trees]  
+19:26:04 rc=0 wall=10s descriptor_errors=0 device_lost=0 log_mb=0
+BENCH tile_4km_trees_heap262k/trees {"aborted":"","fps_center":"7.2ms p99 8.3 gpu 1.8","fps_far_corner":"5.9ms p99 7.2 gpu 2.1","jump_max_ms":16.4,"mmi":51162,"render_errors":0,"rts_150m":"2.0ms p99 2.4 gpu 1.6","rts_600m":"7.8ms p99 8.8 gpu 2.0","strategic":"1.1ms p99 1.3 gpu 0.9","vram":3643.0}
+BENCH done res://benchmarks/raw/bench_tile_4km_trees_heap262k.json
+19:26:04 == bench tile_4km_vulkan [full] --rendering-driver vulkan 
+19:26:20 rc=0 wall=16s descriptor_errors=0 device_lost=0 log_mb=0
+BENCH tile_4km_vulkan/full {"aborted":"","fps_center":"4.4ms p99 5.1 gpu 1.4","fps_far_corner":"3.6ms p99 4.2 gpu 1.5","jump_max_ms":13.4,"mmi":93160,"render_errors":0,"rts_150m":"2.0ms p99 2.1 gpu 1.6","rts_600m":"4.2ms p99 4.9 gpu 2.1","strategic":"1.5ms p99 1.6 gpu 1.2","vram":656.0}
+BENCH done res://benchmarks/raw/bench_tile_4km_vulkan.json
+19:26:20 == bench tile_4km_trees_vulkan [trees] --rendering-driver vulkan 
+19:26:28 rc=0 wall=8s descriptor_errors=0 device_lost=0 log_mb=0
+BENCH tile_4km_trees_vulkan/trees {"aborted":"","fps_center":"3.8ms p99 4.7 gpu 1.5","fps_far_corner":"3.2ms p99 3.8 gpu 1.5","jump_max_ms":12.1,"mmi":51162,"render_errors":0,"rts_150m":"2.0ms p99 2.5 gpu 1.6","rts_600m":"4.0ms p99 4.8 gpu 2.2","strategic":"1.6ms p99 2.1 gpu 1.2","vram":442.0}
+BENCH done res://benchmarks/raw/bench_tile_4km_trees_vulkan.json
+19:26:28 == bench real_2km_vulkan [full,roads] --rendering-driver vulkan 
+19:26:36 rc=0 wall=8s descriptor_errors=0 device_lost=0 log_mb=0
+BENCH real_2km_vulkan/full {"aborted":"","fps_center":"2.3ms p99 2.9 gpu 1.2","fps_far_corner":"2.3ms p99 2.6 gpu 1.3","jump_max_ms":11.1,"mmi":23276,"render_errors":0,"rts_150m":"2.0ms p99 2.4 gpu 1.7","rts_600m":"3.8ms p99 4.9 gpu 2.1","strategic":"1.4ms p99 1.7 gpu 1.1","vram":303.0}
+BENCH real_2km_vulkan/roads {"aborted":"","fps_center":"1.2ms p99 1.6 gpu 0.8","fps_far_corner":"1.2ms p99 1.5 gpu 0.9","jump_max_ms":8.5,"mmi":0,"render_errors":0,"rts_150m":"2.0ms p99 2.4 gpu 1.6","rts_600m":"1.8ms p99 2.3 gpu 1.4","strategic":"1.4ms p99 1.9 gpu 1.1","vram":270.0}
+BENCH done res://benchmarks/raw/bench_real_2km_vulkan.json
+19:26:36 == build real_20km
+19:35:04 rc=0 wall=508s
+BUILD world=real_20km size=20480m spacing=2.00m region=1024
+WorldBuilder: generated 10240x10240 heightmap in 358777 ms, imported in 4342 ms (100 regions)
+WorldBuilder: built road network with 523 nodes, 3 intersections
+BUILD roads + flatten: 47839 ms
+WorldBuilder: scattered vegetation in 86262 ms: { "conifer": 12776, "broadleaf": 18368, "bush": 7655, "rocks": 546, "grass": 512648 }
+BUILD saved terrain data to res://worlds/real_20km/terrain in 5823 ms
+BUILD scene res://scenes/world/real_20km.tscn err=0
+BUILD done in 505677 ms
+383M	worlds/real_20km/terrain
+19:35:05 == bench real_20km [full,particles,roads,terrain]  --shots
+19:35:27 rc=0 wall=22s descriptor_errors=0 device_lost=0 log_mb=0
+BENCH real_20km/full {"aborted":"","fps_center":"1.5ms p99 1.7 gpu 1.1","fps_far_corner":"1.5ms p99 1.7 gpu 1.1","jump_max_ms":13.0,"mmi":8165,"render_errors":0,"rts_150m":"1.8ms p99 2.3 gpu 1.6","rts_600m":"1.9ms p99 2.2 gpu 1.8","strategic":"1.5ms p99 1.8 gpu 1.4","vram":2184.0}
+BENCH real_20km/particles {"aborted":"","fps_center":"1.5ms p99 1.8 gpu 1.2","fps_far_corner":"1.6ms p99 1.7 gpu 1.1","jump_max_ms":13.8,"mmi":7017,"render_errors":0,"rts_150m":"1.9ms p99 2.1 gpu 1.7","rts_600m":"2.0ms p99 2.3 gpu 1.9","strategic":"1.8ms p99 2.5 gpu 1.5","vram":2126.0}
+BENCH real_20km/roads {"aborted":"","fps_center":"1.1ms p99 1.2 gpu 1.0","fps_far_corner":"1.3ms p99 1.5 gpu 1.0","jump_max_ms":12.5,"mmi":0,"render_errors":0,"rts_150m":"1.7ms p99 2.6 gpu 1.6","rts_600m":"1.6ms p99 1.9 gpu 1.5","strategic":"1.5ms p99 1.8 gpu 1.4","vram":1673.0}
+BENCH real_20km/terrain {"aborted":"","fps_center":"1.1ms p99 1.5 gpu 1.0","fps_far_corner":"1.2ms p99 1.4 gpu 1.0","jump_max_ms":11.9,"mmi":0,"render_errors":0,"rts_150m":"1.7ms p99 2.0 gpu 1.6","rts_600m":"1.6ms p99 1.6 gpu 1.5","strategic":"1.4ms p99 1.5 gpu 1.3","vram":1577.0}
+BENCH done res://benchmarks/raw/bench_real_20km.json
+19:35:27 ALL_DONE

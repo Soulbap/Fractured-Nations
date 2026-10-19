@@ -1,0 +1,224 @@
+{
+  "error_samples": {
+    "Terrain3D#4575:_notification:869: free_editor_textures requires `Assets` be saved to a file. Do so, or disable the former to turn off this warning": "push_warning",
+    "instance_reset_physics_interpolation() is deprecated.": "_instance_reset_physics_interpolation_bind_compat_104269"
+  },
+  "instances": {
+    "expected_multimeshes_cells_x_lods": 51162,
+    "per_mesh": {
+      "1": {
+        "cells": 8688,
+        "instances": 56300,
+        "lods": 3,
+        "name": "Conifer"
+      },
+      "2": {
+        "cells": 8366,
+        "instances": 64832,
+        "lods": 3,
+        "name": "Broadleaf"
+      }
+    }
+  },
+  "load": {
+    "errors": {
+      "other_errors": 2,
+      "render_errors": 0
+    },
+    "instantiate_5_frames_ms": 2351,
+    "scene_load_ms": 275
+  },
+  "machine": {
+    "cpu": "12th Gen Intel(R) Core(TM) i7-12700F",
+    "d3d12_max_resource_descriptors": 262144,
+    "driver": "d3d12",
+    "godot": "4.7.2-stable (official)",
+    "gpu": "NVIDIA GeForce RTX 3070",
+    "max_lod_option": "asset default",
+    "window": "(1600, 900)"
+  },
+  "map": {
+    "region_size": 1024,
+    "regions": 16,
+    "size_m": 4096.0,
+    "vertex_spacing": 1.0
+  },
+  "scenarios": {
+    "trees": {
+      "aborted": "",
+      "apply_ms": 0.034,
+      "elapsed_s": 6.599801,
+      "jumps": {
+        "max_ms": 16.4029998779297,
+        "worst_ms_per_jump": [
+          16.4029998779297,
+          8.37600040435791,
+          10.3000001907349,
+          8.51599979400635,
+          15.1120004653931,
+          14.8319997787476,
+          8.81900024414063,
+          14.6260004043579
+        ]
+      },
+      "render_errors": 0,
+      "resources": {
+        "buffer_mem_mb": 44.5689964294434,
+        "gpu_particles": 0,
+        "multimesh_instance_nodes": 51162,
+        "multimesh_instances_total": 363396,
+        "nodes": 51437.0,
+        "objects": 104504.0,
+        "static_mem_mb": 920.518298149109,
+        "texture_mem_mb": 364.32421875,
+        "video_mem_mb": 3642.57421875
+      },
+      "resources_end": {
+        "buffer_mem_mb": 44.5689964294434,
+        "gpu_particles": 0,
+        "multimesh_instance_nodes": 51162,
+        "multimesh_instances_total": 363396,
+        "nodes": 51437.0,
+        "objects": 104504.0,
+        "static_mem_mb": 920.67241191864,
+        "texture_mem_mb": 364.32421875,
+        "video_mem_mb": 3642.57421875
+      },
+      "stations": {
+        "fps_center": {
+          "avg": 7.176538878017,
+          "cpu_render_ms": {
+            "avg": 3.18621666961246,
+            "max": 4.01700019836426,
+            "p50": 3.06699991226196,
+            "p95": 3.84999990463257,
+            "p99": 3.98900008201599
+          },
+          "draw_calls": 4717.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 1.78059444295035,
+            "max": 2.92400002479553,
+            "p50": 1.61000001430511,
+            "p95": 2.27300000190735,
+            "p99": 2.88899993896484
+          },
+          "max": 8.43000030517578,
+          "objects_in_frame": 4795.0,
+          "p50": 7.07200002670288,
+          "p95": 8.01700019836426,
+          "p99": 8.31799983978271,
+          "primitives": 2750828.0,
+          "video_mem_mb": 3642.57421875
+        },
+        "fps_far_corner": {
+          "avg": 5.87481112215254,
+          "cpu_render_ms": {
+            "avg": 2.62809445195728,
+            "max": 4.00799989700317,
+            "p50": 2.55800008773804,
+            "p95": 3.12400007247925,
+            "p99": 3.27800011634827
+          },
+          "draw_calls": 3766.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 2.09958333704207,
+            "max": 2.66000008583069,
+            "p50": 2.05299997329712,
+            "p95": 2.57399988174438,
+            "p99": 2.6470000743866
+          },
+          "max": 8.08500003814697,
+          "objects_in_frame": 3856.0,
+          "p50": 5.77400016784668,
+          "p95": 6.49700021743774,
+          "p99": 7.24399995803833,
+          "primitives": 2429662.0,
+          "video_mem_mb": 3642.57421875
+        },
+        "rts_150m": {
+          "avg": 1.98516111175219,
+          "cpu_render_ms": {
+            "avg": 0.865772222479185,
+            "max": 1.24199998378754,
+            "p50": 0.841000020503998,
+            "p95": 0.996999979019165,
+            "p99": 1.11800003051758
+          },
+          "draw_calls": 1276.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 1.61107222106722,
+            "max": 2.14800000190735,
+            "p50": 1.57299995422363,
+            "p95": 1.85699999332428,
+            "p99": 2.1340000629425
+          },
+          "max": 2.51500010490417,
+          "objects_in_frame": 1396.0,
+          "p50": 1.95200002193451,
+          "p95": 2.2279999256134,
+          "p99": 2.38199996948242,
+          "primitives": 1567790.0,
+          "video_mem_mb": 3642.57421875
+        },
+        "rts_600m": {
+          "avg": 7.78839998775058,
+          "cpu_render_ms": {
+            "avg": 3.4717277818256,
+            "max": 4.8600001335144,
+            "p50": 3.39000010490417,
+            "p95": 4.08900022506714,
+            "p99": 4.24599981307983
+          },
+          "draw_calls": 4779.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 2.00445555382305,
+            "max": 3.16700005531311,
+            "p50": 1.92200005054474,
+            "p95": 2.46399998664856,
+            "p99": 3.14100003242493
+          },
+          "max": 9.42399978637695,
+          "objects_in_frame": 4858.0,
+          "p50": 7.75099992752075,
+          "p95": 8.5620002746582,
+          "p99": 8.8459997177124,
+          "primitives": 2155634.0,
+          "video_mem_mb": 3642.57421875
+        },
+        "strategic": {
+          "avg": 1.05545000400808,
+          "cpu_render_ms": {
+            "avg": 0.496122222145398,
+            "max": 0.739000022411346,
+            "p50": 0.481000006198883,
+            "p95": 0.597000002861023,
+            "p99": 0.703999996185303
+          },
+          "draw_calls": 61.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 0.942950000365575,
+            "max": 1.66199994087219,
+            "p50": 0.902999997138977,
+            "p95": 1.15499997138977,
+            "p99": 1.31599998474121
+          },
+          "max": 1.74699997901917,
+          "objects_in_frame": 172.0,
+          "p50": 1.02600002288818,
+          "p95": 1.25199997425079,
+          "p99": 1.2940000295639,
+          "primitives": 407358.0,
+          "video_mem_mb": 3642.57421875
+        }
+      }
+    }
+  },
+  "scene": "res://scenes/world/tile_4km_trees.tscn",
+  "synthetic_tiled": true,
+  "tag": "tile_4km_trees_heap262k"
+}

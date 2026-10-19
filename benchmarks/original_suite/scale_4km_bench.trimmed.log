@@ -1,0 +1,80 @@
+# Trimmed from 139881039 bytes / 1580559 lines. Original kept outside the repo.
+# descriptor-heap errors: 32452
+# 'Uniforms were never supplied' errors: 701574
+# DIAG lines:
+DIAG load: {"after_10_frames":{"buffer_mem_mb":159.945053100586,"draw_calls":1604.0,"objects":188772.0,"physics_process_ms":0.172,"primitives":1351988.0,"static_mem_mb":1892.71648406982,"texture_mem_mb":364.578125,"video_mem_mb":6380.328125},"first_frame_msec_since_start":5018}
+# Unique ERROR/WARNING messages (count):
+ 700538 ERROR: Uniforms were never supplied for set (1) at the time of drawing, which are required by the pipeline.
+  32320 ERROR: Condition "!driver_uniform_set" is true. Returning: RID()
+  32320 ERROR: Cannot create uniform set because there's not enough room in the RESOURCES descriptor heap.
+   3130 ERROR: Parameter "uniform_set" is null.
+   2868 ERROR: Condition "rid.is_null()" is true. Returning: rid
+   1572 ERROR: Failed to create uniform set for batch.
+    904 ERROR: Uniforms were never supplied for set (0) at the time of drawing, which are required by the pipeline.
+    132 ERROR: Uniforms were never supplied for set (2) at the time of drawing, which are required by the pipeline.
+    132 ERROR: Condition "shader_visible_descriptor_allocation.virtual_alloc_handle == 0" is true.
+    132 ERROR: Cannot allocate per frame descriptor because there's not enough room in the RESOURCES descriptor heap.
+      1 WARNING: instance_reset_physics_interpolation() is deprecated.
+      1 WARNING: Terrain3D#4280:_notification:869: free_editor_textures requires `Assets` be saved to a file. Do so, or disable the former to turn off this warning
+      1 ERROR: BUG: Unreferenced static string to 0: quarter_texture
+# First 60 lines:
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3070
+
+WARNING: instance_reset_physics_interpolation() is deprecated.
+   at: _instance_reset_physics_interpolation_bind_compat_104269 (servers/rendering/rendering_server.compat.inc:62)
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
+WARNING: Terrain3D#4280:_notification:869: free_editor_textures requires `Assets` be saved to a file. Do so, or disable the former to turn off this warning
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+ERROR: Cannot create uniform set because there's not enough room in the RESOURCES descriptor heap.
+Please increase the value of the rendering/rendering_device/d3d12/max_resource_descriptors project setting.
+   at: uniform_set_create (drivers/d3d12/rendering_device_driver_d3d12.cpp:3387)
+ERROR: Condition "!driver_uniform_set" is true. Returning: RID()
+   at: uniform_set_create (servers/rendering/rendering_device.cpp:4767)
+ERROR: Cannot create uniform set because there's not enough room in the RESOURCES descriptor heap.
+Please increase the value of the rendering/rendering_device/d3d12/max_resource_descriptors project setting.
+   at: uniform_set_create (drivers/d3d12/rendering_device_driver_d3d12.cpp:3387)
+ERROR: Condition "!driver_uniform_set" is true. Returning: RID()
+   at: uniform_set_create (servers/rendering/rendering_device.cpp:4767)
+ERROR: Cannot create uniform set because there's not enough room in the RESOURCES descriptor heap.
+Please increase the value of the rendering/rendering_device/d3d12/max_resource_descriptors project setting.
+   at: uniform_set_create (drivers/d3d12/rendering_device_driver_d3d12.cpp:3387)
+ERROR: Condition "!driver_uniform_set" is true. Returning: RID()
+   at: uniform_set_create (servers/rendering/rendering_device.cpp:4767)
+ERROR: Cannot create uniform set because there's not enough room in the RESOURCES descriptor heap.
+Please increase the value of the rendering/rendering_device/d3d12/max_resource_descriptors project setting.
+   at: uniform_set_create (drivers/d3d12/rendering_device_driver_d3d12.cpp:3387)
+ERROR: Condition "!driver_uniform_set" is true. Returning: RID()
+   at: uniform_set_create (servers/rendering/rendering_device.cpp:4767)
+ERROR: Cannot create uniform set because there's not enough room in the RESOURCES descriptor heap.
+Please increase the value of the rendering/rendering_device/d3d12/max_resource_descriptors project setting.
+   at: uniform_set_create (drivers/d3d12/rendering_device_driver_d3d12.cpp:3387)
+ERROR: Condition "!driver_uniform_set" is true. Returning: RID()
+   at: uniform_set_create (servers/rendering/rendering_device.cpp:4767)
+ERROR: Cannot create uniform set because there's not enough room in the RESOURCES descriptor heap.
+Please increase the value of the rendering/rendering_device/d3d12/max_resource_descriptors project setting.
+   at: uniform_set_create (drivers/d3d12/rendering_device_driver_d3d12.cpp:3387)
+ERROR: Condition "!driver_uniform_set" is true. Returning: RID()
+   at: uniform_set_create (servers/rendering/rendering_device.cpp:4767)
+ERROR: Cannot create uniform set because there's not enough room in the RESOURCES descriptor heap.
+Please increase the value of the rendering/rendering_device/d3d12/max_resource_descriptors project setting.
+   at: uniform_set_create (drivers/d3d12/rendering_device_driver_d3d12.cpp:3387)
+ERROR: Condition "!driver_uniform_set" is true. Returning: RID()
+   at: uniform_set_create (servers/rendering/rendering_device.cpp:4767)
+ERROR: Cannot create uniform set because there's not enough room in the RESOURCES descriptor heap.
+Please increase the value of the rendering/rendering_device/d3d12/max_resource_descriptors project setting.
+   at: uniform_set_create (drivers/d3d12/rendering_device_driver_d3d12.cpp:3387)
+ERROR: Condition "!driver_uniform_set" is true. Returning: RID()
+   at: uniform_set_create (servers/rendering/rendering_device.cpp:4767)
+ERROR: Cannot create uniform set because there's not enough room in the RESOURCES descriptor heap.
+Please increase the value of the rendering/rendering_device/d3d12/max_resource_descriptors project setting.
+   at: uniform_set_create (drivers/d3d12/rendering_device_driver_d3d12.cpp:3387)
+ERROR: Condition "!driver_uniform_set" is true. Returning: RID()
+   at: uniform_set_create (servers/rendering/rendering_device.cpp:4767)
+ERROR: Cannot create uniform set because there's not enough room in the RESOURCES descriptor heap.
+Please increase the value of the rendering/rendering_device/d3d12/max_resource_descriptors project setting.
+   at: uniform_set_create (drivers/d3d12/rendering_device_driver_d3d12.cpp:3387)
+ERROR: Condition "!driver_uniform_set" is true. Returning: RID()
+   at: uniform_set_create (servers/rendering/rendering_device.cpp:4767)
+ERROR: Cannot create uniform set because there's not enough room in the RESOURCES descriptor heap.
+Please increase the value of the rendering/rendering_device/d3d12/max_resource_descriptors project setting.

@@ -1,0 +1,89 @@
+{
+  "error_samples": {
+    "Cannot allocate per frame descriptor because there's not enough room in the RESOURCES descriptor heap.\nPlease increase the value of the rendering/rendering_device/d3d12/max_resource_descriptors project setting.": "_command_allocate_per_frame_descriptor",
+    "Cannot create uniform set because there's not enough room in the RESOURCES descriptor heap.\nPlease increase the value of the rendering/rendering_device/d3d12/max_resource_descriptors project setting.": "uniform_set_create",
+    "Condition \"!driver_uniform_set\" is true. Returning: RID()": "uniform_set_create",
+    "Condition \"rid.is_null()\" is true. Returning: rid": "_allocate_from_uniforms",
+    "Condition \"shader_visible_descriptor_allocation.virtual_alloc_handle == 0\" is true.": "command_clear_buffer",
+    "Parameter \"uniform_set\" is null.": "draw_list_bind_uniform_set",
+    "Terrain3D#0143:_notification:869: free_editor_textures requires `Assets` be saved to a file. Do so, or disable the former to turn off this warning": "push_warning",
+    "Uniforms were never supplied for set (0) at the time of drawing, which are required by the pipeline.": "compute_list_dispatch",
+    "Uniforms were never supplied for set (1) at the time of drawing, which are required by the pipeline.": "draw_list_draw",
+    "Uniforms were never supplied for set (2) at the time of drawing, which are required by the pipeline.": "draw_list_draw",
+    "instance_reset_physics_interpolation() is deprecated.": "_instance_reset_physics_interpolation_bind_compat_104269"
+  },
+  "instances": {
+    "expected_multimeshes_cells_x_lods": 204696,
+    "per_mesh": {
+      "1": {
+        "cells": 34760,
+        "instances": 225312,
+        "lods": 3,
+        "name": "Conifer"
+      },
+      "2": {
+        "cells": 33472,
+        "instances": 259504,
+        "lods": 3,
+        "name": "Broadleaf"
+      }
+    }
+  },
+  "load": {
+    "errors": {
+      "other_errors": 3597,
+      "render_errors": 49493
+    },
+    "instantiate_5_frames_ms": 5762,
+    "scene_load_ms": 268
+  },
+  "machine": {
+    "cpu": "12th Gen Intel(R) Core(TM) i7-12700F",
+    "d3d12_max_resource_descriptors": 65536,
+    "driver": "d3d12",
+    "godot": "4.7.2-stable (official)",
+    "gpu": "NVIDIA GeForce RTX 3070",
+    "max_lod_option": "0",
+    "window": "(1600, 900)"
+  },
+  "map": {
+    "region_size": 1024,
+    "regions": 64,
+    "size_m": 8192.0,
+    "vertex_spacing": 1.0
+  },
+  "scenarios": {
+    "full": {
+      "aborted": "render errors: 11624",
+      "apply_ms": 0.003,
+      "elapsed_s": 0.390451,
+      "render_errors": 11624,
+      "resources": {
+        "buffer_mem_mb": 51.9798851013184,
+        "gpu_particles": 0,
+        "multimesh_instance_nodes": 68232,
+        "multimesh_instances_total": 484816,
+        "nodes": 68555.0,
+        "objects": 138883.0,
+        "static_mem_mb": 1820.2427816391,
+        "texture_mem_mb": 1004.44921875,
+        "video_mem_mb": 5356.82421875
+      },
+      "resources_end": {
+        "buffer_mem_mb": 51.9798851013184,
+        "gpu_particles": 0,
+        "multimesh_instance_nodes": 68232,
+        "multimesh_instances_total": 484816,
+        "nodes": 68555.0,
+        "objects": 138883.0,
+        "static_mem_mb": 1820.24857234955,
+        "texture_mem_mb": 1004.44921875,
+        "video_mem_mb": 5356.82421875
+      },
+      "stations": {}
+    }
+  },
+  "scene": "res://scenes/world/tile_8km.tscn",
+  "synthetic_tiled": true,
+  "tag": "tile_8km_lod0"
+}

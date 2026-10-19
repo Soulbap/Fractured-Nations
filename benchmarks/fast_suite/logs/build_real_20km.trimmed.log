@@ -1,0 +1,40 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
+BUILD world=real_20km size=20480m spacing=2.00m region=1024
+WARNING: instance_reset_physics_interpolation() is deprecated.
+WorldBuilder: generated 10240x10240 heightmap in 358777 ms, imported in 4342 ms (100 regions)
+ERROR: Terrain3D#5029:_grab_camera:155: Cannot find the active camera. Set it manually with Terrain3D.set_camera(). Stopping _physics_process()
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 0 due to next_pt_init should be empty for this edge's next pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt

@@ -1,0 +1,48 @@
+19:35:36 == build tile_19km
+TILE tile_19km: 19x19 regions (19.5 km), copy 9819 ms, save 25176 ms, total 35478 ms, instances {  }
+19:36:12 == d3d12_tile_19km driver=d3d12 [terrain] 
+19:36:27 MEM {"wall_s":14.9,"exit_code":0,"peak_working_set_mb":5207,"peak_gpu_dedicated_mb":5063,"peak_gpu_shared_mb":76,"samples":6,"args":"--path . --resolution 1600x900 --rendering-driver d3d12 --log-file \"C:\\Users\\Hafnor\\AppData\\Local\\Temp\\claude\\C--Users-Hafnor-Desktop-Game-Dev-fractured-nations\\c9e36277-ce93-4e3c-b639-8bb293f15cbf\\scratchpad\\val$tag.log\" --script res://tools/bench_world.gd -- --scene=res://scenes/world/tile_19km.tscn --tag=d3d12_tile_19km --scenarios=terrain"}
+19:36:27 descriptor_errors= fatal= crashed=
+19:36:27 == vulkan_real_2km driver=vulkan [full,particles,roads,terrain] 
+19:36:42 MEM {"wall_s":14.7,"exit_code":0,"peak_working_set_mb":1249,"peak_gpu_dedicated_mb":631,"peak_gpu_shared_mb":231,"samples":6,"args":"--path . --resolution 1600x900 --rendering-driver vulkan --log-file \"C:\\Users\\Hafnor\\AppData\\Local\\Temp\\claude\\C--Users-Hafnor-Desktop-Game-Dev-fractured-nations\\c9e36277-ce93-4e3c-b639-8bb293f15cbf\\scratchpad\\val$tag.log\" --script res://tools/bench_world.gd -- --scene=res://scenes/world/test_2km.tscn --tag=vulkan_real_2km --scenarios=full,particles,roads,terrain"}
+19:36:42 descriptor_errors= fatal= crashed=
+19:36:42 == vulkan_tile_4km driver=vulkan [full,roads,terrain] 
+19:37:00 MEM {"wall_s":17.2,"exit_code":0,"peak_working_set_mb":2929,"peak_gpu_dedicated_mb":874,"peak_gpu_shared_mb":429,"samples":7,"args":"--path . --resolution 1600x900 --rendering-driver vulkan --log-file \"C:\\Users\\Hafnor\\AppData\\Local\\Temp\\claude\\C--Users-Hafnor-Desktop-Game-Dev-fractured-nations\\c9e36277-ce93-4e3c-b639-8bb293f15cbf\\scratchpad\\val$tag.log\" --script res://tools/bench_world.gd -- --scene=res://scenes/world/tile_4km.tscn --tag=vulkan_tile_4km --scenarios=full,roads,terrain"}
+19:37:00 descriptor_errors= fatal= crashed=
+19:37:00 == vulkan_tile_15km driver=vulkan [full,particles,roads,terrain] 
+19:37:20 MEM {"wall_s":19.6,"exit_code":0,"peak_working_set_mb":4195,"peak_gpu_dedicated_mb":3375,"peak_gpu_shared_mb":231,"samples":8,"args":"--path . --resolution 1600x900 --rendering-driver vulkan --log-file \"C:\\Users\\Hafnor\\AppData\\Local\\Temp\\claude\\C--Users-Hafnor-Desktop-Game-Dev-fractured-nations\\c9e36277-ce93-4e3c-b639-8bb293f15cbf\\scratchpad\\val$tag.log\" --script res://tools/bench_world.gd -- --scene=res://scenes/world/tile_15km.tscn --tag=vulkan_tile_15km --scenarios=full,particles,roads,terrain"}
+19:37:20 descriptor_errors= fatal= crashed=
+19:37:20 == vulkan_tile_20km driver=vulkan [full,particles,roads,terrain] 
+19:37:45 MEM {"wall_s":24.4,"exit_code":0,"peak_working_set_mb":6527,"peak_gpu_dedicated_mb":5707,"peak_gpu_shared_mb":231,"samples":10,"args":"--path . --resolution 1600x900 --rendering-driver vulkan --log-file \"C:\\Users\\Hafnor\\AppData\\Local\\Temp\\claude\\C--Users-Hafnor-Desktop-Game-Dev-fractured-nations\\c9e36277-ce93-4e3c-b639-8bb293f15cbf\\scratchpad\\val$tag.log\" --script res://tools/bench_world.gd -- --scene=res://scenes/world/tile_20km.tscn --tag=vulkan_tile_20km --scenarios=full,particles,roads,terrain"}
+19:37:45 descriptor_errors= fatal= crashed=
+19:37:45 == vulkan_real_20km driver=vulkan [full,particles,roads,terrain] 
+19:38:02 MEM {"wall_s":17.2,"exit_code":0,"peak_working_set_mb":2373,"peak_gpu_dedicated_mb":1695,"peak_gpu_shared_mb":213,"samples":7,"args":"--path . --resolution 1600x900 --rendering-driver vulkan --log-file \"C:\\Users\\Hafnor\\AppData\\Local\\Temp\\claude\\C--Users-Hafnor-Desktop-Game-Dev-fractured-nations\\c9e36277-ce93-4e3c-b639-8bb293f15cbf\\scratchpad\\val$tag.log\" --script res://tools/bench_world.gd -- --scene=res://scenes/world/real_20km.tscn --tag=vulkan_real_20km --scenarios=full,particles,roads,terrain"}
+19:38:02 descriptor_errors= fatal= crashed=
+19:38:02 == d3d12_real_2km driver=d3d12 [full,particles,roads,terrain] 
+19:38:20 MEM {"wall_s":17.1,"exit_code":0,"peak_working_set_mb":994,"peak_gpu_dedicated_mb":1789,"peak_gpu_shared_mb":103,"samples":7,"args":"--path . --resolution 1600x900 --rendering-driver d3d12 --log-file \"C:\\Users\\Hafnor\\AppData\\Local\\Temp\\claude\\C--Users-Hafnor-Desktop-Game-Dev-fractured-nations\\c9e36277-ce93-4e3c-b639-8bb293f15cbf\\scratchpad\\val$tag.log\" --script res://tools/bench_world.gd -- --scene=res://scenes/world/test_2km.tscn --tag=d3d12_real_2km --scenarios=full,particles,roads,terrain"}
+19:38:20 descriptor_errors= fatal= crashed=
+19:38:20 == d3d12_tile_4km driver=d3d12 [full,roads,terrain] 
+19:38:52 MEM {"wall_s":31.8,"exit_code":0,"peak_working_set_mb":2873,"peak_gpu_dedicated_mb":6290,"peak_gpu_shared_mb":239,"samples":13,"args":"--path . --resolution 1600x900 --rendering-driver d3d12 --log-file \"C:\\Users\\Hafnor\\AppData\\Local\\Temp\\claude\\C--Users-Hafnor-Desktop-Game-Dev-fractured-nations\\c9e36277-ce93-4e3c-b639-8bb293f15cbf\\scratchpad\\val$tag.log\" --script res://tools/bench_world.gd -- --scene=res://scenes/world/tile_4km.tscn --tag=d3d12_tile_4km --scenarios=full,roads,terrain"}
+19:38:52 descriptor_errors= fatal= crashed=
+19:38:52 == d3d12_tile_15km driver=d3d12 [full,particles,roads,terrain] 
+19:39:17 MEM {"wall_s":24.4,"exit_code":0,"peak_working_set_mb":3949,"peak_gpu_dedicated_mb":4728,"peak_gpu_shared_mb":108,"samples":10,"args":"--path . --resolution 1600x900 --rendering-driver d3d12 --log-file \"C:\\Users\\Hafnor\\AppData\\Local\\Temp\\claude\\C--Users-Hafnor-Desktop-Game-Dev-fractured-nations\\c9e36277-ce93-4e3c-b639-8bb293f15cbf\\scratchpad\\val$tag.log\" --script res://tools/bench_world.gd -- --scene=res://scenes/world/tile_15km.tscn --tag=d3d12_tile_15km --scenarios=full,particles,roads,terrain"}
+19:39:17 descriptor_errors= fatal= crashed=
+19:39:17 == d3d12_tile_20km driver=d3d12 [full,particles,roads,terrain] 
+19:39:34 MEM {"wall_s":17.3,"exit_code":-1073741795,"peak_working_set_mb":6335,"peak_gpu_dedicated_mb":6985,"peak_gpu_shared_mb":161,"samples":7,"args":"--path . --resolution 1600x900 --rendering-driver d3d12 --log-file \"C:\\Users\\Hafnor\\AppData\\Local\\Temp\\claude\\C--Users-Hafnor-Desktop-Game-Dev-fractured-nations\\c9e36277-ce93-4e3c-b639-8bb293f15cbf\\scratchpad\\val$tag.log\" --script res://tools/bench_world.gd -- --scene=res://scenes/world/tile_20km.tscn --tag=d3d12_tile_20km --scenarios=full,particles,roads,terrain"}
+19:39:34 descriptor_errors= fatal= crashed=
+19:39:35 == d3d12_real_20km driver=d3d12 [full,particles,roads,terrain] 
+19:39:52 MEM {"wall_s":17.2,"exit_code":0,"peak_working_set_mb":2113,"peak_gpu_dedicated_mb":2229,"peak_gpu_shared_mb":104,"samples":7,"args":"--path . --resolution 1600x900 --rendering-driver d3d12 --log-file \"C:\\Users\\Hafnor\\AppData\\Local\\Temp\\claude\\C--Users-Hafnor-Desktop-Game-Dev-fractured-nations\\c9e36277-ce93-4e3c-b639-8bb293f15cbf\\scratchpad\\val$tag.log\" --script res://tools/bench_world.gd -- --scene=res://scenes/world/real_20km.tscn --tag=d3d12_real_20km --scenarios=full,particles,roads,terrain"}
+19:39:52 descriptor_errors= fatal= crashed=
+19:39:52 == vulkan_fps_real_20km driver=vulkan fps-test
+19:40:17 MEM {"wall_s":24.5,"exit_code":0,"peak_working_set_mb":2416,"peak_gpu_dedicated_mb":1725,"peak_gpu_shared_mb":213,"samples":10,"args":"--path . --resolution 1600x900 --rendering-driver vulkan --log-file \"C:\\Users\\Hafnor\\AppData\\Local\\Temp\\claude\\C--Users-Hafnor-Desktop-Game-Dev-fractured-nations\\c9e36277-ce93-4e3c-b639-8bb293f15cbf\\scratchpad\\val$tag.log\" res://scenes/world/real_20km.tscn -- --fps-test"}
+19:40:17 leak_warnings_at_exit=
+19:40:17 == vulkan_fps_tile_20km driver=vulkan fps-test
+19:40:49 MEM {"wall_s":31.7,"exit_code":0,"peak_working_set_mb":6534,"peak_gpu_dedicated_mb":5707,"peak_gpu_shared_mb":229,"samples":13,"args":"--path . --resolution 1600x900 --rendering-driver vulkan --log-file \"C:\\Users\\Hafnor\\AppData\\Local\\Temp\\claude\\C--Users-Hafnor-Desktop-Game-Dev-fractured-nations\\c9e36277-ce93-4e3c-b639-8bb293f15cbf\\scratchpad\\val$tag.log\" res://scenes/world/tile_20km.tscn -- --fps-test"}
+19:40:49 leak_warnings_at_exit=
+19:40:49 == vulkan_real_20km_shots driver=vulkan [full] --shots
+19:41:01 MEM {"wall_s":12.3,"exit_code":0,"peak_working_set_mb":2380,"peak_gpu_dedicated_mb":1695,"peak_gpu_shared_mb":213,"samples":5,"args":"--path . --resolution 1600x900 --rendering-driver vulkan --log-file \"C:\\Users\\Hafnor\\AppData\\Local\\Temp\\claude\\C--Users-Hafnor-Desktop-Game-Dev-fractured-nations\\c9e36277-ce93-4e3c-b639-8bb293f15cbf\\scratchpad\\val$tag.log\" --script res://tools/bench_world.gd -- --scene=res://scenes/world/real_20km.tscn --tag=vulkan_real_20km_shots --scenarios=full --shots"}
+19:41:01 descriptor_errors= fatal= crashed=
+19:41:01 == vulkan_tile_20km_shots driver=vulkan [full] --shots
+19:41:19 MEM {"wall_s":17.1,"exit_code":0,"peak_working_set_mb":6528,"peak_gpu_dedicated_mb":5707,"peak_gpu_shared_mb":229,"samples":7,"args":"--path . --resolution 1600x900 --rendering-driver vulkan --log-file \"C:\\Users\\Hafnor\\AppData\\Local\\Temp\\claude\\C--Users-Hafnor-Desktop-Game-Dev-fractured-nations\\c9e36277-ce93-4e3c-b639-8bb293f15cbf\\scratchpad\\val$tag.log\" --script res://tools/bench_world.gd -- --scene=res://scenes/world/tile_20km.tscn --tag=vulkan_tile_20km_shots --scenarios=full --shots"}
+19:41:19 descriptor_errors= fatal= crashed=
+19:41:19 ALL_DONE

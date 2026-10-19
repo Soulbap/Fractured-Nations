@@ -1,0 +1,9 @@
+19:14:29 == bench real_2km [full,trees,particles,roads,terrain] 
+19:14:53 rc=0 wall=24s descriptor_errors=0 device_lost=0
+BENCH real_2km/full {"aborted":"","fps_center":"4.3ms p99 5.0 gpu 1.5","fps_far_corner":"4.6ms p99 6.8 gpu 1.6","jump_max_ms":13.1,"mmi":23276,"render_errors":0,"rts_150m":"2.0ms p99 2.3 gpu 1.6","rts_600m":"7.4ms p99 9.9 gpu 1.8","strategic":"1.1ms p99 1.5 gpu 1.0","vram":1750.0}
+BENCH real_2km/trees {"aborted":"","fps_center":"4.2ms p99 5.2 gpu 1.2","fps_far_corner":"4.7ms p99 6.4 gpu 1.6","jump_max_ms":15.7,"mmi":19291,"render_errors":0,"rts_150m":"2.1ms p99 2.5 gpu 1.6","rts_600m":"7.3ms p99 8.3 gpu 1.8","strategic":"1.0ms p99 1.2 gpu 0.9","vram":1501.0}
+BENCH real_2km/particles {"aborted":"","fps_center":"4.5ms p99 4.9 gpu 1.4","fps_far_corner":"4.6ms p99 5.2 gpu 1.5","jump_max_ms":14.3,"mmi":19291,"render_errors":0,"rts_150m":"2.2ms p99 2.4 gpu 1.7","rts_600m":"7.5ms p99 8.7 gpu 1.9","strategic":"1.3ms p99 1.4 gpu 1.0","vram":1515.0}
+BENCH real_2km/roads {"aborted":"","fps_center":"0.9ms p99 1.2 gpu 0.8","fps_far_corner":"1.0ms p99 1.2 gpu 0.9","jump_max_ms":8.0,"mmi":0,"render_errors":0,"rts_150m":"1.7ms p99 2.0 gpu 1.6","rts_600m":"1.3ms p99 1.5 gpu 1.2","strategic":"1.0ms p99 1.0 gpu 0.8","vram":296.0}
+BENCH real_2km/terrain {"aborted":"","fps_center":"1.1ms p99 1.2 gpu 1.0","fps_far_corner":"1.0ms p99 1.2 gpu 0.9","jump_max_ms":7.9,"mmi":0,"render_errors":0,"rts_150m":"1.8ms p99 2.0 gpu 1.6","rts_600m":"1.4ms p99 1.5 gpu 1.2","strategic":"1.0ms p99 1.1 gpu 0.8","vram":287.0}
+BENCH done res://benchmarks/raw/bench_real_2km.json
+19:14:53 == bench tile_4km [full,trees,particles,roads,terrain] 

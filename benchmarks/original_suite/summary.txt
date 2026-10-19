@@ -1,0 +1,36 @@
+== test_2km load
+wall_ms_launch_to_exit=2721
+DIAG load: {"after_10_frames":{"buffer_mem_mb":55.021541595459,"draw_calls":882.0,"objects":48666.0,"physics_process_ms":0.298,"primitives":1056936.0,"static_mem_mb":561.253281593323,"texture_mem_mb":204.32421875,"video_mem_mb":1750.26171875},"first_frame_msec_since_start":2022}
+== test_2km benchmark
+DIAG benchmark: res://benchmarks/raw/test_2km_2026-10-19T18-20-52.json
+DIAG result: {"cpu":"12th Gen Intel(R) Core(TM) i7-12700F","godot":"4.7.2-stable (official)","gpu":"NVIDIA GeForce RTX 3070","gpu_driver":"12_0","load":{"after_10_frames":{"buffer_mem_mb":57.021541595459,"draw_calls":894.0,"objects":48671.0,"physics_process_ms":0.384,"primitives":1057866.0,"static_mem_mb":562.347897529602,"texture_mem_mb":204.578125,"video_mem_mb":1780.015625},"first_frame_msec_since_start":1994},"phases":[{"avg_fps":185.584336314113,"distance_m":1500.0,"duration_s":37.459,"end":{"buffer_mem_mb":57.021541595459,"draw_calls":1933.0,"objects":48826.0,"physics_process_ms":1.745,"primitives":1821234.0,"static_mem_mb":570.860645294189,"texture_mem_mb":204.578125,"video_mem_mb":1780.015625},"frame_ms_avg":5.3883857865431,"frame_ms_max":29.5990009307861,"frame_ms_p50":5.55555534362793,"frame_ms_p95":7.40740728378296,"frame_ms_p99":8.33333301544189,"frames":6952,"peak":{"draw_calls":4240.0,"primitives":2763120.0,"video_mem_mb":1780.015625},"phase":"low_road","speed_mps":40.0},{"avg_fps":330.534923826777,"distance_m":7321.97224210094,"duration_s":57.201,"end":{"buffer_mem_mb":57.021541595459,"draw_calls":511.0,"objects":48887.0,"physics_process_ms":1.764,"primitives":730258.0,"static_mem_mb":571.198970794678,"texture_mem_mb":204.578125,"video_mem_mb":1780.015625},"frame_ms_avg":3.02539891525673,"frame_ms_max":50.7579612731934,"frame_ms_p50":3.03030300140381,"frame_ms_p95":5.0,"frame_ms_p99":6.06060600280762,"frames":18907,"peak":{"draw_calls":3312.0,"primitives":1922706.0,"video_mem_mb":1780.015625},"phase":"high_overview","speed_mps":128.0}],"regions":4,"renderer":"d3d12 / forward_plus","resolution":"(1152.0, 648.0)","vertex_spacing":1.0,"world":"test_2km","world_size_m":2048.0}
+      1 WARNING: Terrain3D#7576:_notification:869: free_editor_textures requires `Assets` be saved to a file. Do so, or disable the former to turn off this warning
+== test_2km editor open
+editor_wall_ms_600_frames=14634 rc=0
+== scale_4km build
+build_wall_ms=375166
+BUILD world=scale_4km size=4096m spacing=1.00m region=1024
+WorldBuilder: generated 4096x4096 heightmap in 57833 ms, imported in 754 ms (16 regions)
+WorldBuilder: built road network with 104 nodes, 3 intersections
+BUILD roads + flatten: 3216 ms
+WorldBuilder: scattered vegetation in 309627 ms: { "conifer": 57104, "broadleaf": 63639, "bush": 25159, "rocks": 5298, "grass": 1798365 }
+BUILD instance format: region=(-2, -2) mesh=1 cells=860 first_cell=(0, 0) entry_len=3 first_xf_origin=(6.484253, 21.78942, 3.702759)
+BUILD saved terrain data to res://worlds/scale_4km/terrain in 2322 ms
+BUILD scene res://scenes/world/scale_4km.tscn err=0
+BUILD done in 374257 ms
+161M	worlds/scale_4km/terrain
+== scale_4km load
+wall_ms_launch_to_exit=107279
+DIAG load: {"after_10_frames":{"buffer_mem_mb":157.945053100586,"draw_calls":1604.0,"objects":188767.0,"physics_process_ms":0.143,"primitives":1351988.0,"static_mem_mb":1891.58555984497,"texture_mem_mb":364.32421875,"video_mem_mb":6376.07421875},"first_frame_msec_since_start":6424}
+== scale_4km benchmark
+ 700538 ERROR: Uniforms were never supplied for set (1) at the time of drawing, which are required by the pipeline.
+  32320 ERROR: Condition "!driver_uniform_set" is true. Returning: RID()
+  32320 ERROR: Cannot create uniform set because there's not enough room in the RESOURCES descriptor heap.
+   3130 ERROR: Parameter "uniform_set" is null.
+   2868 ERROR: Condition "rid.is_null()" is true. Returning: rid
+== scale_4km editor open
+
+== suite stopped by request 2026-10-19 18:44 (fast workflow approved)
+scale_4km benchmark: aborted after ~15 min of continuous D3D12 descriptor errors; no result JSON was produced
+scale_4km editor open: stopped 10 s after start (no measurement)
+scale_8km: not run

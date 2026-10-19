@@ -1,0 +1,48 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3070
+
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
+WARNING: instance_reset_physics_interpolation() is deprecated.
+   at: _instance_reset_physics_interpolation_bind_compat_104269 (servers/rendering/rendering_server.compat.inc:62)
+   GDScript backtrace (most recent call first):
+       [0] _run (res://tools/bench_world.gd:102)
+WARNING: Terrain3D#9009:_notification:869: free_editor_textures requires `Assets` be saved to a file. Do so, or disable the former to turn off this warning
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _run (res://tools/bench_world.gd:102)
+ERROR: FATAL: Condition "p_resource->states_ptr->subresource_states.size() > BarrierRequest::MAX_SUBRESOURCES" is true.
+   at: _resource_transition_batch (drivers/d3d12/rendering_device_driver_d3d12.cpp:702)
+
+================================================================
+CrashHandlerException: Program crashed with signal 4
+Engine version: Godot Engine v4.7.2.stable.official (ed1daf0bf001b61586d9930840f2f1394092c079)
+Dumping the backtrace. Please include this when reporting the bug on: https://github.com/godotengine/godot/issues
+Load address: 7ff4d7fa0000
+
+[1] 7ff61c074d03 (main+40d4d03) - no debug info in PE/COFF executable
+[2] 7ff9ab7df846 (ntdll.dll+8f846) - no debug info in PE/COFF executable
+[3] 7ff9ab7f5e9e (ntdll.dll+a5e9e) - no debug info in PE/COFF executable
+[4] 7ff9ab76e8c5 (ntdll.dll+1e8c5) - no debug info in PE/COFF executable
+[5] 7ff9ab7f4e9d (ntdll.dll+a4e9d) - no debug info in PE/COFF executable
+[6] 7ff619331c9b (main+1391c9b) - no debug info in PE/COFF executable
+[7] 7ff619333de1 (main+1393de1) - no debug info in PE/COFF executable
+[8] 7ff61b2b599b (main+331599b) - no debug info in PE/COFF executable
+[9] 7ff61b2bd97f (main+331d97f) - no debug info in PE/COFF executable
+[10] 7ff61b2bf463 (main+331f463) - no debug info in PE/COFF executable
+[11] 7ff61b232721 (main+3292721) - no debug info in PE/COFF executable
+[12] 7ff61b28c22c (main+32ec22c) - no debug info in PE/COFF executable
+[13] 7ff61b28c81d (main+32ec81d) - no debug info in PE/COFF executable
+[14] 7ff61b3c5092 (main+3425092) - no debug info in PE/COFF executable
+[15] 7ff61b225e43 (main+3285e43) - no debug info in PE/COFF executable
+[16] 7ff61b32440c (main+338440c) - no debug info in PE/COFF executable
+[17] 7ff617ffdba1 (main+5dba1) - no debug info in PE/COFF executable
+[18] 7ff617fa2ef0 (main+2ef0) - no debug info in PE/COFF executable
+[19] 7ff617ff2b41 (main+52b41) - no debug info in PE/COFF executable
+[20] 7ff617ff2b7d (main+52b7d) - no debug info in PE/COFF executable
+[21] 7ff617fa10c8 (main+10c8) - no debug info in PE/COFF executable
+[22] 7ff617fa13f5 (main+13f5) - no debug info in PE/COFF executable
+[23] 7ff9ab16259c (kernel32.dll+1259c) - no debug info in PE/COFF executable
+[24] 7ff9ab7aaf77 (ntdll.dll+5af77) - no debug info in PE/COFF executable
+[25] -1 (main+-7ff617fa0001) - no debug info in PE/COFF executable
+-- END OF C++ BACKTRACE --
+================================================================

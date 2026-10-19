@@ -1,0 +1,1726 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
+BUILD world=scale_4km size=4096m spacing=1.00m region=1024
+WARNING: instance_reset_physics_interpolation() is deprecated.
+   at: _instance_reset_physics_interpolation_bind_compat_104269 (servers/rendering/rendering_server.compat.inc:62)
+   GDScript backtrace (most recent call first):
+       [0] _run (res://tools/build_world.gd:37)
+WorldBuilder: generated 4096x4096 heightmap in 57833 ms, imported in 754 ms (16 regions)
+ERROR: Terrain3D#5029:_grab_camera:155: Cannot find the active camera. Set it manually with Terrain3D.set_camera(). Stopping _physics_process()
+   at: push_error (core/variant/variant_utility.cpp:1023)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 0 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 1 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:268)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 2 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 3 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 6 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 4 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 7 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 7 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 7 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 7 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 7 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 7 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 7 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 7 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 7 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 7 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 7 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 5 due to next_pt_init should be empty for this edge's next pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:776)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WARNING: Invalid cross-container connection, RoadNetwork with edge index 7 due to prior_pt_init should be empty for this edge's prior pt
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _invalidate_edge (res://addons/road-generator/nodes/road_container.gd:1408)
+       [1] validate_edges (res://addons/road-generator/nodes/road_container.gd:784)
+       [2] on_point_update (res://addons/road-generator/nodes/road_container.gd:1163)
+       [3] connect_roadpoint (res://addons/road-generator/nodes/road_point.gd:1023)
+       [4] _connect_chain (res://scripts/world/world_builder.gd:320)
+       [5] build_roads (res://scripts/world/world_builder.gd:288)
+WorldBuilder: built road network with 104 nodes, 3 intersections
+BUILD roads + flatten: 3216 ms
+WorldBuilder: scattered vegetation in 309627 ms: { "conifer": 57104, "broadleaf": 63639, "bush": 25159, "rocks": 5298, "grass": 1798365 }
+BUILD instance format: region=(-2, -2) mesh=1 cells=860 first_cell=(0, 0) entry_len=3 first_xf_origin=(6.484253, 21.78942, 3.702759)
+Terrain3DRegion#0483:save:226: Writing region (-2, -2) to res://worlds/scale_4km/terrain/terrain3d-02-02.res
+Terrain3DRegion#9351:save:226: Writing region (-1, -2) to res://worlds/scale_4km/terrain/terrain3d-01-02.res
+Terrain3DRegion#8219:save:226: Writing region (0, -2) to res://worlds/scale_4km/terrain/terrain3d_00-02.res
+Terrain3DRegion#7087:save:226: Writing region (1, -2) to res://worlds/scale_4km/terrain/terrain3d_01-02.res
+Terrain3DRegion#5955:save:226: Writing region (-2, -1) to res://worlds/scale_4km/terrain/terrain3d-02-01.res
+Terrain3DRegion#4823:save:226: Writing region (-1, -1) to res://worlds/scale_4km/terrain/terrain3d-01-01.res
+Terrain3DRegion#3691:save:226: Writing region (0, -1) to res://worlds/scale_4km/terrain/terrain3d_00-01.res
+Terrain3DRegion#2559:save:226: Writing region (1, -1) to res://worlds/scale_4km/terrain/terrain3d_01-01.res
+Terrain3DRegion#1427:save:226: Writing region (-2, 0) to res://worlds/scale_4km/terrain/terrain3d-02_00.res
+Terrain3DRegion#0295:save:226: Writing region (-1, 0) to res://worlds/scale_4km/terrain/terrain3d-01_00.res
+Terrain3DRegion#9163:save:226: Writing region (0, 0) to res://worlds/scale_4km/terrain/terrain3d_00_00.res
+Terrain3DRegion#8031:save:226: Writing region (1, 0) to res://worlds/scale_4km/terrain/terrain3d_01_00.res
+Terrain3DRegion#6899:save:226: Writing region (-2, 1) to res://worlds/scale_4km/terrain/terrain3d-02_01.res
+Terrain3DRegion#5767:save:226: Writing region (-1, 1) to res://worlds/scale_4km/terrain/terrain3d-01_01.res
+Terrain3DRegion#4635:save:226: Writing region (0, 1) to res://worlds/scale_4km/terrain/terrain3d_00_01.res
+Terrain3DRegion#3503:save:226: Writing region (1, 1) to res://worlds/scale_4km/terrain/terrain3d_01_01.res
+BUILD saved terrain data to res://worlds/scale_4km/terrain in 2322 ms
+BUILD scene res://scenes/world/scale_4km.tscn err=0
+BUILD done in 374257 ms
