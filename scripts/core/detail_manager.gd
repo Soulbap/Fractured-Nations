@@ -30,6 +30,8 @@ const VEHICLE_SCENE := preload("res://scenes/units/vehicle.tscn")
 @export var rts_camera: RTSCamera
 @export var collider_streamer: InstanceColliderStreamer
 @export var units_root: Node3D
+## Placed structures carve the navmesh (WORLD-BASE-01).
+@export var structures: StructureManager
 ## Units closer than this to the observer get a body.
 @export var promote_radius := 120.0
 ## Bodies farther than this lose it. Must stay below nav_area_size / 2 - nav_max_drift.
@@ -52,6 +54,8 @@ var promotions := 0
 var demotions := 0
 var _last_observer := Vector3(INF, 0, INF)
 var _speed := 0.0
+## Seconds until a requested navmesh rebake (structures changed); < 0: none pending.
+var _rebake_in := -1.0
 
 
 func _ready() -> void:
@@ -88,6 +92,21 @@ func _physics_process(delta: float) -> void:
 	_last_observer = observer
 	_follow_observer()
 	_update(false)
+	if _rebake_in >= 0.0:
+		_rebake_in -= delta
+		if _rebake_in < 0.0:
+			_rebake()
+
+
+## Structures changed inside rect: rebake the navmesh soon if it covers that area.
+## Debounced, so drawing a wall or placing several buildings costs one bake.
+func structures_changed(rect: Rect2, delay := 0.4) -> void:
+	if not nav_center.is_finite():
+		return
+	var half := nav_area_size * 0.5
+	var area := Rect2(nav_center.x - half, nav_center.z - half, nav_area_size, nav_area_size)
+	if area.intersects(rect):
+		_rebake_in = delay
 
 
 ## Forces the detailed tier to exist around a position right now (used before possessing
@@ -145,9 +164,15 @@ func _rebake() -> void:
 	for u in sim.state.units.values():
 		if u.kind == UnitState.Kind.VEHICLE and absf(u.position.x - observer.x) < half and absf(u.position.z - observer.z) < half:
 			obstacles.append({"position": u.position, "yaw": u.yaw, "size": VehicleBody.FOOTPRINT})
+	var vehicles := obstacles.size()
+	if structures:
+		obstacles.append_array(structures.nav_obstacles(observer, half))
 	var h: float = terrain.data.get_height(observer)
 	last_bake = navigation.bake_area(Vector3(observer.x, 0.0 if is_nan(h) else h, observer.z), nav_area_size, obstacles)
+	last_bake["vehicle_obstructions"] = vehicles
+	last_bake["structure_obstructions"] = obstacles.size() - vehicles
 	nav_center = observer
+	_rebake_in = -1.0
 	bake_count += 1
 	# Terrain collision follows the terrain camera; build it for the new area now so
 	# bodies promoted in the same tick have ground under them.

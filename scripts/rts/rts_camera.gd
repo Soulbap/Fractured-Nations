@@ -8,8 +8,10 @@ class_name RTSCamera
 extends Node3D
 
 @export var terrain: Terrain3D
-@export var zoom_min := 12.0
-@export var zoom_max := 700.0
+## Closest zoom distance (m). WORLD-BASE-01: ~15 m keeps construction previews readable.
+@export var zoom_min := 15.0
+## Farthest zoom distance (m). Large-scale overview belongs to the future 2D strategic map.
+@export var zoom_max := 300.0
 @export var zoom_factor := 1.15
 ## Pan speed as a fraction of the zoom distance per second.
 @export var pan_speed := 0.9

@@ -37,6 +37,8 @@ const VEHICLE_SCENE := preload("res://scenes/units/vehicle.tscn")
 @onready var game: GameController = $GameController
 @onready var hud: GameHUD = $HUD
 @onready var detail: DetailManager = get_node_or_null("DetailManager")
+@onready var structures: StructureManager = get_node_or_null("Structures")
+@onready var construction: ConstructionController = get_node_or_null("Construction")
 
 var terrain: Terrain3D
 var config: WorldConfig
@@ -49,6 +51,7 @@ var sites: Array[Dictionary] = []
 ## Keeps the scripted test alive while its coroutine runs (a Callable holds no reference).
 var _selftest: CoreSelfTest
 var _large_selftest: LargeWorldSelfTest
+var _base_selftest: BaseSelfTest
 
 
 func _ready() -> void:
@@ -89,6 +92,8 @@ func _ready() -> void:
 	hud.rts = rts
 	hud.sim = sim
 	hud.detail = detail
+	if structures:
+		_setup_construction()
 	if detail:
 		_start_large_world(collider_streamer)
 		return
@@ -113,9 +118,42 @@ func _ready() -> void:
 		game.enter_rts()
 
 	var args := OS.get_cmdline_user_args()
+	if structures:
+		structures.area_changed.connect(func(_r: Rect2) -> void: _rebake_small_area.call_deferred())
 	if "--core-test" in args and not detail:
 		_selftest = CoreSelfTest.new(self)
 		_selftest.run.call_deferred(args)
+
+
+## WORLD-BASE-01: placed structures live in sim.state.construction; the manager shows
+## and collides them around the camera, the controller is the RTS construction mode.
+func _setup_construction() -> void:
+	structures.terrain = terrain
+	structures.vegetation = vegetation
+	structures.sim = sim
+	structures.map_half_size = config.half_size()
+	structures.bind_state(sim.state.construction)
+	if construction:
+		construction.structures = structures
+		construction.rig = rts_camera
+		construction.rts = rts
+		construction.game = game
+		construction.terrain = terrain
+		construction.save_path = "user://saves/%s/construction.json" % config.world_name
+		game.mode_changed.connect(func(m: int) -> void:
+			if m != GameController.Mode.RTS and construction.active:
+				construction.set_active(false))
+	hud.construction = construction
+
+
+## Small world: one fixed navmesh area, rebaked with the structures inside it.
+func _rebake_small_area() -> void:
+	var obstacles := []
+	for b in sim.bodies.values():
+		if b is VehicleBody:
+			obstacles.append(b.nav_obstacle())
+	obstacles.append_array(structures.nav_obstacles(area_center, area_size * 0.5))
+	nav_info = navigation.bake_area(area_center, area_size, obstacles)
 
 
 ## 20 km layout: 26 soldiers and 3 vehicles at the three base sites, bodies only near
@@ -132,6 +170,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	detail.units_root = units_root
 	game.detail = detail
 	hud.detail = detail
+	detail.structures = structures
+	if structures:
+		structures.observer_fn = detail.observer_position
 	for i in config.base_sites.size():
 		var n := config.base_sites[i]
 		var w := config.to_world(Vector2(n.x, n.y))
@@ -154,9 +195,16 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 		game.possessed_id = first.id if first else -1
 		game.enter_rts()
 	var args := OS.get_cmdline_user_args()
+	if structures:
+		structures.area_changed.connect(detail.structures_changed)
+		if "--load-construction" in args and construction:
+			construction.load_saved()
 	if "--large-test" in args:
 		_large_selftest = LargeWorldSelfTest.new(self)
 		_large_selftest.run.call_deferred(args)
+	elif "--base-test" in args:
+		_base_selftest = BaseSelfTest.new(self)
+		_base_selftest.run.call_deferred(args)
 
 
 func _spawn_large_world() -> void:

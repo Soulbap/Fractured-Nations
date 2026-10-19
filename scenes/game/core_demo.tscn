@@ -8,6 +8,8 @@
 [ext_resource type="Script" path="res://scripts/rts/rts_controller.gd" id="6_rts"]
 [ext_resource type="Script" path="res://scripts/core/game_controller.gd" id="7_game"]
 [ext_resource type="Script" path="res://scripts/ui/game_hud.gd" id="8_hud"]
+[ext_resource type="Script" path="res://scripts/construction/structure_manager.gd" id="10_structures"]
+[ext_resource type="Script" path="res://scripts/construction/construction_controller.gd" id="11_construction"]
 
 [node name="CoreDemo" type="Node3D"]
 script = ExtResource("2_demo")
@@ -19,6 +21,9 @@ script = ExtResource("3_sim")
 
 [node name="Navigation" type="NavigationRegion3D" parent="."]
 script = ExtResource("4_nav")
+
+[node name="Structures" type="Node3D" parent="."]
+script = ExtResource("10_structures")
 
 [node name="Units" type="Node3D" parent="."]
 
@@ -38,3 +43,6 @@ script = ExtResource("7_game")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 script = ExtResource("8_hud")
+
+[node name="Construction" type="Node" parent="."]
+script = ExtResource("11_construction")

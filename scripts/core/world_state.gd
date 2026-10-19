@@ -18,6 +18,8 @@ const FACTION_COLORS: Array[Color] = [Color(0.3, 0.55, 1.0), Color(1.0, 0.4, 0.2
 var units := {}
 ## Simulated time in seconds.
 var time := 0.0
+## Placed structures (WORLD-BASE-01): buildings and defensive lines, same no-node rule.
+var construction := ConstructionState.new()
 var _next_id := 1
 
 
@@ -130,7 +132,7 @@ func snapshot() -> Dictionary:
 	var list := []
 	for u in all_units():
 		list.append(u.to_dict())
-	return {"time": time, "next_id": _next_id, "units": list}
+	return {"time": time, "next_id": _next_id, "units": list, "construction": construction.to_dict()}
 
 
 func restore(snap: Dictionary) -> void:
@@ -141,3 +143,5 @@ func restore(snap: Dictionary) -> void:
 		var u := UnitState.from_dict(d)
 		units[u.id] = u
 		unit_added.emit(u)
+	if snap.has("construction"):
+		construction.from_dict(snap.construction)

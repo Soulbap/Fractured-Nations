@@ -6,6 +6,7 @@ extends CanvasLayer
 @export var rts: RTSController
 @export var sim: WorldSim
 @export var detail: DetailManager
+@export var construction: ConstructionController
 
 var _label: Label
 var _overlay: Overlay
@@ -70,10 +71,12 @@ func _text() -> String:
 		if u and u.has_order():
 			lines.append("Order: move to %s  (suspended while possessed, resumes on release)" % _fmt(u.order_target))
 		lines.append("Tab tactical view | WASD move, Shift sprint, Space jump, Esc release mouse, F fly, F3 stats")
+	elif construction and construction.active:
+		lines.append_array(construction.status_lines())
 	else:
 		var back := sim.state.get_unit(game.possessed_id)
 		lines.append("TACTICAL  WASD pan, Q/E rotate, wheel zoom, middle-drag rotate")
-		lines.append("LMB select / drag box, Shift add, Ctrl+A all, RMB move order, H halt, P or double-click possess, Tab back to %s" % (back.unit_name if back else "soldier"))
+		lines.append("LMB select / drag box, Shift add, Ctrl+A all, RMB move order, H halt, P or double-click possess, B construction, Tab back to %s" % (back.unit_name if back else "soldier"))
 		var sel: Array[String] = []
 		var moving := 0
 		for id in rts.selected:
@@ -85,6 +88,11 @@ func _text() -> String:
 		lines.append("Selected: %s%s" % [", ".join(sel) if not sel.is_empty() else "none", "  (%d moving)" % moving if moving > 0 else ""])
 	lines.append("Units %d (%d soldiers, %d vehicles)  moving %d  bodies %d  sim time %.0f s" % [
 		st.units, sim.state.count_of(UnitState.Kind.SOLDIER), sim.state.count_of(UnitState.Kind.VEHICLE), st.moving, st.bodies, st.time])
+	if construction and construction.structures:
+		var cs := construction.structures.stats()
+		lines.append("Structures %d (%d modules)  drawn cells %d  collision cells %d" % [cs.structures, cs.instances, cs.visible_cells, cs.collision_cells])
+		if construction.message != "" and not construction.active:
+			lines.append(construction.message)
 	if detail:
 		var u := sim.state.get_unit(game.possessed_id)
 		var where := "-"
