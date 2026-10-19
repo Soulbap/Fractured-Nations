@@ -142,6 +142,7 @@ frame times; about 90 s, writes `benchmarks/raw/core_test.json` and `docs/screen
 
 ```bash
 Godot_v4.7.2-stable_win64.exe --path . --resolution 1600x900 --log-file core.log res://scenes/game/core_demo.tscn -- --core-test --shots
+Godot_v4.7.2-stable_win64.exe --path . --resolution 1600x900 --log-file wc02.log res://scenes/game/world_core_02.tscn -- --large-test --shots   # WORLD-CORE-02, real 20 km world; keys 1/2/3 sites, N next soldier
 ```
 
 Targeted vegetation checks (mask, tree clearance, determinism, streamer activation,

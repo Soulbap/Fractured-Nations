@@ -12,7 +12,11 @@ signal possess_requested(unit_id: int)
 signal order_issued(count: int, target: Vector3)
 
 @export var rig: RTSCamera
-@export var sim: WorldSim
+@export var sim: WorldSim:
+	set(v):
+		sim = v
+		if v and not v.view_added.is_connected(_on_view_added):
+			v.view_added.connect(_on_view_added)
 @export var terrain: Terrain3D
 ## Where the move-order marker lives.
 @export var marker_parent: Node3D
@@ -105,18 +109,24 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func select(ids: Array) -> void:
 	for id in selected:
-		var b := sim.body_of(id)
-		if b and "selected" in b:
-			b.selected = false
+		var v := sim.view_of(id)
+		if v and "selected" in v:
+			v.selected = false
 	selected.clear()
 	for id in ids:
 		if sim.state.get_unit(id) == null or selected.has(id):
 			continue
 		selected.append(id)
-		var b := sim.body_of(id)
-		if b and "selected" in b:
-			b.selected = true
+		var v := sim.view_of(id)
+		if v and "selected" in v:
+			v.selected = true
 	selection_changed.emit(selected)
+
+
+## A unit changed tier (body <-> proxy): the new node must show the selection too.
+func _on_view_added(id: int, view: Node3D) -> void:
+	if selected.has(id) and "selected" in view:
+		view.selected = true
 
 
 func first_selected_soldier() -> int:
@@ -153,7 +163,7 @@ func ground_point(screen_pos: Vector2) -> Vector3:
 	var from := cam.project_ray_origin(screen_pos)
 	var dir := cam.project_ray_normal(screen_pos)
 	var space := cam.get_world_3d().direct_space_state
-	var q := PhysicsRayQueryParameters3D.create(from, from + dir * 6000.0)
+	var q := PhysicsRayQueryParameters3D.create(from, from + dir * 20000.0)
 	q.collide_with_areas = false
 	var exclude: Array[RID] = []
 	for b in sim.bodies.values():
@@ -179,12 +189,10 @@ func _unit_at(screen_pos: Vector2) -> int:
 	var cam := rig.camera
 	var best := -1
 	var best_d := INF
-	for id in sim.bodies:
-		var b: Node3D = sim.bodies[id]
-		var u := sim.state.get_unit(id)
-		if u == null:
-			continue
-		var p := b.global_position + Vector3.UP * (1.0 if u.kind == UnitState.Kind.SOLDIER else 1.3)
+	# Positions come from the records, so units in either tier are pickable.
+	for u: UnitState in sim.state.units.values():
+		var id := u.id
+		var p := u.position + Vector3.UP * (1.0 if u.kind == UnitState.Kind.SOLDIER else 1.3)
 		if cam.is_position_behind(p):
 			continue
 		var sp := cam.unproject_position(p)
@@ -216,13 +224,12 @@ func _click_select(screen_pos: Vector2, add: bool) -> void:
 func _box_select(rect: Rect2, add: bool) -> void:
 	var cam := rig.camera
 	var ids := Array(selected) if add else []
-	for id in sim.bodies:
-		var b: Node3D = sim.bodies[id]
-		var p := b.global_position + Vector3.UP
+	for u: UnitState in sim.state.units.values():
+		var p := u.position + Vector3.UP
 		if cam.is_position_behind(p):
 			continue
-		if rect.has_point(cam.unproject_position(p)) and not ids.has(id):
-			ids.append(id)
+		if rect.has_point(cam.unproject_position(p)) and not ids.has(u.id):
+			ids.append(u.id)
 	select(ids)
 
 

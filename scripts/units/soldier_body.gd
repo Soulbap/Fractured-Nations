@@ -60,7 +60,7 @@ func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
 
 
 func _exit_tree() -> void:
-	if sim and unit:
+	if sim and unit and sim.bodies.get(unit.id) == self:
 		sim.unregister_body(unit.id)
 
 
@@ -98,6 +98,9 @@ func _ai_step(delta: float) -> void:
 		var path_len := nav.get_current_navigation_path().size()
 		if remaining <= arrive_distance:
 			_finish_order(remaining)
+		elif path_len == 0 and sim.detail and not sim.detail.nav_covers(unit.order_target):
+			desired = flat.normalized() * walk_speed
+			_face(flat.normalized(), delta)
 		elif path_len == 0:
 			# No path yet (navigation map not synced, or target off the navmesh): retry.
 			_empty_path_s += delta
@@ -106,7 +109,15 @@ func _ai_step(delta: float) -> void:
 			elif Engine.get_physics_frames() % 10 == 0:
 				nav.target_position = unit.order_target
 		elif nav.is_navigation_finished():
-			_finish_order(remaining)
+			if remaining > blocked_distance and sim.detail and not sim.detail.nav_covers(unit.order_target):
+				# The target lies beyond the navmesh area around the active camera: keep
+				# heading for it. Leaving the camera's detail radius hands the unit to
+				# the abstract tier, which finishes the walk (the order is never dropped).
+				var far_dir := flat.normalized()
+				desired = far_dir * walk_speed
+				_face(far_dir, delta)
+			else:
+				_finish_order(remaining)
 		else:
 			var dir := next - global_position
 			dir.y = 0.0

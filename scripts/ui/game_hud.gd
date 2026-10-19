@@ -5,6 +5,7 @@ extends CanvasLayer
 @export var game: GameController
 @export var rts: RTSController
 @export var sim: WorldSim
+@export var detail: DetailManager
 
 var _label: Label
 var _overlay: Overlay
@@ -84,6 +85,17 @@ func _text() -> String:
 		lines.append("Selected: %s%s" % [", ".join(sel) if not sel.is_empty() else "none", "  (%d moving)" % moving if moving > 0 else ""])
 	lines.append("Units %d (%d soldiers, %d vehicles)  moving %d  bodies %d  sim time %.0f s" % [
 		st.units, sim.state.count_of(UnitState.Kind.SOLDIER), sim.state.count_of(UnitState.Kind.VEHICLE), st.moving, st.bodies, st.time])
+	if detail:
+		var u := sim.state.get_unit(game.possessed_id)
+		var where := "-"
+		if u:
+			where = "(%.0f, %.0f)" % [u.position.x, u.position.z]
+			for i in game.sites.size():
+				var d := Vector2(u.position.x - game.sites[i].position.x, u.position.z - game.sites[i].position.z).length()
+				if d < 400.0:
+					where += "  near %s" % game.sites[i].name
+		lines.append("Detail: %d bodies, %d abstract  |  1/2/3 jump to site, N next soldier anywhere  |  last unit %s" % [
+			sim.bodies.size(), sim.proxies.size(), where])
 	return "\n".join(lines)
 
 

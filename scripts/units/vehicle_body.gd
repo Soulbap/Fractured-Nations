@@ -7,8 +7,11 @@
 class_name VehicleBody
 extends StaticBody3D
 
-## Footprint (width, length) in meters used to carve the navigation mesh.
-@export var footprint := Vector2(2.6, 5.8)
+## Footprint (width, length) in meters used to carve the navigation mesh; the same for
+## every vehicle, which lets DetailManager carve vehicles that currently have no body.
+const FOOTPRINT := Vector2(2.9, 6.1)
+
+@export var footprint := FOOTPRINT
 
 var unit: UnitState
 var sim: WorldSim
@@ -35,7 +38,7 @@ func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
 
 
 func _exit_tree() -> void:
-	if sim and unit:
+	if sim and unit and sim.bodies.get(unit.id) == self:
 		sim.unregister_body(unit.id)
 
 

@@ -9,16 +9,26 @@
 ##     will use later; today it exists so that the state provably does not depend on
 ##     scene nodes (the self-test exercises it).
 ## Possession is not a tier change: a possessed soldier keeps its body and its record.
+## WORLD-CORE-02: DetailManager decides per unit which tier applies (distance to the
+## active camera) and swaps bodies for lightweight proxies; this class only keeps the
+## registries and runs the abstract step for every unit without a body.
 class_name WorldSim
 extends Node
+
+## Emitted when a body or proxy starts representing a unit (selection state, HUD).
+signal view_added(id: int, view: Node3D)
 
 @export var terrain: Terrain3D
 ## Distance at which an abstract unit counts as arrived.
 @export var abstract_arrive_m := 1.0
 
 var state := WorldState.new()
-## id -> Node3D body
+## id -> Node3D body (detailed tier)
 var bodies := {}
+## id -> UnitProxy (abstract tier visual; a unit has a body or a proxy, never both)
+var proxies := {}
+## Set in the large world: tells bodies whether a point is covered by the navmesh.
+var detail: DetailManager
 
 
 func register_body(id: int, body: Node3D) -> void:
@@ -26,6 +36,16 @@ func register_body(id: int, body: Node3D) -> void:
 	var u := state.get_unit(id)
 	if u:
 		u.has_body = true
+	view_added.emit(id, body)
+
+
+func register_proxy(id: int, proxy: Node3D) -> void:
+	proxies[id] = proxy
+	view_added.emit(id, proxy)
+
+
+func unregister_proxy(id: int) -> void:
+	proxies.erase(id)
 
 
 func unregister_body(id: int) -> void:
@@ -37,6 +57,11 @@ func unregister_body(id: int) -> void:
 
 func body_of(id: int) -> Node3D:
 	return bodies.get(id)
+
+
+## The node currently showing a unit: its body in the detailed tier, else its proxy.
+func view_of(id: int) -> Node3D:
+	return bodies.get(id) if bodies.has(id) else proxies.get(id)
 
 
 func _physics_process(delta: float) -> void:

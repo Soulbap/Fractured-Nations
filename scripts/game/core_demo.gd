@@ -6,7 +6,13 @@
 ## and controls, possession and a HUD. The world scene itself is untouched so the
 ## WORLD-TECH tools keep working on it.
 ##
-## Command line (after "--"): --core-test [--shots]  scripted checks, see CoreSelfTest.
+## WORLD-CORE-02: when the scene has a DetailManager child (scenes/game/world_core_02.tscn)
+## the same game runs on the 20 x 20 km world. Soldiers stand at the three base sites,
+## only units near the active camera get bodies, the rest run in the abstract tier, and
+## the navmesh and terrain collision follow the camera instead of covering the map.
+##
+## Command line (after "--"): --core-test [--shots]  scripted checks, see CoreSelfTest;
+## --large-test [--shots]  the 20 km checks, see LargeWorldSelfTest.
 class_name CoreDemo
 extends Node3D
 
@@ -30,6 +36,7 @@ const VEHICLE_SCENE := preload("res://scenes/units/vehicle.tscn")
 @onready var rts: RTSController = $RTSController
 @onready var game: GameController = $GameController
 @onready var hud: GameHUD = $HUD
+@onready var detail: DetailManager = get_node_or_null("DetailManager")
 
 var terrain: Terrain3D
 var config: WorldConfig
@@ -37,8 +44,11 @@ var vegetation: VegetationStreamer
 var area_center := Vector3.ZERO
 var nav_info := {}
 var spawn_info := {}
+## Large world: [{name, position, radius}] from WorldConfig.base_sites.
+var sites: Array[Dictionary] = []
 ## Keeps the scripted test alive while its coroutine runs (a Callable holds no reference).
 var _selftest: CoreSelfTest
+var _large_selftest: LargeWorldSelfTest
 
 
 func _ready() -> void:
@@ -56,8 +66,9 @@ func _ready() -> void:
 			collider_streamer.target = null
 		world.remove_child(old_player)
 		old_player.queue_free()
-	# Every unit needs ground under it, not only the surroundings of the camera.
-	terrain.collision_mode = Terrain3DCollision.FULL_GAME
+	# Small world: every unit needs ground under it, so collide everywhere. Large world:
+	# dynamic collision around the terrain camera (the active observer).
+	terrain.collision_mode = Terrain3DCollision.DYNAMIC_GAME if detail else Terrain3DCollision.FULL_GAME
 
 	sim.terrain = terrain
 	navigation.terrain = terrain
@@ -77,6 +88,10 @@ func _ready() -> void:
 	hud.game = game
 	hud.rts = rts
 	hud.sim = sim
+	hud.detail = detail
+	if detail:
+		_start_large_world(collider_streamer)
+		return
 
 	area_center = _base_center()
 	_spawn_units()
@@ -98,9 +113,93 @@ func _ready() -> void:
 		game.enter_rts()
 
 	var args := OS.get_cmdline_user_args()
-	if "--core-test" in args:
+	if "--core-test" in args and not detail:
 		_selftest = CoreSelfTest.new(self)
 		_selftest.run.call_deferred(args)
+
+
+## 20 km layout: 26 soldiers and 3 vehicles at the three base sites, bodies only near
+## the first possessed soldier, everyone else abstract until the camera comes near.
+func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
+	detail.sim = sim
+	navigation.cell_size = 0.75
+	sim.detail = detail
+	detail.navigation = navigation
+	detail.terrain = terrain
+	detail.game = game
+	detail.rts_camera = rts_camera
+	detail.collider_streamer = collider_streamer
+	detail.units_root = units_root
+	game.detail = detail
+	hud.detail = detail
+	for i in config.base_sites.size():
+		var n := config.base_sites[i]
+		var w := config.to_world(Vector2(n.x, n.y))
+		var c := on_ground(w.x, w.y, 0.0)
+		sites.append({"name": "Site %s" % "ABC"[i], "position": c, "radius": n.z})
+	game.sites = sites
+	_spawn_large_world()
+	detail.create_missing_proxies()
+	if initial_orders:
+		_issue_large_orders()
+	area_center = sites[0].position
+	var first := _first_soldier_of(0)
+	detail.activate_at(first.position)
+	nav_info = detail.last_bake
+	print("CORE nav: ", JSON.stringify(nav_info))
+	print("CORE spawn: ", JSON.stringify(spawn_info))
+	if start_in_first_person and first:
+		game.possess(first.id)
+	else:
+		game.possessed_id = first.id if first else -1
+		game.enter_rts()
+	var args := OS.get_cmdline_user_args()
+	if "--large-test" in args:
+		_large_selftest = LargeWorldSelfTest.new(self)
+		_large_selftest.run.call_deferred(args)
+
+
+func _spawn_large_world() -> void:
+	# Site A: 10 North. Site B: 8 South. Site C: 4 North facing 4 South. One vehicle each.
+	_spawn_group(sites[0].position + Vector3(0, 0, 8), 0, 10, 5, 0.0)
+	_spawn_vehicle(sites[0].position + Vector3(-26, 0, 14), 0, 0.0, 0)
+	_spawn_group(sites[1].position + Vector3(0, 0, 8), 1, 8, 4, 0.0)
+	_spawn_vehicle(sites[1].position + Vector3(24, 0, 12), 1, PI * 0.5, 1)
+	_spawn_group(sites[2].position + Vector3(-12, 0, 0), 0, 4, 4, PI * 0.5)
+	_spawn_group(sites[2].position + Vector3(12, 0, 0), 1, 4, 4, -PI * 0.5)
+	_spawn_vehicle(sites[2].position + Vector3(0, 0, 22), 0, 0.3, 2)
+	spawn_info = {"soldiers": sim.state.count_of(UnitState.Kind.SOLDIER), "vehicles": sim.state.count_of(UnitState.Kind.VEHICLE),
+		"sites": sites.map(func(s: Dictionary) -> Array: return [s.position.x, s.position.z])}
+
+
+## Rows of soldiers around origin; yaw 0 faces -Z, rows extend along the facing's right.
+func _spawn_group(origin: Vector3, faction: int, count: int, per_row: int, yaw: float) -> void:
+	var right := Vector3(cos(yaw), 0, -sin(yaw))
+	var back := Vector3(sin(yaw), 0, cos(yaw))
+	for i in count:
+		var col := i % per_row
+		var row := i / per_row
+		var p := origin + right * ((col - (per_row - 1) * 0.5) * 3.0) + back * (row * 3.0)
+		sim.state.add_unit(UnitState.Kind.SOLDIER, faction, on_ground(p.x, p.z), yaw)
+
+
+func _spawn_vehicle(pos: Vector3, faction: int, yaw: float, site: int) -> void:
+	sim.state.add_unit(UnitState.Kind.VEHICLE, faction, on_ground(pos.x, pos.z, 0.0), yaw,
+		"%s-V%d" % ["ABC"[site], site + 1])
+
+
+## Orders that run from the start: 3 soldiers at site A walk 60 m, 4 South soldiers at
+## site B walk 300 m (abstract tier, nobody is watching), 3 at site C walk 250 m.
+func _issue_large_orders() -> void:
+	var by_site := func(i: int) -> Array:
+		return sim.state.units_where(func(u: UnitState) -> bool:
+			return u.kind == UnitState.Kind.SOLDIER and Vector2(u.position.x - sites[i].position.x, u.position.z - sites[i].position.z).length() < 60.0)
+	var a: Array = by_site.call(0)
+	sim.state.issue_group_move([a[7].id, a[8].id, a[9].id], on_ground(sites[0].position.x + 55.0, sites[0].position.z - 40.0), 3.0)
+	var b: Array = by_site.call(1)
+	sim.state.issue_group_move([b[0].id, b[1].id, b[2].id, b[3].id], on_ground(sites[1].position.x - 220.0, sites[1].position.z - 200.0), 3.0)
+	var c: Array = by_site.call(2)
+	sim.state.issue_group_move([c[0].id, c[1].id, c[4].id], on_ground(sites[2].position.x + 20.0, sites[2].position.z - 250.0), 3.0)
 
 
 func ground_height(p: Vector3) -> float:
