@@ -3,9 +3,13 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **WORLD-CORE-01** persistent world with FPS/RTS control (soldiers, vehicles,
-orders, possession) on top of the WORLD-TECH-02 vegetation foundation and the WORLD-TECH-01
-world-technology prototype. See [docs/WORLD-CORE-01_REPORT.md](docs/WORLD-CORE-01_REPORT.md),
+Current state: **WORLD-BASE-01** freeform military base construction (RTS construction mode,
+drag-to-build HESCO / fences / barriers, Blender-made construction set, persistent and saved)
+on the **WORLD-CORE-02** 20 km world simulation, the WORLD-CORE-01 FPS/RTS control, the
+WORLD-TECH-02 vegetation foundation and the WORLD-TECH-01 world-technology prototype. See
+[docs/WORLD-BASE-01_REPORT.md](docs/WORLD-BASE-01_REPORT.md),
+[docs/WORLD-CORE-02_REPORT.md](docs/WORLD-CORE-02_REPORT.md),
+[docs/WORLD-CORE-01_REPORT.md](docs/WORLD-CORE-01_REPORT.md),
 [docs/WORLD-TECH-02_REPORT.md](docs/WORLD-TECH-02_REPORT.md) and
 [docs/WORLD-TECH-01_REPORT.md](docs/WORLD-TECH-01_REPORT.md).
 
@@ -48,12 +52,31 @@ vehicle each share the world. A South patrol and two North soldiers already have
 |---|---|
 | W A S D (Shift faster) | Pan |
 | Q / E, middle-mouse drag | Rotate |
-| Mouse wheel | Zoom (12–700 m) |
+| Mouse wheel | Zoom (15–300 m, `RTSCamera.zoom_min` / `zoom_max`) |
+| **B** | Construction mode (see below) |
 | Left click / drag box, Shift+click | Select soldiers and vehicles / add to selection, Ctrl+A all soldiers |
 | Right click | Move order for the selected soldiers (grid formation at the clicked point) |
 | H | Halt the selected soldiers |
 | P, Enter or double-click | Possess the selected soldier (first person) |
 | **Tab** | Return to the soldier you last controlled |
+
+### Construction (WORLD-BASE-01, RTS)
+
+| Key | Construction mode |
+|---|---|
+| B | Enter / leave; pick a type in the panel (top right) |
+| Mouse, LMB | Building preview (green / red with reason), click builds |
+| R, Shift+R, Ctrl+wheel | Rotate 15° |
+| LMB on lines | Start, then one click per corner; click the start again to close a perimeter |
+| Enter, RMB, double-click | Finish the line; Backspace removes the last corner |
+| Shift / Ctrl (held) | 15° direction steps / no snapping |
+| X | Delete tool: click removes a building or one line module, Shift+click a whole line |
+| Esc | Cancel line → tool → leave |
+| F5 / F9 | Save / load construction (`user://saves/<world>/construction.json`) |
+
+Assets are generated in Blender by `tools/blender/structures/*.py` (sources in
+`assets/structures/blender/`). `benchmarks/wb01/run_base_test.sh --shots` runs the scripted
+construction checks on the 20 km world.
 
 The world exploration scene `scenes/world/test_2km.tscn` still runs on its own with the
 WORLD-TECH-01 free-roaming controller.

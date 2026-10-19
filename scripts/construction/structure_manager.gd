@@ -9,7 +9,10 @@
 ##   - collision: one StaticBody3D per cell within collision_radius of the observer
 ##     (the possessed soldier or the tactical focus, like DetailManager);
 ##   - placement checks (terrain slope and clearance, water / outside map, overlap with
-##     other structures, tree trunks and units), ray picking and navmesh obstacles.
+##     other structures, tree trunks and units), ray picking and navmesh obstacles;
+##   - grass clearing: footprints are painted into the in-memory grass exclusion mask
+##     (never saved to the world's mask file) so grass does not grow through floors and
+##     walls; removed structures restore the original texels.
 ## Not a streaming framework: it only toggles nodes per cell.
 class_name StructureManager
 extends Node3D
@@ -37,6 +40,10 @@ const MAX_REACH := 10.0
 ## Navmesh obstacles are this much larger on every side than the collision boxes: the
 ## 0.75 m navmesh raster otherwise lets paths clip wall corners by a few centimetres.
 @export var nav_margin := 0.3
+## Grass layer whose exclusion mask structures paint into (optional).
+@export var grass: GrassLayer
+## Grass-free margin around footprints (m), on top of half a mask texel.
+@export var grass_margin := 1.0
 
 var state: ConstructionState
 ## Returns the point physics should exist around (set by the game; default: camera).
@@ -52,6 +59,13 @@ var _dirty_cells := {}
 var _timer := 0.0
 var _tree_cache := {}
 var _tree_radii := {}
+## Original grass mask texels (copy of the world mask image) and the pending dirty area.
+var _mask_original: Image
+var _mask_dirty := Rect2()
+var _mask_has_dirty := false
+var _mask_timer := 0.0
+## Last cost of the deferred work (ms), for the HUD / tests.
+var timings := {"grass_ms": 0.0, "cells_ms": 0.0}
 
 
 func bind_state(p_state: ConstructionState) -> void:
@@ -71,6 +85,10 @@ func bind_state(p_state: ConstructionState) -> void:
 
 
 func _process(delta: float) -> void:
+	if _mask_has_dirty:
+		_mask_timer -= delta
+		if _mask_timer <= 0.0:
+			_update_grass_mask()
 	_timer -= delta
 	if _timer > 0.0 and _dirty_cells.is_empty():
 		return
@@ -368,6 +386,7 @@ func _on_added(s: StructureState) -> void:
 			_index[c] = []
 		_index[c].append(Vector2i(s.id, i))
 		_dirty_cells[c] = true
+	_grass_dirty(_rect_of(s))
 	area_changed.emit(_rect_of(s))
 
 
@@ -379,12 +398,14 @@ func _on_removed(s: StructureState) -> void:
 		if list.is_empty():
 			_index.erase(c)
 		_dirty_cells[c] = true
+	_grass_dirty(_rect_of(s))
 	area_changed.emit(_rect_of(s))
 
 
 func _on_changed(s: StructureState) -> void:
 	for i in s.instances.size():
 		_dirty_cells[_cell_of(s.instances[i].origin)] = true
+	_grass_dirty(_rect_of(s))
 	area_changed.emit(_rect_of(s))
 
 
@@ -396,6 +417,9 @@ func _on_cleared() -> void:
 	_bodies.clear()
 	_index.clear()
 	_dirty_cells.clear()
+	if _mask_original and grass and grass.mask:
+		grass.mask.image.copy_from(_mask_original)
+		grass.apply_mask()
 
 
 func _rect_of(s: StructureState) -> Rect2:
@@ -408,9 +432,85 @@ func _rect_of(s: StructureState) -> Rect2:
 	return r.grow(MAX_REACH)
 
 
+# --- Grass clearing ---------------------------------------------------------------
+
+func _grass_dirty(rect: Rect2, delay := 0.3) -> void:
+	if grass == null or grass.mask == null or grass.mask.image == null:
+		return
+	_mask_dirty = rect if not _mask_has_dirty else _mask_dirty.merge(rect)
+	_mask_has_dirty = true
+	_mask_timer = delay
+
+
+## Restores the dirty area from the original mask, repaints every structure there and
+## pushes the mask to the grass shader (one texture upload).
+func _update_grass_mask() -> void:
+	var t0 := Time.get_ticks_usec()
+	_mask_has_dirty = false
+	var mask := grass.mask
+	if _mask_original == null:
+		_mask_original = mask.image.duplicate()
+	var t := mask.texel_m
+	var area := _mask_dirty.grow(grass_margin + t)
+	var w := mask.image.get_width()
+	var h := mask.image.get_height()
+	var x0 := clampi(floori((area.position.x - mask.origin.x) / t), 0, w - 1)
+	var z0 := clampi(floori((area.position.y - mask.origin.y) / t), 0, h - 1)
+	var x1 := clampi(ceili((area.end.x - mask.origin.x) / t), 0, w - 1)
+	var z1 := clampi(ceili((area.end.y - mask.origin.y) / t), 0, h - 1)
+	mask.image.blit_rect(_mask_original, Rect2i(x0, z0, x1 - x0 + 1, z1 - z0 + 1), Vector2i(x0, z0))
+	var reach := grass_margin + t * 0.5
+	var seen := {}
+	for c in _cells_around(area.get_center(), maxf(area.size.x, area.size.y) * 0.5 + MAX_REACH):
+		for e: Vector2i in _index.get(c, []):
+			var s: StructureState = state.get_structure(e.x)
+			if s == null or (s.is_line() and s.is_removed(e.y)) or seen.has(e):
+				continue
+			seen[e] = true
+			var obb := _obb(StructureCatalog.get_def(s.type_id), s.instances[e.y])
+			var r: float = (obb[3] as Vector2).length() + reach
+			var oc: Vector2 = obb[0]
+			for pz in range(maxi(floori((oc.y - r - mask.origin.y) / t), 0), mini(ceili((oc.y + r - mask.origin.y) / t), h - 1) + 1):
+				for px in range(maxi(floori((oc.x - r - mask.origin.x) / t), 0), mini(ceili((oc.x + r - mask.origin.x) / t), w - 1) + 1):
+					var p := mask.origin + Vector2(px + 0.5, pz + 0.5) * t
+					if _obb_circle(obb, p, reach):
+						mask.image.set_pixel(px, pz, Color.WHITE)
+	# Closed perimeters (a line ending on its start) clear the whole compound.
+	for sid in _ids_in(area):
+		var s: StructureState = state.get_structure(sid)
+		if not s.is_line() or s.points.size() < 4 or Vector2(s.points[0].x - s.points[-1].x, s.points[0].z - s.points[-1].z).length() > 0.1:
+			continue
+		var poly := PackedVector2Array()
+		var lo := Vector2(INF, INF)
+		var hi := -lo
+		for p in s.points:
+			poly.append(Vector2(p.x, p.z))
+			lo = lo.min(Vector2(p.x, p.z))
+			hi = hi.max(Vector2(p.x, p.z))
+		for pz in range(maxi(floori((lo.y - mask.origin.y) / t), 0), mini(ceili((hi.y - mask.origin.y) / t), h - 1) + 1):
+			for px in range(maxi(floori((lo.x - mask.origin.x) / t), 0), mini(ceili((hi.x - mask.origin.x) / t), w - 1) + 1):
+				if Geometry2D.is_point_in_polygon(mask.origin + Vector2(px + 0.5, pz + 0.5) * t, poly):
+					mask.image.set_pixel(px, pz, Color.WHITE)
+	var t1 := Time.get_ticks_usec()
+	grass.apply_mask()
+	timings["grass_paint_ms"] = (t1 - t0) / 1000.0
+	timings["grass_ms"] = (Time.get_ticks_usec() - t0) / 1000.0
+
+
+## Ids of structures with an instance in the cells covering rect.
+func _ids_in(rect: Rect2) -> Array:
+	var ids := {}
+	for c in _cells_around(rect.get_center(), maxf(rect.size.x, rect.size.y) * 0.5 + MAX_REACH):
+		for e: Vector2i in _index.get(c, []):
+			ids[e.x] = true
+	return ids.keys()
+
+
 # --- Cells: visuals and collision ---------------------------------------------------
 
 func _refresh_cells() -> void:
+	var t0 := Time.get_ticks_usec()
+	var rebuilt := not _dirty_cells.is_empty()
 	var cam := get_viewport().get_camera_3d() if is_inside_tree() else null
 	var cam_p := cam.global_position if cam else Vector3.ZERO
 	var obs: Vector3 = observer_fn.call() if observer_fn.is_valid() else cam_p
@@ -437,6 +537,8 @@ func _refresh_cells() -> void:
 		if not _bodies.has(c):
 			_build_body(c)
 	_dirty_cells.clear()
+	if rebuilt:
+		timings["cells_ms"] = (Time.get_ticks_usec() - t0) / 1000.0
 
 
 func _instances_by_type(c: Vector2i) -> Dictionary:
@@ -595,6 +697,9 @@ func _blocked(def: StructureDef, obb: Array, ignore_id: int, _ignore_index: int)
 			var s: StructureState = state.get_structure(e.x)
 			if s == null or (s.is_line() and s.is_removed(e.y)):
 				continue
+			var o := s.instances[e.y].origin
+			if Vector2(o.x - c.x, o.z - c.y).length() > reach + MAX_REACH:
+				continue  # cheap reject before building the oriented box
 			var odef := StructureCatalog.get_def(s.type_id)
 			var same := def.connect_group != &"" and odef.connect_group == def.connect_group
 			var other := _obb(odef, s.instances[e.y], 0.2 if same else 0.0)

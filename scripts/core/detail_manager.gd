@@ -95,7 +95,7 @@ func _physics_process(delta: float) -> void:
 	if _rebake_in >= 0.0:
 		_rebake_in -= delta
 		if _rebake_in < 0.0:
-			_rebake()
+			_rebake(false)
 
 
 ## Structures changed inside rect: rebake the navmesh soon if it covers that area.
@@ -158,7 +158,9 @@ func _update(force: bool) -> void:
 		bodies_changed.emit(promoted, demoted)
 
 
-func _rebake() -> void:
+## full: re-centre on the observer with terrain collision (sync). Otherwise only the
+## obstacles changed (structures): same area, async bake, collision untouched.
+func _rebake(full := true) -> void:
 	var obstacles := []
 	var half := nav_area_size * 0.5
 	for u in sim.state.units.values():
@@ -168,6 +170,17 @@ func _rebake() -> void:
 	if structures:
 		obstacles.append_array(structures.nav_obstacles(observer, half))
 	var h: float = terrain.data.get_height(observer)
+	if not full and nav_center.is_finite():
+		obstacles = obstacles.slice(0, vehicles)
+		if structures:
+			obstacles.append_array(structures.nav_obstacles(nav_center, half))
+		last_bake = navigation.bake_area(navigation.area_center, nav_area_size, obstacles, true)
+		last_bake["vehicle_obstructions"] = vehicles
+		last_bake["structure_obstructions"] = obstacles.size() - vehicles
+		_rebake_in = -1.0
+		bake_count += 1
+		zone_rebaked.emit(last_bake)
+		return
 	last_bake = navigation.bake_area(Vector3(observer.x, 0.0 if is_nan(h) else h, observer.z), nav_area_size, obstacles)
 	last_bake["vehicle_obstructions"] = vehicles
 	last_bake["structure_obstructions"] = obstacles.size() - vehicles

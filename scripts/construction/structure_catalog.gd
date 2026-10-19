@@ -66,15 +66,25 @@ static func _first_mesh_instance(n: Node) -> MeshInstance3D:
 	return null
 
 
-## Wire mesh, chain-link and netting surfaces are alpha-tested textures; glTF imports may
-## arrive as alpha blend, which sorts badly on long fence lines. Force scissor + both sides.
+## Wire mesh and chain-link are alpha blended, the camouflage net alpha tested; both sides.
+## Vertex colours (baked ground dirt) always multiply the albedo.
 static func _tune_materials(mesh: Mesh) -> void:
 	for i in mesh.get_surface_count():
 		var m := mesh.surface_get_material(i) as BaseMaterial3D
 		if m == null:
 			continue
+		# Ground dirt / contact darkening is baked into vertex colours (Blender ground_ao).
+		if mesh.surface_get_format(i) & Mesh.ARRAY_FORMAT_COLOR:
+			m.vertex_color_use_as_albedo = true
 		var n := m.resource_name.to_lower()
-		if n.contains("mesh") or n.contains("chainlink") or n.contains("net") or n.contains("wire"):
+		if n in ["shelterfabric", "kspanend", "geotextile"]:
+			m.cull_mode = BaseMaterial3D.CULL_DISABLED  # single-sheet surfaces seen from both sides
+		if n in ["hescomesh", "chainlink"]:
+			# Thin wires: alpha blending, so distant mips fade to a grey haze like real
+			# mesh instead of vanishing (alpha scissor loses wires under 1 px).
+			m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		elif n == "camonet":
 			m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 			m.alpha_scissor_threshold = 0.5
 			m.cull_mode = BaseMaterial3D.CULL_DISABLED

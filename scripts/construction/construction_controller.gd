@@ -49,6 +49,9 @@ var message := ""
 ## Scripted tests point the tools here instead of at the OS mouse (INF = real mouse).
 var mouse_override := Vector2.INF
 var _message_until := 0.0
+var _check_key := []
+## Bumped on every construction change so cached line checks are redone.
+var _state_version := 0
 
 var _ghost: MeshInstance3D
 var _line_ghost: MultiMeshInstance3D
@@ -109,6 +112,12 @@ func _ready() -> void:
 func set_active(on: bool) -> void:
 	if on == active:
 		return
+	var st := structures.state
+	if not st.structure_changed.is_connected(_on_state_changed):
+		st.structure_added.connect(_on_state_changed)
+		st.structure_removed.connect(_on_state_changed)
+		st.structure_changed.connect(_on_state_changed)
+		st.cleared.connect(_on_state_changed)
 	active = on
 	cancel()
 	tool = Tool.NONE
@@ -121,6 +130,10 @@ func set_active(on: bool) -> void:
 	set_process(on)
 	_update_preview()
 	mode_changed.emit(on)
+
+
+func _on_state_changed(_a = null) -> void:
+	_state_version += 1
 
 
 func select_type(id: StringName) -> void:
@@ -147,6 +160,7 @@ func cancel() -> void:
 	line_end = Vector3.INF
 	check = {}
 	snap = {}
+	_check_key = []
 	_update_preview()
 
 
@@ -460,6 +474,11 @@ func _refresh_check() -> void:
 		line_end = ModularLine.snap_end(def, last, cursor, angle_snap_deg if Input.is_key_pressed(KEY_SHIFT) else 0.0, ref)
 	var pts := line_points.duplicate()
 	pts.append(line_end)
+	# The cursor often rests: validate a line only when its points changed.
+	var key := [def.id, pts, structures.state.count(), _state_version]
+	if key == _check_key:
+		return
+	_check_key = key
 	var total := 0
 	for i in pts.size() - 1:
 		total += ModularLine.segment_modules(def, pts[i], pts[i + 1])

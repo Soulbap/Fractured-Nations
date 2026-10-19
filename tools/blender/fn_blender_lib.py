@@ -165,7 +165,8 @@ def export_glb(obj, path):
     bpy.ops.export_scene.gltf(filepath=path, export_format="GLB", use_selection=True, export_apply=True,
                               export_yup=True, export_materials="EXPORT", export_normals=True,
                               export_texcoords=True, export_animations=False, export_skins=False,
-                              export_cameras=False, export_lights=False)
+                              export_cameras=False, export_lights=False,
+                              **({"export_vertex_color": "ACTIVE"} if bpy.app.version >= (4, 2, 0) and obj.data.color_attributes else {}))
     return os.path.getsize(path)
 
 

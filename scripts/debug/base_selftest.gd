@@ -137,6 +137,17 @@ func run(args: PackedStringArray) -> void:
 	var corners := [base + Vector3(-h, 0, -h), base + Vector3(h, 0, -h), base + Vector3(h, 0, h), base + Vector3(-h, 0, h), base + Vector3(-h, 0, -h)]
 	var perim: StructureState = await _draw_line(&"hesco", corners, false)
 	var perim_info := _line_info(perim)
+	# Cost of a placement alone (camera at rest, so no re-centre bake from camera moves):
+	# cell rebuild, grass mask update and the debounced async navmesh bake.
+	await _seconds(2.0)
+	var probe := cs.add_line(&"concrete_barrier", PackedVector3Array([base + Vector3(-20, 0, 10), base + Vector3(-11, 0, 10)]))
+	var hitch := await _worst_frame(1.5)
+	perim_info["placement_worst_frame_ms"] = hitch
+	perim_info["placement_timings"] = sm.timings.duplicate()
+	perim_info["placement_nav"] = {"bake_ms": demo.detail.last_bake.get("bake_ms", -1), "async": demo.detail.last_bake.get("async", false),
+		"async_done_ms": demo.detail.last_bake.get("async_done_ms", -1)}
+	cs.remove(probe.id)
+	await _seconds(1.0)
 	_log("hesco_perimeter", perim_info)
 	_expect(perim != null and perim.points.size() == 5 and perim.points[0].is_equal_approx(perim.points[4]), "HESCO perimeter did not close on its start")
 	_expect(perim != null and perim_info.max_joint_error_m < 0.01 and perim_info.corner_gap_m < 0.01, "HESCO cells do not meet exactly (joint %.3f, corner %.3f)" % [perim_info.get("max_joint_error_m", -1), perim_info.get("corner_gap_m", -1)])
@@ -257,6 +268,7 @@ func run(args: PackedStringArray) -> void:
 		plen += path[i].distance_to(path[i + 1])
 	var crosses := _path_crosses(path, perim)
 	_log("navigation", {"structure_obstructions": detail.last_bake.get("structure_obstructions", 0), "bakes": detail.bake_count,
+		"bake_ms": detail.last_bake.get("bake_ms", -1), "polygons": detail.last_bake.get("polygons", -1),
 		"path_points": path.size(), "path_len_m": snappedf(plen, 0.1), "straight_m": snappedf(_flat(inside, outside), 0.1), "path_crosses_wall": crosses})
 	_expect(detail.last_bake.get("structure_obstructions", 0) > 100, "structures not carved into the navmesh")
 	_expect(path.size() > 2 and plen > _flat(inside, outside) + 3.0 and not crosses, "path from inside the base does not go around the wall")
@@ -275,14 +287,6 @@ func run(args: PackedStringArray) -> void:
 	if wb:
 		for q in wb.nav.get_current_navigation_path():
 			wpath.append([snappedf(q.x - base.x, 0.1), snappedf(q.z - base.z, 0.1)])
-	var gap_hits := []
-	for gx in [-2.0, -1.0, 0.0, 1.0, 2.0]:
-		var gp := demo.on_ground(base.x + gx, base.z + h - 3.0, 0.8)
-		var space := demo.get_viewport().world_3d.direct_space_state
-		var q := PhysicsRayQueryParameters3D.create(gp, gp + Vector3(0, 0, 6.0))
-		var hit := space.intersect_ray(q)
-		gap_hits.append(str(hit.collider.name) + "@" + str(snappedf(hit.position.z - base.z, 0.01)) if not hit.is_empty() else "-")
-	_log("gap_rays", {"hits": gap_hits, "vel": [walker.velocity.x, walker.velocity.z], "body_pos": [wb.global_position.x - base.x, wb.global_position.y, wb.global_position.z - base.z] if wb else []})
 	_log("soldier_around_wall", {"pos_rel": [snappedf(walker.position.x - base.x, 0.1), snappedf(walker.position.z - base.z, 0.1)], "agent_path": wpath, "has_body": walker.has_body, "state": walker.move_state, "end_error_m": snappedf(_flat(walker.position, outside), 0.01),
 		"frames_inside_hesco": in_wall, "seconds": (Time.get_ticks_msec() - t0) / 1000.0})
 	_expect(walker.has_body and walker.move_state == UnitState.MoveState.ARRIVED and in_wall == 0, "soldier did not walk around the HESCO wall to the target")
@@ -344,9 +348,9 @@ func run(args: PackedStringArray) -> void:
 			_aim(body, f_end + Vector3(0, 1.2, 0))
 			await _frames(60)
 			_shot("fps_fence_gate")
-			body.teleport(demo.on_ground(base.x + h + 22.0, base.z - 30.0, 0.3), 0.0)
+			body.teleport(demo.on_ground(base.x + h + 12.0, base.z - 25.0, 0.3), 0.0)
 			await _physics(5)
-			_aim(body, base + Vector3(h + 22, 2.0, -12))
+			_aim(body, base + Vector3(h + 22, 2.0, -14))
 			await _frames(60)
 			_shot("fps_vehicle_shelter")
 			body.teleport(demo.on_ground(base.x - 18.0, base.z - 5.0, 0.3), 0.0)
@@ -417,6 +421,16 @@ func run(args: PackedStringArray) -> void:
 
 
 # --- Construction through the UI ---------------------------------------------------
+
+func _worst_frame(seconds: float) -> float:
+	var worst := 0.0
+	var t_end := Time.get_ticks_msec() + seconds * 1000.0
+	while Time.get_ticks_msec() < t_end:
+		var t := Time.get_ticks_usec()
+		await tree.process_frame
+		worst = maxf(worst, (Time.get_ticks_usec() - t) / 1000.0)
+	return snappedf(worst, 0.1)
+
 
 ## Selects a type, points the cursor at pos, presses R `rotations` times and clicks.
 func _place(id: StringName, pos: Vector3, rotations := 0, expect_ok := true) -> StructureState:

@@ -9,8 +9,11 @@ var _delete: Button
 
 
 func _ready() -> void:
-	set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	position = Vector2(12, 12)
+	# Top right: the left side belongs to the F3 overlay, the bottom to the HUD text.
+	set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	offset_right = -12
+	offset_top = 12
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.06, 0.07, 0.06, 0.82)

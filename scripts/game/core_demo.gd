@@ -132,6 +132,7 @@ func _setup_construction() -> void:
 	structures.vegetation = vegetation
 	structures.sim = sim
 	structures.map_half_size = config.half_size()
+	structures.grass = world.get_node_or_null("Grass") as GrassLayer
 	structures.bind_state(sim.state.construction)
 	if construction:
 		construction.structures = structures

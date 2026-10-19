@@ -18,16 +18,31 @@ extends NavigationRegion3D
 var area_center := Vector3.ZERO
 var area_size := 0.0
 var last_bake := {}
+## Async bakes still running.
+var _pending := 0
+var _faces := PackedVector3Array()
+var _faces_key := []
 
 
-## obstacles: [{position: Vector3, yaw: float, size: Vector2}] (vehicles).
-func bake_area(center: Vector3, size: float, obstacles: Array = []) -> Dictionary:
+func has_pending_bake() -> bool:
+	return _pending > 0
+
+
+## obstacles: [{position: Vector3, yaw: float, size: Vector2}] (vehicles, structures).
+## async: bake on a worker thread and swap the navmesh in when done (the previous one
+## stays active meanwhile); used for structure changes, which must not stall a frame.
+func bake_area(center: Vector3, size: float, obstacles: Array = [], async := false) -> Dictionary:
 	area_center = center
 	area_size = size
 	var t0 := Time.get_ticks_usec()
 	var half := size * 0.5
 	var aabb := AABB(Vector3(center.x - half, -2000.0, center.z - half), Vector3(size, 6000.0, size))
-	var faces: PackedVector3Array = terrain.generate_nav_mesh_source_geometry(aabb, false)
+	# Terrain does not change at runtime: reuse the faces when only obstacles changed.
+	var key := [center.x, center.z, size]
+	if key != _faces_key:
+		_faces = terrain.generate_nav_mesh_source_geometry(aabb, false)
+		_faces_key = key
+	var faces := _faces
 	var src := NavigationMeshSourceGeometryData3D.new()
 	src.add_faces(faces, Transform3D.IDENTITY)
 	var trees := _add_tree_obstructions(src, center, half)
@@ -45,10 +60,22 @@ func bake_area(center: Vector3, size: float, obstacles: Array = []) -> Dictionar
 	nm.detail_sample_distance = 6.0
 	nm.detail_sample_max_error = 1.0
 	nm.filter_walkable_low_height_spans = true
-	NavigationServer3D.bake_from_source_geometry_data(nm, src)
-	navigation_mesh = nm
+	var t_src := Time.get_ticks_usec()
+	if async:
+		_pending += 1
+		# The callback may come from the worker thread: apply on the main thread.
+		NavigationServer3D.bake_from_source_geometry_data_async(nm, src, func() -> void:
+			(func() -> void:
+				navigation_mesh = nm
+				_pending -= 1
+				last_bake["async_done_ms"] = (Time.get_ticks_usec() - t0) / 1000.0
+				last_bake["polygons"] = nm.get_polygon_count()).call_deferred())
+	else:
+		NavigationServer3D.bake_from_source_geometry_data(nm, src)
+		navigation_mesh = nm
 	last_bake = {"faces": faces.size() / 3, "tree_obstructions": trees, "vehicle_obstructions": obstacles.size(),
 		"polygons": nm.get_polygon_count(), "bake_ms": (Time.get_ticks_usec() - t0) / 1000.0,
+		"source_ms": (t_src - t0) / 1000.0, "async": async,
 		"area_m": size, "center": [center.x, center.z]}
 	return last_bake
 

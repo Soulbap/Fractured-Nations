@@ -1,0 +1,319 @@
+{
+  "base_site": {
+    "center": [
+      -5508.6,
+      40.9,
+      5755.4
+    ],
+    "score": 0.82
+  },
+  "blocked_sections": {
+    "line": {
+      "built": true,
+      "built_modules": 44,
+      "corner_gap_m": 0.0,
+      "length_m": 53.0,
+      "max_joint_error_m": 0.0004,
+      "modules": 51,
+      "points": 2,
+      "removed": 7,
+      "type": "hesco"
+    },
+    "preview_blocked_modules": 7
+  },
+  "buildings_flat": {
+    "barracks_yaw_deg": 90.0,
+    "placed": [
+      "cp",
+      "b1",
+      "b2",
+      "b3",
+      "storage",
+      "tower1",
+      "tower2"
+    ],
+    "structures": 7
+  },
+  "cancel_delete": {
+    "delete_hover_found": true,
+    "deleted": true,
+    "esc_cancelled_tool": true,
+    "structures": 7
+  },
+  "concrete_line": {
+    "built": true,
+    "built_modules": 5,
+    "corner_gap_m": 0.0,
+    "length_m": 15.0,
+    "max_joint_error_m": 0.0,
+    "modules": 5,
+    "points": 3,
+    "removed": 0,
+    "type": "concrete_barrier"
+  },
+  "construction_mode": {
+    "active": true,
+    "base_center": [
+      -5508.6,
+      5755.4
+    ],
+    "dist_to_site_a_m": 259.999847412109,
+    "panel_visible": true,
+    "rts_selection_active": false
+  },
+  "failures": [],
+  "fence_gate_snap": {
+    "fence1": {
+      "built": true,
+      "built_modules": 27,
+      "corner_gap_m": 0.0,
+      "length_m": 81.0,
+      "max_joint_error_m": 0.0,
+      "modules": 27,
+      "points": 3,
+      "removed": 0,
+      "type": "fence"
+    },
+    "fence2": {
+      "built": true,
+      "built_modules": 14,
+      "corner_gap_m": 0.0,
+      "length_m": 42.0,
+      "max_joint_error_m": 0.0005,
+      "modules": 14,
+      "points": 2,
+      "removed": 0,
+      "type": "fence"
+    },
+    "fence2_start_to_gate_post_m": 0.0,
+    "gate_post_to_fence_end_m": 0.0,
+    "gate_snapped": true,
+    "shelter": true
+  },
+  "fps_collision": {
+    "barracks_roof": true,
+    "collision_cells": 4,
+    "hesco_ray": true,
+    "passed_wall": false,
+    "stopped_at_wall_z": 0.89,
+    "tower_stairs": true
+  },
+  "hesco_perimeter": {
+    "built": true,
+    "built_modules": 264,
+    "corner_gap_m": 0.0005,
+    "length_m": 279.88,
+    "max_joint_error_m": 0.001,
+    "modules": 264,
+    "placement_nav": {
+      "async": true,
+      "async_done_ms": 103.293,
+      "bake_ms": 4.25
+    },
+    "placement_timings": {
+      "cells_ms": 27.272,
+      "grass_ms": 4.642,
+      "grass_paint_ms": 2.939
+    },
+    "placement_worst_frame_ms": 29.1,
+    "points": 5,
+    "removed": 0,
+    "type": "hesco"
+  },
+  "long_fence": {
+    "built": true,
+    "built_modules": 50,
+    "corner_gap_m": 0.0,
+    "length_m": 150.0,
+    "max_joint_error_m": 0.0,
+    "modules": 50,
+    "points": 2,
+    "removed": 0,
+    "type": "fence"
+  },
+  "navigation": {
+    "bake_ms": 4.255,
+    "bakes": 6,
+    "path_crosses_wall": false,
+    "path_len_m": 31.4,
+    "path_points": 9,
+    "polygons": 1397,
+    "straight_m": 27.0,
+    "structure_obstructions": 375
+  },
+  "navigation_after_load": {
+    "structure_obstructions": 375
+  },
+  "pass": true,
+  "performance": {
+    "fps_in_base": {
+      "draw_calls": 399.0,
+      "frame_ms_avg": 1.48,
+      "frame_ms_max": 2.15,
+      "frame_ms_p99": 2.13,
+      "frames": 240,
+      "nav_ms": 0.14,
+      "physics_ms": 42.57
+    },
+    "rts_150m": {
+      "draw_calls": 391.0,
+      "frame_ms_avg": 1.87,
+      "frame_ms_max": 2.64,
+      "frame_ms_p99": 2.51,
+      "frames": 240,
+      "nav_ms": 0.14,
+      "physics_ms": 42.57
+    },
+    "rts_300m": {
+      "draw_calls": 305.0,
+      "frame_ms_avg": 1.88,
+      "frame_ms_max": 2.7,
+      "frame_ms_p99": 2.6,
+      "frames": 240,
+      "nav_ms": 0.19,
+      "physics_ms": 0.75
+    },
+    "structures": {
+      "collision_cells": 4,
+      "collision_shapes": 392,
+      "drawn_instances": 364,
+      "indexed_cells": 4,
+      "instances": 364,
+      "multimeshes": 16,
+      "structures": 14,
+      "visible_cells": 4
+    }
+  },
+  "rts_zoom_limits": {
+    "reached_max": 300.0,
+    "reached_min": 15.0,
+    "zoom_max_property": 300.0,
+    "zoom_min_property": 15.0
+  },
+  "save_load": {
+    "bytes": 2637,
+    "cleared_structures": 0,
+    "identical_after_load": true,
+    "loaded": {
+      "collision_cells": 4,
+      "collision_shapes": 392,
+      "drawn_instances": 364,
+      "indexed_cells": 4,
+      "instances": 364,
+      "multimeshes": 16,
+      "structures": 14,
+      "visible_cells": 4
+    },
+    "max_instance_offset_m": 0.0007,
+    "path": "C:/Users/Hafnor/AppData/Roaming/Godot/app_userdata/Fractured Nations/saves/real_20km/construction.json"
+  },
+  "single_module_removal": {
+    "line_removed_list": [
+      164,
+      165,
+      166,
+      167,
+      168
+    ],
+    "line_still_exists": true,
+    "removed": 5,
+    "targets": [
+      164,
+      165,
+      166,
+      167,
+      168
+    ]
+  },
+  "slopes": {
+    "moderate_built": true,
+    "moderate_slope_deg": 3.2,
+    "moderate_spot": [
+      -5627.6,
+      40.9,
+      5771.0
+    ],
+    "steep_built": false,
+    "steep_reason": "too steep (15° > 7°)",
+    "steep_slope_deg": 14.5,
+    "steep_spot": [
+      -3758.6,
+      41.8,
+      8786.4
+    ]
+  },
+  "soldier_around_wall": {
+    "agent_path": [
+      [
+        8.0,
+        26.0
+      ],
+      [
+        1.1,
+        33.4
+      ],
+      [
+        1.1,
+        33.4
+      ],
+      [
+        0.4,
+        34.9
+      ],
+      [
+        1.0,
+        36.3
+      ],
+      [
+        1.0,
+        36.4
+      ],
+      [
+        1.1,
+        36.6
+      ],
+      [
+        3.7,
+        42.8
+      ],
+      [
+        8.0,
+        53.0
+      ]
+    ],
+    "end_error_m": 1.29,
+    "frames_inside_hesco": 0,
+    "has_body": true,
+    "pos_rel": [
+      7.5,
+      51.8
+    ],
+    "seconds": 6.668,
+    "state": 2
+  },
+  "travel_and_return": {
+    "away": {
+      "collision_cells": 0,
+      "collision_shapes": 0,
+      "drawn_instances": 0,
+      "indexed_cells": 4,
+      "instances": 364,
+      "multimeshes": 0,
+      "structures": 14,
+      "visible_cells": 0
+    },
+    "away_dist_m": 7806.78662109375,
+    "back": {
+      "collision_cells": 4,
+      "collision_shapes": 392,
+      "drawn_instances": 364,
+      "indexed_cells": 4,
+      "instances": 364,
+      "multimeshes": 16,
+      "structures": 14,
+      "visible_cells": 4
+    },
+    "instance_transforms_identical": true,
+    "records_identical": true
+  }
+}
