@@ -1,0 +1,8 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.351 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3070
+
+WARNING: instance_reset_physics_interpolation() is deprecated.
+   at: _instance_reset_physics_interpolation_bind_compat_104269 (servers/rendering/rendering_server.compat.inc:62)
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
+DIAG load: {"after_10_frames":{"buffer_mem_mb":35.3632049560547,"draw_calls":331.0,"objects":7204.0,"physics_process_ms":0.357,"primitives":1890428.0,"static_mem_mb":1503.2642364502,"texture_mem_mb":1492.8818359375,"video_mem_mb":1548.25816345215},"first_frame_msec_since_start":6077}
+DIAG fps-test: {"far_corner":{"horizontal_speed_mps":4.31494140625,"on_floor_ratio":1.0,"position":"(10200.0, 49.73598, 10191.37)","vertical_change_m":0.237869262695313},"jump":{"apex_height_m":1.21598434448242,"landed":true},"landing":{"feet_minus_terrain_m":0.25396728515625,"on_floor":true},"moderate_slope":{"horizontal_speed_mps":4.15333557128906,"max_walkable_deg":46.0,"on_floor_ratio":1.0,"slope_deg":15.3914565010918,"vertical_change_m":2.31056594848633},"sprint":{"horizontal_speed_mps":6.90369939804077,"on_floor_ratio":0.8,"vertical_change_m":-0.397373199462891},"tree_collision":{"active_colliders":70,"blocked":true,"closest_approach_m":0.799250721931458,"collider":"():<CapsuleShape3D#-9223370670283415980> at (168.7665, 53.62389, -1154.156)","final_center_distance_m":6.50743389129639,"nearest_collider_to_tree_m":0.0,"start":"(162.7665, 49.97016, -1154.156)","tree_at":"(168.7665, 50.63528, -1154.156)"},"walk":{"horizontal_speed_mps":3.59157109260559,"on_floor_ratio":0.808333333333333,"vertical_change_m":-0.515838623046875}}

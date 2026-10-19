@@ -1,0 +1,152 @@
+{
+  "colliders": {
+    "active_colliders": 74,
+    "cells_indexed": 2,
+    "enabled_shapes": 74,
+    "first_index_ms": 6.282
+  },
+  "determinism": {
+    "cell": [
+      -3,
+      -4
+    ],
+    "instances": 85,
+    "matches_stored_file": true,
+    "repeat_identical": true
+  },
+  "failures": [],
+  "grass_altitude": {
+    "cutoff_m": 90.0,
+    "particles": 57600,
+    "sequence_height_active_measured": [
+      [
+        1.8,
+        true,
+        1.8
+      ],
+      [
+        60.0,
+        true,
+        60.0
+      ],
+      [
+        120.0,
+        false,
+        120.0
+      ],
+      [
+        600.0,
+        false,
+        600.0
+      ],
+      [
+        70.0,
+        true,
+        70.0
+      ],
+      [
+        1.8,
+        true,
+        1.8
+      ]
+    ]
+  },
+  "mask": {
+    "excluded_fraction": 0.00168228149414063,
+    "open_clear": 400,
+    "open_samples": 400,
+    "pad_excluded": 9,
+    "pad_samples": 9,
+    "road_excluded": 3105,
+    "road_samples": 3105,
+    "size_px": 4096,
+    "texel_m": 5.0
+  },
+  "pass": true,
+  "streamer_fps": {
+    "active_out_of_range": 0,
+    "cold_start": {
+      "settle_frames": 22,
+      "settle_ms": 255.93,
+      "worst_activation_ms": 0.56,
+      "worst_frame_ms": 30.333
+    },
+    "mmi_upper_bound": 1944,
+    "settle_frames": 23,
+    "settle_ms": 58.317,
+    "stats": {
+      "active_cells": 195,
+      "active_instances": 25482,
+      "active_mmis": 524,
+      "loaded_chunks": 6,
+      "loading_chunks": 0,
+      "queued": 0,
+      "worst_activation_ms": 0.57
+    },
+    "worst_frame_ms": 17.295
+  },
+  "streamer_jump": {
+    "first_frame_ms": 17.559,
+    "old_cells_out_of_range_still_active": 0,
+    "settle_frames": 23,
+    "settle_ms": 55.723,
+    "stats": {
+      "active_cells": 201,
+      "active_instances": 27514,
+      "active_mmis": 528,
+      "loaded_chunks": 4,
+      "loading_chunks": 0,
+      "queued": 0,
+      "worst_activation_ms": 0.41
+    },
+    "worst_frame_ms": 17.559
+  },
+  "streamer_move": {
+    "frames": 180,
+    "grass_active": true,
+    "speed_m_per_frame": 1.0,
+    "stats": {
+      "active_cells": 197,
+      "active_instances": 27331,
+      "active_mmis": 524,
+      "loaded_chunks": 9,
+      "loading_chunks": 0,
+      "queued": 0,
+      "worst_activation_ms": 0.35
+    },
+    "worst_frame_ms": 4.258
+  },
+  "streamer_switch": {
+    "grass_active_at_rts600": false,
+    "round_trips": 6,
+    "stats_at_rts600": {
+      "active_cells": 125,
+      "active_instances": 16150,
+      "active_mmis": 247,
+      "loaded_chunks": 9,
+      "loading_chunks": 0,
+      "queued": 0,
+      "worst_activation_ms": 0.37
+    },
+    "worst_frame_ms": 13.849,
+    "worst_settle_frames": 23
+  },
+  "trees": {
+    "cells_checked": 1984,
+    "chunks": 400,
+    "in_base_pads": 0,
+    "max_instances_per_cell": 378,
+    "min_road_distance_m": 9.0186882019043,
+    "on_grass_mask": 6,
+    "per_mesh": {
+      "1": 136266,
+      "2": 171229,
+      "3": 56251,
+      "4": 1304,
+      "5": 1308,
+      "6": 1320
+    },
+    "trees_checked": 307495,
+    "within_road_clearance": 0
+  }
+}

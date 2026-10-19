@@ -1,0 +1,1 @@
+﻿{"wall_s":24.5,"exit_code":0,"peak_working_set_mb":2103,"peak_gpu_dedicated_mb":1744,"peak_gpu_shared_mb":143,"samples":10,"args":"--path . --resolution 1600x900 --log-file \"C:\\Users\\Hafnor\\Desktop\\Game Dev\\fractured-nations\\benchmarks\\wt02_suite\\run1\\v2_fps_real_20km.log\" res://scenes/world/real_20km.tscn -- --fps-test"}

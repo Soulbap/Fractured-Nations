@@ -7,13 +7,15 @@
 ##       [--particle-radius=60] [--particle-spacing=0.5] [--max-vram-mb=7400]
 ##
 ## Scenarios run heaviest first, because layers can only be removed in-process:
-##   full       everything the map contains (terrain, roads, all instanced vegetation)
-##   trees      stored grass removed (trees, bushes, rocks remain)
-##   particles  trees + Terrain3D camera-following GPU particle grass
-##   roads      all vegetation removed (terrain + roads)
+##   full       everything (terrain, roads, streamed trees/bushes/rocks, particle grass)
+##   trees      grass layer off (streamed trees, bushes, rocks remain)
+##   grass      vegetation streamer off, particle grass on
+##   particles  alias of full (kept for comparability with WORLD-TECH-01 tags)
+##   roads      all vegetation off (terrain + roads)
 ##   terrain    roads removed (terrain only)
 ## Each scenario visits the stations with a short warm-up and measurement window and
-## finishes with a camera-jump test. Output: res://benchmarks/raw/bench_<tag>.json
+## finishes with a camera-jump test and an FPS<->RTS switch test.
+## Output: res://benchmarks/raw/bench_<tag>.json
 ##
 ## The longer camera-route benchmark (WorldDiagnostics --benchmark) is kept as an
 ## optional regression test.
@@ -32,6 +34,8 @@ var cfg: WorldConfig
 var cam: Camera3D
 var report := {}
 var particles: Node3D
+var veg: VegetationStreamer
+var grass: GrassLayer
 var errors: ErrorCounter
 var _last_usec := 0
 var _scenario := ""
@@ -109,6 +113,8 @@ func _run() -> void:
 	if pcam:
 		pcam.current = false
 	world.get_node("WorldDiagnostics").visible = false
+	veg = world.get_node_or_null("Vegetation")
+	grass = world.get_node_or_null("Grass")
 	cam = Camera3D.new()
 	cam.far = 30000.0
 	cam.fov = 70.0
@@ -159,6 +165,8 @@ func _run() -> void:
 				r.stations[st.name] = {"aborted_during": true, "partial": res}
 		if _abort == "":
 			r.jumps = await _jumps()
+		if _abort == "":
+			r.switch = await _switch()
 		r.aborted = _abort
 		r.elapsed_s = (Time.get_ticks_usec() - _sc_start_usec) / 1e6
 		var e_end: Dictionary = errors.take()
@@ -189,32 +197,45 @@ func _map_size() -> float:
 
 func _apply(sc: String) -> void:
 	match sc:
-		"full":
-			pass
-		"trees":
-			_strip([0])
-		"particles":
-			_strip([0])
-			if particles == null:
+		"full", "particles":
+			_layers(true, true)
+			if sc == "particles" and grass == null and particles == null:
+				# Legacy scene without a GrassLayer: Terrain3D's particle example.
+				_strip([0])
 				particles = load(PARTICLES_SCENE).instantiate()
 				terrain.add_child(particles)
 				var radius := float(opts.get("particle-radius", 60.0))
 				particles.grid_width = 5
 				particles.cell_width = clampf(radius * 2.0 / 5.0, 8.0, 256.0)
 				particles.instance_spacing = float(opts.get("particle-spacing", 0.5))
+		"trees":
+			_strip([0])
+			_layers(true, false)
+		"grass":
+			_strip([1, 2, 3, 4, 5, 6])
+			_layers(false, true)
 		"roads":
 			_strip([0, 1, 2, 3, 4, 5, 6])
+			_layers(false, false)
 			if particles:
 				particles.free()
 				particles = null
 		"terrain":
 			_strip([0, 1, 2, 3, 4, 5, 6])
+			_layers(false, false)
 			if particles:
 				particles.free()
 				particles = null
 			var roads := world.get_node_or_null("Roads")
 			if roads:
 				roads.free()
+
+
+func _layers(trees_on: bool, grass_on: bool) -> void:
+	if veg:
+		veg.enabled = trees_on
+	if grass:
+		grass.enabled = grass_on
 
 
 func _strip(ids: Array) -> void:
@@ -298,7 +319,36 @@ func _station(st: Dictionary) -> Dictionary:
 	r.objects_in_frame = Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME)
 	r.primitives = Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)
 	r.video_mem_mb = Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0
+	if veg:
+		r.vegetation = veg.get_stats()
+	if grass:
+		r.grass = {"active": grass.active, "camera_height_m": snappedf(grass.camera_height, 0.1),
+			"particles": grass.particle_count() if grass.active else 0}
 	return r
+
+
+## Rapid FPS <-> RTS switching: 6 round trips between the FPS center station and the
+## RTS 600 m station, worst frame and frames until the vegetation streamer settled.
+func _switch() -> Dictionary:
+	var c := _road_center()
+	var ground := {"pos": c + Vector3(0, 1.8, 0), "look": c + Vector3(60, 0.5, 8), "ground": true}
+	var rts := {"pos": c + Vector3(0, 600, 420), "look": c, "ground": false}
+	var worst := 0.0
+	var worst_settle := 0
+	for i in 12:
+		_place(ground if i % 2 == 0 else rts)
+		var frames := 0
+		for k in 90:
+			_last_usec = Time.get_ticks_usec()
+			await process_frame
+			worst = maxf(worst, (Time.get_ticks_usec() - _last_usec) / 1000.0)
+			frames += 1
+			if _check():
+				return {"aborted": true}
+			if veg == null or (veg.is_settled() and k >= 2):
+				break
+		worst_settle = maxi(worst_settle, frames)
+	return {"round_trips": 6, "worst_ms": worst, "worst_settle_frames": worst_settle}
 
 
 ## Unit switching: teleport between 8 spots across the whole map and record the worst
@@ -407,7 +457,7 @@ func _array_mb(img: Image, layers: int) -> float:
 func _resources() -> Dictionary:
 	var mmi := 0
 	var inst_total := 0
-	for n in _all(terrain):
+	for n in _all(world):
 		if n is MultiMeshInstance3D:
 			mmi += 1
 			var mm: MultiMesh = n.multimesh
@@ -417,6 +467,8 @@ func _resources() -> Dictionary:
 	if particles:
 		for n in particles.find_children("*", "GPUParticles3D", true, false):
 			gp += (n as GPUParticles3D).amount
+	if grass and grass.active:
+		gp += grass.particle_count()
 	return {
 		"multimesh_instance_nodes": mmi, "multimesh_instances_total": inst_total,
 		"gpu_particles": gp,
@@ -458,6 +510,9 @@ func _brief(r: Dictionary) -> Dictionary:
 			b[st] = "aborted"
 	if r.has("jumps"):
 		b.jump_max_ms = snappedf(r.jumps.max_ms, 0.1)
+	if r.has("switch") and r.switch.has("worst_ms"):
+		b.switch_max_ms = snappedf(r.switch.worst_ms, 0.1)
+		b.switch_settle_frames = r.switch.worst_settle_frames
 	return b
 
 

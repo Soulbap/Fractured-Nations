@@ -178,9 +178,19 @@ func _walk_into_tree() -> Dictionary:
 		if d < nearest_shape:
 			nearest_shape = d
 			shape_info = "%s at %s" % [cs.shape, cs.global_position]
-	var walk := await _move_for(Vector2(0, 1), false, 3.0)
+	# Walk at the trunk for 3 s and track the closest approach: blocked means the body
+	# came close (< 1.5 m, trunk + body radius) but never entered the trunk (> 0.3 m).
+	# On slopes the body may slide around the trunk and continue; that still counts.
+	var min_dist := INF
+	player.move_intent = Vector2(0, 1)
+	for i in int(3.0 * Engine.physics_ticks_per_second):
+		await tree.physics_frame
+		var q := player.global_position
+		min_dist = minf(min_dist, Vector2(q.x - target.x, q.z - target.z).length())
+	player.move_intent = Vector2.ZERO
 	var p := player.global_position
 	var dist := Vector2(p.x - target.x, p.z - target.z).length()
-	return {"tree_at": target, "final_center_distance_m": dist, "blocked": dist > 0.3 and dist < 1.5,
+	return {"tree_at": target, "final_center_distance_m": dist, "closest_approach_m": min_dist,
+		"blocked": min_dist > 0.3 and min_dist < 1.5,
 		"active_colliders": streamer.active_count, "nearest_collider_to_tree_m": nearest_shape,
-		"collider": shape_info, "start": start, "walk": walk}
+		"collider": shape_info, "start": start}

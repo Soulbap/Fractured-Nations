@@ -1,0 +1,24 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
+WARNING: instance_reset_physics_interpolation() is deprecated.
+   at: _instance_reset_physics_interpolation_bind_compat_104269 (servers/rendering/rendering_server.compat.inc:62)
+   GDScript backtrace (most recent call first):
+       [0] _run (res://tools/rebuild_vegetation.gd:30)
+WARNING: Terrain3D#4391:_notification:869: free_editor_textures requires `Assets` be saved to a file. Do so, or disable the former to turn off this warning
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _run (res://tools/rebuild_vegetation.gd:30)
+REBUILD world=test_2km regions=4 old_instances={}
+REBUILD roads: 95 polylines
+WorldBuilder: baked forest tint into 4 regions in 357 ms
+WorldBuilder: vegetation in 1362 ms (mask 31, scatter 256 cells 952, chunks+save 20, tint 359): 4 chunks, { 1: 13963, 3: 6448, 2: 16134, 4: 424, 5: 444, 6: 426 }
+Terrain3DRegion#9231:save:226: Writing region (-1, -1) to res://worlds/test_2km/terrain/terrain3d-01-01.res
+Terrain3DRegion#1395:save:226: Writing region (-1, 0) to res://worlds/test_2km/terrain/terrain3d-01_00.res
+Terrain3DRegion#3559:save:226: Writing region (0, -1) to res://worlds/test_2km/terrain/terrain3d_00-01.res
+Terrain3DRegion#5723:save:226: Writing region (0, 0) to res://worlds/test_2km/terrain/terrain3d_00_00.res
+REBUILD saved terrain data (4 regions) in 172 ms
+REBUILD vegetation: 4 chunks, 37839 instances, 2.3 MB on disk, mask 1.0 MB, per mesh { 1: 13963, 3: 6448, 2: 16134, 4: 424, 5: 444, 6: 426 }
+REBUILD done in 2162 ms
+WARNING: 4 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
