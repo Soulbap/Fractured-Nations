@@ -1,0 +1,40 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/world/test_2km.tscn" id="1_world"]
+[ext_resource type="Script" path="res://scripts/game/core_demo.gd" id="2_demo"]
+[ext_resource type="Script" path="res://scripts/core/world_sim.gd" id="3_sim"]
+[ext_resource type="Script" path="res://scripts/world/area_navigation.gd" id="4_nav"]
+[ext_resource type="Script" path="res://scripts/rts/rts_camera.gd" id="5_rtscam"]
+[ext_resource type="Script" path="res://scripts/rts/rts_controller.gd" id="6_rts"]
+[ext_resource type="Script" path="res://scripts/core/game_controller.gd" id="7_game"]
+[ext_resource type="Script" path="res://scripts/ui/game_hud.gd" id="8_hud"]
+
+[node name="CoreDemo" type="Node3D"]
+script = ExtResource("2_demo")
+
+[node name="World" parent="." instance=ExtResource("1_world")]
+
+[node name="WorldSim" type="Node" parent="."]
+script = ExtResource("3_sim")
+
+[node name="Navigation" type="NavigationRegion3D" parent="."]
+script = ExtResource("4_nav")
+
+[node name="Units" type="Node3D" parent="."]
+
+[node name="RTSCamera" type="Node3D" parent="."]
+script = ExtResource("5_rtscam")
+
+[node name="Camera3D" type="Camera3D" parent="RTSCamera"]
+current = false
+fov = 60.0
+far = 6000.0
+
+[node name="RTSController" type="Node" parent="."]
+script = ExtResource("6_rts")
+
+[node name="GameController" type="Node" parent="."]
+script = ExtResource("7_game")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("8_hud")

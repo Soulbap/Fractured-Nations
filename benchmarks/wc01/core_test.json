@@ -1,0 +1,147 @@
+{
+  "abstract_tier": {
+    "final_distance_m": 0.0,
+    "final_state": 2,
+    "has_body": false,
+    "moved_in_2s_m": 9.00146484375
+  },
+  "arrival": {
+    "arrived": 6,
+    "max_drift_after_arrival_m": 0.0,
+    "of": 6,
+    "per_unit": {
+      "2": {
+        "dist_to_formation_target_m": 2.31,
+        "state": 2
+      },
+      "3": {
+        "dist_to_formation_target_m": 0.19,
+        "state": 2
+      },
+      "4": {
+        "dist_to_formation_target_m": 2.69,
+        "state": 2
+      },
+      "5": {
+        "dist_to_formation_target_m": 3.46,
+        "state": 2
+      },
+      "6": {
+        "dist_to_formation_target_m": 2.51,
+        "state": 2
+      },
+      "7": {
+        "dist_to_formation_target_m": 3.66,
+        "state": 2
+      }
+    },
+    "waited_s": 14.5
+  },
+  "failures": [],
+  "orders_in_fps": {
+    "example_distance_before_after": [
+      79.7348861694336,
+      66.3114776611328
+    ],
+    "ordered": 6,
+    "progressed_5m_in_3s": 6,
+    "with_path": 6
+  },
+  "pass": true,
+  "performance": {
+    "fps": {
+      "draw_calls": 580.0,
+      "frame_ms_avg": 1.53,
+      "frame_ms_max": 2.54,
+      "frame_ms_p99": 2.42,
+      "frames": 180,
+      "nav_ms": 0.05,
+      "physics_ms": 0.84
+    },
+    "rts_140m": {
+      "draw_calls": 317.0,
+      "frame_ms_avg": 1.81,
+      "frame_ms_max": 2.56,
+      "frame_ms_p99": 2.54,
+      "frames": 180,
+      "nav_ms": 0.05,
+      "physics_ms": 0.84
+    }
+  },
+  "rts_box_select": {
+    "selected": 9,
+    "south_units": 9
+  },
+  "rts_click_order": {
+    "click_selected": true,
+    "order": 1,
+    "order_target_error_m": 0.00018310546875,
+    "picked_ground": "(-414.4802, 38.41357, 559.42)",
+    "selected": [
+      8
+    ],
+    "visible_rect": "(1152.0, 648.0)",
+    "window": "(1600, 900)"
+  },
+  "spawn": {
+    "bodies": 18,
+    "nav": {
+      "area_m": 420.0,
+      "bake_ms": 568.792,
+      "center": [
+        -532.47998046875,
+        593.919982910156
+      ],
+      "faces": 352800,
+      "polygons": 2273,
+      "tree_obstructions": 138,
+      "vehicle_obstructions": 2
+    },
+    "one_body_per_unit": true,
+    "soldiers": 16,
+    "soldiers_on_floor": 16,
+    "terrain_collision_mode": 3,
+    "units": 18,
+    "vehicles": 2
+  },
+  "start_mode": {
+    "camera_current": true,
+    "controlled": true,
+    "mode": 0,
+    "possessed": 1
+  },
+  "suspend_resume": {
+    "distance_3s_later_m": 27.2734603881836,
+    "distance_at_release_m": 40.7019462585449,
+    "order_kept_while_possessed": true,
+    "state": 1,
+    "walked_by_player_m": 6.3807954788208
+  },
+  "switching": {
+    "bodies": 18,
+    "counts_preserved": true,
+    "final_mode": 1,
+    "max_change_over_sprint_distance": 0.6,
+    "max_physics_ticks_per_switch": 1,
+    "max_position_change_m": 0.0750915259122849,
+    "orders_preserved": true,
+    "possessed_sequence": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "switches": 12,
+    "unique_bodies": true,
+    "units": 18
+  },
+  "tab_to_rts": {
+    "mode": 1,
+    "mouse_mode": 0,
+    "released_body_controlled": false,
+    "rts_camera_current": true,
+    "state_player_controlled": false
+  }
+}

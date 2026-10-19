@@ -5,6 +5,7 @@
 *.res binary
 *.png binary
 *.glb binary
+*.blend binary
 *.exr binary
 *.r16 binary
 *.dll binary

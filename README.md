@@ -3,9 +3,10 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **WORLD-TECH-02** scalable vegetation foundation on top of the
-WORLD-TECH-01 world-technology prototype (terrain, roads, FPS exploration, scalability
-measurements). See [docs/WORLD-TECH-02_REPORT.md](docs/WORLD-TECH-02_REPORT.md) and
+Current state: **WORLD-CORE-01** persistent world with FPS/RTS control (soldiers, vehicles,
+orders, possession) on top of the WORLD-TECH-02 vegetation foundation and the WORLD-TECH-01
+world-technology prototype. See [docs/WORLD-CORE-01_REPORT.md](docs/WORLD-CORE-01_REPORT.md),
+[docs/WORLD-TECH-02_REPORT.md](docs/WORLD-TECH-02_REPORT.md) and
 [docs/WORLD-TECH-01_REPORT.md](docs/WORLD-TECH-01_REPORT.md).
 
 ## Requirements
@@ -30,17 +31,32 @@ All addons are committed to the repository. Nothing has to be installed separate
 
 ## Running the prototype
 
-Press **F5** or run `scenes/world/test_2km.tscn`, which is the main scene.
+Press **F5** or run `scenes/game/core_demo.tscn`, which is the main scene. You start in
+first person as a North soldier on the base pad of the 2 km world; two factions (North, blue
+rings / olive uniforms; South, orange rings / khaki uniforms) with 8 soldiers and one transport
+vehicle each share the world. A South patrol and two North soldiers already have move orders.
 
-| Key | Action |
+| Key | First person (possessing a soldier) |
 |---|---|
 | Mouse | Look (click to capture, Esc to release) |
-| W A S D | Move |
-| Shift | Sprint (boost while flying) |
-| Space | Jump (up while flying) |
-| F | Toggle debug fly / noclip |
-| Ctrl | Down while flying |
+| W A S D / Shift / Space | Move / sprint / jump |
+| **Tab** | Switch to the tactical camera (the soldier returns to the simulation) |
+| F | Debug fly / noclip |
 | F3 | Performance overlay |
+
+| Key | Tactical (RTS) |
+|---|---|
+| W A S D (Shift faster) | Pan |
+| Q / E, middle-mouse drag | Rotate |
+| Mouse wheel | Zoom (12–700 m) |
+| Left click / drag box, Shift+click | Select soldiers and vehicles / add to selection, Ctrl+A all soldiers |
+| Right click | Move order for the selected soldiers (grid formation at the clicked point) |
+| H | Halt the selected soldiers |
+| P, Enter or double-click | Possess the selected soldier (first person) |
+| **Tab** | Return to the soldier you last controlled |
+
+The world exploration scene `scenes/world/test_2km.tscn` still runs on its own with the
+WORLD-TECH-01 free-roaming controller.
 
 ## Editing the world
 
@@ -120,6 +136,14 @@ Godot_v4.7.2-stable_win64_console.exe --path . res://scenes/world/test_2km.tscn 
 
 Also `--screenshots` (writes `docs/screenshots/`) and `--quit-after-load`.
 
+WORLD-CORE-01 scripted checks (spawn, orders during FPS, Tab switching, click/box selection,
+right-click orders, 12 perspective switches, arrival, suspended orders, the bodiless unit tier,
+frame times; about 90 s, writes `benchmarks/raw/core_test.json` and `docs/screenshots/core01_*.png`):
+
+```bash
+Godot_v4.7.2-stable_win64.exe --path . --resolution 1600x900 --log-file core.log res://scenes/game/core_demo.tscn -- --core-test --shots
+```
+
 Targeted vegetation checks (mask, tree clearance, determinism, streamer activation,
 camera jumps and FPS/RTS switching, grass altitude cutoff, colliders; about 20 s):
 
@@ -139,8 +163,14 @@ scripts/world/   WorldConfig, terrain generator, WorldBuilder, collider streamin
 scripts/vegetation/  VegetationChunk data, VegetationStreamer, GrassLayer, exclusion mask
 shaders/vegetation/  GPU grass placement and blade shaders
 scripts/player/  FPS controller
-scripts/debug/   diagnostics overlay, benchmark, FPS self-test
-tools/           build, tiling, benchmark and editor-probe tools
+scripts/core/    UnitState, WorldState, WorldSim (authoritative simulation), GameController (possession)
+scripts/units/   SoldierBody, VehicleBody, faction visuals
+scripts/rts/     tactical camera and selection/orders
+scripts/game/    CoreDemo: the playable scene wiring and spawning
+scripts/ui/      HUD
+scripts/debug/   diagnostics overlay, benchmark, FPS self-test, WORLD-CORE-01 self-test
+tools/           build, tiling, benchmark and editor-probe tools; tools/blender/ asset generators
+assets/units/    soldier and vehicle glTF models (+ blender/ sources, ignored by Godot)
 worlds/<name>/   per-world config, Terrain3D assets/material, region data, vegetation chunks
 benchmarks/      committed benchmark evidence (raw/ is git-ignored)
 docs/            reports and screenshots
@@ -153,4 +183,6 @@ docs/            reports and screenshots
   ambientCG CC0 (`assets/terrain/textures/asset_licenses.txt`).
 - Trees, bushes, the grass card and the dirt texture are procedurally generated
   placeholders (`tools/make_vegetation_assets.gd`).
+- The soldier and transport vehicle models are generated in Blender by the project's own
+  scripts (`tools/blender/`), no third-party content.
 - The GPU grass shaders derive from Terrain3D's `extras/particle_example` (MIT).
