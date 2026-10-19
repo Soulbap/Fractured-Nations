@@ -34,4 +34,4 @@ enabled=PackedStringArray("res://addons/godot_ai/plugin.cfg", "res://addons/road
 
 [rendering]
 
-rendering_device/driver.windows="d3d12"
+rendering_device/driver.windows="vulkan"
