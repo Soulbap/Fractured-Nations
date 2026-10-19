@@ -330,7 +330,7 @@ terrain-color representation in the far field.
 
 ### 6.9 Recommended architecture
 
-1. **Renderer:** Vulkan (done, `eabb282`). Keep D3D12 as fallback only.
+1. **Renderer:** Vulkan (done, `eabb282`). Vulkan is Godot 4.7.2's default on Windows; the project previously overrode it with D3D12. The override is now removed entirely, which is the form the editor normalizes to. Keep D3D12 as fallback only.
 2. **Terrain:** Terrain3D, 2 m spacing for 20 km maps, fully resident (~1.3 GB VRAM). Local
    detail through meshes and decals.
 3. **Near field (0–80 m):** camera-local GPU particle grass with a road/base mask and an

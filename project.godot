@@ -31,7 +31,3 @@ enabled=PackedStringArray("res://addons/godot_ai/plugin.cfg", "res://addons/road
 [physics]
 
 3d/physics_engine="Jolt Physics"
-
-[rendering]
-
-rendering_device/driver.windows="vulkan"
