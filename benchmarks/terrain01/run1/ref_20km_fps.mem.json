@@ -1,0 +1,1 @@
+﻿{"wall_s":31.7,"exit_code":0,"peak_working_set_mb":2499,"peak_gpu_dedicated_mb":1986,"peak_gpu_shared_mb":143,"samples":13,"args":"--path . --resolution 1600x900 --log-file \"benchmarks\\terrain01\\run1\\ref_20km_fps.log\" res://scenes/world/ref_20km.tscn -- --fps-test"}

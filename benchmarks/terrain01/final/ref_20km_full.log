@@ -1,0 +1,16 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.351 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3070
+
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
+WARNING: instance_reset_physics_interpolation() is deprecated.
+   at: _instance_reset_physics_interpolation_bind_compat_104269 (servers/rendering/rendering_server.compat.inc:62)
+   GDScript backtrace (most recent call first):
+       [0] _run (res://tools/bench_world.gd:106)
+BENCH stage loaded 10451 ms
+BENCH stage scenario full
+BENCH ref_20km_full/full {"aborted":"","fps_center":"9.6ms p99 10.1 gpu 9.2","fps_far_corner":"8.6ms p99 9.2 gpu 8.2","jump_max_ms":22.9,"mmi":792,"render_errors":0,"rts_150m":"2.5ms p99 2.8 gpu 2.1","rts_600m":"2.9ms p99 3.2 gpu 2.5","strategic":"3.5ms p99 4.4 gpu 1.8","switch_max_ms":26.2,"switch_settle_frames":44,"vram":1606.0}
+BENCH stage scenario trees
+BENCH ref_20km_full/trees {"aborted":"","fps_center":"9.4ms p99 9.9 gpu 9.0","fps_far_corner":"8.3ms p99 9.1 gpu 8.0","jump_max_ms":22.5,"mmi":543,"render_errors":0,"rts_150m":"2.5ms p99 2.6 gpu 2.1","rts_600m":"2.9ms p99 3.2 gpu 2.5","strategic":"3.5ms p99 4.4 gpu 1.8","switch_max_ms":26.0,"switch_settle_frames":44,"vram":1607.0}
+BENCH stage scenario roads
+BENCH ref_20km_full/roads {"aborted":"","fps_center":"1.3ms p99 1.6 gpu 0.9","fps_far_corner":"2.8ms p99 3.3 gpu 1.3","jump_max_ms":15.4,"mmi":0,"render_errors":0,"rts_150m":"1.7ms p99 1.9 gpu 1.3","rts_600m":"1.8ms p99 1.9 gpu 1.4","strategic":"3.5ms p99 4.0 gpu 1.8","switch_max_ms":13.4,"switch_settle_frames":3,"vram":1605.0}
+BENCH done res://benchmarks/raw/bench_ref_20km_full.json

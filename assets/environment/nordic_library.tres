@@ -1,0 +1,233 @@
+[gd_resource type="Resource" script_class="VegetationLibrary" format=3]
+
+[ext_resource type="Script" path="res://scripts/vegetation/vegetation_mesh_def.gd" id="1_xbpqk"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/pine_a.tscn" id="2_1lruq"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/pine_b.tscn" id="3_ty61t"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_a.tscn" id="4_sknsb"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_b.tscn" id="5_nams5"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/birch_a.tscn" id="6_jijsd"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/birch_b.tscn" id="7_fbbk1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/juniper.tscn" id="8_pr3qx"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/shrub.tscn" id="9_o8kou"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/boulder_a.tscn" id="10_h3r5v"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/boulder_b.tscn" id="11_0mey5"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/rocks_small.tscn" id="12_b7p2o"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/outcrop.tscn" id="13_mvvnm"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/log.tscn" id="14_iwvvg"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/stump.tscn" id="15_hoi20"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/fern.tscn" id="16_wse37"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/house.tscn" id="17_nbre4"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/barn.tscn" id="18_3wjxs"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/shed.tscn" id="19_xaqt8"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/fence.tscn" id="20_ovfeh"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/mailbox.tscn" id="21_iq5rp"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/road_post.tscn" id="22_21nfq"]
+[ext_resource type="Script" path="res://scripts/vegetation/vegetation_library.gd" id="23_6b78p"]
+
+[sub_resource type="Resource" id="Resource_t6y5q"]
+script = ExtResource("1_xbpqk")
+name = "Pine A"
+scene = ExtResource("2_1lruq")
+near_range = 90.0
+max_range = 1000.0
+fade_m = 80.0
+collider = Vector3(0, 0.28, 8)
+
+[sub_resource type="Resource" id="Resource_4thry"]
+script = ExtResource("1_xbpqk")
+id = 2
+name = "Pine B"
+scene = ExtResource("3_ty61t")
+near_range = 90.0
+max_range = 1000.0
+fade_m = 80.0
+collider = Vector3(0, 0.32, 9)
+
+[sub_resource type="Resource" id="Resource_ux4vf"]
+script = ExtResource("1_xbpqk")
+id = 3
+name = "Spruce A"
+scene = ExtResource("4_sknsb")
+near_range = 85.0
+max_range = 950.0
+fade_m = 80.0
+collider = Vector3(0, 0.3, 8)
+
+[sub_resource type="Resource" id="Resource_ow4jh"]
+script = ExtResource("1_xbpqk")
+id = 4
+name = "Spruce B"
+scene = ExtResource("5_nams5")
+near_range = 70.0
+max_range = 650.0
+collider = Vector3(0, 0.2, 5)
+
+[sub_resource type="Resource" id="Resource_4urcw"]
+script = ExtResource("1_xbpqk")
+id = 5
+name = "Birch A"
+scene = ExtResource("6_jijsd")
+near_range = 110.0
+max_range = 900.0
+fade_m = 80.0
+collider = Vector3(0, 0.18, 7)
+
+[sub_resource type="Resource" id="Resource_2ow38"]
+script = ExtResource("1_xbpqk")
+id = 6
+name = "Birch B"
+scene = ExtResource("7_fbbk1")
+near_range = 100.0
+max_range = 850.0
+fade_m = 80.0
+collider = Vector3(0, 0.15, 6)
+
+[sub_resource type="Resource" id="Resource_nipys"]
+script = ExtResource("1_xbpqk")
+id = 7
+name = "Juniper"
+scene = ExtResource("8_pr3qx")
+near_range = 60.0
+max_range = 260.0
+fade_m = 40.0
+cast_shadows = false
+
+[sub_resource type="Resource" id="Resource_ngi1v"]
+script = ExtResource("1_xbpqk")
+id = 8
+name = "Shrub"
+scene = ExtResource("9_o8kou")
+near_range = 60.0
+max_range = 300.0
+fade_m = 40.0
+cast_shadows = false
+
+[sub_resource type="Resource" id="Resource_77nvk"]
+script = ExtResource("1_xbpqk")
+id = 9
+name = "Boulder A"
+scene = ExtResource("10_h3r5v")
+near_range = 140.0
+max_range = 650.0
+collider = Vector3(1, 1.1, 0)
+
+[sub_resource type="Resource" id="Resource_vpp75"]
+script = ExtResource("1_xbpqk")
+id = 10
+name = "Boulder B"
+scene = ExtResource("11_0mey5")
+near_range = 140.0
+max_range = 650.0
+collider = Vector3(1, 1, 0)
+
+[sub_resource type="Resource" id="Resource_prot2"]
+script = ExtResource("1_xbpqk")
+id = 11
+name = "Stones"
+scene = ExtResource("12_b7p2o")
+near_range = 45.0
+max_range = 180.0
+fade_m = 30.0
+cast_shadows = false
+
+[sub_resource type="Resource" id="Resource_34ylq"]
+script = ExtResource("1_xbpqk")
+id = 12
+name = "Outcrop"
+scene = ExtResource("13_mvvnm")
+near_range = 200.0
+max_range = 1000.0
+fade_m = 90.0
+collider = Vector3(1, 2.4, 0)
+
+[sub_resource type="Resource" id="Resource_wonga"]
+script = ExtResource("1_xbpqk")
+id = 13
+name = "Fallen log"
+scene = ExtResource("14_iwvvg")
+near_range = 60.0
+max_range = 220.0
+fade_m = 40.0
+
+[sub_resource type="Resource" id="Resource_8q1gf"]
+script = ExtResource("1_xbpqk")
+id = 14
+name = "Stump"
+scene = ExtResource("15_hoi20")
+near_range = 40.0
+max_range = 160.0
+fade_m = 30.0
+cast_shadows = false
+
+[sub_resource type="Resource" id="Resource_eb01y"]
+script = ExtResource("1_xbpqk")
+id = 15
+name = "Fern"
+scene = ExtResource("16_wse37")
+near_range = 30.0
+max_range = 110.0
+fade_m = 25.0
+cast_shadows = false
+
+[sub_resource type="Resource" id="Resource_xl0ie"]
+script = ExtResource("1_xbpqk")
+id = 16
+name = "House"
+scene = ExtResource("17_nbre4")
+near_range = 250.0
+max_range = 1800.0
+fade_m = 100.0
+collider = Vector3(1, 4, 0)
+
+[sub_resource type="Resource" id="Resource_0p0xr"]
+script = ExtResource("1_xbpqk")
+id = 17
+name = "Barn"
+scene = ExtResource("18_3wjxs")
+near_range = 250.0
+max_range = 1800.0
+fade_m = 100.0
+collider = Vector3(1, 5, 0)
+
+[sub_resource type="Resource" id="Resource_m4sfk"]
+script = ExtResource("1_xbpqk")
+id = 18
+name = "Shed"
+scene = ExtResource("19_xaqt8")
+near_range = 120.0
+max_range = 900.0
+collider = Vector3(1, 1.8, 0)
+
+[sub_resource type="Resource" id="Resource_2j4ml"]
+script = ExtResource("1_xbpqk")
+id = 19
+name = "Fence"
+scene = ExtResource("20_ovfeh")
+near_range = 40.0
+max_range = 220.0
+fade_m = 30.0
+cast_shadows = false
+
+[sub_resource type="Resource" id="Resource_y7k2c"]
+script = ExtResource("1_xbpqk")
+id = 20
+name = "Mailbox"
+scene = ExtResource("21_iq5rp")
+near_range = 30.0
+max_range = 120.0
+fade_m = 20.0
+cast_shadows = false
+
+[sub_resource type="Resource" id="Resource_60cva"]
+script = ExtResource("1_xbpqk")
+id = 21
+name = "Road post"
+scene = ExtResource("22_21nfq")
+near_range = 40.0
+max_range = 200.0
+fade_m = 30.0
+cast_shadows = false
+
+[resource]
+script = ExtResource("23_6b78p")
+meshes = Array[ExtResource("1_xbpqk")]([SubResource("Resource_t6y5q"), SubResource("Resource_4thry"), SubResource("Resource_ux4vf"), SubResource("Resource_ow4jh"), SubResource("Resource_4urcw"), SubResource("Resource_2ow38"), SubResource("Resource_nipys"), SubResource("Resource_ngi1v"), SubResource("Resource_77nvk"), SubResource("Resource_vpp75"), SubResource("Resource_prot2"), SubResource("Resource_34ylq"), SubResource("Resource_wonga"), SubResource("Resource_8q1gf"), SubResource("Resource_eb01y"), SubResource("Resource_xl0ie"), SubResource("Resource_0p0xr"), SubResource("Resource_m4sfk"), SubResource("Resource_2j4ml"), SubResource("Resource_y7k2c"), SubResource("Resource_60cva")])

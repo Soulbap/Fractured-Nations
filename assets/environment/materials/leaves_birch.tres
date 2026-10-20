@@ -1,0 +1,23 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/environment/foliage.gdshader" id="1_3ouol"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/birch_twig_alb.png" id="2_i5xj2"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/birch_twig_nrm.png" id="3_iyrhq"]
+
+[resource]
+resource_name = "Leaves_Birch"
+render_priority = 0
+shader = ExtResource("1_3ouol")
+shader_parameter/wind_strength = 0.16
+shader_parameter/wind_speed = null
+shader_parameter/sway_height = 12.0
+shader_parameter/wind_dir = null
+shader_parameter/albedo_tex = ExtResource("2_i5xj2")
+shader_parameter/normal_tex = ExtResource("3_iyrhq")
+shader_parameter/use_normal_tex = null
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/alpha_cut = null
+shader_parameter/translucency = 0.45
+shader_parameter/roughness_value = null
+shader_parameter/flutter = 0.03
+shader_parameter/normal_up_blend = null

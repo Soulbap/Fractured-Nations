@@ -1,0 +1,807 @@
+{
+  "error_samples": {
+    "instance_reset_physics_interpolation() is deprecated.": "_instance_reset_physics_interpolation_bind_compat_104269"
+  },
+  "instances": {
+    "expected_multimeshes_cells_x_lods": 0,
+    "per_mesh": {}
+  },
+  "load": {
+    "errors": {
+      "other_errors": 1,
+      "render_errors": 0
+    },
+    "instantiate_5_frames_ms": 9556,
+    "scene_load_ms": 866
+  },
+  "machine": {
+    "cpu": "12th Gen Intel(R) Core(TM) i7-12700F",
+    "d3d12_max_resource_descriptors": 65536,
+    "driver": "vulkan",
+    "godot": "4.7.2-stable (official)",
+    "gpu": "NVIDIA GeForce RTX 3070",
+    "max_lod_option": "asset default",
+    "window": "(1600, 900)"
+  },
+  "map": {
+    "region_size": 1024,
+    "regions": 100,
+    "size_m": 20000.0,
+    "vertex_spacing": 1.953125
+  },
+  "scenarios": {
+    "full": {
+      "aborted": "",
+      "apply_ms": 0.039,
+      "elapsed_s": 10.403882,
+      "jumps": {
+        "max_ms": 22.9270000457764,
+        "worst_ms_per_jump": [
+          22.7250003814697,
+          18.0860004425049,
+          22.9270000457764,
+          20.5610008239746,
+          21.8579998016357,
+          22.3819999694824,
+          20.7759990692139,
+          21.5729999542236
+        ]
+      },
+      "render_errors": 0,
+      "resources": {
+        "buffer_mem_mb": 47.9228973388672,
+        "gpu_particles": 57600,
+        "multimesh_instance_nodes": 792,
+        "multimesh_instances_total": 32809,
+        "nodes": 24343.0,
+        "objects": 45050.0,
+        "static_mem_mb": 1751.52319717407,
+        "texture_mem_mb": 1537.69189453125,
+        "video_mem_mb": 1606.37245178223
+      },
+      "resources_end": {
+        "buffer_mem_mb": 48.4150238037109,
+        "gpu_particles": 0,
+        "multimesh_instance_nodes": 543,
+        "multimesh_instances_total": 39657,
+        "nodes": 24094.0,
+        "objects": 44556.0,
+        "static_mem_mb": 1768.878657341,
+        "texture_mem_mb": 1537.69189453125,
+        "video_mem_mb": 1607.36457824707
+      },
+      "stations": {
+        "fps_center": {
+          "avg": 9.56448887189229,
+          "cpu_render_ms": {
+            "avg": 1.46309444043371,
+            "max": 1.86500000953674,
+            "p50": 1.44099998474121,
+            "p95": 1.67700004577637,
+            "p99": 1.86500000953674
+          },
+          "draw_calls": 2409.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 9.15455001195272,
+            "max": 9.99699974060059,
+            "p50": 9.05300045013428,
+            "p95": 9.32900047302246,
+            "p99": 9.59099960327148
+          },
+          "grass": {
+            "active": true,
+            "camera_height_m": 1.8,
+            "particles": 57600
+          },
+          "max": 10.5059995651245,
+          "objects_in_frame": 2915.0,
+          "p50": 9.55599975585938,
+          "p95": 9.88000011444092,
+          "p99": 10.0579996109009,
+          "primitives": 1426008.0,
+          "vegetation": {
+            "active_cells": 232,
+            "active_instances": 51638,
+            "active_mmis": 1023,
+            "loaded_chunks": 22,
+            "loading_chunks": 0,
+            "queued": 0,
+            "worst_activation_ms": 0.61
+          },
+          "video_mem_mb": 1607.56494140625
+        },
+        "fps_far_corner": {
+          "avg": 8.61153885523478,
+          "cpu_render_ms": {
+            "avg": 2.69240555895699,
+            "max": 3.35199999809265,
+            "p50": 2.69300007820129,
+            "p95": 3.02900004386902,
+            "p99": 3.30800008773804
+          },
+          "draw_calls": 4406.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 8.21692228317261,
+            "max": 8.81700038909912,
+            "p50": 8.10200023651123,
+            "p95": 8.44499969482422,
+            "p99": 8.70199966430664
+          },
+          "grass": {
+            "active": true,
+            "camera_height_m": 1.8,
+            "particles": 57600
+          },
+          "max": 9.23900032043457,
+          "objects_in_frame": 5812.0,
+          "p50": 8.61800003051758,
+          "p95": 8.86600017547607,
+          "p99": 9.23400020599365,
+          "primitives": 1816804.0,
+          "vegetation": {
+            "active_cells": 225,
+            "active_instances": 65702,
+            "active_mmis": 1214,
+            "loaded_chunks": 9,
+            "loading_chunks": 0,
+            "queued": 0,
+            "worst_activation_ms": 0.48
+          },
+          "video_mem_mb": 1608.9542388916
+        },
+        "rts_150m": {
+          "avg": 2.46251665883594,
+          "cpu_render_ms": {
+            "avg": 0.387499999503295,
+            "max": 0.513999998569489,
+            "p50": 0.379999995231628,
+            "p95": 0.469999998807907,
+            "p99": 0.5
+          },
+          "draw_calls": 425.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 2.1006944404708,
+            "max": 2.33100008964539,
+            "p50": 2.09800004959106,
+            "p95": 2.11100006103516,
+            "p99": 2.31500005722046
+          },
+          "grass": {
+            "active": false,
+            "camera_height_m": 149.5,
+            "particles": 0
+          },
+          "max": 2.78200006484985,
+          "objects_in_frame": 584.0,
+          "p50": 2.44799995422363,
+          "p95": 2.56299996376038,
+          "p99": 2.77699995040894,
+          "primitives": 828458.0,
+          "vegetation": {
+            "active_cells": 224,
+            "active_instances": 50795,
+            "active_mmis": 953,
+            "loaded_chunks": 20,
+            "loading_chunks": 0,
+            "queued": 0,
+            "worst_activation_ms": 0.41
+          },
+          "video_mem_mb": 1608.04438781738
+        },
+        "rts_600m": {
+          "avg": 2.90782777865728,
+          "cpu_render_ms": {
+            "avg": 0.579294446110725,
+            "max": 0.83899998664856,
+            "p50": 0.569000005722046,
+            "p95": 0.693000018596649,
+            "p99": 0.754999995231628
+          },
+          "draw_calls": 817.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 2.54428333573871,
+            "max": 2.87199997901917,
+            "p50": 2.53999996185303,
+            "p95": 2.55200004577637,
+            "p99": 2.82299995422363
+          },
+          "grass": {
+            "active": false,
+            "camera_height_m": 598.0,
+            "particles": 0
+          },
+          "max": 3.37400007247925,
+          "objects_in_frame": 994.0,
+          "p50": 2.89400005340576,
+          "p95": 3.00999999046326,
+          "p99": 3.22399997711182,
+          "primitives": 1004110.0,
+          "vegetation": {
+            "active_cells": 161,
+            "active_instances": 39657,
+            "active_mmis": 543,
+            "loaded_chunks": 20,
+            "loading_chunks": 0,
+            "queued": 0,
+            "worst_activation_ms": 0.29
+          },
+          "video_mem_mb": 1607.36457824707
+        },
+        "strategic": {
+          "avg": 3.49438333246443,
+          "cpu_render_ms": {
+            "avg": 2.33563332425223,
+            "max": 2.89800000190735,
+            "p50": 2.30999994277954,
+            "p95": 2.62599992752075,
+            "p99": 2.78999996185303
+          },
+          "draw_calls": 4432.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 1.76547778116332,
+            "max": 2.04200005531311,
+            "p50": 1.76499998569489,
+            "p95": 1.77900004386902,
+            "p99": 1.807000041008
+          },
+          "grass": {
+            "active": false,
+            "camera_height_m": 14995.6,
+            "particles": 0
+          },
+          "max": 4.59800004959106,
+          "objects_in_frame": 6340.0,
+          "p50": 3.46900010108948,
+          "p95": 3.94199991226196,
+          "p99": 4.37799978256226,
+          "primitives": 1003824.0,
+          "vegetation": {
+            "active_cells": 0,
+            "active_instances": 0,
+            "active_mmis": 0,
+            "loaded_chunks": 20,
+            "loading_chunks": 0,
+            "queued": 0,
+            "worst_activation_ms": 0.0
+          },
+          "video_mem_mb": 1604.94410705566
+        }
+      },
+      "switch": {
+        "round_trips": 6,
+        "worst_ms": 26.18,
+        "worst_settle_frames": 44
+      }
+    },
+    "roads": {
+      "aborted": "",
+      "apply_ms": 3.39,
+      "elapsed_s": 4.551856,
+      "jumps": {
+        "max_ms": 15.4230003356934,
+        "worst_ms_per_jump": [
+          15.4230003356934,
+          12.0559997558594,
+          13.1079998016357,
+          11.9750003814697,
+          12.7849998474121,
+          14.4779996871948,
+          12.8760004043579,
+          1.43599998950958
+        ]
+      },
+      "render_errors": 0,
+      "resources": {
+        "buffer_mem_mb": 45.9945526123047,
+        "gpu_particles": 0,
+        "multimesh_instance_nodes": 0,
+        "multimesh_instances_total": 0,
+        "nodes": 23551.0,
+        "objects": 43470.0,
+        "static_mem_mb": 1758.8528547287,
+        "texture_mem_mb": 1537.69189453125,
+        "video_mem_mb": 1604.94410705566
+      },
+      "resources_end": {
+        "buffer_mem_mb": 45.9945526123047,
+        "gpu_particles": 0,
+        "multimesh_instance_nodes": 0,
+        "multimesh_instances_total": 0,
+        "nodes": 23551.0,
+        "objects": 43470.0,
+        "static_mem_mb": 1758.8785200119,
+        "texture_mem_mb": 1537.69189453125,
+        "video_mem_mb": 1604.94410705566
+      },
+      "stations": {
+        "fps_center": {
+          "avg": 1.27780000434981,
+          "cpu_render_ms": {
+            "avg": 0.824316664536794,
+            "max": 1.02999997138977,
+            "p50": 0.814999997615814,
+            "p95": 0.925999999046326,
+            "p99": 1.02300000190735
+          },
+          "draw_calls": 1522.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 0.863055552045504,
+            "max": 0.897000014781952,
+            "p50": 0.862999975681305,
+            "p95": 0.879999995231628,
+            "p99": 0.888999998569489
+          },
+          "grass": {
+            "active": false,
+            "camera_height_m": 598.0,
+            "particles": 0
+          },
+          "max": 1.75300002098084,
+          "objects_in_frame": 2028.0,
+          "p50": 1.26300001144409,
+          "p95": 1.39600002765656,
+          "p99": 1.57000005245209,
+          "primitives": 715464.0,
+          "vegetation": {
+            "active_cells": 0,
+            "active_instances": 0,
+            "active_mmis": 0,
+            "loaded_chunks": 20,
+            "loading_chunks": 0,
+            "queued": 0,
+            "worst_activation_ms": 0.53
+          },
+          "video_mem_mb": 1604.94410705566
+        },
+        "fps_far_corner": {
+          "avg": 2.7825888911883,
+          "cpu_render_ms": {
+            "avg": 1.90956666602029,
+            "max": 2.26099991798401,
+            "p50": 1.87100005149841,
+            "p95": 2.10599994659424,
+            "p99": 2.21600008010864
+          },
+          "draw_calls": 3604.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 1.31216111448076,
+            "max": 1.33500003814697,
+            "p50": 1.31299996376038,
+            "p95": 1.32200002670288,
+            "p99": 1.3289999961853
+          },
+          "grass": {
+            "active": false,
+            "camera_height_m": 598.0,
+            "particles": 0
+          },
+          "max": 3.30999994277954,
+          "objects_in_frame": 5010.0,
+          "p50": 2.73699998855591,
+          "p95": 3.1470000743866,
+          "p99": 3.28800010681152,
+          "primitives": 1044740.0,
+          "vegetation": {
+            "active_cells": 0,
+            "active_instances": 0,
+            "active_mmis": 0,
+            "loaded_chunks": 20,
+            "loading_chunks": 0,
+            "queued": 0,
+            "worst_activation_ms": 0.0
+          },
+          "video_mem_mb": 1604.94410705566
+        },
+        "rts_150m": {
+          "avg": 1.6575222240554,
+          "cpu_render_ms": {
+            "avg": 0.224361110395855,
+            "max": 0.354999989271164,
+            "p50": 0.216999992728233,
+            "p95": 0.305000007152557,
+            "p99": 0.345999985933304
+          },
+          "draw_calls": 116.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 1.3023833307955,
+            "max": 1.56700003147125,
+            "p50": 1.29999995231628,
+            "p95": 1.30900001525879,
+            "p99": 1.317999958992
+          },
+          "grass": {
+            "active": false,
+            "camera_height_m": 598.0,
+            "particles": 0
+          },
+          "max": 1.96000003814697,
+          "objects_in_frame": 275.0,
+          "p50": 1.64400005340576,
+          "p95": 1.75,
+          "p99": 1.88800001144409,
+          "primitives": 759212.0,
+          "vegetation": {
+            "active_cells": 0,
+            "active_instances": 0,
+            "active_mmis": 0,
+            "loaded_chunks": 20,
+            "loading_chunks": 0,
+            "queued": 0,
+            "worst_activation_ms": 0.0
+          },
+          "video_mem_mb": 1604.94410705566
+        },
+        "rts_600m": {
+          "avg": 1.7557388888465,
+          "cpu_render_ms": {
+            "avg": 0.261194444033835,
+            "max": 0.402999997138977,
+            "p50": 0.252999991178513,
+            "p95": 0.330000013113022,
+            "p99": 0.370999991893768
+          },
+          "draw_calls": 202.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 1.40389444298214,
+            "max": 1.41799998283386,
+            "p50": 1.40400004386902,
+            "p95": 1.41299998760223,
+            "p99": 1.41700005531311
+          },
+          "grass": {
+            "active": false,
+            "camera_height_m": 598.0,
+            "particles": 0
+          },
+          "max": 1.93499994277954,
+          "objects_in_frame": 379.0,
+          "p50": 1.74500000476837,
+          "p95": 1.86199998855591,
+          "p99": 1.90400004386902,
+          "primitives": 821496.0,
+          "vegetation": {
+            "active_cells": 0,
+            "active_instances": 0,
+            "active_mmis": 0,
+            "loaded_chunks": 20,
+            "loading_chunks": 0,
+            "queued": 0,
+            "worst_activation_ms": 0.0
+          },
+          "video_mem_mb": 1604.94410705566
+        },
+        "strategic": {
+          "avg": 3.4920499947336,
+          "cpu_render_ms": {
+            "avg": 2.32581666443083,
+            "max": 2.72699999809265,
+            "p50": 2.28900003433228,
+            "p95": 2.54500007629395,
+            "p99": 2.67499995231628
+          },
+          "draw_calls": 4432.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 1.76644444664319,
+            "max": 2.08299994468689,
+            "p50": 1.76400005817413,
+            "p95": 1.78299999237061,
+            "p99": 1.7960000038147
+          },
+          "grass": {
+            "active": false,
+            "camera_height_m": 598.0,
+            "particles": 0
+          },
+          "max": 4.09200000762939,
+          "objects_in_frame": 6340.0,
+          "p50": 3.45900011062622,
+          "p95": 3.83299994468689,
+          "p99": 4.03499984741211,
+          "primitives": 1003824.0,
+          "vegetation": {
+            "active_cells": 0,
+            "active_instances": 0,
+            "active_mmis": 0,
+            "loaded_chunks": 20,
+            "loading_chunks": 0,
+            "queued": 0,
+            "worst_activation_ms": 0.0
+          },
+          "video_mem_mb": 1604.94410705566
+        }
+      },
+      "switch": {
+        "round_trips": 6,
+        "worst_ms": 13.389,
+        "worst_settle_frames": 3
+      }
+    },
+    "trees": {
+      "aborted": "",
+      "apply_ms": 0.635,
+      "elapsed_s": 10.020273,
+      "jumps": {
+        "max_ms": 22.5189990997314,
+        "worst_ms_per_jump": [
+          22.4790000915527,
+          18.2049999237061,
+          22.5189990997314,
+          18.5100002288818,
+          19.8719997406006,
+          22.4069995880127,
+          20.3570003509521,
+          20.8390007019043
+        ]
+      },
+      "render_errors": 0,
+      "resources": {
+        "buffer_mem_mb": 48.4150238037109,
+        "gpu_particles": 0,
+        "multimesh_instance_nodes": 543,
+        "multimesh_instances_total": 39657,
+        "nodes": 24094.0,
+        "objects": 44556.0,
+        "static_mem_mb": 1768.88086223602,
+        "texture_mem_mb": 1537.69189453125,
+        "video_mem_mb": 1607.36457824707
+      },
+      "resources_end": {
+        "buffer_mem_mb": 48.4150238037109,
+        "gpu_particles": 0,
+        "multimesh_instance_nodes": 543,
+        "multimesh_instances_total": 39657,
+        "nodes": 24094.0,
+        "objects": 44556.0,
+        "static_mem_mb": 1768.93778896332,
+        "texture_mem_mb": 1537.69189453125,
+        "video_mem_mb": 1607.36457824707
+      },
+      "stations": {
+        "fps_center": {
+          "avg": 9.38014997376336,
+          "cpu_render_ms": {
+            "avg": 1.58632777730624,
+            "max": 1.94500005245209,
+            "p50": 1.58299994468689,
+            "p95": 1.8289999961853,
+            "p99": 1.94400000572205
+          },
+          "draw_calls": 2394.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 8.97758888668484,
+            "max": 9.56599998474121,
+            "p50": 8.90799999237061,
+            "p95": 9.29100036621094,
+            "p99": 9.50399971008301
+          },
+          "grass": {
+            "active": false,
+            "camera_height_m": 598.0,
+            "particles": 0
+          },
+          "max": 9.89400005340576,
+          "objects_in_frame": 2900.0,
+          "p50": 9.36800003051758,
+          "p95": 9.66399955749512,
+          "p99": 9.8730001449585,
+          "primitives": 1218648.0,
+          "vegetation": {
+            "active_cells": 232,
+            "active_instances": 51638,
+            "active_mmis": 1023,
+            "loaded_chunks": 20,
+            "loading_chunks": 0,
+            "queued": 0,
+            "worst_activation_ms": 0.46
+          },
+          "video_mem_mb": 1608.0958404541
+        },
+        "fps_far_corner": {
+          "avg": 8.34128886858622,
+          "cpu_render_ms": {
+            "avg": 2.75926667584313,
+            "max": 3.84599995613098,
+            "p50": 2.74900007247925,
+            "p95": 3.13700008392334,
+            "p99": 3.57399988174438
+          },
+          "draw_calls": 4381.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 7.97174445788066,
+            "max": 8.74499988555908,
+            "p50": 7.83400011062622,
+            "p95": 8.41800022125244,
+            "p99": 8.74300003051758
+          },
+          "grass": {
+            "active": false,
+            "camera_height_m": 598.0,
+            "particles": 0
+          },
+          "max": 9.18099975585938,
+          "objects_in_frame": 5787.0,
+          "p50": 8.33399963378906,
+          "p95": 8.80900001525879,
+          "p99": 9.14999961853027,
+          "primitives": 1471204.0,
+          "vegetation": {
+            "active_cells": 225,
+            "active_instances": 65702,
+            "active_mmis": 1214,
+            "loaded_chunks": 9,
+            "loading_chunks": 0,
+            "queued": 0,
+            "worst_activation_ms": 0.76
+          },
+          "video_mem_mb": 1608.9542388916
+        },
+        "rts_150m": {
+          "avg": 2.46246110465792,
+          "cpu_render_ms": {
+            "avg": 0.415388888782925,
+            "max": 0.578999996185303,
+            "p50": 0.412999987602234,
+            "p95": 0.499000012874603,
+            "p99": 0.569000005722046
+          },
+          "draw_calls": 425.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 2.10112777153651,
+            "max": 2.32699990272522,
+            "p50": 2.09999990463257,
+            "p95": 2.10899996757507,
+            "p99": 2.11299991607666
+          },
+          "grass": {
+            "active": false,
+            "camera_height_m": 598.0,
+            "particles": 0
+          },
+          "max": 2.76900005340576,
+          "objects_in_frame": 584.0,
+          "p50": 2.44799995422363,
+          "p95": 2.5550000667572,
+          "p99": 2.58200001716614,
+          "primitives": 828458.0,
+          "vegetation": {
+            "active_cells": 224,
+            "active_instances": 50795,
+            "active_mmis": 953,
+            "loaded_chunks": 20,
+            "loading_chunks": 0,
+            "queued": 0,
+            "worst_activation_ms": 0.38
+          },
+          "video_mem_mb": 1608.04438781738
+        },
+        "rts_600m": {
+          "avg": 2.90983334117466,
+          "cpu_render_ms": {
+            "avg": 0.561677779257298,
+            "max": 0.704999983310699,
+            "p50": 0.549000024795532,
+            "p95": 0.66100001335144,
+            "p99": 0.703999996185303
+          },
+          "draw_calls": 817.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 2.54791111283832,
+            "max": 2.86500000953674,
+            "p50": 2.54500007629395,
+            "p95": 2.5550000667572,
+            "p99": 2.8529999256134
+          },
+          "grass": {
+            "active": false,
+            "camera_height_m": 598.0,
+            "particles": 0
+          },
+          "max": 3.30800008773804,
+          "objects_in_frame": 994.0,
+          "p50": 2.89400005340576,
+          "p95": 3.00099992752075,
+          "p99": 3.2039999961853,
+          "primitives": 1004110.0,
+          "vegetation": {
+            "active_cells": 161,
+            "active_instances": 39657,
+            "active_mmis": 543,
+            "loaded_chunks": 20,
+            "loading_chunks": 0,
+            "queued": 0,
+            "worst_activation_ms": 0.31
+          },
+          "video_mem_mb": 1607.36457824707
+        },
+        "strategic": {
+          "avg": 3.52012222078111,
+          "cpu_render_ms": {
+            "avg": 2.34554444816377,
+            "max": 2.93099999427795,
+            "p50": 2.31100010871887,
+            "p95": 2.62599992752075,
+            "p99": 2.83299994468689
+          },
+          "draw_calls": 4432.0,
+          "frames": 180,
+          "gpu_ms": {
+            "avg": 1.76511111193233,
+            "max": 1.82200002670288,
+            "p50": 1.76499998569489,
+            "p95": 1.7849999666214,
+            "p99": 1.79200005531311
+          },
+          "grass": {
+            "active": false,
+            "camera_height_m": 598.0,
+            "particles": 0
+          },
+          "max": 4.65399980545044,
+          "objects_in_frame": 6340.0,
+          "p50": 3.46300005912781,
+          "p95": 3.96600008010864,
+          "p99": 4.39699983596802,
+          "primitives": 1003824.0,
+          "vegetation": {
+            "active_cells": 0,
+            "active_instances": 0,
+            "active_mmis": 0,
+            "loaded_chunks": 20,
+            "loading_chunks": 0,
+            "queued": 0,
+            "worst_activation_ms": 0.0
+          },
+          "video_mem_mb": 1604.94410705566
+        }
+      },
+      "switch": {
+        "round_trips": 6,
+        "worst_ms": 25.98,
+        "worst_settle_frames": 44
+      }
+    }
+  },
+  "scene": "res://scenes/world/ref_20km.tscn",
+  "synthetic_tiled": false,
+  "tag": "ref_20km_full",
+  "terrain_map_arrays": {
+    "color": {
+      "approx_mb": 533.333206176758,
+      "format": 5,
+      "layers": 100,
+      "mip_levels": 11,
+      "size": "(1024, 1024)",
+      "subresources": 1100
+    },
+    "control": {
+      "approx_mb": 400.0,
+      "format": 8,
+      "layers": 100,
+      "mip_levels": 1,
+      "size": "(1024, 1024)",
+      "subresources": 100
+    },
+    "height": {
+      "approx_mb": 400.0,
+      "format": 8,
+      "layers": 100,
+      "mip_levels": 1,
+      "size": "(1024, 1024)",
+      "subresources": 100
+    }
+  }
+}

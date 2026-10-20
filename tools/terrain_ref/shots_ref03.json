@@ -1,0 +1,225 @@
+[
+ {
+  "name": "fps_pine_forest",
+  "ref_km": [
+   4.834,
+   8.037
+  ],
+  "height": 1.7,
+  "fov": 70.0,
+  "yaw_deg": 219.15109508500493,
+  "pitch_deg": -4.0
+ },
+ {
+  "name": "fps_spruce_forest",
+  "ref_km": [
+   1.504,
+   4.59
+  ],
+  "height": 1.7,
+  "fov": 70.0,
+  "yaw_deg": 61.85500085723347,
+  "pitch_deg": -4.0
+ },
+ {
+  "name": "fps_birch_wetland",
+  "ref_km": [
+   4.238,
+   13.379
+  ],
+  "height": 1.7,
+  "fov": 70.0,
+  "yaw_deg": 359.4206644794614,
+  "pitch_deg": -4.0
+ },
+ {
+  "name": "fps_forest_edge_meadow",
+  "ref_km": [
+   3.936,
+   16.523
+  ],
+  "height": 1.7,
+  "fov": 70.0,
+  "yaw_deg": 5.023303688502319,
+  "pitch_deg": -4.0
+ },
+ {
+  "name": "fps_rocky_hill",
+  "ref_km": [
+   3.887,
+   15.713
+  ],
+  "height": 1.7,
+  "fov": 70.0,
+  "yaw_deg": 157.8005027304279,
+  "pitch_deg": -4.0
+ },
+ {
+  "name": "fps_village_ostby",
+  "ref_km": [
+   13.6,
+   7.85
+  ],
+  "height": 1.7,
+  "fov": 70.0,
+  "look_km": [
+   13.25,
+   8.1
+  ],
+  "look_up": 2.0
+ },
+ {
+  "name": "fps_village_moen",
+  "ref_km": [
+   8.85,
+   2.65
+  ],
+  "height": 1.7,
+  "fov": 70.0,
+  "look_km": [
+   8.5,
+   2.9
+  ],
+  "look_up": 2.0
+ },
+ {
+  "name": "fps_river_bridge",
+  "ref_km": [
+   11.22796,
+   5.50278
+  ],
+  "height": 2.5,
+  "fov": 70.0,
+  "look_km": [
+   11.15796,
+   5.45278
+  ],
+  "look_up": 2.0
+ },
+ {
+  "name": "rts_150m_bridge",
+  "ref_km": [
+   11.277959999999998,
+   5.35278
+  ],
+  "height": 150,
+  "fov": 70.0,
+  "look_km": [
+   11.15796,
+   5.45278
+  ],
+  "look_up": 0.0
+ },
+ {
+  "name": "fps_lake_shore",
+  "ref_km": [
+   4.45,
+   2.55
+  ],
+  "height": 1.7,
+  "fov": 70.0,
+  "look_km": [
+   3.2,
+   2.5
+  ],
+  "look_up": 2.0
+ },
+ {
+  "name": "fps_massif_pass",
+  "ref_km": [
+   18.6,
+   16.1
+  ],
+  "height": 1.8,
+  "fov": 70.0,
+  "look_km": [
+   17.3,
+   17.6
+  ],
+  "look_up": 2.0
+ },
+ {
+  "name": "rts_150m_town",
+  "ref_km": [
+   9.6,
+   11.2
+  ],
+  "height": 150,
+  "fov": 70.0,
+  "look_km": [
+   9.1,
+   11.8
+  ],
+  "look_up": 0.0
+ },
+ {
+  "name": "rts_150m_forest_road",
+  "ref_km": [
+   5.2,
+   13.6
+  ],
+  "height": 150,
+  "fov": 70.0,
+  "look_km": [
+   4.6,
+   13.2
+  ],
+  "look_up": 0.0
+ },
+ {
+  "name": "rts_600m_center",
+  "ref_km": [
+   11.0,
+   9.6
+  ],
+  "height": 600,
+  "fov": 70.0,
+  "look_km": [
+   9.6,
+   11.6
+  ],
+  "look_up": 0.0
+ },
+ {
+  "name": "rts_600m_massif",
+  "ref_km": [
+   15.0,
+   14.0
+  ],
+  "height": 600,
+  "fov": 70.0,
+  "look_km": [
+   17.5,
+   17.5
+  ],
+  "look_up": 0.0
+ },
+ {
+  "name": "rts_600m_lakes",
+  "ref_km": [
+   6.5,
+   5.0
+  ],
+  "height": 600,
+  "fov": 70.0,
+  "look_km": [
+   3.2,
+   3.0
+  ],
+  "look_up": 0.0
+ },
+ {
+  "name": "rts_1500m_overview",
+  "ref_km": [
+   12.0,
+   4.0
+  ],
+  "height": 1500,
+  "fov": 70.0,
+  "look_km": [
+   10.0,
+   11.0
+  ],
+  "look_up": 0.0
+ }
+]

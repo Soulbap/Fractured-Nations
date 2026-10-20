@@ -1,0 +1,23 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/environment/foliage.gdshader" id="1_e8qgp"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/spruce_spray_alb.png" id="2_410eu"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/spruce_spray_nrm.png" id="3_krig6"]
+
+[resource]
+resource_name = "Needles_Spruce"
+render_priority = 0
+shader = ExtResource("1_e8qgp")
+shader_parameter/wind_strength = 0.08
+shader_parameter/wind_speed = null
+shader_parameter/sway_height = 15.0
+shader_parameter/wind_dir = null
+shader_parameter/albedo_tex = ExtResource("2_410eu")
+shader_parameter/normal_tex = ExtResource("3_krig6")
+shader_parameter/use_normal_tex = null
+shader_parameter/tint = Color(0.95, 1, 0.95, 1)
+shader_parameter/alpha_cut = null
+shader_parameter/translucency = 0.2
+shader_parameter/roughness_value = null
+shader_parameter/flutter = 0.005
+shader_parameter/normal_up_blend = null

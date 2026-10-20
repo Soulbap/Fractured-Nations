@@ -1,0 +1,17 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/environment/grass_tuft.gdshader" id="1_ptrve"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/dwarf_shrub_alb.png" id="2_wjp74"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/grass_tuft_alb.png" id="3_j7sxe"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_ptrve")
+shader_parameter/tuft_tex = ExtResource("3_j7sxe")
+shader_parameter/forest_tex = ExtResource("2_wjp74")
+shader_parameter/forest_lum_lo = null
+shader_parameter/forest_lum_hi = null
+shader_parameter/wind_direction = null
+shader_parameter/tint_strength = null
+shader_parameter/tint = null
+shader_parameter/alpha_cut = null

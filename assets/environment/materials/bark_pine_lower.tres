@@ -1,0 +1,18 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/environment/bark.gdshader" id="1_yj8mw"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/bark_pine_lower_alb.png" id="2_pgwu0"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/bark_pine_lower_nrm.png" id="3_jir5o"]
+
+[resource]
+resource_name = "Bark_PineLower"
+render_priority = 0
+shader = ExtResource("1_yj8mw")
+shader_parameter/wind_strength = 0.1
+shader_parameter/wind_speed = null
+shader_parameter/sway_height = 16.0
+shader_parameter/wind_dir = null
+shader_parameter/albedo_tex = ExtResource("2_pgwu0")
+shader_parameter/normal_tex = ExtResource("3_jir5o")
+shader_parameter/tint = null
+shader_parameter/roughness_value = null

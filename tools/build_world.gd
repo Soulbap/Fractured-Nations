@@ -41,7 +41,8 @@ func _run() -> void:
 	root.add_child(roads)
 	roads.owner = root
 
-	var builder := WorldBuilder.new()
+	# Reference-based worlds (WORLD-TERRAIN-01) bring their own builder.
+	var builder: WorldBuilder = cfg.create_builder() if cfg.has_method("create_builder") else WorldBuilder.new()
 	builder.name = "WorldBuilder"
 	builder.config = cfg
 	builder.terrain = terrain
@@ -61,6 +62,8 @@ func _run() -> void:
 		for i in 5:
 			await physics_frame
 		print("BUILD roads + flatten: %d ms" % (Time.get_ticks_msec() - t))
+	if builder.has_method("build_extras"):
+		builder.build_extras(root)
 	if not opts.has("no-vegetation"):
 		builder.scatter_vegetation()
 

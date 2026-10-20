@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/birch_a_lod0.res" id="1_q224s"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/birch_a_lod1.res" id="2_4fri1"]
+
+[node name="BirchA" type="Node3D" unique_id=1779076637]
+
+[node name="birch_a_LOD0" type="MeshInstance3D" parent="." unique_id=13726407]
+mesh = ExtResource("1_q224s")
+
+[node name="birch_a_LOD1" type="MeshInstance3D" parent="." unique_id=1991091299]
+mesh = ExtResource("2_4fri1")

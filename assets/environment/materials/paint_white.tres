@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "Paint_White"
+cull_mode = 2
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.935741, 0.9309246, 0.9063318, 1)
+roughness = 0.8

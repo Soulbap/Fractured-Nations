@@ -1,0 +1,83 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.351 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3070
+
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
+WARNING: instance_reset_physics_interpolation() is deprecated.
+   at: _instance_reset_physics_interpolation_bind_compat_104269 (servers/rendering/rendering_server.compat.inc:62)
+   GDScript backtrace (most recent call first):
+       [0] _run (res://tools/test_vegetation.gd:38)
+WARNING: Loaded resource as image file, this will not work on export: 'res://worlds/ref_20km/source/vegetation.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scripts/world/reference_terrain_generator.gd:22)
+       [1] _generator (res://scripts/world/reference_world_builder.gd:67)
+       [2] _check_mask (res://tools/test_vegetation.gd:111)
+       [3] _run (res://tools/test_vegetation.gd:60)
+       [4] _frames (res://tools/test_vegetation.gd:399)
+WARNING: Loaded resource as image file, this will not work on export: 'res://worlds/ref_20km/source/info.png'. Instead, import the image file as an Image resource and load it normally as a resource.
+   at: load_from_file (core/io/image.cpp:2780)
+   GDScript backtrace (most recent call first):
+       [0] _init (res://scripts/world/reference_terrain_generator.gd:23)
+       [1] _generator (res://scripts/world/reference_world_builder.gd:67)
+       [2] _check_mask (res://tools/test_vegetation.gd:111)
+       [3] _run (res://tools/test_vegetation.gd:60)
+       [4] _frames (res://tools/test_vegetation.gd:399)
+VEGTEST mask {"excluded_fraction":0.00879321727223825,"open_clear":400,"open_samples":400,"pad_excluded":0,"pad_samples":0,"road_excluded":95265,"road_samples":95265,"size_px":4000,"texel_m":5.0}
+VEGTEST trees {"cells_checked":1795,"chunks":400,"in_base_pads":0,"max_instances_per_cell":510,"min_road_distance_m":5.01824235916138,"on_grass_mask":65,"per_mesh":{"1":234518,"2":77680,"3":47051,"4":11029,"5":26987,"6":17795,"7":20085,"8":19589,"9":1502,"10":1495,"11":4563,"12":35,"13":12560,"14":14332,"15":12964,"16":355,"17":26,"18":58,"19":286,"20":204,"21":214},"trees_checked":312198,"within_road_clearance":0}
+WARNING: Vector2 cannot be normalized, the elements must be finite. Making (0, 0) as a fallback.
+   at: normalize (core/math/vector2.cpp:55)
+   GDScript backtrace (most recent call first):
+       [0] _plan_props (res://scripts/world/reference_world_builder.gd:843)
+       [1] prepare_scatter (res://scripts/world/reference_world_builder.gd:789)
+       [2] _check_determinism (res://tools/test_vegetation.gd:213)
+       [3] _run (res://tools/test_vegetation.gd:62)
+       [4] _frames (res://tools/test_vegetation.gd:399)
+WARNING: Vector2 cannot be normalized, the elements must be finite. Making (0, 0) as a fallback.
+   at: normalize (core/math/vector2.cpp:55)
+   GDScript backtrace (most recent call first):
+       [0] _plan_props (res://scripts/world/reference_world_builder.gd:843)
+       [1] prepare_scatter (res://scripts/world/reference_world_builder.gd:789)
+       [2] _check_determinism (res://tools/test_vegetation.gd:213)
+       [3] _run (res://tools/test_vegetation.gd:62)
+       [4] _frames (res://tools/test_vegetation.gd:399)
+WARNING: Vector2 cannot be normalized, the elements must be finite. Making (0, 0) as a fallback.
+   at: normalize (core/math/vector2.cpp:55)
+   GDScript backtrace (most recent call first):
+       [0] _plan_props (res://scripts/world/reference_world_builder.gd:843)
+       [1] prepare_scatter (res://scripts/world/reference_world_builder.gd:789)
+       [2] _check_determinism (res://tools/test_vegetation.gd:213)
+       [3] _run (res://tools/test_vegetation.gd:62)
+       [4] _frames (res://tools/test_vegetation.gd:399)
+WARNING: Vector2 cannot be normalized, the elements must be finite. Making (0, 0) as a fallback.
+   at: normalize (core/math/vector2.cpp:55)
+   GDScript backtrace (most recent call first):
+       [0] _plan_props (res://scripts/world/reference_world_builder.gd:843)
+       [1] prepare_scatter (res://scripts/world/reference_world_builder.gd:789)
+       [2] _check_determinism (res://tools/test_vegetation.gd:213)
+       [3] _run (res://tools/test_vegetation.gd:62)
+       [4] _frames (res://tools/test_vegetation.gd:399)
+WARNING: Vector2 cannot be normalized, the elements must be finite. Making (0, 0) as a fallback.
+   at: normalize (core/math/vector2.cpp:55)
+   GDScript backtrace (most recent call first):
+       [0] _plan_props (res://scripts/world/reference_world_builder.gd:843)
+       [1] prepare_scatter (res://scripts/world/reference_world_builder.gd:789)
+       [2] _check_determinism (res://tools/test_vegetation.gd:213)
+       [3] _run (res://tools/test_vegetation.gd:62)
+       [4] _frames (res://tools/test_vegetation.gd:399)
+WARNING: Vector2 cannot be normalized, the elements must be finite. Making (0, 0) as a fallback.
+   at: normalize (core/math/vector2.cpp:55)
+   GDScript backtrace (most recent call first):
+       [0] _plan_props (res://scripts/world/reference_world_builder.gd:843)
+       [1] prepare_scatter (res://scripts/world/reference_world_builder.gd:789)
+       [2] _check_determinism (res://tools/test_vegetation.gd:213)
+       [3] _run (res://tools/test_vegetation.gd:62)
+       [4] _frames (res://tools/test_vegetation.gd:399)
+ReferenceWorldBuilder: planned props { 18: 278, 16: 1126, 17: 205, 21: 4141, 19: 4463 }
+VEGTEST determinism {"cell":[-3,-4],"instances":32,"matches_stored_file":true,"repeat_identical":true}
+VEGTEST streamer_fps {"active_out_of_range":0,"cold_start":{"settle_frames":43,"settle_ms":1481.748,"worst_activation_ms":0.56,"worst_frame_ms":190.921},"mmi_upper_bound":21504,"settle_frames":43,"settle_ms":1268.474,"stats":{"active_cells":232,"active_instances":51638,"active_mmis":1023,"loaded_chunks":21,"loading_chunks":0,"queued":0,"worst_activation_ms":0.45},"worst_frame_ms":32.38}
+VEGTEST streamer_jump {"first_frame_ms":42.722,"old_cells_out_of_range_still_active":0,"settle_frames":56,"settle_ms":2314.661,"stats":{"active_cells":250,"active_instances":73616,"active_mmis":1298,"loaded_chunks":16,"loading_chunks":0,"queued":0,"worst_activation_ms":0.56},"worst_frame_ms":42.722}
+VEGTEST streamer_switch {"grass_active_at_rts600":false,"round_trips":6,"stats_at_rts600":{"active_cells":161,"active_instances":39657,"active_mmis":543,"loaded_chunks":20,"loading_chunks":0,"queued":0,"worst_activation_ms":0.44},"worst_frame_ms":52.535,"worst_settle_frames":44}
+VEGTEST streamer_move {"frames":180,"grass_active":true,"speed_m_per_frame":1.0,"stats":{"active_cells":236,"active_instances":57441,"active_mmis":1052,"loaded_chunks":20,"loading_chunks":0,"queued":0,"worst_activation_ms":0.45},"worst_frame_ms":45.145}
+VEGTEST grass_altitude {"cutoff_m":90.0,"particles":57600,"sequence_height_active_measured":[[1.8,true,1.8],[60.0,true,60.0],[120.0,false,120.0],[600.0,false,600.0],[70.0,true,70.0],[1.8,true,1.8]]}
+VEGTEST colliders {"active_colliders":89,"cells_indexed":4,"enabled_shapes":89,"first_index_ms":9.118}
+VEGTEST FAIL ["FPS/RTS switch worst frame 52.5 ms"]

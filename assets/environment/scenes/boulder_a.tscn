@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/boulder_a_lod0.res" id="1_krcko"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/boulder_a_lod1.res" id="2_tk6a2"]
+
+[node name="BoulderA" type="Node3D" unique_id=775698700]
+
+[node name="boulder_a_LOD0" type="MeshInstance3D" parent="." unique_id=1766042715]
+mesh = ExtResource("1_krcko")
+
+[node name="boulder_a_LOD1" type="MeshInstance3D" parent="." unique_id=1530204056]
+mesh = ExtResource("2_tk6a2")

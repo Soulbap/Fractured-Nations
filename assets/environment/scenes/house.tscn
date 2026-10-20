@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/house_lod0.res" id="1_2kn7e"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/house_lod1.res" id="2_lw8f5"]
+
+[node name="House" type="Node3D" unique_id=1839042640]
+
+[node name="house_LOD0" type="MeshInstance3D" parent="." unique_id=1371635666]
+mesh = ExtResource("1_2kn7e")
+
+[node name="house_LOD1" type="MeshInstance3D" parent="." unique_id=117891533]
+mesh = ExtResource("2_lw8f5")

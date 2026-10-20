@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/road_post_lod0.res" id="1_ltfwh"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/road_post_lod1.res" id="2_vap2m"]
+
+[node name="RoadPost" type="Node3D" unique_id=160697179]
+
+[node name="road_post_LOD0" type="MeshInstance3D" parent="." unique_id=1683919891]
+mesh = ExtResource("1_ltfwh")
+
+[node name="road_post_LOD1" type="MeshInstance3D" parent="." unique_id=1584253727]
+mesh = ExtResource("2_vap2m")

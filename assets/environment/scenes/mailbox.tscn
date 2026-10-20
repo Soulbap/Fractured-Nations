@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/mailbox_lod0.res" id="1_n3aru"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/mailbox_lod1.res" id="2_ic0vq"]
+
+[node name="Mailbox" type="Node3D" unique_id=1072675920]
+
+[node name="mailbox_LOD0" type="MeshInstance3D" parent="." unique_id=384454017]
+mesh = ExtResource("1_n3aru")
+
+[node name="mailbox_LOD1" type="MeshInstance3D" parent="." unique_id=714161439]
+mesh = ExtResource("2_ic0vq")
