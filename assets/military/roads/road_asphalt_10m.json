@@ -1,0 +1,100 @@
+{
+ "id": "road_asphalt_10m",
+ "family": "road",
+ "display_name": "Asphalt road section 10 m",
+ "category": "Roads",
+ "description": "Two-lane asphalt road, 10 m straight section: 7.0 m carriageway (2.5 % crossfall), 1.0 m gravel shoulders, 2.0 m V-ditches 0.5 m deep, centre dashes (3 m / 6 m) and edge lines.",
+ "bounds_min": [
+  -6.5,
+  -5.0,
+  -0.6
+ ],
+ "bounds_max": [
+  6.5,
+  5.0,
+  0.154
+ ],
+ "size_above_ground": [
+  13.0,
+  10.0,
+  0.154
+ ],
+ "footprint_xy": [
+  -6.5,
+  -5.0,
+  6.5,
+  5.0
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  56,
+  56,
+  20
+ ],
+ "surfaces": [
+  4,
+  4,
+  3
+ ],
+ "materials": [
+  "Asphalt",
+  "Dirt",
+  "Gravel",
+  "Paint_RoadWhite"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   80
+  ],
+  [
+   80,
+   300
+  ],
+  [
+   300,
+   2000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -6.5,
+   -0.25,
+   -5.0,
+   13.0,
+   0.3,
+   10.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SNAP_S",
+   "pos": [
+    0,
+    -5.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "section joins here (south)"
+  },
+  {
+   "name": "SNAP_N",
+   "pos": [
+    0,
+    5.0,
+    0
+   ],
+   "yaw": 0,
+   "note": "section joins here (north)"
+  }
+ ],
+ "structure": null,
+ "profile": {
+  "carriageway_m": 7.0,
+  "lane_m": 3.5,
+  "shoulder_m": 1.0,
+  "ditch_m": 2.0,
+  "ditch_depth_m": 0.5,
+  "crossfall": 0.025
+ }
+}

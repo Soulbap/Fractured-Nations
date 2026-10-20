@@ -1,0 +1,72 @@
+{
+ "id": "camo_net_canopy",
+ "family": "prop",
+ "display_name": "Camouflage net canopy",
+ "category": "Shelter",
+ "description": "Woodland camouflage net 8 x 8 m on four 2.6 m poles and a 3.2 m centre pole.",
+ "bounds_min": [
+  -5.004,
+  -5.004,
+  0.0
+ ],
+ "bounds_max": [
+  5.004,
+  5.004,
+  3.243
+ ],
+ "size_above_ground": [
+  10.007,
+  10.007,
+  3.243
+ ],
+ "footprint_xy": [
+  -5.004,
+  -5.004,
+  5.004,
+  5.004
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  260,
+  228,
+  128
+ ],
+ "surfaces": [
+  3,
+  2,
+  1
+ ],
+ "materials": [
+  "Camo_Net",
+  "Canvas_Tan",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   30
+  ],
+  [
+   30,
+   100
+  ],
+  [
+   100,
+   400
+  ]
+ ],
+ "collision_boxes_godot": [],
+ "markers": [
+  {
+   "name": "ATT_Under",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "yaw": 0,
+   "note": "vehicle / equipment parks under the net"
+  }
+ ],
+ "structure": null
+}

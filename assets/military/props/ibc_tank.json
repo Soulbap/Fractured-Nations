@@ -1,0 +1,68 @@
+{
+ "id": "ibc_tank",
+ "family": "prop",
+ "display_name": "IBC water tank 1000 l",
+ "category": "Logistics",
+ "description": "1000 l intermediate bulk container 1.2 x 1.0 x 1.16 m (water).",
+ "bounds_min": [
+  -0.61,
+  -0.51,
+  0.0
+ ],
+ "bounds_max": [
+  0.61,
+  0.58,
+  1.165
+ ],
+ "size_above_ground": [
+  1.22,
+  1.09,
+  1.165
+ ],
+ "footprint_xy": [
+  -0.61,
+  -0.51,
+  0.61,
+  0.58
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  384,
+  56,
+  24
+ ],
+ "surfaces": [
+  1,
+  1,
+  1
+ ],
+ "materials": [
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   20
+  ],
+  [
+   20,
+   60
+  ],
+  [
+   60,
+   160
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.6,
+   0.0,
+   -0.5,
+   1.2,
+   1.16,
+   1.0
+  ]
+ ],
+ "markers": [],
+ "structure": null
+}

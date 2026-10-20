@@ -10,6 +10,7 @@ points (ATT_*) are exported as nodes; see docs/ASSET-PRODUCTION-01_REPORT.md.
 import math
 
 import ap_kit as K
+import ap_signs as S
 from ap_kit import Frame
 
 ALL = (0, 1, 2)
@@ -353,3 +354,308 @@ BUILDERS = {
     "supply_depot": supply_depot,
     "vehicle_depot": vehicle_depot,
 }
+
+
+# =============================================================================== 5 Medical station
+
+
+def medical_station(A):
+    """Role 1 medical station: arched-frame field hospital tent 6.1 x 12 m with an end
+    vestibule, attached white medical container, red-cross panels, ambulance bay."""
+    a = A.Asset("medical_station", "building", "Medical Station", "Buildings",
+                "Role 1 aid station: 6.1 x 12 m arched treatment tent with vestibule, 20 ft medical container, "
+                "covered ambulance drop-off, red-cross markings.")
+    W, D, ridge = 6.1, 12.0, 3.2
+    import math as m
+    # Floor platform (duckboard) as foundation.
+    a.skirt(-W / 2 - 0.2, -D / 2, W / 2 + 0.2, D / 2 + 2.0, 0.3, "Timber_Dark", top=0.12)
+    # Arched tent: superellipse cross-section lofted along Y, canvas, closed ends.
+    # Superellipse arch (n = 3): near-vertical low walls rounding into the roof.
+    prof = []
+    n = 16
+    for i in range(n + 1):
+        t = m.pi * i / n
+        c, s_ = m.cos(t), m.sin(t)
+        prof.append((W / 2 * m.copysign(abs(c) ** (2 / 3), c), 0.12 + (ridge - 0.12) * abs(s_) ** (2 / 3)))
+    verts, faces = [], []
+    k = len(prof)
+    for y in (-D / 2, D / 2):
+        verts += [(x, y, z) for x, z in prof]
+    for i in range(k - 1):
+        faces.append((i, i + 1, k + i + 1, k + i))
+    a.poly(verts, faces, "Canvas_Tan")
+    for y, flip in ((-D / 2, True), (D / 2, False)):
+        end = [(x, y, z) for x, z in prof]
+        a.poly(end, [tuple(range(k))[::-1] if not flip else tuple(range(k))], "Canvas_Tan")
+    # Frame arches every 2 m (visible ribs) and ridge line.
+    for i in range(7):
+        y = -D / 2 + i * D / 6
+        a.tube([(x * 1.01, y, z * 1.005 + 0.01) for x, z in prof], 0.025, "Canvas_Tan", (0,), segs=5, cap=False)
+    # Vestibule (entrance) at the front with a door flap.
+    vw, vd, vh = 2.6, 2.0, 2.4
+    a.box_between((-vw / 2, D / 2, 0.12), (vw / 2, D / 2 + vd, vh), "Canvas_Tan")
+    a.prism([(-vw / 2 - 0.1, 0), (vw / 2 + 0.1, 0), (0, 0.45)], (0, D / 2, vh), (0, D / 2 + vd + 0.1, vh), "Canvas_Tan")
+    F = Frame((0, D / 2 + vd, 0.12), 0)
+    F.box(a, (1.4, 0.02, 2.0), 0, 0.01, 1.0, "Canvas_OD", L01)
+    F.sign(a, "medical_cross", 0, 2.75 - 0.12, 0.6, 0.6, y=0.02)
+    # Red cross panels on both sides of the arch and on the roof.
+    for x, yaw in ((W / 2 + 0.01, -90), (-(W / 2 + 0.01), 90)):
+        Frame((x, 0, 0), yaw).sign(a, "medical_cross", 0, 1.5, 1.6, 1.6, y=0.0)
+    a.quad_uv([(-1.2, -1.2, ridge + 0.13), (1.2, -1.2, ridge + 0.13), (1.2, 1.2, ridge + 0.13), (-1.2, 1.2, ridge + 0.13)],
+              S.rect("medical_cross"), "Signs", ALL)
+    # Medical container on the east side, connected by a short canvas tunnel.
+    cx = W / 2 + 2.6
+    a.box_between((cx - 1.22, -4.5, 0.15), (cx + 1.22, 1.56, 2.74), "Container_White")
+    a.box_between((cx - 1.25, -4.53, 0.0), (cx + 1.25, 1.59, 0.15), "Steel_Dark", L01)
+    Frame((cx + 1.22, -1.5, 0.15), -90).sign(a, "medical_cross", 0, 1.4, 1.2, 1.2, y=0.01)
+    Frame((cx, 1.56, 0.15), 0).sign(a, "plate_medical", 0, 1.9, 1.6, 0.8, y=0.01)
+    K.door(a, Frame((cx, 1.56, 0.15), 0), -0.5, leaf="Paint_White", light=True)
+    K.ac_unit(a, Frame((cx + 1.22, -3.5, 0.15), -90), 0, 1.9)
+    a.box_between((W / 2 - 0.1, -2.6, 0.12), (cx - 1.22, -0.6, 2.2), "Canvas_Tan")
+    # Ambulance drop-off canopy in front.
+    a.box_between((-3.5, D / 2 + vd + 0.5, 3.0), (3.5, D / 2 + vd + 5.5, 3.1), "Canvas_White", ALL)
+    for px in (-3.4, 3.4):
+        for py in (D / 2 + vd + 0.6, D / 2 + vd + 5.4):
+            a.cyl(0.04, 0.04, 3.0, (px, py, 1.5), "Steel_Galv", L01, segs=6)
+    a.col_between((-W / 2, -D / 2, -0.3), (W / 2, D / 2, ridge))
+    a.col_between((-vw / 2, D / 2, 0), (vw / 2, D / 2 + vd, vh))
+    a.col_between((cx - 1.22, -4.5, 0), (cx + 1.22, 1.56, 2.74))
+    a.marker("IP_Entrance", (0, D / 2 + vd + 1.0, 0), 180, "patient entrance")
+    a.marker("VEH_Ambulance", (0, D / 2 + vd + 3.0, 0), 90, "ambulance stops under the canopy")
+    a.marker("IP_Container", (cx - 0.5, 2.6, 0), 180, "medical supply container")
+    a.marker("ATT_Expansion_W", (-W / 2 - 3.5, 0, 0), 90, "second ward tent (west)")
+    a.marker("ATT_Helipad", (0, D / 2 + 25.0, 0), 180, "casualty evacuation landing site")
+    a.ao_height, a.ao_strength = 0.8, 0.30
+    a.structure = _structure(6.0, 0.5)
+    a.meta["function"] = {"role": "medical", "beds": 8, "treatment_bays": 2}
+    return a
+
+
+# =============================================================================== 6 Guard tower
+
+
+def guard_tower_steel(A):
+    """Prefabricated steel guard tower: armoured 2.6 x 2.6 m cabin with slit windows on
+    a 4.5 m braced frame, external stair with landing, searchlight, sandbagged base."""
+    a = A.Asset("guard_tower_steel", "building", "Guard Tower", "Defences",
+                "Steel watchtower: 2.6 x 2.6 m armoured cabin, floor at 4.5 m, 360 deg observation slits, "
+                "searchlight, external stair, sandbag ring at the base.")
+    c, fl = 2.6, 4.5
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            a.box((0.6, 0.6, 0.3), (sx * 1.1, sy * 1.1, 0.0), "Concrete", ALL)
+            a.box((0.16, 0.16, fl), (sx * 1.1, sy * 1.1, fl / 2), "Paint_OD", ALL)
+    for z0, z1 in ((0.4, 2.4), (2.4, 4.3)):
+        for sy in (-1, 1):
+            a.cyl_between((-1.1, sy * 1.1, z0), (1.1, sy * 1.1, z1), 0.035, "Paint_OD", L01, segs=6)
+            a.cyl_between((sy * 1.1, -1.1, z0), (sy * 1.1, 1.1, z1), 0.035, "Paint_OD", L01, segs=6)
+        a.box((2.4, 0.08, 0.08), (0, 1.1, z1), "Paint_OD", L01)
+        a.box((2.4, 0.08, 0.08), (0, -1.1, z1), "Paint_OD", L01)
+    a.box((c + 0.4, c + 0.4, 0.15), (0, 0, fl), "Steel_Dark", ALL)
+    a.box_between((-c / 2, -c / 2, fl + 0.07), (c / 2, c / 2, fl + 1.05), "Paint_OD")
+    a.box_between((-c / 2, -c / 2, fl + 1.55), (c / 2, c / 2, fl + 2.35), "Paint_OD")
+    for k in range(4):
+        F = Frame(Frame((0, 0, 0), 90 * k).p(0, c / 2, fl), 90 * k)
+        F.box(a, (c - 0.3, 0.04, 0.5), 0, -0.02, 1.30, "Glass", ALL)
+        for x in (-0.65, 0.0, 0.65):
+            F.box(a, (0.10, 0.12, 0.5), x, 0.0, 1.30, "Paint_OD", L01)
+    a.box_between((-c / 2 - 0.35, -c / 2 - 0.35, fl + 2.35), (c / 2 + 0.35, c / 2 + 0.35, fl + 2.50), "Paint_OD")
+    a.cyl(0.18, 0.15, 0.25, (0.9, 0.9, fl + 2.7), "Paint_Black", L01, axis=(0, 1, 0.3), segs=12)
+    a.cyl(0.16, 0.16, 0.01, (0.9, 1.03, fl + 2.74), "Lamp", L0, axis=(0, 1, 0.3), segs=12)
+    K.whip(a, -0.9, -0.9, fl + 2.5, 1.8)
+    # Stair along the west side, landing at mid height, door at the back.
+    run = 3.2
+    for k in range(13):
+        t = (k + 0.5) / 13
+        a.box((0.9, 0.24, 0.04), (-c / 2 - 0.55, 1.6 - t * run, 0.15 + t * (fl - 0.15)), "Steel_Dark", L01)
+    for sx in (-c / 2 - 0.1, -c / 2 - 1.0):
+        a.cyl_between((sx, 1.6, 0.05), (sx, 1.6 - run, fl), 0.03, "Paint_OD", L01, segs=6)
+        a.cyl_between((sx, 1.6, 1.0), (sx, 1.6 - run, fl + 1.0), 0.02, "Paint_Yellow", L0, segs=6)
+    K.door(a, Frame((0, -c / 2, fl + 0.07), 180), 0.6, w=0.8, h=2.0, leaf="Paint_OD", light=False)
+    # Sandbag ring at the base.
+    import random
+    rnd = random.Random(7)
+    for k in range(4):
+        for i in range(10):
+            ang = (i + 0.5 * (k % 2)) * 2 * math.pi / 10
+            r = 2.3
+            a.box((0.6, 0.32, 0.13), (r * math.cos(ang), r * math.sin(ang), 0.07 + k * 0.12), "Sandbag", L0,
+                  rot=A.rot_z(math.degrees(ang) + 90 + rnd.uniform(-4, 4)), bevel=0.03, segs=1)
+    a.cyl(2.3, 2.3, 0.5, (0, 0, 0.25), "Sandbag", (1, 2), segs=10, cap=True)
+    a.col_between((-1.2, -1.2, -0.3), (1.2, 1.2, fl))
+    a.col_between((-c / 2 - 0.2, -c / 2 - 0.2, fl), (c / 2 + 0.2, c / 2 + 0.2, fl + 2.5))
+    a.marker("IP_Stair", (-c / 2 - 0.55, 2.4, 0), 180, "foot of the stair")
+    a.marker("IP_Observer", (0, 0.4, fl + 0.07), 0, "sentry position in the cabin")
+    a.marker("ATT_Searchlight", (0.9, 0.9, fl + 2.7), 0)
+    a.foundation = 0.3
+    a.ao_height, a.ao_strength = 0.6, 0.30
+    a.structure = _structure(10.0, 0.6, "Defences")
+    return a
+
+
+# =============================================================================== 7 Bunker
+
+
+def bunker(A):
+    """Bunker / fighting position: half-buried reinforced-concrete box 4 x 4 m with 0.4 m
+    walls, three firing slits, sandbag cover on the roof, entrance trench at the back."""
+    a = A.Asset("bunker_fighting", "building", "Bunker / Fighting Position", "Defences",
+                "Reinforced-concrete bunker 4.0 x 4.0 x 1.6 m above ground (0.6 m below), firing slits front and sides, "
+                "sandbag roof cover, rear entrance with sandbag walls.")
+    W, D, H = 4.0, 4.0, 1.6
+    a.box_between((-W / 2, -D / 2, -0.6), (W / 2, D / 2, H), "Concrete_Dark")
+    a.box_between((-W / 2 - 0.2, -D / 2 - 0.2, H), (W / 2 + 0.2, D / 2 + 0.2, H + 0.25), "Concrete")
+    for k, (yaw, w) in enumerate(((0, 1.8), (90, 1.0), (-90, 1.0))):
+        F = Frame(Frame((0, 0, 0), yaw).p(0, (D if yaw == 0 else W) / 2, 0), yaw)
+        F.box(a, (w, 0.06, 0.22), 0, 0.0, 1.20, "Paint_Black", ALL)
+        F.box(a, (w + 0.3, 0.12, 0.08), 0, 0.05, 1.36, "Concrete", L01)
+    # Sandbag cover on the roof (two layers), earth splayed around the base.
+    import random
+    rnd = random.Random(3)
+    for k in range(2):
+        for i in range(7):
+            for j in range(7):
+                if rnd.random() < 0.08:
+                    continue
+                x = -2.0 + (i + 0.5) * 4.0 / 7 + (0.15 if k else 0)
+                y = -2.0 + (j + 0.5) * 4.0 / 7
+                a.box((0.58, 0.32, 0.13), (x, y, H + 0.32 + k * 0.12), "Sandbag", L0, rot=A.rot_z(rnd.uniform(-8, 8) + (90 if k else 0)), bevel=0.03, segs=1)
+    a.box_between((-W / 2, -D / 2, H + 0.25), (W / 2, D / 2, H + 0.52), "Sandbag", (1, 2), bevel=0.03)
+    # Earth bank piled against the front and side walls (below the firing slits).
+    for yaw in (0, 90, -90):
+        F = Frame(Frame((0, 0, 0), yaw).p(0, 2.0, 0), yaw)
+        a.prism([(-2.4, 0.0), (2.4, 0.0), (2.0, 0.85), (-2.0, 0.85)], F.p(0, 0.0, -0.05), F.p(0, 1.2, -0.05), "Dirt", ALL)
+    # Rear entrance: opening in the back wall + sandbag-lined approach.
+    Fb = Frame((0, -D / 2, 0), 180)
+    Fb.box(a, (0.9, 0.05, 1.5), 0, 0.0, 0.7, "Paint_Black", ALL)
+    for sx in (-0.75, 0.75):
+        for k in range(8):
+            a.box((0.32, 0.6, 0.13), (sx, -D / 2 - 1.0, 0.07 + k * 0.12), "Sandbag", L0, bevel=0.03, segs=1)
+        a.box((0.32, 1.8, 0.95), (sx, -D / 2 - 1.0, 0.48), "Sandbag", (1, 2))
+    a.col_between((-W / 2, -D / 2, -0.6), (W / 2, D / 2, H + 0.5))
+    a.marker("IP_Entrance", (0, -D / 2 - 2.2, 0), 0, "rear entrance")
+    a.marker("IP_FiringPort_Front", (0, D / 2 - 0.6, 0.0), 0, "rifleman at the front slit (floor at 0.0 m)")
+    a.marker("IP_FiringPort_W", (-W / 2 + 0.6, 0, 0.0), 90)
+    a.marker("IP_FiringPort_E", (W / 2 - 0.6, 0, 0.0), -90)
+    a.foundation = 0.6
+    a.ao_height, a.ao_strength = 0.7, 0.35
+    a.structure = _structure(8.0, 0.8, "Defences")
+    return a
+
+
+# =============================================================================== 8 Communications station
+
+
+def comms_station(A):
+    """Communications station: shelter container with equipment racks, 18 m guyed
+    lattice mast with panel and dish antennas, satellite terminal, generator pad."""
+    a = A.Asset("comms_station", "building", "Communications Station", "Buildings",
+                "Signals site: 20 ft equipment shelter (A/C, cable entry), 18 m guyed lattice mast with dishes and whips, "
+                "2.4 m satellite terminal, generator pad.")
+    # Gravel pad.
+    a.box_between((-7.0, -6.0, -0.05), (7.0, 6.0, 0.06), "Gravel", ALL)
+    sx0, sy0 = -3.5, 1.0
+    a.box_between((sx0 - 3.03, sy0 - 1.22, 0.30), (sx0 + 3.03, sy0 + 1.22, 2.89), "Container_OD")
+    for x in (sx0 - 2.6, sx0 + 2.6):
+        for y in (sy0 - 0.9, sy0 + 0.9):
+            a.box((0.3, 0.3, 0.32), (x, y, 0.15), "Concrete", ALL)
+    Fs = Frame((sx0, sy0 - 1.22, 0.30), 180)
+    K.door(a, Fs, 1.5, leaf="Paint_OD")
+    K.steps(a, Frame((sx0 - 1.5, sy0 - 1.22, 0), 180), 0, 1.0, 0.30, rails=False)
+    K.ac_unit(a, Frame((sx0 + 3.03, sy0, 0.30), -90), 0, 1.6)
+    Frame((sx0, sy0 + 1.22, 0.30), 0).sign(a, "plate_comms", 0, 1.8, 1.4, 0.7, y=0.01)
+    a.box((0.5, 0.25, 0.6), (sx0 + 2.7, sy0 + 1.35, 1.5), "Paint_Grey", L01)
+    # Mast with cable ladder to the shelter.
+    mx, my = 3.0, 1.5
+    K.lattice_mast(a, mx, my, 18.0, 0.55)
+    for z, r in ((9.0, 7.0), (17.0, 9.5)):
+        K.guy_wires(a, mx, my, z, r, 3, 20.0)
+    for yaw, z in ((30, 16.5), (150, 16.5), (270, 16.5)):
+        x = mx + 0.5 * math.cos(math.radians(yaw))
+        y = my + 0.5 * math.sin(math.radians(yaw))
+        a.box((0.32, 0.08, 1.4), (x, y, z), "Plastic_White", L01, rot=A.rot_z(yaw + 90))
+    K.dish(a, mx, my + 0.5, 13.0, 0.6, 0, 5)
+    K.dish(a, mx - 0.5, my, 11.0, 0.45, 100, 3)
+    for k, ln in enumerate((3.0, 2.0)):
+        K.whip(a, mx + 0.15 * (k - 0.5), my, 18.0, ln)
+    a.tube([(mx, my, 3.0), (mx - 0.5, my - 0.2, 2.6), (sx0 + 3.03, sy0, 2.4)], 0.03, "Plastic_Black", L0, segs=5)
+    # Satellite terminal on a ground frame.
+    a.box((1.6, 1.6, 0.15), (-3.0, -3.5, 0.1), "Steel_Galv", L01)
+    a.cyl(0.08, 0.08, 1.2, (-3.0, -3.5, 0.75), "Steel_Galv", L01, segs=8)
+    K.dish(a, -3.0, -3.2, 1.6, 1.2, 160, 40)
+    # Generator pad.
+    a.box_between((3.5, -4.5, 0.06), (6.5, -2.5, 0.18), "Concrete", ALL)
+    a.col_between((sx0 - 3.03, sy0 - 1.22, 0), (sx0 + 3.03, sy0 + 1.22, 2.89))
+    a.col_box((0.7, 0.7, 18.0), (mx, my, 9.0))
+    a.col_box((1.6, 1.6, 2.4), (-3.0, -3.5, 1.2))
+    a.marker("IP_Shelter_Door", (sx0 + 1.5, sy0 - 2.6, 0), 0, "shelter door")
+    a.marker("ATT_Generator", (5.0, -3.5, 0.18), 0, "generator set stands on this pad")
+    a.marker("ATT_Mast_Top", (mx, my, 18.0), 0, "antenna mounting at the top of the mast")
+    a.lod_ranges = [[0, 80], [80, 300], [300, 2500]]
+    a.ao_height, a.ao_strength = 0.8, 0.30
+    a.structure = _structure(6.0, 0.6)
+    a.meta["function"] = {"role": "communications", "mast_m": 18}
+    return a
+
+
+# =============================================================================== 9 Training facility
+
+
+def training_facility(A):
+    """Training facility: prefabricated classroom building 14 x 8 m with a covered
+    outdoor briefing area (benches, map board) and a flag-free sign mast."""
+    a = A.Asset("training_facility", "building", "Training Facility", "Buildings",
+                "Training centre: 14 x 8 m classroom building (two classrooms, 40 seats) on a plinth, 6 x 8 m covered "
+                "briefing area with benches and a map board.")
+    W, D = 14.0, 8.0
+    x0, x1, y0, y1 = -W / 2, W / 2, -D / 2, D / 2
+    fl = 0.3
+    eave = fl + 3.0
+    a.skirt(x0 - 0.3, y0 - 0.3, x1 + 6.6, y1 + 0.3, 0.5, "Concrete", top=fl)
+    a.box_between((x0, y0, fl), (x1, y1, eave), "Concrete_Block")
+    rise = K.gable_roof(a, x0, y0, x1, y1, eave, 12, overhang=0.45, mat="Roof_Tan", wall_mat="Concrete_Block")
+    front, back = Frame((0, y1, fl), 0), Frame((0, y0, fl), 180)
+    K.door(a, front, 3.5, leaf="Paint_Grey", canopy=1.0)
+    K.door(a, front, -3.5, leaf="Paint_Grey", canopy=1.0)
+    front.sign(a, "plate_training", 0, 2.2, 1.6, 0.8, back="Paint_Grey")
+    for wx in (-5.6, -1.5, 1.5, 5.6):
+        K.window(a, front, wx, 1.6, 1.4, 1.1, bars=False)
+        K.window(a, back, wx, 1.6, 1.4, 1.1, bars=False)
+        K.ac_unit(a, back, wx + 0.9, 0.9)
+    for F, xs in ((front, (-6.8, 6.8)), (back, (-6.8, 6.8))):
+        for fx in xs:
+            K.downpipe(a, F, fx, eave)
+    # Covered briefing area east of the building.
+    bx0, bx1 = x1, x1 + 6.3
+    a.box_between((bx0, y0, eave - 0.05), (bx1, y1, eave + 0.07), "Roof_Tan", ALL)
+    for px in (bx0 + 3.0, bx1 - 0.15):
+        for py in (y0 + 0.15, y1 - 0.15):
+            a.box((0.15, 0.15, eave - fl), (px, py, (eave + fl) / 2), "Paint_Grey", ALL)
+    for r in range(3):
+        y = y0 + 1.6 + r * 1.6
+        a.box((4.0, 0.35, 0.05), (bx0 + 3.4, y, fl + 0.45), "Timber", L01)
+        for lx in (-1.7, 1.7):
+            a.box((0.06, 0.30, 0.45), (bx0 + 3.4 + lx, y, fl + 0.22), "Steel_Dark", L0)
+    a.box((0.08, 2.4, 1.4), (bx1 - 0.5, 0, fl + 1.6), "Paint_White", L01)
+    a.box((0.06, 0.06, 0.9), (bx1 - 0.5, -1.1, fl + 0.45), "Steel_Dark", L0)
+    a.box((0.06, 0.06, 0.9), (bx1 - 0.5, 1.1, fl + 0.45), "Steel_Dark", L0)
+    a.col_between((x0, y0, -0.5), (x1, y1, eave + rise))
+    a.col_between((x0 - 0.3, y0 - 0.3, -0.5), (bx1 + 0.3, y1 + 0.3, fl))
+    a.col_between((bx0, y0, eave - 0.05), (bx1, y1, eave + 0.07))
+    a.marker("IP_Classroom_1", (3.5, y1 + 2.0, 0), 180)
+    a.marker("IP_Classroom_2", (-3.5, y1 + 2.0, 0), 180)
+    a.marker("IP_Briefing", (bx0 + 3.4, 0, fl), 90, "instructor position at the map board")
+    a.marker("ATT_Range_Access", (bx1 + 4.0, 0, 0), -90, "path to ranges / training areas")
+    a.ao_height, a.ao_strength = 1.0, 0.35
+    a.structure = _structure(6.0, 0.8)
+    a.meta["function"] = {"role": "training", "seats": 40, "classrooms": 2}
+    return a
+
+
+BUILDERS.update({
+    "medical_station": medical_station,
+    "guard_tower_steel": guard_tower_steel,
+    "bunker_fighting": bunker,
+    "comms_station": comms_station,
+    "training_facility": training_facility,
+})

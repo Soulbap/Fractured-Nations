@@ -1,0 +1,97 @@
+{
+ "id": "iso_container_40_od",
+ "family": "prop",
+ "display_name": "40 ft container (olive)",
+ "category": "Containers",
+ "description": "40 ISO dry freight container (12.192 x 2.438 x 2.591 m), doors at the front.",
+ "bounds_min": [
+  -1.222,
+  -6.096,
+  0.0
+ ],
+ "bounds_max": [
+  1.222,
+  6.163,
+  2.591
+ ],
+ "size_above_ground": [
+  2.444,
+  12.26,
+  2.591
+ ],
+ "footprint_xy": [
+  -1.222,
+  -6.096,
+  1.222,
+  6.163
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  1816,
+  240,
+  14
+ ],
+ "surfaces": [
+  3,
+  3,
+  2
+ ],
+ "materials": [
+  "Container_OD",
+  "Kit_Palette",
+  "Paint_OD",
+  "Signs"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   35
+  ],
+  [
+   35,
+   120
+  ],
+  [
+   120,
+   600
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.219,
+   0.0,
+   -6.096,
+   2.438,
+   2.591,
+   12.192
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Doors",
+   "pos": [
+    0,
+    6.996,
+    0
+   ],
+   "yaw": 180,
+   "note": "stand here to open / load the doors"
+  },
+  {
+   "name": "ATT_Stack",
+   "pos": [
+    0,
+    0,
+    2.591
+   ],
+   "yaw": 0,
+   "note": "next container stacks here (castings align)"
+  }
+ ],
+ "structure": null,
+ "module": {
+  "length": 12.192,
+  "width": 2.438,
+  "height": 2.591
+ }
+}

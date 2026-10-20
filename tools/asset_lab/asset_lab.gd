@@ -10,6 +10,11 @@ extends Node3D
 ##                        benchmarks/asset01/validate.json (exit code 1 on failures)
 ##   --lod [filter]       the same asset seen from LOD0 / LOD1 / LOD2 distances (real
 ##                        visibility ranges) -> docs/asset01/godot/<id>_lodrange.jpg
+##   --factions           faction infantry: rig/material/mount checks against CHARACTER-01
+##                        (benchmarks/asset01/factions.json) and screenshots (line-up,
+##                        close-ups, walking, RTS, first-person sight picture)
+##   --charperf N         N animated faction soldiers vs N CHARACTER-01 soldiers:
+##                        frame time / draw calls -> benchmarks/asset01/charperf_N.json
 ## filter: comma list of ids, "family:<name>", or empty for every asset in the catalog.
 
 const CATALOG := "res://assets/military/catalog.json"
@@ -41,6 +46,10 @@ func _ready() -> void:
 			_validate(ids)
 		"--lod":
 			await _lod_range(ids)
+		"--factions":
+			await _factions()
+		"--charperf":
+			await _charperf(int(args[1]) if args.size() > 1 else 60)
 		_:
 			push_error("unknown mode " + mode)
 	print("AP done failures=%d" % failures.size())
@@ -286,7 +295,9 @@ func _validate(ids: Array) -> void:
 					errs.append("surface %s/%d has no vertex colours" % [mi.name, s])
 			ranges.append([l, mi.visibility_range_begin, mi.visibility_range_end])
 		ranges.sort()
-		if tris[1] >= tris[0] or tris[2] >= tris[1]:
+		# Never more triangles at a farther LOD; LOD2 must be cheaper than LOD0 (tiny props
+		# may share one simple mesh for LOD1 and LOD2).
+		if tris[1] > tris[0] or tris[2] > tris[1] or tris[2] >= tris[0]:
 			errs.append("LOD triangle counts do not decrease: %s" % str(tris))
 		for i in range(1, ranges.size()):
 			if absf(ranges[i][1] - ranges[i - 1][2]) > 0.01:
@@ -332,3 +343,210 @@ func _validate(ids: Array) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(BENCH_DIR))
 	var out := FileAccess.open(BENCH_DIR + "validate.json", FileAccess.WRITE)
 	out.store_string(JSON.stringify(report, " ", true))
+
+
+# ----------------------------------------------------------------------------- infantry
+
+const FACTION_LOADOUTS := ["NATO_rifleman", "RU_rifleman", "CN_rifleman"]
+const REF_LOADOUT := "A_standard"
+
+
+func _spawn_char(id: String, pos: Vector3, yaw: float, faction := 0) -> InfantryCharacter:
+	var lo := InfantryLoadout.by_id(id)
+	if lo == null:
+		failures.append("loadout %s missing" % id)
+		return null
+	var c := InfantryCharacter.new()
+	c.name = id
+	add_child(c)
+	c.position = pos
+	c.rotation.y = yaw
+	c.setup(lo, faction)
+	return c
+
+
+func _shot_to(name: String) -> void:
+	await _settle(4)
+	var img := await _grab()
+	img.save_jpg(SHOT_DIR + name + ".jpg", 0.9)
+	print("AP shot ", name)
+
+
+func _cam_at(pos: Vector3, target: Vector3, fov := 50.0) -> void:
+	cam.fov = fov
+	cam.global_position = pos
+	cam.look_at(target)
+
+
+func _factions() -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SHOT_DIR))
+	sun.directional_shadow_max_distance = 60.0
+	var report := {}
+	var ref := _spawn_char(REF_LOADOUT, Vector3(2.4, 0, 0), 0.0)
+	var ref_bones := ref.skeleton.get_bone_count()
+	var ref_clips := ref.anim_player.get_animation_list().size()
+	var chars: Array[InfantryCharacter] = []
+	for i in FACTION_LOADOUTS.size():
+		var id: String = FACTION_LOADOUTS[i]
+		var c := _spawn_char(id, Vector3((i - 1) * 1.2 - 0.6, 0, 0), 0.0, i % 2)
+		if c == null:
+			continue
+		chars.append(c)
+		var errs: Array[String] = []
+		if c.skeleton.get_bone_count() != ref_bones:
+			errs.append("bone count %d != CHARACTER-01 %d" % [c.skeleton.get_bone_count(), ref_bones])
+		if c.anim_player.get_animation_list().size() != ref_clips:
+			errs.append("clip count differs from CHARACTER-01")
+		for it in c.loadout.items:
+			if not c.pieces.has(it.id) or (c.pieces[it.id] as Array).is_empty():
+				errs.append("piece %s not attached" % it.id)
+		var unknown := {}
+		for mi in c.lod_meshes:
+			for s_i in mi.mesh.get_surface_count():
+				var m := mi.mesh.surface_get_material(s_i)
+				if m and not InfantryMaterials.TABLE.has(m.resource_name) and not m.resource_name.begins_with("Patch") and m.resource_name != "InfantryProxy":
+					unknown[m.resource_name] = true
+		if not unknown.is_empty():
+			errs.append("materials missing from InfantryMaterials.TABLE: %s" % str(unknown.keys()))
+		for mname in ["weapon:ATT_Optic", "weapon:ATT_Muzzle", "weapon:ATT_Underbarrel", "weapon:GRIP_Support"]:
+			if not c.mounts.has(mname):
+				errs.append("mount %s missing" % mname)
+		var grip: Node3D = c.mounts.get("weapon:GRIP_Support")
+		if grip and grip.position.distance_to(Vector3(0, 0.074, -0.165)) > 0.002:
+			errs.append("GRIP_Support at %s, standard (0, 0.074, -0.165)" % str(grip.position))
+		var optic: Node3D = c.mounts.get("weapon:ATT_Optic")
+		if optic and absf(optic.position.y - 0.114) > 0.001:
+			errs.append("ATT_Optic height %.4f, standard 0.114 (first-person sight line)" % optic.position.y)
+		var tris := [c.triangle_count(0), c.triangle_count(1), c.triangle_count(2)]
+		var surfaces := 0
+		for mi in c.lod_meshes:
+			if not String(mi.name).begins_with("Merged"):
+				surfaces += mi.mesh.get_surface_count()
+		report[id] = {"bones": c.skeleton.get_bone_count(), "clips": c.anim_player.get_animation_list().size(), "tris": tris,
+			"lod0_surfaces": surfaces, "pieces": c.pieces.size(), "errors": errs}
+		for e in errs:
+			failures.append("%s: %s" % [id, e])
+		print("AP faction %s tris=%s lod0_surfaces=%d errors=%d" % [id, str(tris), surfaces, errs.size()])
+	report[REF_LOADOUT] = {"bones": ref_bones, "tris": [ref.triangle_count(0), ref.triangle_count(1), ref.triangle_count(2)]}
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(BENCH_DIR))
+	FileAccess.open(BENCH_DIR + "factions.json", FileAccess.WRITE).store_string(JSON.stringify(report, " ", true))
+	await _settle(10)
+	# Line-up (NATO, RU, CN, then the CHARACTER-01 reference on the right).
+	var mid := Vector3(0.3, 0.95, 0)
+	_cam_at(mid + Vector3(-1.6, 0.35, -4.6), mid, 45.0)
+	await _shot_to("factions_lineup_front")
+	_cam_at(mid + Vector3(1.4, 0.4, 4.6), mid, 45.0)
+	await _shot_to("factions_lineup_back")
+	_cam_at(mid + Vector3(-5.5, 0.1, -0.2), mid, 38.0)
+	await _shot_to("factions_lineup_side")
+	# Hip-height views (proportions of pelvis / thighs / jacket hem), every loadout alone.
+	var all_chars: Array[InfantryCharacter] = chars.duplicate()
+	all_chars.append(ref)
+	for c in all_chars:
+		for o in all_chars:
+			o.visible = o == c
+		var hp := c.global_position + Vector3(0, 0.95, 0)
+		_cam_at(hp + Vector3(0, 0.05, -2.3), hp, 40.0)
+		await _shot_to("faction_%s_hips_front" % c.name)
+		_cam_at(hp + Vector3(-2.3, 0.05, 0), hp, 40.0)
+		await _shot_to("faction_%s_hips_side" % c.name)
+	for o in all_chars:
+		o.visible = true
+	ref.visible = false
+	# Close-ups at first-person distance (another soldier seen from 1.6 m at eye height).
+	for c in chars:
+		var p := c.global_position + Vector3(0, 1.45, 0)
+		_cam_at(p + Vector3(0.7, 0.18, -1.45), p + Vector3(0, -0.15, 0), 50.0)
+		await _shot_to("faction_%s_close" % c.name)
+		_cam_at(p + Vector3(-0.9, 0.1, 1.3), p + Vector3(0, -0.2, 0), 50.0)
+		await _shot_to("faction_%s_close_back" % c.name)
+	# Walking seen from the side.
+	for c in chars:
+		c.debug_velocity = -c.global_basis.z * 1.4
+	await _settle(40)
+	_cam_at(mid + Vector3(-5.0, 0.0, -0.8), mid + Vector3(0, 0, -0.8), 40.0)
+	await _shot_to("factions_walking")
+	for c in chars:
+		c.debug_velocity = Vector3.ZERO
+		c.position.z = 0
+	# RTS and distant views (merged LOD1 / LOD2).
+	await _settle(30)
+	_cam_at(mid + Vector3(-14, 18, -14), mid, 30.0)
+	await _shot_to("factions_rts_30m")
+	_cam_at(mid + Vector3(-30, 25, -30), mid, 9.0)
+	await _shot_to("factions_far_45m_zoom")
+	# First-person sight picture through each faction optic (Viewmodel, aiming).
+	for c in chars:
+		c.visible = false
+	var board := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(1.0, 1.0, 0.05)
+	board.mesh = bm
+	add_child(board)
+	board.position = Vector3(0, 1.6, -25.0)
+	for id in FACTION_LOADOUTS:
+		var vcam := Camera3D.new()
+		vcam.fov = 70
+		add_child(vcam)
+		vcam.position = Vector3(0, 1.6, 0)
+		vcam.make_current()
+		var vm := Viewmodel.new()
+		vm.loadout = InfantryLoadout.by_id(id)
+		vcam.add_child(vm)
+		await _settle(10)
+		await _shot_to("faction_%s_fps_hip" % id)
+		vm.aiming = true
+		await _settle(45)
+		await _shot_to("faction_%s_fps_ads" % id)
+		vcam.queue_free()
+	cam.make_current()
+
+
+func _charperf(n: int) -> void:
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	var vp := get_viewport().get_viewport_rid()
+	RenderingServer.viewport_set_measure_render_time(vp, true)
+	var report := {"soldiers": n}
+	for set_name in ["factions", "character01"]:
+		var ids: Array = FACTION_LOADOUTS if set_name == "factions" else ["A_standard", "B_heavy", "C_recon"]
+		var root := Node3D.new()
+		add_child(root)
+		var per_row := int(ceil(sqrt(n)))
+		var t0 := Time.get_ticks_usec()
+		for i in n:
+			var c := InfantryCharacter.new()
+			root.add_child(c)
+			c.position = Vector3((i % per_row) * 2.2 - per_row * 1.1, 0, (i / per_row) * 2.2 - per_row * 1.1)
+			c.setup(InfantryLoadout.by_id(ids[i % ids.size()]), i % 2)
+			c.debug_velocity = -c.global_basis.z * (1.4 if i % 3 else 4.5)
+		var res := {"build_ms": snappedf((Time.get_ticks_usec() - t0) / 1000.0, 0.1)}
+		for station in [["close", 6.0, 3.0], ["mid", 30.0, 16.0], ["rts", 90.0, 55.0]]:
+			_cam_at(Vector3(0, station[2], station[1]).rotated(Vector3.UP, 0.7), Vector3(0, 0.9, 0), 55.0)
+			await _settle(30)
+			var frames := 0
+			var t := 0.0
+			var worst := 0.0
+			var last := Time.get_ticks_usec()
+			InfantryCharacter.anim_usec = 0
+			while t < 3.0:
+				await get_tree().process_frame
+				var now := Time.get_ticks_usec()
+				var dt := (now - last) / 1000000.0
+				last = now
+				t += dt
+				frames += 1
+				worst = maxf(worst, dt)
+			res[station[0]] = {"avg_ms": snappedf(t / frames * 1000.0, 0.01), "worst_ms": snappedf(worst * 1000.0, 0.01),
+				"anim_ms": snappedf(InfantryCharacter.anim_usec / 1000.0 / frames, 0.001),
+				"gpu_ms": snappedf(RenderingServer.viewport_get_measured_render_time_gpu(vp), 0.01),
+				"draw_calls": Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
+				"primitives": Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)}
+			if set_name == "factions":
+				await _shot_to("charperf_%d_%s" % [n, station[0]])
+		report[set_name] = res
+		print("AP charperf %s %s" % [set_name, JSON.stringify(res)])
+		root.queue_free()
+		await _settle(5)
+	report["video_mem_mb"] = snappedf(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0, 0.1)
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(BENCH_DIR))
+	FileAccess.open(BENCH_DIR + "charperf_%d.json" % n, FileAccess.WRITE).store_string(JSON.stringify(report, " ", true))

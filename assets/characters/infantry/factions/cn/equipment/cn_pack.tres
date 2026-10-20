@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="InfantryEquipment" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/characters/infantry_equipment.gd" id="1_eq"]
+[ext_resource type="PackedScene" path="res://assets/characters/infantry/factions/cn/parts/cn_pack.glb" id="2_scene"]
+
+[resource]
+script = ExtResource("1_eq")
+id = "cn_pack"
+scene = ExtResource("2_scene")
+mode = 1
+attach = "ATT_Back"
+slot = "back"
+hides_body = PackedStringArray()

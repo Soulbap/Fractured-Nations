@@ -1,0 +1,115 @@
+{
+ "id": "guard_tower_steel",
+ "family": "building",
+ "display_name": "Guard Tower",
+ "category": "Defences",
+ "description": "Steel watchtower: 2.6 x 2.6 m armoured cabin, floor at 4.5 m, 360 deg observation slits, searchlight, external stair, sandbag ring at the base.",
+ "bounds_min": [
+  -2.474,
+  -2.477,
+  -0.15
+ ],
+ "bounds_max": [
+  2.478,
+  2.463,
+  8.8
+ ],
+ "size_above_ground": [
+  4.952,
+  4.939,
+  8.8
+ ],
+ "footprint_xy": [
+  -2.474,
+  -2.477,
+  2.478,
+  2.463
+ ],
+ "foundation_depth": 0.3,
+ "tris": [
+  2788,
+  824,
+  212
+ ],
+ "surfaces": [
+  4,
+  4,
+  3
+ ],
+ "materials": [
+  "Concrete",
+  "Kit_Palette",
+  "Paint_OD",
+  "Sandbag"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   70
+  ],
+  [
+   70,
+   280
+  ],
+  [
+   280,
+   2000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.2,
+   -0.3,
+   -1.2,
+   2.4,
+   4.8,
+   2.4
+  ],
+  [
+   -1.5,
+   4.5,
+   -1.5,
+   3.0,
+   2.5,
+   3.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Stair",
+   "pos": [
+    -1.85,
+    2.4,
+    0
+   ],
+   "yaw": 180,
+   "note": "foot of the stair"
+  },
+  {
+   "name": "IP_Observer",
+   "pos": [
+    0,
+    0.4,
+    4.57
+   ],
+   "yaw": 0,
+   "note": "sentry position in the cabin"
+  },
+  {
+   "name": "ATT_Searchlight",
+   "pos": [
+    0.9,
+    0.9,
+    7.2
+   ],
+   "yaw": 0,
+   "note": ""
+  }
+ ],
+ "structure": {
+  "category": "Defences",
+  "max_slope_deg": 10.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.6
+ }
+}

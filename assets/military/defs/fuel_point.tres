@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"fuel_point"
+display_name = "Vehicle fuel point"
+category = "Fuel"
+description = "Two-lane vehicle fuel point: 10 x 8 m canopy at 5 m, dispenser island, spill kit and fire point."
+mesh_path = "res://assets/military/modules/fuel_point.glb"
+size = Vector3(14, 5.6, 10)
+max_slope_deg = 3
+max_ground_gap = 0.4
+sink = 0.05
+blocks_navigation = false
+collision_boxes = Array[AABB]([AABB(-0.8, 0, -2.5, 1.6, 0.22, 5), AABB(-0.175, 0, 1.825, 0.35, 5, 0.35), AABB(-0.175, 0, -2.175, 0.35, 5, 0.35), AABB(-5, 5, -4, 10, 0.6, 8)])
+ramps = Array[AABB]([])

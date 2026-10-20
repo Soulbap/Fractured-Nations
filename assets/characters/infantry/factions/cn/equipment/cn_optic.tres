@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="InfantryEquipment" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/characters/infantry_equipment.gd" id="1_eq"]
+[ext_resource type="PackedScene" path="res://assets/characters/infantry/factions/cn/weapons/cn_optic.glb" id="2_scene"]
+
+[resource]
+script = ExtResource("1_eq")
+id = "cn_optic"
+scene = ExtResource("2_scene")
+mode = 1
+attach = "weapon:ATT_Optic"
+slot = "weapon_optic"
+hides_body = PackedStringArray()

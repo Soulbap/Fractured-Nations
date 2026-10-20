@@ -1,0 +1,75 @@
+{
+ "id": "wheel_apc",
+ "family": "vehicle",
+ "display_name": "APC wheel",
+ "category": "Vehicles",
+ "description": "Separate wheel (tyre, rim, hub) for vehicle implementations: radius 0.600 m, width 0.40 m. Origin at the wheel centre; axle along X.",
+ "bounds_min": [
+  -0.205,
+  -0.65,
+  -0.044
+ ],
+ "bounds_max": [
+  0.28,
+  0.65,
+  1.244
+ ],
+ "size_above_ground": [
+  0.485,
+  1.3,
+  1.244
+ ],
+ "footprint_xy": [
+  -0.205,
+  -0.65,
+  0.28,
+  0.65
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  496,
+  72,
+  28
+ ],
+ "surfaces": [
+  2,
+  2,
+  1
+ ],
+ "materials": [
+  "Kit_Palette",
+  "Paint_Green"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   160
+  ],
+  [
+   160,
+   800
+  ]
+ ],
+ "collision_boxes_godot": [],
+ "markers": [
+  {
+   "name": "AXLE",
+   "pos": [
+    0,
+    0,
+    0.6
+   ],
+   "yaw": 0,
+   "note": "wheel centre / axle"
+  }
+ ],
+ "structure": null,
+ "wheel": {
+  "radius_m": 0.6,
+  "width_m": 0.4
+ }
+}

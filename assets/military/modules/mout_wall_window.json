@@ -1,0 +1,95 @@
+{
+ "id": "mout_wall_window",
+ "family": "module",
+ "display_name": "MOUT wall (window)",
+ "category": "Training",
+ "description": "Concrete-block urban training wall 4.0 x 0.2 x 2.6 m with a window opening.",
+ "bounds_min": [
+  -2.02,
+  -0.13,
+  0.0
+ ],
+ "bounds_max": [
+  2.02,
+  0.13,
+  2.68
+ ],
+ "size_above_ground": [
+  4.04,
+  0.26,
+  2.68
+ ],
+ "footprint_xy": [
+  -2.02,
+  -0.13,
+  2.02,
+  0.13
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  72,
+  72,
+  48
+ ],
+ "surfaces": [
+  2,
+  2,
+  1
+ ],
+ "materials": [
+  "Concrete",
+  "Concrete_Block"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   50
+  ],
+  [
+   50,
+   200
+  ],
+  [
+   200,
+   1000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -2.0,
+   0.0,
+   -0.1,
+   4.0,
+   2.6,
+   0.2
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SNAP_W",
+   "pos": [
+    -2.0,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": ""
+  },
+  {
+   "name": "SNAP_E",
+   "pos": [
+    2.0,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": ""
+  }
+ ],
+ "structure": {
+  "category": "Training",
+  "max_slope_deg": 6.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.4
+ }
+}

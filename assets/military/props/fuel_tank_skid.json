@@ -1,0 +1,92 @@
+{
+ "id": "fuel_tank_skid",
+ "family": "prop",
+ "display_name": "Fuel tank 10 000 l",
+ "category": "Fuel",
+ "description": "Skid-mounted 10 000 l fuel tank (diameter 1.8 m, 4.2 m long) with dispensing pump, hose reel and hazard placards.",
+ "bounds_min": [
+  -2.317,
+  -1.0,
+  0.0
+ ],
+ "bounds_max": [
+  2.3,
+  1.2,
+  3.05
+ ],
+ "size_above_ground": [
+  4.617,
+  2.2,
+  3.05
+ ],
+ "footprint_xy": [
+  -2.317,
+  -1.0,
+  2.3,
+  1.2
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  800,
+  182,
+  40
+ ],
+ "surfaces": [
+  3,
+  3,
+  2
+ ],
+ "materials": [
+  "Kit_Palette",
+  "Paint_OD",
+  "Signs"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   30
+  ],
+  [
+   30,
+   100
+  ],
+  [
+   100,
+   400
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -2.2,
+   0.0,
+   -1.0,
+   4.4,
+   2.2,
+   2.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Dispense",
+   "pos": [
+    1.9,
+    1.8,
+    0
+   ],
+   "yaw": 180,
+   "note": "fuel dispensing point"
+  },
+  {
+   "name": "VEH_Refuel",
+   "pos": [
+    0,
+    5.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "vehicle refuels here"
+  }
+ ],
+ "structure": null,
+ "capacity_l": 10000
+}

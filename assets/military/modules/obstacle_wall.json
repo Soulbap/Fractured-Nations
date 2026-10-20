@@ -1,0 +1,85 @@
+{
+ "id": "obstacle_wall",
+ "family": "module",
+ "display_name": "Obstacle: climbing wall",
+ "category": "Training",
+ "description": "Timber climbing wall 3.0 m wide x 2.1 m high with foot boards.",
+ "bounds_min": [
+  -1.525,
+  -0.34,
+  -0.3
+ ],
+ "bounds_max": [
+  1.525,
+  0.34,
+  2.4
+ ],
+ "size_above_ground": [
+  3.05,
+  0.68,
+  2.4
+ ],
+ "footprint_xy": [
+  -1.525,
+  -0.34,
+  1.525,
+  0.34
+ ],
+ "foundation_depth": 0.3,
+ "tris": [
+  144,
+  120,
+  120
+ ],
+ "surfaces": [
+  2,
+  2,
+  2
+ ],
+ "materials": [
+  "Timber",
+  "Timber_Dark"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   140
+  ],
+  [
+   140,
+   600
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.5,
+   0.0,
+   -0.1,
+   3.0,
+   2.1,
+   0.2
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Approach",
+   "pos": [
+    0,
+    2.0,
+    0
+   ],
+   "yaw": 180,
+   "note": ""
+  }
+ ],
+ "structure": {
+  "category": "Training",
+  "max_slope_deg": 10.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.3
+ }
+}

@@ -1,0 +1,138 @@
+{
+ "id": "range_target_line",
+ "family": "module",
+ "display_name": "Range target line (6 lanes)",
+ "category": "Training",
+ "description": "Target line 15 m wide: six 0.5 x 1.0 m silhouette targets on timber frames, 0.8 m protective earth berm, distance board.",
+ "bounds_min": [
+  -8.0,
+  -1.2,
+  0.0
+ ],
+ "bounds_max": [
+  8.9,
+  1.2,
+  1.9
+ ],
+ "size_above_ground": [
+  16.9,
+  2.4,
+  1.9
+ ],
+ "footprint_xy": [
+  -8.0,
+  -1.2,
+  8.9,
+  1.2
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  332,
+  260,
+  96
+ ],
+ "surfaces": [
+  5,
+  5,
+  3
+ ],
+ "materials": [
+  "Dirt",
+  "Kit_Palette",
+  "Plywood",
+  "Signs",
+  "Timber"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   60
+  ],
+  [
+   60,
+   240
+  ],
+  [
+   240,
+   1200
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -8.0,
+   0.0,
+   -1.2,
+   16.0,
+   0.8,
+   2.4
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Target_1",
+   "pos": [
+    -6.25,
+    -0.9,
+    1.35
+   ],
+   "yaw": 180,
+   "note": "target centre (faces the firing point, -Y)"
+  },
+  {
+   "name": "IP_Target_2",
+   "pos": [
+    -3.75,
+    -0.9,
+    1.35
+   ],
+   "yaw": 180,
+   "note": "target centre (faces the firing point, -Y)"
+  },
+  {
+   "name": "IP_Target_3",
+   "pos": [
+    -1.25,
+    -0.9,
+    1.35
+   ],
+   "yaw": 180,
+   "note": "target centre (faces the firing point, -Y)"
+  },
+  {
+   "name": "IP_Target_4",
+   "pos": [
+    1.25,
+    -0.9,
+    1.35
+   ],
+   "yaw": 180,
+   "note": "target centre (faces the firing point, -Y)"
+  },
+  {
+   "name": "IP_Target_5",
+   "pos": [
+    3.75,
+    -0.9,
+    1.35
+   ],
+   "yaw": 180,
+   "note": "target centre (faces the firing point, -Y)"
+  },
+  {
+   "name": "IP_Target_6",
+   "pos": [
+    6.25,
+    -0.9,
+    1.35
+   ],
+   "yaw": 180,
+   "note": "target centre (faces the firing point, -Y)"
+  }
+ ],
+ "structure": {
+  "category": "Training",
+  "max_slope_deg": 8.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.3
+ }
+}

@@ -1,0 +1,110 @@
+{
+ "id": "bridge_small",
+ "family": "road",
+ "display_name": "Small road bridge 12 m",
+ "category": "Roads",
+ "description": "Single-span concrete road bridge: 12 m span, 7.5 m deck, 0.9 m deep beams, abutments 3 m high with wing walls, 1.1 m steel parapets. Deck top at 0.0 m; the gap below goes to -3.0 m.",
+ "bounds_min": [
+  -4.05,
+  -9.6,
+  -3.0
+ ],
+ "bounds_max": [
+  4.05,
+  9.6,
+  1.3
+ ],
+ "size_above_ground": [
+  8.1,
+  19.2,
+  1.3
+ ],
+ "footprint_xy": [
+  -4.05,
+  -9.6,
+  4.05,
+  9.6
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  432,
+  432,
+  168
+ ],
+ "surfaces": [
+  4,
+  4,
+  2
+ ],
+ "materials": [
+  "Asphalt",
+  "Concrete",
+  "Concrete_Dark",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   80
+  ],
+  [
+   80,
+   300
+  ],
+  [
+   300,
+   2000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -3.75,
+   -0.25,
+   -7.0,
+   7.5,
+   0.25,
+   14.0
+  ],
+  [
+   -3.75,
+   0.0,
+   -7.0,
+   0.3,
+   1.3,
+   14.0
+  ],
+  [
+   3.45,
+   0.0,
+   -7.0,
+   0.3,
+   1.3,
+   14.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SNAP_S",
+   "pos": [
+    0,
+    -7.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "road joins (south)"
+  },
+  {
+   "name": "SNAP_N",
+   "pos": [
+    0,
+    7.0,
+    0
+   ],
+   "yaw": 0,
+   "note": "road joins (north)"
+  }
+ ],
+ "structure": null,
+ "span_m": 12.0,
+ "deck_width_m": 7.5
+}

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"shoot_house"
+display_name = "Shoot house (CQB)"
+category = "Training"
+description = "Close-quarters battle house 12 x 9 m, 2.4 m plywood walls on timber framing, four rooms, corridor, open top, observation catwalk."
+mesh_path = "res://assets/military/modules/shoot_house.glb"
+size = Vector3(12.6, 3.1, 9.6)
+max_slope_deg = 5
+max_ground_gap = 0.4
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-6.06, 0, 4.44, 5.12, 2.4, 0.12), AABB(-0.06, 0, 4.44, 6.12, 2.4, 0.12), AABB(-6.06, 0, -4.56, 5.52, 2.4, 0.12), AABB(0.54, 0, -4.56, 5.52, 2.4, 0.12), AABB(-6.06, 0, -4.56, 0.12, 2.4, 9.12), AABB(5.94, 0, -4.56, 0.12, 2.4, 9.12), AABB(-6.06, 0, -0.66, 2.52, 2.4, 0.12), AABB(-2.66, 0, -0.66, 1.52, 2.4, 0.12), AABB(1.14, 0, -0.66, 1.52, 2.4, 0.12), AABB(3.54, 0, -0.66, 2.52, 2.4, 0.12), AABB(-6.06, 0, 1.14, 2.52, 2.4, 0.12), AABB(-2.66, 0, 1.14, 1.52, 2.4, 0.12), AABB(1.14, 0, 1.14, 1.52, 2.4, 0.12), AABB(3.54, 0, 1.14, 2.52, 2.4, 0.12), AABB(-1.26, 0, -4.56, 0.12, 2.4, 4.02), AABB(1.14, 0, -4.56, 0.12, 2.4, 4.02), AABB(-1.26, 0, 1.14, 0.12, 2.4, 3.42), AABB(1.14, 0, 1.14, 0.12, 2.4, 3.42)])
+ramps = Array[AABB]([])

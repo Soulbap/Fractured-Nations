@@ -147,8 +147,10 @@ class Asset:
                 f.smooth = smooth
             bmesh.ops.recalc_face_normals(bm, faces=faces)
 
-    def loft(self, rings, mat, lods=ALL, closed=True, cap=True, smooth=False):
-        """Faces between consecutive rings of 3D points (same count per ring)."""
+    def loft(self, rings, mat, lods=ALL, closed=True, cap=True, smooth=False, flip=False, recalc=False):
+        """Faces between consecutive rings of 3D points (same count per ring). Face
+        orientation follows the ring order (flip reverses it); recalc asks bmesh to
+        orient the faces (only reliable on closed, non-degenerate shapes)."""
         for i in lods:
             bm, idx = self.bms[i], self._slot(i, mat)
             vr = [[bm.verts.new(Vector(p)) for p in r] for r in rings]
@@ -163,6 +165,10 @@ class Asset:
             for f in faces:
                 f.material_index = idx
                 f.smooth = smooth
+                if flip:
+                    f.normal_flip()
+            if recalc:
+                bmesh.ops.recalc_face_normals(bm, faces=faces)
 
     def poly(self, verts, faces, mat, lods=ALL, uvs=None, smooth=False):
         """Raw polygons. uvs: optional per-face list of per-loop (u, v) (authored UVs)."""

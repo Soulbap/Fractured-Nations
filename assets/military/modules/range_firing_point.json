@@ -1,0 +1,209 @@
+{
+ "id": "range_firing_point",
+ "family": "module",
+ "display_name": "Range firing point (6 lanes)",
+ "category": "Training",
+ "description": "Covered rifle firing point, 6 lanes x 2.5 m (15 m), 4 m deep roof, firing slab, lane boards and range flag.",
+ "bounds_min": [
+  -8.1,
+  -2.3,
+  -0.3
+ ],
+ "bounds_max": [
+  8.54,
+  3.22,
+  7.0
+ ],
+ "size_above_ground": [
+  16.64,
+  5.52,
+  7.0
+ ],
+ "footprint_xy": [
+  -8.1,
+  -2.3,
+  8.54,
+  3.22
+ ],
+ "foundation_depth": 0.3,
+ "tris": [
+  1516,
+  332,
+  200
+ ],
+ "surfaces": [
+  7,
+  7,
+  4
+ ],
+ "materials": [
+  "Canvas_Green",
+  "Concrete",
+  "Kit_Palette",
+  "Paint_OD",
+  "Roof_OD",
+  "Sandbag",
+  "Signs"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   60
+  ],
+  [
+   60,
+   240
+  ],
+  [
+   240,
+   1600
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -7.5,
+   -0.3,
+   -3.0,
+   15.0,
+   0.4,
+   5.0
+  ],
+  [
+   -7.475,
+   0.1,
+   1.825,
+   0.15,
+   2.8,
+   0.15
+  ],
+  [
+   -7.475,
+   0.1,
+   -1.975,
+   0.15,
+   2.8,
+   0.15
+  ],
+  [
+   -0.075,
+   0.1,
+   1.825,
+   0.15,
+   2.8,
+   0.15
+  ],
+  [
+   -0.075,
+   0.1,
+   -1.975,
+   0.15,
+   2.8,
+   0.15
+  ],
+  [
+   7.325,
+   0.1,
+   1.825,
+   0.15,
+   2.8,
+   0.15
+  ],
+  [
+   7.325,
+   0.1,
+   -1.975,
+   0.15,
+   2.8,
+   0.15
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Lane_1",
+   "pos": [
+    -6.25,
+    0.5,
+    0.1
+   ],
+   "yaw": 0,
+   "note": "firing position, faces down range (+Y)"
+  },
+  {
+   "name": "IP_Lane_2",
+   "pos": [
+    -3.75,
+    0.5,
+    0.1
+   ],
+   "yaw": 0,
+   "note": "firing position, faces down range (+Y)"
+  },
+  {
+   "name": "IP_Lane_3",
+   "pos": [
+    -1.25,
+    0.5,
+    0.1
+   ],
+   "yaw": 0,
+   "note": "firing position, faces down range (+Y)"
+  },
+  {
+   "name": "IP_Lane_4",
+   "pos": [
+    1.25,
+    0.5,
+    0.1
+   ],
+   "yaw": 0,
+   "note": "firing position, faces down range (+Y)"
+  },
+  {
+   "name": "IP_Lane_5",
+   "pos": [
+    3.75,
+    0.5,
+    0.1
+   ],
+   "yaw": 0,
+   "note": "firing position, faces down range (+Y)"
+  },
+  {
+   "name": "IP_Lane_6",
+   "pos": [
+    6.25,
+    0.5,
+    0.1
+   ],
+   "yaw": 0,
+   "note": "firing position, faces down range (+Y)"
+  },
+  {
+   "name": "ATT_DownRange",
+   "pos": [
+    0,
+    27.0,
+    0
+   ],
+   "yaw": 0,
+   "note": "first target line (25 m); place range_target_line along +Y"
+  },
+  {
+   "name": "ATT_Tower",
+   "pos": [
+    -11.5,
+    -4.0,
+    0
+   ],
+   "yaw": 0,
+   "note": "range control tower"
+  }
+ ],
+ "structure": {
+  "category": "Training",
+  "max_slope_deg": 5.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.4
+ },
+ "lanes": 6
+}

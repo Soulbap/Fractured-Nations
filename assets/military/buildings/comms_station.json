@@ -1,0 +1,129 @@
+{
+ "id": "comms_station",
+ "family": "building",
+ "display_name": "Communications Station",
+ "category": "Buildings",
+ "description": "Signals site: 20 ft equipment shelter (A/C, cable entry), 18 m guyed lattice mast with dishes and whips, 2.4 m satellite terminal, generator pad.",
+ "bounds_min": [
+  -7.0,
+  -7.981,
+  -0.1
+ ],
+ "bounds_max": [
+  12.052,
+  7.731,
+  21.0
+ ],
+ "size_above_ground": [
+  19.052,
+  15.712,
+  21.0
+ ],
+ "footprint_xy": [
+  -7.0,
+  -7.981,
+  12.052,
+  7.731
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  1954,
+  506,
+  118
+ ],
+ "surfaces": [
+  6,
+  5,
+  4
+ ],
+ "materials": [
+  "Concrete",
+  "Container_OD",
+  "Gravel",
+  "Kit_Palette",
+  "Paint_OD",
+  "Signs"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   80
+  ],
+  [
+   80,
+   300
+  ],
+  [
+   300,
+   2500
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -6.53,
+   0.0,
+   -2.22,
+   6.06,
+   2.89,
+   2.44
+  ],
+  [
+   2.65,
+   0.0,
+   -1.85,
+   0.7,
+   18.0,
+   0.7
+  ],
+  [
+   -3.8,
+   0.0,
+   2.7,
+   1.6,
+   2.4,
+   1.6
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Shelter_Door",
+   "pos": [
+    -2.0,
+    -1.6,
+    0
+   ],
+   "yaw": 0,
+   "note": "shelter door"
+  },
+  {
+   "name": "ATT_Generator",
+   "pos": [
+    5.0,
+    -3.5,
+    0.18
+   ],
+   "yaw": 0,
+   "note": "generator set stands on this pad"
+  },
+  {
+   "name": "ATT_Mast_Top",
+   "pos": [
+    3.0,
+    1.5,
+    18.0
+   ],
+   "yaw": 0,
+   "note": "antenna mounting at the top of the mast"
+  }
+ ],
+ "structure": {
+  "category": "Buildings",
+  "max_slope_deg": 6.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.6
+ },
+ "function": {
+  "role": "communications",
+  "mast_m": 18
+ }
+}

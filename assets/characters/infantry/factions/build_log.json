@@ -1,0 +1,74 @@
+{
+ "t_body": 27.9,
+ "uniform_seconds": {
+  "ru": 15.8
+ },
+ "t_uniform": 43.7,
+ "gear_seconds": {
+  "ru": 24.3
+ },
+ "weapon_tris": {
+  "ru_rifle": 4440,
+  "ru_optic": 352
+ },
+ "t_gear": 77.3,
+ "tris": {
+  "ru_jacket": 10044,
+  "ru_trousers": 10368,
+  "ru_helmet": 4864,
+  "ru_armor": 8508,
+  "ru_rifle": 4440,
+  "ru_optic": 352
+ },
+ "export": {
+  "ru_jacket": {
+   "bytes": 784616,
+   "lod_tris": [
+    10044,
+    3012,
+    652
+   ]
+  },
+  "ru_trousers": {
+   "bytes": 820420,
+   "lod_tris": [
+    10368,
+    3110,
+    672
+   ]
+  },
+  "ru_helmet": {
+   "bytes": 258340,
+   "lod_tris": [
+    4864,
+    1458,
+    315
+   ]
+  },
+  "ru_armor": {
+   "bytes": 657348,
+   "lod_tris": [
+    8508,
+    2552,
+    546
+   ]
+  },
+  "ru_rifle": {
+   "bytes": 457824,
+   "lod_tris": [
+    4440,
+    1332,
+    213
+   ]
+  },
+  "ru_optic": {
+   "bytes": 72604,
+   "lod_tris": [
+    352,
+    200,
+    60
+   ]
+  }
+ },
+ "t_total": 78.2
+}

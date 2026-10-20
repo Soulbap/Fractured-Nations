@@ -1,0 +1,91 @@
+{
+ "id": "mesh_fence_temporary",
+ "family": "prop",
+ "display_name": "Temporary fence panel",
+ "category": "Fences",
+ "description": "Mobile mesh fence panel 3.50 x 2.00 m in tube frame, standing in two concrete-filled feet.",
+ "bounds_min": [
+  -2.055,
+  -0.1,
+  0.0
+ ],
+ "bounds_max": [
+  2.055,
+  0.1,
+  2.1
+ ],
+ "size_above_ground": [
+  4.11,
+  0.2,
+  2.1
+ ],
+ "footprint_xy": [
+  -2.055,
+  -0.1,
+  2.055,
+  0.1
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  170,
+  170,
+  26
+ ],
+ "surfaces": [
+  3,
+  3,
+  2
+ ],
+ "materials": [
+  "Concrete_Dark",
+  "Hesco_Mesh",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   30
+  ],
+  [
+   30,
+   100
+  ],
+  [
+   100,
+   400
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.75,
+   0.0,
+   -0.1,
+   3.5,
+   2.1,
+   0.2
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SNAP_W",
+   "pos": [
+    -1.75,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": ""
+  },
+  {
+   "name": "SNAP_E",
+   "pos": [
+    1.75,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": ""
+  }
+ ],
+ "structure": null
+}

@@ -1,0 +1,98 @@
+{
+ "id": "boom_barrier",
+ "family": "prop",
+ "display_name": "Boom barrier 6 m",
+ "category": "Checkpoint",
+ "description": "Road boom barrier for a 6 m lane: drive cabinet 0.35 x 0.35 x 1.0 m, 6.0 m red/white arm at 0.9 m, rest post.",
+ "bounds_min": [
+  -0.4,
+  -0.4,
+  -0.1
+ ],
+ "bounds_max": [
+  6.4,
+  0.4,
+  1.2
+ ],
+ "size_above_ground": [
+  6.8,
+  0.8,
+  1.2
+ ],
+ "footprint_xy": [
+  -0.4,
+  -0.4,
+  6.4,
+  0.4
+ ],
+ "foundation_depth": 0.1,
+ "tris": [
+  708,
+  264,
+  36
+ ],
+ "surfaces": [
+  2,
+  2,
+  2
+ ],
+ "materials": [
+  "Concrete",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   30
+  ],
+  [
+   30,
+   100
+  ],
+  [
+   100,
+   400
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.2,
+   0.0,
+   -0.2,
+   0.4,
+   1.1,
+   0.4
+  ],
+  [
+   0.3,
+   0.87,
+   -0.05,
+   6.0,
+   0.1,
+   0.1
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Control",
+   "pos": [
+    -0.6,
+    0.6,
+    0
+   ],
+   "yaw": 135,
+   "note": "operator position"
+  },
+  {
+   "name": "VEH_Stop",
+   "pos": [
+    3.3,
+    4.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "vehicle stops here (lane centre)"
+  }
+ ],
+ "structure": null
+}

@@ -1,0 +1,95 @@
+{
+ "id": "range_tower",
+ "family": "module",
+ "display_name": "Range control tower",
+ "category": "Training",
+ "description": "Range control tower: 2.5 x 2.5 m cabin, floor 3.0 m, glazing on all sides, stair, PA loudspeakers.",
+ "bounds_min": [
+  -1.55,
+  -1.55,
+  -0.125
+ ],
+ "bounds_max": [
+  2.176,
+  1.61,
+  5.927
+ ],
+ "size_above_ground": [
+  3.726,
+  3.16,
+  5.927
+ ],
+ "footprint_xy": [
+  -1.55,
+  -1.55,
+  2.176,
+  1.61
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  364,
+  364,
+  180
+ ],
+ "surfaces": [
+  2,
+  2,
+  2
+ ],
+ "materials": [
+  "Concrete",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   60
+  ],
+  [
+   60,
+   240
+  ],
+  [
+   240,
+   1600
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.2,
+   -0.25,
+   -1.2,
+   2.4,
+   5.75,
+   2.4
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Stair",
+   "pos": [
+    1.75,
+    -2.0,
+    0
+   ],
+   "yaw": 0,
+   "note": ""
+  },
+  {
+   "name": "IP_Officer",
+   "pos": [
+    0,
+    0,
+    3.06
+   ],
+   "yaw": 0,
+   "note": "range officer, overlooks the firing point (+Y)"
+  }
+ ],
+ "structure": {
+  "category": "Training",
+  "max_slope_deg": 8.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.4
+ }
+}

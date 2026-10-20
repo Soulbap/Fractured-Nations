@@ -1,0 +1,102 @@
+{
+ "id": "t_wall",
+ "family": "prop",
+ "display_name": "T-wall blast wall",
+ "category": "Defences",
+ "description": "Reinforced concrete T-wall segment: 1.52 m long, 3.66 m high, 0.20-0.30 m stem on a 1.22 x 0.30 m base.",
+ "bounds_min": [
+  -0.76,
+  -0.614,
+  0.0
+ ],
+ "bounds_max": [
+  0.76,
+  0.614,
+  3.768
+ ],
+ "size_above_ground": [
+  1.52,
+  1.228,
+  3.768
+ ],
+ "footprint_xy": [
+  -0.76,
+  -0.614,
+  0.76,
+  0.614
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  164,
+  28,
+  28
+ ],
+ "surfaces": [
+  2,
+  1,
+  1
+ ],
+ "materials": [
+  "Concrete",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   60
+  ],
+  [
+   60,
+   220
+  ],
+  [
+   220,
+   1500
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.76,
+   0.0,
+   -0.61,
+   1.52,
+   0.3,
+   1.22
+  ],
+  [
+   -0.76,
+   0.0,
+   -0.15,
+   1.52,
+   3.66,
+   0.3
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SNAP_W",
+   "pos": [
+    -0.76,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": ""
+  },
+  {
+   "name": "SNAP_E",
+   "pos": [
+    0.76,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": ""
+  }
+ ],
+ "structure": null,
+ "module": {
+  "length": 1.52,
+  "height": 3.66
+ }
+}

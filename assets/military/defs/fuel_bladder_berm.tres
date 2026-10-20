@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"fuel_bladder_berm"
+display_name = "Fuel bladder in bund"
+category = "Fuel"
+description = "Bulk fuel storage: 50 m3 collapsible fabric tank (9 x 6 m, 1.2 m high) inside a 1.2 m earth bund 13 x 10 m with liner."
+mesh_path = "res://assets/military/modules/fuel_bladder_berm.glb"
+size = Vector3(15.8, 1.6, 12.92)
+max_slope_deg = 4
+max_ground_gap = 0.5
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-6.5, 0, 3.6, 13, 1.2, 2.8), AABB(-6.5, 0, -6.4, 13, 1.2, 2.8), AABB(-4.5, 0, -3, 9, 1.2, 6)])
+ramps = Array[AABB]([])

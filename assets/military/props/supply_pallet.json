@@ -1,0 +1,82 @@
+{
+ "id": "supply_pallet",
+ "family": "prop",
+ "display_name": "Supply pallet",
+ "category": "Logistics",
+ "description": "EUR pallet with four strapped wooden supply crates (1.2 x 0.8 x 1.1 m).",
+ "bounds_min": [
+  -0.6,
+  -0.41,
+  0.0
+ ],
+ "bounds_max": [
+  0.6,
+  0.41,
+  1.05
+ ],
+ "size_above_ground": [
+  1.2,
+  0.82,
+  1.05
+ ],
+ "footprint_xy": [
+  -0.6,
+  -0.41,
+  0.6,
+  0.41
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  732,
+  72,
+  24
+ ],
+ "surfaces": [
+  4,
+  2,
+  2
+ ],
+ "materials": [
+  "Kit_Palette",
+  "Plywood",
+  "Timber",
+  "Timber_Dark"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   20
+  ],
+  [
+   20,
+   60
+  ],
+  [
+   60,
+   160
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.6,
+   0.0,
+   -0.4,
+   1.2,
+   1.05,
+   0.8
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Forks",
+   "pos": [
+    0,
+    1.5,
+    0
+   ],
+   "yaw": 180,
+   "note": "forklift / pallet jack entry side"
+  }
+ ],
+ "structure": null
+}

@@ -1,0 +1,414 @@
+{
+ "id": "apc_8x8",
+ "family": "vehicle",
+ "display_name": "Wheeled APC 8x8",
+ "category": "Vehicles",
+ "description": "Modern 8x8 wheeled armoured personnel carrier (Boxer / Patria AMV class): hull 7.9 x 2.99 x 2.4 m, sloped glacis, remote weapon station, rear ramp, 8 seats + crew 3. Visual prototype.",
+ "bounds_min": [
+  -1.635,
+  -4.01,
+  -0.044
+ ],
+ "bounds_max": [
+  1.635,
+  3.975,
+  4.8
+ ],
+ "size_above_ground": [
+  3.27,
+  7.985,
+  4.8
+ ],
+ "footprint_xy": [
+  -1.635,
+  -4.01,
+  1.635,
+  3.975
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  4944,
+  936,
+  300
+ ],
+ "surfaces": [
+  2,
+  2,
+  2
+ ],
+ "materials": [
+  "Kit_Palette",
+  "Paint_Green"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   160
+  ],
+  [
+   160,
+   1500
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.495,
+   0.55,
+   -3.95,
+   2.99,
+   1.9,
+   7.9
+  ],
+  [
+   -0.7,
+   2.4,
+   -0.2,
+   1.0,
+   0.8,
+   1.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "WHEEL_1L",
+   "pos": [
+    -1.175,
+    2.55,
+    0.6
+   ],
+   "yaw": 0,
+   "note": "wheel centre, r=0.60 m, width 0.40 m"
+  },
+  {
+   "name": "SUSP_1L",
+   "pos": [
+    -0.825,
+    2.55,
+    1.0
+   ],
+   "yaw": 0,
+   "note": "suspension top mount"
+  },
+  {
+   "name": "WHEEL_1R",
+   "pos": [
+    1.175,
+    2.55,
+    0.6
+   ],
+   "yaw": 0,
+   "note": "wheel centre, r=0.60 m, width 0.40 m"
+  },
+  {
+   "name": "SUSP_1R",
+   "pos": [
+    0.825,
+    2.55,
+    1.0
+   ],
+   "yaw": 0,
+   "note": "suspension top mount"
+  },
+  {
+   "name": "WHEEL_2L",
+   "pos": [
+    -1.175,
+    1.1,
+    0.6
+   ],
+   "yaw": 0,
+   "note": "wheel centre, r=0.60 m, width 0.40 m"
+  },
+  {
+   "name": "SUSP_2L",
+   "pos": [
+    -0.825,
+    1.1,
+    1.0
+   ],
+   "yaw": 0,
+   "note": "suspension top mount"
+  },
+  {
+   "name": "WHEEL_2R",
+   "pos": [
+    1.175,
+    1.1,
+    0.6
+   ],
+   "yaw": 0,
+   "note": "wheel centre, r=0.60 m, width 0.40 m"
+  },
+  {
+   "name": "SUSP_2R",
+   "pos": [
+    0.825,
+    1.1,
+    1.0
+   ],
+   "yaw": 0,
+   "note": "suspension top mount"
+  },
+  {
+   "name": "WHEEL_3L",
+   "pos": [
+    -1.175,
+    -1.1,
+    0.6
+   ],
+   "yaw": 0,
+   "note": "wheel centre, r=0.60 m, width 0.40 m"
+  },
+  {
+   "name": "SUSP_3L",
+   "pos": [
+    -0.825,
+    -1.1,
+    1.0
+   ],
+   "yaw": 0,
+   "note": "suspension top mount"
+  },
+  {
+   "name": "WHEEL_3R",
+   "pos": [
+    1.175,
+    -1.1,
+    0.6
+   ],
+   "yaw": 0,
+   "note": "wheel centre, r=0.60 m, width 0.40 m"
+  },
+  {
+   "name": "SUSP_3R",
+   "pos": [
+    0.825,
+    -1.1,
+    1.0
+   ],
+   "yaw": 0,
+   "note": "suspension top mount"
+  },
+  {
+   "name": "WHEEL_4L",
+   "pos": [
+    -1.175,
+    -2.55,
+    0.6
+   ],
+   "yaw": 0,
+   "note": "wheel centre, r=0.60 m, width 0.40 m"
+  },
+  {
+   "name": "SUSP_4L",
+   "pos": [
+    -0.825,
+    -2.55,
+    1.0
+   ],
+   "yaw": 0,
+   "note": "suspension top mount"
+  },
+  {
+   "name": "WHEEL_4R",
+   "pos": [
+    1.175,
+    -2.55,
+    0.6
+   ],
+   "yaw": 0,
+   "note": "wheel centre, r=0.60 m, width 0.40 m"
+  },
+  {
+   "name": "SUSP_4R",
+   "pos": [
+    0.825,
+    -2.55,
+    1.0
+   ],
+   "yaw": 0,
+   "note": "suspension top mount"
+  },
+  {
+   "name": "DOOR_Ramp",
+   "pos": [
+    0,
+    -4.0,
+    0.75
+   ],
+   "yaw": 180,
+   "note": "rear ramp (hinge at the bottom), troops dismount here"
+  },
+  {
+   "name": "DOOR_Driver",
+   "pos": [
+    -0.75,
+    1.9,
+    2.5
+   ],
+   "yaw": 0,
+   "note": "driver hatch"
+  },
+  {
+   "name": "DOOR_Commander",
+   "pos": [
+    0.6,
+    0.2,
+    2.5
+   ],
+   "yaw": 0,
+   "note": "commander hatch"
+  },
+  {
+   "name": "SEAT_Driver",
+   "pos": [
+    -0.75,
+    1.9,
+    1.4
+   ],
+   "yaw": 0,
+   "note": ""
+  },
+  {
+   "name": "SEAT_Commander",
+   "pos": [
+    0.6,
+    0.2,
+    1.5
+   ],
+   "yaw": 0,
+   "note": ""
+  },
+  {
+   "name": "SEAT_Gunner",
+   "pos": [
+    0.2,
+    -0.1,
+    1.5
+   ],
+   "yaw": 0,
+   "note": "RWS operator station"
+  },
+  {
+   "name": "SEAT_Troop_1",
+   "pos": [
+    -0.85,
+    -1.0,
+    1.3
+   ],
+   "yaw": 90,
+   "note": "troop seat, faces inward"
+  },
+  {
+   "name": "SEAT_Troop_2",
+   "pos": [
+    0.85,
+    -1.0,
+    1.3
+   ],
+   "yaw": -90,
+   "note": "troop seat, faces inward"
+  },
+  {
+   "name": "SEAT_Troop_3",
+   "pos": [
+    -0.85,
+    -1.65,
+    1.3
+   ],
+   "yaw": 90,
+   "note": "troop seat, faces inward"
+  },
+  {
+   "name": "SEAT_Troop_4",
+   "pos": [
+    0.85,
+    -1.65,
+    1.3
+   ],
+   "yaw": -90,
+   "note": "troop seat, faces inward"
+  },
+  {
+   "name": "SEAT_Troop_5",
+   "pos": [
+    -0.85,
+    -2.3,
+    1.3
+   ],
+   "yaw": 90,
+   "note": "troop seat, faces inward"
+  },
+  {
+   "name": "SEAT_Troop_6",
+   "pos": [
+    0.85,
+    -2.3,
+    1.3
+   ],
+   "yaw": -90,
+   "note": "troop seat, faces inward"
+  },
+  {
+   "name": "SEAT_Troop_7",
+   "pos": [
+    -0.85,
+    -2.95,
+    1.3
+   ],
+   "yaw": 90,
+   "note": "troop seat, faces inward"
+  },
+  {
+   "name": "SEAT_Troop_8",
+   "pos": [
+    0.85,
+    -2.95,
+    1.3
+   ],
+   "yaw": -90,
+   "note": "troop seat, faces inward"
+  },
+  {
+   "name": "WEAPON_RWS",
+   "pos": [
+    -0.3,
+    1.15,
+    2.92
+   ],
+   "yaw": 0,
+   "note": "RWS muzzle (12.7 mm MG)"
+  },
+  {
+   "name": "TOW_Front",
+   "pos": [
+    0,
+    3.95,
+    0.85
+   ],
+   "yaw": 0,
+   "note": ""
+  }
+ ],
+ "structure": null,
+ "vehicle": {
+  "length_m": 7.9,
+  "width_m": 2.99,
+  "height_m": 3.2,
+  "wheel_radius_m": 0.6,
+  "wheel_width_m": 0.4,
+  "axles_y": [
+   2.55,
+   1.1,
+   -1.1,
+   -2.55
+  ],
+  "track_m": 2.35,
+  "crew": 3,
+  "troops": 8
+ }
+}

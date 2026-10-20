@@ -1,0 +1,196 @@
+{
+ "id": "checkpoint_station",
+ "family": "module",
+ "display_name": "Guard checkpoint",
+ "category": "Checkpoint",
+ "description": "Entry control point, one 4.5 m lane: 8 x 12 m canopy, guard booth, boom barrier, two speed bumps, Jersey-barrier chicane, checkpoint and speed signs.",
+ "bounds_min": [
+  -6.0,
+  -10.0,
+  -0.3
+ ],
+ "bounds_max": [
+  6.0,
+  10.0,
+  5.6
+ ],
+ "size_above_ground": [
+  12.0,
+  20.0,
+  5.6
+ ],
+ "footprint_xy": [
+  -6.0,
+  -10.0,
+  6.0,
+  10.0
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  444,
+  444,
+  248
+ ],
+ "surfaces": [
+  5,
+  5,
+  3
+ ],
+ "materials": [
+  "Asphalt",
+  "Concrete",
+  "Kit_Palette",
+  "Paint_OD",
+  "Signs"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   60
+  ],
+  [
+   60,
+   240
+  ],
+  [
+   240,
+   1600
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -4.4,
+   0.0,
+   -0.8,
+   1.6,
+   2.7,
+   1.6
+  ],
+  [
+   -4.15,
+   0.0,
+   5.35,
+   0.3,
+   5.0,
+   0.3
+  ],
+  [
+   -4.15,
+   0.0,
+   -5.65,
+   0.3,
+   5.0,
+   0.3
+  ],
+  [
+   3.85,
+   0.0,
+   5.35,
+   0.3,
+   5.0,
+   0.3
+  ],
+  [
+   3.85,
+   0.0,
+   -5.65,
+   0.3,
+   5.0,
+   0.3
+  ],
+  [
+   -2.5,
+   0.045,
+   -9.305,
+   3.0,
+   0.81,
+   0.61
+  ],
+  [
+   0.0,
+   0.045,
+   -8.305,
+   3.0,
+   0.81,
+   0.61
+  ]
+ ],
+ "markers": [
+  {
+   "name": "VEH_Inspect",
+   "pos": [
+    0.2,
+    0.0,
+    0.05
+   ],
+   "yaw": 180,
+   "note": "vehicle stops for inspection (inbound -Y)"
+  },
+  {
+   "name": "IP_Guard",
+   "pos": [
+    -3.6,
+    0.0,
+    0.05
+   ],
+   "yaw": 90,
+   "note": "guard in the booth"
+  },
+  {
+   "name": "IP_Search",
+   "pos": [
+    1.8,
+    0.0,
+    0.05
+   ],
+   "yaw": -90,
+   "note": "searcher position beside the vehicle"
+  },
+  {
+   "name": "SNAP_Road_N",
+   "pos": [
+    0.0,
+    10.0,
+    0
+   ],
+   "yaw": 0,
+   "note": "road continues north"
+  },
+  {
+   "name": "SNAP_Road_S",
+   "pos": [
+    0.0,
+    -10.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "road continues south"
+  },
+  {
+   "name": "SNAP_Fence_W",
+   "pos": [
+    -6.0,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": "perimeter fence joins (west)"
+  },
+  {
+   "name": "SNAP_Fence_E",
+   "pos": [
+    6.0,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": "perimeter fence joins (east)"
+  }
+ ],
+ "structure": {
+  "category": "Checkpoint",
+  "max_slope_deg": 4.0,
+  "blocks_navigation": false,
+  "max_ground_gap": 0.4
+ }
+}

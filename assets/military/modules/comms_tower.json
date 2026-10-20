@@ -1,0 +1,85 @@
+{
+ "id": "comms_tower",
+ "family": "module",
+ "display_name": "Communications tower 24 m",
+ "category": "Communications",
+ "description": "Guyed 24 m triangular lattice tower: two microwave dishes, three sector panels, whip antennas, warning light.",
+ "bounds_min": [
+  -6.625,
+  -11.383,
+  -0.2
+ ],
+ "bounds_max": [
+  13.125,
+  11.383,
+  27.5
+ ],
+ "size_above_ground": [
+  19.75,
+  22.767,
+  27.5
+ ],
+ "footprint_xy": [
+  -6.625,
+  -11.383,
+  13.125,
+  11.383
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  1764,
+  348,
+  32
+ ],
+ "surfaces": [
+  2,
+  2,
+  2
+ ],
+ "materials": [
+  "Concrete",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   100
+  ],
+  [
+   100,
+   400
+  ],
+  [
+   400,
+   3000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.4,
+   0.0,
+   -0.4,
+   0.8,
+   24.0,
+   0.8
+  ]
+ ],
+ "markers": [
+  {
+   "name": "ATT_Top",
+   "pos": [
+    0,
+    0,
+    24.0
+   ],
+   "yaw": 0,
+   "note": "antenna mounting"
+  }
+ ],
+ "structure": {
+  "category": "Communications",
+  "max_slope_deg": 8.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.3
+ }
+}

@@ -84,6 +84,7 @@ def stage_body(b):
     body = B.build_body(b.coll_body)
     body.data.materials.append(b.mats["SkinBody"])
     L.parent_to_armature(body, b.arm, auto=True)
+    L.limit_leg_weights(body)
     hands = B.build_hands(b.coll_body)
     hands.data.materials.append(b.mats["SkinBody"])
     L.parent_to_armature(hands, b.arm, auto=True)
@@ -135,6 +136,8 @@ def stage_uniform(b):
     for k, o in uni.items():
         M.apply_box_uvs(o)
         L.transfer_weights(o, b.weight_ref, b.arm, smooth_iters=2)
+        if k == "jacket":
+            L.limit_leg_weights(o, *L.JACKET_LEG_FADE)
         b.pieces["uniform_" + k] = o
     b.log["uniform_tris"] = {k: L.tri_count(o) for k, o in uni.items()}
 

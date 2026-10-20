@@ -1,0 +1,82 @@
+{
+ "id": "generator_60kw",
+ "family": "prop",
+ "display_name": "Generator 60 kW",
+ "category": "Power",
+ "description": "Skid-mounted 60 kW diesel generator set, enclosure 2.6 x 1.1 x 1.5 m on a base fuel tank.",
+ "bounds_min": [
+  -1.35,
+  -0.575,
+  0.0
+ ],
+ "bounds_max": [
+  1.35,
+  0.575,
+  2.13
+ ],
+ "size_above_ground": [
+  2.7,
+  1.15,
+  2.13
+ ],
+ "footprint_xy": [
+  -1.35,
+  -0.575,
+  1.35,
+  0.575
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  262,
+  96,
+  24
+ ],
+ "surfaces": [
+  3,
+  3,
+  2
+ ],
+ "materials": [
+  "Kit_Palette",
+  "Paint_OD",
+  "Signs"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   30
+  ],
+  [
+   30,
+   100
+  ],
+  [
+   100,
+   400
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.35,
+   0.0,
+   -0.575,
+   2.7,
+   1.6,
+   1.15
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Panel",
+   "pos": [
+    2.0,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": "control panel / power outlet"
+  }
+ ],
+ "structure": null,
+ "power_kw": 60
+}

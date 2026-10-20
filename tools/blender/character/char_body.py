@@ -43,9 +43,9 @@ def _v(p):
 def torso_sdf(P, grow=0.0, neck=True):
     g = grow
     d = D.union(
-        D.ellipsoid(P, (0, 0.000, 0.955), (0.150 + g, 0.104 + g, 0.100 + g)),
-        D.ellipsoid(P, (0, 0.006, 1.080), (0.138 + g, 0.098 + g, 0.110 + g)),
-        D.ellipsoid(P, (0, -0.006, 1.245), (0.152 + g, 0.110 + g, 0.150 + g)),
+        D.ellipsoid(P, (0, 0.000, 0.950), (0.156 + g, 0.106 + g, 0.105 + g)),
+        D.ellipsoid(P, (0, 0.006, 1.080), (0.158 + g, 0.102 + g, 0.115 + g)),
+        D.ellipsoid(P, (0, -0.006, 1.245), (0.170 + g, 0.112 + g, 0.150 + g)),
         D.ellipsoid(P, (0, -0.010, 1.360), (0.160 + g, 0.098 + g, 0.090 + g)),
         k=0.05)
     pecs = D.union(D.ellipsoid(P, (-0.068, 0.060, 1.318), (0.072 + g, 0.040 + g, 0.058 + g)),
@@ -54,11 +54,16 @@ def torso_sdf(P, grow=0.0, neck=True):
                    D.ellipsoid(P, (0.080, -0.060, 1.300), (0.075 + g, 0.055 + g, 0.120 + g)))
     glutes = D.union(D.ellipsoid(P, (-0.070, -0.055, 0.915), (0.082 + g, 0.068 + g, 0.088 + g)),
                      D.ellipsoid(P, (0.070, -0.055, 0.915), (0.082 + g, 0.068 + g, 0.088 + g)))
+    # Hip / trochanter mass: the widest point of the lower body (~0.33 m) sits at the
+    # hip joints, so the thighs taper from the hips instead of bulging past the pelvis.
+    hips = D.union(D.ellipsoid(P, (-0.086, -0.008, 0.905), (0.070 + g, 0.086 + g, 0.090 + g)),
+                   D.ellipsoid(P, (0.086, -0.008, 0.905), (0.070 + g, 0.086 + g, 0.090 + g)))
     traps = D.union(D.round_cone(P, (0, -0.032, 1.470), (-0.150, -0.026, 1.440), 0.052 + g, 0.042 + g),
                     D.round_cone(P, (0, -0.032, 1.470), (0.150, -0.026, 1.440), 0.052 + g, 0.042 + g))
     neck_d = D.round_cone(P, (0, -0.030, 1.430), (0, -0.020, 1.610), 0.060 + g, 0.052 + g) if neck else None
     d = D.union(d, pecs, back, k=0.035)
     d = D.union(d, glutes, k=0.04)
+    d = D.union(d, hips, k=0.06)
     d = D.union(d, traps, k=0.04)
     if neck:
         d = D.union(d, neck_d, k=0.03)
@@ -87,8 +92,8 @@ def leg_sdf(P, side, grow=0.0):
     s = "Left" if side < 0 else "Right"
     hip, kn, an = j[s + "UpperLeg"], j[s + "LowerLeg"], j[s + "Foot"]
     g = grow
-    thigh = D.round_cone(P, _v(hip + Vector((side * 0.006, 0, 0.010))), _v(kn), 0.082 + g, 0.050 + g)
-    quad = D.sphere(P, _v(hip.lerp(kn, 0.38) + Vector((0, 0.010, 0))), 0.069 + g)
+    thigh = D.round_cone(P, _v(hip + Vector((-side * 0.004, 0, 0.010))), _v(kn), 0.080 + g, 0.049 + g)
+    quad = D.sphere(P, _v(hip.lerp(kn, 0.36) + Vector((-side * 0.010, 0.014, 0))), 0.064 + g)
     knee = D.sphere(P, _v(kn + Vector((0, 0.004, 0))), 0.045 + g)
     shin = D.round_cone(P, _v(kn), _v(an), 0.048 + g, 0.033 + g)
     calf = D.ellipsoid(P, _v(kn.lerp(an, 0.28) + Vector((0, -0.016, 0))), (0.050 + g, 0.052 + g, 0.095 + g))

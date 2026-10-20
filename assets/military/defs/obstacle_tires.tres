@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"obstacle_tires"
+display_name = "Obstacle: tyre run"
+category = "Training"
+description = "Tyre run: 2 x 8 truck tyres laid flat, 6 m long."
+mesh_path = "res://assets/military/modules/obstacle_tires.glb"
+size = Vector3(1.74, 0.23, 6.36)
+max_slope_deg = 10
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = false
+collision_boxes = Array[AABB]([])
+ramps = Array[AABB]([])

@@ -1,0 +1,68 @@
+{
+ "id": "road_delineator",
+ "family": "road",
+ "display_name": "Delineator post",
+ "category": "Roads",
+ "description": "Roadside delineator post 1.0 m, black band and red reflector.",
+ "bounds_min": [
+  -0.052,
+  -0.072,
+  -0.3
+ ],
+ "bounds_max": [
+  0.052,
+  0.075,
+  1.0
+ ],
+ "size_above_ground": [
+  0.105,
+  0.148,
+  1.0
+ ],
+ "footprint_xy": [
+  -0.052,
+  -0.072,
+  0.052,
+  0.075
+ ],
+ "foundation_depth": 0.3,
+ "tris": [
+  68,
+  24,
+  12
+ ],
+ "surfaces": [
+  1,
+  1,
+  1
+ ],
+ "materials": [
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   25
+  ],
+  [
+   25,
+   70
+  ],
+  [
+   70,
+   200
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.05,
+   0.0,
+   -0.07,
+   0.1,
+   1.0,
+   0.14
+  ]
+ ],
+ "markers": [],
+ "structure": null
+}

@@ -1,0 +1,79 @@
+{
+ "id": "field_toilet",
+ "family": "prop",
+ "display_name": "Field toilet",
+ "category": "Shelter",
+ "description": "Portable toilet cabin 1.1 x 1.1 x 2.3 m.",
+ "bounds_min": [
+  -0.56,
+  -0.56,
+  0.0
+ ],
+ "bounds_max": [
+  0.56,
+  0.58,
+  2.65
+ ],
+ "size_above_ground": [
+  1.12,
+  1.14,
+  2.65
+ ],
+ "footprint_xy": [
+  -0.56,
+  -0.56,
+  0.56,
+  0.58
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  152,
+  112,
+  24
+ ],
+ "surfaces": [
+  1,
+  1,
+  1
+ ],
+ "materials": [
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   20
+  ],
+  [
+   20,
+   60
+  ],
+  [
+   60,
+   160
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.55,
+   0.0,
+   -0.55,
+   1.1,
+   2.3,
+   1.1
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Door",
+   "pos": [
+    0,
+    1.2,
+    0
+   ],
+   "yaw": 180,
+   "note": ""
+  }
+ ],
+ "structure": null
+}

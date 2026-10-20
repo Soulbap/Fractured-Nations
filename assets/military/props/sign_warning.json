@@ -1,0 +1,69 @@
+{
+ "id": "sign_warning",
+ "family": "prop",
+ "display_name": "Danger sign",
+ "category": "Signs",
+ "description": "Danger sign on a 60 mm galvanized post, plate 0.90 m, lower edge 1.8 m.",
+ "bounds_min": [
+  -0.423,
+  -0.03,
+  -0.5
+ ],
+ "bounds_max": [
+  0.423,
+  0.04,
+  2.605
+ ],
+ "size_above_ground": [
+  0.846,
+  0.07,
+  2.605
+ ],
+ "footprint_xy": [
+  -0.423,
+  -0.03,
+  0.423,
+  0.04
+ ],
+ "foundation_depth": 0.5,
+ "tris": [
+  60,
+  28,
+  28
+ ],
+ "surfaces": [
+  2,
+  2,
+  2
+ ],
+ "materials": [
+  "Kit_Palette",
+  "Signs"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   20
+  ],
+  [
+   20,
+   60
+  ],
+  [
+   60,
+   160
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.04,
+   0.0,
+   -0.04,
+   0.08,
+   2.2,
+   0.08
+  ]
+ ],
+ "markers": [],
+ "structure": null
+}

@@ -1,0 +1,113 @@
+{
+ "id": "vehicle_ramp",
+ "family": "module",
+ "display_name": "Vehicle incline ramp (30 %)",
+ "category": "Vehicle training",
+ "description": "Concrete driver-training ramp 4 m wide: 30 % climb to 2.1 m, 3 m level top, 30 % descent (17 m long).",
+ "bounds_min": [
+  -2.2,
+  -8.5,
+  -0.4
+ ],
+ "bounds_max": [
+  2.2,
+  8.5,
+  2.35
+ ],
+ "size_above_ground": [
+  4.4,
+  17.0,
+  2.35
+ ],
+ "footprint_xy": [
+  -2.2,
+  -8.5,
+  2.2,
+  8.5
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  34,
+  34,
+  22
+ ],
+ "surfaces": [
+  2,
+  2,
+  1
+ ],
+ "materials": [
+  "Concrete",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   60
+  ],
+  [
+   60,
+   240
+  ],
+  [
+   240,
+   1600
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -2.0,
+   0.0,
+   -1.5,
+   4.0,
+   2.1,
+   3.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "VEH_Start",
+   "pos": [
+    0,
+    -14.5,
+    0
+   ],
+   "yaw": 0,
+   "note": "vehicle starts the climb northbound (+Y)"
+  },
+  {
+   "name": "VEH_End",
+   "pos": [
+    0,
+    14.5,
+    0
+   ],
+   "yaw": 0,
+   "note": ""
+  }
+ ],
+ "structure": {
+  "category": "Vehicle training",
+  "max_slope_deg": 4.0,
+  "blocks_navigation": false,
+  "max_ground_gap": 0.6,
+  "ramps_godot": [
+   [
+    -2.0,
+    0,
+    1.5,
+    4.0,
+    2.1,
+    7.0
+   ],
+   [
+    -2.0,
+    0,
+    -8.5,
+    4.0,
+    2.1,
+    7.0
+   ]
+  ]
+ }
+}

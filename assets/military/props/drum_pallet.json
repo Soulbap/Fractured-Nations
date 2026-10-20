@@ -1,0 +1,71 @@
+{
+ "id": "drum_pallet",
+ "family": "prop",
+ "display_name": "Fuel drums on pallet",
+ "category": "Fuel",
+ "description": "Four 200 l drums on a 1.2 x 1.2 m pallet with a hazard placard.",
+ "bounds_min": [
+  -0.61,
+  -0.61,
+  0.0
+ ],
+ "bounds_max": [
+  0.61,
+  0.612,
+  1.024
+ ],
+ "size_above_ground": [
+  1.22,
+  1.222,
+  1.024
+ ],
+ "footprint_xy": [
+  -0.61,
+  -0.61,
+  0.61,
+  0.612
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  926,
+  158,
+  92
+ ],
+ "surfaces": [
+  4,
+  4,
+  3
+ ],
+ "materials": [
+  "Kit_Palette",
+  "Paint_Green",
+  "Signs",
+  "Timber"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   20
+  ],
+  [
+   20,
+   60
+  ],
+  [
+   60,
+   160
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.61,
+   0.0,
+   -0.61,
+   1.22,
+   1.03,
+   1.22
+  ]
+ ],
+ "markers": [],
+ "structure": null
+}

@@ -1,0 +1,72 @@
+{
+ "id": "ammo_pallet",
+ "family": "prop",
+ "display_name": "Ammunition pallet",
+ "category": "Ammunition",
+ "description": "EUR pallet with 3 x 4 x 2 wooden ammunition boxes, strapped (1.2 x 0.8 x 0.66 m).",
+ "bounds_min": [
+  -0.6,
+  -0.407,
+  0.0
+ ],
+ "bounds_max": [
+  0.6,
+  0.408,
+  0.66
+ ],
+ "size_above_ground": [
+  1.2,
+  0.815,
+  0.66
+ ],
+ "footprint_xy": [
+  -0.6,
+  -0.407,
+  0.6,
+  0.408
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  962,
+  110,
+  24
+ ],
+ "surfaces": [
+  5,
+  3,
+  2
+ ],
+ "materials": [
+  "Kit_Palette",
+  "Paint_OD",
+  "Signs",
+  "Timber",
+  "Timber_Dark"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   20
+  ],
+  [
+   20,
+   60
+  ],
+  [
+   60,
+   160
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.6,
+   0.0,
+   -0.4,
+   1.2,
+   0.66,
+   0.8
+  ]
+ ],
+ "markers": [],
+ "structure": null
+}

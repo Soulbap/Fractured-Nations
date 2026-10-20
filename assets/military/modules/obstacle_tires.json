@@ -1,0 +1,65 @@
+{
+ "id": "obstacle_tires",
+ "family": "module",
+ "display_name": "Obstacle: tyre run",
+ "category": "Training",
+ "description": "Tyre run: 2 x 8 truck tyres laid flat, 6 m long.",
+ "bounds_min": [
+  -0.82,
+  -3.18,
+  0.0
+ ],
+ "bounds_max": [
+  0.92,
+  3.18,
+  0.23
+ ],
+ "size_above_ground": [
+  1.741,
+  6.36,
+  0.23
+ ],
+ "footprint_xy": [
+  -0.82,
+  -3.18,
+  0.92,
+  3.18
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  1536,
+  704,
+  320
+ ],
+ "surfaces": [
+  2,
+  2,
+  1
+ ],
+ "materials": [
+  "Dirt",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   140
+  ],
+  [
+   140,
+   600
+  ]
+ ],
+ "collision_boxes_godot": [],
+ "markers": [],
+ "structure": {
+  "category": "Training",
+  "max_slope_deg": 10.0,
+  "blocks_navigation": false,
+  "max_ground_gap": 0.3
+ }
+}

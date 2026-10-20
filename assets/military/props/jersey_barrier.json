@@ -1,0 +1,94 @@
+{
+ "id": "jersey_barrier",
+ "family": "prop",
+ "display_name": "Concrete barrier (F-shape)",
+ "category": "Road",
+ "description": "F-shape / Jersey concrete barrier, 3.0 x 0.61 x 0.81 m: 75 mm toe, 55 deg and 84 deg faces.",
+ "bounds_min": [
+  -1.5,
+  -0.308,
+  0.0
+ ],
+ "bounds_max": [
+  1.5,
+  0.308,
+  0.887
+ ],
+ "size_above_ground": [
+  3.0,
+  0.616,
+  0.887
+ ],
+ "footprint_xy": [
+  -1.5,
+  -0.308,
+  1.5,
+  0.308
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  164,
+  28,
+  28
+ ],
+ "surfaces": [
+  2,
+  1,
+  1
+ ],
+ "materials": [
+  "Concrete",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   150
+  ],
+  [
+   150,
+   800
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.5,
+   0.0,
+   -0.305,
+   3.0,
+   0.81,
+   0.61
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SNAP_W",
+   "pos": [
+    -1.5,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": ""
+  },
+  {
+   "name": "SNAP_E",
+   "pos": [
+    1.5,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": ""
+  }
+ ],
+ "structure": null,
+ "module": {
+  "length": 3.0,
+  "height": 0.81
+ }
+}

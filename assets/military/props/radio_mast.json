@@ -1,0 +1,70 @@
+{
+ "id": "radio_mast",
+ "family": "prop",
+ "display_name": "Telescopic radio mast 12 m",
+ "category": "Communications",
+ "description": "Field telescopic mast 12 m (three sections) on a tripod, guyed at 6 and 11 m, three whip antennas.",
+ "bounds_min": [
+  -5.754,
+  -6.625,
+  -0.1
+ ],
+ "bounds_max": [
+  5.754,
+  3.375,
+  14.35
+ ],
+ "size_above_ground": [
+  11.508,
+  10.0,
+  14.35
+ ],
+ "footprint_xy": [
+  -5.754,
+  -6.625,
+  5.754,
+  3.375
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  504,
+  252,
+  60
+ ],
+ "surfaces": [
+  3,
+  3,
+  1
+ ],
+ "materials": [
+  "Concrete",
+  "Kit_Palette",
+  "Paint_OD"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   50
+  ],
+  [
+   50,
+   200
+  ],
+  [
+   200,
+   1500
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.1,
+   0.0,
+   -0.1,
+   0.2,
+   12.0,
+   0.2
+  ]
+ ],
+ "markers": [],
+ "structure": null
+}

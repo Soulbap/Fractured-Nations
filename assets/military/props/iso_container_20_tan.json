@@ -1,0 +1,97 @@
+{
+ "id": "iso_container_20_tan",
+ "family": "prop",
+ "display_name": "20 ft container (tan)",
+ "category": "Containers",
+ "description": "20 ISO dry freight container (6.058 x 2.438 x 2.591 m), doors at the front.",
+ "bounds_min": [
+  -1.222,
+  -3.029,
+  0.0
+ ],
+ "bounds_max": [
+  1.222,
+  3.096,
+  2.591
+ ],
+ "size_above_ground": [
+  2.444,
+  6.125,
+  2.591
+ ],
+ "footprint_xy": [
+  -1.222,
+  -3.029,
+  1.222,
+  3.096
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  1864,
+  240,
+  14
+ ],
+ "surfaces": [
+  3,
+  3,
+  2
+ ],
+ "materials": [
+  "Container_Tan",
+  "Kit_Palette",
+  "Paint_Tan",
+  "Signs"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   35
+  ],
+  [
+   35,
+   120
+  ],
+  [
+   120,
+   600
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.219,
+   0.0,
+   -3.029,
+   2.438,
+   2.591,
+   6.058
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Doors",
+   "pos": [
+    0,
+    3.929,
+    0
+   ],
+   "yaw": 180,
+   "note": "stand here to open / load the doors"
+  },
+  {
+   "name": "ATT_Stack",
+   "pos": [
+    0,
+    0,
+    2.591
+   ],
+   "yaw": 0,
+   "note": "next container stacks here (castings align)"
+  }
+ ],
+ "structure": null,
+ "module": {
+  "length": 6.058,
+  "width": 2.438,
+  "height": 2.591
+ }
+}

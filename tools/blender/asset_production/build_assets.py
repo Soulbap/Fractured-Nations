@@ -31,8 +31,8 @@ import ap_textures as T  # noqa: E402
 import ap_materials as AM  # noqa: E402
 import ap_lib as A  # noqa: E402
 
-FAMILY_MODULES = {"building": "fam_buildings", "module": "fam_modules", "prop": "fam_props",
-                  "road": "fam_roads", "vehicle": "fam_vehicles"}
+FAMILY_MODULES = {"building": ["fam_buildings"], "module": ["fam_modules"], "prop": ["fam_props", "fam_props_logistics"],
+                  "road": ["fam_roads"], "vehicle": ["fam_vehicles"]}
 FAMILY_DIRS = {"building": "buildings", "module": "modules", "prop": "props", "road": "roads", "vehicle": "vehicles"}
 
 OUT = os.path.join(REPO, "assets", "military")
@@ -59,16 +59,17 @@ def parse_args():
 
 def registry():
     reg = {}
-    for fam, mod_name in FAMILY_MODULES.items():
-        try:
-            mod = importlib.import_module(mod_name)
-        except ImportError as e:
-            if mod_name not in str(e):
-                raise
-            continue
-        importlib.reload(mod)
-        for aid, fn in mod.BUILDERS.items():
-            reg[aid] = (fam, fn)
+    for fam, names in FAMILY_MODULES.items():
+        for mod_name in names:
+            try:
+                mod = importlib.import_module(mod_name)
+            except ImportError as e:
+                if mod_name not in str(e):
+                    raise
+                continue
+            importlib.reload(mod)
+            for aid, fn in mod.BUILDERS.items():
+                reg[aid] = (fam, fn)
     return reg
 
 
@@ -138,4 +139,13 @@ def main():
     print("FNBUILD", json.dumps(log))
 
 
-main()
+
+if __name__ == "__main__" or True:
+    # Blender exits with code 0 on a Python exception; make failures visible to scripts.
+    try:
+        main()
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        sys.stdout.flush()
+        os._exit(1)

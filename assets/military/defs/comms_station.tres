@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"comms_station"
+display_name = "Communications Station"
+category = "Buildings"
+description = "Signals site: 20 ft equipment shelter (A/C, cable entry), 18 m guyed lattice mast with dishes and whips, 2.4 m satellite terminal, generator pad."
+mesh_path = "res://assets/military/buildings/comms_station.glb"
+size = Vector3(19.052, 21, 15.712)
+max_slope_deg = 6
+max_ground_gap = 0.6
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-6.53, 0, -2.22, 6.06, 2.89, 2.44), AABB(2.65, 0, -1.85, 0.7, 18, 0.7), AABB(-3.8, 0, 2.7, 1.6, 2.4, 1.6)])
+ramps = Array[AABB]([])

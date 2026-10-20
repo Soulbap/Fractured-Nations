@@ -1,0 +1,95 @@
+{
+ "id": "tent_frame_10x6",
+ "family": "prop",
+ "display_name": "Frame tent 10 x 6 m",
+ "category": "Shelter",
+ "description": "Military frame tent 6.0 x 10.0 m, eaves 1.8 m, ridge 3.2 m.",
+ "bounds_min": [
+  -4.314,
+  -5.22,
+  -0.075
+ ],
+ "bounds_max": [
+  4.314,
+  5.22,
+  3.18
+ ],
+ "size_above_ground": [
+  8.629,
+  10.44,
+  3.18
+ ],
+ "footprint_xy": [
+  -4.314,
+  -5.22,
+  4.314,
+  5.22
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  488,
+  64,
+  40
+ ],
+ "surfaces": [
+  2,
+  2,
+  1
+ ],
+ "materials": [
+  "Canvas_Tan",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   30
+  ],
+  [
+   30,
+   100
+  ],
+  [
+   100,
+   400
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -3.0,
+   0.0,
+   -5.0,
+   6.0,
+   3.15,
+   10.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Door_N",
+   "pos": [
+    0,
+    6.2,
+    0
+   ],
+   "yaw": 180,
+   "note": ""
+  },
+  {
+   "name": "IP_Door_S",
+   "pos": [
+    0,
+    -6.2,
+    0
+   ],
+   "yaw": 0,
+   "note": ""
+  }
+ ],
+ "structure": {
+  "category": "Shelter",
+  "max_slope_deg": 8.0,
+  "max_ground_gap": 0.3,
+  "blocks_navigation": true
+ }
+}
