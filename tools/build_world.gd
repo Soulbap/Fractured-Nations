@@ -58,7 +58,7 @@ func _run() -> void:
 		await builder.build_roads(root)
 		for i in 10:
 			await physics_frame
-		builder.flatten_roads()
+		await builder.flatten_roads()
 		for i in 5:
 			await physics_frame
 		print("BUILD roads + flatten: %d ms" % (Time.get_ticks_msec() - t))

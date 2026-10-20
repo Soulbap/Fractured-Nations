@@ -17,6 +17,19 @@ enum Layout {
 	CENTERED,
 }
 
+## WORLD-PLAYTEST-01: ground surfaces built into the terrain itself (graded and painted,
+## no mesh, no collision box): roads drawn as curves and paved areas drawn as polygons.
+enum Surface {
+	## A structure with a mesh (everything before WORLD-PLAYTEST-01).
+	NONE,
+	## A road: a curve through control points, graded along its length; part of the world's
+	## road network (RoadNetwork), so routes prefer it.
+	ROAD,
+	## A paved area (vehicle yard, motor pool, hardstanding): a polygon graded to one plane.
+	## Not a road: it opens no navigation shortcut.
+	AREA,
+}
+
 enum Fit {
 	## Level, set into the ground at the mean height (buildings).
 	LEVEL,
@@ -62,6 +75,25 @@ enum Fit {
 @export var color := Color(0.5, 0.5, 0.45)
 ## Cells farther than this from the camera do not draw the type at all.
 @export var visible_range := 1600.0
+## WORLD-PLAYTEST-01 ground surfaces (roads, areas). surface != NONE: no mesh or collision;
+## StructureManager grades the terrain and paints the control map instead.
+@export var surface := Surface.NONE
+## Full surface width (m) of a road (carriageway and shoulders).
+@export var surface_width := 0.0
+## Terrain3D texture ids and blend painted on the surface.
+@export var surface_texture := 0
+@export var surface_overlay := 0
+@export_range(0.0, 1.0) var surface_blend := 0.3
+## Steepest grade (rise / run) along a road or across an area after grading.
+@export var max_grade := 0.12
+## Largest cut or fill (m) the grading may make.
+@export var max_cut := 3.0
+## Travel cost per metre on the strategic grid (open ground = 1.0; world tracks 0.45).
+@export var travel_cost := 0.5
+
+
+func is_surface() -> bool:
+	return surface != Surface.NONE
 
 
 func footprint() -> Vector2:

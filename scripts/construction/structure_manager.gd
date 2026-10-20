@@ -75,6 +75,13 @@ const WATER_CELL := 64.0
 ## Largest cut or fill allowed when the groundwork would touch a road (road meshes follow
 ## the original terrain).
 @export var level_max_depth_near_road := 0.3
+## WORLD-PLAYTEST-01 roads and paved areas: width (m) of the zone beyond their edge where
+## the grading blends into the ground, of the painted dirt verge, the tightest curve a road
+## may have (a truck's turning circle) and the largest paved area.
+@export var surface_blend := 5.0
+@export var surface_verge := 1.6
+@export var min_road_radius := 9.0
+@export var max_area_m2 := 40000.0
 
 var state: ConstructionState
 ## Returns the point physics should exist around (set by the game; default: camera).
@@ -101,6 +108,15 @@ var _mask_has_dirty := false
 var _mask_timer := 0.0
 ## Last cost of the deferred work (ms), for the HUD / tests.
 var timings := {"grass_ms": 0.0, "cells_ms": 0.0}
+## WORLD-PLAYTEST-01 ground surfaces (roads, paved areas): id -> StructureState. They are
+## not in the structure index (no mesh, no collision box, never an obstacle).
+var _surfaces := {}
+## Blocking footprints for blocks_point(): Vector2i (BLOCK_CELL m) -> Array of boxes.
+const BLOCK_CELL := 8.0
+var _block_grid := {}
+var _block_dirty := true
+## Original control-map value of every vertex a surface painted (Vector2i -> int).
+var _orig_control := {}
 
 
 func bind_state(p_state: ConstructionState) -> void:
@@ -152,7 +168,7 @@ func stats() -> Dictionary:
 	var modules := 0
 	for s: StructureState in state.structures.values():
 		modules += s.built_count()
-	return {"structures": state.count(), "instances": modules, "indexed_cells": _index.size(),
+	return {"structures": state.count(), "surfaces": _surfaces.size(), "instances": modules, "indexed_cells": _index.size(),
 		"visible_cells": _visual.size(), "multimeshes": mmis, "drawn_instances": inst,
 		"collision_cells": _bodies.size(), "collision_shapes": shapes}
 
@@ -427,6 +443,10 @@ func _resolve(s: StructureState) -> void:
 
 
 func _on_added(s: StructureState) -> void:
+	_block_dirty = true
+	if _is_surface(s):
+		_surface_changed(s, true)
+		return
 	_resolve(s)
 	for i in s.instances.size():
 		var c := _cell_of(s.instances[i].origin)
@@ -441,6 +461,10 @@ func _on_added(s: StructureState) -> void:
 
 
 func _on_removed(s: StructureState) -> void:
+	_block_dirty = true
+	if _surfaces.has(s.id):
+		_surface_changed(s, false)
+		return
 	for i in s.instances.size():
 		var c := _cell_of(s.instances[i].origin)
 		var list: Array = _index.get(c, [])
@@ -455,6 +479,7 @@ func _on_removed(s: StructureState) -> void:
 
 
 func _on_changed(s: StructureState) -> void:
+	_block_dirty = true
 	for i in s.instances.size():
 		_dirty_cells[_cell_of(s.instances[i].origin)] = true
 	_grass_dirty(_rect_of(s))
@@ -462,6 +487,7 @@ func _on_changed(s: StructureState) -> void:
 
 
 func _on_cleared() -> void:
+	_block_dirty = true
 	for c in _visual.keys():
 		_free_visual(c)
 	for c in _bodies.keys():
@@ -469,7 +495,9 @@ func _on_cleared() -> void:
 	_bodies.clear()
 	_index.clear()
 	_dirty_cells.clear()
+	_surfaces.clear()
 	_restore_all_ground()
+	_restore_all_paint()
 	if _mask_original and grass and grass.mask:
 		grass.mask.image.copy_from(_mask_original)
 		grass.apply_mask()
@@ -544,6 +572,32 @@ func _update_grass_mask() -> void:
 			for px in range(maxi(floori((lo.x - mask.origin.x) / t), 0), mini(ceili((hi.x - mask.origin.x) / t), w - 1) + 1):
 				if Geometry2D.is_point_in_polygon(mask.origin + Vector2(px + 0.5, pz + 0.5) * t, poly):
 					mask.image.set_pixel(px, pz, Color.WHITE)
+	# WORLD-PLAYTEST-01: roads and paved areas are grass-free like the world's own roads.
+	for sf: StructureState in _surfaces_in(area):
+		var sdef := StructureCatalog.get_def(sf.type_id)
+		if sdef.surface == StructureDef.Surface.ROAD:
+			var hw := sdef.surface_width * 0.5 + t * 0.5
+			for i in sf.profile.size() - 1:
+				var a := Vector2(sf.profile[i].x, sf.profile[i].z)
+				var b := Vector2(sf.profile[i + 1].x, sf.profile[i + 1].z)
+				var lo := a.min(b) - Vector2(hw, hw)
+				var hi := a.max(b) + Vector2(hw, hw)
+				for pz in range(maxi(floori((lo.y - mask.origin.y) / t), 0), mini(ceili((hi.y - mask.origin.y) / t), h - 1) + 1):
+					for px in range(maxi(floori((lo.x - mask.origin.x) / t), 0), mini(ceili((hi.x - mask.origin.x) / t), w - 1) + 1):
+						if LineOfFire._point_segment_dist2d(mask.origin + Vector2(px + 0.5, pz + 0.5) * t, a, b) <= hw:
+							mask.image.set_pixel(px, pz, Color.WHITE)
+		else:
+			var poly := PackedVector2Array()
+			var lo := Vector2(INF, INF)
+			var hi := -lo
+			for v in sf.points:
+				poly.append(Vector2(v.x, v.z))
+				lo = lo.min(Vector2(v.x, v.z))
+				hi = hi.max(Vector2(v.x, v.z))
+			for pz in range(maxi(floori((lo.y - mask.origin.y) / t), 0), mini(ceili((hi.y - mask.origin.y) / t), h - 1) + 1):
+				for px in range(maxi(floori((lo.x - mask.origin.x) / t), 0), mini(ceili((hi.x - mask.origin.x) / t), w - 1) + 1):
+					if Geometry2D.is_point_in_polygon(mask.origin + Vector2(px + 0.5, pz + 0.5) * t, poly):
+						mask.image.set_pixel(px, pz, Color.WHITE)
 	var t1 := Time.get_ticks_usec()
 	grass.apply_mask()
 	timings["grass_paint_ms"] = (t1 - t0) / 1000.0
@@ -743,45 +797,72 @@ func _relevel(rect: Rect2) -> void:
 	var z1 := ceili(rect.end.y / sp)
 	var changed := 0
 	var regions := {}
-	for iz in range(z0, z1 + 1):
-		for ix in range(x0, x1 + 1):
-			var key := Vector2i(ix, iz)
-			var p := Vector2(ix * sp, iz * sp)
-			var px := _pixel_pos(ix, iz, sp)
-			var orig: float = _orig_heights[key] if _orig_heights.has(key) else terrain.data.get_pixel(Terrain3DRegion.TYPE_HEIGHT, px).r
-			var w_max := 0.0
-			var core := NAN
-			var sw := 0.0
-			var swy := 0.0
-			for pad: Array in pads:
-				var d := _obb_distance(pad[0], p)
-				if d <= 0.0:
-					core = pad[1]
-					break
-				if d >= level_blend:
-					continue
-				var w := 1.0 - smoothstep(0.0, level_blend, d)
+	# WORLD-PLAYTEST-01: the vertices to recompute are those near a pad, inside a road or
+	# area corridor, or changed before (to restore); a long road's bounding rectangle would
+	# otherwise mean hundreds of thousands of untouched vertices.
+	var field := _surface_field(rect)
+	var keys := {}
+	for k: Vector2i in field:
+		keys[k] = true
+	for k: Vector2i in _orig_heights:
+		if k.x >= x0 and k.x <= x1 and k.y >= z0 and k.y <= z1:
+			keys[k] = true
+	for pad: Array in pads:
+		var reach: float = (pad[0][3] as Vector2).length() + level_blend
+		var c: Vector2 = pad[0][0]
+		for iz in range(maxi(floori((c.y - reach) / sp), z0), mini(ceili((c.y + reach) / sp), z1) + 1):
+			for ix in range(maxi(floori((c.x - reach) / sp), x0), mini(ceili((c.x + reach) / sp), x1) + 1):
+				keys[Vector2i(ix, iz)] = true
+	for key: Vector2i in keys:
+		var ix := key.x
+		var iz := key.y
+		var p := Vector2(ix * sp, iz * sp)
+		var px := _pixel_pos(ix, iz, sp)
+		var orig: float = _orig_heights[key] if _orig_heights.has(key) else terrain.data.get_pixel(Terrain3DRegion.TYPE_HEIGHT, px).r
+		var w_max := 0.0
+		var core := NAN
+		var sw := 0.0
+		var swy := 0.0
+		for pad: Array in pads:
+			var d := _obb_distance(pad[0], p)
+			if d <= 0.0:
+				core = pad[1]
+				break
+			if d >= level_blend:
+				continue
+			var w := 1.0 - smoothstep(0.0, level_blend, d)
+			w_max = maxf(w_max, w)
+			var w4 := w * w * w * w
+			sw += w4
+			swy += w4 * float(pad[1])
+		# Roads and paved areas: their surface height inside, a blend outside (pads win).
+		var e: Array = field.get(key, [])
+		if not e.is_empty() and is_nan(core):
+			if e[0] <= 0.0:
+				core = e[1]
+			else:
+				var w := 1.0 - smoothstep(0.0, e[2], e[0])
 				w_max = maxf(w_max, w)
 				var w4 := w * w * w * w
 				sw += w4
-				swy += w4 * float(pad[1])
-			var h := orig
-			if not is_nan(core):
-				h = core
-			elif w_max > 0.0:
-				h = lerpf(orig, swy / sw, w_max)
-			var cur: float = terrain.data.get_pixel(Terrain3DRegion.TYPE_HEIGHT, px).r
-			if absf(h - cur) < 0.0005:
-				if h == orig and _orig_heights.has(key) and is_nan(core) and w_max == 0.0:
-					_orig_heights.erase(key)
-				continue
-			if not _orig_heights.has(key):
-				_orig_heights[key] = orig
-			terrain.data.set_pixel(Terrain3DRegion.TYPE_HEIGHT, px, Color(h, 0.0, 0.0, 1.0))
-			if is_nan(core) and w_max == 0.0:
+				swy += w4 * float(e[1])
+		var h := orig
+		if not is_nan(core):
+			h = core
+		elif w_max > 0.0:
+			h = lerpf(orig, swy / sw, w_max)
+		var cur: float = terrain.data.get_pixel(Terrain3DRegion.TYPE_HEIGHT, px).r
+		if absf(h - cur) < 0.0005:
+			if h == orig and _orig_heights.has(key) and is_nan(core) and w_max == 0.0:
 				_orig_heights.erase(key)
-			changed += 1
-			regions[terrain.data.get_region_location(px)] = true
+			continue
+		if not _orig_heights.has(key):
+			_orig_heights[key] = orig
+		terrain.data.set_pixel(Terrain3DRegion.TYPE_HEIGHT, px, Color(h, 0.0, 0.0, 1.0))
+		if is_nan(core) and w_max == 0.0:
+			_orig_heights.erase(key)
+		changed += 1
+		regions[terrain.data.get_region_location(px)] = true
 	if changed > 0:
 		for loc in regions:
 			var region: Terrain3DRegion = terrain.data.get_region(loc)
@@ -895,8 +976,513 @@ func _refit_lines(rect: Rect2) -> void:
 		var before := s.instances.duplicate()
 		_resolve(s)
 		if s.instances != before:
+			_block_dirty = true
 			for xf in s.instances:
 				_dirty_cells[_cell_of(xf.origin)] = true
+
+
+# --- Ground surfaces: roads and paved areas (WORLD-PLAYTEST-01) ----------------------
+
+## Surfaces (roads, paved areas) are built into the terrain itself, like the world's own
+## unpaved roads and streets: graded (the groundwork above, from the record's profile) and
+## painted into the Terrain3D control map with the world's road textures. The terrain
+## files are never written; original heights and control values are kept and restored
+## when a surface is removed. Roads also feed the RoadNetwork (WorldState.roads), which the
+## strategic routes follow; paved areas do not (no navigation shortcut).
+
+func _is_surface(s: StructureState) -> bool:
+	var def := StructureCatalog.get_def(s.type_id)
+	return def != null and def.is_surface()
+
+
+func surface_count() -> int:
+	return _surfaces.size()
+
+
+func _surface_changed(s: StructureState, added: bool) -> void:
+	if added:
+		if s.profile.is_empty():
+			push_warning("StructureManager: surface %d has no profile" % s.id)
+			return
+		_surfaces[s.id] = s
+	else:
+		_surfaces.erase(s.id)
+	var rect := _surface_rect(s)
+	var t0 := Time.get_ticks_usec()
+	_relevel(rect)
+	_repaint(rect)
+	timings["surface_ms"] = (Time.get_ticks_usec() - t0) / 1000.0
+	_grass_dirty(rect)
+	area_changed.emit(rect)
+
+
+## XZ bounds of a surface including its blend zone.
+func _surface_rect(s: StructureState) -> Rect2:
+	var def := StructureCatalog.get_def(s.type_id)
+	var pts := s.profile if def.surface == StructureDef.Surface.ROAD else s.points
+	var lo := Vector2(INF, INF)
+	var hi := -lo
+	for p in pts:
+		lo = lo.min(Vector2(p.x, p.z))
+		hi = hi.max(Vector2(p.x, p.z))
+	return Rect2(lo, hi - lo).grow(def.surface_width * 0.5 + surface_blend + terrain_spacing())
+
+
+func terrain_spacing() -> float:
+	return terrain.vertex_spacing if terrain else 2.0
+
+
+func _surfaces_in(rect: Rect2) -> Array:
+	var out := []
+	for s: StructureState in _surfaces.values():
+		if _surface_rect(s).intersects(rect):
+			out.append(s)
+	# Areas first, then roads (a road across a yard is painted over it), each by id.
+	out.sort_custom(func(a: StructureState, b: StructureState) -> bool:
+		var ra := StructureCatalog.get_def(a.type_id).surface == StructureDef.Surface.ROAD
+		var rb := StructureCatalog.get_def(b.type_id).surface == StructureDef.Surface.ROAD
+		return a.id < b.id if ra == rb else rb)
+	return out
+
+
+## Influence of every surface on the terrain vertices inside rect:
+## Vector2i vertex -> [distance outside the surface edge (<= 0 inside), surface height,
+## blend width, StructureDef]. Where surfaces overlap the one reaching deepest wins.
+func _surface_field(rect: Rect2) -> Dictionary:
+	var out := {}
+	if _surfaces.is_empty() or terrain == null:
+		return out
+	var sp := terrain_spacing()
+	var blend := surface_blend
+	for s: StructureState in _surfaces_in(rect):
+		var def := StructureCatalog.get_def(s.type_id)
+		if def.surface == StructureDef.Surface.ROAD:
+			var half := def.surface_width * 0.5
+			var reach := half + blend
+			var pts := s.profile
+			for i in pts.size() - 1:
+				var a := Vector2(pts[i].x, pts[i].z)
+				var b := Vector2(pts[i + 1].x, pts[i + 1].z)
+				var ab := b - a
+				var l2 := maxf(ab.length_squared(), 1e-6)
+				var lo := a.min(b) - Vector2(reach, reach)
+				var hi := a.max(b) + Vector2(reach, reach)
+				lo = lo.max(rect.position)
+				hi = hi.min(rect.end)
+				for iz in range(ceili(lo.y / sp), floori(hi.y / sp) + 1):
+					for ix in range(ceili(lo.x / sp), floori(hi.x / sp) + 1):
+						var q := Vector2(ix * sp, iz * sp)
+						var t := clampf((q - a).dot(ab) / l2, 0.0, 1.0)
+						var d := q.distance_to(a + ab * t)
+						if d > reach:
+							continue
+						var key := Vector2i(ix, iz)
+						var dout := d - half
+						var e: Array = out.get(key, [])
+						if e.is_empty() or dout < e[0]:
+							out[key] = [dout, lerpf(pts[i].y, pts[i + 1].y, t), blend, def]
+		else:
+			var poly := PackedVector2Array()
+			var lo := Vector2(INF, INF)
+			var hi := -lo
+			for p in s.points:
+				poly.append(Vector2(p.x, p.z))
+				lo = lo.min(Vector2(p.x, p.z))
+				hi = hi.max(Vector2(p.x, p.z))
+			var c: Vector3 = s.profile[0]
+			var g: Vector3 = s.profile[1] if s.profile.size() > 1 else Vector3.ZERO
+			lo = (lo - Vector2(blend, blend)).max(rect.position)
+			hi = (hi + Vector2(blend, blend)).min(rect.end)
+			for iz in range(ceili(lo.y / sp), floori(hi.y / sp) + 1):
+				for ix in range(ceili(lo.x / sp), floori(hi.x / sp) + 1):
+					var q := Vector2(ix * sp, iz * sp)
+					var d := StrategicRoutes._dist_to_poly(q, poly)
+					var dout := -d if Geometry2D.is_point_in_polygon(q, poly) else d
+					if dout > blend:
+						continue
+					var key := Vector2i(ix, iz)
+					var e: Array = out.get(key, [])
+					if e.is_empty() or dout < e[0]:
+						out[key] = [dout, c.y + g.x * (q.x - c.x) + g.z * (q.y - c.z), blend, def]
+	return out
+
+
+## Paints the control map inside rect from the surfaces there (surface textures inside, a
+## dirt verge outside the edge) and restores the original paint where none is left.
+func _repaint(rect: Rect2) -> void:
+	if terrain == null or terrain.data == null:
+		return
+	var sp := terrain_spacing()
+	var field := _surface_field(rect)
+	var keys := {}
+	for k: Vector2i in field:
+		keys[k] = true
+	var x0 := floori(rect.position.x / sp)
+	var z0 := floori(rect.position.y / sp)
+	var x1 := ceili(rect.end.x / sp)
+	var z1 := ceili(rect.end.y / sp)
+	for k: Vector2i in _orig_control:
+		if k.x >= x0 and k.x <= x1 and k.y >= z0 and k.y <= z1:
+			keys[k] = true
+	var regions := {}
+	var changed := 0
+	for key: Vector2i in keys:
+		var pos := Vector3(key.x * sp, 0.0, key.y * sp)
+		var cur: int = terrain.data.get_control(pos)
+		var orig: int = _orig_control.get(key, cur)
+		var val := orig
+		var e: Array = field.get(key, [])
+		if not e.is_empty():
+			var def: StructureDef = e[3]
+			var n := _hash01(key)
+			if e[0] <= 0.0:
+				val = _control(orig, def.surface_texture, def.surface_overlay, clampf(def.surface_blend + 0.12 * (n - 0.5), 0.0, 1.0))
+			elif e[0] < surface_verge:
+				# Verge: the original ground with worn dirt fading out from the edge.
+				val = _control(orig, orig >> 27 & 0x1F, WorldTerrainGenerator.TEX_DIRT, (1.0 - e[0] / surface_verge) * (0.45 + 0.2 * n))
+		if val == cur:
+			if e.is_empty():
+				_orig_control.erase(key)
+			continue
+		if not _orig_control.has(key):
+			_orig_control[key] = orig
+		terrain.data.set_control(pos, val)
+		if e.is_empty():
+			_orig_control.erase(key)
+		changed += 1
+		regions[terrain.data.get_region_location(pos)] = true
+	if changed > 0:
+		_upload(regions, Terrain3DRegion.TYPE_CONTROL)
+	timings["paint_vertices"] = changed
+
+
+func _upload(regions: Dictionary, map_type: int) -> void:
+	for loc in regions:
+		var region: Terrain3DRegion = terrain.data.get_region(loc)
+		if region:
+			region.set_edited(true)
+	terrain.data.update_maps(map_type, false, false)
+	for loc in regions:
+		var region: Terrain3DRegion = terrain.data.get_region(loc)
+		if region:
+			region.set_edited(false)
+
+
+## Control value with new base / overlay textures and blend; the other bits (UV rotation
+## and scale, hole, navigation, auto-shader) are kept. Same layout as the world generator.
+static func _control(orig: int, base: int, over: int, blend: float) -> int:
+	var b8 := clampi(roundi(blend * 255.0), 0, 255)
+	return (orig & 0x3FFF) | ((base & 0x1F) << 27) | ((over & 0x1F) << 22) | (b8 << 14)
+
+
+static func _hash01(k: Vector2i) -> float:
+	var h := (k.x * 73856093) ^ (k.y * 19349663)
+	return float(absi(h) % 1000) / 1000.0
+
+
+func _restore_all_paint() -> void:
+	if terrain == null or _orig_control.is_empty():
+		return
+	var sp := terrain_spacing()
+	var regions := {}
+	for key: Vector2i in _orig_control:
+		var pos := Vector3(key.x * sp, 0.0, key.y * sp)
+		terrain.data.set_control(pos, _orig_control[key])
+		regions[terrain.data.get_region_location(pos)] = true
+	_orig_control.clear()
+	_upload(regions, Terrain3DRegion.TYPE_CONTROL)
+
+
+## Ground height before any groundwork (the world's own terrain).
+func original_height(x: float, z: float) -> float:
+	var sp := terrain_spacing()
+	var key := Vector2i(roundi(x / sp), roundi(z / sp))
+	if _orig_heights.has(key) and absf(x - key.x * sp) < 0.01 and absf(z - key.y * sp) < 0.01:
+		return _orig_heights[key]
+	return _height(x, z)
+
+
+## Validates a road through control points and grades it.
+## start / end: RoadNetwork.nearest() results the ends are snapped to ({} = free end).
+## Returns {ok, reason, profile (graded centre line), length_m, max_cut_m, grade, radius_m,
+## bad: PackedInt32Array of profile indices that fail (preview)}.
+func check_road(def: StructureDef, ctrl: PackedVector3Array, start := {}, end := {}, clear_trees := true) -> Dictionary:
+	var out := {"ok": false, "reason": "", "profile": PackedVector3Array(), "length_m": 0.0, "max_cut_m": 0.0,
+		"grade": 0.0, "radius_m": INF, "bad": PackedInt32Array()}
+	if ctrl.size() < 2:
+		out.reason = "click at least two points"
+		return out
+	var line := RoadNetwork.spline(ctrl, 2.0)
+	var n := line.size()
+	for i in n:
+		var h := _height(line[i].x, line[i].z)
+		if is_nan(h):
+			out.reason = "outside the terrain"
+			out.bad.append(i)
+			return out
+		line[i].y = h
+	var pins := {}
+	if not start.is_empty():
+		pins[0] = (start.pos as Vector3).y
+	if not end.is_empty():
+		pins[n - 1] = (end.pos as Vector3).y
+	var prof := RoadNetwork.grade(line, def.max_grade, pins)
+	out.profile = prof
+	out.length_m = RoadNetwork.length_of(prof)
+	out.radius_m = RoadNetwork.min_radius(prof)
+	var half := def.surface_width * 0.5
+	var reason := ""
+	if out.length_m < 4.0:
+		reason = "too short"
+	elif out.radius_m < min_road_radius:
+		reason = "curve too tight (radius %.0f m < %.0f m)" % [out.radius_m, min_road_radius]
+	var max_cut := 0.0
+	var steep := 0.0
+	for i in n:
+		var p := prof[i]
+		var bad := ""
+		var cut := absf(p.y - line[i].y)
+		max_cut = maxf(max_cut, cut)
+		if i > 0:
+			var ds := maxf(Vector2(p.x - prof[i - 1].x, p.z - prof[i - 1].z).length(), 0.05)
+			steep = maxf(steep, absf(p.y - prof[i - 1].y) / ds)
+		if not _inside_map(p, half + 2.0):
+			bad = "outside the map"
+		elif _wet(p.x, p.z, line[i].y) or _wet(p.x, p.z, p.y):
+			bad = "water (roads cannot cross rivers or lakes; use a bridge)"
+		elif cut > def.max_cut:
+			bad = "too steep for the ground (%.1f m %s > %.1f m)" % [cut, "fill" if p.y > line[i].y else "cut", def.max_cut]
+		if bad != "":
+			out.bad.append(i)
+			if reason == "":
+				reason = bad
+	out.max_cut_m = snappedf(max_cut, 0.01)
+	out.grade = snappedf(steep, 0.001)
+	if reason == "" and steep > def.max_grade + 0.01:
+		reason = "too steep at the junction (%.0f %% > %.0f %%)" % [steep * 100.0, def.max_grade * 100.0]
+	# Structures and solid vegetation along the corridor (every ~4 m).
+	if reason == "":
+		var k := 0
+		while k < n - 1:
+			var k2 := mini(k + 2, n - 1)
+			var a := Vector2(prof[k].x, prof[k].z)
+			var b := Vector2(prof[k2].x, prof[k2].z)
+			var dir := (b - a).normalized() if b.distance_to(a) > 0.01 else Vector2.RIGHT
+			var obb := [(a + b) * 0.5, dir, Vector2(-dir.y, dir.x), Vector2(a.distance_to(b) * 0.5 + 0.2, half)]
+			var why := _surface_blocked(obb, clear_trees)
+			if why != "":
+				reason = why
+				for j in range(k, k2 + 1):
+					out.bad.append(j)
+				break
+			k = k2
+	out.reason = reason
+	out.ok = reason == ""
+	return out
+
+
+## Validates a paved area (polygon corners, XZ) and grades it to one plane.
+## Returns {ok, reason, profile ([centroid with height, gradient]), area_m2, max_cut_m, grade}.
+func check_area(def: StructureDef, poly3: PackedVector3Array, clear_trees := true) -> Dictionary:
+	var out := {"ok": false, "reason": "", "profile": PackedVector3Array(), "area_m2": 0.0, "max_cut_m": 0.0, "grade": 0.0}
+	if poly3.size() < 3:
+		out.reason = "click at least three corners"
+		return out
+	var poly := PackedVector2Array()
+	var lo := Vector2(INF, INF)
+	var hi := -lo
+	for p in poly3:
+		poly.append(Vector2(p.x, p.z))
+		lo = lo.min(Vector2(p.x, p.z))
+		hi = hi.max(Vector2(p.x, p.z))
+	if Geometry2D.triangulate_polygon(poly).is_empty():
+		out.reason = "the outline crosses itself"
+		return out
+	var area := 0.0
+	for i in poly.size():
+		area += poly[i].cross(poly[(i + 1) % poly.size()])
+	area = absf(area) * 0.5
+	out.area_m2 = snappedf(area, 0.1)
+	if area < 16.0:
+		out.reason = "too small"
+		return out
+	if area > max_area_m2:
+		out.reason = "too large (%.0f m² > %.0f m²)" % [area, max_area_m2]
+		return out
+	# Ground samples every 2 m inside: least-squares plane, gradient limited to max_grade.
+	var samples := []
+	var step := 2.0
+	var y := lo.y
+	while y <= hi.y:
+		var x := lo.x
+		while x <= hi.x:
+			var q := Vector2(x, y)
+			if Geometry2D.is_point_in_polygon(q, poly):
+				var h := _height(x, y)
+				if is_nan(h):
+					out.reason = "outside the terrain"
+					return out
+				if _wet(x, y, h):
+					out.reason = "water"
+					return out
+				samples.append(Vector3(x, h, y))
+			x += step
+		y += step
+	for p in poly3:
+		samples.append(Vector3(p.x, _height(p.x, p.z), p.z))
+	var c := Vector3.ZERO
+	for p: Vector3 in samples:
+		c += p
+	c /= samples.size()
+	var sxx := 0.0
+	var szz := 0.0
+	var sxz := 0.0
+	var sxh := 0.0
+	var szh := 0.0
+	for p: Vector3 in samples:
+		var dx := p.x - c.x
+		var dz := p.z - c.z
+		var dh := p.y - c.y
+		sxx += dx * dx
+		szz += dz * dz
+		sxz += dx * dz
+		sxh += dx * dh
+		szh += dz * dh
+	var det := sxx * szz - sxz * sxz
+	var g := Vector2.ZERO
+	if absf(det) > 1e-6:
+		g = Vector2((sxh * szz - szh * sxz) / det, (szh * sxx - sxh * sxz) / det)
+	if g.length() > def.max_grade:
+		g = g.normalized() * def.max_grade
+	var max_cut := 0.0
+	for p: Vector3 in samples:
+		max_cut = maxf(max_cut, absf(c.y + g.x * (p.x - c.x) + g.y * (p.z - c.z) - p.y))
+	out.max_cut_m = snappedf(max_cut, 0.01)
+	out.grade = snappedf(g.length(), 0.001)
+	out.profile = PackedVector3Array([c, Vector3(g.x, 0.0, g.y)])
+	var reason := ""
+	if not _inside_map(Vector3(lo.x, 0, lo.y), surface_blend) or not _inside_map(Vector3(hi.x, 0, hi.y), surface_blend):
+		reason = "outside the map"
+	elif max_cut > def.max_cut:
+		reason = "too uneven (%.1f m cut / fill > %.1f m)" % [max_cut, def.max_cut]
+	if reason == "":
+		# Solid vegetation and blocking structures in 6 m tiles over the outline.
+		var ty := lo.y
+		while ty <= hi.y and reason == "":
+			var tx := lo.x
+			while tx <= hi.x and reason == "":
+				var tc := Vector2(tx + 3.0, ty + 3.0)
+				if Geometry2D.is_point_in_polygon(tc, poly) or StrategicRoutes._dist_to_poly(tc, poly) < 3.0:
+					reason = _surface_blocked([tc, Vector2.RIGHT, Vector2.DOWN, Vector2(3.0, 3.0)], clear_trees, false)
+				tx += 6.0
+			ty += 6.0
+	out.reason = reason
+	out.ok = reason == ""
+	return out
+
+
+## Why a piece of road / area footprint cannot be built ("" = free): blocking structures
+## (walls, buildings; gates and other surfaces are fine) and solid vegetation that is not
+## cleared. Units are no obstacle: they step aside.
+func _surface_blocked(obb: Array, clear_trees: bool, structures_block := true) -> String:
+	var c: Vector2 = obb[0]
+	var reach: float = (obb[3] as Vector2).length()
+	if structures_block:
+		for cell in _cells_around(c, reach + MAX_REACH):
+			for e: Vector2i in _index.get(cell, []):
+				var s: StructureState = state.get_structure(e.x)
+				if s == null or (s.is_line() and s.is_removed(e.y)):
+					continue
+				var odef := StructureCatalog.get_def(s.type_id)
+				if not odef.blocks_navigation:
+					continue
+				var o := s.instances[e.y].origin
+				if Vector2(o.x - c.x, o.z - c.y).length() > reach + MAX_REACH:
+					continue
+				if _obb_overlap(obb, _obb(odef, s.instances[e.y])):
+					return "blocked by %s" % odef.display_name.to_lower()
+	if vegetation and vegetation.library:
+		var cs: float = vegetation.cell_size_m
+		var r := reach + 3.0
+		var c0 := VegetationChunk.cell_of(Vector3(c.x - r, 0, c.y - r), cs)
+		var c1 := VegetationChunk.cell_of(Vector3(c.x + r, 0, c.y + r), cs)
+		for cx in range(c0.x, c1.x + 1):
+			for cz in range(c0.y, c1.y + 1):
+				for t: Array in _trees_in(Vector2i(cx, cz)):
+					var tp := Vector2(t[0], t[1])
+					if tp.distance_to(c) > r + t[2]:
+						continue
+					if clear_trees and clearable_ids.has(t[3]):
+						continue
+					if _obb_circle(obb, tp, t[2] + tree_margin):
+						return "blocked by %s" % _obstacle_name(t[3])
+	return ""
+
+
+## Clearing records for a surface: pieces of ~8 m along a road, 8 m tiles over an area,
+## each covering the surface plus its blend zone (the grading moves the ground there).
+func _surface_clearings(s: StructureState, trees: bool) -> Array:
+	var out := []
+	var def := StructureCatalog.get_def(s.type_id)
+	if def.surface == StructureDef.Surface.ROAD:
+		var pts := s.profile
+		var half := def.surface_width * 0.5 + minf(surface_blend, 3.0)
+		var i := 0
+		while i < pts.size() - 1:
+			var j := mini(i + 4, pts.size() - 1)
+			var a := Vector2(pts[i].x, pts[i].z)
+			var b := Vector2(pts[j].x, pts[j].z)
+			var mid := (a + b) * 0.5
+			var ang := (b - a).angle()
+			out.append({"c": [snappedf(mid.x, 0.01), snappedf(mid.y, 0.01)], "yaw": snappedf(ang, 0.0001),
+				"h": [snappedf(a.distance_to(b) * 0.5 + 0.5, 0.01), snappedf(half, 0.01)], "trees": trees})
+			i = j
+	else:
+		var poly := PackedVector2Array()
+		var lo := Vector2(INF, INF)
+		var hi := -lo
+		for p in s.points:
+			poly.append(Vector2(p.x, p.z))
+			lo = lo.min(Vector2(p.x, p.z))
+			hi = hi.max(Vector2(p.x, p.z))
+		var y := lo.y - 2.0
+		while y <= hi.y + 2.0:
+			var x := lo.x - 2.0
+			while x <= hi.x + 2.0:
+				var q := Vector2(x + 4.0, y + 4.0)
+				if Geometry2D.is_point_in_polygon(q, poly) or StrategicRoutes._dist_to_poly(q, poly) < 6.0:
+					out.append({"c": [snappedf(q.x, 0.01), snappedf(q.y, 0.01)], "yaw": 0.0, "h": [4.2, 4.2], "trees": trees})
+				x += 8.0
+			y += 8.0
+	return out
+
+
+## The surface under a ground point: a road within its half width (+1 m) or an area
+## containing it. Returns the structure id or -1.
+func pick_surface(p: Vector3) -> int:
+	if not p.is_finite():
+		return -1
+	var q := Vector2(p.x, p.z)
+	var best := -1
+	var best_d := INF
+	for s: StructureState in _surfaces.values():
+		var def := StructureCatalog.get_def(s.type_id)
+		if def.surface == StructureDef.Surface.ROAD:
+			for i in s.profile.size() - 1:
+				var a := Vector2(s.profile[i].x, s.profile[i].z)
+				var b := Vector2(s.profile[i + 1].x, s.profile[i + 1].z)
+				var d := LineOfFire._point_segment_dist2d(q, a, b)
+				if d <= def.surface_width * 0.5 + 1.0 and d < best_d:
+					best_d = d
+					best = s.id
+		else:
+			var poly := PackedVector2Array()
+			for v in s.points:
+				poly.append(Vector2(v.x, v.z))
+			if Geometry2D.is_point_in_polygon(q, poly) and best_d > 0.5:
+				best_d = 0.5
+				best = s.id
+	return best
 
 
 # --- Water ------------------------------------------------------------------------
@@ -1101,6 +1687,8 @@ func clearings_for(s: StructureState, trees: bool) -> Array:
 	var def := StructureCatalog.get_def(s.type_id)
 	if def == null:
 		return out
+	if def.is_surface():
+		return _surface_clearings(s, trees)
 	for i in s.instances.size():
 		if s.is_line() and s.is_removed(i):
 			continue
@@ -1140,18 +1728,34 @@ func _apply_clearings() -> void:
 ## True if a soldier-sized circle at p (XZ) overlaps a navigation-blocking structure
 ## (walls, HESCO, fences, building walls; gates and ramps stay passable). Used by the
 ## abstract tier, which has no physics, so units do not walk through bases.
+## WORLD-PLAYTEST-01: the footprints are kept in a fine grid (BLOCK_CELL) built once per
+## change, so a test touches the few boxes near p; scanning every module of a 128 m cell
+## (a base perimeter has hundreds) cost 6-7 ms per simulation tick with units moving
+## inside a base and capped time compression. Same boxes, same answer.
 func blocks_point(p: Vector2, radius := 0.4) -> bool:
-	for c in _cells_around(p, MAX_REACH + radius):
-		for e: Vector2i in _index.get(c, []):
-			var s: StructureState = state.get_structure(e.x)
-			if s == null or (s.is_line() and s.is_removed(e.y)):
+	if _block_dirty:
+		_rebuild_block_grid()
+	for gx in range(floori((p.x - radius) / BLOCK_CELL), floori((p.x + radius) / BLOCK_CELL) + 1):
+		for gz in range(floori((p.y - radius) / BLOCK_CELL), floori((p.y + radius) / BLOCK_CELL) + 1):
+			for obb: Array in _block_grid.get(Vector2i(gx, gz), []):
+				if _obb_circle(obb, p, radius):
+					return true
+	return false
+
+
+func _rebuild_block_grid() -> void:
+	_block_dirty = false
+	_block_grid.clear()
+	if state == null:
+		return
+	for s: StructureState in state.structures.values():
+		var def := StructureCatalog.get_def(s.type_id)
+		if def == null or not def.blocks_navigation or def.is_surface():
+			continue
+		for i in s.instances.size():
+			if s.is_line() and s.is_removed(i):
 				continue
-			var xf := s.instances[e.y]
-			if Vector2(xf.origin.x - p.x, xf.origin.z - p.y).length() > MAX_REACH + radius:
-				continue
-			var def := StructureCatalog.get_def(s.type_id)
-			if not def.blocks_navigation:
-				continue
+			var xf := s.instances[i]
 			var ax := Vector2(xf.basis.x.x, xf.basis.x.z).normalized()
 			var az := Vector2(xf.basis.z.x, xf.basis.z.z).normalized()
 			for box in def.get_collision_boxes():
@@ -1162,6 +1766,11 @@ func blocks_point(p: Vector2, radius := 0.4) -> bool:
 				var half := Vector2(box.size.x, box.size.z) * 0.5
 				if def.linear:
 					half.x = def.module_length * 0.5
-				if _obb_circle([Vector2(w.x, w.z), ax, az, half], p, radius):
-					return true
-	return false
+				var obb := [Vector2(w.x, w.z), ax, az, half]
+				var r := half.length()
+				for gx in range(floori((w.x - r) / BLOCK_CELL), floori((w.x + r) / BLOCK_CELL) + 1):
+					for gz in range(floori((w.z - r) / BLOCK_CELL), floori((w.z + r) / BLOCK_CELL) + 1):
+						var k := Vector2i(gx, gz)
+						if not _block_grid.has(k):
+							_block_grid[k] = []
+						_block_grid[k].append(obb)

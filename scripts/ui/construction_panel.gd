@@ -37,7 +37,8 @@ func _ready() -> void:
 		head.add_theme_color_override("font_color", Color(0.65, 0.68, 0.58))
 		box.add_child(head)
 		for d in StructureCatalog.in_category(cat):
-			var b := _button(d.display_name + ("  [line]" if d.linear else ""), func() -> void: controller.select_type(d.id), true)
+			var tag := "  [line]" if d.linear else ("  [curve]" if d.surface == StructureDef.Surface.ROAD else ("  [area]" if d.surface == StructureDef.Surface.AREA else ""))
+			var b := _button(d.display_name + tag, func() -> void: controller.select_type(d.id), true)
 			b.tooltip_text = d.description
 			box.add_child(b)
 			_buttons[d.id] = b

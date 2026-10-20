@@ -38,6 +38,17 @@ var route_reach_m := 30.0
 ## A leg whose leader gains nothing for this long counts as done (s).
 var route_stall_s := 25.0
 var route_skips := 0
+## WORLD-PLAYTEST-01: a Move order farther than this (m), or one whose straight line crosses
+## water or ground the strategic grid rules out, follows a strategic route (bridges, roads,
+## round cliffs) instead of a straight walk; a stalled route leg is re-planned from where
+## the squad is (at most route_replans times per order) before the waypoint is skipped.
+var route_min_m := 150.0
+var route_replans := 3
+var routed_orders := 0
+var route_replanned := 0
+var _replans := {}
+## squad id -> formation to take on the last leg of a routed player Move.
+var _end_formation := {}
 var _leg_progress := {}
 ## Emitted when a squad reached the last waypoint of its route (WarSim advances its
 ## operation).
@@ -87,8 +98,36 @@ func order_move(squad_ids: Array, target: Vector3) -> int:
 		sq.order_yaw = yaw
 		sq.follow_unit_id = -1
 		sq.follow_squad_id = -1
+		if _routed_move(sq, centre):
+			n += sq.members.size()
+			continue
 		n += _send_to_slots(sq, centre, yaw, true)
 	return n
+
+
+## WORLD-PLAYTEST-01: the same strategic routes the war's operations use, for a player's
+## (or anybody's) Move order that is long or would cross water or a cliff in a straight
+## line. Before, such an order walked straight: into the river far from any bridge, or up
+## an impassable slope, both near the camera (beyond the navmesh area the bodies headed
+## straight for the target) and in the abstract tier. Returns false for short, clear moves.
+func _routed_move(sq: SquadState, target: Vector3) -> bool:
+	var routes: StrategicRoutes = sim.war.routes if sim.war else null
+	if routes == null or not routes.ready:
+		return false
+	var from := _centroid(sq)
+	if _flat(from, target) < route_min_m and routes._leg_clear(from, target):
+		return false
+	var r := routes.route(from, target, sim.terrain)
+	if r.size() < 2:
+		return false
+	r[r.size() - 1] = target
+	_replans.erase(sq.id)
+	routed_orders += 1
+	# March in column (narrow enough for bridges and tracks), take the ordered formation
+	# again for the last leg.
+	_end_formation[sq.id] = _end_formation.get(sq.id, sq.formation)
+	follow_route(sq, r, SquadState.Formation.COLUMN)
+	return true
 
 
 # --- Routes (WORLD-SANDBOX-01) ---------------------------------------------------
@@ -110,10 +149,16 @@ func follow_route(sq: SquadState, route: PackedVector3Array, formation := SquadS
 func clear_route(sq: SquadState) -> void:
 	sq.route = PackedVector3Array()
 	sq.route_i = 0
+	if _end_formation.has(sq.id):
+		sq.formation = _end_formation[sq.id]
+		_end_formation.erase(sq.id)
 
 
 func _route_leg(sq: SquadState) -> void:
 	var target := sq.route[sq.route_i]
+	if sq.route_i == sq.route.size() - 1 and _end_formation.has(sq.id):
+		sq.formation = _end_formation[sq.id]
+		_end_formation.erase(sq.id)
 	var from := _centroid(sq) if sq.route_i == 0 else sq.route[sq.route_i - 1]
 	_order_move_one(sq, target, _yaw_towards(from, target, sq.order_yaw))
 
@@ -135,9 +180,11 @@ func _update_route(sq: SquadState) -> void:
 	if prog[2] != sq.route_i or d < prog[0] - 2.0:
 		_leg_progress[sq.id] = [d, sim.state.time, sq.route_i]
 	elif sim.state.time - prog[1] > route_stall_s:
+		_leg_progress.erase(sq.id)
+		if _replan(sq):
+			return
 		finished = true
 		route_skips += 1
-		_leg_progress.erase(sq.id)
 	if not close and not finished:
 		# A squad whose order was replaced (Hold, Follow, a player Move) keeps no route.
 		if sq.order != SquadState.Order.MOVE:
@@ -150,6 +197,24 @@ func _update_route(sq: SquadState) -> void:
 		return
 	sq.route_i += 1
 	_route_leg(sq)
+
+
+## A stalled leg: plan again from where the squad stands to the route's end (the obstacle
+## the old leg ran into is not on the grid: a structure, a crowd, an unmapped steep bank).
+func _replan(sq: SquadState) -> bool:
+	var routes: StrategicRoutes = sim.war.routes if sim.war else null
+	var n: int = _replans.get(sq.id, 0)
+	if routes == null or not routes.ready or n >= route_replans or sq.route.is_empty():
+		return false
+	var goal := sq.route[sq.route.size() - 1]
+	var r := routes.route(_centroid(sq), goal, sim.terrain)
+	if r.size() < 2:
+		return false
+	r[r.size() - 1] = goal
+	_replans[sq.id] = n + 1
+	route_replanned += 1
+	follow_route(sq, r, sq.formation)
+	return true
 
 
 ## A squad Move for one squad that keeps its route, operation and detachment state.
@@ -445,6 +510,10 @@ func _free_ground(p: Vector3) -> Vector3:
 			var c := _ground(p + Vector3(cos(a), 0.0, sin(a)) * r)
 			if _usable(c):
 				return c
+	# WORLD-PLAYTEST-01: a slot in the river beside a bridge goes onto the deck.
+	var on := sim.state.roads.onto_deck(p)
+	if on.is_finite():
+		return on + Vector3.UP * 0.25
 	return q
 
 
@@ -458,6 +527,10 @@ func _usable(p: Vector3) -> bool:
 func _ground(p: Vector3) -> Vector3:
 	if sim.terrain:
 		var h: float = sim.terrain.data.get_height(p)
+		# On a bridge the ground is the deck, not the river bed under it.
+		var deck := sim.state.roads.deck_height(p)
+		if not is_nan(deck):
+			h = deck if is_nan(h) else maxf(h, deck)
 		if not is_nan(h):
 			return Vector3(p.x, h + 0.25, p.z)
 	return p

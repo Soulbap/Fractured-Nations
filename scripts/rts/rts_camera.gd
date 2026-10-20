@@ -2,8 +2,10 @@
 ##
 ## Pan with the movement keys (speed scales with zoom), rotate with Q/E or middle-mouse
 ## drag, zoom with the wheel. Pitch steepens as the camera rises so close views look
-## along the ground and far views look down. The rig never touches the world state; it
-## is one of two cameras looking at the same scene.
+## along the ground and far views look down; dragging with the middle mouse button up and
+## down tilts the view on top of that (WORLD-PLAYTEST-01), clamped to pitch_min_deg ..
+## pitch_max_deg. The rig never touches the world state; it is one of two cameras looking
+## at the same scene.
 class_name RTSCamera
 extends Node3D
 
@@ -21,6 +23,12 @@ extends Node3D
 @export var drag_sensitivity := 0.005
 @export var pitch_near_deg := 28.0
 @export var pitch_far_deg := 65.0
+## Limits of the tilted pitch (degrees below the horizon): never level with the ground,
+## never straight down past the focus.
+@export var pitch_min_deg := 8.0
+@export var pitch_max_deg := 84.0
+## Middle-drag tilt per pixel of vertical mouse motion (radians).
+@export var tilt_sensitivity := 0.004
 @export var ground_clearance := 3.0
 ## Clearance above the terrain at the closest zoom (blends to ground_clearance by 40 m).
 @export var ground_clearance_near := 1.2
@@ -35,6 +43,8 @@ extends Node3D
 var focus := Vector3.ZERO
 var yaw := 0.0
 var zoom := 80.0
+## Player tilt added to the zoom-dependent pitch (radians, + = steeper).
+var pitch_offset := 0.0
 var active := false
 
 @onready var camera: Camera3D = $Camera3D
@@ -89,7 +99,24 @@ func _unhandled_input(event: InputEvent) -> void:
 			_update_transform()
 	elif event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_MIDDLE:
 		yaw -= event.relative.x * drag_sensitivity
+		tilt_by(event.relative.y * tilt_sensitivity)
 		_update_transform()
+
+
+## Tilts the view (radians, + = steeper), keeping the resulting pitch inside the limits.
+func tilt_by(delta_rad: float) -> void:
+	var base := _base_pitch()
+	pitch_offset = clampf(base + pitch_offset + delta_rad, deg_to_rad(pitch_min_deg), deg_to_rad(pitch_max_deg)) - base
+
+
+## Pitch below the horizon (radians) the camera uses now.
+func pitch() -> float:
+	return clampf(_base_pitch() + pitch_offset, deg_to_rad(pitch_min_deg), deg_to_rad(pitch_max_deg))
+
+
+func _base_pitch() -> float:
+	var t := log(zoom / zoom_min) / log(zoom_max / zoom_min)
+	return deg_to_rad(lerpf(pitch_near_deg, pitch_far_deg, clampf(t, 0.0, 1.0)))
 
 
 func _ground_height(p: Vector3) -> float:
@@ -106,10 +133,9 @@ func _update_transform() -> void:
 	var h := _ground_height(focus)
 	if not is_nan(h):
 		focus.y = h
-	var t := log(zoom / zoom_min) / log(zoom_max / zoom_min)
-	var pitch := deg_to_rad(lerpf(pitch_near_deg, pitch_far_deg, clampf(t, 0.0, 1.0)))
+	var pitch_r := pitch()
 	var back := Vector3(sin(yaw), 0.0, cos(yaw))
-	var pos := focus + back * cos(pitch) * zoom + Vector3.UP * sin(pitch) * zoom
+	var pos := focus + back * cos(pitch_r) * zoom + Vector3.UP * sin(pitch_r) * zoom
 	var clearance := lerpf(ground_clearance_near, ground_clearance, clampf((zoom - zoom_min) / maxf(collision_below_zoom - zoom_min, 0.01), 0.0, 1.0))
 	var gh := _ground_height(pos)
 	if not is_nan(gh) and pos.y < gh + clearance:

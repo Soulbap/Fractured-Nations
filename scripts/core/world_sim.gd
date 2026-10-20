@@ -46,6 +46,8 @@ var structures: StructureManager
 var _slide := {}
 ## Length of the last simulation step (s).
 var last_delta := 0.0
+## Accumulated cost of the simulation parts (microseconds) and ticks counted.
+var tick_usec := {"abstract": 0, "squads": 0, "war": 0, "brain": 0, "combat": 0, "ticks": 0}
 
 
 func register_body(id: int, body: Node3D) -> void:
@@ -121,13 +123,26 @@ func _on_unit_removed(id: int) -> void:
 func _physics_process(delta: float) -> void:
 	last_delta = delta
 	state.time += delta
+	var t0 := Time.get_ticks_usec()
 	for u in state.units.values():
 		if not u.has_body and u.alive:
 			_abstract_step(u, delta)
+	var t1 := Time.get_ticks_usec()
 	squads.update(delta)
+	var t2 := Time.get_ticks_usec()
 	war.update(delta)
+	var t3 := Time.get_ticks_usec()
 	brain.update(delta)
+	var t4 := Time.get_ticks_usec()
 	combat.update(delta)
+	var t5 := Time.get_ticks_usec()
+	# WORLD-PLAYTEST-01: where a simulation tick goes (time compression measurements).
+	tick_usec.abstract += t1 - t0
+	tick_usec.squads += t2 - t1
+	tick_usec.war += t3 - t2
+	tick_usec.brain += t4 - t3
+	tick_usec.combat += t5 - t4
+	tick_usec.ticks += 1
 
 
 ## A save was loaded into the existing records: bodies would write their old position
@@ -162,6 +177,7 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 	if dist <= (0.5 if reacting else abstract_arrive_m):
 		u.position.x = goal.x
 		u.position.z = goal.z
+		_settle_height(u)
 		u.velocity = Vector3.ZERO
 		if reacting:
 			u.react_state = UnitState.ReactState.ARRIVED
@@ -186,8 +202,25 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 	u.velocity = dir * u.speed
 	u.yaw = atan2(-dir.x, -dir.z)
 	u.move_state = UnitState.MoveState.MOVING
+	_settle_height(u)
+
+
+## Height of an abstract unit: the terrain, or the bridge deck it stands on; a unit beside
+## a bridge above the river (a formation's outer file) moves onto the deck.
+func _settle_height(u: UnitState) -> void:
 	if terrain:
 		var h: float = terrain.data.get_height(u.position)
+		# WORLD-PLAYTEST-01: on a bridge the unit walks on the deck, not in the river below.
+		var deck := state.roads.deck_height(u.position)
+		if not is_nan(deck):
+			h = deck if is_nan(h) else maxf(h, deck)
+		elif structures and not is_nan(h) and structures.water_height(u.position.x, u.position.z) > h + 0.2:
+			# Beside a bridge over the river (a formation's outer file): onto the deck.
+			var on := state.roads.onto_deck(u.position)
+			if on.is_finite():
+				u.position.x = on.x
+				u.position.z = on.z
+				h = on.y
 		if not is_nan(h):
 			u.position.y = h
 

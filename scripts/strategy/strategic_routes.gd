@@ -6,7 +6,9 @@
 ##     is impassable, gentler slopes cost more;
 ##   - water: the lakes (water.json outlines) and the river (centre line and width) are
 ##     impassable, except along the road bridges (roads.json bridge spans);
-##   - roads: cheaper to walk (forces prefer them, as columns on the march do).
+##   - roads: cheaper to walk (forces prefer them, as columns on the march do). Roads come
+##     from the world's RoadNetwork (WORLD-PLAYTEST-01): the generated roads and the roads
+##     the player builds, re-marked when the network changes (paved areas are not roads).
 ## Routes come from Godot's native AStarGrid2D on that grid (8 directions, no corner
 ## cutting past impassable cells), and are reduced to waypoints a squad can walk in
 ## straight lines: every straight leg is re-checked against the grid, so a leg never
@@ -21,7 +23,7 @@ extends RefCounted
 
 const CELL := 50.0
 ## Cache version: change when the grid rules change.
-const VERSION := 3
+const VERSION := 4
 var max_slope_deg := 32.0
 ## Road cells cost this much per metre; open ground 1.0, slopes more.
 var road_cost := 0.45
@@ -46,22 +48,93 @@ var routes_planned := 0
 var route_ms_total := 0.0
 var route_ms_max := 0.0
 var bridges: Array[Vector3] = []
+## WORLD-PLAYTEST-01: the road network the grid follows, and the grid as built from the
+## world alone (terrain, water, world roads), so built roads can be added and removed.
+var network: RoadNetwork
+var _base_solid := PackedByteArray()
+var _base_weight := PackedFloat32Array()
+var _base_road := PackedByteArray()
+## Identity of the world data the cache was built from (file times and sizes).
+var _fingerprint := ""
 
 
 ## Builds (or loads) the grid. half: half the map size (m); src: the world's source
 ## folder (roads.json, water.json); cache_path: user:// file.
-func setup(terrain: Terrain3D, half: float, src: String, cache_path: String) -> void:
+## p_network: the world's roads (loaded from src when null or empty).
+func setup(terrain: Terrain3D, half: float, src: String, cache_path: String, p_network: RoadNetwork = null) -> void:
 	var t0 := Time.get_ticks_usec()
 	var n := ceili(half * 2.0 / CELL)
 	size = Vector2i(n, n)
 	origin = Vector2(-half, -half)
-	_read_bridges(src)
+	network = p_network if p_network else RoadNetwork.new()
+	if network.world.is_empty():
+		network.load_world(src)
+	_read_bridges()
+	# WORLD-PLAYTEST-01: a regenerated world (new terrain, roads or water) must not reuse a
+	# grid cached from the old one.
+	_fingerprint = fingerprint(src)
 	if not _load_cache(cache_path):
 		_build(terrain, src)
 		_save_cache(cache_path)
+	_base_solid = solid.duplicate()
+	_base_weight = weight.duplicate()
+	_base_road = road.duplicate()
 	_setup_astar()
+	_mark_built(Rect2(origin, Vector2(size) * CELL))
+	if not network.changed.is_connected(_on_roads_changed):
+		network.changed.connect(_on_roads_changed)
 	build_ms = (Time.get_ticks_usec() - t0) / 1000.0
 	ready = true
+
+
+## Times and sizes of the files the grid is derived from.
+static func fingerprint(src: String) -> String:
+	var parts := []
+	for f in ["roads.json", "water.json", "height.r32"]:
+		var path: String = src + f
+		var sz := -1
+		if FileAccess.file_exists(path):
+			var fa := FileAccess.open(path, FileAccess.READ)
+			if fa:
+				sz = fa.get_length()
+				fa.close()
+		parts.append("%s:%d:%d" % [f, FileAccess.get_modified_time(path), sz])
+	return ",".join(parts)
+
+
+## Roads were built or removed in rect: the cells there go back to the world grid and the
+## built roads crossing them are marked again.
+func _on_roads_changed(rect: Rect2) -> void:
+	if not ready:
+		return
+	var c0 := world_to_cell(Vector3(rect.position.x - CELL, 0, rect.position.y - CELL))
+	var c1 := world_to_cell(Vector3(rect.end.x + CELL, 0, rect.end.y + CELL))
+	for z in range(maxi(c0.y, 0), mini(c1.y, size.y - 1) + 1):
+		for x in range(maxi(c0.x, 0), mini(c1.x, size.x - 1) + 1):
+			var i := z * size.x + x
+			solid[i] = _base_solid[i]
+			weight[i] = _base_weight[i]
+			road[i] = _base_road[i]
+	_mark_built(rect.grow(CELL))
+	for z in range(maxi(c0.y, 0), mini(c1.y, size.y - 1) + 1):
+		for x in range(maxi(c0.x, 0), mini(c1.x, size.x - 1) + 1):
+			_sync_point(Vector2i(x, z))
+
+
+## Marks the built roads touching rect (the world roads are part of the cached grid).
+func _mark_built(rect: Rect2) -> int:
+	var n := 0
+	for r: RoadNetwork.Road in network.roads_in(rect):
+		if r.built:
+			n += _mark_line(r.points, r.travel_cost, [], true)
+	return n
+
+
+func _sync_point(c: Vector2i) -> void:
+	var i := c.y * size.x + c.x
+	astar.set_point_solid(c, solid[i] == 1)
+	if solid[i] == 0:
+		astar.set_point_weight_scale(c, weight[i])
 
 
 func _setup_astar() -> void:
@@ -115,7 +188,7 @@ func _build(terrain: Terrain3D, src: String) -> void:
 				var s := steep / tmax
 				weight[i] = 1.0 + 2.5 * s * s
 	_mark_water(src)
-	_mark_roads(src)
+	_mark_roads()
 
 
 func _mark_water(src: String) -> void:
@@ -165,23 +238,35 @@ func _set_water(c: Vector2i) -> void:
 	water[i] = 1
 
 
-func _mark_roads(src: String) -> void:
-	var r: Variant = JSON.parse_string(FileAccess.get_file_as_string(src + "roads.json"))
-	if not r is Dictionary:
-		return
-	for rd: Dictionary in r.roads:
-		var pts: Array = rd.points
-		var spans: Array = rd.get("bridges", [])
-		for k in pts.size():
-			var p := Vector3(pts[k][0], pts[k][1], pts[k][2])
+## The world's roads (RoadNetwork.world, i.e. roads.json).
+func _mark_roads() -> void:
+	for rd: RoadNetwork.Road in network.world:
+		_mark_line(rd.points, minf(road_cost, rd.travel_cost), rd.bridges, false)
+
+
+## Marks the cells of one road polyline, sampled at least every quarter cell (world roads
+## come every ~10 m, built roads every ~2 m). Bridge spans (with their approaches) open the
+## river; elsewhere a road along the bank does not. Returns the number of cells marked.
+func _mark_line(pts: PackedVector3Array, cost: float, spans: Array, sync_astar: bool) -> int:
+	var n := 0
+	var last := Vector2i(-1, -1)
+	for k in pts.size():
+		var samples: Array[Vector3] = [pts[k]]
+		if k + 1 < pts.size():
+			var seg := Vector2(pts[k + 1].x - pts[k].x, pts[k + 1].z - pts[k].z).length()
+			var extra := floori(seg / (CELL * 0.25))
+			for j in range(1, extra + 1):
+				samples.append(pts[k].lerp(pts[k + 1], float(j) / (extra + 1)))
+		var on_bridge := false
+		for sp: Array in spans:
+			if k >= int(sp[0]) - 3 and k <= int(sp[1]) + 3:
+				on_bridge = true
+		for p in samples:
 			var c := world_to_cell(p)
-			if not _in(c):
+			if not _in(c) or c == last:
 				continue
+			last = c
 			var i := c.y * size.x + c.x
-			var on_bridge := false
-			for s: Array in spans:
-				if k >= int(s[0]) - 3 and k <= int(s[1]) + 3:
-					on_bridge = true
 			if water[i] and not on_bridge:
 				continue  # a road along the bank does not open the river
 			if on_bridge:
@@ -191,20 +276,21 @@ func _mark_roads(src: String) -> void:
 			elif solid[i]:
 				solid[i] = 0  # roads are cut into slopes: walkable
 			road[i] = 1
-			weight[i] = minf(weight[i], road_cost)
+			weight[i] = minf(weight[i], cost)
+			n += 1
+			if sync_astar:
+				_sync_point(c)
+	return n
 
 
-func _read_bridges(src: String) -> void:
+func _read_bridges() -> void:
 	bridges.clear()
-	var r: Variant = JSON.parse_string(FileAccess.get_file_as_string(src + "roads.json"))
-	if not r is Dictionary:
-		return
-	for rd: Dictionary in r.roads:
-		for s: Array in rd.get("bridges", []):
-			var a: Array = rd.points[int(s[0])]
-			var b: Array = rd.points[int(s[1])]
-			if Vector2(a[0] - b[0], a[2] - b[2]).length() >= 50.0:
-				bridges.append(Vector3((a[0] + b[0]) * 0.5, (a[1] + b[1]) * 0.5, (a[2] + b[2]) * 0.5))
+	for rd: RoadNetwork.Road in network.world:
+		for sp: Array in rd.bridges:
+			var a := rd.points[int(sp[0])]
+			var b := rd.points[int(sp[1])]
+			if Vector2(a.x - b.x, a.z - b.z).length() >= 50.0:
+				bridges.append((a + b) * 0.5)
 
 
 # --- Cache --------------------------------------------------------------------------
@@ -217,7 +303,8 @@ func _load_cache(path: String) -> bool:
 		return false
 	var d: Variant = f.get_var()
 	f.close()
-	if not d is Dictionary or d.get("version", 0) != VERSION or d.get("size", Vector2i.ZERO) != size:
+	if not d is Dictionary or d.get("version", 0) != VERSION or d.get("size", Vector2i.ZERO) != size \
+			or d.get("fingerprint", "") != _fingerprint:
 		return false
 	solid = d.solid
 	weight = d.weight
@@ -231,7 +318,7 @@ func _save_cache(path: String) -> void:
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f:
-		f.store_var({"version": VERSION, "size": size, "solid": solid, "weight": weight, "road": road, "water": water})
+		f.store_var({"version": VERSION, "size": size, "fingerprint": _fingerprint, "solid": solid, "weight": weight, "road": road, "water": water})
 		f.close()
 
 
