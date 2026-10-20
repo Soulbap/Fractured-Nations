@@ -121,7 +121,9 @@ func _check_mask() -> void:
 	# Base pad centers: excluded.
 	var pads := 0
 	var pads_ok := 0
-	for site in builder.config.base_sites:
+	# Reference worlds build no base pads (their base_sites are only demo spawn points).
+	var pad_sites: PackedVector3Array = builder.config.base_sites if not builder.has_method("prepare_scatter") else PackedVector3Array()
+	for site in pad_sites:
 		var c := Vector2(site.x, site.y) * builder.config.half_size()
 		for d in [Vector2.ZERO, Vector2(site.z * 0.7, 0), Vector2(0, -site.z * 0.7)]:
 			pads += 1
@@ -207,6 +209,8 @@ func _check_determinism() -> void:
 		"thr": builder.config.forest_threshold, "clear": builder.config.road_clearance_m,
 		"base_h": builder.config.base_height, "sites": builder.config.base_sites.size()}
 	builder._generator()
+	if builder.has_method("prepare_scatter"):
+		builder.prepare_scatter()
 	var chunks := builder._load_chunks()
 	var cell := Vector2i(-3, -4)
 	var stored := {}
