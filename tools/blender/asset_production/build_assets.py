@@ -103,6 +103,8 @@ def main():
         import ap_signs
         importlib.reload(ap_signs)
         ap_signs.build(TEX_DIR)
+    if o["textures"] or not os.path.exists(os.path.join(TEX_DIR, "palette.png")):
+        AM.build_palette(TEX_DIR)
     log = {"assets": {}}
     metas = []
     for aid, fam, fn in todo:

@@ -247,10 +247,12 @@ def gravel(tex_dir, n=1024, seed=151):
 def dirt(tex_dir, n=1024, seed=161):
     """Compacted earth (tile 4 m): brown mottling, darker damp patches, small pebbles."""
     rng = np.random.default_rng(seed)
-    base = fractal(n, seed)
-    shade = 0.78 + 0.30 * base
-    damp = ramp(fnoise(n, 4, seed + 1), 0.6, 0.9)
-    shade *= 1 - 0.18 * damp
+    # Low contrast at the tile scale (4 m) so the repeat does not read from a distance;
+    # most variation sits in the 0.1-0.5 m band.
+    base = fractal(n, seed, cuts=(3, 8, 24, 70), weights=(0.15, 0.30, 0.35, 0.20))
+    shade = 0.84 + 0.20 * base
+    damp = ramp(fnoise(n, 10, seed + 1), 0.62, 0.92)
+    shade *= 1 - 0.08 * damp
     rgb = np.dstack([shade * 0.47, shade * 0.40, shade * 0.30]).astype(F)
     h = 4.0 * base + 1.2 * fnoise(n, 160, seed + 2)
     px = n / 4.0

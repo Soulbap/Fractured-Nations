@@ -52,7 +52,7 @@ MATERIALS = {
     "Container_Grey":  _m("paint", "container_ribs_normal", (0.50, 0.51, 0.50), 0.68, 0.18, 1.0, CONT_TILE),
     "Container_White": _m("paint", "container_ribs_normal", (0.80, 0.80, 0.77), 0.64, 0.10, 1.0, CONT_TILE),
     # Corrugated roof sheet (bare galvanized and painted).
-    "Roof_Galv":       _m("galvanized", "roof_sheet_normal", (0.80, 0.81, 0.80), 0.42, 0.85, 1.0, ROOF_TILE),
+    "Roof_Galv":       _m("galvanized", "roof_sheet_normal", (0.74, 0.75, 0.74), 0.52, 0.60, 1.0, ROOF_TILE),
     "Roof_OD":         _m("paint", "roof_sheet_normal", (0.29, 0.31, 0.22), 0.70, 0.15, 1.0, ROOF_TILE),
     "Roof_Tan":        _m("paint", "roof_sheet_normal", (0.60, 0.54, 0.42), 0.72, 0.12, 1.0, ROOF_TILE),
     # Bare metal.
@@ -92,7 +92,59 @@ MATERIALS = {
     "Reflector_Red":   _m(None, None, (0.75, 0.05, 0.03), 0.25, 0.0, 1.0, 1.0),
     # Atlases (authored UVs).
     "Signs":           _m("signs", None, (1.0, 1.0, 1.0), 0.55, 0.0, 1.0, 1.0, ("keep_uv",)),
+    "Kit_Palette":     _m("palette", None, (1.0, 1.0, 1.0), 1.0, 1.0, 1.0, 1.0, ("keep_uv", "palette")),
 }
+
+# Small flat-coloured parts (hardware, glass, lamps, rubber, plastics, small painted
+# parts) are folded into ONE material, Kit_Palette: a 256 px texture of 32 px swatches
+# (albedo, roughness/metal in palette_orm G/B, emission). Faces of these materials get
+# the swatch centre as UV at build time, so a building's small parts cost one surface.
+PALETTE = ["Paint_Grey", "Paint_White", "Paint_Black", "Paint_Yellow", "Paint_Red", "Steel_Galv", "Steel_Dark",
+           "Rubber", "Plastic_Black", "Plastic_White", "Plastic_Orange", "Plastic_OD", "Glass", "Lamp", "Reflector_Red"]
+PAL_GRID = 8
+
+
+def palette_uv(name):
+    i = PALETTE.index(name)
+    c, r = i % PAL_GRID, i // PAL_GRID
+    return ((c + 0.5) / PAL_GRID, 1.0 - (r + 0.5) / PAL_GRID)
+
+
+def build_palette(tex_dir, n=256):
+    """Writes palette.png (sRGB albedo = tint x mean of the material's texture),
+    palette_orm.png (R 1, G roughness, B metallic) and palette_emission.png."""
+    import bpy
+    import numpy as np
+    alb = np.zeros((n, n, 3), np.float32)
+    orm = np.zeros((n, n, 3), np.float32)
+    emi = np.zeros((n, n, 3), np.float32)
+    orm[..., 0] = 1.0
+    orm[..., 1] = 0.8
+    lin = lambda c: np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+    srgb = lambda c: np.where(c <= 0.0031308, c * 12.92, 1.055 * np.power(np.maximum(c, 0), 1 / 2.4) - 0.055)
+    means = {}
+    for name in PALETTE:
+        m = MATERIALS[name]
+        tint = lin(np.array(m["col"], np.float32))
+        if m["alb"]:
+            if m["alb"] not in means:
+                img = bpy.data.images.load(os.path.join(tex_dir, m["alb"] + ".png"))
+                px = np.array(img.pixels[:], np.float32).reshape(-1, 4)[:, :3]   # linear (decoded sRGB)
+                means[m["alb"]] = px.mean(axis=0)
+                bpy.data.images.remove(img)
+            tint = tint * means[m["alb"]]
+        i = PALETTE.index(name)
+        c, r = i % PAL_GRID, i // PAL_GRID
+        s = n // PAL_GRID
+        ys, xs = slice(r * s, (r + 1) * s), slice(c * s, (c + 1) * s)
+        alb[ys, xs] = srgb(tint)
+        orm[ys, xs, 1] = m["rough"]
+        orm[ys, xs, 2] = m["metal"]
+        if "emit" in m["flags"]:
+            emi[ys, xs] = m["col"]
+    L.save_png(os.path.join(tex_dir, "palette.png"), alb)
+    L.save_png(os.path.join(tex_dir, "palette_orm.png"), orm)
+    L.save_png(os.path.join(tex_dir, "palette_emission.png"), emi)
 
 
 def tile_of(name):
@@ -111,6 +163,8 @@ def blender_material(name, tex_dir):
     m = MATERIALS[name]
     if name in bpy.data.materials:
         return bpy.data.materials[name]
+    if "palette" in m["flags"]:
+        return _palette_blender(tex_dir)
     path = lambda k: os.path.join(tex_dir, k + ".png") if k else None
     alb = path(m["alb"])
     if alb and not os.path.exists(alb):
@@ -147,6 +201,62 @@ def blender_material(name, tex_dir):
     return mat
 
 
+def _palette_blender(tex_dir):
+    import bpy
+    mat = bpy.data.materials.new("Kit_Palette")
+    mat.use_nodes = True
+    nt = mat.node_tree
+    bsdf = nt.nodes.get("Principled BSDF")
+
+    def tex(fn, non_color):
+        t = nt.nodes.new("ShaderNodeTexImage")
+        t.image = L.load_image(os.path.join(tex_dir, fn), non_color=non_color)
+        t.interpolation = "Closest"
+        return t
+    a, o, e = tex("palette.png", False), tex("palette_orm.png", True), tex("palette_emission.png", False)
+    vc = nt.nodes.new("ShaderNodeVertexColor")
+    vc.layer_name = "Col"
+    mix = nt.nodes.new("ShaderNodeMix")
+    mix.data_type = "RGBA"
+    mix.blend_type = "MULTIPLY"
+    mix.inputs["Factor"].default_value = 1.0
+    nt.links.new(a.outputs["Color"], mix.inputs[6])
+    nt.links.new(vc.outputs["Color"], mix.inputs[7])
+    nt.links.new(mix.outputs[2], bsdf.inputs["Base Color"])
+    sep = nt.nodes.new("ShaderNodeSeparateColor")
+    nt.links.new(o.outputs["Color"], sep.inputs[0])
+    nt.links.new(sep.outputs[1], bsdf.inputs["Roughness"])
+    nt.links.new(sep.outputs[2], bsdf.inputs["Metallic"])
+    nt.links.new(e.outputs["Color"], bsdf.inputs["Emission Color"])
+    bsdf.inputs["Emission Strength"].default_value = 3.0
+    return mat
+
+
+PALETTE_TRES = """[gd_resource type="StandardMaterial3D" load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/military/textures/palette.png" id="1_alb"]
+[ext_resource type="Texture2D" path="res://assets/military/textures/palette_orm.png" id="2_orm"]
+[ext_resource type="Texture2D" path="res://assets/military/textures/palette_emission.png" id="3_emi"]
+
+[resource]
+resource_name = "Kit_Palette"
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_alb")
+metallic = 1.0
+metallic_specular = 0.5
+metallic_texture = ExtResource("2_orm")
+metallic_texture_channel = 2
+roughness = 1.0
+roughness_texture = ExtResource("2_orm")
+roughness_texture_channel = 1
+emission_enabled = true
+emission = Color(0, 0, 0, 1)
+emission_energy_multiplier = 3.0
+emission_texture = ExtResource("3_emi")
+texture_filter = 0
+"""
+
+
 def _color(c):
     return "Color(%.4f, %.4f, %.4f, 1)" % tuple(min(x, 1.0) for x in c)
 
@@ -154,6 +264,8 @@ def _color(c):
 def godot_tres(name):
     """Text of the StandardMaterial3D resource for one library material."""
     m = MATERIALS[name]
+    if "palette" in m["flags"]:
+        return PALETTE_TRES
     ext = []
     lines = ['resource_name = "%s"' % name, "vertex_color_use_as_albedo = true", "albedo_color = " + _color(m["col"])]
     if m["alb"]:
@@ -218,5 +330,9 @@ def write_godot_materials(mat_dir, tex_dir, names=None):
         imp = os.path.join(tex_dir, fn + ".import")
         if os.path.exists(imp):
             continue
+        txt = TEX_IMPORT.format(normal=1 if fn.endswith("_normal.png") else 2)
+        if fn.startswith("palette"):
+            # Flat swatches: lossless, no mipmaps (sampled at swatch centres, nearest).
+            txt = txt.replace("compress/mode=2", "compress/mode=0").replace("mipmaps/generate=true", "mipmaps/generate=false")
         with open(imp, "w", encoding="utf-8") as f:
-            f.write(TEX_IMPORT.format(normal=1 if fn.endswith("_normal.png") else 2))
+            f.write(txt)

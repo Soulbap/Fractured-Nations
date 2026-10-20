@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"supply_depot"
+display_name = "Supply Depot"
+category = "Buildings"
+description = "Supply warehouse 20 x 14 m, eaves 6.0 m: 12 m covered loading dock (1.2 m truck-bed height, two 3.0 x 3.6 m dock doors), 4.5 x 4.8 m drive-in roller door, personnel door, skylights."
+mesh_path = "res://assets/military/buildings/supply_depot.glb"
+size = Vector3(20.7, 7.374, 18.08)
+max_slope_deg = 5
+max_ground_gap = 1
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-10, -0.6, -7, 20, 7.8343, 14), AABB(-8, -0.5, -10, 12, 1.7, 3)])
+ramps = Array[AABB]([])

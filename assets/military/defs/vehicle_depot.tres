@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"vehicle_depot"
+display_name = "Vehicle Depot"
+category = "Buildings"
+description = "Motor pool maintenance hall 25 x 16 m, eaves 6.5 m: three vehicle bays with 4.6 x 5.0 m doors, 4 m lean-to office/workshop on the west side, 6 m concrete apron with drain and bay lines."
+mesh_path = "res://assets/military/buildings/vehicle_depot.glb"
+size = Vector3(30.3, 9.475, 22.42)
+max_slope_deg = 5
+max_ground_gap = 1
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-12.5, -0.6, -8, 25, 8.8005, 16), AABB(-16.5, -0.6, -6, 4, 4.5, 12)])
+ramps = Array[AABB]([])

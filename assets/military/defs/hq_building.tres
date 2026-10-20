@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"hq_building"
+display_name = "Headquarters"
+category = "Buildings"
+description = "Headquarters / tactical operations centre: 16 x 10 m CMU block building on a 0.3 m concrete plinth, covered entrance, 2.0 m double door, satellite dish and antenna mast."
+mesh_path = "res://assets/military/buildings/hq_building.glb"
+size = Vector3(17.23, 11.2, 14.36)
+max_slope_deg = 6
+max_ground_gap = 1
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-8, -0.6, -5, 16, 5.2628, 10), AABB(-8.6, -0.6, -8.2, 17.2, 0.9, 13.8), AABB(-3.25, 3, -7.95, 6.5, 0.33, 2.95)])
+ramps = Array[AABB]([])

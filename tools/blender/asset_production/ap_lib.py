@@ -223,6 +223,40 @@ class Asset:
 
     # ------------------------------------------------------------------ build
 
+    # Area share below which a material is merged into the dominant one, per LOD.
+    MERGE_SHARE = (0.0, 0.015, 0.08)
+
+    def _consolidate(self, i):
+        """Folds palette materials into Kit_Palette (UV = swatch centre) and, on LOD1/2,
+        merges materials with a small area share into the largest material."""
+        bm = self.bms[i]
+        names = self.slots[i]
+        auth = self.uv_faces[i]
+        area = {}
+        for f in bm.faces:
+            nm = names[f.material_index]
+            if nm in AM.PALETTE:
+                auth[f] = [AM.palette_uv(nm)] * len(f.loops)
+                nm = "Kit_Palette"
+            area[nm] = area.get(nm, 0.0) + f.calc_area()
+        total = sum(area.values()) or 1.0
+        merge = {}
+        if self.MERGE_SHARE[i] > 0:
+            textured = [k for k in area if not AM.keeps_uv(k)]
+            if textured:
+                main = max(textured, key=lambda k: area[k])
+                for k in textured:
+                    if k != main and area[k] / total < self.MERGE_SHARE[i]:
+                        merge[k] = main
+        new = []
+        for f in bm.faces:
+            nm = names[f.material_index]
+            nm = "Kit_Palette" if nm in AM.PALETTE else merge.get(nm, nm)
+            if nm not in new:
+                new.append(nm)
+            f.material_index = new.index(nm)
+        self.slots[i] = new
+
     def build(self, coll, tex_dir):
         objs = []
         for i in ALL:
@@ -230,6 +264,7 @@ class Asset:
             if not bm.faces:
                 objs.append(None)
                 continue
+            self._consolidate(i)
             uvl = bm.loops.layers.uv.new("UVMap")
             col = bm.loops.layers.color.new("Col")
             names = self.slots[i]

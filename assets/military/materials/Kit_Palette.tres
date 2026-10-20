@@ -1,0 +1,22 @@
+[gd_resource type="StandardMaterial3D" load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/military/textures/palette.png" id="1_alb"]
+[ext_resource type="Texture2D" path="res://assets/military/textures/palette_orm.png" id="2_orm"]
+[ext_resource type="Texture2D" path="res://assets/military/textures/palette_emission.png" id="3_emi"]
+
+[resource]
+resource_name = "Kit_Palette"
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_alb")
+metallic = 1.0
+metallic_specular = 0.5
+metallic_texture = ExtResource("2_orm")
+metallic_texture_channel = 2
+roughness = 1.0
+roughness_texture = ExtResource("2_orm")
+roughness_texture_channel = 1
+emission_enabled = true
+emission = Color(0, 0, 0, 1)
+emission_energy_multiplier = 3.0
+emission_texture = ExtResource("3_emi")
+texture_filter = 0

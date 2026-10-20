@@ -1,4 +1,97 @@
 {
+ "barracks_block": {
+  "collision_shapes": 4,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    70.0
+   ],
+   [
+    1,
+    70.0,
+    280.0
+   ],
+   [
+    2,
+    280.0,
+    2000.0
+   ]
+  ],
+  "markers": 6,
+  "materials": [
+   "Kit_Palette",
+   "Paint_Tan",
+   "Roof_Tan",
+   "Concrete",
+   "Signs",
+   "Concrete_Dark"
+  ],
+  "size": [
+   27.6994895935059,
+   5.06961679458618,
+   9.51974487304688
+  ],
+  "static_bodies": 4,
+  "surfaces": [
+   6,
+   4,
+   4
+  ],
+  "tris": [
+   4384,
+   1180,
+   136
+  ]
+ },
+ "hq_building": {
+  "collision_shapes": 3,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    70.0
+   ],
+   [
+    1,
+    70.0,
+    280.0
+   ],
+   [
+    2,
+    280.0,
+    2000.0
+   ]
+  ],
+  "markers": 7,
+  "materials": [
+   "Concrete",
+   "Concrete_Block",
+   "Concrete_Dark",
+   "Roof_OD",
+   "Kit_Palette",
+   "Paint_OD",
+   "Signs"
+  ],
+  "size": [
+   17.230001449585,
+   11.8000011444092,
+   14.3599996566772
+  ],
+  "static_bodies": 3,
+  "surfaces": [
+   7,
+   7,
+   5
+  ],
+  "tris": [
+   4334,
+   1056,
+   156
+  ]
+ },
  "iso_container_20_od": {
   "collision_shapes": 1,
   "errors": [],
@@ -21,11 +114,9 @@
   ],
   "markers": 2,
   "materials": [
-   "Steel_Dark",
-   "Paint_Black",
+   "Kit_Palette",
    "Paint_OD",
    "Container_OD",
-   "Steel_Galv",
    "Signs"
   ],
   "size": [
@@ -35,7 +126,7 @@
   ],
   "static_bodies": 1,
   "surfaces": [
-   5,
+   3,
    3,
    2
   ],
@@ -43,6 +134,99 @@
    1864,
    240,
    14
+  ]
+ },
+ "supply_depot": {
+  "collision_shapes": 2,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    70.0
+   ],
+   [
+    1,
+    70.0,
+    280.0
+   ],
+   [
+    2,
+    280.0,
+    2000.0
+   ]
+  ],
+  "markers": 8,
+  "materials": [
+   "Concrete",
+   "Roof_Tan",
+   "Roof_Galv",
+   "Kit_Palette",
+   "Paint_Tan",
+   "Paint_OD",
+   "Signs"
+  ],
+  "size": [
+   20.7000007629395,
+   7.97428894042969,
+   18.0799999237061
+  ],
+  "static_bodies": 2,
+  "surfaces": [
+   7,
+   5,
+   5
+  ],
+  "tris": [
+   2948,
+   1004,
+   120
+  ]
+ },
+ "vehicle_depot": {
+  "collision_shapes": 2,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    70.0
+   ],
+   [
+    1,
+    70.0,
+    280.0
+   ],
+   [
+    2,
+    280.0,
+    2000.0
+   ]
+  ],
+  "markers": 10,
+  "materials": [
+   "Concrete",
+   "Roof_OD",
+   "Kit_Palette",
+   "Paint_OD",
+   "Signs",
+   "Concrete_Dark"
+  ],
+  "size": [
+   30.3000011444092,
+   10.0750007629395,
+   22.4200000762939
+  ],
+  "static_bodies": 2,
+  "surfaces": [
+   6,
+   5,
+   4
+  ],
+  "tris": [
+   3620,
+   922,
+   130
   ]
  }
 }

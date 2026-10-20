@@ -1,0 +1,171 @@
+{
+ "id": "hq_building",
+ "family": "building",
+ "display_name": "Headquarters",
+ "category": "Buildings",
+ "description": "Headquarters / tactical operations centre: 16 x 10 m CMU block building on a 0.3 m concrete plinth, covered entrance, 2.0 m double door, satellite dish and antenna mast.",
+ "bounds_min": [
+  -8.6,
+  -5.6,
+  -0.6
+ ],
+ "bounds_max": [
+  8.63,
+  8.76,
+  11.2
+ ],
+ "size_above_ground": [
+  17.23,
+  14.36,
+  11.2
+ ],
+ "footprint_xy": [
+  -8.6,
+  -5.6,
+  8.63,
+  8.76
+ ],
+ "foundation_depth": 0.6,
+ "tris": [
+  4334,
+  1056,
+  156
+ ],
+ "surfaces": [
+  7,
+  7,
+  5
+ ],
+ "materials": [
+  "Concrete",
+  "Concrete_Block",
+  "Concrete_Dark",
+  "Kit_Palette",
+  "Paint_OD",
+  "Roof_OD",
+  "Signs"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   70
+  ],
+  [
+   70,
+   280
+  ],
+  [
+   280,
+   2000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -8.0,
+   -0.6,
+   -5.0,
+   16.0,
+   5.2628,
+   10.0
+  ],
+  [
+   -8.6,
+   -0.6,
+   -8.2,
+   17.2,
+   0.9,
+   13.8
+  ],
+  [
+   -3.25,
+   3.0,
+   -7.95,
+   6.5,
+   0.33,
+   2.95
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Entrance",
+   "pos": [
+    0,
+    9.2,
+    0
+   ],
+   "yaw": 180,
+   "note": "main entrance (double door)"
+  },
+  {
+   "name": "IP_Door_Side",
+   "pos": [
+    -9.8,
+    -0.6,
+    0
+   ],
+   "yaw": -90,
+   "note": "side door"
+  },
+  {
+   "name": "IP_Door_Rear",
+   "pos": [
+    0,
+    -6.8,
+    0
+   ],
+   "yaw": 0,
+   "note": "rear door"
+  },
+  {
+   "name": "IP_Power",
+   "pos": [
+    6.8,
+    -6.2,
+    0
+   ],
+   "yaw": 0,
+   "note": "generator / power hook-up"
+  },
+  {
+   "name": "ATT_Expansion_W",
+   "pos": [
+    -9.0,
+    -2.0,
+    0
+   ],
+   "yaw": 90,
+   "note": "annex / container office attaches here (west)"
+  },
+  {
+   "name": "ATT_Expansion_E",
+   "pos": [
+    9.0,
+    2.0,
+    0
+   ],
+   "yaw": -90,
+   "note": "annex / container office attaches here (east)"
+  },
+  {
+   "name": "ATT_Roof_Antenna",
+   "pos": [
+    4.5,
+    -2.5,
+    4.2314
+   ],
+   "yaw": 0,
+   "note": "extra antenna on the roof"
+  }
+ ],
+ "structure": {
+  "category": "Buildings",
+  "max_slope_deg": 6.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 1.0
+ },
+ "function": {
+  "role": "command",
+  "floor_area_m2": 160.0,
+  "staff": 25
+ }
+}

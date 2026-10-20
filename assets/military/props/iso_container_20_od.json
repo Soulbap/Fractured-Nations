@@ -32,17 +32,15 @@
   14
  ],
  "surfaces": [
-  5,
+  3,
   3,
   2
  ],
  "materials": [
   "Container_OD",
-  "Paint_Black",
+  "Kit_Palette",
   "Paint_OD",
-  "Signs",
-  "Steel_Dark",
-  "Steel_Galv"
+  "Signs"
  ],
  "lod_ranges": [
   [
