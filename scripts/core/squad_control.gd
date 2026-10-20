@@ -25,6 +25,10 @@ var follow_lead_s := 1.0
 var follow_interval := 1.0
 ## A soldier this close to its Follow slot without an order stays put.
 var follow_settle_m := 3.0
+## COMBAT-01b: a follower whose slot has not moved since its last order is only sent
+## back when it was pushed farther than this from it (crowding after arrival must not
+## re-issue the same slot again and again while the followed unit stands still).
+var follow_drift_m := 6.0
 ## Gap between squads that are ordered to the same point.
 var squad_gap := 5.0
 var update_interval := 0.5
@@ -32,6 +36,9 @@ var update_interval := 0.5
 var sim: WorldSim
 var _timer := 0.0
 var _follow_timer := 0.0
+## unit id -> the Follow slot last ordered to it (not saved: after a load the first
+## update compares with the soldier's order / position instead).
+var _follow_slot := {}
 
 
 func _init(p_sim: WorldSim) -> void:
@@ -138,6 +145,17 @@ func set_formation(squad_ids: Array, formation: SquadState.Formation) -> void:
 		_reapply(sq)
 
 
+## COMBAT-01b rules of engagement. Changes nothing about movement: the soldiers' AI
+## reads the squad's ROE before every shot.
+func set_roe(squad_ids: Array, roe: SquadState.Roe) -> int:
+	var n := 0
+	for sq: SquadState in _squads(squad_ids):
+		sq.roe = roe
+		sim.state.squad_changed.emit(sq)
+		n += 1
+	return n
+
+
 func set_spacing(squad_ids: Array, spacing: float) -> void:
 	for sq: SquadState in _squads(squad_ids):
 		sq.spacing = clampf(spacing, 1.5, 10.0)
@@ -221,12 +239,22 @@ func _update_follow(sq: SquadState, force: bool) -> void:
 	for i in ids.size():
 		var u := sim.state.get_unit(ids[i])
 		var s: Vector3 = slots[mini(i, lead - 1)]
-		if not force:
+		var last: Vector3 = _follow_slot.get(u.id, Vector3.INF)
+		if not force and last.is_finite() and _flat(last, s) < follow_reissue_m:
+			# The slot is where it was last ordered: walking there, stopped near it, or
+			# reported BLOCKED, the soldier keeps what it has. Only one pushed far away
+			# goes back. (UNIT-01A compared the soldier's position with the slot, so a
+			# follower that ended its walk 3-4 m off - crowding, stuck handling - got the
+			# same slot again although the leader stood still.)
+			if u.order == UnitState.Order.MOVE or u.move_state == UnitState.MoveState.BLOCKED or _flat(u.position, s) < follow_drift_m:
+				continue
+		elif not force and not last.is_finite():
 			if u.order == UnitState.Order.MOVE and _flat(u.order_target, s) < follow_reissue_m:
 				continue
 			if u.order != UnitState.Order.MOVE and _flat(u.position, s) < follow_settle_m:
 				continue
 		sim.state.issue_move(u.id, s)
+		_follow_slot[u.id] = s
 
 
 ## The unit a following squad walks behind, or null.

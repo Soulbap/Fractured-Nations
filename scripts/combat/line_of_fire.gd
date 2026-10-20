@@ -48,6 +48,13 @@ var _buckets := {}
 var _loaded_cells := {}
 ## Last trace cost breakdown (usec) for measurements.
 var last_cost := {}
+## COMBAT-01b sight through foliage (see sight()): a tree whose trunk stands within
+## foliage_m of the line counts as one layer of leaves / undergrowth; trees closer than
+## foliage_skip_m to either end do not count (a soldier at a forest edge looks past the
+## tree next to him); foliage_block layers hide what is behind them.
+var foliage_m := 2.5
+var foliage_skip_m := 3.0
+var foliage_block := 3
 
 
 func setup(p_state: WorldState, p_terrain: Terrain3D, p_vegetation: VegetationStreamer, p_structures: StructureManager) -> void:
@@ -105,6 +112,51 @@ func trace(from: Vector3, to: Vector3, exclude_id := -1, hit_units := true) -> D
 ## True if nothing in the world blocks the straight line (soldiers ignored).
 func clear_line(from: Vector3, to: Vector3) -> bool:
 	return trace(from, to, -1, false).blocker == "range"
+
+
+## COMBAT-01b line of sight: the same world data as a shot (structures, terrain, trunks
+## and rocks; soldiers do not hide each other), plus foliage, which stops eyes but not
+## bullets. Returns {visible, blocker ("" / "structure" / "terrain" / "tree" /
+## "foliage"), distance, foliage}.
+func sight(from: Vector3, to: Vector3) -> Dictionary:
+	var r := trace(from, to, -1, false)
+	if r.blocker != "range":
+		return {"visible": false, "blocker": r.blocker, "distance": r.distance, "foliage": 0}
+	var f := foliage_layers(from, to, foliage_block)
+	return {"visible": f < foliage_block, "blocker": "foliage" if f >= foliage_block else "", "distance": r.distance, "foliage": f}
+
+
+## Trees (not rocks) whose trunk stands within foliage_m of the segment, below their top,
+## ignoring foliage_skip_m at both ends. Stops counting at stop_at.
+func foliage_layers(from: Vector3, to: Vector3, stop_at := 1 << 30) -> int:
+	if vegetation == null or _solid.is_empty():
+		return 0
+	var a := Vector2(from.x, from.z)
+	var b := Vector2(to.x, to.z)
+	var seg_len := a.distance_to(b)
+	if seg_len <= foliage_skip_m * 2.0:
+		return 0
+	var dir2 := (b - a) / seg_len
+	var dy_per_m := (to.y - from.y) / seg_len
+	var n := 0
+	for bucket: Vector2i in _buckets_along(a, b):
+		_ensure_cell(Vector2i(floori(bucket.x * BUCKET / vegetation.cell_size_m), floori(bucket.y * BUCKET / vegetation.cell_size_m)))
+		var data: PackedFloat32Array = _buckets.get(bucket, PackedFloat32Array())
+		for i in range(0, data.size(), 6):
+			if data[i + 5] > 0.5:
+				continue
+			var rel := Vector2(data[i] - a.x, data[i + 1] - a.y)
+			var along := rel.dot(dir2)
+			if along < foliage_skip_m or along > seg_len - foliage_skip_m:
+				continue
+			if absf(rel.x * dir2.y - rel.y * dir2.x) > foliage_m + data[i + 3]:
+				continue
+			if from.y + dy_per_m * along > data[i + 2] + data[i + 4]:
+				continue  # the line passes over the tree
+			n += 1
+			if n >= stop_at:
+				return n
+	return n
 
 
 # --- Structures ---------------------------------------------------------------------

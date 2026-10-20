@@ -23,6 +23,9 @@ var perim: StructureState
 
 func run(args: PackedStringArray) -> void:
 	shots = "--shots" in args
+	# COMBAT-01b: earlier milestones test without autonomous fire (their squads would
+	# otherwise start shooting each other); combat01b_selftest.gd tests the AI.
+	demo.sim.brain.enabled = false
 	_shot_dir = "res://docs/unit01a"
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	con = demo.construction
@@ -78,6 +81,14 @@ func run(args: PackedStringArray) -> void:
 				with_body += 1
 	_log("setup", {"area": _describe(area), "base_center": _v(base_c), "bodies_in_squads": with_body, "structures": cs.count()})
 	_expect(with_body == 16, "not all squad soldiers have bodies at the test area (%d of 16)" % with_body)
+	# COMBAT-01b: only the Follow check, repeated (reproducing the UNIT-01A follow failure).
+	var rep := args.find("--follow-repeat")
+	if rep >= 0:
+		var n := int(args[rep + 1]) if rep + 1 < args.size() else 5
+		for i in n:
+			_log("follow_%d" % i, await _follow_check())
+		_finish()
+		return
 
 	# 2. Selection: Ctrl+click a soldier selects its squad; the panel selects one too.
 	var cam := rig.camera
@@ -389,10 +400,37 @@ func _follow_check() -> Dictionary:
 	_click(MOUSE_BUTTON_LEFT, cam.unproject_position(target.position + Vector3.UP))
 	await _frames(3)
 	var follows := bravo.order == SquadState.Order.FOLLOW and bravo.follow_squad_id == alpha.id
-	var issued := {"n": 0}
+	# order_changed fires for new orders and for arrivals / stops: count them apart. A new
+	# order is a MOVE with a target the soldier did not have; after Alpha stops, each one
+	# is recorded with what the follower and the leader were doing.
+	var issued := {"n": 0, "arrivals": 0, "stop_t": -1.0, "stop_pos": Vector3.INF, "late": []}
+	var last_target := {}
+	var last_issued := {}
+	for id in bravo.members:
+		var m := demo.sim.state.get_unit(id)
+		last_target[id] = m.order_target if m.order == UnitState.Order.MOVE else Vector3.INF
 	var counter := func(u: UnitState) -> void:
-		if bravo.has_member(u.id):
-			issued.n += 1
+		if not bravo.has_member(u.id):
+			return
+		if u.order != UnitState.Order.MOVE:
+			issued.arrivals += 1
+			last_target[u.id] = Vector3.INF
+			return
+		var prev: Vector3 = last_target.get(u.id, Vector3.INF)
+		if prev.is_finite() and prev.is_equal_approx(u.order_target):
+			return
+		issued.n += 1
+		var prev_issued: Vector3 = last_issued.get(u.id, Vector3.INF)
+		last_issued[u.id] = u.order_target
+		if issued.stop_t >= 0.0:
+			var l := demo.sim.state.get_unit(alpha.leader_id)
+			issued.late.append({"t_after_stop": snappedf(demo.sim.state.time - issued.stop_t, 0.01), "unit": u.id,
+				"new_target_shift_m": snappedf(_flat(prev, u.order_target), 0.01) if prev.is_finite() else -1.0,
+				"unit_to_new_target_m": snappedf(_flat(u.position, u.order_target), 0.01),
+				"shift_from_last_order_m": snappedf(_flat(prev_issued, u.order_target), 0.01) if prev_issued.is_finite() else -1.0,
+				"leader_moved_since_stop_m": snappedf(_flat(l.position, issued.stop_pos), 0.01),
+				"leader_speed": snappedf(Vector2(l.velocity.x, l.velocity.z).length(), 0.01)})
+		last_target[u.id] = u.order_target
 	demo.sim.state.order_changed.connect(counter)
 	demo.sim.squads.order_move([alpha.id], demo.on_ground(area.x - 60.0, area.z - 80.0, 0.0))
 	var t0 := Time.get_ticks_msec()
@@ -411,6 +449,9 @@ func _follow_check() -> Dictionary:
 			break
 	var walk_s := (Time.get_ticks_msec() - t0) / 1000.0
 	var during_walk: int = issued.n
+	issued.stop_t = demo.sim.state.time
+	issued.stop_pos = demo.sim.state.get_unit(alpha.leader_id).position
+	var arrivals0: int = issued.arrivals
 	await _seconds(6.0)
 	var settle: int = issued.n - during_walk
 	await _seconds(6.0)
@@ -430,9 +471,12 @@ func _follow_check() -> Dictionary:
 	var out := {"follow_order": follows, "alpha_status": SquadState.Status.keys()[alpha.status], "max_dist_to_alpha_leader_m": snappedf(dist, 0.1),
 		"bravo_behind_leader": behind, "min_pair_during_m": snappedf(min_pair, 0.01), "final_min_pair_m": snappedf(_min_pair(bravo.members), 0.01),
 		"walk_s": snappedf(walk_s, 0.1), "orders_while_alpha_walks": during_walk, "orders_per_soldier_per_10s_walking": snappedf(per10, 0.01),
-		"orders_while_settling_6s": settle, "orders_while_alpha_stands_6s": while_standing, "seconds": snappedf(secs, 0.1)}
+		"orders_while_settling_6s": settle, "orders_while_alpha_stands_6s": while_standing, "seconds": snappedf(secs, 0.1),
+		"arrivals_after_stop": issued.arrivals - arrivals0, "orders_after_stop": issued.late}
 	_expect(follows and dist < 25.0 and behind >= 3 and _min_pair(bravo.members) >= 1.5, "Follow did not keep Bravo behind Alpha (%s)" % JSON.stringify(out))
-	_expect(per10 <= 12.0 and while_standing == 0, "Follow re-issued orders too often (%s)" % JSON.stringify(out))
+	# After the leader stops, each follower may get its final slot once (the slots stop
+	# leading ahead of a walking leader); nothing after that.
+	_expect(per10 <= 12.0 and while_standing == 0 and settle <= bravo.members.size(), "Follow re-issued orders too often (%s)" % JSON.stringify(out))
 	demo.sim.squads.order_hold([bravo.id])
 	return out
 

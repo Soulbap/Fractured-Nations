@@ -3,7 +3,13 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **COMBAT-01a** — the first rifle: possess a soldier, aim, fire (semi / auto),
+Current state: **COMBAT-01b** — soldiers fight on their own: they see enemies (field of
+view, terrain, trees, foliage, structures), pick and keep a target, aim with human error,
+fire, reload and take casualties through the same rifle and combat authority as the player,
+while squad orders, Hold Fire / Weapons Free, possession and save/load keep working; see
+[docs/COMBAT-01B_REPORT.md](docs/COMBAT-01B_REPORT.md).
+
+Before that, **COMBAT-01a** — the first rifle: possess a soldier, aim, fire (semi / auto),
 reload and kill; hits and cover are resolved from world data, so they work at any range and
 with or without the camera nearby; see [docs/COMBAT-01A_REPORT.md](docs/COMBAT-01A_REPORT.md).
 
@@ -71,6 +77,7 @@ uniforms) share the world and some soldiers already have move orders. The contro
 | **Tab** | Switch to the tactical camera (the soldier returns to the simulation) |
 | F | Debug fly / noclip |
 | F3 | Performance overlay |
+| F4 | AI combat debug overlay (both views): state, target, why a soldier is not firing |
 
 | Key | Tactical (RTS) |
 |---|---|
@@ -85,6 +92,7 @@ uniforms) share the world and some soldiers already have move orders. The contro
 | F, then click a soldier | Selected squads follow that soldier, or its squad (its leader) |
 | G / Shift+G | Regroup selected squads on their leader / at the cursor |
 | V, [ and ] | Line or column formation, spacing −/+ 0.5 m (1.5–10 m) |
+| Y, FREE / HOLD in the squad panel | Rules of engagement of the selected squads: Weapons Free (default, soldiers engage on their own) / Hold Fire (they track but do not shoot) |
 | P, Enter or double-click | Possess the selected soldier (first person) |
 | **Tab** | Return to the soldier you last controlled |
 
@@ -110,7 +118,9 @@ Assets are generated in Blender by `tools/blender/structures/*.py` (sources in
 `assets/structures/blender/`). Scripted checks on the reference world (from the repository
 root, after the world build): `bash benchmarks/wi01/run_test.sh integration --shots`
 (construction in five terrain types, clearing, navigation, persistence, performance),
-`... base` (the WORLD-BASE-01 checks) and `... large` (the WORLD-CORE-02 checks).
+`... base` (the WORLD-BASE-01 checks) and `... large` (the WORLD-CORE-02 checks). The newest
+runner, `bash benchmarks/combat01b/run_test.sh <kind>`, also takes `combat-ai` (COMBAT-01b
+AI firefights), `combat` (COMBAT-01a) and `squad` (UNIT-01A).
 
 The world exploration scene `scenes/world/test_2km.tscn` still runs on its own with the
 WORLD-TECH-01 free-roaming controller.

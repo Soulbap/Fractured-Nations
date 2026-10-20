@@ -14,7 +14,9 @@
 ## Command line (after "--"): --core-test [--shots]  scripted checks, see CoreSelfTest;
 ## --large-test [--shots]  the 20 km checks, see LargeWorldSelfTest; --base-test, see BaseSelfTest;
 ## --integration-test [--shots]  construction on the reference world, see IntegrationSelfTest;
-## --squad-test [--shots]  UNIT-01A squads and orders, see SquadSelfTest.
+## --squad-test [--shots]  UNIT-01A squads and orders, see SquadSelfTest;
+## --combat-test [--shots]  COMBAT-01a, see CombatSelfTest; --combat-ai-test [--shots]  COMBAT-01b
+## AI firefights, see CombatAISelfTest.
 class_name CoreDemo
 extends Node3D
 
@@ -57,6 +59,7 @@ var _base_selftest: BaseSelfTest
 var _integration_selftest: IntegrationSelfTest
 var _squad_selftest: SquadSelfTest
 var _combat_selftest: CombatSelfTest
+var _combat_ai_selftest: CombatAISelfTest
 ## COMBAT-01a shot effects (muzzle flash, tracer, impact, sound).
 var combat_fx: CombatFX
 
@@ -232,6 +235,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	if "--large-test" in args:
 		_large_selftest = LargeWorldSelfTest.new(self)
 		_large_selftest.run.call_deferred(args)
+	elif "--combat-ai-test" in args:
+		_combat_ai_selftest = CombatAISelfTest.new(self)
+		_combat_ai_selftest.run.call_deferred(args)
 	elif "--combat-test" in args:
 		_combat_selftest = CombatSelfTest.new(self)
 		_combat_selftest.run.call_deferred(args)

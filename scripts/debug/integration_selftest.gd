@@ -24,6 +24,9 @@ var spots := {}
 
 func run(args: PackedStringArray) -> void:
 	shots = "--shots" in args
+	# COMBAT-01b: earlier milestones test without autonomous fire (their squads would
+	# otherwise start shooting each other); combat01b_selftest.gd tests the AI.
+	demo.sim.brain.enabled = false
 	_shot_dir = "res://docs/integration01"
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	con = demo.construction

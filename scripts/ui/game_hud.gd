@@ -21,6 +21,9 @@ var death_note_until := 0.0
 ## Hits / kills the possessed soldier scored (tests read these).
 var hits_seen := 0
 var kills_seen := 0
+## COMBAT-01b optional AI overlay (F4): state, target, sight and why a soldier is not
+## firing, for every soldier near the camera, plus the brain's cost counters.
+var combat_debug := false
 
 
 class Overlay extends Control:
@@ -30,6 +33,8 @@ class Overlay extends Control:
 		queue_redraw()
 
 	func _draw() -> void:
+		if hud.combat_debug:
+			_draw_combat_debug()
 		if hud.game and hud.game.mode == GameController.Mode.FPS:
 			_draw_fps()
 		elif hud.rts:
@@ -38,6 +43,64 @@ class Overlay extends Control:
 				var r := Rect2(hud.rts.drag_start, hud.rts.drag_current - hud.rts.drag_start).abs()
 				draw_rect(r, Color(1, 1, 1, 0.12), true)
 				draw_rect(r, Color(1, 1, 1, 0.85), false, 1.5)
+
+	## COMBAT-01b debug: one tag per soldier within 400 m of the camera (name, AI state,
+	## target, seen / remembered, reason it is not firing) and a line to its target: red
+	## while visible, grey to the last known position while hidden.
+	func _draw_combat_debug() -> void:
+		var cam := get_viewport().get_camera_3d()
+		if cam == null:
+			return
+		var font := ThemeDB.fallback_font
+		var st := hud.sim.state
+		var placed: Array[Vector2] = []
+		var cols := {UnitState.AiState.ENGAGING: Color(1, 0.35, 0.3), UnitState.AiState.OBSERVING: Color(1, 0.9, 0.4),
+			UnitState.AiState.LOST_TARGET: Color(1, 0.6, 0.2), UnitState.AiState.RELOADING: Color(0.4, 0.9, 1),
+			UnitState.AiState.IDLE: Color(0.8, 0.8, 0.8), UnitState.AiState.DEAD: Color(0.4, 0.4, 0.4), UnitState.AiState.PLAYER: Color(0.6, 1, 0.6)}
+		for u: UnitState in st.units.values():
+			if u.kind != UnitState.Kind.SOLDIER or u.position.distance_to(cam.global_position) > 400.0:
+				continue
+			var head := u.position + Vector3.UP * 2.1
+			if cam.is_position_behind(head):
+				continue
+			var p := cam.unproject_position(head)
+			var col: Color = cols.get(u.ai_state, Color.WHITE)
+			var t := st.get_unit(u.target_id)
+			if t and u.alive:
+				var a := u.position + Vector3.UP * 1.4
+				var b := (t.position if u.target_visible else u.target_last_pos) + Vector3.UP * 1.2
+				if b.is_finite() and not cam.is_position_behind(a) and not cam.is_position_behind(b):
+					draw_line(cam.unproject_position(a), cam.unproject_position(b), Color(1, 0.2, 0.2, 0.7) if u.target_visible else Color(0.7, 0.7, 0.7, 0.5), 1.5)
+			# Tags that would overlap one already drawn become a coloured dot.
+			var crowded := false
+			for q in placed:
+				if absf(q.x - p.x) < 150.0 and absf(q.y - p.y) < 16.0:
+					crowded = true
+					break
+			if crowded:
+				draw_circle(p, 3.5, col)
+				continue
+			placed.append(p)
+			var text := "%s %s" % [u.unit_name, u.ai_state_name()]
+			if t and u.alive:
+				text += " > %s %s" % [t.unit_name, "seen" if u.target_visible else "mem %.0fs" % (st.time - u.target_seen_at)]
+			if u.alive and u.ai_reason != "" and u.ai_reason != "no target":
+				text += " [%s]" % u.ai_reason
+			if u.alive and u.weapon_id != &"":
+				text += " %d/%d" % [u.mag, u.reserve]
+			var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+			draw_rect(Rect2(p + Vector2(-w * 0.5 - 3, -12), Vector2(w + 6, 15)), Color(0, 0, 0, 0.45), true)
+			draw_string(font, p + Vector2(-w * 0.5, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, col)
+		var s := hud.sim.brain.summary()
+		var lines := ["COMBAT AI (F4)  states %s" % JSON.stringify(s.states),
+			"sight checks %d (%.2f / frame, %.0f us each)  update %.0f us avg, %d us max" % [s.sight_checks, s.sight_checks_per_frame, s.sight_us_avg, s.update_us_avg, s.update_us_max],
+			"AI shots %d  acquisitions %d  switches %d  dropped %d  friendly holds %d" % [s.ai_shots, s.acquisitions, s.switches, s.dropped, s.friendly_holds]]
+		var y := 18.0
+		for line: String in lines:
+			var lw := font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
+			draw_rect(Rect2(Vector2(size.x - lw - 20, y - 13), Vector2(lw + 12, 17)), Color(0, 0, 0, 0.55), true)
+			draw_string(font, Vector2(size.x - lw - 14, y), line, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.9, 0.95, 0.8))
+			y += 18.0
 
 	## Crosshair opened by the current spread, hit marker, damage flash (COMBAT-01a).
 	func _draw_fps() -> void:
@@ -95,6 +158,9 @@ class Overlay extends Control:
 			if leader and not cam.is_position_behind(leader.position + Vector3.UP * 2.4):
 				var p := cam.unproject_position(leader.position + Vector3.UP * 2.4)
 				var text := "%s  %s" % [sq.squad_name, sq.order_name()]
+				if sq.roe == SquadState.Roe.HOLD_FIRE:
+					text += "  HOLD FIRE"
+					col = Color(1.0, 0.7, 0.25)
 				var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
 				draw_rect(Rect2(p + Vector2(-w * 0.5 - 4, -16), Vector2(w + 8, 20)), Color(0, 0, 0, 0.5), true)
 				draw_string(font, p + Vector2(-w * 0.5, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, col)
@@ -138,6 +204,12 @@ func _ready() -> void:
 	squad_panel.position = Vector2(12, 250)
 	squad_panel.visible = false
 	add_child(squad_panel)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F4:
+		combat_debug = not combat_debug
+		get_viewport().set_input_as_handled()
 
 
 func _process(_delta: float) -> void:
@@ -204,7 +276,7 @@ func _text() -> String:
 		var sq := sim.state.squad_of(u.id) if u else null
 		if sq:
 			lines.append("Squad %s (%d%s) order: %s - the others keep their orders" % [sq.squad_name, sq.members.size(), ", you lead" if sq.leader_id == u.id else "", sq.order_name()])
-		lines.append("LMB fire, R reload, V semi/auto, RMB aim | Tab tactical view | WASD move, Shift sprint, Space jump, Esc release mouse, F fly")
+		lines.append("LMB fire, R reload, V semi/auto, RMB aim | Tab tactical view | WASD move, Shift sprint, Space jump, Esc release mouse, F fly, F4 AI debug")
 	elif construction and construction.active:
 		lines.append_array(construction.status_lines())
 	else:
@@ -213,7 +285,7 @@ func _text() -> String:
 		if Time.get_ticks_msec() / 1000.0 < death_note_until and back and not back.alive:
 			lines.append("%s was killed. Select a living soldier and press P to take over." % back.unit_name)
 		lines.append("LMB select / drag box, Shift add, Ctrl+click squad, Ctrl+A all, RMB move, H hold, P or double-click possess, B construction, Tab back to %s" % (back.unit_name if back and back.alive else "soldier"))
-		lines.append("Squads: F + click follow, G regroup (Shift+G at cursor), V line / column, [ ] spacing")
+		lines.append("Squads: F + click follow, G regroup (Shift+G at cursor), V line / column, [ ] spacing, Y weapons free / hold fire | F4 AI debug")
 		var sel: Array[String] = []
 		var moving := 0
 		for id in rts.selected:

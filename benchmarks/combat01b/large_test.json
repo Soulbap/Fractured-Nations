@@ -1,0 +1,227 @@
+{
+  "a_runs_while_at_b": {
+    "a_group_abstract_and_executing": 4,
+    "of": 4,
+    "sim_time_advanced_s": 4.3
+  },
+  "abstract_orders_away": {
+    "bodyless": 7,
+    "example": [
+      297.056610107422,
+      279.072052001953
+    ],
+    "progressed_10m_in_4s": 7,
+    "states": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "units": 7
+  },
+  "cycle_all_soldiers": {
+    "bodies": 8,
+    "distinct_visited": 28,
+    "far_jumps_over_1km": 3,
+    "final_on_floor": true,
+    "proxies": 23,
+    "unique_units": 31
+  },
+  "failures": [],
+  "fps_at_b": {
+    "grass_active": true,
+    "height_above_terrain_m": 0.0,
+    "nav_bakes": 2,
+    "tree_colliders": 0,
+    "vegetation": {
+      "active_cells": 256,
+      "active_instances": 46612,
+      "active_mmis": 976,
+      "loaded_chunks": 20,
+      "loading_chunks": 0,
+      "queued": 0,
+      "worst_activation_ms": 1.14
+    },
+    "walked_m": 8.55
+  },
+  "fps_jump_to_c": {
+    "bodies": 9,
+    "bodies_at_c": 9,
+    "mode": 0,
+    "on_floor": true,
+    "possessed": 25,
+    "site": 2
+  },
+  "layout": {
+    "bodies": 13,
+    "bodies_at_site_a": 13,
+    "mode": 0,
+    "nav_first_bake": {
+      "area_m": 440.0,
+      "async": false,
+      "bake_ms": 239.495,
+      "center": [
+        -7107.5,
+        -7592.0
+      ],
+      "collision_ms": 309.193,
+      "faces": 101250,
+      "polygons": 1115,
+      "recenter": "sync",
+      "source_ms": 113.732,
+      "structure_obstructions": 0,
+      "tree_obstructions": 24,
+      "vehicle_obstructions": 1
+    },
+    "possessed": 1,
+    "proxies": 18,
+    "site_distances_m": [
+      11987.0,
+      16907.0,
+      11543.0
+    ],
+    "soldiers": 28,
+    "soldiers_on_floor": [
+      12,
+      12
+    ],
+    "soldiers_per_site": [
+      12,
+      8,
+      8
+    ],
+    "terrain_collision_mode": 1,
+    "vehicles": 3,
+    "world_m": 20000.0
+  },
+  "order_at_c": {
+    "error_m": 1.23,
+    "has_body": true,
+    "seconds": 10.5,
+    "state": 2
+  },
+  "pass": true,
+  "performance": {
+    "demotions": 86,
+    "fps_site_a": {
+      "draw_calls": 866.0,
+      "frame_ms_avg": 1.82,
+      "frame_ms_max": 2.4,
+      "frame_ms_p99": 2.38,
+      "frames": 150,
+      "nav_ms": 0.05,
+      "physics_ms": 0.69
+    },
+    "memory_static_mb": 1796.0,
+    "nav_bakes_total": 11,
+    "nav_last_bake": {
+      "area_m": 440.0,
+      "async": false,
+      "bake_ms": 238.655,
+      "center": [
+        -7107.5,
+        -7592.0
+      ],
+      "collision_ms": 389.49,
+      "faces": 101250,
+      "polygons": 1115,
+      "recenter": "sync",
+      "source_ms": 116.427,
+      "structure_obstructions": 0,
+      "tree_obstructions": 24,
+      "vehicle_obstructions": 1
+    },
+    "objects": 44469.0,
+    "possess_jump_ms": [
+      620.1,
+      663.3,
+      632.7
+    ],
+    "promotions": 99,
+    "rts_1500m": {
+      "draw_calls": 276.0,
+      "frame_ms_avg": 1.72,
+      "frame_ms_max": 2.2,
+      "frame_ms_p99": 2.18,
+      "frames": 150,
+      "nav_ms": 0.05,
+      "physics_ms": 0.69
+    },
+    "rts_160m": {
+      "draw_calls": 315.0,
+      "frame_ms_avg": 1.69,
+      "frame_ms_max": 2.23,
+      "frame_ms_p99": 2.19,
+      "frames": 150,
+      "nav_ms": 0.05,
+      "physics_ms": 0.69
+    },
+    "terrain_collision_radius": 208
+  },
+  "possess_at_b": {
+    "camera_current": true,
+    "clicked_selected": true,
+    "expected": 18,
+    "mode": 0,
+    "on_floor": true,
+    "possess_call_ms": 17.8,
+    "possessed": 18,
+    "terrain_camera_is_body_cam": true
+  },
+  "return_to_a": {
+    "bodies": 13,
+    "finished_their_walk": 8,
+    "identity_ok": true,
+    "idle_units_checked": 4,
+    "ids": 31,
+    "max_idle_drift_m": 0.0,
+    "ordered_units_at_a": 8,
+    "possessed_site": 0,
+    "proxies": 18,
+    "still_executing_same_order": 0
+  },
+  "rts_b_ground": {
+    "collision_ray_hit_y": 243.868927001953,
+    "navmesh_point_dist_m": 0.43,
+    "terrain_y": 243.868911743164
+  },
+  "rts_jump_to_b": {
+    "bodies_at_b": 9,
+    "bodies_total": 9,
+    "dist_to_site_b_m": 0.0,
+    "focus": [
+      -3100.0,
+      3700.0
+    ],
+    "nav_bakes": 2,
+    "nav_center_to_b_m": 0.0,
+    "terrain_camera_is_anchor": true
+  },
+  "rts_order_at_a": {
+    "ground_error_m": 0.0,
+    "ordered": 4,
+    "selected": 4
+  },
+  "transitions_in_transit": {
+    "demoted_at_m": 150.5,
+    "has_body_now": true,
+    "in_arrival_error_m": 1.26,
+    "in_state": 2,
+    "in_tiers": [
+      false,
+      true
+    ],
+    "max_step_over_walk_distance": 1.0,
+    "out_arrival_error_m": 0.0,
+    "out_state": "arrived",
+    "out_tiers": [
+      true,
+      false
+    ],
+    "promoted_at_m": 119.9,
+    "same_record": true
+  }
+}

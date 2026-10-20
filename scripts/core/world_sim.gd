@@ -27,6 +27,8 @@ var state := WorldState.new()
 var squads := SquadControl.new(self)
 ## COMBAT-01a: firing, reloading, damage and death (the one combat authority).
 var combat := CombatSim.new(self)
+## COMBAT-01b: soldiers' own perception, target choice and firing (through `combat`).
+var brain := CombatBrain.new(self)
 ## Parent of bodies and proxies (corpse markers are created here).
 var units_root: Node3D
 ## id -> Node3D body (detailed tier)
@@ -76,6 +78,7 @@ func _ready() -> void:
 	state.restored.connect(_on_restored)
 	state.unit_removed.connect(_on_unit_removed)
 	state.unit_died.connect(_on_unit_died)
+	brain.connect_signals()
 
 
 ## A soldier died: its body (if any) goes, a corpse marker (UnitProxy) stays in the world.
@@ -112,6 +115,7 @@ func _physics_process(delta: float) -> void:
 		if not u.has_body and u.alive:
 			_abstract_step(u, delta)
 	squads.update(delta)
+	brain.update(delta)
 	combat.update(delta)
 
 
@@ -134,6 +138,9 @@ func _on_restored() -> void:
 func _abstract_step(u: UnitState, delta: float) -> void:
 	if u.order != UnitState.Order.MOVE:
 		u.velocity = Vector3.ZERO
+		# COMBAT-01b: a standing soldier turns to what it watches (its target).
+		if not is_nan(u.watch_yaw) and not u.player_controlled:
+			u.yaw = lerp_angle(u.yaw, u.watch_yaw, clampf(8.0 * delta, 0.0, 1.0))
 		return
 	var to := u.order_target - u.position
 	to.y = 0.0

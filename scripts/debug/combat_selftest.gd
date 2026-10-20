@@ -20,6 +20,9 @@ var deaths := []
 
 func run(args: PackedStringArray) -> void:
 	shots = "--shots" in args
+	# COMBAT-01b: earlier milestones test without autonomous fire (their squads would
+	# otherwise start shooting each other); combat01b_selftest.gd tests the AI.
+	demo.sim.brain.enabled = false
 	_shot_dir = "res://docs/combat01a"
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	con = demo.construction
@@ -703,6 +706,12 @@ func _agreement_check() -> Dictionary:
 	var ana_only := 0
 	var both := 0
 	var mismatch_edge := []
+	# COMBAT-01b: every ray is also measured against both shapes by dense sampling (5 mm),
+	# independent of either implementation. A disagreement where the two shapes differ is
+	# expected (the hit model is deliberately not the movement capsule); a result that
+	# contradicts its own shape by more than 1 cm is an implementation error.
+	var cls := {"shape_difference": 0, "grazing_1cm": 0, "analytic_impl_error": 0, "physics_impl_error": 0}
+	var errors := []
 	for i in 2000:
 		var id: int = units[i % units.size()]
 		var body: Node3D = demo.sim.body_of(id)
@@ -720,6 +729,20 @@ func _agreement_check() -> Dictionary:
 		q.exclude = ex
 		var h := space.intersect_ray(q)
 		var phys: bool = not h.is_empty() and h.collider == body
+		var g := _sampled_shapes(from, to, p)
+		var ana_geo: bool = g.ana < 0.0
+		var phys_geo: bool = g.phys < 0.0
+		if ana != ana_geo and absf(g.ana) > 0.01:
+			cls.analytic_impl_error += 1
+			errors.append({"kind": "analytic", "sdf": snappedf(g.ana, 0.001), "impl": ana})
+		if phys != phys_geo and absf(g.phys) > 0.01:
+			cls.physics_impl_error += 1
+			errors.append({"kind": "physics", "sdf": snappedf(g.phys, 0.001), "impl": phys})
+		if ana != phys:
+			if ana_geo != phys_geo:
+				cls.shape_difference += 1
+			elif absf(g.ana) <= 0.01 or absf(g.phys) <= 0.01:
+				cls.grazing_1cm += 1
 		if ana == phys:
 			agree += 1
 			if ana:
@@ -734,7 +757,11 @@ func _agreement_check() -> Dictionary:
 	mismatch_edge.sort()
 	out.soldiers = {"rays": 2000, "agree": agree, "both_hit": both, "physics_only": phys_only, "analytic_only": ana_only,
 		"mismatch_axis_dist_m": [snappedf(mismatch_edge[0], 0.01), snappedf(mismatch_edge[mismatch_edge.size() / 2], 0.01), snappedf(mismatch_edge[-1], 0.01)] if not mismatch_edge.is_empty() else [],
-		"model": "analytic head sphere r0.14 @1.62 + torso capsule r0.30 0..1.50; physics capsule r0.35 0..1.80"}
+		"model": "analytic head sphere r0.14 @1.62 + torso capsule r0.30 0..1.50; physics capsule r0.35 0..1.80",
+		"mismatch_classes": cls, "impl_error_samples": errors.slice(0, 10)}
+	_expect(cls.analytic_impl_error == 0, "analytic soldier hits contradict their own shape (%s)" % JSON.stringify(errors.slice(0, 5)))
+	_expect(cls.shape_difference + cls.grazing_1cm + cls.analytic_impl_error + cls.physics_impl_error >= phys_only + ana_only,
+		"unexplained analytic / physics mismatches (%s)" % JSON.stringify(cls))
 	# Terrain within 150 m: grazing lines 0.2-1.5 m above ground.
 	var s := _u(shooter)
 	var tagree := 0
@@ -760,6 +787,24 @@ func _agreement_check() -> Dictionary:
 				dist_err = maxf(dist_err, absf(ana - phys))
 	out.terrain_grazing = {"rays": tn, "agree": tagree, "max_distance_diff_m": snappedf(dist_err, 0.01)}
 	return out
+
+
+## Smallest signed distance along the segment to the analytic hit shapes and to the
+## body's movement capsule (r 0.35, 1.8 m tall), by sampling every 5 mm.
+func _sampled_shapes(from: Vector3, to: Vector3, p: Vector3) -> Dictionary:
+	var n := maxi(int(from.distance_to(to) / 0.005), 2)
+	var head := p + Vector3(0, LineOfFire.HEAD_Y, 0)
+	var t0 := p + Vector3(0, LineOfFire.TORSO_Y0, 0)
+	var t1 := p + Vector3(0, LineOfFire.TORSO_Y1, 0)
+	var c0 := p + Vector3(0, 0.35, 0)
+	var c1 := p + Vector3(0, 1.45, 0)
+	var ana := INF
+	var phys := INF
+	for k in n + 1:
+		var q := from.lerp(to, float(k) / n)
+		ana = minf(ana, minf(q.distance_to(head) - LineOfFire.HEAD_R, q.distance_to(Geometry3D.get_closest_point_to_segment(q, t0, t1)) - LineOfFire.TORSO_R))
+		phys = minf(phys, q.distance_to(Geometry3D.get_closest_point_to_segment(q, c0, c1)) - 0.35)
+	return {"ana": ana, "phys": phys}
 
 
 ## Closest horizontal distance between a ray and the vertical axis through p.

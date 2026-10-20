@@ -220,6 +220,10 @@ func kill(t: UnitState, source_id := -1) -> void:
 	t.move_state = UnitState.MoveState.IDLE
 	t.velocity = Vector3.ZERO
 	t.reload_until = -1.0
+	t.ai_state = UnitState.AiState.DEAD
+	t.target_id = -1
+	t.target_visible = false
+	t.burst_left = 0
 	sim.state.mark_fallen(t.id)
 	sim.state.unit_died.emit(t)
 

@@ -9,7 +9,8 @@
 ## orders (formation slots, see SquadControl) and to the other selected soldiers as
 ## individual orders, which detach them from their squad order. Keys: RMB move, H hold,
 ## F then click a unit = follow it (or its squad), G regroup on the leader, Shift+G
-## regroup at the cursor, V line / column, [ ] spacing. The ground point of a move order comes from a physics ray against the terrain
+## regroup at the cursor, V line / column, [ ] spacing, Y weapons free / hold fire
+## (COMBAT-01b rules of engagement). The ground point of a move order comes from a physics ray against the terrain
 ## collision, with Terrain3D's height-map ray march as fallback.
 class_name RTSController
 extends Node
@@ -132,6 +133,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		change_spacing(-0.5)
 	elif event.is_action_pressed("squad_spacing_up"):
 		change_spacing(0.5)
+	elif event.is_action_pressed("squad_roe"):
+		toggle_roe()
 	elif event.is_action_pressed("select_all"):
 		var ids := []
 		for u in sim.state.soldiers():
@@ -261,6 +264,23 @@ func toggle_formation() -> void:
 	_say("Formation: %s" % SquadState.FORMATION_NAMES[f])
 
 
+## Y: weapons free <-> hold fire for the selected squads (the first one decides).
+func toggle_roe() -> void:
+	var sqs := selected_squads()
+	if sqs.is_empty():
+		_say("Rules of engagement: select a squad first")
+		return
+	var first := sim.state.get_squad(sqs[0])
+	var roe := SquadState.Roe.HOLD_FIRE if first.roe == SquadState.Roe.WEAPONS_FREE else SquadState.Roe.WEAPONS_FREE
+	set_roe(sqs, roe)
+
+
+func set_roe(squad_ids: Array, roe: SquadState.Roe) -> void:
+	var n := sim.squads.set_roe(squad_ids, roe)
+	if n > 0:
+		_say("%s: %s" % [", ".join(squad_ids.map(func(id: int) -> String: return sim.state.get_squad(id).squad_name)), SquadState.ROE_NAMES[roe]])
+
+
 func change_spacing(delta: float) -> void:
 	var sqs := selected_squads()
 	if sqs.is_empty():
@@ -342,7 +362,7 @@ func current_message() -> String:
 
 static func _ensure_squad_actions() -> void:
 	var binds := {"squad_follow": KEY_F, "squad_regroup": KEY_G, "squad_formation": KEY_V,
-		"squad_spacing_down": KEY_BRACKETLEFT, "squad_spacing_up": KEY_BRACKETRIGHT}
+		"squad_spacing_down": KEY_BRACKETLEFT, "squad_spacing_up": KEY_BRACKETRIGHT, "squad_roe": KEY_Y}
 	for action in binds:
 		if InputMap.has_action(action):
 			continue

@@ -152,6 +152,9 @@ func _ai_step(delta: float) -> void:
 			_check_stuck(delta, remaining)
 	else:
 		_applied_target = Vector3.INF
+		# COMBAT-01b: standing, the soldier turns to what its AI watches (its target).
+		if not is_nan(unit.watch_yaw):
+			rotation.y = lerp_angle(rotation.y, unit.watch_yaw, clampf(turn_speed * delta, 0.0, 1.0))
 	if _unstick_left > 0.0:
 		_unstick_left -= delta
 		_apply_velocity(desired, delta)

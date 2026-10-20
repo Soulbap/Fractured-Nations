@@ -1,0 +1,778 @@
+{
+  "deaths": 75,
+  "failures": [],
+  "forest": {
+    "clear_fraction": {
+      "deep": 0.44,
+      "edge": 1.0
+    },
+    "fight": {
+      "blockers": {
+        "range": 52,
+        "terrain": 177,
+        "tree": 137,
+        "unit": 120
+      },
+      "brain": {
+        "acquisitions": 32,
+        "ai_shots": 486,
+        "dropped": 17,
+        "friendly_holds": 0,
+        "sight_checks": 2247,
+        "sight_checks_per_frame": 1.08,
+        "sight_us_avg": 116.6,
+        "states": {
+          "dead": 11,
+          "engaging": 11,
+          "idle": 22
+        },
+        "switches": 11,
+        "update_us_avg": 441.8,
+        "update_us_max": 7914
+      },
+      "counter_gaps": 0,
+      "damage_events": 120,
+      "damaging_shots": 120,
+      "duplicate_counters": 0,
+      "hit_ratio": 0.247,
+      "hits": 120,
+      "rate_violations": 0,
+      "reloads": 12,
+      "shots": 486,
+      "shots_since_free": 486,
+      "sides": [
+        {
+          "alive": 6,
+          "fallen": 2,
+          "hits": 67,
+          "mean_ground_y": 166.32,
+          "misses_long": 166,
+          "misses_short": 17,
+          "shots": 250,
+          "squad": "North-F"
+        },
+        {
+          "alive": 5,
+          "fallen": 3,
+          "hits": 53,
+          "mean_ground_y": 165.32,
+          "misses_long": 166,
+          "misses_short": 17,
+          "shots": 236,
+          "squad": "South-F"
+        }
+      ]
+    },
+    "geometry": {
+      "deep": [
+        -658.0,
+        165.1,
+        -7836.5
+      ],
+      "edge": [
+        -633.2,
+        165.4,
+        -7811.7
+      ],
+      "open": [
+        -569.6,
+        166.3,
+        -7748.1
+      ]
+    },
+    "south_at_edge": {
+      "north_seeing": 8,
+      "sight": {
+        "blocked_by": {},
+        "clear": 64,
+        "pairs": 64
+      },
+      "south_status": "DONE",
+      "trees_within_12m": 4
+    },
+    "south_deep_in_forest": {
+      "north_max_seeing": 8,
+      "sight": {
+        "blocked_by": {
+          "foliage": 19,
+          "tree": 17
+        },
+        "clear": 28,
+        "pairs": 64
+      },
+      "trees_within_12m": 9
+    }
+  },
+  "friendly_in_line": {
+    "friend_aside": {
+      "friend_damage": 0.0,
+      "gunner_shots": 14
+    },
+    "friend_in_line": {
+      "friend_damage": 0.0,
+      "friendly_holds": 15,
+      "gunner_seeing": 1,
+      "gunner_shots": 0,
+      "reason": "between bursts"
+    }
+  },
+  "hold_fire": {
+    "hold_again": {
+      "north_shots_after": 0,
+      "roe": "Hold fire"
+    },
+    "hold_fire_8s": {
+      "north_seeing": 8,
+      "shots": 0,
+      "south_seeing": 8
+    },
+    "weapons_free": {
+      "first_shot_after_s": 0.08,
+      "north_shots": 27,
+      "panel_row": "North-H  [N]  8  Line  None   | 8 engaging",
+      "roe_after_key": "Weapons free",
+      "south_shots": 0
+    }
+  },
+  "open_firefight": {
+    "ammo_violations": [],
+    "blockers": {
+      "range": 21,
+      "terrain": 189,
+      "tree": 21,
+      "unit": 29
+    },
+    "brain": {
+      "acquisitions": 34,
+      "ai_shots": 260,
+      "dropped": 25,
+      "friendly_holds": 0,
+      "sight_checks": 634,
+      "sight_checks_per_frame": 0.65,
+      "sight_us_avg": 124.4,
+      "states": {
+        "dead": 15,
+        "idle": 22,
+        "observing": 7
+      },
+      "switches": 0,
+      "update_us_avg": 390.5,
+      "update_us_max": 1614
+    },
+    "counter_gaps": 0,
+    "damage_events": 29,
+    "damage_on_dead": 0,
+    "damaging_shots": 29,
+    "dead_still_in_squads": 0,
+    "deaths_reported_twice": 0,
+    "duplicate_counters": 0,
+    "duration_s": 16.3,
+    "first_seconds": {
+      "north_fires": 0.699999999999998,
+      "north_sees": 0.0666666666666664,
+      "south_fires": 0.766666666666664,
+      "south_sees": 0.133333333333333
+    },
+    "hit_ratio": 0.112,
+    "hits": 29,
+    "max_bodies": 16,
+    "rate_violations": 0,
+    "reloads": 7,
+    "shots": 260,
+    "shots_by_dead": 0,
+    "sides": [
+      {
+        "alive": 0,
+        "fallen": 8,
+        "hits": 8,
+        "mean_ground_y": 165.37,
+        "misses_long": 92,
+        "misses_short": 15,
+        "shots": 115,
+        "squad": "North-1"
+      },
+      {
+        "alive": 7,
+        "fallen": 1,
+        "hits": 21,
+        "mean_ground_y": 165.35,
+        "misses_long": 105,
+        "misses_short": 19,
+        "shots": 145,
+        "squad": "South-1"
+      }
+    ],
+    "stale_dead_targets": 0
+  },
+  "orders_and_possession": {
+    "movement": {
+      "dist_to_destination_m": 1.9,
+      "follower_max_dist_to_leader_m": 12.7,
+      "follower_order": "Follow",
+      "follower_shots": 88,
+      "holding_south_max_drift_m": 0.0,
+      "holding_south_order_frames": 0,
+      "move_s": 20.0,
+      "north_shots": 229,
+      "shots_while_moving": 214,
+      "south_shots": 227,
+      "status": "DONE"
+    },
+    "possession": {
+      "after_tab": {
+        "ai_state": "engaging",
+        "engaged_before": 18,
+        "engagements_kept": 18,
+        "mode_rts": true
+      },
+      "ai_shots_of_possessed": 0,
+      "ai_state": "player",
+      "engagements_changed": 0,
+      "engagements_kept_on_possess": 15,
+      "other_members_orders_unchanged": true,
+      "player_shots": 1,
+      "possessed": true,
+      "squad_mates_shots": 34,
+      "squad_order_unchanged": true
+    }
+  },
+  "pass": true,
+  "performance": {
+    "16v16_vs_baseline": {
+      "avg_ms_added": 0.12,
+      "p99_ms_added": 1.98
+    },
+    "baseline_rts_no_test_squads": {
+      "bodies": 0,
+      "brain_update_us_avg": 120.2,
+      "brain_update_us_max": 171,
+      "frame_ms_avg": 1.82,
+      "frame_ms_max": 2.28,
+      "frame_ms_p99": 2.08,
+      "frames": 3290,
+      "frames_over_33ms": 0,
+      "shot_resolve_us_avg": 0.0,
+      "shot_resolve_us_max": 0,
+      "shots": 0,
+      "sight_checks": 0,
+      "sight_checks_per_frame": 0.0,
+      "sight_us_avg": 0.0,
+      "states": {
+        "dead": 6,
+        "idle": 22
+      }
+    },
+    "forest_16v16_fps": {
+      "bodies": 32,
+      "brain_update_us_avg": 1198.4,
+      "brain_update_us_max": 2307,
+      "case": "16v16 forest FPS",
+      "frame_ms_avg": 6.14,
+      "frame_ms_max": 9.28,
+      "frame_ms_p99": 9.13,
+      "frames": 1303,
+      "frames_over_33ms": 0,
+      "shot_resolve_us_avg": 0.0,
+      "shot_resolve_us_max": 0,
+      "shots": 0,
+      "sight_checks": 4464,
+      "sight_checks_per_frame": 9.3,
+      "sight_us_avg": 91.2,
+      "soldiers": 32,
+      "states": {
+        "dead": 6,
+        "idle": 53,
+        "player": 1
+      }
+    },
+    "forest_16v16_rts": {
+      "bodies": 32,
+      "brain_update_us_avg": 1233.6,
+      "brain_update_us_max": 2323,
+      "case": "16v16 forest RTS",
+      "frame_ms_avg": 2.13,
+      "frame_ms_max": 5.11,
+      "frame_ms_p99": 4.88,
+      "frames": 3749,
+      "frames_over_33ms": 0,
+      "shot_resolve_us_avg": 0.0,
+      "shot_resolve_us_max": 0,
+      "shots": 0,
+      "sight_checks": 4608,
+      "sight_checks_per_frame": 9.6,
+      "sight_us_avg": 91.3,
+      "soldiers": 32,
+      "states": {
+        "dead": 6,
+        "idle": 54
+      }
+    },
+    "open_16v16_fps": {
+      "bodies": 32,
+      "brain_update_us_avg": 876.1,
+      "brain_update_us_max": 2583,
+      "case": "16v16 open FPS",
+      "frame_ms_avg": 2.45,
+      "frame_ms_max": 5.7,
+      "frame_ms_p99": 4.58,
+      "frames": 3261,
+      "frames_over_33ms": 0,
+      "shot_resolve_us_avg": 208.4,
+      "shot_resolve_us_max": 415,
+      "shots": 390,
+      "sight_checks": 744,
+      "sight_checks_per_frame": 1.55,
+      "sight_us_avg": 121.1,
+      "soldiers": 32,
+      "states": {
+        "dead": 6,
+        "engaging": 31,
+        "idle": 22,
+        "player": 1
+      }
+    },
+    "open_16v16_rts": {
+      "bodies": 32,
+      "brain_update_us_avg": 906.5,
+      "brain_update_us_max": 2064,
+      "case": "16v16 open RTS",
+      "frame_ms_avg": 1.94,
+      "frame_ms_max": 4.65,
+      "frame_ms_p99": 4.06,
+      "frames": 4113,
+      "frames_over_33ms": 0,
+      "shot_resolve_us_avg": 214.8,
+      "shot_resolve_us_max": 421,
+      "shots": 400,
+      "sight_checks": 768,
+      "sight_checks_per_frame": 1.6,
+      "sight_us_avg": 121.6,
+      "soldiers": 32,
+      "states": {
+        "dead": 6,
+        "engaging": 32,
+        "idle": 22
+      }
+    },
+    "open_8v8_fps": {
+      "bodies": 16,
+      "brain_update_us_avg": 463.2,
+      "brain_update_us_max": 1509,
+      "case": "8v8 open FPS",
+      "frame_ms_avg": 2.23,
+      "frame_ms_max": 4.15,
+      "frame_ms_p99": 3.6,
+      "frames": 3577,
+      "frames_over_33ms": 0,
+      "shot_resolve_us_avg": 203.1,
+      "shot_resolve_us_max": 395,
+      "shots": 190,
+      "sight_checks": 360,
+      "sight_checks_per_frame": 0.75,
+      "sight_us_avg": 124.6,
+      "soldiers": 16,
+      "states": {
+        "dead": 6,
+        "engaging": 15,
+        "idle": 22,
+        "player": 1
+      }
+    },
+    "open_8v8_rts": {
+      "bodies": 16,
+      "brain_update_us_avg": 484.0,
+      "brain_update_us_max": 1641,
+      "case": "8v8 open RTS",
+      "frame_ms_avg": 1.85,
+      "frame_ms_max": 3.93,
+      "frame_ms_p99": 3.19,
+      "frames": 4330,
+      "frames_over_33ms": 0,
+      "shot_resolve_us_avg": 220.2,
+      "shot_resolve_us_max": 403,
+      "shots": 190,
+      "sight_checks": 384,
+      "sight_checks_per_frame": 0.8,
+      "sight_us_avg": 125.5,
+      "soldiers": 16,
+      "states": {
+        "dead": 6,
+        "engaging": 16,
+        "idle": 22
+      }
+    }
+  },
+  "reload_and_ammo": {
+    "end": {
+      "mag": 0,
+      "reason": "no ammunition",
+      "reserve": 0
+    },
+    "reloads": 2,
+    "seen_reloading_state": true,
+    "shots": 35,
+    "shots_during_reload": 0,
+    "start": {
+      "mag": 3,
+      "reserve": 32
+    },
+    "stats": {
+      "blockers": {
+        "range": 6,
+        "terrain": 22,
+        "tree": 1,
+        "unit": 6
+      },
+      "brain": {
+        "acquisitions": 2,
+        "ai_shots": 35,
+        "dropped": 0,
+        "friendly_holds": 0,
+        "sight_checks": 100,
+        "sight_checks_per_frame": 0.1,
+        "sight_us_avg": 113.9,
+        "states": {
+          "dead": 6,
+          "engaging": 1,
+          "idle": 22,
+          "observing": 1
+        },
+        "switches": 0,
+        "update_us_avg": 159.5,
+        "update_us_max": 653
+      },
+      "counter_gaps": 0,
+      "damage_events": 6,
+      "damaging_shots": 6,
+      "duplicate_counters": 0,
+      "hit_ratio": 0.171,
+      "hits": 6,
+      "rate_violations": 0,
+      "reloads": 2,
+      "shots": 35,
+      "sides": [
+        {
+          "alive": 1,
+          "fallen": 0,
+          "hits": 6,
+          "mean_ground_y": 165.1,
+          "misses_long": 28,
+          "misses_short": 1,
+          "shots": 35,
+          "squad": "Rifle"
+        },
+        {
+          "alive": 1,
+          "fallen": 0,
+          "hits": 0,
+          "mean_ground_y": 165.2,
+          "misses_long": 0,
+          "misses_short": 0,
+          "shots": 0,
+          "squad": "Dummy"
+        }
+      ]
+    }
+  },
+  "save_load": {
+    "differences": [],
+    "engaged_when_saved": 16,
+    "north_shots_after_load": 87,
+    "roe_saved": [
+      0,
+      1
+    ],
+    "south_shots_after_load": 0,
+    "units": 16
+  },
+  "startup": {
+    "area": {
+      "height_range_40m": 0.54,
+      "pos": [
+        -1106.8,
+        165.2,
+        -7885.3
+      ],
+      "road_m": 1e99999,
+      "settlement": "Bruvoll",
+      "settlement_edge_m": 1556.0,
+      "slope_deg": 0.1,
+      "solids_30m": {
+        "houses": 0,
+        "rocks": 0,
+        "trees": 0
+      },
+      "solids_60m": {
+        "houses": 0,
+        "rocks": 0,
+        "trees": 0
+      }
+    },
+    "brain": {
+      "aim_error_deg": [
+        0.25,
+        0.2,
+        1.2
+      ],
+      "awareness_m": 25.0,
+      "engage_range": 350.0,
+      "foliage": [
+        2.5,
+        3.0,
+        3
+      ],
+      "fov_deg": 150.0,
+      "los_budget": 24,
+      "perception_hz": 3.0,
+      "sight_range": 400.0,
+      "target_memory_s": 6.0
+    },
+    "default_soldiers": 28
+  },
+  "structures": {
+    "low_wall": {
+      "hit_heights_above_target_feet": [
+        1.31,
+        1.34,
+        1.37,
+        1.39,
+        1.41,
+        1.45,
+        1.45,
+        1.46,
+        1.46,
+        1.52,
+        1.54,
+        1.54,
+        1.61,
+        1.64
+      ],
+      "hits_crossing_the_wall": [],
+      "north_shots": 180,
+      "south_aim_heights_at_5s": [
+        1.55,
+        1.55,
+        1.55,
+        1.55,
+        1.55,
+        1.55,
+        1.55
+      ],
+      "south_blocked_by_wall": 52,
+      "south_hits_on_north": 14,
+      "south_shots": 167
+    },
+    "tall_wall": {
+      "line_n0_s0": "structure",
+      "max_seeing": 0,
+      "shots": 0
+    }
+  },
+  "symmetry": {
+    "rounds": [
+      {
+        "alive_f0": 0,
+        "alive_f1": 5,
+        "hits_f0": 15,
+        "hits_f1": 24,
+        "north_side_faction": 0,
+        "seed": 100,
+        "shots_f0": 165,
+        "shots_f1": 195,
+        "winner_faction": 1,
+        "winner_side": "z-"
+      },
+      {
+        "alive_f0": 0,
+        "alive_f1": 6,
+        "hits_f0": 13,
+        "hits_f1": 21,
+        "north_side_faction": 1,
+        "seed": 101,
+        "shots_f0": 96,
+        "shots_f1": 123,
+        "winner_faction": 1,
+        "winner_side": "z+"
+      },
+      {
+        "alive_f0": 6,
+        "alive_f1": 0,
+        "hits_f0": 24,
+        "hits_f1": 12,
+        "north_side_faction": 0,
+        "seed": 102,
+        "shots_f0": 209,
+        "shots_f1": 180,
+        "winner_faction": 0,
+        "winner_side": "z+"
+      },
+      {
+        "alive_f0": 1,
+        "alive_f1": 0,
+        "hits_f0": 23,
+        "hits_f1": 21,
+        "north_side_faction": 1,
+        "seed": 103,
+        "shots_f0": 197,
+        "shots_f1": 162,
+        "winner_faction": 0,
+        "winner_side": "z-"
+      }
+    ],
+    "winners_by_faction": [
+      1,
+      1,
+      0,
+      0
+    ],
+    "winners_by_side": [
+      "z-",
+      "z+",
+      "z+",
+      "z-"
+    ]
+  },
+  "target_stability": {
+    "after_contact_lost": {
+      "dropped_after_s": 5.92,
+      "has_order": false,
+      "memory_s": 6.0,
+      "moved_m": 0.0,
+      "states": [
+        "observing",
+        "lost target",
+        "observing"
+      ]
+    },
+    "closer_enemy_switch": true,
+    "two_equal_targets": {
+      "acquisitions": 3,
+      "switches": 0,
+      "targets_over_15s": [
+        113
+      ]
+    }
+  },
+  "terrain": {
+    "behind_ridge": {
+      "max_seeing": 0,
+      "seconds": 10.0,
+      "shots": 0,
+      "sight_checks": 1440
+    },
+    "geometry": {
+      "distance_m": 190.0,
+      "p": [
+        -2168.2,
+        329.5,
+        -7325.4
+      ],
+      "q": [
+        -1992.6,
+        327.9,
+        -7398.1
+      ],
+      "r": [
+        -2034.2,
+        329.9,
+        -7380.9
+      ],
+      "walk_m": 45.0
+    },
+    "over_ridge": {
+      "blockers": {
+        "range": 18,
+        "terrain": 52,
+        "tree": 8
+      },
+      "contact_after_s": 6.9,
+      "north_seeing": 8,
+      "north_shots": 39,
+      "south_shots": 39,
+      "south_status": "MOVING"
+    }
+  },
+  "tiers": {
+    "demotions": 34,
+    "health_vs_shot_damage_mismatch": 0,
+    "phases": [
+      {
+        "camera": "12 km away",
+        "shots": 172,
+        "test_bodies": 0
+      },
+      {
+        "camera": "at the fight",
+        "shots": 190,
+        "test_bodies": 16
+      },
+      {
+        "camera": "12 km away",
+        "shots": 107,
+        "test_bodies": 0
+      },
+      {
+        "camera": "at the fight",
+        "shots": 164,
+        "test_bodies": 16
+      }
+    ],
+    "promotions": 34,
+    "stats": {
+      "blockers": {
+        "range": 77,
+        "terrain": 412,
+        "tree": 34,
+        "unit": 110
+      },
+      "brain": {
+        "acquisitions": 0,
+        "ai_shots": 633,
+        "dropped": 0,
+        "friendly_holds": 0,
+        "sight_checks": 768,
+        "sight_checks_per_frame": 0.8,
+        "sight_us_avg": 110.2,
+        "states": {
+          "dead": 6,
+          "engaging": 16,
+          "idle": 22
+        },
+        "switches": 0,
+        "update_us_avg": 523.5,
+        "update_us_max": 1714
+      },
+      "counter_gaps": 0,
+      "damage_events": 110,
+      "damaging_shots": 110,
+      "duplicate_counters": 0,
+      "hit_ratio": 0.174,
+      "hits": 110,
+      "rate_violations": 0,
+      "reloads": 16,
+      "shots": 633,
+      "sides": [
+        {
+          "alive": 8,
+          "fallen": 0,
+          "hits": 59,
+          "mean_ground_y": 165.23,
+          "misses_long": 240,
+          "misses_short": 24,
+          "shots": 323,
+          "squad": "North-T"
+        },
+        {
+          "alive": 8,
+          "fallen": 0,
+          "hits": 51,
+          "mean_ground_y": 165.27,
+          "misses_long": 236,
+          "misses_short": 23,
+          "shots": 310,
+          "squad": "South-T"
+        }
+      ]
+    }
+  }
+}

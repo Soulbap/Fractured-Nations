@@ -12,6 +12,10 @@ enum Order { NONE, MOVE, HOLD, FOLLOW, REGROUP }
 enum Formation { LINE, COLUMN }
 ## Progress of the current order (set by WorldSim, for the HUD and tests).
 enum Status { IDLE, MOVING, DONE, PARTIAL }
+## COMBAT-01b rules of engagement: WEAPONS_FREE engage detected enemies on their own;
+## HOLD_FIRE observe and track, but never fire on their own.
+enum Roe { WEAPONS_FREE, HOLD_FIRE }
+const ROE_NAMES: Array[String] = ["Weapons free", "Hold fire"]
 
 const ORDER_NAMES: Array[String] = ["None", "Move", "Hold", "Follow", "Regroup"]
 const FORMATION_NAMES: Array[String] = ["Line", "Column"]
@@ -41,6 +45,7 @@ var status := Status.IDLE
 var blocked := PackedInt32Array()
 ## COMBAT-01a: members killed (no longer in `members`; identity kept for the record).
 var fallen := PackedInt32Array()
+var roe := Roe.WEAPONS_FREE
 
 
 func has_member(unit_id: int) -> bool:
@@ -55,6 +60,10 @@ func order_name() -> String:
 	return ORDER_NAMES[order]
 
 
+func roe_name() -> String:
+	return ROE_NAMES[roe]
+
+
 func formation_name() -> String:
 	return FORMATION_NAMES[formation]
 
@@ -65,7 +74,7 @@ func to_dict() -> Dictionary:
 		"leader": leader_id, "order": order, "order_target": order_target, "order_yaw": order_yaw,
 		"follow_unit": follow_unit_id, "follow_squad": follow_squad_id,
 		"formation": formation, "spacing": spacing, "detached": Array(detached),
-		"status": status, "blocked": Array(blocked), "fallen": Array(fallen),
+		"status": status, "blocked": Array(blocked), "fallen": Array(fallen), "roe": roe,
 	}
 
 
@@ -87,4 +96,5 @@ static func from_dict(d: Dictionary) -> SquadState:
 	s.status = d.get("status", Status.IDLE)
 	s.blocked = PackedInt32Array(d.get("blocked", []))
 	s.fallen = PackedInt32Array(d.get("fallen", []))
+	s.roe = d.get("roe", Roe.WEAPONS_FREE)
 	return s

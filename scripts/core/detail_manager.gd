@@ -149,6 +149,8 @@ func _update(force: bool) -> void:
 		if _flat_dist(u.position, observer) > demote_radius:
 			_demote(u)
 			demoted += 1
+	# Counted here: the early returns below would otherwise lose them.
+	demotions += demoted
 	if not settled:
 		return
 	if _recenter_to.is_finite():
@@ -167,7 +169,6 @@ func _update(force: bool) -> void:
 			promoted += 1
 	if promoted > 0 or demoted > 0:
 		promotions += promoted
-		demotions += demoted
 		bodies_changed.emit(promoted, demoted)
 
 
