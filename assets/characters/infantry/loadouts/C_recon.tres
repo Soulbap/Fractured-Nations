@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="InfantryLoadout" load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://scripts/characters/infantry_loadout.gd" id="1_lo"]
+[ext_resource type="Script" path="res://scripts/characters/infantry_equipment.gd" id="2_eq"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/uniform_jacket.tres" id="3_uniform_jacket"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/uniform_trousers.tres" id="4_uniform_trousers"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/uniform_boots.tres" id="5_uniform_boots"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/uniform_gloves.tres" id="6_uniform_gloves"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/helmet_bare.tres" id="7_helmet_bare"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/eyepro.tres" id="8_eyepro"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/vest_standard.tres" id="9_vest_standard"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/belt_heavy.tres" id="10_belt_heavy"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/carbine.tres" id="11_carbine"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/optic_reddot.tres" id="12_optic_reddot"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/laser.tres" id="13_laser"]
+
+[resource]
+script = ExtResource("1_lo")
+id = "C_recon"
+display_name = "Recon (light carrier, NVG helmet, no pack)"
+items = Array[ExtResource("2_eq")]([ExtResource("3_uniform_jacket"), ExtResource("4_uniform_trousers"), ExtResource("5_uniform_boots"), ExtResource("6_uniform_gloves"), ExtResource("7_helmet_bare"), ExtResource("8_eyepro"), ExtResource("9_vest_standard"), ExtResource("10_belt_heavy"), ExtResource("11_carbine"), ExtResource("12_optic_reddot"), ExtResource("13_laser")])

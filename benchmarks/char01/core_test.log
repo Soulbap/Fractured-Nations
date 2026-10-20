@@ -1,0 +1,181 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.351 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3070
+
+WARNING: instance_reset_physics_interpolation() is deprecated.
+   at: _instance_reset_physics_interpolation_bind_compat_104269 (servers/rendering/rendering_server.compat.inc:62)
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
+WARNING: Terrain3D#1996:_notification:869: free_editor_textures requires `Assets` be saved to a file. Do so, or disable the former to turn off this warning
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:259)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _use_infantry_character (res://scripts/units/soldier_body.gd:85)
+       [4] bind (res://scripts/units/soldier_body.gd:59)
+       [5] _spawn_faction (res://scripts/game/core_demo.gd:241)
+       [6] _spawn_units (res://scripts/game/core_demo.gd:224)
+       [7] _ready (res://scripts/game/core_demo.gd:97)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:259)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _use_infantry_character (res://scripts/units/soldier_body.gd:85)
+       [4] bind (res://scripts/units/soldier_body.gd:59)
+       [5] _spawn_faction (res://scripts/game/core_demo.gd:241)
+       [6] _spawn_units (res://scripts/game/core_demo.gd:224)
+       [7] _ready (res://scripts/game/core_demo.gd:97)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:259)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _use_infantry_character (res://scripts/units/soldier_body.gd:85)
+       [4] bind (res://scripts/units/soldier_body.gd:59)
+       [5] _spawn_faction (res://scripts/game/core_demo.gd:241)
+       [6] _spawn_units (res://scripts/game/core_demo.gd:224)
+       [7] _ready (res://scripts/game/core_demo.gd:97)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:259)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _use_infantry_character (res://scripts/units/soldier_body.gd:85)
+       [4] bind (res://scripts/units/soldier_body.gd:59)
+       [5] _spawn_faction (res://scripts/game/core_demo.gd:241)
+       [6] _spawn_units (res://scripts/game/core_demo.gd:224)
+       [7] _ready (res://scripts/game/core_demo.gd:97)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:259)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _use_infantry_character (res://scripts/units/soldier_body.gd:85)
+       [4] bind (res://scripts/units/soldier_body.gd:59)
+       [5] _spawn_faction (res://scripts/game/core_demo.gd:241)
+       [6] _spawn_units (res://scripts/game/core_demo.gd:224)
+       [7] _ready (res://scripts/game/core_demo.gd:97)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:259)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _use_infantry_character (res://scripts/units/soldier_body.gd:85)
+       [4] bind (res://scripts/units/soldier_body.gd:59)
+       [5] _spawn_faction (res://scripts/game/core_demo.gd:241)
+       [6] _spawn_units (res://scripts/game/core_demo.gd:224)
+       [7] _ready (res://scripts/game/core_demo.gd:97)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:259)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _use_infantry_character (res://scripts/units/soldier_body.gd:85)
+       [4] bind (res://scripts/units/soldier_body.gd:59)
+       [5] _spawn_faction (res://scripts/game/core_demo.gd:241)
+       [6] _spawn_units (res://scripts/game/core_demo.gd:224)
+       [7] _ready (res://scripts/game/core_demo.gd:97)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:259)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _use_infantry_character (res://scripts/units/soldier_body.gd:85)
+       [4] bind (res://scripts/units/soldier_body.gd:59)
+       [5] _spawn_faction (res://scripts/game/core_demo.gd:241)
+       [6] _spawn_units (res://scripts/game/core_demo.gd:224)
+       [7] _ready (res://scripts/game/core_demo.gd:97)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:259)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _use_infantry_character (res://scripts/units/soldier_body.gd:85)
+       [4] bind (res://scripts/units/soldier_body.gd:59)
+       [5] _spawn_faction (res://scripts/game/core_demo.gd:241)
+       [6] _spawn_units (res://scripts/game/core_demo.gd:224)
+       [7] _ready (res://scripts/game/core_demo.gd:97)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:265)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _use_infantry_character (res://scripts/units/soldier_body.gd:85)
+       [4] bind (res://scripts/units/soldier_body.gd:59)
+       [5] _spawn_faction (res://scripts/game/core_demo.gd:241)
+       [6] _spawn_units (res://scripts/game/core_demo.gd:224)
+       [7] _ready (res://scripts/game/core_demo.gd:97)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:265)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _use_infantry_character (res://scripts/units/soldier_body.gd:85)
+       [4] bind (res://scripts/units/soldier_body.gd:59)
+       [5] _spawn_faction (res://scripts/game/core_demo.gd:241)
+       [6] _spawn_units (res://scripts/game/core_demo.gd:224)
+       [7] _ready (res://scripts/game/core_demo.gd:97)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:265)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _use_infantry_character (res://scripts/units/soldier_body.gd:85)
+       [4] bind (res://scripts/units/soldier_body.gd:59)
+       [5] _spawn_faction (res://scripts/game/core_demo.gd:241)
+       [6] _spawn_units (res://scripts/game/core_demo.gd:224)
+       [7] _ready (res://scripts/game/core_demo.gd:97)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:265)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _use_infantry_character (res://scripts/units/soldier_body.gd:85)
+       [4] bind (res://scripts/units/soldier_body.gd:59)
+       [5] _spawn_faction (res://scripts/game/core_demo.gd:241)
+       [6] _spawn_units (res://scripts/game/core_demo.gd:224)
+       [7] _ready (res://scripts/game/core_demo.gd:97)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] bake_area (res://scripts/world/area_navigation.gd:48)
+       [1] _ready (res://scripts/game/core_demo.gd:102)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] bake_area (res://scripts/world/area_navigation.gd:48)
+       [1] _ready (res://scripts/game/core_demo.gd:102)
+CORE nav: {"area_m":420.0,"bake_ms":600.953,"center":[-532.47998046875,593.919982910156],"faces":352800,"polygons":2273,"tree_obstructions":138,"vehicle_obstructions":2}
+CORE spawn: {"area_center":[-532.47998046875,38.2968254089355,593.919982910156],"bodies":18,"soldiers":16,"vehicles":2}
+CORE spawn {"bodies":18,"nav":{"area_m":420.0,"bake_ms":600.953,"center":[-532.47998046875,593.919982910156],"faces":352800,"polygons":2273,"tree_obstructions":138,"vehicle_obstructions":2},"one_body_per_unit":true,"soldiers":16,"soldiers_on_floor":16,"terrain_collision_mode":3,"units":18,"vehicles":2}
+CORE start_mode {"camera_current":true,"controlled":true,"mode":0,"possessed":1}
+CORE orders_in_fps {"example_distance_before_after":[79.5238418579102,66.1009521484375],"ordered":6,"progressed_5m_in_3s":6,"with_path":6}
+CORE character01_moving {"bad_ids":[],"bodies_with_full_loadout":16,"loadouts":{"A_standard":10,"B_heavy":6},"moving_bodies_animating":10,"moving_bodies_checked":10,"proxies_with_loadout_mesh":0,"soldier_bodies":16,"soldier_proxies":0}
+CORE shot: res://docs/character01/godot/core01_fps_watching_orders.jpg
+CORE tab_to_rts {"mode":1,"mouse_mode":0,"released_body_controlled":false,"rts_camera_current":true,"state_player_controlled":false}
+CORE rts_click_order {"click_selected":true,"order":1,"order_target_error_m":0.00018310546875,"picked_ground":"(-414.4802, 38.41357, 559.42)","selected":[14],"visible_rect":"(1152.0, 648.0)","window":"(1600, 900)"}
+CORE rts_box_select {"selected":9,"south_units":9}
+CORE shot: res://docs/character01/godot/core01_rts_group_55m.jpg
+CORE shot: res://docs/character01/godot/core01_rts_overview_160m.jpg
+CORE switching {"bodies":18,"counts_preserved":true,"final_mode":1,"max_change_over_sprint_distance":0.6,"max_physics_ticks_per_switch":1,"max_position_change_m":0.0750915259122849,"orders_preserved":true,"possessed_sequence":[1,2,3,4,5,6],"switches":12,"unique_bodies":true,"units":18}
+CORE shot: res://docs/character01/godot/core01_fps_possessed_other_soldier.jpg
+CORE arrival {"arrived":6,"max_drift_after_arrival_m":0.0,"of":6,"per_unit":{"2":{"dist_to_formation_target_m":2.32,"state":2},"3":{"dist_to_formation_target_m":0.19,"state":2},"4":{"dist_to_formation_target_m":2.69,"state":2},"5":{"dist_to_formation_target_m":3.46,"state":2},"6":{"dist_to_formation_target_m":2.5,"state":2},"7":{"dist_to_formation_target_m":3.63,"state":2}},"waited_s":14.5}
+CORE suspend_resume {"distance_3s_later_m":27.2734603881836,"distance_at_release_m":40.7019462585449,"order_kept_while_possessed":true,"state":1,"walked_by_player_m":6.3807954788208}
+CORE abstract_tier {"final_distance_m":0.0,"final_state":2,"has_body":false,"moved_in_2s_m":9.00146484375}
+CORE performance {"fps":{"draw_calls":521.0,"frame_ms_avg":1.65,"frame_ms_max":3.13,"frame_ms_p99":2.77,"frames":180,"nav_ms":0.12,"physics_ms":1.51},"rts_140m":{"draw_calls":232.0,"frame_ms_avg":1.84,"frame_ms_max":2.98,"frame_ms_p99":2.92,"frames":180,"nav_ms":0.16,"physics_ms":1.55}}
+CORE character01 {"bad_ids":[],"bodies_with_full_loadout":16,"loadouts":{"A_standard":10,"B_heavy":6},"moving_bodies_animating":0,"moving_bodies_checked":0,"proxies_with_loadout_mesh":0,"soldier_bodies":16,"soldier_proxies":0}
+CORE PASS []

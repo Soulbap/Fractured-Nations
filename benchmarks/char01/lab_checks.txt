@@ -1,0 +1,8 @@
+CHAR RESULT PASS
+CHAR alignment {"crouch":{"helmet_mm":0.0,"support_mm":2.99995089881122,"weapon_mm":0.0},"crouchwalk":{"helmet_mm":0.0,"support_mm":0.161201227456331,"weapon_mm":0.0},"idle":{"helmet_mm":0.0,"support_mm":0.416909344494343,"weapon_mm":0.0},"run":{"helmet_mm":0.0,"support_mm":0.543235510122031,"weapon_mm":0.0},"sprint":{"helmet_mm":0.0,"support_mm":0.88610325474292,"weapon_mm":0.0},"walk":{"helmet_mm":0.0,"support_mm":0.304414861602709,"weapon_mm":0.0}}
+CHAR foot_slide {"run":{"body_speed":4.5,"max":4.94,"mean_planted_speed":1.95,"samples":37},"run_mid":{"body_speed":3.0,"max":0.0,"mean_planted_speed":0.0,"samples":0},"walk":{"body_speed":1.4,"max":0.59,"mean_planted_speed":0.11,"samples":66},"walk_slow":{"body_speed":1.0,"max":0.44,"mean_planted_speed":0.09,"samples":68}}
+CHAR lod_and_materials {"A_tris":[61139,18471,3897],"B_tris":{"0":65059,"1":19781,"2":4190},"material_names":["Skin","Eye","Iris","Camo_M23","Patch_0","Boot_Leather","Boot_Sole","Glove_Coyote","Polymer_Black","Strap_Black","Polymer_OD","Lens_Tinted","Webbing_RangerGreen","Cordura_RangerGreen","Rubber_Black","Cordura_Coyote","Metal_Black","Metal_Worn","Lens","Helmet_Shell","Webbing_Coyote","Fabric_RangerGreen","Camo_Arid","Patch_1"],"unique_materials_all_loadouts":24}
+CHAR proxy {"aabb":"[P: (-0.339075, 0.000954, -0.825807), S: (0.676137, 2.023138, 1.328075)]","build_ms_faction1":43.089,"surfaces":1,"triangles":4190}
+CHAR shared_rig {"bones":[60,60,60,60],"clips":["CrouchWalk_B","CrouchWalk_F","CrouchWalk_L","CrouchWalk_R","Crouch_Idle","Idle","Run_B","Run_F","Run_L","Run_R","Sprint_F","Walk_B","Walk_F","Walk_L","Walk_R"],"humanoid_bones_present":"53/56","same_clips":true}
+CHAR summary {"failures":[],"pass":true}
+CHAR swap {"back":true,"ms":2.477,"swapped":true}

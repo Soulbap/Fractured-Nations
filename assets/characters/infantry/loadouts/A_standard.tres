@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="InfantryLoadout" load_steps=15 format=3]
+
+[ext_resource type="Script" path="res://scripts/characters/infantry_loadout.gd" id="1_lo"]
+[ext_resource type="Script" path="res://scripts/characters/infantry_equipment.gd" id="2_eq"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/uniform_jacket.tres" id="3_uniform_jacket"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/uniform_trousers.tres" id="4_uniform_trousers"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/uniform_boots.tres" id="5_uniform_boots"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/uniform_gloves.tres" id="6_uniform_gloves"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/helmet_covered.tres" id="7_helmet_covered"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/eyepro.tres" id="8_eyepro"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/vest_standard.tres" id="9_vest_standard"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/belt_standard.tres" id="10_belt_standard"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/pack_assault.tres" id="11_pack_assault"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/carbine.tres" id="12_carbine"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/optic_reddot.tres" id="13_optic_reddot"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/foregrip.tres" id="14_foregrip"]
+
+[resource]
+script = ExtResource("1_lo")
+id = "A_standard"
+display_name = "Standard infantry (rifleman)"
+items = Array[ExtResource("2_eq")]([ExtResource("3_uniform_jacket"), ExtResource("4_uniform_trousers"), ExtResource("5_uniform_boots"), ExtResource("6_uniform_gloves"), ExtResource("7_helmet_covered"), ExtResource("8_eyepro"), ExtResource("9_vest_standard"), ExtResource("10_belt_standard"), ExtResource("11_pack_assault"), ExtResource("12_carbine"), ExtResource("13_optic_reddot"), ExtResource("14_foregrip")])

@@ -52,3 +52,6 @@ override.cfg
 addons/*/bin/~*
 /worlds/edit_test_*/
 /scenes/world/edit_test_*.tscn
+
+# Python bytecode from the Blender build scripts
+__pycache__/

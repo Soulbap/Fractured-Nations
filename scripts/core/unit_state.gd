@@ -30,6 +30,9 @@ var move_state := MoveState.IDLE
 var player_controlled := false
 ## True while a physical body executes this unit (set by WorldSim when a body binds).
 var has_body := false
+## Soldier equipment configuration (InfantryLoadout id, CHARACTER-01). Empty until the unit
+## is first shown; then a deterministic default is stored so it persists.
+var loadout := ""
 
 
 func is_vehicle() -> bool:
@@ -50,7 +53,7 @@ func to_dict() -> Dictionary:
 		"position": position, "yaw": yaw, "velocity": velocity,
 		"health": health, "max_health": max_health, "speed": speed,
 		"order": order, "order_target": order_target, "move_state": move_state,
-		"player_controlled": player_controlled, "has_body": has_body,
+		"player_controlled": player_controlled, "has_body": has_body, "loadout": loadout,
 	}
 
 
@@ -71,4 +74,5 @@ static func from_dict(d: Dictionary) -> UnitState:
 	u.move_state = d.get("move_state", MoveState.IDLE)
 	u.player_controlled = d.get("player_controlled", false)
 	u.has_body = d.get("has_body", false)
+	u.loadout = d.get("loadout", "")
 	return u

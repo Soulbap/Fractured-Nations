@@ -1,0 +1,42 @@
+{
+  "buffer_mem_mb": 186.5,
+  "build_ms": 1014.577,
+  "close": {
+    "anim_ms": 4.087,
+    "avg_ms": 17.4,
+    "cpu_render_ms": 2.37,
+    "draw_calls": 2485.0,
+    "gpu_ms": 6.03,
+    "objects": 3028.0,
+    "primitives": 3085124.0,
+    "process_ms": 24.78,
+    "worst_ms": 21.68
+  },
+  "mid": {
+    "anim_ms": 3.994,
+    "avg_ms": 15.99,
+    "cpu_render_ms": 1.85,
+    "draw_calls": 1668.0,
+    "gpu_ms": 3.73,
+    "objects": 1668.0,
+    "primitives": 2250074.0,
+    "process_ms": 22.34,
+    "worst_ms": 16.67
+  },
+  "old_placeholder": false,
+  "rts": {
+    "anim_ms": 1.34,
+    "avg_ms": 6.29,
+    "cpu_render_ms": 0.82,
+    "draw_calls": 305.0,
+    "gpu_ms": 1.77,
+    "objects": 305.0,
+    "primitives": 1213060.0,
+    "process_ms": 15.62,
+    "worst_ms": 11.2
+  },
+  "soldiers": 150,
+  "static_mem_mb": 189.5,
+  "texture_mem_mb": 119.3,
+  "video_mem_mb": 317.3
+}

@@ -26,6 +26,9 @@ func _init(p_demo: CoreDemo) -> void:
 
 func run(args: PackedStringArray) -> void:
 	shots = "--shots" in args
+	for a in args:
+		if a.begins_with("--shot-dir="):
+			_shot_dir = a.trim_prefix("--shot-dir=")
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	var sim := demo.sim
 	var state := sim.state
@@ -431,6 +434,11 @@ func _flat(a: Vector3, b: Vector3) -> float:
 
 
 func _finish() -> void:
+	# CHARACTER-01: soldiers wear their persisted loadout, pieces attached, proxies in place.
+	var ch := CharacterIntegrationCheck.run(demo.sim)
+	_log("character01", ch.data)
+	for msg in ch.failures:
+		_expect(false, msg)
 	results["failures"] = failures
 	results["pass"] = failures.is_empty()
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://benchmarks/raw"))

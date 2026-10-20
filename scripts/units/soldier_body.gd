@@ -30,6 +30,8 @@ var selected := false:
 @onready var nav: NavigationAgent3D = $NavigationAgent3D
 @onready var visual: Node3D = $Visual
 @onready var ring: MeshInstance3D = $Ring
+## CHARACTER-01 infantry character (null when the placeholder model is used).
+var character: InfantryCharacter
 
 var _safe_velocity := Vector3.ZERO
 var _applied_target := Vector3.INF
@@ -53,10 +55,36 @@ func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
 	rotation.y = unit.yaw
 	velocity = Vector3.ZERO
 	_spawn = global_transform
-	UnitVisuals.apply_faction(visual, unit.faction)
+	if InfantryCharacter.enabled():
+		_use_infantry_character()
+	else:
+		UnitVisuals.apply_faction(visual, unit.faction)
 	UnitVisuals.style_ring(ring, unit.faction, selected)
 	sim.register_body(unit.id, self)
 	_sync_state()
+
+
+## Replaces the placeholder model with the modular infantry character for the unit's
+## loadout. Built once per body; a re-promoted unit gets the same loadout (UnitState).
+func _use_infantry_character() -> void:
+	if unit.loadout == "":
+		unit.loadout = InfantryLoadout.default_for(unit.id)
+	var lo := InfantryLoadout.by_id(unit.loadout)
+	if lo == null:
+		UnitVisuals.apply_faction(visual, unit.faction)
+		return
+	if character and character.loadout == lo and character.faction == unit.faction:
+		return
+	for c in visual.get_children():
+		visual.remove_child(c)
+		c.queue_free()
+	character = InfantryCharacter.new()
+	character.name = "Infantry"
+	character.body = self
+	visual.add_child(character)
+	character.setup(lo, unit.faction)
+	if player_controlled:
+		UnitVisuals.set_shadows_only(visual, true)
 
 
 func _exit_tree() -> void:
