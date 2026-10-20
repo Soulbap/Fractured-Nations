@@ -3,7 +3,14 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **WORLD-SANDBOX-01B** — the war made ready for the first manual playtest: a
+Current state: **INTEGRATION-02** — the unified sandbox on branch `feature/unified-sandbox`,
+the single development baseline: the complete WORLD-SANDBOX-01B war (strategic map, RTS, FPS,
+faction AI, operations, combat, construction, saves) with the CHARACTER-01 soldiers (rig,
+equipment, animations, first-person carbine). See
+[docs/INTEGRATION-02_REPORT.md](docs/INTEGRATION-02_REPORT.md) for what was integrated and how
+to launch it; development rules are in [CLAUDE.md](CLAUDE.md).
+
+Before that, **WORLD-SANDBOX-01B** — the war made ready for the first manual playtest: a
 readable strategic map (smooth zoom towards the cursor; squads always drawn at their real
 positions and grouped on screen only when they would overlap; operation details with march
 progress), a short HUD that names your faction (F1 all controls, F3 technical counters), AI

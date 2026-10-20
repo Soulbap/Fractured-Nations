@@ -132,6 +132,9 @@ func _physics_process(delta: float) -> void:
 	else:
 		_ai_step(delta)
 	_sync_state()
+	if character:
+		# Soldiers holding cover crouch behind it (COMBAT-02 tactic -> CHARACTER-01 pose).
+		character.crouched = not player_controlled and unit.tactic == UnitState.Tactic.IN_COVER
 
 
 func _ai_step(delta: float) -> void:
@@ -335,6 +338,8 @@ func _recoil() -> void:
 func _set_viewmodel(on: bool) -> void:
 	if on and viewmodel == null and unit and unit.weapon_id != &"":
 		viewmodel = Viewmodel.new()
+		viewmodel.loadout = InfantryLoadout.by_id(unit.loadout if unit.loadout != "" else InfantryLoadout.default_for(unit.id))
+		viewmodel.faction = unit.faction
 		camera.add_child(viewmodel)
 		camera.near = 0.03
 		_fov_hip = camera.fov
@@ -345,10 +350,14 @@ func _set_viewmodel(on: bool) -> void:
 
 
 ## Where shots visibly leave this soldier: the first-person muzzle while possessed, else
-## the carbine muzzle of the third-person model.
+## the muzzle of the carbine held by the character (the placeholder model's carbine
+## when the character is disabled).
 func muzzle_position() -> Vector3:
 	if viewmodel and player_controlled:
 		return viewmodel.muzzle.global_position
+	var tip := character.muzzle() if character else null
+	if tip:
+		return tip.global_position
 	return global_transform * Vector3(0.03, 1.22, -0.80)
 
 

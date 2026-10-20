@@ -1,0 +1,69 @@
+# Fractured Nations — development instructions
+
+Modern military sandbox in Godot 4.7.2 (Vulkan, Jolt, Terrain3D). User-facing overview and
+launch instructions: [README.md](README.md). Chat language with the product owner is
+Norwegian; code, comments and docs are English.
+
+## Branch workflow
+
+- **`feature/unified-sandbox` is the single development baseline** (WORLD-SANDBOX-01B +
+  CHARACTER-01, INTEGRATION-02). New milestones branch from it, e.g.
+  `feature/<milestone>` created from `feature/unified-sandbox`, and are merged back into it.
+- Do not continue parallel development on the old feature branches
+  (`feature/world-sandbox-01b`, `feature/character-01`, `feature/combat-*`, ...). They stay
+  as they are, with their worktrees, as history.
+- Use a git worktree per milestone (`../fractured-nations-<milestone>`). Generated, git-ignored
+  data (`worlds/ref_*`, `scenes/world/ref_*.tscn`, `.godot/`) is copied from an existing
+  worktree or rebuilt with `tools/terrain_ref/build_ref_world.sh` (about 14 min).
+- Nothing is merged into `main` without the product owner's explicit approval. Commit and
+  push milestone results; never force-push.
+- Each milestone ends with a report in `docs/<MILESTONE>_REPORT.md` and an updated README.
+
+## Architecture principles
+
+- **One authoritative world simulation** (`WorldState` / `WorldSim`). A soldier is a
+  `UnitState` record; `SoldierBody` (near, physical) and `UnitProxy` (far, cheap) are only
+  representations of it. Possession, orders, combat and saves read and write the record.
+- **No duplicate controllers.** FPS control, AI movement, combat (`CombatSim`, `CombatBrain`),
+  squads and the war (`WarSim`) each have exactly one implementation. If two systems collide,
+  fix the cause; do not add a parallel system, a compatibility layer or a manager that
+  papers over it.
+- **Near/far consistency.** Anything shown on a body must come from persisted record state
+  (e.g. `UnitState.loadout`) so it survives demotion/promotion, possession and save/load.
+  Distant units use the cheapest representation (`InfantryProxyMesh`, abstract simulation).
+- **Data-driven content.** Characters are `InfantryLoadout` / `InfantryEquipment` resources on
+  one shared rig; structures come from `StructureCatalog`. New content is data, not code.
+- **Future-proofing.** Nothing soldier-specific may be hardcoded where vehicles, logistics or
+  bases will need it (e.g. muzzle positions come from the held weapon's mount, not offsets).
+- **Building must work on uneven terrain**: groundwork in `StructureManager`, never
+  flat-site hunting.
+- Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are
+  shadow-fill-rate bound; vegetation lives in 128 m cell chunks. See the WORLD-TECH reports.
+
+## Testing policy (mandatory)
+
+- **Change-impact testing.** Run only the tests that directly cover the changed code and its
+  dependents, e.g. `--sandbox-test --only characters,map_fps,persist`. Say which tests you
+  chose and why before running them.
+- Shared systems changed → also run the affected integration scenarios, not the whole suite.
+- Visual/UI changes: run the real game and inspect screenshots (`--shots`).
+- Never rerun tests that passed unless later changes could affect them. No automatic full
+  regression after a commit, phase or bug fix; at most **one** justified full-suite run per
+  milestone, announced beforehand with the reason.
+- A failing test is investigated and the failing test plus its dependencies rerun, never
+  replaced by a full run.
+- Keep tests to minutes. Accelerate simulated time or place forces close together instead of
+  long real-time runs. Long routes/stress runs are optional.
+- Check that a test really exercises what it claims (INTEGRATION-02: a "pass" with no target
+  alive proved nothing). Scenarios must fail when their precondition is missing.
+
+## Practical notes
+
+- Test runs: `Godot_v4.7.2-stable_win64_console.exe --path . --resolution 1600x900 --log-file x.log res://scenes/game/world_ref_20km.tscn -- --sandbox-test [--shots] [--only a,b] [--shot-dir=res://docs/...]`.
+  Use the GUI exe with `--log-file` for runs that may spam errors.
+- After adding `class_name` scripts or assets run `Godot ... --headless --path . --import` once.
+- A script that fails to compile makes a test hang until timeout; check the log head first.
+- Blender asset pipeline: `tools/blender/` (+Y forward, one joined mesh, origin on the ground,
+  material names drive faction colours; character: `tools/blender/character/`, standard in
+  `docs/CHARACTER_STANDARD.md`). Always inspect imported assets in Godot, not only Blender.
+- Python on Windows: open files with `encoding='utf-8'`.

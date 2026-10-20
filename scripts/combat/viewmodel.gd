@@ -1,52 +1,103 @@
-## First-person rifle (COMBAT-01a): the soldier model's carbine rebuilt from the same
-## part sizes as tools/blender/make_soldier.py, held in front of the possessed soldier's
-## camera. Presentation only: it kicks back on a shot and moves to the centre while
-## aiming. The muzzle marker is where the first-person muzzle flash and tracer start.
+## First-person weapon (COMBAT-01a, CHARACTER-01): the weapon pieces of the possessed
+## soldier's loadout (weapon, optic, foregrip ...), the same assets the third-person
+## character carries, held in front of the camera. Presentation only: it kicks back on a
+## shot and moves to the centre while aiming. The muzzle mount is where the first-person
+## muzzle flash and tracer start.
 class_name Viewmodel
 extends Node3D
 
-const HIP := Vector3(0.17, -0.19, -0.42)
-## Aiming: centred just below the line of sight, so the target stays visible over the
-## optic (no see-through sight model in this milestone).
-const ADS := Vector3(0.0, -0.135, -0.34)
+## Weapon space has its origin at the pistol grip (CHARACTER_STANDARD.md); these place the
+## grip relative to the camera (Godot axes: -Z forward).
+const HIP := Vector3(0.16, -0.27, -0.50)
+## Aiming: the line of sight runs through the optic window (its lens is see-through here).
+const ADS := Vector3(0.0, -0.172, -0.36)
 
+## Loadout whose weapon pieces are shown; set before the node enters the tree.
+var loadout: InfantryLoadout
+var faction := 0
 var aiming := false
-var muzzle: Marker3D
+var muzzle: Node3D
 var _kick := 0.0
+static var _lens_mat: StandardMaterial3D
+static var _housing_mat: ShaderMaterial
 
 
 func _ready() -> void:
-	var metal := StandardMaterial3D.new()
-	metal.albedo_color = Color(0.13, 0.14, 0.13)
-	metal.roughness = 0.55
-	metal.metallic = 0.4
-	var furniture := StandardMaterial3D.new()
-	furniture.albedo_color = Color(0.22, 0.23, 0.19)
-	furniture.roughness = 0.85
-	# Blender part (size x, y forward, z up; offset) -> Godot box (x, z, y) at (x, z, -y).
-	_part(Vector3(0.05, 0.28, 0.075), Vector3(0, 0.0, 0.0), metal)       # receiver
-	_part(Vector3(0.045, 0.26, 0.055), Vector3(0, 0.27, 0.005), furniture)  # handguard
-	_part(Vector3(0.045, 0.24, 0.06), Vector3(0, -0.25, -0.005), furniture) # stock
-	_part(Vector3(0.03, 0.045, 0.11), Vector3(0, -0.04, -0.085), furniture) # grip
-	_part(Vector3(0.03, 0.065, 0.17), Vector3(0, 0.07, -0.11), metal)       # magazine
-	_part(Vector3(0.035, 0.10, 0.05), Vector3(0, 0.0, 0.06), metal)         # optic
-	_part(Vector3(0.04, 0.44, 0.012), Vector3(0, 0.17, 0.042), metal)       # rail
-	_part(Vector3(0.016, 0.16, 0.016), Vector3(0, 0.46, 0.008), metal)      # barrel
-	muzzle = Marker3D.new()
-	muzzle.position = Vector3(0, 0.008, -0.55)
-	add_child(muzzle)
+	var mounts := {}
+	# Weapon first, then the accessories mounted on it ("weapon:ATT_Optic" ...).
+	for pass_i in 2:
+		for it in loadout.items:
+			if not it.slot.begins_with("weapon") or it.scene == null or it.attach.contains(":") != (pass_i == 1):
+				continue
+			var parent: Node3D = mounts.get(it.attach) if pass_i == 1 else self
+			if parent == null:
+				continue
+			var inst: Node3D = it.scene.instantiate()
+			parent.add_child(inst)
+			for n in inst.find_children("*", "", true, false):
+				if n is MeshInstance3D:
+					_style(n, it.slot == "weapon_optic")
+				elif String(n.name).begins_with("ATT_") or String(n.name).begins_with("GRIP_"):
+					mounts["%s:%s" % [it.slot, n.name]] = n
+	muzzle = mounts.get("weapon:ATT_Muzzle")
+	if muzzle == null:
+		muzzle = Node3D.new()
+		add_child(muzzle)
 	position = HIP
 
 
-func _part(size: Vector3, off: Vector3, mat: Material) -> void:
-	var mi := MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = Vector3(size.x, size.z, size.y)
-	mi.mesh = box
-	mi.material_override = mat
-	mi.position = Vector3(off.x, off.z, -off.y)
+## Only the closest LOD is shown, with the character's materials, and no shadow of its own
+## (the first-person body already casts one).
+func _style(mi: MeshInstance3D, sight := false) -> void:
+	if String(mi.name).contains("_LOD") and not String(mi.name).ends_with("_LOD0"):
+		mi.queue_free()
+		return
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(mi)
+	for s in mi.mesh.get_surface_count():
+		var mat := mi.mesh.surface_get_material(s)
+		if mat:
+			var override: Material
+			if mat.resource_name == "Lens":
+				override = _lens()
+			elif sight and mat.resource_name == "Metal_Black":
+				override = _sight_housing()
+			else:
+				override = InfantryMaterials.get_material(mat.resource_name, faction)
+			mi.set_surface_override_material(s, override)
+
+
+## Sight housing for the first-person view. The third-person model's tube is a solid
+## cylinder; here the faces across the bore are cut away so the line of sight passes
+## through the optic (the rim, mount and turrets stay). Optic axis: z in mesh space,
+## centre height 0.058 above the mount (char_weapon.build_red_dot).
+static func _sight_housing() -> ShaderMaterial:
+	if _housing_mat == null:
+		var sh := Shader.new()
+		sh.code = """shader_type spatial;
+render_mode cull_disabled;
+varying vec3 v_pos;
+varying vec3 v_nrm;
+void vertex() { v_pos = VERTEX; v_nrm = NORMAL; }
+void fragment() {
+	if (length(vec2(v_pos.x, v_pos.y - 0.058)) < 0.0195 && abs(v_nrm.z) > 0.7) { discard; }
+	ALBEDO = vec3(0.045, 0.045, 0.048);
+	METALLIC = 0.85;
+	ROUGHNESS = 0.42;
+}"""
+		_housing_mat = ShaderMaterial.new()
+		_housing_mat.shader = sh
+	return _housing_mat
+
+
+## Optic glass for the first-person view: nearly clear, so the sight picture is visible.
+static func _lens() -> StandardMaterial3D:
+	if _lens_mat == null:
+		_lens_mat = StandardMaterial3D.new()
+		_lens_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_lens_mat.albedo_color = Color(0.55, 0.75, 0.9, 0.08)
+		_lens_mat.roughness = 0.05
+		_lens_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return _lens_mat
 
 
 func kick() -> void:

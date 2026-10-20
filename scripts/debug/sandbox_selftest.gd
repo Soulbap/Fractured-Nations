@@ -19,7 +19,10 @@ var warps := []
 
 func run(args: PackedStringArray) -> void:
 	shots = "--shots" in args
-	_shot_dir = "res://docs/sandbox01b"
+	_shot_dir = "res://docs/integration02"
+	for a in args:
+		if a.begins_with("--shot-dir="):
+			_shot_dir = a.trim_prefix("--shot-dir=")
 	var oi := args.find("--only")
 	if oi >= 0 and oi + 1 < args.size():
 		only = args[oi + 1].split(",")
@@ -85,6 +88,8 @@ func run(args: PackedStringArray) -> void:
 		_log("player_offensive", await _offensive())
 	if _want("reinforce"):
 		_log("reinforcement", await _reinforce())
+	if _want("characters"):
+		_log("characters", await _characters())
 	if _want("map_fps"):
 		_log("map_rts_fps", await _map_to_fps())
 	if _want("navigation"):
@@ -118,6 +123,173 @@ func _obj(name: String) -> ObjectiveState:
 		if o.obj_name == name:
 			return o
 	return null
+
+
+# --- INTEGRATION-02: CHARACTER-01 soldiers in the running war ---------------------------
+
+## Soldiers wear their persisted loadout (bodies: full character, distant: proxy mesh),
+## animate with their real velocity, hold the carbine at the muzzle shots leave from,
+## keep their kit through possession, demotion / promotion and save / load.
+func _characters() -> Dictionary:
+	_pause_ai(true)
+	var out := {}
+	var hq := _obj("North HQ")
+	var base := _near_point(hq.position, _obj("Sentrum").position, 90.0)
+	var own := _spawn(0, base, 8)
+	demo.rts_camera.frame(base, 0.0, 60.0)
+	await _seconds(4.0)
+	var check := CharacterIntegrationCheck.run(demo.sim)
+	out["start"] = check.data
+	for msg in check.failures:
+		_expect(false, msg)
+	var bodies_own := 0
+	for id in own.members:
+		bodies_own += 1 if demo.sim.body_of(id) is SoldierBody else 0
+	_expect(bodies_own == own.members.size(), "characters: only %d of %d near soldiers have bodies" % [bodies_own, own.members.size()])
+	# Movement: the animation follows the real velocity (walk speed 4.5 m/s).
+	demo.sim.squads.order_move([own.id], base + Vector3(0, 0, 60))
+	await _seconds(3.0)
+	var speeds := []
+	var anim_ok := 0
+	var checked := 0
+	for id in own.members:
+		var b := demo.sim.body_of(id) as SoldierBody
+		if b == null or b.character == null:
+			continue
+		var v := Vector2(b.velocity.x, b.velocity.z).length()
+		if v > 0.5:
+			checked += 1
+			speeds.append(snappedf(v, 0.1))
+			var st: Dictionary = b.character.anim_state()
+			if st.move_amount > 0.5 and absf(st.move.length() - v) < 1.5:
+				anim_ok += 1
+	out["movement"] = {"moving": checked, "animating": anim_ok, "speeds": speeds}
+	_expect(checked > 0 and anim_ok == checked, "characters: moving soldiers do not animate with their velocity (%s)" % str(out.movement))
+	if shots:
+		_frame_action(ws.squad_center(own), demo.rts_camera.yaw, 25.0)
+		await _seconds(0.5)
+		_shot("char_rts_25m")
+		_frame_action(ws.squad_center(own), demo.rts_camera.yaw, 90.0)
+		await _seconds(0.5)
+		_shot("char_rts_90m")
+	# Possession, aiming and shooting at a fresh enemy squad (the AI holds fire meanwhile).
+	var pid: int = own.members[0]
+	var foe := _spawn(1, _u(pid).position + Vector3(45, 0, 30), 4)
+	var brain_was := brain.enabled
+	brain.enabled = false
+	await _seconds(2.0)
+	var body := await _possess(pid)
+	var poss := {"possessed": body != null}
+	if body:
+		var tgt := -1
+		for id in foe.members:
+			if _u(id).alive:
+				tgt = id
+				break
+		poss["viewmodel"] = body.viewmodel != null
+		_expect(body.viewmodel != null, "characters: possessed soldier has no first-person weapon")
+		if body.viewmodel:
+			var m := body.viewmodel.muzzle
+			var rel := body.camera.global_transform.affine_inverse() * m.global_position
+			poss["viewmodel_muzzle_cam_space"] = [snappedf(rel.x, 0.01), snappedf(rel.y, 0.01), snappedf(rel.z, 0.01)]
+			_expect(rel.z < -0.3 and absf(rel.x) < 0.4 and rel.y > -0.5 and rel.y < 0.1, "characters: viewmodel muzzle is not in front of the camera %s" % str(rel))
+		if tgt > 0:
+			await _fps_shot_at(body, _u(tgt).position + Vector3.UP * 1.3)
+			await _seconds(0.3)
+			if shots:
+				_shot("char_fps_hip")
+			Input.action_press("aim")
+			await _seconds(0.6)
+			if shots:
+				_shot("char_fps_ads")
+			var n0 := shot_log.size()
+			Input.action_press("fire")
+			await _physics(3)
+			if shots:
+				_shot("char_fps_firing")
+			await _physics(8)
+			Input.action_release("fire")
+			Input.action_release("aim")
+			poss["player_shots"] = shot_log.size() - n0
+			_expect(poss.player_shots > 0, "characters: possessed soldier did not fire")
+		else:
+			_expect(false, "characters: no enemy target for the possessed soldier")
+		await _seconds(0.5)
+		_press(KEY_TAB)
+		await _physics(8)
+		var back := demo.sim.body_of(pid) as SoldierBody
+		poss["back_in_rts"] = back != null and back.character != null and not back.player_controlled and demo.game.mode != GameController.Mode.FPS
+		_expect(poss.back_in_rts, "characters: soldier did not return to simulation control with its character")
+	out["possession"] = poss
+	brain.enabled = brain_was
+	# Third-person muzzle: shots leave from the carbine's muzzle, not a guessed offset.
+	var mz := {}
+	for id in own.members:
+		var b := demo.sim.body_of(id) as SoldierBody
+		if b and b.character and b.character.muzzle():
+			var rel := b.global_transform.affine_inverse() * b.muzzle_position()
+			mz = {"local": [snappedf(rel.x, 0.01), snappedf(rel.y, 0.01), snappedf(rel.z, 0.01)]}
+			_expect(rel.y > 0.7 and rel.y < 1.7 and rel.z < -0.1 and rel.z > -1.4 and absf(rel.x) < 0.6, "characters: carbine muzzle is outside the plausible zone %s" % str(rel))
+			break
+	_expect(not mz.is_empty(), "characters: no soldier body exposes a carbine muzzle")
+	out["muzzle"] = mz
+	# Near / far: distant soldiers drop to proxies, return with the same kit.
+	# The enemy squad is gone for this part (no more deaths while soldiers change tier).
+	brain.enabled = false
+	var ids: Array = Array(own.members).filter(func(id: int) -> bool: return _u(id).alive)
+	var kit := {}
+	for id in ids:
+		kit[id] = _u(id).loadout
+	demo.rts_camera.frame(base + Vector3(2500, 0, 2500), 0.0, 100.0)
+	await _seconds(4.0)
+	var far_bodies := 0
+	var far_proxies := 0
+	for id in ids:
+		far_bodies += 1 if demo.sim.body_of(id) is SoldierBody else 0
+		far_proxies += 1 if demo.sim.proxies.has(id) else 0
+	var far_check := CharacterIntegrationCheck.run(demo.sim)
+	for msg in far_check.failures:
+		_expect(false, msg)
+	demo.rts_camera.frame(base, 0.0, 60.0)
+	await _seconds(5.0)
+	var back_bodies := 0
+	var same_kit := 0
+	for id in ids:
+		var b := demo.sim.body_of(id) as SoldierBody
+		if b and b.character:
+			back_bodies += 1
+			same_kit += 1 if _u(id).loadout == kit[id] and b.character.loadout.id == kit[id] else 0
+	out["near_far"] = {"far_bodies": far_bodies, "far_proxies": far_proxies, "far_check": far_check.data, "back_bodies": back_bodies, "same_kit": same_kit}
+	_expect(far_bodies == 0 and far_proxies == ids.size(), "characters: distant soldiers are not proxies (%s)" % str(out.near_far))
+	_expect(back_bodies == ids.size() and same_kit == back_bodies, "characters: soldiers did not return with the same kit (%s)" % str(out.near_far))
+	if shots:
+		_frame_action(ws.squad_center(own), demo.rts_camera.yaw, 40.0)
+		await _seconds(0.5)
+		_shot("char_rts_after_return")
+	# Save / load keeps every soldier's loadout, bodies re-wear it.
+	var before := {}
+	for u in demo.sim.state.soldiers():
+		before[u.id] = u.loadout
+	_press(KEY_F5)
+	await _frames(2)
+	for id in own.members:
+		_u(id).loadout = ""
+	_press(KEY_F9)
+	await _seconds(3.0)
+	var lost := 0
+	for id in before:
+		var u := _u(id)
+		if u == null or u.loadout != before[id]:
+			lost += 1
+	var after_check := CharacterIntegrationCheck.run(demo.sim)
+	for msg in after_check.failures:
+		_expect(false, msg)
+	out["save_load"] = {"soldiers": before.size(), "loadout_mismatches": lost, "after": after_check.data}
+	_expect(lost == 0, "characters: %d soldiers lost their loadout through save / load" % lost)
+	brain.enabled = brain_was
+	_pause_ai(false)
+	return out
+
 
 
 # --- Camera transitions ---------------------------------------------------------------------

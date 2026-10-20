@@ -331,6 +331,11 @@ func _process(delta: float) -> void:
 		_frame_skip = 0
 
 
+## Muzzle mount of the held weapon (null when the loadout has no weapon with one).
+func muzzle() -> Node3D:
+	return mounts.get("weapon:ATT_Muzzle")
+
+
 func world_velocity() -> Vector3:
 	return body.velocity if body else debug_velocity
 
