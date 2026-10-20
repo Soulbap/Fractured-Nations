@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"t_wall"
+display_name = "T-wall blast wall"
+category = "Defences"
+description = "Reinforced concrete T-wall segment: 1.52 m long, 3.66 m high, 0.20-0.30 m stem on a 1.22 x 0.30 m base."
+mesh_path = "res://assets/military/props/t_wall.glb"
+size = Vector3(1.52, 3.768, 1.228)
+linear = true
+module_length = 1.52
+layout = 0
+fit = 1
+connect_group = &"twall"
+max_slope_deg = 12
+max_ground_gap = 0.4
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-0.76, 0, -0.61, 1.52, 0.3, 1.22), AABB(-0.76, 0, -0.15, 1.52, 3.66, 0.3)])
+ramps = Array[AABB]([])

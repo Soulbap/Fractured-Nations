@@ -3,7 +3,18 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **WORLD-PLAYTEST-01** (branch `feature/world-playtest-01`, from the unified
+Current state: **WORLD-INTEGRATION-03** (branch `feature/world-integration-03`, the new
+development baseline) — WORLD-PLAYTEST-01 and ASSET-PRODUCTION-01 brought together in one
+playable sandbox: the corrected 20 km world with its road network, player-built roads and
+yards; three infantry families in the war (North wears NATO kit, South Russian, East Chinese —
+a configurable table in `WorldState.FACTION_LOADOUTS`, not a faction identity); the nine
+military base buildings, 24 base-expansion modules and a curated set of props placeable
+through the construction menu (six collapsible categories: Buildings, Training, Logistics,
+Defences, Infrastructure, Roads) with the existing groundwork, clearing, collision and
+navigation; the 6x6 truck and 8x8 APC validated in the world as visual prototypes. See
+[docs/WORLD-INTEGRATION-03_REPORT.md](docs/WORLD-INTEGRATION-03_REPORT.md).
+
+Before that, **WORLD-PLAYTEST-01** (branch `feature/world-playtest-01`, from the unified
 sandbox) — fixes from the first manual playtest: the river runs in a natural valley instead
 of a 27 m deep canal, bridges span an open river (they stood on earth dams), the 300 km road
 network was audited and repaired, the player can build dirt / gravel / asphalt roads as curves

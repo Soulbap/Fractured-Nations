@@ -91,7 +91,7 @@ func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
 ## loadout. Built once per body; a re-promoted unit gets the same loadout (UnitState).
 func _use_infantry_character() -> void:
 	if unit.loadout == "":
-		unit.loadout = InfantryLoadout.default_for(unit.id)
+		unit.loadout = InfantryLoadout.default_for(unit.id, unit.faction)
 	var lo := InfantryLoadout.by_id(unit.loadout)
 	if lo == null:
 		UnitVisuals.apply_faction(visual, unit.faction)
@@ -338,7 +338,7 @@ func _recoil() -> void:
 func _set_viewmodel(on: bool) -> void:
 	if on and viewmodel == null and unit and unit.weapon_id != &"":
 		viewmodel = Viewmodel.new()
-		viewmodel.loadout = InfantryLoadout.by_id(unit.loadout if unit.loadout != "" else InfantryLoadout.default_for(unit.id))
+		viewmodel.loadout = InfantryLoadout.by_id(unit.loadout if unit.loadout != "" else InfantryLoadout.default_for(unit.id, unit.faction))
 		viewmodel.faction = unit.faction
 		camera.add_child(viewmodel)
 		camera.near = 0.03

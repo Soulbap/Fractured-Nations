@@ -6,9 +6,11 @@ Norwegian; code, comments and docs are English.
 
 ## Branch workflow
 
-- **`feature/unified-sandbox` is the single development baseline** (WORLD-SANDBOX-01B +
-  CHARACTER-01, INTEGRATION-02). New milestones branch from it, e.g.
-  `feature/<milestone>` created from `feature/unified-sandbox`, and are merged back into it.
+- **`feature/world-integration-03` is the current development baseline** (worktree
+  `../fractured-nations-integration03`): `feature/unified-sandbox` (INTEGRATION-02) +
+  `feature/world-playtest-01` + `feature/asset-production-01`, integrated in
+  WORLD-INTEGRATION-03. New milestones branch from it, e.g. `feature/<milestone>`, and are
+  merged back into it (or into its successor integration branch).
 - Do not continue parallel development on the old feature branches
   (`feature/world-sandbox-01b`, `feature/character-01`, `feature/combat-*`, ...). They stay
   as they are, with their worktrees, as history.
@@ -32,7 +34,12 @@ Norwegian; code, comments and docs are English.
   (e.g. `UnitState.loadout`) so it survives demotion/promotion, possession and save/load.
   Distant units use the cheapest representation (`InfantryProxyMesh`, abstract simulation).
 - **Data-driven content.** Characters are `InfantryLoadout` / `InfantryEquipment` resources on
-  one shared rig; structures come from `StructureCatalog`. New content is data, not code.
+  one shared rig; structures come from `StructureCatalog` (code-built field set +
+  `assets/military/defs/**/*.tres`; props via `tools/asset_production/make_prop_defs.py`).
+  New content is data, not code.
+- **Faction look is a table, not an identity.** `WorldState.FACTION_LOADOUTS` (and
+  `InfantryMaterials.FACTION_CAMO`) say what a faction's soldiers wear; nothing in the war,
+  diplomacy or combat reads it. North / South / East stay the faction identities.
 - **Future-proofing.** Nothing soldier-specific may be hardcoded where vehicles, logistics or
   bases will need it (e.g. muzzle positions come from the held weapon's mount, not offsets).
 - **One road network** (`RoadNetwork`, `WorldState.roads`): the world's roads.json plus the
@@ -63,7 +70,8 @@ Norwegian; code, comments and docs are English.
 ## Practical notes
 
 - Test runs: `Godot_v4.7.2-stable_win64_console.exe --path . --resolution 1600x900 --log-file x.log res://scenes/game/world_ref_20km.tscn -- --sandbox-test [--shots] [--only a,b] [--shot-dir=res://docs/...]`.
-  Use the GUI exe with `--log-file` for runs that may spam errors.
+  Use the GUI exe with `--log-file` for runs that may spam errors. Integration scenarios of the
+  combined baseline: `--integration03-test --only catalog,factions,base,base_nav,long_route,views,persist,vehicles,perf`.
 - After adding `class_name` scripts or assets run `Godot ... --headless --path . --import` once.
 - A script that fails to compile makes a test hang until timeout; check the log head first.
 - Blender asset pipeline: `tools/blender/` (+Y forward, one joined mesh, origin on the ground,

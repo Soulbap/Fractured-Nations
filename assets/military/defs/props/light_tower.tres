@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"light_tower"
+display_name = "Mobile light tower"
+category = "Infrastructure"
+description = "Trailer light tower 2.6 x 1.4 m, mast raised to 9.0 m, four LED floodlights."
+mesh_path = "res://assets/military/props/light_tower.glb"
+size = Vector3(4.11, 9.341, 2.38)
+max_slope_deg = 10
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-1.2, 0, -0.65, 2.4, 1.5, 1.3), AABB(-0.9, 1.5, -0.1, 0.2, 7.6, 0.2)])
+ramps = Array[AABB]([])

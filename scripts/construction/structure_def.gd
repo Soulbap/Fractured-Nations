@@ -63,8 +63,12 @@ enum Fit {
 @export var sink := 0.05
 ## Carved out of the navmesh (gates are not: soldiers walk through them).
 @export var blocks_navigation := true
-## Local-space collision boxes; empty means one box of `size`.
+## Local-space collision boxes; empty means one box of `size` (unless `walkable`).
 @export var collision_boxes: Array[AABB] = []
+## WORLD-INTEGRATION-03: no collision body and no navmesh obstacle at all (parking pads,
+## low-crawl wire, tyre runs, camouflage nets, signs): units walk over / under it. The
+## footprint (`size`) is still used for overlap and terrain checks.
+@export var walkable := false
 ## Local-space walkable wedges (stairs): the box rises from y0 at max Z to y1 at min Z.
 @export var ramps: Array[AABB] = []
 ## Lines snap their ends to structures with the same group (fence <-> gate, hesco <-> hesco).
@@ -113,6 +117,9 @@ func bounds() -> AABB:
 	for box in get_collision_boxes() + ramps:
 		b = box if first else b.merge(box)
 		first = false
+	if first:
+		# Nothing solid (walkable): the footprint is the asset's size.
+		b = AABB(Vector3(-size.x * 0.5, 0.0, -size.z * 0.5), size)
 	if linear:
 		b.position.x = -module_length * 0.5
 		b.size.x = module_length
@@ -120,6 +127,8 @@ func bounds() -> AABB:
 
 
 func get_collision_boxes() -> Array[AABB]:
+	if walkable:
+		return []
 	if not collision_boxes.is_empty():
 		return collision_boxes
 	return [AABB(Vector3(-size.x * 0.5, 0.0, -size.z * 0.5), size)]

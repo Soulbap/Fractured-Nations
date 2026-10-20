@@ -64,6 +64,7 @@ var _combat_scale_selftest: CombatScaleSelfTest
 var _combat_tactics_selftest: CombatTacticsSelfTest
 var _sandbox_selftest: SandboxSelfTest
 var _playtest_selftest: PlaytestSelfTest
+var _integration03_selftest: Integration03SelfTest
 ## WORLD-SANDBOX-01: true when the game runs the three-faction war (the default).
 var sandbox := false
 var routes: StrategicRoutes
@@ -292,6 +293,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--base-test" in args:
 		_base_selftest = BaseSelfTest.new(self)
 		_base_selftest.run.call_deferred(args)
+	elif "--integration03-test" in args:
+		_integration03_selftest = Integration03SelfTest.new(self)
+		_integration03_selftest.run.call_deferred(args)
 	elif "--playtest-test" in args:
 		_playtest_selftest = PlaytestSelfTest.new(self)
 		_playtest_selftest.run.call_deferred(args)

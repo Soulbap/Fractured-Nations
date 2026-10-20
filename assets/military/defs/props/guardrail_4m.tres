@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"guardrail_4m"
+display_name = "Guardrail"
+category = "Infrastructure"
+description = "W-beam guardrail module 4.0 m, rail centre 0.65 m, posts C100 every 2 m driven 1.0 m."
+mesh_path = "res://assets/military/roads/guardrail_4m.glb"
+size = Vector3(4, 0.8, 0.29)
+linear = true
+module_length = 4
+layout = 0
+fit = 2
+connect_group = &"guardrail"
+max_slope_deg = 16
+max_ground_gap = 0.5
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-2, 0, -0.3, 4, 0.8, 0.3)])
+ramps = Array[AABB]([])

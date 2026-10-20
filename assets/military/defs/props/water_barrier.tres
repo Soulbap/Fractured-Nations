@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"water_barrier"
+display_name = "Water-filled barrier"
+category = "Defences"
+description = "Plastic water-filled barrier 2.0 x 0.5 x 1.0 m (red/white alternating)."
+mesh_path = "res://assets/military/props/water_barrier.glb"
+size = Vector3(2, 1.03, 0.5)
+linear = true
+module_length = 2
+layout = 0
+fit = 2
+connect_group = &"water"
+max_slope_deg = 12
+max_ground_gap = 0.25
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-1, 0, -0.25, 2, 1, 0.5)])
+ramps = Array[AABB]([])

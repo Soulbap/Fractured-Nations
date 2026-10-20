@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"sandbag_wall_low_2m"
+display_name = "Sandbag wall (low)"
+category = "Defences"
+description = "Sandbag wall 2.0 m long, 5 courses (0.60 m high)."
+mesh_path = "res://assets/military/props/sandbag_wall_low_2m.glb"
+size = Vector3(2, 0.619, 0.671)
+linear = true
+module_length = 2
+layout = 0
+fit = 2
+connect_group = &"sandbag"
+max_slope_deg = 18
+max_ground_gap = 0.35
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-1, 0, -0.32, 2, 0.6, 0.64)])
+ramps = Array[AABB]([])

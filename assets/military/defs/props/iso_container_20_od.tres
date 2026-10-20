@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"iso_container_20_od"
+display_name = "Container 20 ft"
+category = "Logistics"
+description = "20 ISO dry freight container (6.058 x 2.438 x 2.591 m), doors at the front."
+mesh_path = "res://assets/military/props/iso_container_20_od.glb"
+size = Vector3(2.444, 2.591, 6.125)
+max_slope_deg = 6
+max_ground_gap = 0.35
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-1.219, 0, -3.029, 2.438, 2.591, 6.058)])
+ramps = Array[AABB]([])

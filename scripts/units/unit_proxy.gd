@@ -37,7 +37,7 @@ func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
 	elif InfantryCharacter.enabled():
 		# CHARACTER-01: static posed far-view mesh of the unit's loadout (one draw call).
 		if unit.loadout == "":
-			unit.loadout = InfantryLoadout.default_for(unit.id)
+			unit.loadout = InfantryLoadout.default_for(unit.id, unit.faction)
 		var pm := InfantryProxyMesh.get_mesh(unit.loadout, unit.faction)
 		if pm:
 			_marker.mesh = pm

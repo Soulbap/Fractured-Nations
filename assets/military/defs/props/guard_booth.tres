@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"guard_booth"
+display_name = "Guard booth"
+category = "Defences"
+description = "Steel sentry booth 1.6 x 1.6 m, 2.6 m high on a 0.15 m plinth, wrap-around windows, door at the back."
+mesh_path = "res://assets/military/props/guard_booth.glb"
+size = Vector3(2, 2.68, 2.08)
+max_slope_deg = 8
+max_ground_gap = 0.4
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-0.8, -0.3, -0.8, 1.6, 2.98, 1.6)])
+ramps = Array[AABB]([])

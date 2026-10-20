@@ -29,6 +29,13 @@ var world_seed := 1
 ## WORLD-SANDBOX-01: three factions (North is the player's by default).
 const FACTION_NAMES: Array[String] = ["North", "South", "East"]
 const FACTION_COLORS: Array[Color] = [Color(0.3, 0.55, 1.0), Color(1.0, 0.4, 0.2), Color(0.25, 0.85, 0.55)]
+## WORLD-INTEGRATION-03: the equipment family (InfantryLoadout id) a faction's soldiers wear
+## when a soldier record has no loadout yet. A provisional visual assignment (North: NATO
+## kit, South: Russian, East: Chinese) that only InfantryLoadout.default_for() reads;
+## faction identity, diplomacy, combat and objectives never look at it. Change the table
+## (and InfantryMaterials.FACTION_CAMO for the shared camouflage pieces) to re-dress a
+## faction; a soldier keeps the loadout stored in its record.
+const FACTION_LOADOUTS: Array[String] = ["NATO_rifleman", "RU_rifleman", "CN_rifleman"]
 
 ## id -> UnitState
 var units := {}
@@ -271,6 +278,11 @@ static func faction_name(faction: int) -> String:
 
 static func faction_color(faction: int) -> Color:
 	return FACTION_COLORS[faction] if faction >= 0 and faction < FACTION_COLORS.size() else Color.WHITE
+
+
+## The faction's configured equipment family, or "" when it has none.
+static func faction_loadout(faction: int) -> String:
+	return FACTION_LOADOUTS[faction] if faction >= 0 and faction < FACTION_LOADOUTS.size() else ""
 
 
 ## Deep copy of everything, for save/load and for consistency checks in tests.

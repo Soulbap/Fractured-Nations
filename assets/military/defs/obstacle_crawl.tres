@@ -14,5 +14,6 @@ max_slope_deg = 10
 max_ground_gap = 0.3
 sink = 0.05
 blocks_navigation = false
+walkable = true
 collision_boxes = Array[AABB]([])
 ramps = Array[AABB]([])

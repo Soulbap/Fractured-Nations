@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"generator_60kw"
+display_name = "Generator 60 kW"
+category = "Infrastructure"
+description = "Skid-mounted 60 kW diesel generator set, enclosure 2.6 x 1.1 x 1.5 m on a base fuel tank."
+mesh_path = "res://assets/military/props/generator_60kw.glb"
+size = Vector3(2.7, 2.13, 1.15)
+max_slope_deg = 8
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-1.35, 0, -0.575, 2.7, 1.6, 1.15)])
+ramps = Array[AABB]([])

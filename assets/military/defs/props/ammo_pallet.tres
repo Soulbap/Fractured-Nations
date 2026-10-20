@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"ammo_pallet"
+display_name = "Ammunition pallet"
+category = "Logistics"
+description = "EUR pallet with 3 x 4 x 2 wooden ammunition boxes, strapped (1.2 x 0.8 x 0.66 m)."
+mesh_path = "res://assets/military/props/ammo_pallet.glb"
+size = Vector3(1.2, 0.66, 0.815)
+max_slope_deg = 10
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-0.6, 0, -0.4, 1.2, 0.66, 0.8)])
+ramps = Array[AABB]([])

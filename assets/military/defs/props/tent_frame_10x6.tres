@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"tent_frame_10x6"
+display_name = "Frame tent 10 x 6 m"
+category = "Infrastructure"
+description = "Military frame tent 6.0 x 10.0 m, eaves 1.8 m, ridge 3.2 m."
+mesh_path = "res://assets/military/props/tent_frame_10x6.glb"
+size = Vector3(8.628, 3.18, 10.44)
+max_slope_deg = 5
+max_ground_gap = 0.4
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-3, 0, -5, 6, 3.15, 10)])
+ramps = Array[AABB]([])

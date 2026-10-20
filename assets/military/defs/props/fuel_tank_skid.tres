@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"fuel_tank_skid"
+display_name = "Fuel tank 10 000 l"
+category = "Logistics"
+description = "Skid-mounted 10 000 l fuel tank (diameter 1.8 m, 4.2 m long) with dispensing pump, hose reel and hazard placards."
+mesh_path = "res://assets/military/props/fuel_tank_skid.glb"
+size = Vector3(4.617, 3.05, 2.2)
+max_slope_deg = 5
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-2.2, 0, -1, 4.4, 2.2, 2)])
+ramps = Array[AABB]([])

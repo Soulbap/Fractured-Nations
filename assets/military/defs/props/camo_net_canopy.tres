@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"camo_net_canopy"
+display_name = "Camouflage net canopy"
+category = "Infrastructure"
+description = "Woodland camouflage net 8 x 8 m on four 2.6 m poles and a 3.2 m centre pole."
+mesh_path = "res://assets/military/props/camo_net_canopy.glb"
+size = Vector3(10.008, 3.243, 10.008)
+max_slope_deg = 10
+max_ground_gap = 0.8
+sink = 0.05
+blocks_navigation = false
+walkable = true
+collision_boxes = Array[AABB]([])
+ramps = Array[AABB]([])

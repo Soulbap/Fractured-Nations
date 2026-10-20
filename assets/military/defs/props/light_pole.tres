@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"light_pole"
+display_name = "Light pole 8 m"
+category = "Infrastructure"
+description = "Galvanized 8 m light pole on a concrete footing, 1.2 m arm with LED luminaire."
+mesh_path = "res://assets/military/props/light_pole.glb"
+size = Vector3(0.5, 8.13, 1.875)
+max_slope_deg = 15
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-0.1, 0, -0.1, 0.2, 8, 0.2)])
+ramps = Array[AABB]([])

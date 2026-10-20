@@ -22,9 +22,14 @@ static func by_id(loadout_id: String) -> InfantryLoadout:
 	return _cache[loadout_id]
 
 
-## Deterministic default for units that have no loadout yet: every third soldier carries
-## the heavy loadout. The result is stored in the UnitState so it persists.
-static func default_for(unit_id: int) -> String:
+## Deterministic default for units that have no loadout yet. WORLD-INTEGRATION-03: the
+## faction's configured family (WorldState.FACTION_LOADOUTS) when it has one and the
+## resource exists; otherwise every third soldier carries the heavy loadout. The result is
+## stored in the UnitState so it persists (save/load, promotion, possession).
+static func default_for(unit_id: int, faction := -1) -> String:
+	var fam := WorldState.faction_loadout(faction)
+	if fam != "" and by_id(fam) != null:
+		return fam
 	return "B_heavy" if unit_id % 3 == 2 else "A_standard"
 
 

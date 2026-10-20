@@ -1,15 +1,29 @@
-## The construction set of WORLD-BASE-01: every buildable type and its numbers.
+## Every buildable type and its numbers.
 ##
-## Dimensions follow the real-world references listed in docs/WORLD-BASE-01_REPORT.md
-## (20 ft ISO shelters, HESCO MIL-series cells, 2.4 m chain-link, F-shape concrete
-## barriers). Meshes come from tools/blender/structures/*.py -> assets/structures/*.glb.
-## Kept in code so the numbers live next to each other; a .tres per type would work the
-## same way (StructureDef is a Resource).
+## Two sources, one list:
+##   * the WORLD-BASE-01 field set, kept in code so its numbers live next to each other
+##     (20 ft ISO shelters, HESCO MIL-series cells, 2.4 m chain-link, F-shape barriers;
+##     meshes from tools/blender/structures/*.py -> assets/structures/*.glb), plus the
+##     WORLD-PLAYTEST-01 roads and paved areas;
+##   * WORLD-INTEGRATION-03: the ASSET-PRODUCTION-01 library as StructureDef resources
+##     (assets/military/defs/*.tres for the buildings and modules, written by the asset
+##     pipeline; assets/military/defs/props/*.tres for the curated props, written by
+##     tools/asset_production/make_prop_defs.py). A new asset is a new .tres, no code.
+## Asset categories ("Ammunition", "Fuel", ...) are folded into the six menu categories here:
+## grouping is a gameplay decision, the asset data stays as authored.
 class_name StructureCatalog
 extends RefCounted
 
-const CATEGORIES: Array[String] = ["Buildings", "Defences", "Roads"]
+const CATEGORIES: Array[String] = ["Buildings", "Training", "Logistics", "Defences", "Infrastructure", "Roads"]
 const ASSET_DIR := "res://assets/structures/"
+const DEF_DIRS: Array[String] = ["res://assets/military/defs/", "res://assets/military/defs/props/"]
+## Asset-side category -> menu category (anything not listed keeps its own name).
+const MENU_CATEGORY := {
+	"Ammunition": "Logistics", "Fuel": "Logistics", "Maintenance": "Logistics", "Containers": "Logistics",
+	"Checkpoint": "Defences", "Fences": "Defences",
+	"Communications": "Infrastructure", "Power": "Infrastructure", "Shelter": "Infrastructure", "Signs": "Infrastructure",
+	"Vehicle training": "Training",
+}
 
 static var _defs: Array[StructureDef] = []
 static var _by_id := {}
@@ -139,6 +153,33 @@ static func _add(d: StructureDef) -> void:
 		d.mesh_path = ASSET_DIR + String(d.id) + ".glb"
 	_defs.append(d)
 	_by_id[d.id] = d
+
+
+## WORLD-INTEGRATION-03: every StructureDef resource in DEF_DIRS, in file order. A resource
+## whose id the code-built set already has is skipped (the code set wins), one without a
+## menu category goes to "Buildings".
+static func _load_resource_defs() -> void:
+	for dir_path in DEF_DIRS:
+		var dir := DirAccess.open(dir_path)
+		if dir == null:
+			continue
+		var names: Array[String] = []
+		for f in dir.get_files():
+			if f.ends_with(".tres") or f.ends_with(".tres.remap"):
+				names.append(f.trim_suffix(".remap"))
+		names.sort()
+		for f in names:
+			var d := load(dir_path + f) as StructureDef
+			if d == null or d.id == &"" or _by_id.has(d.id):
+				continue
+			d.category = MENU_CATEGORY.get(d.category, d.category)
+			if not CATEGORIES.has(d.category):
+				d.category = "Buildings"
+			# Props and road dressing are small: cells beyond 700 m do not draw them at all
+			# (buildings and modules keep the 1600 m default, like the WORLD-BASE-01 set).
+			if d.mesh_path.contains("/props/") or d.mesh_path.contains("/roads/"):
+				d.visible_range = minf(d.visible_range, 700.0)
+			_add(d)
 
 
 static func _box(x0: float, y0: float, z0: float, x1: float, y1: float, z1: float) -> AABB:
@@ -323,3 +364,6 @@ static func _build() -> void:
 		ReferenceWorldBuilder.TEX_GRAVEL, 0.06, 0.05, 1.0)
 	d.description = "Asphalt apron / parking area. Graded to one plane (max 5 %)."
 	_add(d)
+
+	# --- ASSET-PRODUCTION-01 library (WORLD-INTEGRATION-03) --------------------------
+	_load_resource_defs()

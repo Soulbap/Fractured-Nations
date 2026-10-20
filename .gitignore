@@ -64,3 +64,6 @@ __pycache__/
 /worlds/*.log
 # Full-resolution top-down mosaics (8192 px); the 2048 px versions are committed.
 /docs/terrain01/shots/*_full.jpg
+
+# Test / import logs written next to the project (--log-file x.log)
+/*.log

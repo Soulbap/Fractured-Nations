@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"road_delineator"
+display_name = "Delineator post"
+category = "Infrastructure"
+description = "Roadside delineator post 1.0 m, black band and red reflector."
+mesh_path = "res://assets/military/roads/road_delineator.glb"
+size = Vector3(0.104, 1, 0.147)
+max_slope_deg = 25
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = false
+walkable = true
+collision_boxes = Array[AABB]([AABB(-0.05, 0, -0.07, 0.1, 1, 0.14)])
+ramps = Array[AABB]([])

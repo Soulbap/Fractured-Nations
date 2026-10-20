@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"sign_checkpoint"
+display_name = "Checkpoint sign"
+category = "Infrastructure"
+description = "Checkpoint sign on a 60 mm galvanized post, plate 0.70 m, lower edge 1.9 m."
+mesh_path = "res://assets/military/props/sign_checkpoint.glb"
+size = Vector3(1.4, 2.55, 0.07)
+max_slope_deg = 20
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = false
+walkable = true
+collision_boxes = Array[AABB]([AABB(-0.04, 0, -0.04, 0.08, 2.2, 0.08)])
+ramps = Array[AABB]([])

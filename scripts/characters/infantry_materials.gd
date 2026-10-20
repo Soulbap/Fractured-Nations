@@ -49,8 +49,10 @@ const TABLE := {
 	"Polymer_Plum": [Color(0.32, 0.14, 0.12), 0.60, 0.0, "polymer_albedo.png", "polymer_normal.png", 0.7],
 }
 
-## Camouflage per faction index (WorldState faction ids). Unknown factions use M23.
-const FACTION_CAMO := ["Camo_M23", "Camo_Arid"]
+## Camouflage per faction index (WorldState faction ids) for the shared CHARACTER-01 pieces
+## built with "Camo_M23" (legacy loadouts, assault pack, belt). WORLD-INTEGRATION-03: the
+## three family camouflages, matching WorldState.FACTION_LOADOUTS. Unknown factions use M23.
+const FACTION_CAMO := ["Camo_NATO", "Camo_EMR", "Camo_Type21"]
 
 static var _cache := {}
 static var _proxy_material: StandardMaterial3D

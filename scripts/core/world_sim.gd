@@ -234,9 +234,20 @@ func _settle_height(u: UnitState) -> void:
 func _free_direction(u: UnitState, dir: Vector3, step: float) -> Vector3:
 	var p := Vector2(u.position.x, u.position.z)
 	var look := maxf(step, 1.0)
+	# WORLD-INTEGRATION-03: the next step itself is tested too, not only the point 1 m
+	# ahead. Sliding at 45° along a wall, the look-ahead point cleared the footprint while
+	# the unit crept into it a few centimetres per tick, and "already inside: walk out"
+	# then let it walk straight through the wall.
+	var near := maxf(step * 2.0, 0.3)
 	if structures.blocks_point(p):
-		return dir  # already inside a footprint (built around it): let it walk out
-	if not structures.blocks_point(p + Vector2(dir.x, dir.z) * look):
+		# Inside a footprint (built around it, or pushed in): out the way it came, else
+		# any free side; through it only when nothing else is free.
+		for deg: float in [180.0, 135.0, -135.0, 90.0, -90.0]:
+			var d := dir.rotated(Vector3.UP, deg_to_rad(deg))
+			if not structures.blocks_point(p + Vector2(d.x, d.z) * look):
+				return d
+		return dir
+	if not structures.blocks_point(p + Vector2(dir.x, dir.z) * look) and not structures.blocks_point(p + Vector2(dir.x, dir.z) * near):
 		_slide.erase(u.id)
 		return dir
 	# WORLD-SANDBOX-01: follow the obstacle on one side until the way to the target is
@@ -248,7 +259,8 @@ func _free_direction(u: UnitState, dir: Vector3, step: float) -> Vector3:
 			side = 1 if not structures.blocks_point(p + Vector2(dir.rotated(Vector3.UP, deg_to_rad(45.0)).x, dir.rotated(Vector3.UP, deg_to_rad(45.0)).z) * look) else -1
 		for deg: float in [45.0, 90.0, 135.0]:
 			var d := dir.rotated(Vector3.UP, deg_to_rad(deg * side))
-			if not structures.blocks_point(p + Vector2(d.x, d.z) * look):
+			var q := Vector2(d.x, d.z)
+			if not structures.blocks_point(p + q * look) and not structures.blocks_point(p + q * near):
 				_slide[u.id] = side
 				return d
 		side = -side
