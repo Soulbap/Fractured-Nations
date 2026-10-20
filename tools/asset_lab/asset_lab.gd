@@ -15,6 +15,9 @@ extends Node3D
 ##                        close-ups, walking, RTS, first-person sight picture)
 ##   --charperf N         N animated faction soldiers vs N CHARACTER-01 soldiers:
 ##                        frame time / draw calls -> benchmarks/asset01/charperf_N.json
+##   --showcase           a sample base composed of the library (+ 15 soldiers): FPS / RTS /
+##                        strategic screenshots and timings, then 9 bases 400 m apart
+##                        -> benchmarks/asset01/showcase.json
 ## filter: comma list of ids, "family:<name>", or empty for every asset in the catalog.
 
 const CATALOG := "res://assets/military/catalog.json"
@@ -50,6 +53,8 @@ func _ready() -> void:
 			await _factions()
 		"--charperf":
 			await _charperf(int(args[1]) if args.size() > 1 else 60)
+		"--showcase":
+			await _showcase()
 		_:
 			push_error("unknown mode " + mode)
 	print("AP done failures=%d" % failures.size())
@@ -550,3 +555,150 @@ func _charperf(n: int) -> void:
 	report["video_mem_mb"] = snappedf(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0, 0.1)
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(BENCH_DIR))
 	FileAccess.open(BENCH_DIR + "charperf_%d.json" % n, FileAccess.WRITE).store_string(JSON.stringify(report, " ", true))
+
+
+# ----------------------------------------------------------------------------- showcase base
+
+## Sample base layout: [asset id, x, z, yaw_deg] in Godot space (yaw 0 = asset front toward
+## -Z). A north-south road at x = 0 with buildings facing it, HESCO perimeter, gate.
+const BASE_LAYOUT := [
+	["hq_building", -24, -22, -90], ["barracks_block", -24, 14, -90], ["barracks_block", -40, 14, -90],
+	["medical_station", -26, 50, -90], ["supply_depot", 27, -26, 90], ["vehicle_depot", 30, 14, 90],
+	["training_facility", 26, 52, 90], ["comms_station", -46, -50, 0], ["ammo_magazine", -46, 58, 180],
+	["container_yard", 44, -58, 0], ["fuel_point", 50, 38, 90], ["fuel_bladder_berm", 50, 62, 0],
+	["guard_tower_steel", -58, -70, 45], ["guard_tower_steel", 58, -70, -45], ["guard_tower_steel", -58, 74, 135],
+	["guard_tower_steel", 58, 74, -135], ["bunker_fighting", 13, 80, 180], ["bunker_fighting", -13, 80, 180],
+	["checkpoint_station", 0, 92, 0], ["repair_bay", 46, 8, 90], ["generator_60kw", -12, -33, 0],
+	["generator_60kw", 14, -40, 90], ["tent_frame_10x6", -48, 34, 0], ["tent_frame_6x4", -40, 36, 0],
+	["camo_net_canopy", 14, 30, 0], ["dfp_sandbag_ring", -50, 72, 180], ["mg_nest", 50, 72, 180],
+	["radio_mast", -36, -32, 0], ["fuel_tank_skid", 44, 24, 90], ["drum_pallet", 41, 30, 0],
+	["supply_pallet", 13, -20, 0], ["supply_pallet", 13, -18.5, 0], ["ammo_pallet", 13, -17, 0],
+	["iso_container_20_od", 15, -35, 0], ["iso_container_20_tan", 18, -35, 0], ["iso_container_40_od", 22, -44, 90],
+	["light_tower", 8, 60, 0], ["ibc_tank", -14, 30, 0], ["field_toilet", -48, 44, 0], ["field_toilet", -46.6, 44, 0],
+	["sign_speed_15", 4.5, 70, 0], ["sign_restricted", -6, 104, 0], ["jersey_barrier", -3, 112, 0], ["jersey_barrier", 3.5, 116, 0],
+	["truck_6x6", 9, -26, -90], ["truck_6x6", 9, -34, -90], ["apc_8x8", 12, 8, 180], ["apc_8x8", 12, 20, 180],
+	["range_firing_point", 0, -112, 0], ["range_target_line", 0, -212, 0], ["range_backstop", 0, -226, 0],
+	["range_tower", -12, -108, 0], ["obstacle_wall", -40, -100, 0], ["obstacle_net", -46, -104, 0],
+	["obstacle_tires", -33, -104, 0], ["obstacle_monkey_bars", -26, -100, 0], ["shoot_house", 40, -104, 0],
+]
+
+
+func _base(origin: Vector3, soldiers := true) -> Node3D:
+	var root := Node3D.new()
+	root.position = origin
+	add_child(root)
+	var cache := {}
+	var put := func(id: String, x: float, z: float, yaw: float) -> void:
+		if not cache.has(id):
+			cache[id] = load(catalog[id]["glb"])
+		var n: Node3D = cache[id].instantiate()
+		n.position = Vector3(x, 0, z)
+		n.rotation.y = deg_to_rad(yaw)
+		root.add_child(n)
+	for e in BASE_LAYOUT:
+		put.call(e[0], e[1], e[2], e[3])
+	# Asphalt road through the base (10 m sections) and light poles along it.
+	for k in range(-6, 12):
+		put.call("road_asphalt_10m", 0.0, k * 10.0 + 5.0, 0.0)
+	for k in range(-5, 10, 3):
+		put.call("light_pole", -8.0, k * 10.0, -90.0)
+		put.call("light_pole", 8.0, k * 10.0 + 15.0, 90.0)
+	# HESCO perimeter (5.3 m sections), gap for the gate at the south.
+	var x0 := -62.0
+	var x1 := 62.0
+	var z0 := -76.0
+	var z1 := 82.0
+	var step := 5.3
+	var x := x0 + step / 2
+	while x < x1:
+		put.call("hesco_mil1_5", x, z0, 0.0)
+		if absf(x) > 9.0:
+			put.call("hesco_mil1_5", x, z1, 0.0)
+		x += step
+	var z := z0 + step / 2 + 0.6
+	while z < z1 - 0.6:
+		put.call("hesco_mil1_5", x0 - 0.5, z, 90.0)
+		put.call("hesco_mil1_5", x1 + 0.5, z, 90.0)
+		z += step
+	if soldiers:
+		var ids := ["NATO_rifleman", "RU_rifleman", "CN_rifleman"]
+		for i in 9:
+			var c := InfantryCharacter.new()
+			root.add_child(c)
+			c.position = Vector3(-14.0 + (i % 3) * 1.4, 0.0, -24.0 + (i / 3) * 1.6)
+			c.rotation.y = deg_to_rad(-90 + (i % 3) * 20)
+			c.setup(InfantryLoadout.by_id(ids[i / 3]), (i / 3) % 2)
+		for i in 6:
+			var c := InfantryCharacter.new()
+			root.add_child(c)
+			c.position = Vector3(-3.0 + (i % 2) * 6.0, 0.12, 40.0 - (i / 2) * 3.0)
+			c.setup(InfantryLoadout.by_id(ids[i % 3]), i % 2)
+			c.debug_velocity = Vector3(0, 0, -1.4)
+	return root
+
+
+func _measure(label: String, report: Dictionary, vp: RID) -> void:
+	await _settle(30)
+	var frames := 0
+	var t := 0.0
+	var worst := 0.0
+	var last := Time.get_ticks_usec()
+	while t < 3.0:
+		await get_tree().process_frame
+		var now := Time.get_ticks_usec()
+		var dt := (now - last) / 1000000.0
+		last = now
+		t += dt
+		frames += 1
+		worst = maxf(worst, dt)
+	report[label] = {"avg_ms": snappedf(t / frames * 1000.0, 0.01), "worst_ms": snappedf(worst * 1000.0, 0.01),
+		"gpu_ms": snappedf(RenderingServer.viewport_get_measured_render_time_gpu(vp), 0.01),
+		"draw_calls": Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
+		"objects": Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
+		"primitives": Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)}
+	print("AP showcase %s %s" % [label, JSON.stringify(report[label])])
+
+
+func _showcase() -> void:
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	var vp := get_viewport().get_viewport_rid()
+	RenderingServer.viewport_set_measure_render_time(vp, true)
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SHOT_DIR))
+	sun.directional_shadow_max_distance = 300.0
+	var t0 := Time.get_ticks_usec()
+	var base := _base(Vector3.ZERO)
+	var report := {"build_ms": snappedf((Time.get_ticks_usec() - t0) / 1000.0, 0.1), "instances": base.get_child_count()}
+	# Views: [name, camera position, look target, fov].
+	var views := [
+		["rts_overview", Vector3(-110, 105, 165), Vector3(0, 0, 0), 50.0],
+		["rts_core", Vector3(-45, 45, 40), Vector3(-5, 0, -5), 50.0],
+		["fps_gate", Vector3(1.5, 1.7, 112), Vector3(0, 3, 40), 70.0],
+		["fps_main_street", Vector3(-6, 1.7, 30), Vector3(-10, 2, -30), 70.0],
+		["fps_hq_entrance", Vector3(-6, 1.7, -14), Vector3(-20, 2.0, -24), 70.0],
+		["fps_motor_pool", Vector3(4, 1.7, 26), Vector3(28, 3, 10), 70.0],
+		["fps_supply_dock", Vector3(5, 1.7, -14), Vector3(22, 2.5, -30), 70.0],
+		["fps_range", Vector3(-4, 1.7, -104), Vector3(0, 1, -200), 60.0],
+		["strategic_600m", Vector3(-450, 380, 450), Vector3(0, 0, 0), 22.0],
+	]
+	for v in views:
+		_cam_at(v[1], v[2], v[3])
+		await _measure(v[0], report, vp)
+		await _shot_to("showcase_" + v[0])
+	# Many bases: 3 x 3 bases 400 m apart, seen from high above (LOD1/LOD2, no soldiers).
+	base.queue_free()
+	await _settle(4)
+	for i in 3:
+		for j in 3:
+			_base(Vector3((i - 1) * 400.0, 0, (j - 1) * 400.0), false)
+	sun.directional_shadow_max_distance = 600.0
+	_cam_at(Vector3(-650, 520, 650), Vector3(0, 0, 0), 45.0)
+	cam.far = 6000.0
+	await _measure("nine_bases_strategic", report, vp)
+	await _shot_to("showcase_nine_bases")
+	_cam_at(Vector3(-40, 60, 260), Vector3(0, 0, 0), 55.0)
+	await _measure("nine_bases_rts_inside", report, vp)
+	await _shot_to("showcase_nine_bases_rts")
+	report["video_mem_mb"] = snappedf(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0, 0.1)
+	report["texture_mem_mb"] = snappedf(Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576.0, 0.1)
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(BENCH_DIR))
+	FileAccess.open(BENCH_DIR + "showcase.json", FileAccess.WRITE).store_string(JSON.stringify(report, " ", true))

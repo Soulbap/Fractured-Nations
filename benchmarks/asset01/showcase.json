@@ -1,0 +1,94 @@
+{
+ "build_ms": 1174.1,
+ "fps_gate": {
+  "avg_ms": 1.07,
+  "draw_calls": 609.0,
+  "gpu_ms": 0.47,
+  "objects": 1294.0,
+  "primitives": 233888.0,
+  "worst_ms": 2.14
+ },
+ "fps_hq_entrance": {
+  "avg_ms": 1.43,
+  "draw_calls": 309.0,
+  "gpu_ms": 0.45,
+  "objects": 507.0,
+  "primitives": 203772.0,
+  "worst_ms": 2.49
+ },
+ "fps_main_street": {
+  "avg_ms": 1.26,
+  "draw_calls": 400.0,
+  "gpu_ms": 0.5,
+  "objects": 709.0,
+  "primitives": 163000.0,
+  "worst_ms": 3.35
+ },
+ "fps_motor_pool": {
+  "avg_ms": 1.41,
+  "draw_calls": 253.0,
+  "gpu_ms": 0.46,
+  "objects": 471.0,
+  "primitives": 62170.0,
+  "worst_ms": 2.27
+ },
+ "fps_range": {
+  "avg_ms": 1.31,
+  "draw_calls": 33.0,
+  "gpu_ms": 0.41,
+  "objects": 33.0,
+  "primitives": 3874.0,
+  "worst_ms": 2.31
+ },
+ "fps_supply_dock": {
+  "avg_ms": 1.41,
+  "draw_calls": 216.0,
+  "gpu_ms": 0.45,
+  "objects": 399.0,
+  "primitives": 51338.0,
+  "worst_ms": 2.92
+ },
+ "instances": 203,
+ "nine_bases_rts_inside": {
+  "avg_ms": 1.14,
+  "draw_calls": 773.0,
+  "gpu_ms": 0.44,
+  "objects": 3411.0,
+  "primitives": 84218.0,
+  "worst_ms": 2.04
+ },
+ "nine_bases_strategic": {
+  "avg_ms": 1.08,
+  "draw_calls": 307.0,
+  "gpu_ms": 0.44,
+  "objects": 2291.0,
+  "primitives": 50718.0,
+  "worst_ms": 2.19
+ },
+ "rts_core": {
+  "avg_ms": 1.08,
+  "draw_calls": 365.0,
+  "gpu_ms": 0.59,
+  "objects": 666.0,
+  "primitives": 165316.0,
+  "worst_ms": 2.08
+ },
+ "rts_overview": {
+  "avg_ms": 1.03,
+  "draw_calls": 374.0,
+  "gpu_ms": 0.52,
+  "objects": 973.0,
+  "primitives": 144204.0,
+  "worst_ms": 2.06
+ },
+ "strategic_600m": {
+  "avg_ms": 1.38,
+  "draw_calls": 120.0,
+  "gpu_ms": 0.46,
+  "objects": 407.0,
+  "primitives": 61309.0,
+  "worst_ms": 2.25
+ },
+ "texture_mem_mb": 141.9,
+ "video_mem_mb": 194.5
+}

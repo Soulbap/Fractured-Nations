@@ -33,17 +33,17 @@ def road_asphalt(A):
                 "2.0 m V-ditches 0.5 m deep, centre dashes (3 m / 6 m) and edge lines.")
     L = 10.0
     crown = 3.5 * 0.025
-    _strip(a, -6.5, -5.5, 0.05, -0.45, "Dirt")
+    _strip(a, -6.5, -5.5, 0.0, -0.45, "Dirt")
     _strip(a, -5.5, -4.5, -0.45, 0.02, "Dirt")
     _strip(a, -4.5, -3.5, 0.02, 0.06, "Gravel")
     _strip(a, -3.5, 0.0, 0.06, 0.06 + crown, "Asphalt")
     _strip(a, 0.0, 3.5, 0.06 + crown, 0.06, "Asphalt")
     _strip(a, 3.5, 4.5, 0.06, 0.02, "Gravel")
     _strip(a, 4.5, 5.5, 0.02, -0.45, "Dirt")
-    _strip(a, 5.5, 6.5, -0.45, 0.05, "Dirt")
+    _strip(a, 5.5, 6.5, -0.45, 0.0, "Dirt")
     # Skirt below the outer edges (hides gaps to the terrain) and the asphalt edge face.
     for sx in (-1, 1):
-        a.poly([(sx * 6.5, -L / 2, 0.05), (sx * 6.5, L / 2, 0.05), (sx * 6.5, L / 2, -0.6), (sx * 6.5, -L / 2, -0.6)][::(1 if sx > 0 else -1)],
+        a.poly([(sx * 6.5, -L / 2, 0.0), (sx * 6.5, L / 2, 0.0), (sx * 6.5, L / 2, -0.6), (sx * 6.5, -L / 2, -0.6)][::(1 if sx > 0 else -1)],
                [(0, 1, 2, 3)], "Dirt", ALL)
     # Markings: centre dashes 3 m long every 9 m (one in this section), edge lines 0.15 m.
     zc = 0.06 + crown + 0.004
@@ -65,14 +65,14 @@ def road_gravel(A):
                 "Gravel road, 10 m straight section: 5.5 m crowned carriageway (3 %), 1.5 m ditches 0.35 m deep.")
     L = 10.0
     crown = 2.75 * 0.03
-    _strip(a, -4.25, -3.5, 0.03, -0.32, "Dirt")
+    _strip(a, -4.25, -3.5, 0.0, -0.32, "Dirt")
     _strip(a, -3.5, -2.75, -0.32, 0.03, "Dirt")
     _strip(a, -2.75, 0.0, 0.03, 0.03 + crown, "Gravel")
     _strip(a, 0.0, 2.75, 0.03 + crown, 0.03, "Gravel")
     _strip(a, 2.75, 3.5, 0.03, -0.32, "Dirt")
-    _strip(a, 3.5, 4.25, -0.32, 0.03, "Dirt")
+    _strip(a, 3.5, 4.25, -0.32, 0.0, "Dirt")
     for sx in (-1, 1):
-        a.poly([(sx * 4.25, -L / 2, 0.03), (sx * 4.25, L / 2, 0.03), (sx * 4.25, L / 2, -0.5), (sx * 4.25, -L / 2, -0.5)][::(1 if sx > 0 else -1)],
+        a.poly([(sx * 4.25, -L / 2, 0.0), (sx * 4.25, L / 2, 0.0), (sx * 4.25, L / 2, -0.5), (sx * 4.25, -L / 2, -0.5)][::(1 if sx > 0 else -1)],
                [(0, 1, 2, 3)], "Dirt", ALL)
     # Loose gravel windrows along the edges (LOD0 only).
     for sx in (-1, 1):

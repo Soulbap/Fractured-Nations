@@ -1,26 +1,95 @@
 {
- "t_body": 27.9,
+ "t_body": 29.1,
  "uniform_seconds": {
-  "ru": 15.8
+  "nato": 15.5,
+  "ru": 15.5,
+  "cn": 15.2
  },
- "t_uniform": 43.7,
+ "t_uniform": 75.3,
  "gear_seconds": {
-  "ru": 24.3
+  "nato": 20.3,
+  "ru": 22.3,
+  "cn": 32.2
  },
  "weapon_tris": {
+  "nato_rifle": 4948,
+  "nato_optic": 720,
   "ru_rifle": 4440,
-  "ru_optic": 352
+  "ru_optic": 352,
+  "cn_rifle": 4772,
+  "cn_optic": 512
  },
- "t_gear": 77.3,
+ "t_gear": 159.3,
  "tris": {
+  "nato_jacket": 10044,
+  "nato_trousers": 8000,
   "ru_jacket": 10044,
   "ru_trousers": 10368,
+  "cn_jacket": 10044,
+  "cn_trousers": 8000,
+  "nato_helmet": 5814,
+  "nato_vest": 7108,
   "ru_helmet": 4864,
   "ru_armor": 8508,
+  "cn_helmet": 5240,
+  "cn_vest": 6476,
+  "cn_pack": 4164,
+  "nato_rifle": 4948,
+  "nato_optic": 720,
   "ru_rifle": 4440,
-  "ru_optic": 352
+  "ru_optic": 352,
+  "cn_rifle": 4772,
+  "cn_optic": 512
  },
  "export": {
+  "nato_jacket": {
+   "bytes": 813508,
+   "lod_tris": [
+    10044,
+    3012,
+    652
+   ]
+  },
+  "nato_trousers": {
+   "bytes": 578116,
+   "lod_tris": [
+    8000,
+    2400,
+    520
+   ]
+  },
+  "nato_helmet": {
+   "bytes": 305768,
+   "lod_tris": [
+    5814,
+    1744,
+    376
+   ]
+  },
+  "nato_vest": {
+   "bytes": 559948,
+   "lod_tris": [
+    7108,
+    2132,
+    459
+   ]
+  },
+  "nato_rifle": {
+   "bytes": 516408,
+   "lod_tris": [
+    4948,
+    1484,
+    238
+   ]
+  },
+  "nato_optic": {
+   "bytes": 71184,
+   "lod_tris": [
+    720,
+    216,
+    57
+   ]
+  },
   "ru_jacket": {
    "bytes": 784616,
    "lod_tris": [
@@ -68,7 +137,63 @@
     200,
     60
    ]
+  },
+  "cn_jacket": {
+   "bytes": 784620,
+   "lod_tris": [
+    10044,
+    3012,
+    652
+   ]
+  },
+  "cn_trousers": {
+   "bytes": 578108,
+   "lod_tris": [
+    8000,
+    2400,
+    520
+   ]
+  },
+  "cn_helmet": {
+   "bytes": 267504,
+   "lod_tris": [
+    5240,
+    1572,
+    340
+   ]
+  },
+  "cn_vest": {
+   "bytes": 557640,
+   "lod_tris": [
+    6476,
+    1942,
+    416
+   ]
+  },
+  "cn_pack": {
+   "bytes": 206444,
+   "lod_tris": [
+    4164,
+    1248,
+    270
+   ]
+  },
+  "cn_rifle": {
+   "bytes": 500384,
+   "lod_tris": [
+    4772,
+    1430,
+    233
+   ]
+  },
+  "cn_optic": {
+   "bytes": 53632,
+   "lod_tris": [
+    512,
+    200,
+    60
+   ]
   }
  },
- "t_total": 78.2
+ "t_total": 161.6
 }
