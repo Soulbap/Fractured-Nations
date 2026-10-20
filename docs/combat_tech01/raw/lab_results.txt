@@ -1,0 +1,6 @@
+LAB engine {"physics":"Jolt Physics","version":"4.7.2-stable (official)"}
+LAB exp1_hurtbox_jolt {"a_areas_only":{"collider":"HurtBody","health":75},"b_head":{"collider":"HurtHead","damage":50},"c_wall_mask_hurt_only":{"collider":"HurtBody"},"d_wall_mask_world_hurt":{"collider":"StaticBody3D"},"e_body_vs_hurt_same_size":{"collider":"@CharacterBody3D@16","collider_class":"CharacterBody3D"},"f_shooter_inside_own_hurtbox":{"hit_from_inside_false":"none","hit_from_inside_true":"@CharacterBody3D@21","query_default_hit_from_inside":false,"raycast3d_default":false,"shooter":"@CharacterBody3D@21"},"g_death":{"died_signals":1,"health":0,"is_dead":true}}
+LAB exp2_bukkbeek_weapon_from_code {"fired":11,"global_reserve_after":471,"global_reserve_before":480,"mag_now":1,"reserve_is_global_autoload":true,"target_damage":374.0,"target_hits":11}
+LAB exp3_jolt_ray_cost {"los_blocked":525,"los_pairs":2016,"los_total_ms":1.495,"shot_rays":1000,"us_per_los_ray":0.74156746031746,"us_per_shot_ray_with_areas":1.723}
+LAB exp4_script_load {"VisionCone3D.gd":true,"action.gd":true,"beehave_tree.gd":true,"health.gd":true,"selector.gd":true}
+LAB exp5_record_hits_vs_hurtboxes {"agree":2999,"disagree":1,"physics_hits":129,"rays":3000,"record_hits":130,"us_physics_area_ray":0.51,"us_record_test_40_units":32.41}
