@@ -258,7 +258,7 @@ func update(delta: float) -> void:
 		_qi = _qi % _queue.size()
 		var u := sim.state.get_unit(_queue[_qi])
 		_qi += 1
-		if u == null:
+		if u == null or u.vehicle_id >= 0:
 			continue
 		# Far from the observer, every other turn is skipped: half the perception rate
 		# for distant battles (they still fight; reactions are a little slower).
@@ -286,7 +286,7 @@ func update(delta: float) -> void:
 	for j in nq:
 		var id := _queue[(_ei + j) % nq]
 		var u := sim.state.get_unit(id)
-		if u == null:
+		if u == null or u.vehicle_id >= 0:
 			continue
 		if u.target_id < 0 and not u.is_reloading() and u.watch_until < now and not u.player_controlled \
 				and (u.mag * 2 >= _mag_size(u) or u.reserve <= 0):
@@ -648,7 +648,7 @@ func _ensure_grid() -> void:
 	_fgrid.clear()
 	_covers.clear()
 	for u: UnitState in sim.state.units.values():
-		if u.alive and u.kind == UnitState.Kind.SOLDIER:
+		if u.alive and u.kind == UnitState.Kind.SOLDIER and u.vehicle_id < 0:
 			if u.cover_pos.is_finite():
 				_covers.append([u.cover_pos, u])
 			var k := Vector2i(floori(u.position.x / GRID), floori(u.position.z / GRID))
@@ -682,7 +682,7 @@ func look_yaw(u: UnitState) -> float:
 func _rebuild_queue() -> void:
 	_queue.clear()
 	for u: UnitState in sim.state.all_units():
-		if u.alive and u.kind == UnitState.Kind.SOLDIER:
+		if u.alive and u.kind == UnitState.Kind.SOLDIER and u.vehicle_id < 0:
 			_queue.append(u.id)
 	_qi = _qi % maxi(_queue.size(), 1)
 	_queue_dirty = false

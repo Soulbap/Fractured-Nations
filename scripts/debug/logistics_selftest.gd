@@ -43,6 +43,10 @@ func run(args: PackedStringArray) -> void:
 		_log("veh_drive", await _veh_drive())
 	if _want("veh_player"):
 		_log("veh_player", await _veh_player())
+	if _want("transport_cancel"):
+		_log("transport_cancel", await _transport_cancel())
+	if _want("transport"):
+		_log("transport", await _transport())
 	if _want("veh_shots"):
 		_log("veh_shots", await _veh_shots())
 	if _want("veh_persist"):
@@ -110,13 +114,14 @@ func _beyond_bridge(origin: Vector3, want_km: float) -> Dictionary:
 				if idx < 0 or idx >= r.points.size():
 					continue
 				var p := r.points[idx]
+				var pn := r.points[idx - 8 if idx > int(sp[1]) else idx + 8]
 				var res := router.plan(origin, demo.on_ground(p.x, p.z, 0.0), truck)
 				if not res.ok or res.bridges < 1:
 					continue
 				var score := absf(res.length_m / 1000.0 - want_km)
 				if score < best_score:
 					best_score = score
-					best = {"target": demo.on_ground(p.x, p.z, 0.0), "bridge": (a + b) * 0.5, "road": r.name, "dist_m": _flat(origin, p), "route_m": res.length_m}
+					best = {"target": demo.on_ground(p.x, p.z, 0.0), "near_target": demo.on_ground(pn.x, pn.z, 0.0), "bridge": (a + b) * 0.5, "road": r.name, "dist_m": _flat(origin, p), "route_m": res.length_m}
 	return best
 
 
@@ -596,4 +601,234 @@ func _veh_shots() -> Dictionary:
 		await _seconds(0.3)
 		_shot("08_truck_entering_base")
 		out["base_entry_ok"] = g3 < 4000
+	return out
+
+
+# --- Phase B: infantry transport ---------------------------------------------------------------
+
+## Soldiers of both squads: aboard / hidden / positions, for the invariants checked all the way.
+func _aboard_state(sqs: Array, vehicles: Array) -> Dictionary:
+	var out := {"aboard": 0, "with_view": 0, "far_from_vehicle": 0, "dup_occupant": 0, "link_mismatch": 0, "walking_while_aboard": 0, "ai_active_aboard": 0}
+	var seen := {}
+	for vu: UnitState in vehicles:
+		for id in vu.veh.occupants:
+			if seen.has(id):
+				out.dup_occupant += 1
+			seen[id] = vu.id
+	for sq: SquadState in sqs:
+		for id in sq.members:
+			var s := _u(id)
+			if s == null or s.vehicle_id < 0:
+				continue
+			out.aboard += 1
+			if demo.sim.view_of(id) != null:
+				out.with_view += 1
+			var vu := _u(s.vehicle_id)
+			if vu == null or not vu.veh.occupants.has(id):
+				out.link_mismatch += 1
+			elif _flat(s.position, vu.position) > 3.0:
+				out.far_from_vehicle += 1
+			if s.order != UnitState.Order.NONE:
+				out.walking_while_aboard += 1
+			if s.target_id >= 0 or s.ai_state == UnitState.AiState.ENGAGING:
+				out.ai_active_aboard += 1
+	return out
+
+
+func _soldier_sig(sqs: Array) -> Dictionary:
+	var sig := {}
+	for sq: SquadState in sqs:
+		for id in sq.members:
+			var s := _u(id)
+			sig[id] = [s.faction, snappedf(s.health, 0.1), String(s.weapon_id), s.mag, s.reserve, s.loadout, sq.id]
+	return sig
+
+
+func _soldier_target(from: Vector3, off: Vector3) -> Vector3:
+	var p := from + off
+	return demo.on_ground(p.x, p.z, 0.0)
+
+
+func _transport() -> Dictionary:
+	var out := {}
+	var net: RoadNetwork = demo.sim.state.roads
+	await _base()
+	_expect(fob.has("center"), "transport: no base")
+	if not fob.has("center"):
+		return out
+	var c: Vector3 = fob.center
+	# The vehicle yard of the base: trucks facing west, squads waiting east of them.
+	var far := _beyond_bridge(c, 6.0)
+	_expect(not far.is_empty(), "transport: no bridge target")
+	if far.is_empty():
+		return out
+	out["target"] = {"route_m": snappedf(far.route_m, 1.0)}
+	var along := Vector3(-1, 0, 0)
+	var side := Vector3(0, 0, 1)
+	var rp := c + Vector3(34, 0, 48)
+	var truck := _veh(VehicleDefs.TRUCK, c + Vector3(32, 0, 52), PI * 0.5)
+	var apc := _veh(VehicleDefs.APC, c + Vector3(32, 0, 44), PI * 0.5)
+	var sa := _spawn(0, c + Vector3(50, 0, 50), 8)
+	var sb := _spawn(0, c + Vector3(50, 0, 44), 8)
+	await _physics(10)
+	demo.rts_camera.frame(rp + side * 6.0, 0.0, 45.0)
+	await _seconds(2.0)
+	var before := _soldier_sig([sa, sb])
+	# Capacity: the truck takes 12 of 16 soldiers.
+	var r1 := demo.sim.vehicles.transport.order_transport(truck.id, sa.id)
+	var r2 := demo.sim.vehicles.transport.order_transport(truck.id, sb.id)
+	out["capacity"] = {"first": r1.get("boarding", 0), "second": r2.get("boarding", 0), "second_ok": r2.ok, "left_behind": r2.get("left_behind", 0)}
+	_expect(r1.ok and r1.boarding == 8 and r2.ok and r2.boarding == 4 and r2.left_behind == 4, "transport: truck capacity %s" % JSON.stringify(out.capacity))
+	await _seconds(0.5)
+	_shot("09_boarding_start")
+	var w := await _warp(60.0, 4.0, 60.0, func() -> bool: return truck.veh.occupants.size() >= 12 and truck.veh.phase == VehicleState.Phase.NONE)
+	out["boarded"] = {"truck_occupants": truck.veh.occupants.size(), "phase": VehicleState.PHASE_NAMES[truck.veh.phase], "sim_s": w.sim_s}
+	if truck.veh.occupants.size() < 12:
+		var dbg := []
+		var door := demo.sim.vehicles.transport.door_point(truck)
+		for id in truck.veh.pending:
+			var ps := _u(id)
+			dbg.append({"id": id, "pos": [snappedf(ps.position.x, 0.1), snappedf(ps.position.z, 0.1)], "to_door": snappedf(_flat(ps.position, door), 0.1), "order": ps.order, "target": [snappedf(ps.order_target.x, 0.1), snappedf(ps.order_target.z, 0.1)],
+				"move_state": ps.move_state, "has_body": ps.has_body, "react": ps.is_reacting(), "tactic": ps.tactic})
+		out["pending_debug"] = dbg
+		out["truck_at"] = [snappedf(truck.position.x, 0.1), snappedf(truck.position.z, 0.1), snappedf(truck.yaw, 0.01)]
+		_shot("09b_boarding_stuck")
+	_expect(truck.veh.occupants.size() == 12, "transport: truck has %d aboard" % truck.veh.occupants.size())
+	_shot("10_boarded_truck")
+	var inv := _aboard_state([sa, sb], [truck, apc])
+	out["boarded_invariants"] = inv
+	_expect(inv.with_view == 0 and inv.dup_occupant == 0 and inv.link_mismatch == 0 and inv.walking_while_aboard == 0, "transport: aboard invariants %s" % JSON.stringify(inv))
+	var left_ids := []
+	for id in sb.members:
+		if _u(id).vehicle_id < 0:
+			left_ids.append(id)
+	out["left_on_foot"] = left_ids.size()
+	_expect(left_ids.size() == 4, "transport: %d left on foot (expected 4)" % left_ids.size())
+	# Combined RTS order: the rest of squad B boards the APC and is driven to the target.
+	demo.rts.select_squads([sb.id])
+	demo.rts.select(Array(demo.rts.selected) + [apc.id])
+	var n := demo.rts.order_move(far.near_target)
+	out["combined_order"] = {"soldiers": n, "message": demo.rts.current_message()}
+	# The truck goes with its 12: a plain Move order for the vehicle.
+	demo.rts.select([truck.id])
+	demo.rts.order_move(far.target)
+	out["truck_order_message"] = demo.rts.current_message()
+	_expect(truck.veh.phase == VehicleState.Phase.NONE and truck.order == UnitState.Order.MOVE, "transport: truck did not start")
+	var tr_t := _sample_begin(truck, truck.veh.def())
+	var tr_a := _sample_begin(apc, apc.veh.def())
+	await _warp(70.0, 4.0, 60.0)
+	out["boarded_apc"] = {"apc_occupants": apc.veh.occupants.size(), "apc_phase": VehicleState.PHASE_NAMES[apc.veh.phase], "apc_order": apc.order}
+	_expect(apc.veh.occupants.size() >= 4, "transport: apc occupants %d" % apc.veh.occupants.size())
+	# Redirect while transporting: another destination, the passengers stay aboard.
+	var redir := demo.sim.vehicles.order_drive(apc.id, far.near_target)
+	out["redirect"] = {"ok": redir.ok, "apc_aboard": apc.veh.occupants.size(), "phase": VehicleState.PHASE_NAMES[apc.veh.phase]}
+	_expect(redir.ok and apc.veh.occupants.size() >= 4, "transport: redirect")
+	# Camera away (the bodies go), then save / load with soldiers aboard.
+	demo.rts_camera.frame(Vector3(9000, 0, 9000), 0.0, 120.0)
+	await _seconds(2.0)
+	await _warp(60.0, 4.0, 60.0)
+	var path := "user://saves/logistics_transport_test.sav"
+	demo.sim.state.save_file(path)
+	var sig_before := _soldier_sig([sa, sb])
+	var occ_before := [Array(truck.veh.occupants), Array(apc.veh.occupants)]
+	for sq: SquadState in [sa, sb]:
+		for id in sq.members:
+			_u(id).vehicle_id = -1
+	truck.veh.occupants = PackedInt32Array()
+	apc.veh.occupants = PackedInt32Array()
+	demo.sim.state.load_file(path)
+	await _physics(3)
+	var occ_after := [Array(truck.veh.occupants), Array(apc.veh.occupants)]
+	var inv_after := _aboard_state([sa, sb], [truck, apc])
+	out["save_load"] = {"same_occupants": occ_before == occ_after, "invariants": inv_after, "same_records": sig_before == _soldier_sig([sa, sb])}
+	_expect(occ_before == occ_after and inv_after.with_view == 0 and inv_after.link_mismatch == 0, "transport: save/load aboard %s" % JSON.stringify(out.save_load))
+	_expect(sig_before == _soldier_sig([sa, sb]), "transport: soldier records changed through save/load")
+	await _warp(1200.0, 16.0, 400.0, func() -> bool: return truck.order == UnitState.Order.NONE and apc.order == UnitState.Order.NONE)
+	var t_end := _sample_end(tr_t)
+	var a_end := _sample_end(tr_a)
+	out["journey"] = {"truck": t_end, "apc": a_end, "truck_arrived": truck.move_state == UnitState.MoveState.ARRIVED, "apc_arrived": apc.move_state == UnitState.MoveState.ARRIVED}
+	out["diagnose"] = {"truck": demo.sim.vehicles.diagnose(truck), "apc": demo.sim.vehicles.diagnose(apc)}
+	_expect(truck.move_state == UnitState.MoveState.ARRIVED and apc.move_state == UnitState.MoveState.ARRIVED, "transport: vehicles did not arrive")
+	_expect(t_end.teleports == 0 and a_end.teleports == 0 and t_end.inside_blocking == 0 and a_end.inside_blocking == 0, "transport: journey track problems")
+	out["arrival_state"] = _aboard_state([sa, sb], [truck, apc])
+	# Disembark both with the U command through the RTS, camera on the vehicles.
+	demo.rts_camera.frame(truck.position, 0.5, 45.0)
+	await _seconds(2.5)
+	demo.rts.select([truck.id, apc.id])
+	demo.rts.order_unload()
+	await _warp(12.0, 1.0, 30.0)
+	_shot("11_disembarked")
+	var spots := []
+	var bad_spot := 0
+	var min_pair := INF
+	for sq: SquadState in [sa, sb]:
+		for id in sq.members:
+			var s := _u(id)
+			if s.vehicle_id >= 0:
+				bad_spot += 1
+				continue
+			if sm.blocks_point(Vector2(s.position.x, s.position.z), 0.3) or (sm.is_wet(s.position.x, s.position.z) and is_nan(net.deck_height(s.position))):
+				bad_spot += 1
+			for o in spots:
+				min_pair = minf(min_pair, _flat(o, s.position))
+			spots.append(s.position)
+	out["disembark"] = {"on_foot": spots.size(), "bad_spots": bad_spot, "min_pair_m": snappedf(min_pair, 0.1), "truck_left": truck.veh.occupants.size(), "apc_left": apc.veh.occupants.size()}
+	_expect(spots.size() == 16 and bad_spot == 0 and min_pair > 0.5, "transport: disembark %s" % JSON.stringify(out.disembark))
+	# The squads can act at once: a Move order 60 m away is carried out.
+	demo.rts.select_squads([sa.id, sb.id])
+	var dest2 := demo.on_ground(lerpf(truck.position.x, far.near_target.x, 0.5), lerpf(truck.position.z, far.near_target.z, 0.5), 0.0)
+	demo.rts.order_move(dest2)
+	await _warp(60.0, 4.0, 60.0)
+	var arrived := 0
+	for sq: SquadState in [sa, sb]:
+		for id in sq.members:
+			arrived += 1 if _flat(_u(id).position, dest2) < 22.0 else 0
+	var same := _soldier_sig([sa, sb]) == before
+	out["after_orders"] = {"soldiers_near_target": arrived, "of": 16, "records_unchanged": same}
+	_expect(arrived >= 14, "transport: only %d of 16 followed their order after disembarking" % arrived)
+	_expect(same, "transport: soldier identity / equipment changed during transport")
+	return out
+
+
+## Cancelling and re-assigning a boarding, and a full squad into the APC (its 8 seats).
+func _transport_cancel() -> Dictionary:
+	var out := {}
+	await _base()
+	var c: Vector3 = fob.center
+	var truck := _veh(VehicleDefs.TRUCK, c + Vector3(32, 0, 52), PI * 0.5)
+	var apc := _veh(VehicleDefs.APC, c + Vector3(32, 0, 44), PI * 0.5)
+	var sq := _spawn(0, c + Vector3(54, 0, 48), 8)
+	var extra := _spawn(0, c + Vector3(54, 0, 56), 1)
+	await _physics(10)
+	demo.rts_camera.frame(c + Vector3(40, 0, 48), 0.0, 40.0)
+	await _seconds(1.5)
+	var t := demo.sim.vehicles.transport
+	var r := t.order_transport(truck.id, sq.id)
+	await _warp(1.0, 1.0, 10.0)
+	t.unload(truck.id)                         # U while boarding = cancel
+	await _warp(1.0, 1.0, 10.0)
+	var after_cancel := _aboard_state([sq], [truck, apc])
+	var halted := 0
+	for id in sq.members:
+		halted += 1 if _u(id).order == UnitState.Order.NONE else 0
+	out["cancel"] = {"ordered": r.ok, "aboard": after_cancel.aboard, "halted": halted, "phase": VehicleState.PHASE_NAMES[truck.veh.phase], "pending": truck.veh.pending.size()}
+	_expect(r.ok and after_cancel.aboard == 0 and halted == 8 and truck.veh.pending.is_empty() and truck.veh.phase == VehicleState.Phase.NONE, "cancel: %s" % JSON.stringify(out.cancel))
+	# Assign another vehicle: the same squad boards the APC (exactly eight seats).
+	var r2 := t.order_transport(apc.id, sq.id)
+	await _warp(30.0, 2.0, 30.0, func() -> bool: return apc.veh.occupants.size() >= 8)
+	out["apc"] = {"ordered": r2.ok, "aboard": apc.veh.occupants.size(), "capacity": apc.veh.def().passengers}
+	_expect(r2.ok and apc.veh.occupants.size() == 8, "apc: %s" % JSON.stringify(out.apc))
+	# A ninth soldier is refused, the vehicle is full.
+	var r3 := t.order_transport(apc.id, extra.id)
+	out["full"] = {"ok": r3.ok, "reason": r3.reason}
+	_expect(not r3.ok, "apc: a ninth soldier was accepted")
+	# Cancel while transporting: the vehicle stops and everybody gets off.
+	var near := c + Vector3(0, 0, 120)
+	demo.sim.vehicles.order_drive(apc.id, near)
+	await _warp(8.0, 1.0, 20.0)
+	t.unload(apc.id)
+	await _warp(8.0, 1.0, 20.0)
+	var inv := _aboard_state([sq], [apc])
+	out["unload_in_transit"] = {"aboard": inv.aboard, "apc_speed": snappedf(apc.veh.speed, 0.1), "occupants": apc.veh.occupants.size()}
+	_expect(inv.aboard == 0 and apc.veh.occupants.is_empty(), "unload in transit: %s" % JSON.stringify(out.unload_in_transit))
 	return out

@@ -81,7 +81,7 @@ func _ready() -> void:
 ## Creates the proxy for every unit that has no body yet (call after spawning records).
 func create_missing_proxies() -> void:
 	for u in sim.state.all_units():
-		if not sim.bodies.has(u.id) and not sim.proxies.has(u.id):
+		if not sim.bodies.has(u.id) and not sim.proxies.has(u.id) and u.vehicle_id < 0:
 			_make_proxy(u)
 
 
@@ -148,7 +148,7 @@ func activate_at(pos: Vector3, need_id := -1) -> void:
 		if _flat_dist(nav_center, pos) > 1.0 and not _recenter_to.is_finite():
 			_rebake(true, true)
 		var u := sim.state.get_unit(need_id)
-		if u and not u.has_body and u.alive:
+		if u and not u.has_body and u.alive and u.vehicle_id < 0:
 			_promote(u)
 			promotions += 1
 		return
@@ -191,7 +191,7 @@ func _update(force: bool) -> void:
 	var promoted := 0
 	promotions_waiting = 0
 	for u in sim.state.units.values():
-		if not u.has_body and u.alive and _flat_dist(u.position, observer) <= promote_radius:
+		if not u.has_body and u.alive and u.vehicle_id < 0 and _flat_dist(u.position, observer) <= promote_radius:
 			if ground and not ground.ready_at(u.position):
 				promotions_waiting += 1
 				continue

@@ -76,6 +76,21 @@ func unregister_body(id: int) -> void:
 		u.has_body = false
 
 
+## A soldier boarded a vehicle: its body and proxy go (the record stays, DetailManager gives
+## it neither while it is aboard).
+func hide_view(id: int) -> void:
+	var b: Node3D = bodies.get(id)
+	if b:
+		unregister_body(id)
+		b.get_parent().remove_child(b)
+		b.queue_free()
+	var p: Node3D = proxies.get(id)
+	if p:
+		unregister_proxy(id)
+		p.get_parent().remove_child(p)
+		p.queue_free()
+
+
 func body_of(id: int) -> Node3D:
 	return bodies.get(id)
 
@@ -127,7 +142,7 @@ func _physics_process(delta: float) -> void:
 	state.time += delta
 	var t0 := Time.get_ticks_usec()
 	for u in state.units.values():
-		if not u.has_body and u.alive and u.kind == UnitState.Kind.SOLDIER:
+		if not u.has_body and u.alive and u.kind == UnitState.Kind.SOLDIER and u.vehicle_id < 0:
 			_abstract_step(u, delta)
 	var t1 := Time.get_ticks_usec()
 	squads.update(delta)
@@ -153,6 +168,12 @@ func _physics_process(delta: float) -> void:
 ## A save was loaded into the existing records: bodies would write their old position
 ## back on the next tick, so they jump to the loaded one first.
 func _on_restored() -> void:
+	# LOGISTICS-01: soldiers aboard a vehicle show nothing; the others show something again.
+	for u: UnitState in state.units.values():
+		if u.vehicle_id >= 0:
+			hide_view(u.id)
+	if detail:
+		detail.create_missing_proxies()
 	for id in bodies:
 		var b: Node3D = bodies[id]
 		var u := state.get_unit(id)

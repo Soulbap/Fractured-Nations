@@ -357,6 +357,7 @@ func apply_snapshot(snap: Dictionary) -> Dictionary:
 		u.order_target = fresh.order_target
 		u.move_state = fresh.move_state
 		u.loadout = fresh.loadout
+		u.vehicle_id = fresh.vehicle_id
 		if fresh.veh:
 			if u.veh == null:
 				u.veh = fresh.veh

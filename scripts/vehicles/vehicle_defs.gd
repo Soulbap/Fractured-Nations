@@ -56,6 +56,8 @@ class Def:
 	var max_health := 400.0
 	## Infantry the vehicle carries, and the supply capacity (kg) of its cargo.
 	var passengers := 12
+	## Distance behind the vehicle's centre where infantry board and disembark (rear door / ramp).
+	var door_z := 5.2
 	var cargo_capacity := 10000.0
 	## Road class -> speed ceiling (m/s) when the route runs on it.
 	var class_speed := {&"primary": 22.0, &"secondary": 18.0, &"local": 14.0, &"street": 12.0, &"track": 8.0}
@@ -91,6 +93,7 @@ static func get_def(id: StringName) -> Def:
 			d.fuel_per_km = 1.6
 			d.max_health = 900.0
 			d.passengers = 8
+			d.door_z = 4.7
 			d.cargo_capacity = 800.0
 		_:
 			d.id = TRUCK

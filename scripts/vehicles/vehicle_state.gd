@@ -9,6 +9,8 @@
 class_name VehicleState
 extends RefCounted
 
+enum Phase { NONE, APPROACH, BOARDING, TRANSIT, UNLOADING }
+const PHASE_NAMES: Array[String] = ["", "driving to the squad", "boarding", "transporting", "disembarking"]
 enum Status { PARKED, DRIVING, WAITING, BLOCKED, NO_FUEL, DISABLED, PLAYER }
 const STATUS_NAMES: Array[String] = ["parked", "driving", "waiting", "blocked", "no fuel", "disabled", "driven by player"]
 
@@ -30,6 +32,16 @@ var route := PackedVector3Array()
 var route_cap := PackedFloat32Array()
 var route_i := 0
 var route_info := {}
+
+## Infantry transport (Phase B): soldier ids aboard (seat order), the squad assigned to the
+## vehicle, the phase of the transport order and its destination.
+var occupants := PackedInt32Array()
+## Soldiers told to board that have not got on yet (their seats are taken).
+var pending := PackedInt32Array()
+var squad_id := -1
+var phase := Phase.NONE
+var phase_since := 0.0
+var transport_dest := Vector3.INF
 
 ## Stuck handling: odometer at the last recovery (stuck_s), reversing time left, attempts made.
 var stuck_s := 0.0
@@ -72,6 +84,7 @@ func to_dict() -> Dictionary:
 		rt.append([snappedf(p.x, 0.01), snappedf(p.y, 0.01), snappedf(p.z, 0.01)])
 	return {"type": String(type_id), "speed": speed, "steer": steer, "fuel": fuel, "odo": odometer,
 		"status": status, "reason": reason, "route": rt, "cap": Array(route_cap), "route_i": route_i,
+		"occ": Array(occupants), "pending": Array(pending), "squad": squad_id, "phase": phase, "phase_since": phase_since, "dest": transport_dest,
 		"info": route_info, "stuck": stuck_s, "reverse": reverse_left, "recoveries": recoveries, "replans": replans}
 
 
@@ -96,6 +109,12 @@ func copy_from(d: Dictionary) -> void:
 	route_cap = PackedFloat32Array(d.get("cap", []))
 	route_i = d.get("route_i", 0)
 	route_info = d.get("info", {})
+	occupants = PackedInt32Array(d.get("occ", []))
+	pending = PackedInt32Array(d.get("pending", []))
+	squad_id = d.get("squad", -1)
+	phase = d.get("phase", Phase.NONE)
+	phase_since = d.get("phase_since", 0.0)
+	transport_dest = d.get("dest", Vector3.INF)
 	stuck_s = d.get("stuck", 0.0)
 	reverse_left = d.get("reverse", 0.0)
 	recoveries = d.get("recoveries", 0)

@@ -46,6 +46,10 @@ var has_body := false
 var loadout := ""
 ## LOGISTICS-01: vehicle-only state (type, speed, fuel, route, ...); null for soldiers.
 var veh: VehicleState
+## LOGISTICS-01: id of the vehicle this soldier rides in (-1 = on foot). Aboard, the soldier
+## has no body and no proxy, takes no part in combat and follows the vehicle; VehicleSim
+## changes this together with the vehicle's `occupants`.
+var vehicle_id := -1
 
 # --- Combat (COMBAT-01a). Authoritative weapon and life state; WeaponDef is static. ---
 var alive := true
@@ -115,6 +119,10 @@ var anchor_pos := Vector3.INF
 var cover_note := ""
 
 
+func is_aboard() -> bool:
+	return vehicle_id >= 0
+
+
 func is_vehicle() -> bool:
 	return kind == Kind.VEHICLE
 
@@ -134,7 +142,7 @@ func to_dict() -> Dictionary:
 		"health": health, "max_health": max_health, "speed": speed,
 		"order": order, "order_target": order_target, "move_state": move_state,
 		"player_controlled": player_controlled, "has_body": has_body, "loadout": loadout,
-		"veh": veh.to_dict() if veh else null,
+		"veh": veh.to_dict() if veh else null, "vehicle_id": vehicle_id,
 		"alive": alive, "weapon_id": weapon_id, "mag": mag, "reserve": reserve, "fire_auto": fire_auto,
 		"next_shot_at": next_shot_at, "reload_until": reload_until, "shot_counter": shot_counter,
 		"bloom": bloom, "last_shot_at": last_shot_at, "died_at": died_at, "killer_id": killer_id,
@@ -169,6 +177,7 @@ static func from_dict(d: Dictionary) -> UnitState:
 	u.loadout = d.get("loadout", "")
 	if d.get("veh") is Dictionary:
 		u.veh = VehicleState.from_dict(d.veh)
+	u.vehicle_id = d.get("vehicle_id", -1)
 	return u
 
 

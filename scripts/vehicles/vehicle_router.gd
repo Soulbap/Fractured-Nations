@@ -50,6 +50,8 @@ var _cells := {}
 ## road key -> PackedInt32Array of node ids
 var _ids_of := {}
 var _dirty := false
+## Road vertices switched off because a structure (a wall across the road) blocks them.
+var _disabled: Array[int] = []
 ## Roads narrower than this (vehicle width + 1 m of margin) cost far more.
 var min_width := 4.5
 var debug_legs := false
@@ -63,10 +65,21 @@ func setup(p_net: RoadNetwork, p_routes: StrategicRoutes, p_terrain: Terrain3D, 
 	structures = p_structures
 	if not net.changed.is_connected(_on_changed):
 		net.changed.connect(_on_changed)
+	if structures and not structures.area_changed.is_connected(_on_structures_changed):
+		structures.area_changed.connect(_on_structures_changed)
 
 
 func _on_changed(_rect: Rect2) -> void:
 	_dirty = true
+
+
+## Structures were built or removed: road vertices disabled because a structure stood on them
+## are tried again.
+func _on_structures_changed(_rect: Rect2) -> void:
+	for id in _disabled:
+		if astar.has_point(id):
+			astar.set_point_disabled(id, false)
+	_disabled.clear()
 
 
 ## Builds the graph on first use (about half a second for the 124 world roads).
@@ -243,7 +256,7 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 	var combos: Array = []
 	for a: Dictionary in a_list:
 		for b: Dictionary in b_list:
-			var ids := astar.get_id_path(a.id, b.id)
+			var ids := _clear_path(a.id, b.id, def)
 			if ids.is_empty():
 				continue
 			var cost: float = _path_cost(ids) + (a.dist + b.dist) * OFFROAD_COST
@@ -279,6 +292,26 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 		return f
 	cands.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return x.cost < y.cost)
 	return _assemble(cands[0], from, to, def)
+
+
+## The cheapest road path a -> b whose vertices are not inside structures: blocked vertices
+## are switched off and the search repeated (a perimeter wall across a road closes it).
+func _clear_path(a: int, b: int, def: VehicleDefs.Def) -> PackedInt64Array:
+	for _attempt in 8:
+		var ids := astar.get_id_path(a, b)
+		if ids.is_empty() or structures == null:
+			return ids
+		var bad: Array[int] = []
+		for id in ids:
+			var p := astar.get_point_position(id)
+			if structures.blocks_point(Vector2(p.x, p.z), def.collide_r + 0.3):
+				bad.append(id)
+		if bad.is_empty():
+			return ids
+		for id in bad:
+			astar.set_point_disabled(id, true)
+			_disabled.append(id)
+	return PackedInt64Array()
 
 
 func _fail(reason: String) -> Dictionary:

@@ -22,6 +22,8 @@ const MAX_RECOVERIES := 4
 
 var sim: WorldSim
 var router := VehicleRouter.new()
+## Infantry boarding, riding and disembarking (phase B).
+var transport: VehicleTransport
 ## Vehicle unit ids (kept in step with WorldState by its signals).
 var ids: Array[int] = []
 var ticks := 0
@@ -35,6 +37,7 @@ var _on_road := {}
 
 func _init(p_sim: WorldSim) -> void:
 	sim = p_sim
+	transport = VehicleTransport.new(self)
 	sim.state.unit_added.connect(_on_added)
 	sim.state.unit_removed.connect(_on_removed)
 	sim.state.restored.connect(refresh)
@@ -70,13 +73,22 @@ func _on_removed(id: int) -> void:
 
 ## Plans a route to `target` for a vehicle and starts driving it. Returns the planner result
 ## ({ok, reason, length_m, road_m, ...}); on failure the vehicle keeps its previous order.
-func order_drive(id: int, target: Vector3) -> Dictionary:
+func order_drive(id: int, target: Vector3, from_transport := false) -> Dictionary:
 	var u := sim.state.get_unit(id)
 	if u == null or u.veh == null or not u.alive:
 		return {"ok": false, "reason": "No such vehicle"}
 	var v := u.veh
 	if v.status == VehicleState.Status.DISABLED:
 		return {"ok": false, "reason": "The vehicle is disabled"}
+	if not from_transport:
+		match v.phase:
+			VehicleState.Phase.APPROACH:
+				transport.cancel(id)
+			VehicleState.Phase.BOARDING:
+				# A Move order while boarding: leave now with whoever is aboard.
+				transport.depart(u, v, target)
+			VehicleState.Phase.TRANSIT:
+				v.transport_dest = target
 	var t := Vector3(target.x, ground_at(target), target.z)
 	var res := router.plan(u.position, t, v.def())
 	if not res.ok:
@@ -115,9 +127,46 @@ func halt(id: int) -> void:
 	var u := sim.state.get_unit(id)
 	if u == null or u.veh == null:
 		return
+	if u.veh.phase == VehicleState.Phase.TRANSIT or u.veh.phase == VehicleState.Phase.APPROACH:
+		u.veh.phase = VehicleState.Phase.NONE
 	_clear_order(u, VehicleState.Status.PARKED)
 	u.move_state = UnitState.MoveState.IDLE
 	sim.state.order_changed.emit(u)
+
+
+## Stops driving without touching the transport phase (the transport code uses it).
+func halt_in_place(u: UnitState) -> void:
+	_clear_order(u, VehicleState.Status.PARKED)
+	u.move_state = UnitState.MoveState.IDLE
+
+
+func status_note(u: UnitState, text: String) -> void:
+	_event(u, text)
+
+
+## Ground height plus a soldier's standing offset (terrain or bridge deck).
+func ground_with_clearance(p: Vector3) -> Vector3:
+	return Vector3(p.x, ground_at(p) + 0.25, p.z)
+
+
+## A spot where a soldier may stand: not in a structure, not in water, not inside a vehicle.
+func spot_valid(p: Vector3) -> bool:
+	if sim.structures:
+		if sim.structures.blocks_point(Vector2(p.x, p.z), 0.6):
+			return false
+		if is_nan(sim.state.roads.deck_height(p)) and sim.structures.is_wet(p.x, p.z):
+			return false
+	for oid in ids:
+		var o: UnitState = sim.state.units.get(oid)
+		if o == null:
+			continue
+		var d := o.veh.def()
+		var off := p - o.position
+		var lz := off.x * -sin(o.yaw) + off.z * -cos(o.yaw)
+		var lx := off.x * cos(o.yaw) - off.z * sin(o.yaw)
+		if absf(lx) < d.width * 0.5 + 0.6 and absf(lz) < d.length * 0.5 + 0.6:
+			return false
+	return true
 
 
 func _clear_order(u: UnitState, status: int) -> void:
@@ -227,6 +276,9 @@ func _step(u: UnitState, dt: float) -> void:
 	var steer_target := 0.0
 	var rate := d.brake
 	var following := false
+	# The physics probe belongs to a body: without one (far from the camera) nothing is reported.
+	if not u.has_body:
+		v.probe_ahead = INF
 	if not u.alive or v.status == VehicleState.Status.DISABLED:
 		v.status = VehicleState.Status.DISABLED
 		if u.order != UnitState.Order.NONE:
@@ -289,6 +341,8 @@ func _step(u: UnitState, dt: float) -> void:
 		_integrate(u, v, d, dt)
 	if following and u.order == UnitState.Order.MOVE:
 		_check_stuck(u, v, d, target_speed, dt)
+	if v.phase != VehicleState.Phase.NONE or not v.occupants.is_empty():
+		transport.update(u, v, dt)
 
 
 ## Pure pursuit along the route: {speed, steer}. Also handles arrival.
@@ -546,6 +600,31 @@ func _event(u: UnitState, text: String) -> void:
 		sim.war.log_event(u.faction, "vehicle", "%s: %s" % [u.unit_name, text])
 
 
+## What holds a vehicle up right now (tests and debugging): the first route point ahead that
+## lies in a structure and the vehicles within the lane ahead.
+func diagnose(u: UnitState) -> Dictionary:
+	var v := u.veh
+	var d := v.def()
+	var out := {"pos": [snappedf(u.position.x, 0.1), snappedf(u.position.z, 0.1)], "route_i": v.route_i, "route": v.route.size(),
+		"status": v.status_name(), "reason": v.reason, "speed": snappedf(v.speed, 0.01), "probe": snappedf(v.probe_ahead, 0.1),
+		"recoveries": v.recoveries, "replans": v.replans, "reverse_left": snappedf(v.reverse_left, 0.1)}
+	if sim.structures:
+		for k in range(v.route_i, mini(v.route_i + 30, v.route.size())):
+			var p := v.route[k]
+			if sim.structures.blocks_point(Vector2(p.x, p.z), d.collide_r):
+				out["blocked_route_point"] = [k, snappedf(p.x, 0.1), snappedf(p.z, 0.1), snappedf(Vector2(p.x - u.position.x, p.z - u.position.z).length(), 0.1)]
+				break
+		out["in_structure_now"] = _blocked_at(d, u.position, u.yaw)
+	var near := []
+	for oid in ids:
+		if oid != u.id:
+			var o: UnitState = sim.state.units.get(oid)
+			if o and Vector2(o.position.x - u.position.x, o.position.z - u.position.z).length() < 40.0:
+				near.append([oid, snappedf(o.position.x, 0.1), snappedf(o.position.z, 0.1), o.veh.status_name()])
+	out["vehicles_near"] = near
+	return out
+
+
 ## One-line status for the HUD and the map.
 func describe(u: UnitState) -> String:
 	var v := u.veh
@@ -553,6 +632,8 @@ func describe(u: UnitState) -> String:
 		return ""
 	var d := v.def()
 	var s := "%s  %s" % [d.display_name, v.status_name()]
+	if not v.occupants.is_empty() or v.phase != VehicleState.Phase.NONE:
+		s += "  [" + transport.describe(u) + "]"
 	if v.status == VehicleState.Status.DRIVING or v.status == VehicleState.Status.PLAYER:
 		s += "  %d km/h" % roundi(absf(v.speed) * 3.6)
 	if u.order == UnitState.Order.MOVE and not v.route.is_empty():

@@ -141,6 +141,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		change_spacing(0.5)
 	elif event.is_action_pressed("squad_roe"):
 		toggle_roe()
+	elif event.is_action_pressed("vehicle_board"):
+		order_board()
+	elif event.is_action_pressed("vehicle_unload"):
+		order_unload()
 	elif event.is_action_pressed("select_all"):
 		var ids := []
 		for u in sim.state.soldiers():
@@ -220,6 +224,12 @@ func first_selected_soldier() -> int:
 ## selected squads, individual orders for the other selected soldiers. Returns the
 ## number of soldiers ordered.
 func order_move_at(screen_pos: Vector2) -> int:
+	# LOGISTICS-01: right-click on a friendly vehicle with squads selected = board it.
+	var over := _unit_at(screen_pos)
+	if over > 0 and not selected.has(over):
+		var ou := sim.state.get_unit(over)
+		if ou and ou.kind == UnitState.Kind.VEHICLE and _can_command(over) and not selected_squads().is_empty():
+			return order_board_vehicle(over)
 	var hit := ground_point(screen_pos)
 	if not hit.is_finite():
 		return 0
@@ -227,6 +237,17 @@ func order_move_at(screen_pos: Vector2) -> int:
 
 
 func order_move(hit: Vector3) -> int:
+	# Squads and vehicles selected together: a combined transport order (the squads board
+	# the vehicles and are driven to the point).
+	if not selected_vehicles().is_empty() and not selected_squads().is_empty():
+		var tn := order_transport_group(hit)
+		if tn > 0:
+			last_order_target = hit
+			_marker.global_position = hit + Vector3.UP * 0.1
+			_marker.visible = true
+			_marker_until = Time.get_ticks_msec() / 1000.0 + 2.5
+			order_issued.emit(tn, hit)
+			return tn
 	var sqs := selected_squads()
 	_player_takes(sqs)
 	var n := sim.squads.order_move(sqs, hit) if not sqs.is_empty() else 0
@@ -242,6 +263,74 @@ func order_move(hit: Vector3) -> int:
 		_marker_until = Time.get_ticks_msec() / 1000.0 + 2.5
 		order_issued.emit(n, hit)
 	return n
+
+
+## Squads of the selection board vehicles of the selection (in order, while seats last);
+## dest finite: they are driven there and set down. Returns the soldiers boarding.
+func order_transport_group(dest: Vector3) -> int:
+	var vids := selected_vehicles()
+	var sqs := selected_squads()
+	var texts: Array[String] = []
+	var n := 0
+	var si := 0
+	for vid in vids:
+		var u := sim.state.get_unit(vid)
+		var free: int = u.veh.def().passengers - u.veh.occupants.size()
+		while si < sqs.size() and free > 0:
+			var sq := sim.state.get_squad(sqs[si])
+			si += 1
+			if sq == null:
+				continue
+			var res := sim.vehicles.transport.order_transport(vid, sq.id, dest if dest.is_finite() else Vector3.INF)
+			if res.ok:
+				n += res.boarding
+				free -= res.boarding
+				texts.append("%s boards %s (%d)" % [sq.squad_name, u.unit_name, res.boarding] + (", %d left behind" % res.left_behind if res.left_behind > 0 else ""))
+			else:
+				texts.append("%s: %s" % [u.unit_name, res.reason])
+	if si < sqs.size():
+		texts.append("no seats for %d squad(s)" % (sqs.size() - si))
+	_player_takes(sqs)
+	_say(" · ".join(texts))
+	return n
+
+
+## T: the selected squads board the selected vehicle(s) and wait for orders.
+func order_board() -> int:
+	if selected_vehicles().is_empty() or selected_squads().is_empty():
+		_say("Board: select a squad and a vehicle (T)")
+		return 0
+	return order_transport_group(Vector3.INF)
+
+
+## Right-click on a vehicle: the selected squads board it.
+func order_board_vehicle(vid: int) -> int:
+	var sqs := selected_squads()
+	var n := 0
+	var u := sim.state.get_unit(vid)
+	var texts: Array[String] = []
+	for sid in sqs:
+		var res := sim.vehicles.transport.order_transport(vid, sid)
+		if res.ok:
+			n += res.boarding
+			texts.append("%s boards %s (%d)" % [sim.state.get_squad(sid).squad_name, u.unit_name, res.boarding])
+		else:
+			texts.append("%s: %s" % [u.unit_name, res.reason])
+			break
+	_player_takes(sqs)
+	_say(" · ".join(texts))
+	return n
+
+
+## U: selected vehicles stop and set their passengers down.
+func order_unload() -> void:
+	var vids := selected_vehicles()
+	if vids.is_empty():
+		_say("Unload: select a vehicle (U)")
+		return
+	for vid in vids:
+		sim.vehicles.transport.unload(vid)
+	_say("Disembarking")
 
 
 ## LOGISTICS-01: the selected vehicles drive to the point (a line abreast when several go to
@@ -429,7 +518,7 @@ func current_message() -> String:
 
 
 static func _ensure_squad_actions() -> void:
-	var binds := {"squad_follow": KEY_F, "squad_regroup": KEY_G, "squad_formation": KEY_V,
+	var binds := {"vehicle_board": KEY_T, "vehicle_unload": KEY_U, "squad_follow": KEY_F, "squad_regroup": KEY_G, "squad_formation": KEY_V,
 		"squad_spacing_down": KEY_BRACKETLEFT, "squad_spacing_up": KEY_BRACKETRIGHT, "squad_roe": KEY_Y}
 	for action in binds:
 		if InputMap.has_action(action):

@@ -442,10 +442,12 @@ func _send_to_slots(sq: SquadState, centre: Vector3, yaw: float, reset: bool, le
 ## Members the squad order drives (not detached), leader first.
 func _active_members(sq: SquadState) -> Array:
 	var out := []
-	if not sq.is_detached(sq.leader_id) and sim.state.get_unit(sq.leader_id):
+	var lu := sim.state.get_unit(sq.leader_id)
+	if not sq.is_detached(sq.leader_id) and lu and lu.vehicle_id < 0:
 		out.append(sq.leader_id)
 	for id in sq.members:
-		if id != sq.leader_id and not sq.is_detached(id) and sim.state.get_unit(id):
+		var mu := sim.state.get_unit(id)
+		if id != sq.leader_id and not sq.is_detached(id) and mu and mu.vehicle_id < 0:
 			out.append(id)
 	return out
 
