@@ -29,6 +29,8 @@ var bodies := {}
 var proxies := {}
 ## Set in the large world: tells bodies whether a point is covered by the navmesh.
 var detail: DetailManager
+## Set when construction exists: abstract units do not pass through structures.
+var structures: StructureManager
 
 
 func register_body(id: int, body: Node3D) -> void:
@@ -87,6 +89,13 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 		return
 	var step := minf(u.speed * delta, dist)
 	var dir := to / dist
+	if structures:
+		dir = _free_direction(u, dir, step)
+		if dir == Vector3.ZERO:
+			u.velocity = Vector3.ZERO
+			u.order = UnitState.Order.NONE
+			u.move_state = UnitState.MoveState.BLOCKED
+			return
 	u.position += dir * step
 	u.velocity = dir * u.speed
 	u.yaw = atan2(-dir.x, -dir.z)
@@ -95,6 +104,24 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 		var h: float = terrain.data.get_height(u.position)
 		if not is_nan(h):
 			u.position.y = h
+
+
+## Abstract units have no physics; without this they walk straight through walls, HESCO
+## and fences. The next step is tested against the structures' blocking footprints
+## (StructureManager.blocks_point, a cell lookup): straight on if free, else sliding
+## 45° / 90° to one side (along a wall), else ZERO (the unit stops, BLOCKED). No path
+## search: an abstract unit does not find a gate on its own; it gets its navmesh path
+## again when it becomes detailed near the camera.
+func _free_direction(u: UnitState, dir: Vector3, step: float) -> Vector3:
+	var p := Vector2(u.position.x, u.position.z)
+	var look := maxf(step, 0.5)
+	if structures.blocks_point(p):
+		return dir  # already inside a footprint (built around it): let it walk out
+	for deg: float in [0.0, 45.0, -45.0, 90.0, -90.0]:
+		var d := dir.rotated(Vector3.UP, deg_to_rad(deg))
+		if not structures.blocks_point(p + Vector2(d.x, d.z) * look):
+			return d
+	return Vector3.ZERO
 
 
 ## Counts for the HUD and tests: how many units have a body, how many are moving.

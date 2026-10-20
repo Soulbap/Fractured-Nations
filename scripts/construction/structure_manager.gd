@@ -12,25 +12,34 @@
 ##     other structures, tree trunks and units), ray picking and navmesh obstacles;
 ##   - grass clearing: footprints are painted into the in-memory grass exclusion mask
 ##     (never saved to the world's mask file) so grass does not grow through floors and
-##     walls; removed structures restore the original texels.
+##     walls; removed structures restore the original texels;
+##   - groundwork (WORLD-INTEGRATION-01): buildings level the terrain under their footprint
+##     to a pad that blends into the surroundings, so they can stand on sloped and uneven
+##     ground. The pads are derived from the building records (no extra saved data), the
+##     terrain files are never written, and removing a building restores the ground.
 ## Not a streaming framework: it only toggles nodes per cell.
 class_name StructureManager
 extends Node3D
 
 ## Emitted after structures were added or removed inside this XZ rectangle (navigation).
 signal area_changed(rect: Rect2)
+## Emitted after groundwork changed terrain heights inside this XZ rectangle (navigation
+## must re-read the terrain faces there).
+signal terrain_edited(rect: Rect2)
 
 const CELL := 128.0
 ## Largest distance (m) from an instance origin to the edge of its footprint.
 const MAX_REACH := 10.0
+## Grid size (m) of the water triangle index.
+const WATER_CELL := 64.0
 
 @export var terrain: Terrain3D
 @export var vegetation: VegetationStreamer
 @export var sim: WorldSim
 ## Map half size; nothing is built closer than 5 m to the edge.
 @export var map_half_size := 0.0
-## Terrain below this height counts as water (the current maps have no water bodies;
-## lakes or a sea level go here).
+## Terrain below this height counts as water (a sea level). Rivers and lakes come from
+## set_water().
 @export var water_level := -INF
 @export var render_radius := 1800.0
 @export var collision_radius := 260.0
@@ -38,12 +47,34 @@ const MAX_REACH := 10.0
 ## Extra clearance around tree trunks for placement.
 @export var tree_margin := 0.35
 ## Navmesh obstacles are this much larger on every side than the collision boxes: the
-## 0.75 m navmesh raster otherwise lets paths clip wall corners by a few centimetres.
-@export var nav_margin := 0.3
+## 0.75 m navmesh raster otherwise lets paths clip wall corners. 0.3 m (WORLD-BASE-01) left
+## about 0.3 m worst-case clearance, less than the 0.35 m soldier capsule; a soldier got
+## stuck on a command post corner after an area re-centre (WORLD-INTEGRATION-01).
+@export var nav_margin := 0.5
 ## Grass layer whose exclusion mask structures paint into (optional).
 @export var grass: GrassLayer
 ## Grass-free margin around footprints (m), on top of half a mask texel.
 @export var grass_margin := 1.0
+## Vegetation that placement may clear inside a footprint when clearing is on (trees,
+## juniper, shrubs, stones, logs, stumps, ferns of the Nordic library). Boulders,
+## outcrops and the settlement buildings and props are never cleared and keep blocking.
+@export var clearable_ids := PackedInt32Array([1, 2, 3, 4, 5, 6, 7, 8, 11, 13, 14, 15])
+## Ids without a collider that are always removed under a footprint (they would poke
+## through floors); trees only go when clearing is on.
+@export var undergrowth_ids := PackedInt32Array([7, 8, 11, 13, 14, 15])
+## Cleared margin around footprints (m).
+@export var clear_margin := 1.0
+## Groundwork: buildings level the ground under them (cut and fill to one pad height).
+@export var level_ground := true
+## Steepest average terrain slope a building can be levelled on.
+@export var level_max_slope_deg := 20.0
+## Largest cut or fill (m) between the pad and the terrain anywhere under the footprint.
+@export var level_max_depth := 2.5
+## Width (m) of the zone around a pad where the levelled ground blends back into the terrain.
+@export var level_blend := 4.0
+## Largest cut or fill allowed when the groundwork would touch a road (road meshes follow
+## the original terrain).
+@export var level_max_depth_near_road := 0.3
 
 var state: ConstructionState
 ## Returns the point physics should exist around (set by the game; default: camera).
@@ -59,6 +90,10 @@ var _dirty_cells := {}
 var _timer := 0.0
 var _tree_cache := {}
 var _tree_radii := {}
+## Vector2i water cell -> Array of [a, b, c] world-space triangles (set_water).
+var _water := {}
+## Groundwork: original terrain height of every vertex a pad changed (Vector2i -> float).
+var _orig_heights := {}
 ## Original grass mask texels (copy of the world mask image) and the pending dirty area.
 var _mask_original: Image
 var _mask_dirty := Rect2()
@@ -74,14 +109,17 @@ func bind_state(p_state: ConstructionState) -> void:
 		state.structure_removed.disconnect(_on_removed)
 		state.structure_changed.disconnect(_on_changed)
 		state.cleared.disconnect(_on_cleared)
+		state.clearings_changed.disconnect(_apply_clearings)
 	state = p_state
 	state.structure_added.connect(_on_added)
 	state.structure_removed.connect(_on_removed)
 	state.structure_changed.connect(_on_changed)
 	state.cleared.connect(_on_cleared)
+	state.clearings_changed.connect(_apply_clearings)
 	_on_cleared()
 	for s in state.all():
 		_on_added(s)
+	_apply_clearings()
 
 
 func _process(delta: float) -> void:
@@ -123,7 +161,7 @@ func stats() -> Dictionary:
 
 ## Fits a building to the terrain and validates it.
 ## Returns {ok: bool, reason: String, xform: Transform3D}.
-func check_building(def: StructureDef, pos: Vector3, yaw: float, ignore_id := -1) -> Dictionary:
+func check_building(def: StructureDef, pos: Vector3, yaw: float, ignore_id := -1, clear_trees := false) -> Dictionary:
 	var b := def.bounds()
 	var basis := Basis(Vector3.UP, yaw)
 	var c := Vector3(b.get_center().x, 0.0, b.get_center().z)
@@ -145,7 +183,7 @@ func check_building(def: StructureDef, pos: Vector3, yaw: float, ignore_id := -1
 			if is_nan(h):
 				reason = "outside the terrain"
 				break
-			if h < water_level:
+			if _wet(w.x, w.z, h):
 				reason = "water"
 			hmin = minf(hmin, h)
 			hmax = maxf(hmax, h)
@@ -155,25 +193,35 @@ func check_building(def: StructureDef, pos: Vector3, yaw: float, ignore_id := -1
 			szz += lz * lz
 		if reason == "outside the terrain":
 			break
-	var xform := Transform3D(basis, Vector3(pos.x, (hmax if hmax > -INF else pos.y) - def.sink, pos.z))
-	if reason == "" and not _inside_map(xform.origin, b.size.length() * 0.5):
+	var levelled := level_ground and terrain != null and hmax > -INF
+	# Groundwork: the pad sits halfway between the lowest and highest ground, so cut and
+	# fill are equal. Without it the building rests on the highest point.
+	var pad_y := (hmin + hmax) * 0.5 if levelled else hmax
+	var xform := Transform3D(basis, Vector3(pos.x, (pad_y if hmax > -INF else pos.y) - def.sink, pos.z))
+	var depth := (hmax - hmin) * 0.5 if levelled else 0.0
+	if reason == "" and not _inside_map(xform.origin, b.size.length() * 0.5 + (level_blend if levelled else 0.0)):
 		reason = "outside the map"
 	if reason == "":
 		var gx := sxh / maxf(sxx, 0.001)
 		var gz := szh / maxf(szz, 0.001)
 		var slope := rad_to_deg(atan(sqrt(gx * gx + gz * gz)))
-		if slope > def.max_slope_deg:
-			reason = "too steep (%.0f° > %.0f°)" % [slope, def.max_slope_deg]
-		elif hmax - hmin > def.max_ground_gap:
+		var max_slope := maxf(def.max_slope_deg, level_max_slope_deg) if levelled else def.max_slope_deg
+		if slope > max_slope:
+			reason = "too steep (%.0f° > %.0f°)" % [slope, max_slope]
+		elif not levelled and hmax - hmin > def.max_ground_gap:
 			reason = "uneven ground (%.1f m)" % (hmax - hmin)
+		elif levelled and depth > level_max_depth:
+			reason = "too uneven to level (%.1f m cut / fill > %.1f m)" % [depth, level_max_depth]
+		elif levelled and depth > level_max_depth_near_road and _near_road(_obb(def, xform), level_blend):
+			reason = "too uneven to level next to a road (%.1f m cut / fill)" % depth
 	if reason == "":
-		reason = _blocked(def, _obb(def, xform), ignore_id, -1)
-	return {"ok": reason == "", "reason": reason, "xform": xform}
+		reason = _blocked(def, _obb(def, xform), ignore_id, -1, clear_trees)
+	return {"ok": reason == "", "reason": reason, "xform": xform, "level_m": snappedf(depth, 0.01)}
 
 
 ## Fits every module of a line and validates each one.
 ## Returns {modules: [{xform, ok, reason}], ok_count, length_m}.
-func check_line(def: StructureDef, points: PackedVector3Array, ignore_id := -1) -> Dictionary:
+func check_line(def: StructureDef, points: PackedVector3Array, ignore_id := -1, clear_trees := false) -> Dictionary:
 	var mods := ModularLine.modules(def, points)
 	var out := []
 	var ok_count := 0
@@ -181,7 +229,7 @@ func check_line(def: StructureDef, points: PackedVector3Array, ignore_id := -1) 
 		var m: Dictionary = mods[i]
 		var r := fit_module(def, m.center, m.dir, i)
 		if r.ok:
-			r.reason = _blocked(def, _obb(def, r.xform), ignore_id, -1)
+			r.reason = _blocked(def, _obb(def, r.xform), ignore_id, -1, clear_trees)
 			r.ok = r.reason == ""
 		out.append(r)
 		if r.ok:
@@ -231,7 +279,7 @@ func fit_module(def: StructureDef, c: Vector2, dir: Vector2, index := 0) -> Dict
 	var xform := Transform3D(basis, Vector3(c.x, y - def.sink, c.y))
 	var reason := ""
 	var slope := rad_to_deg(atan(absf(slope_along)))
-	if hmin < water_level:
+	if hmin < water_level or _wet(c.x, c.y, hc) or _wet(p1.x, p1.y, h1) or _wet(p2.x, p2.y, h2):
 		reason = "water"
 	elif not _inside_map(xform.origin, half_l + 1.0):
 		reason = "outside the map"
@@ -328,8 +376,9 @@ func pick(from: Vector3, dir: Vector3, max_dist := 3000.0) -> Dictionary:
 # --- Navigation -------------------------------------------------------------------
 
 ## Obstacles for AreaNavigation.bake_area inside a square: [{position, yaw, size}].
-## Only ground-touching collision boxes of blocking types (walls, not roofs; gates and
-## stairs stay walkable).
+## Only ground-touching collision boxes (walls, not roofs). Non-blocking types (gates) carve
+## their boxes too, which are only the posts: the opening between them stays walkable, and
+## paths no longer run into the posts (WORLD-INTEGRATION-01).
 func nav_obstacles(center: Vector3, half: float) -> Array:
 	var out := []
 	var seen := {}
@@ -342,8 +391,6 @@ func nav_obstacles(center: Vector3, half: float) -> Array:
 			if s == null or (s.is_line() and s.is_removed(e.y)):
 				continue
 			var def := StructureCatalog.get_def(s.type_id)
-			if not def.blocks_navigation:
-				continue
 			var xf := s.instances[e.y]
 			if absf(xf.origin.x - center.x) > half + MAX_REACH or absf(xf.origin.z - center.z) > half + MAX_REACH:
 				continue
@@ -374,8 +421,9 @@ func _resolve(s: StructureState) -> void:
 		for i in mods.size():
 			s.instances.append(fit_module(def, mods[i].center, mods[i].dir, i).xform)
 	else:
-		var r := check_building(def, s.position, s.yaw, s.id)
-		s.instances.append(r.xform)
+		# The record holds the fitted transform (pad height - sink); refitting would read
+		# ground that this building's own groundwork has already changed.
+		s.instances.append(Transform3D(Basis(Vector3.UP, s.yaw), s.position))
 
 
 func _on_added(s: StructureState) -> void:
@@ -386,6 +434,8 @@ func _on_added(s: StructureState) -> void:
 			_index[c] = []
 		_index[c].append(Vector2i(s.id, i))
 		_dirty_cells[c] = true
+	if _is_pad(s):
+		_relevel(_rect_of(s).grow(level_blend))
 	_grass_dirty(_rect_of(s))
 	area_changed.emit(_rect_of(s))
 
@@ -398,6 +448,8 @@ func _on_removed(s: StructureState) -> void:
 		if list.is_empty():
 			_index.erase(c)
 		_dirty_cells[c] = true
+	if _is_pad(s):
+		_relevel(_rect_of(s).grow(level_blend))
 	_grass_dirty(_rect_of(s))
 	area_changed.emit(_rect_of(s))
 
@@ -417,6 +469,7 @@ func _on_cleared() -> void:
 	_bodies.clear()
 	_index.clear()
 	_dirty_cells.clear()
+	_restore_all_ground()
 	if _mask_original and grass and grass.mask:
 		grass.mask.image.copy_from(_mask_original)
 		grass.apply_mask()
@@ -625,6 +678,276 @@ static func _wedge(b: AABB) -> ConvexPolygonShape3D:
 	return shape
 
 
+# --- Groundwork --------------------------------------------------------------------
+
+func _levels(def: StructureDef) -> bool:
+	return level_ground and terrain != null and def != null and not def.linear
+
+
+func _is_pad(s: StructureState) -> bool:
+	return not s.is_line() and _levels(StructureCatalog.get_def(s.type_id)) and not s.instances.is_empty()
+
+
+## Margin around a footprint that placement clears of vegetation.
+func _clear_reach(def: StructureDef) -> float:
+	return maxf(clear_margin, level_blend) if _levels(def) else clear_margin
+
+
+## The groundwork zone of a footprint touches a road (the world's original grass mask).
+func _near_road(obb: Array, reach: float) -> bool:
+	if grass == null or grass.mask == null or grass.mask.image == null:
+		return false
+	if _mask_original == null:
+		_mask_original = grass.mask.image.duplicate()
+	var m := grass.mask
+	var r: float = (obb[3] as Vector2).length() + reach
+	var c: Vector2 = obb[0]
+	var steps := ceili(r / m.texel_m)
+	for iz in range(-steps, steps + 1):
+		for ix in range(-steps, steps + 1):
+			var p := c + Vector2(ix, iz) * m.texel_m
+			if not _obb_circle(obb, p, reach):
+				continue
+			var px := int((p.x - m.origin.x) / m.texel_m)
+			var pz := int((p.y - m.origin.y) / m.texel_m)
+			if px >= 0 and pz >= 0 and px < _mask_original.get_width() and pz < _mask_original.get_height() and _mask_original.get_pixel(px, pz).r >= 0.5:
+				return true
+	return false
+
+
+## Pads touching rect: [obb, pad height] of every levelling building.
+func _pads_in(rect: Rect2) -> Array:
+	var out := []
+	for sid in _ids_in(rect.grow(level_blend)):
+		var s: StructureState = state.get_structure(sid)
+		if s == null or not _is_pad(s):
+			continue
+		var def := StructureCatalog.get_def(s.type_id)
+		out.append([_obb(def, s.instances[0]), s.instances[0].origin.y + def.sink])
+	return out
+
+
+## Recomputes the terrain heights inside rect from the original ground and every pad
+## there: inside a footprint the pad height, in the blend zone a smooth mix (weights^4 so
+## neighbouring pads barely pull on each other's edges), elsewhere the original height.
+## Then uploads the height maps, patches the physics shapes and refits lines in the area.
+func _relevel(rect: Rect2) -> void:
+	if terrain == null or terrain.data == null:
+		return
+	var t0 := Time.get_ticks_usec()
+	var sp: float = terrain.vertex_spacing
+	var pads := _pads_in(rect)
+	var x0 := floori(rect.position.x / sp)
+	var z0 := floori(rect.position.y / sp)
+	var x1 := ceili(rect.end.x / sp)
+	var z1 := ceili(rect.end.y / sp)
+	var changed := 0
+	var regions := {}
+	for iz in range(z0, z1 + 1):
+		for ix in range(x0, x1 + 1):
+			var key := Vector2i(ix, iz)
+			var p := Vector2(ix * sp, iz * sp)
+			var px := _pixel_pos(ix, iz, sp)
+			var orig: float = _orig_heights[key] if _orig_heights.has(key) else terrain.data.get_pixel(Terrain3DRegion.TYPE_HEIGHT, px).r
+			var w_max := 0.0
+			var core := NAN
+			var sw := 0.0
+			var swy := 0.0
+			for pad: Array in pads:
+				var d := _obb_distance(pad[0], p)
+				if d <= 0.0:
+					core = pad[1]
+					break
+				if d >= level_blend:
+					continue
+				var w := 1.0 - smoothstep(0.0, level_blend, d)
+				w_max = maxf(w_max, w)
+				var w4 := w * w * w * w
+				sw += w4
+				swy += w4 * float(pad[1])
+			var h := orig
+			if not is_nan(core):
+				h = core
+			elif w_max > 0.0:
+				h = lerpf(orig, swy / sw, w_max)
+			var cur: float = terrain.data.get_pixel(Terrain3DRegion.TYPE_HEIGHT, px).r
+			if absf(h - cur) < 0.0005:
+				if h == orig and _orig_heights.has(key) and is_nan(core) and w_max == 0.0:
+					_orig_heights.erase(key)
+				continue
+			if not _orig_heights.has(key):
+				_orig_heights[key] = orig
+			terrain.data.set_pixel(Terrain3DRegion.TYPE_HEIGHT, px, Color(h, 0.0, 0.0, 1.0))
+			if is_nan(core) and w_max == 0.0:
+				_orig_heights.erase(key)
+			changed += 1
+			regions[terrain.data.get_region_location(px)] = true
+	if changed > 0:
+		for loc in regions:
+			var region: Terrain3DRegion = terrain.data.get_region(loc)
+			if region:
+				region.set_edited(true)
+		terrain.data.update_maps(Terrain3DRegion.TYPE_HEIGHT, false, false)
+		for loc in regions:
+			var region: Terrain3DRegion = terrain.data.get_region(loc)
+			if region:
+				region.set_edited(false)
+		timings["level_shapes"] = _patch_collision(rect)
+		_refit_lines(rect)
+		terrain_edited.emit(rect)
+	timings["level_vertices"] = changed
+	timings["level_ms"] = (Time.get_ticks_usec() - t0) / 1000.0
+
+
+## Puts every changed vertex back (all structures cleared).
+func _restore_all_ground() -> void:
+	if terrain == null or _orig_heights.is_empty():
+		return
+	var sp: float = terrain.vertex_spacing
+	var lo := Vector2(INF, INF)
+	var hi := -lo
+	for key: Vector2i in _orig_heights:
+		var px := _pixel_pos(key.x, key.y, sp)
+		terrain.data.set_pixel(Terrain3DRegion.TYPE_HEIGHT, px, Color(_orig_heights[key], 0.0, 0.0, 1.0))
+		terrain.data.get_regionp(px).set_edited(true)
+		lo = lo.min(Vector2(key) * sp)
+		hi = hi.max(Vector2(key) * sp)
+	_orig_heights.clear()
+	terrain.data.update_maps(Terrain3DRegion.TYPE_HEIGHT, false, false)
+	for r: Terrain3DRegion in terrain.data.get_regions_active():
+		r.set_edited(false)
+	var rect := Rect2(lo, hi - lo).grow(2.0)
+	_patch_collision(rect)
+	terrain_edited.emit(rect)
+
+
+## Position that addresses the height pixel of vertex (ix, iz) (a quarter cell inside it,
+## safe for both floor and round pixel lookups).
+static func _pixel_pos(ix: int, iz: int, sp: float) -> Vector3:
+	return Vector3((ix + 0.25) * sp, 0.0, (iz + 0.25) * sp)
+
+
+## Distance from p to an oriented rectangle (0 inside).
+static func _obb_distance(a: Array, p: Vector2) -> float:
+	var d := p - (a[0] as Vector2)
+	var lx: float = absf(d.dot(a[1])) - a[3].x
+	var lz: float = absf(d.dot(a[2])) - a[3].y
+	return Vector2(maxf(lx, 0.0), maxf(lz, 0.0)).length()
+
+
+## Terrain3D builds its collision from the height data only when shapes move or on a full
+## rebuild (~0.4 s for the 200 m radius). Instead, the heightfield shapes overlapping rect
+## get their data re-read from the edited terrain. Returns the number of patched shapes.
+func _patch_collision(rect: Rect2) -> int:
+	if terrain.collision == null or not terrain.collision.is_enabled():
+		return 0
+	var body := terrain.collision.get_rid()
+	if not body.is_valid():
+		return 0
+	var n := 0
+	var delta := 0.0
+	for i in PhysicsServer3D.body_get_shape_count(body):
+		var shape := PhysicsServer3D.body_get_shape(body, i)
+		if PhysicsServer3D.shape_get_type(shape) != PhysicsServer3D.SHAPE_HEIGHTMAP:
+			continue
+		var xf := PhysicsServer3D.body_get_shape_transform(body, i)
+		var data: Dictionary = PhysicsServer3D.shape_get_data(shape)
+		var w: int = data.width
+		var dpt: int = data.depth
+		var half := Vector3((w - 1) * 0.5, 0.0, (dpt - 1) * 0.5)
+		var a := xf * (-half)
+		var b := xf * half
+		var srect := Rect2(Vector2(minf(a.x, b.x), minf(a.z, b.z)), Vector2(absf(b.x - a.x), absf(b.z - a.z)))
+		if not srect.intersects(rect):
+			continue
+		var heights: PackedFloat32Array = data.heights
+		var sy := xf.basis.y.length()
+		var lo := INF
+		var hi := -INF
+		for iz in dpt:
+			for ix in w:
+				var wp := xf * Vector3(ix - half.x, 0.0, iz - half.z)
+				var h: float = terrain.data.get_height(Vector3(wp.x, 0.0, wp.z))
+				if is_nan(h):
+					continue
+				var lh := (h - xf.origin.y) / sy
+				delta = maxf(delta, absf(heights[iz * w + ix] - lh) * sy)
+				heights[iz * w + ix] = lh
+				lo = minf(lo, lh)
+				hi = maxf(hi, lh)
+		data.heights = heights
+		data.min_height = minf(data.get("min_height", lo), lo)
+		data.max_height = maxf(data.get("max_height", hi), hi)
+		PhysicsServer3D.shape_set_data(shape, data)
+		n += 1
+	# Largest height change written (m); on unedited ground this checks that the shapes
+	# are read back exactly as Terrain3D built them.
+	timings["collision_patch_delta_m"] = delta
+	return n
+
+
+## Line structures in rect follow the ground: refit their modules after groundwork.
+func _refit_lines(rect: Rect2) -> void:
+	for sid in _ids_in(rect):
+		var s: StructureState = state.get_structure(sid)
+		if s == null or not s.is_line():
+			continue
+		var before := s.instances.duplicate()
+		_resolve(s)
+		if s.instances != before:
+			for xf in s.instances:
+				_dirty_cells[_cell_of(xf.origin)] = true
+
+
+# --- Water ------------------------------------------------------------------------
+
+## Indexes the water surfaces of a world (the reference world's river ribbons and lake
+## polygons under its Water node) so placement can reject points under water.
+func set_water(root: Node) -> void:
+	_water.clear()
+	if root == null:
+		return
+	var tris := 0
+	for n in root.find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		var xf: Transform3D = mi.global_transform if mi.is_inside_tree() else mi.transform
+		var faces := mi.mesh.get_faces()
+		for i in range(0, faces.size(), 3):
+			var a := xf * faces[i]
+			var b := xf * faces[i + 1]
+			var c := xf * faces[i + 2]
+			var lo := Vector2(minf(a.x, minf(b.x, c.x)), minf(a.z, minf(b.z, c.z)))
+			var hi := Vector2(maxf(a.x, maxf(b.x, c.x)), maxf(a.z, maxf(b.z, c.z)))
+			var tri := [a, b, c]
+			for gx in range(floori(lo.x / WATER_CELL), floori(hi.x / WATER_CELL) + 1):
+				for gz in range(floori(lo.y / WATER_CELL), floori(hi.y / WATER_CELL) + 1):
+					var k := Vector2i(gx, gz)
+					if not _water.has(k):
+						_water[k] = []
+					_water[k].append(tri)
+			tris += 1
+	print("StructureManager: water index %d triangles in %d cells" % [tris, _water.size()])
+
+
+## Water surface height at (x, z), or -INF where there is no water.
+func water_height(x: float, z: float) -> float:
+	var p := Vector2(x, z)
+	for tri: Array in _water.get(Vector2i(floori(x / WATER_CELL), floori(z / WATER_CELL)), []):
+		var a: Vector3 = tri[0]
+		var b: Vector3 = tri[1]
+		var c: Vector3 = tri[2]
+		if Geometry2D.point_is_inside_triangle(p, Vector2(a.x, a.z), Vector2(b.x, b.z), Vector2(c.x, c.z)):
+			return maxf(a.y, maxf(b.y, c.y))
+	return -INF
+
+
+## Terrain height h at (x, z) is below the water level or under a water surface.
+func _wet(x: float, z: float, h: float) -> bool:
+	return h < water_level or h < water_height(x, z) + 0.15
+
+
 # --- Geometry helpers -------------------------------------------------------------
 
 func _height(x: float, z: float) -> float:
@@ -686,7 +1009,7 @@ static func _obb_circle(a: Array, p: Vector2, r: float) -> bool:
 
 
 ## Why a footprint cannot be built here ("" = free): other structures, tree trunks, units.
-func _blocked(def: StructureDef, obb: Array, ignore_id: int, _ignore_index: int) -> String:
+func _blocked(def: StructureDef, obb: Array, ignore_id: int, _ignore_index: int, clear_trees := false) -> String:
 	var c: Vector2 = obb[0]
 	var reach: float = (obb[3] as Vector2).length()
 	# Structures. Same connection group (HESCO to HESCO, fence to gate) may touch.
@@ -708,24 +1031,24 @@ func _blocked(def: StructureDef, obb: Array, ignore_id: int, _ignore_index: int)
 				mine = [obb[0], obb[1], obb[2], Vector2(maxf(obb[3].x - 0.2, 0.05), maxf(obb[3].y - 0.2, 0.05))]
 			if _obb_overlap(mine, other):
 				return "blocked by %s" % odef.display_name.to_lower()
-	# Tree trunks.
+	# Tree trunks, rocks and settlement buildings (vegetation instances with a collider).
 	if vegetation and vegetation.library:
-		if _tree_radii.is_empty():
-			for d in vegetation.library.meshes:
-				if d.collider.x >= 0.0:
-					_tree_radii[d.id] = maxf(d.collider.y, 0.25)
 		var cs: float = vegetation.cell_size_m
 		var r := reach + 3.0
 		var c0 := VegetationChunk.cell_of(Vector3(c.x - r, 0, c.y - r), cs)
 		var c1 := VegetationChunk.cell_of(Vector3(c.x + r, 0, c.y + r), cs)
 		for cx in range(c0.x, c1.x + 1):
 			for cz in range(c0.y, c1.y + 1):
-				for t in _trees_in(Vector2i(cx, cz)):
-					var tp := Vector2(t.x, t.y)
-					if tp.distance_to(c) > r + t.z:
+				for t: Array in _trees_in(Vector2i(cx, cz)):
+					var tp := Vector2(t[0], t[1])
+					if tp.distance_to(c) > r + t[2]:
 						continue
-					if _obb_circle(obb, tp, t.z + tree_margin):
-						return "blocked by a tree"
+					if clear_trees and clearable_ids.has(t[3]) and _obb_circle(obb, tp, _clear_reach(def) - 0.05):
+						continue  # trunk inside the cleared area (footprint + margin / groundwork)
+					# Groundwork moves the ground under anything standing in its blend zone.
+					var keep := maxf(t[2] + tree_margin, level_blend if _levels(def) else 0.0)
+					if _obb_circle(obb, tp, keep):
+						return "blocked by %s" % _obstacle_name(t[3])
 	# Units standing there (records, so abstract units count too).
 	if sim:
 		for u: UnitState in sim.state.units.values():
@@ -742,13 +1065,103 @@ func _blocked(def: StructureDef, obb: Array, ignore_id: int, _ignore_index: int)
 	return ""
 
 
-## Tree trunks of one vegetation cell as Vector3(x, z, radius), cached (static data).
+## Solid vegetation of one vegetation cell as [x, z, radius, mesh_id], cached until
+## clearings change.
 func _trees_in(cell: Vector2i) -> Array:
 	if _tree_cache.has(cell):
 		return _tree_cache[cell]
+	# Built here, not on first placement: a lookup before any placement check must not
+	# cache empty cells.
+	if _tree_radii.is_empty():
+		for d in vegetation.library.meshes:
+			if d.collider.x >= 0.0:
+				_tree_radii[d.id] = maxf(d.collider.y, 0.25)
 	var out := []
 	for inst in vegetation.get_cell_instances(cell, _tree_radii.keys()):
 		var xf: Transform3D = inst[1]
-		out.append(Vector3(xf.origin.x, xf.origin.z, _tree_radii[inst[0]] * xf.basis.get_scale().x))
+		out.append([xf.origin.x, xf.origin.z, _tree_radii[inst[0]] * xf.basis.get_scale().x, inst[0]])
 	_tree_cache[cell] = out
 	return out
+
+
+func _obstacle_name(mesh_id: int) -> String:
+	var d := vegetation.library.get_def(mesh_id)
+	var n := d.name.to_lower() if d else "vegetation"
+	if clearable_ids.has(mesh_id):
+		return "a tree (%s; C turns clearing on)" % n
+	return "a %s" % n
+
+
+# --- Vegetation clearing ----------------------------------------------------------
+
+## Clearing records for the built footprints of a structure: the oriented footprint plus
+## clear_margin. trees: also remove trees (the clearing toggle); undergrowth always goes.
+func clearings_for(s: StructureState, trees: bool) -> Array:
+	var out := []
+	var def := StructureCatalog.get_def(s.type_id)
+	if def == null:
+		return out
+	for i in s.instances.size():
+		if s.is_line() and s.is_removed(i):
+			continue
+		var obb := _obb(def, s.instances[i])
+		var ax: Vector2 = obb[1]
+		var m := _clear_reach(def)
+		var half: Vector2 = obb[3] + Vector2(m, m)
+		var oc: Vector2 = obb[0]
+		out.append({"c": [snappedf(oc.x, 0.01), snappedf(oc.y, 0.01)], "yaw": snappedf(atan2(ax.y, ax.x), 0.0001),
+			"h": [snappedf(half.x, 0.01), snappedf(half.y, 0.01)], "trees": trees})
+	return out
+
+
+## Pushes the state's clearings to the vegetation streamer (which filters rendering,
+## colliders and navigation obstructions) and drops the cached trunks.
+func _apply_clearings() -> void:
+	_tree_cache.clear()
+	if vegetation == null or state == null:
+		return
+	var all_ids := {}
+	for id in clearable_ids:
+		all_ids[id] = true
+	var under := {}
+	for id in undergrowth_ids:
+		under[id] = true
+	var list := []
+	for r: Dictionary in state.clearings:
+		var a: float = r.get("yaw", 0.0)
+		var ax := Vector2(cos(a), sin(a))
+		list.append([Vector2(r.c[0], r.c[1]), ax, Vector2(-ax.y, ax.x), Vector2(r.h[0], r.h[1]),
+			all_ids if r.get("trees", true) else under])
+	vegetation.set_clearings(list)
+
+
+# --- Abstract tier ----------------------------------------------------------------
+
+## True if a soldier-sized circle at p (XZ) overlaps a navigation-blocking structure
+## (walls, HESCO, fences, building walls; gates and ramps stay passable). Used by the
+## abstract tier, which has no physics, so units do not walk through bases.
+func blocks_point(p: Vector2, radius := 0.4) -> bool:
+	for c in _cells_around(p, MAX_REACH + radius):
+		for e: Vector2i in _index.get(c, []):
+			var s: StructureState = state.get_structure(e.x)
+			if s == null or (s.is_line() and s.is_removed(e.y)):
+				continue
+			var xf := s.instances[e.y]
+			if Vector2(xf.origin.x - p.x, xf.origin.z - p.y).length() > MAX_REACH + radius:
+				continue
+			var def := StructureCatalog.get_def(s.type_id)
+			if not def.blocks_navigation:
+				continue
+			var ax := Vector2(xf.basis.x.x, xf.basis.x.z).normalized()
+			var az := Vector2(xf.basis.z.x, xf.basis.z.z).normalized()
+			for box in def.get_collision_boxes():
+				if box.position.y > 1.0:
+					continue
+				var bc := box.get_center()
+				var w := xf * Vector3(bc.x, 0.0, bc.z)
+				var half := Vector2(box.size.x, box.size.z) * 0.5
+				if def.linear:
+					half.x = def.module_length * 0.5
+				if _obb_circle([Vector2(w.x, w.z), ax, az, half], p, radius):
+					return true
+	return false

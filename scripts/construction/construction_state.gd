@@ -12,12 +12,26 @@ signal structure_removed(s: StructureState)
 ## A line lost a module (s.removed changed).
 signal structure_changed(s: StructureState)
 signal cleared
+## Vegetation clearings were added or replaced.
+signal clearings_changed
 
-const FORMAT_VERSION := 1
+## 2: adds "clearings" (version 1 files load with none).
+const FORMAT_VERSION := 2
 
 ## id -> StructureState
 var structures := {}
+## Areas where construction removed trees and undergrowth, independent of the structures
+## (removing a building does not regrow the forest): [{"c": [x, z], "yaw": r, "h": [hx, hz]}].
+var clearings: Array = []
 var _next_id := 1
+
+
+## Records cleared rectangles (XZ center, yaw, half extents) in one change.
+func add_clearings(list: Array) -> void:
+	if list.is_empty():
+		return
+	clearings.append_array(list)
+	clearings_changed.emit()
 
 
 func add_building(type_id: StringName, position: Vector3, yaw: float, faction := 0) -> StructureState:
@@ -78,19 +92,25 @@ func all() -> Array:
 
 func clear() -> void:
 	structures.clear()
+	clearings = []
 	_next_id = 1
 	cleared.emit()
+	clearings_changed.emit()
 
 
 func to_dict() -> Dictionary:
 	var list := []
 	for s in all():
 		list.append(s.to_dict())
-	return {"format": FORMAT_VERSION, "next_id": _next_id, "structures": list}
+	return {"format": FORMAT_VERSION, "next_id": _next_id, "structures": list, "clearings": clearings.duplicate(true)}
 
 
 func from_dict(d: Dictionary) -> void:
 	clear()
+	var cl: Array = d.get("clearings", [])
+	if not cl.is_empty():
+		clearings = cl.duplicate(true)
+		clearings_changed.emit()
 	for sd in d.get("structures", []):
 		var s := StructureState.from_dict(sd)
 		if s.id <= 0 or s.type_id == &"":

@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Fractured Nations"
-run/main_scene="res://scenes/game/core_demo.tscn"
+run/main_scene="res://scenes/game/world_ref_20km.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 

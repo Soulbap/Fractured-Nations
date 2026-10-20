@@ -8,7 +8,9 @@
 ## removes the last corner, Esc cancels. Ends snap to compatible structures (Ctrl
 ## disables snapping), Shift snaps the direction to 15° steps. Blocked modules of a line
 ## are shown red and left out when it is built. X switches to deletion: click a building
-## or a single line module, Shift+click removes a whole line.
+## or a single line module, Shift+click removes a whole line. C toggles vegetation clearing:
+## on (default), trees, shrubs and debris inside a new footprint are removed (persistent,
+## saved with the base); off, trees block placement. Rocks and settlements always block.
 ## Everything placed goes to WorldState.construction; nothing here renders placed
 ## structures (StructureManager does).
 class_name ConstructionController
@@ -29,6 +31,8 @@ enum Tool { NONE, PLACE, DELETE }
 @export var rotate_step_deg := 15.0
 @export var angle_snap_deg := 15.0
 @export var max_line_modules := 800
+## Clear trees and undergrowth inside new footprints (C toggles).
+@export var clear_trees := true
 
 var active := false
 var tool := Tool.NONE
@@ -228,6 +232,9 @@ func _unhandled_input(event: InputEvent) -> void:
 					handled = false
 			_:
 				handled = false
+	elif event.is_action_pressed("construction_clear"):
+		clear_trees = not clear_trees
+		_say("Vegetation clearing %s" % ("ON: trees inside new footprints are cut" if clear_trees else "OFF: trees block placement"))
 	elif event.is_action_pressed("construction_rotate"):
 		rotate_by(-rotate_step_deg if Input.is_key_pressed(KEY_SHIFT) else rotate_step_deg)
 	elif event.is_action_pressed("construction_finish"):
@@ -290,6 +297,7 @@ func place_building() -> StructureState:
 		return null
 	var xf: Transform3D = check.xform
 	var s := structures.state.add_building(def.id, xf.origin, yaw)
+	structures.state.add_clearings(structures.clearings_for(s, clear_trees))
 	_say("Built %s" % def.display_name)
 	built.emit(s)
 	return s
@@ -323,7 +331,7 @@ func finish_line() -> StructureState:
 		cancel()
 		return null
 	var pts := line_points.duplicate()  # packed arrays are shared; cancel() clears line_points
-	var result := structures.check_line(def, pts)
+	var result := structures.check_line(def, pts, -1, clear_trees)
 	var removed := PackedInt32Array()
 	var mods: Array = result.modules
 	for i in mods.size():
@@ -334,6 +342,7 @@ func finish_line() -> StructureState:
 		cancel()
 		return null
 	var s := structures.state.add_line(def.id, pts, removed)
+	structures.state.add_clearings(structures.clearings_for(s, clear_trees))
 	var blocked := 0
 	for m in mods:
 		if not m.ok:
@@ -450,7 +459,7 @@ func _refresh_check() -> void:
 		line_end = Vector3.INF
 		return
 	if not def.linear:
-		check = structures.check_building(def, cursor, yaw)
+		check = structures.check_building(def, cursor, yaw, -1, clear_trees)
 		return
 	if line_points.is_empty():
 		var p: Vector3 = snap.point if not snap.is_empty() else cursor
@@ -460,7 +469,7 @@ func _refresh_check() -> void:
 		line_end = Vector3.INF
 		var r := structures.fit_module(def, Vector2(p.x, p.z) + (dir * def.module_length * 0.5 if def.layout == StructureDef.Layout.SPAN else Vector2.ZERO), dir)
 		if r.ok:
-			r.reason = structures._blocked(def, StructureManager._obb(def, r.xform), -1, -1)
+			r.reason = structures._blocked(def, StructureManager._obb(def, r.xform), -1, -1, clear_trees)
 			r.ok = r.reason == ""
 		check = {"modules": [r], "ok_count": 1 if r.ok else 0, "length_m": 0.0}
 		return
@@ -475,7 +484,7 @@ func _refresh_check() -> void:
 	var pts := line_points.duplicate()
 	pts.append(line_end)
 	# The cursor often rests: validate a line only when its points changed.
-	var key := [def.id, pts, structures.state.count(), _state_version]
+	var key := [def.id, pts, structures.state.count(), _state_version, clear_trees]
 	if key == _check_key:
 		return
 	_check_key = key
@@ -485,7 +494,7 @@ func _refresh_check() -> void:
 	if total > max_line_modules:
 		line_end = last
 		pts = line_points
-	check = structures.check_line(def, pts) if pts.size() >= 2 else {}
+	check = structures.check_line(def, pts, -1, clear_trees) if pts.size() >= 2 else {}
 
 
 # --- Preview ----------------------------------------------------------------------
@@ -551,7 +560,7 @@ func status_lines() -> Array[String]:
 		return out
 	match tool:
 		Tool.NONE:
-			out.append("CONSTRUCTION  choose a type on the left | X delete | F5 save, F9 load | B or Esc leave")
+			out.append("CONSTRUCTION  choose a type on the left | X delete | C clearing %s | F5 save, F9 load | B or Esc leave" % ("ON" if clear_trees else "OFF"))
 		Tool.DELETE:
 			var what := "nothing under the cursor"
 			if not hover.is_empty():
@@ -567,10 +576,12 @@ func status_lines() -> Array[String]:
 					info = "%d modules, %.0f m%s" % [n, check.length_m, (", %d blocked: %s" % [bad, _first_reason()]) if bad > 0 else ""]
 				out.append("%s  LMB %s | Enter/RMB/double-click finish | Backspace undo corner | Shift 15° | Ctrl no snap | Esc cancel" % [
 					def.display_name.to_upper(), "start" if line_points.is_empty() else "add corner"])
-				out.append("%s%s" % [info, "  | snapped" if not snap.is_empty() else ""])
+				out.append("%s%s  | C clearing %s" % [info, "  | snapped" if not snap.is_empty() else "", "ON" if clear_trees else "OFF"])
 			else:
 				out.append("%s  LMB build | R / Shift+R / Ctrl+wheel rotate (%.0f°) | RMB/Esc cancel" % [def.display_name.to_upper(), rad_to_deg(yaw)])
-				out.append("OK to build" if check.get("ok", false) else "Cannot build: %s" % check.get("reason", "point at the ground"))
+				var lvl: float = check.get("level_m", 0.0)
+				out.append(("OK to build%s" % ("  (groundwork: levels up to %.1f m)" % lvl if lvl >= 0.1 else "") if check.get("ok", false) else "Cannot build: %s" % check.get("reason", "point at the ground"))
+					+ "  | C clearing %s" % ("ON" if clear_trees else "OFF"))
 	if message != "":
 		out.append(message)
 	return out
@@ -599,7 +610,7 @@ static func _ensure_input_actions() -> void:
 	var binds := {
 		"construction_mode": [KEY_B], "construction_rotate": [KEY_R], "construction_finish": [KEY_ENTER, KEY_KP_ENTER],
 		"construction_undo_point": [KEY_BACKSPACE], "construction_delete": [KEY_X, KEY_DELETE],
-		"construction_save": [KEY_F5], "construction_load": [KEY_F9],
+		"construction_save": [KEY_F5], "construction_load": [KEY_F9], "construction_clear": [KEY_C],
 	}
 	for action in binds:
 		if InputMap.has_action(action):

@@ -20,12 +20,50 @@ var area_size := 0.0
 var last_bake := {}
 ## Async bakes still running.
 var _pending := 0
+## Bumped per bake: an async result older than the newest bake is dropped (a sync bake
+## for a possession jump must not be replaced by a re-centre that finishes later).
+var _serial := 0
 var _faces := PackedVector3Array()
 var _faces_key := []
 
 
 func has_pending_bake() -> bool:
 	return _pending > 0
+
+
+## The terrain changed inside rect (construction groundwork): update the cached terrain
+## faces there. Terrain3D emits one quad (two triangles, six vertices) per grid cell, row by
+## row over the grid points inside the area, so the affected vertices are found by index;
+## regenerating all faces would cost ~115 ms on the main thread at every placement. If the
+## face count does not match that layout (holes), the cache is dropped instead.
+func terrain_changed(rect: Rect2) -> void:
+	var half := area_size * 0.5
+	var area := Rect2(area_center.x - half, area_center.z - half, area_size, area_size)
+	if _faces_key.is_empty() or not area.intersects(rect):
+		return
+	var sp: float = terrain.vertex_spacing
+	var gx0 := ceili(area.position.x / sp)
+	var gz0 := ceili(area.position.y / sp)
+	var ncols := floori(area.end.x / sp) - gx0 + 1
+	var nrows := floori(area.end.y / sp) - gz0 + 1
+	if _faces.size() != ncols * nrows * 6:
+		_faces_key = []
+		return
+	var cx0 := maxi(floori(rect.position.x / sp) - 1 - gx0, 0)
+	var cz0 := maxi(floori(rect.position.y / sp) - 1 - gz0, 0)
+	var cx1 := mini(ceili(rect.end.x / sp) + 1 - gx0, ncols - 1)
+	var cz1 := mini(ceili(rect.end.y / sp) + 1 - gz0, nrows - 1)
+	var corner := [Vector2i(0, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(0, 0), Vector2i(1, 0), Vector2i(1, 1)]
+	for cz in range(cz0, cz1 + 1):
+		for cx in range(cx0, cx1 + 1):
+			var base := (cz * ncols + cx) * 6
+			for k in 6:
+				var v := _faces[base + k]
+				var o: Vector2i = corner[k]
+				var h: float = terrain.data.get_height(Vector3((gx0 + cx + o.x) * sp, 0.0, (gz0 + cz + o.y) * sp))
+				if not is_nan(h):
+					v.y = h
+					_faces[base + k] = v
 
 
 ## obstacles: [{position: Vector3, yaw: float, size: Vector2}] (vehicles, structures).
@@ -61,12 +99,15 @@ func bake_area(center: Vector3, size: float, obstacles: Array = [], async := fal
 	nm.detail_sample_max_error = 1.0
 	nm.filter_walkable_low_height_spans = true
 	var t_src := Time.get_ticks_usec()
+	_serial += 1
+	var serial := _serial
 	if async:
 		_pending += 1
 		# The callback may come from the worker thread: apply on the main thread.
 		NavigationServer3D.bake_from_source_geometry_data_async(nm, src, func() -> void:
 			(func() -> void:
-				navigation_mesh = nm
+				if serial == _serial:
+					navigation_mesh = nm
 				_pending -= 1
 				last_bake["async_done_ms"] = (Time.get_ticks_usec() - t0) / 1000.0
 				last_bake["polygons"] = nm.get_polygon_count()).call_deferred())

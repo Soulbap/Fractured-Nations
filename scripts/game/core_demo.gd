@@ -12,7 +12,8 @@
 ## the navmesh and terrain collision follow the camera instead of covering the map.
 ##
 ## Command line (after "--"): --core-test [--shots]  scripted checks, see CoreSelfTest;
-## --large-test [--shots]  the 20 km checks, see LargeWorldSelfTest.
+## --large-test [--shots]  the 20 km checks, see LargeWorldSelfTest; --base-test, see BaseSelfTest;
+## --integration-test [--shots]  construction on the reference world, see IntegrationSelfTest.
 class_name CoreDemo
 extends Node3D
 
@@ -52,6 +53,7 @@ var sites: Array[Dictionary] = []
 var _selftest: CoreSelfTest
 var _large_selftest: LargeWorldSelfTest
 var _base_selftest: BaseSelfTest
+var _integration_selftest: IntegrationSelfTest
 
 
 func _ready() -> void:
@@ -133,7 +135,11 @@ func _setup_construction() -> void:
 	structures.sim = sim
 	structures.map_half_size = config.half_size()
 	structures.grass = world.get_node_or_null("Grass") as GrassLayer
+	structures.set_water(world.get_node_or_null("Water"))
+	if navigation:
+		structures.terrain_edited.connect(navigation.terrain_changed)
 	structures.bind_state(sim.state.construction)
+	sim.structures = structures
 	if construction:
 		construction.structures = structures
 		construction.rig = rts_camera
@@ -203,6 +209,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	if "--large-test" in args:
 		_large_selftest = LargeWorldSelfTest.new(self)
 		_large_selftest.run.call_deferred(args)
+	elif "--integration-test" in args:
+		_integration_selftest = IntegrationSelfTest.new(self)
+		_integration_selftest.run.call_deferred(args)
 	elif "--base-test" in args:
 		_base_selftest = BaseSelfTest.new(self)
 		_base_selftest.run.call_deferred(args)

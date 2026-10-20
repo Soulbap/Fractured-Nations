@@ -79,7 +79,7 @@ func _run() -> void:
 			if key.z == id:
 				n += 1
 		print("PROBE hide %-12s (%3d MMIs): %.2f ms  (saves %.2f)" % [d.name, n, t, base - t])
-	for node_name in ["Grass", "Water", "Structures", "Roads"]:
+	for node_name in ["Grass", "Water", "RoadStructures", "Roads"]:
 		var nd: Node3D = world.get_node_or_null(node_name)
 		if nd:
 			nd.visible = false

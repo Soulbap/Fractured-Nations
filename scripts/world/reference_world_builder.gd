@@ -645,11 +645,11 @@ func water_material(flowing: bool) -> ShaderMaterial:
 ## missing scenes are skipped (the paved road deck still spans the river).
 func place_structures(scene_owner: Node) -> void:
 	var data = _json("roads.json")
-	var root := scene_owner.get_node_or_null("Structures")
+	var root := scene_owner.get_node_or_null("RoadStructures")
 	if root:
 		root.free()
 	root = Node3D.new()
-	root.name = "Structures"
+	root.name = "RoadStructures"
 	scene_owner.add_child(root)
 	root.owner = scene_owner
 	var scenes := {}

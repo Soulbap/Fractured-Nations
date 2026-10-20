@@ -15,6 +15,10 @@
 class_name VegetationStreamer
 extends Node3D
 
+## Emitted when construction clearings changed the instances of these cells (colliders
+## and other caches of get_cell_instances must re-read them).
+signal clearings_changed(cells: Array)
+
 @export var enabled := true:
 	set(v):
 		enabled = v
@@ -41,6 +45,11 @@ extends Node3D
 ## Vector3i(cell.x, cell.y, mesh_id) -> MultiMeshInstance3D
 var active := {}
 var active_lod := {}
+## Cleared areas (WORLD-INTEGRATION-01, construction footprints): Vector2i cell ->
+## Array of [center: Vector2, axis_x: Vector2, axis_z: Vector2, half: Vector2, ids: Dictionary].
+## Instances of those mesh ids inside a rectangle are skipped by activation and by
+## get_cell_instances. The chunk files are never changed; the rectangles are game state.
+var clearings := {}
 ## Vector2i chunk location -> VegetationChunk
 var chunks := {}
 
@@ -99,6 +108,66 @@ func is_settled() -> bool:
 	return _loading.is_empty() and _queue_pos >= _queue.size()
 
 
+## Replaces all clearings (list of [center, axis_x, axis_z, half, ids]); re-activates the
+## affected cells with the filtered instances.
+func set_clearings(list: Array) -> void:
+	var by_cell := {}
+	var cs := cell_size_m
+	for r in list:
+		var c: Vector2 = r[0]
+		var reach: float = (r[3] as Vector2).length()
+		var c0 := VegetationChunk.cell_of(Vector3(c.x - reach, 0, c.y - reach), cs)
+		var c1 := VegetationChunk.cell_of(Vector3(c.x + reach, 0, c.y + reach), cs)
+		for cx in range(c0.x, c1.x + 1):
+			for cz in range(c0.y, c1.y + 1):
+				var cell := Vector2i(cx, cz)
+				if not by_cell.has(cell):
+					by_cell[cell] = []
+				by_cell[cell].append(r)
+	var changed := []
+	for cell in by_cell:
+		if not clearings.has(cell) or clearings[cell] != by_cell[cell]:
+			changed.append(cell)
+	for cell in clearings:
+		if not by_cell.has(cell):
+			changed.append(cell)
+	clearings = by_cell
+	if changed.is_empty():
+		return
+	var lookup := {}
+	for cell in changed:
+		lookup[cell] = true
+	for key in active.keys():
+		if lookup.has(Vector2i(key.x, key.y)):
+			_deactivate(key)
+	_dirty = true
+	clearings_changed.emit(changed)
+
+
+## Instance buffer of one (cell, mesh) without the cleared instances (the stored buffer
+## itself when nothing there is cleared).
+func _filtered(cell: Vector2i, mesh_id: int, buf: PackedFloat32Array) -> PackedFloat32Array:
+	var rects: Array = clearings.get(cell, [])
+	if rects.is_empty():
+		return buf
+	var fpi := VegetationChunk.FLOATS_PER_INSTANCE
+	var out := PackedFloat32Array()
+	for i in buf.size() / fpi:
+		var o := VegetationChunk.instance_transform(buf, i).origin
+		var p := Vector2(o.x, o.z)
+		var cleared := false
+		for r in rects:
+			if not r[4].has(mesh_id):
+				continue
+			var d: Vector2 = p - r[0]
+			if absf(d.dot(r[1])) <= r[3].x and absf(d.dot(r[2])) <= r[3].y:
+				cleared = true
+				break
+		if not cleared:
+			out.append_array(buf.slice(i * fpi, (i + 1) * fpi))
+	return out
+
+
 ## Instances of one cell as [mesh_id, Transform3D] pairs; loads the chunk synchronously.
 ## Used by InstanceColliderStreamer, which needs data immediately around the player.
 func get_cell_instances(cell: Vector2i, mesh_ids: Array) -> Array:
@@ -111,7 +180,7 @@ func get_cell_instances(cell: Vector2i, mesh_ids: Array) -> Array:
 	for mesh_id in mesh_ids:
 		if not by_mesh.has(mesh_id):
 			continue
-		var buf: PackedFloat32Array = by_mesh[mesh_id]
+		var buf := _filtered(cell, mesh_id, by_mesh[mesh_id])
 		for i in buf.size() / VegetationChunk.FLOATS_PER_INSTANCE:
 			out.append([mesh_id, VegetationChunk.instance_transform(buf, i)])
 	return out
@@ -306,7 +375,9 @@ func _activate(key: Vector3i, dist: float) -> void:
 	if ch == null or not ch.cells.has(cell) or not ch.cells[cell].has(key.z):
 		return
 	var def := library.get_def(key.z)
-	var buf: PackedFloat32Array = ch.cells[cell][key.z]
+	var buf := _filtered(cell, key.z, ch.cells[cell][key.z])
+	if buf.is_empty():
+		return
 	var lod := 0 if dist < def.near_range else 1
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D

@@ -45,12 +45,22 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	if not vegetation or not target:
 		return
+	if not vegetation.clearings_changed.is_connected(_on_clearings_changed):
+		vegetation.clearings_changed.connect(_on_clearings_changed)
 	var c := target.global_position
 	if c.distance_to(_last_center) < rebuild_distance:
 		return
 	_last_center = c
 	_index_near(c)
 	_rebuild(c)
+
+
+## Construction cleared vegetation: forget the indexed instances and rebuild on the next
+## tick (a few cells around the target; cheap).
+func _on_clearings_changed(_cells: Array) -> void:
+	_indexed.clear()
+	_buckets.clear()
+	_last_center = Vector3(INF, INF, INF)
 
 
 func _solid_ids() -> Array:

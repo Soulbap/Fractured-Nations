@@ -43,6 +43,10 @@ const VEHICLE_SCENE := preload("res://scenes/units/vehicle.tscn")
 @export var settle_speed := 20.0
 ## Dynamic terrain collision radius (m) around the terrain camera.
 @export var collision_radius := 200.0
+## Re-centre the navmesh on a worker thread when the observer drifts (camera panning,
+## walking, RTS jumps); units in the new area get bodies once it is ready. Possession
+## (activate_at) stays synchronous because the body needs ground and a path at once.
+@export var async_recenter := true
 
 var observer := Vector3.ZERO
 ## Invisible camera that Terrain3D follows (collision + LOD) while the tactical camera is active.
@@ -56,6 +60,9 @@ var _last_observer := Vector3(INF, 0, INF)
 var _speed := 0.0
 ## Seconds until a requested navmesh rebake (structures changed); < 0: none pending.
 var _rebake_in := -1.0
+## Centre of a re-centre bake running on a worker (INF: none).
+var _recenter_to := Vector3(INF, 0, INF)
+var _recenter_t0 := 0
 
 
 func _ready() -> void:
@@ -92,7 +99,7 @@ func _physics_process(delta: float) -> void:
 	_last_observer = observer
 	_follow_observer()
 	_update(false)
-	if _rebake_in >= 0.0:
+	if _rebake_in >= 0.0 and not _recenter_to.is_finite():
 		_rebake_in -= delta
 		if _rebake_in < 0.0:
 			_rebake(false)
@@ -144,9 +151,15 @@ func _update(force: bool) -> void:
 			demoted += 1
 	if not settled:
 		return
+	if _recenter_to.is_finite():
+		if navigation.has_pending_bake() and not force:
+			return  # no new bodies until the area they will walk on is baked
+		_finish_recenter()
 	var drift := _flat_dist(nav_center, observer) if nav_center.is_finite() else INF
 	if drift > nav_recenter_m or force and drift > 1.0:
-		_rebake()
+		_rebake(true, async_recenter and not force and nav_center.is_finite())
+		if _recenter_to.is_finite():
+			return
 	var promoted := 0
 	for u in sim.state.units.values():
 		if not u.has_body and _flat_dist(u.position, observer) <= promote_radius:
@@ -160,7 +173,7 @@ func _update(force: bool) -> void:
 
 ## full: re-centre on the observer with terrain collision (sync). Otherwise only the
 ## obstacles changed (structures): same area, async bake, collision untouched.
-func _rebake(full := true) -> void:
+func _rebake(full := true, async := false) -> void:
 	var obstacles := []
 	var half := nav_area_size * 0.5
 	for u in sim.state.units.values():
@@ -181,17 +194,37 @@ func _rebake(full := true) -> void:
 		bake_count += 1
 		zone_rebaked.emit(last_bake)
 		return
-	last_bake = navigation.bake_area(Vector3(observer.x, 0.0 if is_nan(h) else h, observer.z), nav_area_size, obstacles)
+	last_bake = navigation.bake_area(Vector3(observer.x, 0.0 if is_nan(h) else h, observer.z), nav_area_size, obstacles, async)
 	last_bake["vehicle_obstructions"] = vehicles
 	last_bake["structure_obstructions"] = obstacles.size() - vehicles
-	nav_center = observer
+	last_bake["recenter"] = "async" if async else "sync"
 	_rebake_in = -1.0
 	bake_count += 1
-	# Terrain collision follows the terrain camera; build it for the new area now so
-	# bodies promoted in the same tick have ground under them.
+	if async:
+		_recenter_to = observer
+		_recenter_t0 = Time.get_ticks_usec()
+		return
+	nav_center = observer
+	_update_collision()
+	zone_rebaked.emit(last_bake)
+
+
+## The worker finished the re-centre bake: switch the area and build terrain collision.
+func _finish_recenter() -> void:
+	nav_center = _recenter_to
+	_recenter_to = Vector3(INF, 0, INF)
+	last_bake["recenter_wait_ms"] = (Time.get_ticks_usec() - _recenter_t0) / 1000.0
+	_update_collision()
+	zone_rebaked.emit(last_bake)
+
+
+## Terrain collision follows the terrain camera; build it for the new area now so
+## bodies promoted in the same tick have ground under them.
+func _update_collision() -> void:
+	var t := Time.get_ticks_usec()
 	terrain.collision_radius = collision_radius
 	terrain.collision.update(true)
-	zone_rebaked.emit(last_bake)
+	last_bake["collision_ms"] = (Time.get_ticks_usec() - t) / 1000.0
 
 
 func _promote(u: UnitState) -> void:

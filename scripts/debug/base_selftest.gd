@@ -80,7 +80,8 @@ func run(args: PackedStringArray) -> void:
 
 	# 3. Moderate slope accepted, steep slope refused (spots searched within 2 km).
 	var moderate := _find_slope(&"command_post", 3.0, 6.5)
-	var steep := _find_slope(&"command_post", 12.0, 45.0)
+	# Above the groundwork limit (StructureManager.level_max_slope_deg, WORLD-INTEGRATION-01).
+	var steep := _find_slope(&"command_post", sm.level_max_slope_deg + 2.0, 45.0)
 	var mod_s: StructureState = null
 	var mod_slope := -1.0
 	if moderate.is_finite():
@@ -506,20 +507,30 @@ func _wheel(button: MouseButton) -> void:
 func _find_base_site(center: Vector3) -> Vector3:
 	var best := center
 	var best_score := INF
+	# WORLD-INTEGRATION-01: never in water or outside the map (the reference world has
+	# lakes and its sites lie near the map edge).
+	var lim := demo.config.half_size() - 120.0
 	for ring: float in [180.0, 260.0, 340.0, 420.0]:
 		for k in 16:
 			var a := k * TAU / 16.0
 			var p := center + Vector3(cos(a), 0, sin(a)) * ring
+			if absf(p.x) > lim or absf(p.z) > lim:
+				continue
 			var hs := []
+			var wet := false
 			for ix in range(-5, 6):
 				for iz in range(-5, 6):
-					hs.append(demo.ground_height(p + Vector3(ix * 10.0, 0, iz * 10.0)))
+					var q := p + Vector3(ix * 10.0, 0, iz * 10.0)
+					hs.append(demo.ground_height(q))
+					wet = wet or sm._wet(q.x, q.z, hs[-1])
+			if wet:
+				continue
 			var rng: float = hs.max() - hs.min()
 			var trees := 0
 			for cx in range(-1, 2):
 				for cz in range(-1, 2):
 					for t in sm._trees_in(VegetationChunk.cell_of(p + Vector3(cx * 60.0, 0, cz * 60.0), 128.0)):
-						if absf(t.x - p.x) < 90.0 and absf(t.y - p.z) < 90.0:
+						if absf(t[0] - p.x) < 90.0 and absf(t[1] - p.z) < 90.0:
 							trees += 1
 			var score := rng + trees * 0.5
 			if score < best_score:

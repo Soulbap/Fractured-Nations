@@ -3,7 +3,11 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **WORLD-BASE-01** freeform military base construction (RTS construction mode,
+Current state: **WORLD-INTEGRATION-01** — the construction system and the FPS/RTS game run on
+the reference world `ref_20km`, which is now the main scene (see
+[docs/WORLD-INTEGRATION-01_REPORT.md](docs/WORLD-INTEGRATION-01_REPORT.md) and
+[docs/WORLD-TERRAIN-01_REPORT.md](docs/WORLD-TERRAIN-01_REPORT.md)), on top of
+**WORLD-BASE-01** freeform military base construction (RTS construction mode,
 drag-to-build HESCO / fences / barriers, Blender-made construction set, persistent and saved)
 on the **WORLD-CORE-02** 20 km world simulation, the WORLD-CORE-01 FPS/RTS control, the
 WORLD-TECH-02 vegetation foundation and the WORLD-TECH-01 world-technology prototype. See
@@ -35,10 +39,20 @@ All addons are committed to the repository. Nothing has to be installed separate
 
 ## Running the prototype
 
-Press **F5** or run `scenes/game/core_demo.tscn`, which is the main scene. You start in
-first person as a North soldier on the base pad of the 2 km world; two factions (North, blue
-rings / olive uniforms; South, orange rings / khaki uniforms) with 8 soldiers and one transport
-vehicle each share the world. A South patrol and two North soldiers already have move orders.
+**The main scene is `scenes/game/world_ref_20km.tscn`, which needs the generated reference
+world.** On a fresh checkout build it first (about 14 minutes, ~2.4 GB of git-ignored data under
+`worlds/ref_20km/` and `scenes/world/ref_20km.tscn`; Blender 5.x must be installed because the
+generator runs in Blender's Python):
+
+```bash
+bash tools/terrain_ref/build_ref_world.sh
+```
+
+Then press **F5**. You start in first person as a North soldier at the first of the three
+playable sites of the 20 km world (keys 1 / 2 / 3 jump between them). The small
+`scenes/game/core_demo.tscn` (2 km world, committed data, no build needed) still runs on its
+own. In both, two factions (North, blue rings / olive uniforms; South, orange rings / khaki
+uniforms) share the world and some soldiers already have move orders. The controls are the same.
 
 | Key | First person (possessing a soldier) |
 |---|---|
@@ -71,12 +85,15 @@ vehicle each share the world. A South patrol and two North soldiers already have
 | Enter, RMB, double-click | Finish the line; Backspace removes the last corner |
 | Shift / Ctrl (held) | 15° direction steps / no snapping |
 | X | Delete tool: click removes a building or one line module, Shift+click a whole line |
+| C | Vegetation clearing on (default) / off: trees, shrubs and debris inside new footprints are cut (saved with the base); off, trees block placement. Rocks and settlement buildings always block |
 | Esc | Cancel line → tool → leave |
 | F5 / F9 | Save / load construction (`user://saves/<world>/construction.json`) |
 
 Assets are generated in Blender by `tools/blender/structures/*.py` (sources in
-`assets/structures/blender/`). `benchmarks/wb01/run_base_test.sh --shots` runs the scripted
-construction checks on the 20 km world.
+`assets/structures/blender/`). Scripted checks on the reference world (from the repository
+root, after the world build): `bash benchmarks/wi01/run_test.sh integration --shots`
+(construction in five terrain types, clearing, navigation, persistence, performance),
+`... base` (the WORLD-BASE-01 checks) and `... large` (the WORLD-CORE-02 checks).
 
 The world exploration scene `scenes/world/test_2km.tscn` still runs on its own with the
 WORLD-TECH-01 free-roaming controller.
@@ -184,7 +201,7 @@ reference map (`docs/terrain01/reference_map_03.png`) with Nordic trees, rocks, 
 and road furniture from the project's Blender pipeline. See
 [docs/WORLD-TERRAIN-01_REPORT.md](docs/WORLD-TERRAIN-01_REPORT.md).
 
-Generated data (~1.5 GB) is not committed. Build it once (about 15 minutes; `--assets` also
+Generated data (~2.4 GB) is not committed. Build it once (about 14 minutes; `--assets` also
 regenerates the Blender assets, whose outputs are committed):
 
 ```bash
