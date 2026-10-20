@@ -41,6 +41,9 @@ var move_state := MoveState.IDLE
 var player_controlled := false
 ## True while a physical body executes this unit (set by WorldSim when a body binds).
 var has_body := false
+## Soldier equipment configuration (InfantryLoadout id, CHARACTER-01). Empty until the unit
+## is first shown; then a deterministic default is stored so it persists.
+var loadout := ""
 
 # --- Combat (COMBAT-01a). Authoritative weapon and life state; WeaponDef is static. ---
 var alive := true
@@ -128,7 +131,7 @@ func to_dict() -> Dictionary:
 		"position": position, "yaw": yaw, "velocity": velocity,
 		"health": health, "max_health": max_health, "speed": speed,
 		"order": order, "order_target": order_target, "move_state": move_state,
-		"player_controlled": player_controlled, "has_body": has_body,
+		"player_controlled": player_controlled, "has_body": has_body, "loadout": loadout,
 		"alive": alive, "weapon_id": weapon_id, "mag": mag, "reserve": reserve, "fire_auto": fire_auto,
 		"next_shot_at": next_shot_at, "reload_until": reload_until, "shot_counter": shot_counter,
 		"bloom": bloom, "last_shot_at": last_shot_at, "died_at": died_at, "killer_id": killer_id,
@@ -160,6 +163,7 @@ static func from_dict(d: Dictionary) -> UnitState:
 	u.player_controlled = d.get("player_controlled", false)
 	u.has_body = d.get("has_body", false)
 	u.copy_combat_from(d)
+	u.loadout = d.get("loadout", "")
 	return u
 
 

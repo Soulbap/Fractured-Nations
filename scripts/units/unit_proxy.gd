@@ -34,7 +34,15 @@ func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
 		box.size = Vector3(2.9, 2.5, 6.1)
 		_marker.mesh = box
 		_marker.position.y = 1.25
-	else:
+	elif InfantryCharacter.enabled():
+		# CHARACTER-01: static posed far-view mesh of the unit's loadout (one draw call).
+		if unit.loadout == "":
+			unit.loadout = InfantryLoadout.default_for(unit.id)
+		var pm := InfantryProxyMesh.get_mesh(unit.loadout, unit.faction)
+		if pm:
+			_marker.mesh = pm
+			mat = null
+	if _marker.mesh == null:
 		var cap := CapsuleMesh.new()
 		cap.radius = 0.35
 		cap.height = 1.8

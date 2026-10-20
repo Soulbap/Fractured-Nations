@@ -322,6 +322,7 @@ func apply_snapshot(snap: Dictionary) -> Dictionary:
 		u.order = fresh.order
 		u.order_target = fresh.order_target
 		u.move_state = fresh.move_state
+		u.loadout = fresh.loadout
 		u.copy_combat_from(fresh.to_dict())
 		updated += 1
 	var removed := 0

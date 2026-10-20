@@ -1,0 +1,322 @@
+{
+ "body_tris": {
+  "body_torso": 3686,
+  "body_arms": 4236,
+  "body_legs": 6236,
+  "body_feet": 1642,
+  "body_hands": 4998,
+  "body_head": 5340
+ },
+ "t_body": 16.7,
+ "uniform_tris": {
+  "jacket": 10044,
+  "trousers": 8000,
+  "boots": 3600,
+  "gloves": 4000
+ },
+ "t_uniform": 37.5,
+ "gear_seconds": {
+  "vest_standard": 13.7,
+  "vest_heavy": 13.8,
+  "belt_standard": 0.6,
+  "belt_heavy": 0.6,
+  "pack_assault": 6.3,
+  "pack_ruck": 7.2,
+  "helmet_covered": 2.6,
+  "helmet_bare": 1.8,
+  "eyepro": 0.2
+ },
+ "gear_tris": {
+  "vest_standard": 6676,
+  "vest_heavy": 7360,
+  "belt_standard": 2956,
+  "belt_heavy": 3396,
+  "pack_assault": 5220,
+  "pack_ruck": 7476,
+  "helmet_covered": 5572,
+  "helmet_bare": 5888,
+  "eyepro": 1828,
+  "carbine": 7296,
+  "optic_reddot": 556,
+  "foregrip": 148,
+  "laser": 224
+ },
+ "t_gear": 84.7,
+ "anim_check": {
+  "Idle": {
+   "support_hand_err_mm": 0.0
+  },
+  "Crouch_Idle": {
+   "support_hand_err_mm": 0.0
+  },
+  "Walk_F": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.082,
+   "stance_slip_p90_ms": 0.602
+  },
+  "Walk_B": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.067,
+   "stance_slip_p90_ms": 0.592
+  },
+  "Walk_L": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.069,
+   "stance_slip_p90_ms": 0.466
+  },
+  "Walk_R": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.068,
+   "stance_slip_p90_ms": 0.437
+  },
+  "Jog_F": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.165,
+   "stance_slip_p90_ms": 0.827
+  },
+  "Jog_B": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.158,
+   "stance_slip_p90_ms": 0.788
+  },
+  "Jog_L": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.145,
+   "stance_slip_p90_ms": 0.804
+  },
+  "Jog_R": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.134,
+   "stance_slip_p90_ms": 0.782
+  },
+  "Run_F": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.287,
+   "stance_slip_p90_ms": 0.862
+  },
+  "Run_B": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.287,
+   "stance_slip_p90_ms": 0.86
+  },
+  "Run_L": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.287,
+   "stance_slip_p90_ms": 0.86
+  },
+  "Run_R": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.287,
+   "stance_slip_p90_ms": 0.86
+  },
+  "Sprint_F": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.452,
+   "stance_slip_p90_ms": 1.355
+  },
+  "CrouchWalk_F": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.121,
+   "stance_slip_p90_ms": 1.144
+  },
+  "CrouchWalk_B": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.119,
+   "stance_slip_p90_ms": 1.145
+  },
+  "CrouchWalk_L": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.118,
+   "stance_slip_p90_ms": 1.145
+  },
+  "CrouchWalk_R": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.118,
+   "stance_slip_p90_ms": 1.145
+  }
+ },
+ "t_anim": 87.5,
+ "export": {
+  "rig": {
+   "bytes": 4619888,
+   "meshes": [
+    "Char_Head_LOD0",
+    "Char_Head_LOD1",
+    "Char_Head_LOD2",
+    "Char_Torso_LOD0",
+    "Char_Torso_LOD1",
+    "Char_Torso_LOD2",
+    "Char_Arms_LOD0",
+    "Char_Arms_LOD1",
+    "Char_Arms_LOD2",
+    "Char_Hands_LOD0",
+    "Char_Hands_LOD1",
+    "Char_Hands_LOD2",
+    "Char_Legs_LOD0",
+    "Char_Legs_LOD1",
+    "Char_Legs_LOD2",
+    "Char_Feet_LOD0",
+    "Char_Feet_LOD1",
+    "Char_Feet_LOD2"
+   ],
+   "clips": [
+    "CrouchWalk_B",
+    "CrouchWalk_F",
+    "CrouchWalk_L",
+    "CrouchWalk_R",
+    "Crouch_Idle",
+    "Idle",
+    "Jog_B",
+    "Jog_F",
+    "Jog_L",
+    "Jog_R",
+    "Run_B",
+    "Run_F",
+    "Run_L",
+    "Run_R",
+    "Sprint_F",
+    "Walk_B",
+    "Walk_F",
+    "Walk_L",
+    "Walk_R"
+   ]
+  },
+  "uniform_jacket": {
+   "bytes": 792880,
+   "lod_tris": [
+    10044,
+    3012,
+    652
+   ]
+  },
+  "uniform_trousers": {
+   "bytes": 582284,
+   "lod_tris": [
+    8000,
+    2400,
+    520
+   ]
+  },
+  "uniform_boots": {
+   "bytes": 321488,
+   "lod_tris": [
+    3600,
+    1080,
+    232
+   ]
+  },
+  "uniform_gloves": {
+   "bytes": 377816,
+   "lod_tris": [
+    4000,
+    1200,
+    260
+   ]
+  },
+  "vest_standard": {
+   "bytes": 521404,
+   "lod_tris": [
+    6676,
+    2002,
+    429
+   ]
+  },
+  "vest_heavy": {
+   "bytes": 590648,
+   "lod_tris": [
+    7360,
+    2208,
+    471
+   ]
+  },
+  "belt_standard": {
+   "bytes": 293624,
+   "lod_tris": [
+    2956,
+    886,
+    192
+   ]
+  },
+  "belt_heavy": {
+   "bytes": 298124,
+   "lod_tris": [
+    3396,
+    1018,
+    220
+   ]
+  },
+  "helmet_covered": {
+   "bytes": 292516,
+   "lod_tris": [
+    5571,
+    1669,
+    361
+   ]
+  },
+  "helmet_bare": {
+   "bytes": 316888,
+   "lod_tris": [
+    5887,
+    1765,
+    379
+   ]
+  },
+  "eyepro": {
+   "bytes": 142712,
+   "lod_tris": [
+    1828,
+    548,
+    116
+   ]
+  },
+  "pack_assault": {
+   "bytes": 312480,
+   "lod_tris": [
+    5220,
+    1566,
+    338
+   ]
+  },
+  "pack_ruck": {
+   "bytes": 371788,
+   "lod_tris": [
+    7476,
+    2242,
+    483
+   ]
+  },
+  "carbine": {
+   "bytes": 793264,
+   "lod_tris": [
+    7296,
+    2188,
+    342
+   ]
+  },
+  "optic_reddot": {
+   "bytes": 57484,
+   "lod_tris": [
+    556,
+    200,
+    56
+   ]
+  },
+  "foregrip": {
+   "bytes": 23100,
+   "lod_tris": [
+    148,
+    148,
+    60
+   ]
+  },
+  "laser": {
+   "bytes": 37524,
+   "lod_tris": [
+    224,
+    200,
+    60
+   ]
+  }
+ },
+ "t_total": 110.1
+}

@@ -31,6 +31,9 @@ func run(args: PackedStringArray) -> void:
 	# COMBAT-01b: earlier milestones test without autonomous fire (their squads would
 	# otherwise start shooting each other); combat01b_selftest.gd tests the AI.
 	demo.sim.brain.enabled = false
+	for a in args:
+		if a.begins_with("--shot-dir="):
+			_shot_dir = a.trim_prefix("--shot-dir=")
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	var sim := demo.sim
 	var state := sim.state
@@ -83,6 +86,11 @@ func run(args: PackedStringArray) -> void:
 	_log("orders_in_fps", {"ordered": group.size(), "progressed_5m_in_3s": progressed, "with_path": paths,
 		"example_distance_before_after": [d0[group[0]], d1[group[0]]]})
 	_expect(progressed == group.size(), "%d of %d ordered soldiers did not progress while in FPS" % [group.size() - progressed, group.size()])
+	# CHARACTER-01: while these soldiers walk, their character animates and wears its loadout.
+	var ch_moving := CharacterIntegrationCheck.run(sim)
+	_log("character01_moving", ch_moving.data)
+	for msg in ch_moving.failures:
+		_expect(false, msg)
 	if shots:
 		_aim(first_body, sim.body_of(group[0]).global_position)
 		await _frames(30)
@@ -293,6 +301,11 @@ func run(args: PackedStringArray) -> void:
 # ------------------------------------------------------------------------------
 
 func _finish() -> void:
+	# CHARACTER-01: soldiers wear their persisted loadout, pieces attached, proxies in place.
+	var ch := CharacterIntegrationCheck.run(demo.sim)
+	_log("character01", ch.data)
+	for msg in ch.failures:
+		_expect(false, msg)
 	results["failures"] = failures
 	results["pass"] = failures.is_empty()
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://benchmarks/raw"))

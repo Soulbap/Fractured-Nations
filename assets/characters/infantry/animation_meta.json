@@ -1,0 +1,134 @@
+{
+  "fps": 30,
+  "loco_frames": 32,
+  "gait": {
+    "Walk": {
+      "speed": 1.4,
+      "period": 1.0,
+      "duty": 0.6,
+      "offset": 0.0,
+      "lift": 0.09,
+      "drop": 0.035,
+      "bob": 0.018,
+      "lean": 3.0
+    },
+    "Jog": {
+      "speed": 3.0,
+      "period": 0.78,
+      "duty": 0.32,
+      "offset": -0.06,
+      "lift": 0.13,
+      "drop": 0.062,
+      "bob": 0.026,
+      "lean": 6.0
+    },
+    "Run": {
+      "speed": 4.5,
+      "period": 0.7,
+      "duty": 0.22,
+      "offset": -0.09,
+      "lift": 0.17,
+      "drop": 0.075,
+      "bob": 0.03,
+      "lean": 9.0
+    },
+    "Sprint": {
+      "speed": 7.5,
+      "period": 0.62,
+      "duty": 0.16,
+      "offset": -0.1,
+      "lift": 0.22,
+      "drop": 0.085,
+      "bob": 0.032,
+      "lean": 15.0
+    },
+    "CrouchWalk": {
+      "speed": 1.2,
+      "period": 1.05,
+      "duty": 0.62,
+      "offset": 0.02,
+      "lift": 0.08,
+      "drop": 0.3,
+      "bob": 0.012,
+      "lean": 16.0
+    }
+  },
+  "clips": {
+    "Idle": {
+      "frames": 120,
+      "loop": true
+    },
+    "Crouch_Idle": {
+      "frames": 120,
+      "loop": true
+    },
+    "Walk_F": {
+      "frames": 32,
+      "loop": true
+    },
+    "Walk_B": {
+      "frames": 32,
+      "loop": true
+    },
+    "Walk_L": {
+      "frames": 32,
+      "loop": true
+    },
+    "Walk_R": {
+      "frames": 32,
+      "loop": true
+    },
+    "Jog_F": {
+      "frames": 32,
+      "loop": true
+    },
+    "Jog_B": {
+      "frames": 32,
+      "loop": true
+    },
+    "Jog_L": {
+      "frames": 32,
+      "loop": true
+    },
+    "Jog_R": {
+      "frames": 32,
+      "loop": true
+    },
+    "Run_F": {
+      "frames": 32,
+      "loop": true
+    },
+    "Run_B": {
+      "frames": 32,
+      "loop": true
+    },
+    "Run_L": {
+      "frames": 32,
+      "loop": true
+    },
+    "Run_R": {
+      "frames": 32,
+      "loop": true
+    },
+    "Sprint_F": {
+      "frames": 32,
+      "loop": true
+    },
+    "CrouchWalk_F": {
+      "frames": 32,
+      "loop": true
+    },
+    "CrouchWalk_B": {
+      "frames": 32,
+      "loop": true
+    },
+    "CrouchWalk_L": {
+      "frames": 32,
+      "loop": true
+    },
+    "CrouchWalk_R": {
+      "frames": 32,
+      "loop": true
+    }
+  }
+}
