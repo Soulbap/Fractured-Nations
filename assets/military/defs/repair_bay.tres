@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"repair_bay"
+display_name = "Vehicle repair bay (open)"
+category = "Maintenance"
+description = "Open maintenance shelter 10 x 14 m, 6.0 m clear height, inspection pit 1 x 6 m, 5 t gantry beam and hoist."
+mesh_path = "res://assets/military/modules/repair_bay.glb"
+size = Vector3(11.04, 7.422, 15)
+max_slope_deg = 4
+max_ground_gap = 0.5
+sink = 0.05
+blocks_navigation = false
+collision_boxes = Array[AABB]([AABB(-5.125, 0, 6.875, 0.25, 6, 0.25), AABB(4.875, 0, 6.875, 0.25, 6, 0.25), AABB(-5.125, 0, 2.2083, 0.25, 6, 0.25), AABB(4.875, 0, 2.2083, 0.25, 6, 0.25), AABB(-5.125, 0, -2.4583, 0.25, 6, 0.25), AABB(4.875, 0, -2.4583, 0.25, 6, 0.25), AABB(-5.125, 0, -7.125, 0.25, 6, 0.25), AABB(4.875, 0, -7.125, 0.25, 6, 0.25), AABB(-5.5, -0.3, -7.5, 11, 0.4, 15)])
+ramps = Array[AABB]([])

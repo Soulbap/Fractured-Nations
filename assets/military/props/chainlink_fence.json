@@ -1,0 +1,94 @@
+{
+ "id": "chainlink_fence",
+ "family": "prop",
+ "display_name": "Chain-link fence 3 m",
+ "category": "Fences",
+ "description": "Chain-link security fence module 3.0 m x 2.4 m with Y-arm barbed-wire outriggers (top 2.9 m).",
+ "bounds_min": [
+  -1.534,
+  -0.309,
+  -0.5
+ ],
+ "bounds_max": [
+  1.533,
+  0.309,
+  2.807
+ ],
+ "size_above_ground": [
+  3.067,
+  0.618,
+  2.807
+ ],
+ "footprint_xy": [
+  -1.534,
+  -0.309,
+  1.533,
+  0.309
+ ],
+ "foundation_depth": 0.5,
+ "tris": [
+  282,
+  62,
+  42
+ ],
+ "surfaces": [
+  2,
+  2,
+  2
+ ],
+ "materials": [
+  "Chainlink",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   140
+  ],
+  [
+   140,
+   600
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.5,
+   0.0,
+   -0.04,
+   3.0,
+   2.4,
+   0.08
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SNAP_W",
+   "pos": [
+    -1.5,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": ""
+  },
+  {
+   "name": "SNAP_E",
+   "pos": [
+    1.5,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": ""
+  }
+ ],
+ "structure": null,
+ "module": {
+  "length": 3.0,
+  "height": 2.4
+ }
+}

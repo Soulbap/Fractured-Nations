@@ -1,0 +1,75 @@
+{
+ "id": "obstacle_net",
+ "family": "module",
+ "display_name": "Obstacle: cargo net A-frame",
+ "category": "Training",
+ "description": "Timber A-frame 4.5 m high with cargo nets on both faces.",
+ "bounds_min": [
+  -1.6,
+  -1.884,
+  -0.033
+ ],
+ "bounds_max": [
+  1.6,
+  1.884,
+  4.59
+ ],
+ "size_above_ground": [
+  3.2,
+  3.767,
+  4.59
+ ],
+ "footprint_xy": [
+  -1.6,
+  -1.884,
+  1.6,
+  1.884
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  572,
+  104,
+  104
+ ],
+ "surfaces": [
+  2,
+  2,
+  2
+ ],
+ "materials": [
+  "Canvas_Tan",
+  "Hesco_Mesh",
+  "Timber_Dark"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   50
+  ],
+  [
+   50,
+   180
+  ],
+  [
+   180,
+   800
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.6,
+   0.0,
+   -0.15,
+   3.2,
+   4.5,
+   0.3
+  ]
+ ],
+ "markers": [],
+ "structure": {
+  "category": "Training",
+  "max_slope_deg": 10.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.3
+ }
+}

@@ -1,0 +1,68 @@
+{
+ "id": "sandbag_single",
+ "family": "prop",
+ "display_name": "Sandbag",
+ "category": "Defences",
+ "description": "One filled sandbag 0.60 x 0.32 x 0.13 m.",
+ "bounds_min": [
+  -0.3,
+  -0.16,
+  0.0
+ ],
+ "bounds_max": [
+  0.36,
+  0.16,
+  0.13
+ ],
+ "size_above_ground": [
+  0.66,
+  0.32,
+  0.13
+ ],
+ "footprint_xy": [
+  -0.3,
+  -0.16,
+  0.36,
+  0.16
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  136,
+  44,
+  12
+ ],
+ "surfaces": [
+  1,
+  1,
+  1
+ ],
+ "materials": [
+  "Sandbag"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   20
+  ],
+  [
+   20,
+   60
+  ],
+  [
+   60,
+   160
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.3,
+   0.0,
+   -0.16,
+   0.6,
+   0.13,
+   0.32
+  ]
+ ],
+ "markers": [],
+ "structure": null
+}

@@ -1,0 +1,168 @@
+{
+ "id": "barracks_block",
+ "family": "building",
+ "display_name": "Barracks",
+ "category": "Buildings",
+ "description": "Prefabricated barracks 24.0 x 7.2 m (8 rooms, 32 beds): sandwich-panel walls on block piers, floor 0.5 m, gable roof, doors at the front centre and both gable ends.",
+ "bounds_min": [
+  -13.85,
+  -4.07,
+  -0.45
+ ],
+ "bounds_max": [
+  13.85,
+  5.45,
+  4.62
+ ],
+ "size_above_ground": [
+  27.699,
+  9.52,
+  4.62
+ ],
+ "footprint_xy": [
+  -13.85,
+  -4.07,
+  13.85,
+  5.45
+ ],
+ "foundation_depth": 0.45,
+ "tris": [
+  4384,
+  1180,
+  136
+ ],
+ "surfaces": [
+  6,
+  4,
+  4
+ ],
+ "materials": [
+  "Concrete",
+  "Concrete_Dark",
+  "Kit_Palette",
+  "Paint_Tan",
+  "Roof_Tan",
+  "Signs"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   70
+  ],
+  [
+   70,
+   280
+  ],
+  [
+   280,
+   2000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -12.0,
+   -0.45,
+   -3.6,
+   24.0,
+   4.7146,
+   7.2
+  ],
+  [
+   -0.8,
+   0.0,
+   -4.6,
+   1.6,
+   0.5,
+   1.0
+  ],
+  [
+   -13.0,
+   0.0,
+   -0.8,
+   1.0,
+   0.5,
+   1.6
+  ],
+  [
+   12.0,
+   0.0,
+   -0.8,
+   1.0,
+   0.5,
+   1.6
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Door_Front",
+   "pos": [
+    0,
+    6.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "main door"
+  },
+  {
+   "name": "IP_Door_W",
+   "pos": [
+    -14.4,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": "west gable door"
+  },
+  {
+   "name": "IP_Door_E",
+   "pos": [
+    14.4,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": "east gable door"
+  },
+  {
+   "name": "ATT_Expansion_N",
+   "pos": [
+    0,
+    -6.6,
+    0
+   ],
+   "yaw": 0,
+   "note": "second barracks block / shower container behind"
+  },
+  {
+   "name": "ATT_Expansion_W",
+   "pos": [
+    -16.0,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": "extension in line (west)"
+  },
+  {
+   "name": "ATT_Expansion_E",
+   "pos": [
+    16.0,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": "extension in line (east)"
+  }
+ ],
+ "structure": {
+  "category": "Buildings",
+  "max_slope_deg": 6.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.8
+ },
+ "function": {
+  "role": "accommodation",
+  "rooms": 8,
+  "beds": 32
+ }
+}

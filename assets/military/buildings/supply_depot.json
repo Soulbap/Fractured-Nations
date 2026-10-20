@@ -1,0 +1,174 @@
+{
+ "id": "supply_depot",
+ "family": "building",
+ "display_name": "Supply Depot",
+ "category": "Buildings",
+ "description": "Supply warehouse 20 x 14 m, eaves 6.0 m: 12 m covered loading dock (1.2 m truck-bed height, two 3.0 x 3.6 m dock doors), 4.5 x 4.8 m drive-in roller door, personnel door, skylights.",
+ "bounds_min": [
+  -10.35,
+  -7.48,
+  -0.6
+ ],
+ "bounds_max": [
+  10.35,
+  10.6,
+  7.374
+ ],
+ "size_above_ground": [
+  20.7,
+  18.08,
+  7.374
+ ],
+ "footprint_xy": [
+  -10.35,
+  -7.48,
+  10.35,
+  10.6
+ ],
+ "foundation_depth": 0.6,
+ "tris": [
+  2948,
+  1004,
+  120
+ ],
+ "surfaces": [
+  7,
+  5,
+  5
+ ],
+ "materials": [
+  "Concrete",
+  "Kit_Palette",
+  "Paint_OD",
+  "Paint_Tan",
+  "Roof_Galv",
+  "Roof_Tan",
+  "Signs"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   70
+  ],
+  [
+   70,
+   280
+  ],
+  [
+   280,
+   2000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -10.0,
+   -0.6,
+   -7.0,
+   20.0,
+   7.8343,
+   14.0
+  ],
+  [
+   -8.0,
+   -0.5,
+   -10.0,
+   12.0,
+   1.7,
+   3.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Dock_1",
+   "pos": [
+    -5.0,
+    9.2,
+    1.2
+   ],
+   "yaw": 180,
+   "note": "loading dock door 1 (on the dock)"
+  },
+  {
+   "name": "IP_Dock_2",
+   "pos": [
+    1.0,
+    9.2,
+    1.2
+   ],
+   "yaw": 180,
+   "note": "loading dock door 2 (on the dock)"
+  },
+  {
+   "name": "VEH_Dock_1",
+   "pos": [
+    -5.0,
+    15.0,
+    0
+   ],
+   "yaw": 0,
+   "note": "truck reverses to here (rear to the dock)"
+  },
+  {
+   "name": "VEH_Dock_2",
+   "pos": [
+    1.0,
+    15.0,
+    0
+   ],
+   "yaw": 0,
+   "note": "truck reverses to here (rear to the dock)"
+  },
+  {
+   "name": "IP_Forklift_Door",
+   "pos": [
+    7.0,
+    9.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "drive-in door"
+  },
+  {
+   "name": "IP_Door",
+   "pos": [
+    -11.2,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": "personnel door (west side)"
+  },
+  {
+   "name": "ATT_Yard_E",
+   "pos": [
+    16.0,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": "container / pallet storage yard (east)"
+  },
+  {
+   "name": "ATT_Expansion_W",
+   "pos": [
+    -11.0,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": "second warehouse / tent store (west)"
+  }
+ ],
+ "structure": {
+  "category": "Buildings",
+  "max_slope_deg": 5.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 1.0
+ },
+ "function": {
+  "role": "logistics",
+  "storage_m2": 280.0,
+  "pallet_positions": 180,
+  "dock_doors": 2
+ }
+}

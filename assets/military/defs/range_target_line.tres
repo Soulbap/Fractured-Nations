@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"range_target_line"
+display_name = "Range target line (6 lanes)"
+category = "Training"
+description = "Target line 15 m wide: six 0.5 x 1.0 m silhouette targets on timber frames, 0.8 m protective earth berm, distance board."
+mesh_path = "res://assets/military/modules/range_target_line.glb"
+size = Vector3(16.9, 1.9, 2.4)
+max_slope_deg = 8
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-8, 0, -1.2, 16, 0.8, 2.4)])
+ramps = Array[AABB]([])

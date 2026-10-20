@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"container_yard"
+display_name = "Container storage area"
+category = "Logistics"
+description = "Gravel storage yard 28 x 16 m with six 20 ft containers (two rows, partly double-stacked), kerbs and two light poles."
+mesh_path = "res://assets/military/modules/container_yard.glb"
+size = Vector3(28.2, 8, 16.2)
+max_slope_deg = 3
+max_ground_gap = 0.4
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-9.219, 0.05, 1.471, 2.438, 2.591, 6.058), AABB(-9.069, 2.641, 1.471, 2.438, 2.591, 6.058), AABB(-4.019, 0.05, 1.471, 2.438, 2.591, 6.058), AABB(1.181, 0.05, 1.471, 2.438, 2.591, 6.058), AABB(-9.219, 0.05, -7.529, 2.438, 2.591, 6.058), AABB(-4.019, 0.05, -7.529, 2.438, 2.591, 6.058), AABB(1.181, 0.05, -7.529, 2.438, 2.591, 6.058)])
+ramps = Array[AABB]([])

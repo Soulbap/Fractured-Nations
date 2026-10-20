@@ -1,0 +1,107 @@
+{
+ "id": "ammo_magazine",
+ "family": "module",
+ "display_name": "Ammunition storage bunker",
+ "category": "Ammunition",
+ "description": "Earth-covered magazine: 6 m wide steel arch, 12 m deep, earth mound 0.6 m over the crown, concrete headwall with 2.4 x 2.6 m steel double door, two lightning masts.",
+ "bounds_min": [
+  -7.543,
+  -9.6,
+  -0.2
+ ],
+ "bounds_max": [
+  7.543,
+  11.0,
+  9.0
+ ],
+ "size_above_ground": [
+  15.087,
+  20.6,
+  9.0
+ ],
+ "footprint_xy": [
+  -7.543,
+  -9.6,
+  7.543,
+  11.0
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  230,
+  142,
+  82
+ ],
+ "surfaces": [
+  5,
+  5,
+  3
+ ],
+ "materials": [
+  "Concrete",
+  "Dirt",
+  "Kit_Palette",
+  "Paint_OD",
+  "Signs"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   70
+  ],
+  [
+   70,
+   280
+  ],
+  [
+   280,
+   2000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -6.5,
+   0.0,
+   -6.0,
+   13.0,
+   4.0,
+   12.0
+  ],
+  [
+   -4.2,
+   0.0,
+   -6.4,
+   8.4,
+   4.4,
+   0.4
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Door",
+   "pos": [
+    0,
+    7.5,
+    0.08
+   ],
+   "yaw": 180,
+   "note": "magazine door"
+  },
+  {
+   "name": "VEH_Loading",
+   "pos": [
+    0,
+    14.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "truck reverses to the apron"
+  }
+ ],
+ "structure": {
+  "category": "Ammunition",
+  "max_slope_deg": 4.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.8
+ },
+ "capacity_t_neq": 20
+}

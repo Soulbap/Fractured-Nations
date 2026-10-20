@@ -1,0 +1,65 @@
+{
+ "id": "obstacle_crawl",
+ "family": "module",
+ "display_name": "Obstacle: low crawl wire",
+ "category": "Training",
+ "description": "Low-crawl lane 3 x 8 m: wire grid at 0.5 m on short pickets.",
+ "bounds_min": [
+  -1.6,
+  -4.1,
+  -0.1
+ ],
+ "bounds_max": [
+  1.6,
+  4.1,
+  0.504
+ ],
+ "size_above_ground": [
+  3.2,
+  8.2,
+  0.504
+ ],
+ "footprint_xy": [
+  -1.6,
+  -4.1,
+  1.6,
+  4.1
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  744,
+  732,
+  12
+ ],
+ "surfaces": [
+  2,
+  2,
+  1
+ ],
+ "materials": [
+  "Dirt",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   140
+  ],
+  [
+   140,
+   600
+  ]
+ ],
+ "collision_boxes_godot": [],
+ "markers": [],
+ "structure": {
+  "category": "Training",
+  "max_slope_deg": 10.0,
+  "blocks_navigation": false,
+  "max_ground_gap": 0.3
+ }
+}

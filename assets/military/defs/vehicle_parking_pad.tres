@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"vehicle_parking_pad"
+display_name = "Vehicle parking pad"
+category = "Vehicle training"
+description = "Concrete vehicle park 24 x 14 m, six 4 x 8 m bays with yellow lines and wheel stops, drive lane in front."
+mesh_path = "res://assets/military/modules/vehicle_parking_pad.glb"
+size = Vector3(24.1, 0.2, 14)
+max_slope_deg = 3
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = false
+collision_boxes = Array[AABB]([])
+ramps = Array[AABB]([])

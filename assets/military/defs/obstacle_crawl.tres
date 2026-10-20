@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"obstacle_crawl"
+display_name = "Obstacle: low crawl wire"
+category = "Training"
+description = "Low-crawl lane 3 x 8 m: wire grid at 0.5 m on short pickets."
+mesh_path = "res://assets/military/modules/obstacle_crawl.glb"
+size = Vector3(3.2, 0.504, 8.2)
+max_slope_deg = 10
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = false
+collision_boxes = Array[AABB]([])
+ramps = Array[AABB]([])

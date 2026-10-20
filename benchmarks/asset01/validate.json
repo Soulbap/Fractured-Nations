@@ -1,0 +1,4128 @@
+{
+ "ammo_box_wood": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    15.0
+   ],
+   [
+    1,
+    15.0,
+    40.0
+   ],
+   [
+    2,
+    40.0,
+    90.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Paint_OD",
+   "Canvas_Tan",
+   "Signs"
+  ],
+  "size": [
+   0.674472153186798,
+   0.259999990463257,
+   0.312000006437302
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   3,
+   1,
+   1
+  ],
+  "tris": [
+   138,
+   12,
+   12
+  ]
+ },
+ "ammo_can": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    15.0
+   ],
+   [
+    1,
+    15.0,
+    40.0
+   ],
+   [
+    2,
+    40.0,
+    90.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette",
+   "Paint_OD"
+  ],
+  "size": [
+   0.310000002384186,
+   0.203999996185303,
+   0.159999996423721
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   1,
+   1
+  ],
+  "tris": [
+   112,
+   24,
+   12
+  ]
+ },
+ "ammo_magazine": {
+  "collision_shapes": 2,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    70.0
+   ],
+   [
+    1,
+    70.0,
+    280.0
+   ],
+   [
+    2,
+    280.0,
+    2000.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Dirt",
+   "Concrete",
+   "Paint_OD",
+   "Kit_Palette",
+   "Signs"
+  ],
+  "size": [
+   15.0866022109985,
+   9.19999980926514,
+   20.6000003814697
+  ],
+  "static_bodies": 2,
+  "surfaces": [
+   5,
+   5,
+   3
+  ],
+  "tris": [
+   230,
+   142,
+   82
+  ]
+ },
+ "ammo_pallet": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Timber",
+   "Timber_Dark",
+   "Paint_OD",
+   "Kit_Palette",
+   "Signs"
+  ],
+  "size": [
+   1.20000004768372,
+   0.659999966621399,
+   0.815500020980835
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   5,
+   3,
+   2
+  ],
+  "tris": [
+   962,
+   110,
+   24
+  ]
+ },
+ "apc_8x8": {
+  "collision_shapes": 2,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    40.0
+   ],
+   [
+    1,
+    40.0,
+    160.0
+   ],
+   [
+    2,
+    160.0,
+    1500.0
+   ]
+  ],
+  "markers": 32,
+  "materials": [
+   "Paint_Green",
+   "Kit_Palette"
+  ],
+  "size": [
+   3.26999998092651,
+   4.84446620941162,
+   7.98500061035156
+  ],
+  "static_bodies": 2,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   4944,
+   936,
+   300
+  ]
+ },
+ "barracks_block": {
+  "collision_shapes": 4,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    70.0
+   ],
+   [
+    1,
+    70.0,
+    280.0
+   ],
+   [
+    2,
+    280.0,
+    2000.0
+   ]
+  ],
+  "markers": 6,
+  "materials": [
+   "Kit_Palette",
+   "Paint_Tan",
+   "Roof_Tan",
+   "Concrete",
+   "Signs",
+   "Concrete_Dark"
+  ],
+  "size": [
+   27.6994895935059,
+   5.06961679458618,
+   9.51974487304688
+  ],
+  "static_bodies": 4,
+  "surfaces": [
+   6,
+   4,
+   4
+  ],
+  "tris": [
+   4384,
+   1180,
+   136
+  ]
+ },
+ "boom_barrier": {
+  "collision_shapes": 2,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    30.0
+   ],
+   [
+    1,
+    30.0,
+    100.0
+   ],
+   [
+    2,
+    100.0,
+    400.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Concrete",
+   "Kit_Palette"
+  ],
+  "size": [
+   6.80000019073486,
+   1.30000007152557,
+   0.800000011920929
+  ],
+  "static_bodies": 2,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   708,
+   264,
+   36
+  ]
+ },
+ "bridge_small": {
+  "collision_shapes": 3,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    80.0
+   ],
+   [
+    1,
+    80.0,
+    300.0
+   ],
+   [
+    2,
+    300.0,
+    2000.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Concrete",
+   "Asphalt",
+   "Concrete_Dark",
+   "Kit_Palette"
+  ],
+  "size": [
+   8.10000038146973,
+   4.30000019073486,
+   19.2000007629395
+  ],
+  "static_bodies": 3,
+  "surfaces": [
+   4,
+   4,
+   2
+  ],
+  "tris": [
+   432,
+   432,
+   168
+  ]
+ },
+ "bunker_fighting": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    70.0
+   ],
+   [
+    1,
+    70.0,
+    280.0
+   ],
+   [
+    2,
+    280.0,
+    2000.0
+   ]
+  ],
+  "markers": 4,
+  "materials": [
+   "Concrete_Dark",
+   "Concrete",
+   "Kit_Palette",
+   "Dirt",
+   "Sandbag"
+  ],
+  "size": [
+   6.40000009536743,
+   2.70499992370605,
+   6.5
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   5,
+   5,
+   5
+  ],
+  "tris": [
+   4764,
+   212,
+   144
+  ]
+ },
+ "camo_net_canopy": {
+  "collision_shapes": 0,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    30.0
+   ],
+   [
+    1,
+    30.0,
+    100.0
+   ],
+   [
+    2,
+    100.0,
+    400.0
+   ]
+  ],
+  "markers": 1,
+  "materials": [
+   "Camo_Net",
+   "Kit_Palette",
+   "Canvas_Tan"
+  ],
+  "size": [
+   10.0070714950562,
+   3.24318552017212,
+   10.0070714950562
+  ],
+  "static_bodies": 0,
+  "surfaces": [
+   3,
+   2,
+   1
+  ],
+  "tris": [
+   260,
+   228,
+   128
+  ]
+ },
+ "chainlink_fence": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    40.0
+   ],
+   [
+    1,
+    40.0,
+    140.0
+   ],
+   [
+    2,
+    140.0,
+    600.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Kit_Palette",
+   "Chainlink"
+  ],
+  "size": [
+   3.0673999786377,
+   3.30684757232666,
+   0.618260324001312
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   282,
+   62,
+   42
+  ]
+ },
+ "chainlink_gate": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    40.0
+   ],
+   [
+    1,
+    40.0,
+    140.0
+   ],
+   [
+    2,
+    140.0,
+    600.0
+   ]
+  ],
+  "markers": 3,
+  "materials": [
+   "Kit_Palette",
+   "Chainlink"
+  ],
+  "size": [
+   4.22651815414429,
+   3.70684766769409,
+   0.618260324001312
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   492,
+   204,
+   44
+  ]
+ },
+ "checkpoint_station": {
+  "collision_shapes": 7,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    60.0
+   ],
+   [
+    1,
+    60.0,
+    240.0
+   ],
+   [
+    2,
+    240.0,
+    1600.0
+   ]
+  ],
+  "markers": 7,
+  "materials": [
+   "Asphalt",
+   "Kit_Palette",
+   "Paint_OD",
+   "Concrete",
+   "Signs"
+  ],
+  "size": [
+   12.0,
+   5.90000057220459,
+   20.0
+  ],
+  "static_bodies": 7,
+  "surfaces": [
+   5,
+   5,
+   3
+  ],
+  "tris": [
+   444,
+   444,
+   248
+  ]
+ },
+ "comms_station": {
+  "collision_shapes": 3,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    80.0
+   ],
+   [
+    1,
+    80.0,
+    300.0
+   ],
+   [
+    2,
+    300.0,
+    2500.0
+   ]
+  ],
+  "markers": 3,
+  "materials": [
+   "Gravel",
+   "Container_OD",
+   "Concrete",
+   "Kit_Palette",
+   "Paint_OD",
+   "Signs"
+  ],
+  "size": [
+   19.0520801544189,
+   21.1000003814697,
+   15.7121562957764
+  ],
+  "static_bodies": 3,
+  "surfaces": [
+   6,
+   5,
+   4
+  ],
+  "tris": [
+   1954,
+   506,
+   118
+  ]
+ },
+ "comms_tower": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    100.0
+   ],
+   [
+    1,
+    100.0,
+    400.0
+   ],
+   [
+    2,
+    400.0,
+    3000.0
+   ]
+  ],
+  "markers": 1,
+  "materials": [
+   "Concrete",
+   "Kit_Palette"
+  ],
+  "size": [
+   19.75,
+   27.7000007629395,
+   22.7666606903076
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   1764,
+   348,
+   32
+  ]
+ },
+ "container_yard": {
+  "collision_shapes": 7,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    80.0
+   ],
+   [
+    1,
+    80.0,
+    320.0
+   ],
+   [
+    2,
+    320.0,
+    2000.0
+   ]
+  ],
+  "markers": 8,
+  "materials": [
+   "Gravel",
+   "Concrete",
+   "Container_OD",
+   "Kit_Palette",
+   "Signs",
+   "Container_Tan",
+   "Container_Blue",
+   "Container_Rust"
+  ],
+  "size": [
+   28.2000007629395,
+   8.30000019073486,
+   16.2000007629395
+  ],
+  "static_bodies": 7,
+  "surfaces": [
+   8,
+   8,
+   4
+  ],
+  "tris": [
+   934,
+   246,
+   150
+  ]
+ },
+ "crate_large": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Timber_Dark",
+   "Plywood",
+   "Timber",
+   "Signs"
+  ],
+  "size": [
+   1.21200001239777,
+   0.904999971389771,
+   0.811999976634979
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   4,
+   2,
+   2
+  ],
+  "tris": [
+   110,
+   36,
+   36
+  ]
+ },
+ "dfp_sandbag_ring": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    40.0
+   ],
+   [
+    1,
+    40.0,
+    160.0
+   ],
+   [
+    2,
+    160.0,
+    800.0
+   ]
+  ],
+  "markers": 3,
+  "materials": [
+   "Sandbag",
+   "Dirt"
+  ],
+  "size": [
+   3.19999980926514,
+   0.988999962806702,
+   2.80125951766968
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   4764,
+   40,
+   40
+  ]
+ },
+ "drum_pallet": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Timber",
+   "Paint_Green",
+   "Kit_Palette",
+   "Signs"
+  ],
+  "size": [
+   1.22000002861023,
+   1.0239999294281,
+   1.22200000286102
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   4,
+   4,
+   3
+  ],
+  "tris": [
+   926,
+   158,
+   92
+  ]
+ },
+ "field_toilet": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 1,
+  "materials": [
+   "Kit_Palette"
+  ],
+  "size": [
+   1.12000000476837,
+   2.65000009536743,
+   1.13999998569489
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "tris": [
+   152,
+   112,
+   24
+  ]
+ },
+ "fuel_bladder_berm": {
+  "collision_shapes": 3,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    60.0
+   ],
+   [
+    1,
+    60.0,
+    240.0
+   ],
+   [
+    2,
+    240.0,
+    1500.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Dirt",
+   "Kit_Palette",
+   "Signs"
+  ],
+  "size": [
+   15.8000001907349,
+   2.77999997138977,
+   12.9200000762939
+  ],
+  "static_bodies": 3,
+  "surfaces": [
+   3,
+   3,
+   3
+  ],
+  "tris": [
+   780,
+   296,
+   138
+  ]
+ },
+ "fuel_drum": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Paint_Green",
+   "Kit_Palette"
+  ],
+  "size": [
+   0.600000023841858,
+   0.894999980926514,
+   0.600000023841858
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   1,
+   1
+  ],
+  "tris": [
+   516,
+   132,
+   28
+  ]
+ },
+ "fuel_drum_red": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette"
+  ],
+  "size": [
+   0.600000023841858,
+   0.894999980926514,
+   0.600000023841858
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "tris": [
+   516,
+   132,
+   28
+  ]
+ },
+ "fuel_point": {
+  "collision_shapes": 4,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    60.0
+   ],
+   [
+    1,
+    60.0,
+    240.0
+   ],
+   [
+    2,
+    240.0,
+    1600.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Concrete",
+   "Concrete_Dark",
+   "Kit_Palette",
+   "Signs"
+  ],
+  "size": [
+   14.0,
+   5.90000057220459,
+   10.0
+  ],
+  "static_bodies": 4,
+  "surfaces": [
+   4,
+   4,
+   3
+  ],
+  "tris": [
+   344,
+   236,
+   84
+  ]
+ },
+ "fuel_tank_skid": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    30.0
+   ],
+   [
+    1,
+    30.0,
+    100.0
+   ],
+   [
+    2,
+    100.0,
+    400.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Kit_Palette",
+   "Paint_OD",
+   "Signs"
+  ],
+  "size": [
+   4.61698389053345,
+   3.04999995231628,
+   2.19999980926514
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "tris": [
+   800,
+   182,
+   40
+  ]
+ },
+ "generator_60kw": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    30.0
+   ],
+   [
+    1,
+    30.0,
+    100.0
+   ],
+   [
+    2,
+    100.0,
+    400.0
+   ]
+  ],
+  "markers": 1,
+  "materials": [
+   "Kit_Palette",
+   "Paint_OD",
+   "Signs"
+  ],
+  "size": [
+   2.70000004768372,
+   2.12999987602234,
+   1.14999997615814
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "tris": [
+   262,
+   96,
+   24
+  ]
+ },
+ "generator_60kw_tan": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    30.0
+   ],
+   [
+    1,
+    30.0,
+    100.0
+   ],
+   [
+    2,
+    100.0,
+    400.0
+   ]
+  ],
+  "markers": 1,
+  "materials": [
+   "Kit_Palette",
+   "Paint_Tan",
+   "Signs"
+  ],
+  "size": [
+   2.70000004768372,
+   2.12999987602234,
+   1.14999997615814
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "tris": [
+   262,
+   96,
+   24
+  ]
+ },
+ "guard_booth": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    30.0
+   ],
+   [
+    1,
+    30.0,
+    100.0
+   ],
+   [
+    2,
+    100.0,
+    400.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Concrete",
+   "Paint_OD",
+   "Kit_Palette"
+  ],
+  "size": [
+   2.0,
+   2.98000001907349,
+   2.07999992370605
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "tris": [
+   296,
+   132,
+   36
+  ]
+ },
+ "guard_tower_steel": {
+  "collision_shapes": 2,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    70.0
+   ],
+   [
+    1,
+    70.0,
+    280.0
+   ],
+   [
+    2,
+    280.0,
+    2000.0
+   ]
+  ],
+  "markers": 3,
+  "materials": [
+   "Concrete",
+   "Paint_OD",
+   "Kit_Palette",
+   "Sandbag"
+  ],
+  "size": [
+   4.9517617225647,
+   8.94999980926514,
+   4.93939113616943
+  ],
+  "static_bodies": 2,
+  "surfaces": [
+   4,
+   4,
+   3
+  ],
+  "tris": [
+   2788,
+   824,
+   212
+  ]
+ },
+ "guardrail_4m": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    50.0
+   ],
+   [
+    1,
+    50.0,
+    200.0
+   ],
+   [
+    2,
+    200.0,
+    900.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Kit_Palette"
+  ],
+  "size": [
+   4.05000019073486,
+   1.79999995231628,
+   0.28999999165535
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "tris": [
+   72,
+   72,
+   48
+  ]
+ },
+ "guardrail_end": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    50.0
+   ],
+   [
+    1,
+    50.0,
+    200.0
+   ],
+   [
+    2,
+    200.0,
+    900.0
+   ]
+  ],
+  "markers": 1,
+  "materials": [
+   "Kit_Palette"
+  ],
+  "size": [
+   4.05000019073486,
+   1.79999995231628,
+   1.08999991416931
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "tris": [
+   264,
+   264,
+   228
+  ]
+ },
+ "hesco_mil1_1": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    50.0
+   ],
+   [
+    1,
+    50.0,
+    180.0
+   ],
+   [
+    2,
+    180.0,
+    1200.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Hesco_Liner",
+   "Dirt",
+   "Hesco_Mesh",
+   "Kit_Palette"
+  ],
+  "size": [
+   1.07732045650482,
+   1.37000000476837,
+   1.07999992370605
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   4,
+   3,
+   2
+  ],
+  "tris": [
+   140,
+   36,
+   24
+  ]
+ },
+ "hesco_mil1_5": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    50.0
+   ],
+   [
+    1,
+    50.0,
+    180.0
+   ],
+   [
+    2,
+    180.0,
+    1200.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Hesco_Liner",
+   "Dirt",
+   "Hesco_Mesh",
+   "Kit_Palette"
+  ],
+  "size": [
+   5.31732082366943,
+   1.37000000476837,
+   1.07999992370605
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   4,
+   3,
+   2
+  ],
+  "tris": [
+   348,
+   36,
+   24
+  ]
+ },
+ "hesco_mil7_2": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    50.0
+   ],
+   [
+    1,
+    50.0,
+    180.0
+   ],
+   [
+    2,
+    180.0,
+    1200.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Hesco_Liner",
+   "Dirt",
+   "Hesco_Mesh",
+   "Kit_Palette"
+  ],
+  "size": [
+   4.27732086181641,
+   2.21000003814697,
+   2.15000009536743
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   4,
+   3,
+   2
+  ],
+  "tris": [
+   192,
+   36,
+   24
+  ]
+ },
+ "hq_building": {
+  "collision_shapes": 3,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    70.0
+   ],
+   [
+    1,
+    70.0,
+    280.0
+   ],
+   [
+    2,
+    280.0,
+    2000.0
+   ]
+  ],
+  "markers": 7,
+  "materials": [
+   "Concrete",
+   "Concrete_Block",
+   "Concrete_Dark",
+   "Roof_OD",
+   "Kit_Palette",
+   "Paint_OD",
+   "Signs"
+  ],
+  "size": [
+   17.230001449585,
+   11.8000011444092,
+   14.3599996566772
+  ],
+  "static_bodies": 3,
+  "surfaces": [
+   7,
+   7,
+   5
+  ],
+  "tris": [
+   4334,
+   1056,
+   156
+  ]
+ },
+ "ibc_tank": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette"
+  ],
+  "size": [
+   1.22000002861023,
+   1.16499996185303,
+   1.08999991416931
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "tris": [
+   384,
+   56,
+   24
+  ]
+ },
+ "iso_container_20_blue": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    35.0
+   ],
+   [
+    1,
+    35.0,
+    120.0
+   ],
+   [
+    2,
+    120.0,
+    600.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Kit_Palette",
+   "Container_Blue",
+   "Signs"
+  ],
+  "size": [
+   2.44400000572205,
+   2.59100008010864,
+   6.1254997253418
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   1864,
+   240,
+   14
+  ]
+ },
+ "iso_container_20_od": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    35.0
+   ],
+   [
+    1,
+    35.0,
+    120.0
+   ],
+   [
+    2,
+    120.0,
+    600.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Kit_Palette",
+   "Paint_OD",
+   "Container_OD",
+   "Signs"
+  ],
+  "size": [
+   2.44400000572205,
+   2.59100008010864,
+   6.1254997253418
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "tris": [
+   1864,
+   240,
+   14
+  ]
+ },
+ "iso_container_20_rust": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    35.0
+   ],
+   [
+    1,
+    35.0,
+    120.0
+   ],
+   [
+    2,
+    120.0,
+    600.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Kit_Palette",
+   "Container_Rust",
+   "Signs"
+  ],
+  "size": [
+   2.44400000572205,
+   2.59100008010864,
+   6.1254997253418
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   1864,
+   240,
+   14
+  ]
+ },
+ "iso_container_20_tan": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    35.0
+   ],
+   [
+    1,
+    35.0,
+    120.0
+   ],
+   [
+    2,
+    120.0,
+    600.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Kit_Palette",
+   "Paint_Tan",
+   "Container_Tan",
+   "Signs"
+  ],
+  "size": [
+   2.44400000572205,
+   2.59100008010864,
+   6.1254997253418
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "tris": [
+   1864,
+   240,
+   14
+  ]
+ },
+ "iso_container_40_od": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    35.0
+   ],
+   [
+    1,
+    35.0,
+    120.0
+   ],
+   [
+    2,
+    120.0,
+    600.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Kit_Palette",
+   "Paint_OD",
+   "Container_OD",
+   "Signs"
+  ],
+  "size": [
+   2.44400000572205,
+   2.59100008010864,
+   12.25950050354
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "tris": [
+   1816,
+   240,
+   14
+  ]
+ },
+ "iso_container_40_tan": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    35.0
+   ],
+   [
+    1,
+    35.0,
+    120.0
+   ],
+   [
+    2,
+    120.0,
+    600.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Kit_Palette",
+   "Paint_Tan",
+   "Container_Tan",
+   "Signs"
+  ],
+  "size": [
+   2.44400000572205,
+   2.59100008010864,
+   12.25950050354
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "tris": [
+   1816,
+   240,
+   14
+  ]
+ },
+ "jerrycan": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    15.0
+   ],
+   [
+    1,
+    15.0,
+    40.0
+   ],
+   [
+    2,
+    40.0,
+    90.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Paint_Green",
+   "Kit_Palette"
+  ],
+  "size": [
+   0.344999998807907,
+   0.485355317592621,
+   0.17799998819828
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   1,
+   1
+  ],
+  "tris": [
+   168,
+   12,
+   12
+  ]
+ },
+ "jersey_barrier": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    40.0
+   ],
+   [
+    1,
+    40.0,
+    150.0
+   ],
+   [
+    2,
+    150.0,
+    800.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Concrete",
+   "Kit_Palette"
+  ],
+  "size": [
+   3.0,
+   0.88720577955246,
+   0.61599999666214
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   1,
+   1
+  ],
+  "tris": [
+   164,
+   28,
+   28
+  ]
+ },
+ "light_pole": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    40.0
+   ],
+   [
+    1,
+    40.0,
+    160.0
+   ],
+   [
+    2,
+    160.0,
+    1200.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette",
+   "Concrete"
+  ],
+  "size": [
+   0.5,
+   8.3795919418335,
+   1.875
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   180,
+   116,
+   40
+  ]
+ },
+ "light_tower": {
+  "collision_shapes": 2,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    40.0
+   ],
+   [
+    1,
+    40.0,
+    160.0
+   ],
+   [
+    2,
+    160.0,
+    1200.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette"
+  ],
+  "size": [
+   4.10999965667725,
+   9.34109973907471,
+   2.38000011444092
+  ],
+  "static_bodies": 2,
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "tris": [
+   516,
+   324,
+   72
+  ]
+ },
+ "medical_station": {
+  "collision_shapes": 3,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    70.0
+   ],
+   [
+    1,
+    70.0,
+    280.0
+   ],
+   [
+    2,
+    280.0,
+    2000.0
+   ]
+  ],
+  "markers": 5,
+  "materials": [
+   "Timber_Dark",
+   "Canvas_Tan",
+   "Canvas_OD",
+   "Signs",
+   "Container_White",
+   "Kit_Palette",
+   "Canvas_White"
+  ],
+  "size": [
+   10.789999961853,
+   3.62999987602234,
+   19.5202255249023
+  ],
+  "static_bodies": 3,
+  "surfaces": [
+   7,
+   6,
+   5
+  ],
+  "tris": [
+   1652,
+   282,
+   142
+  ]
+ },
+ "mesh_fence_temporary": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    30.0
+   ],
+   [
+    1,
+    30.0,
+    100.0
+   ],
+   [
+    2,
+    100.0,
+    400.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Concrete_Dark",
+   "Kit_Palette",
+   "Hesco_Mesh"
+  ],
+  "size": [
+   4.1100001335144,
+   2.09999990463257,
+   0.200000002980232
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "tris": [
+   170,
+   170,
+   26
+  ]
+ },
+ "mg_nest": {
+  "collision_shapes": 4,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    40.0
+   ],
+   [
+    1,
+    40.0,
+    160.0
+   ],
+   [
+    2,
+    160.0,
+    800.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Sandbag",
+   "Timber",
+   "Plywood"
+  ],
+  "size": [
+   3.40000009536743,
+   1.80299997329712,
+   3.20000004768372
+  ],
+  "static_bodies": 4,
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "tris": [
+   6252,
+   108,
+   60
+  ]
+ },
+ "mout_wall_door": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    50.0
+   ],
+   [
+    1,
+    50.0,
+    200.0
+   ],
+   [
+    2,
+    200.0,
+    1000.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Concrete_Block",
+   "Concrete"
+  ],
+  "size": [
+   4.03999996185303,
+   2.6800000667572,
+   0.259999990463257
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "tris": [
+   48,
+   48,
+   36
+  ]
+ },
+ "mout_wall_window": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    50.0
+   ],
+   [
+    1,
+    50.0,
+    200.0
+   ],
+   [
+    2,
+    200.0,
+    1000.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Concrete_Block",
+   "Concrete"
+  ],
+  "size": [
+   4.03999996185303,
+   2.6800000667572,
+   0.259999990463257
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "tris": [
+   72,
+   72,
+   48
+  ]
+ },
+ "obstacle_balance": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    40.0
+   ],
+   [
+    1,
+    40.0,
+    140.0
+   ],
+   [
+    2,
+    140.0,
+    600.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Timber",
+   "Timber_Dark"
+  ],
+  "size": [
+   2.59021139144897,
+   1.50000011920929,
+   5.0
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "tris": [
+   216,
+   168,
+   60
+  ]
+ },
+ "obstacle_crawl": {
+  "collision_shapes": 0,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    40.0
+   ],
+   [
+    1,
+    40.0,
+    140.0
+   ],
+   [
+    2,
+    140.0,
+    600.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette",
+   "Dirt"
+  ],
+  "size": [
+   3.20000004768372,
+   0.604000151157379,
+   8.19999980926514
+  ],
+  "static_bodies": 0,
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "tris": [
+   744,
+   732,
+   12
+  ]
+ },
+ "obstacle_monkey_bars": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    40.0
+   ],
+   [
+    1,
+    40.0,
+    140.0
+   ],
+   [
+    2,
+    140.0,
+    600.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette"
+  ],
+  "size": [
+   0.879999995231628,
+   2.59999990463257,
+   4.07999992370605
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "tris": [
+   428,
+   120,
+   80
+  ]
+ },
+ "obstacle_net": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    50.0
+   ],
+   [
+    1,
+    50.0,
+    180.0
+   ],
+   [
+    2,
+    180.0,
+    800.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Canvas_Tan",
+   "Timber_Dark",
+   "Hesco_Mesh"
+  ],
+  "size": [
+   3.20000004768372,
+   4.62342548370361,
+   3.76712560653687
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   572,
+   104,
+   104
+  ]
+ },
+ "obstacle_tires": {
+  "collision_shapes": 0,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    40.0
+   ],
+   [
+    1,
+    40.0,
+    140.0
+   ],
+   [
+    2,
+    140.0,
+    600.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette",
+   "Dirt"
+  ],
+  "size": [
+   1.74094521999359,
+   0.230000004172325,
+   6.35999965667725
+  ],
+  "static_bodies": 0,
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "tris": [
+   1536,
+   704,
+   320
+  ]
+ },
+ "obstacle_wall": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    40.0
+   ],
+   [
+    1,
+    40.0,
+    140.0
+   ],
+   [
+    2,
+    140.0,
+    600.0
+   ]
+  ],
+  "markers": 1,
+  "materials": [
+   "Timber_Dark",
+   "Timber"
+  ],
+  "size": [
+   3.05000019073486,
+   2.70000028610229,
+   0.680000007152557
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   144,
+   120,
+   120
+  ]
+ },
+ "pallet_euro": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Timber",
+   "Timber_Dark"
+  ],
+  "size": [
+   1.20000004768372,
+   0.143999993801117,
+   0.800000011920929
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   1,
+   1
+  ],
+  "tris": [
+   240,
+   12,
+   12
+  ]
+ },
+ "radio_mast": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    50.0
+   ],
+   [
+    1,
+    50.0,
+    200.0
+   ],
+   [
+    2,
+    200.0,
+    1500.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Paint_OD",
+   "Concrete",
+   "Kit_Palette"
+  ],
+  "size": [
+   11.5083303451538,
+   14.4499998092651,
+   10.0
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   3,
+   3,
+   1
+  ],
+  "tris": [
+   504,
+   252,
+   60
+  ]
+ },
+ "range_backstop": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    80.0
+   ],
+   [
+    1,
+    80.0,
+    320.0
+   ],
+   [
+    2,
+    320.0,
+    2000.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Dirt",
+   "Timber_Dark"
+  ],
+  "size": [
+   20.0200004577637,
+   4.19999980926514,
+   8.0
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "tris": [
+   156,
+   156,
+   36
+  ]
+ },
+ "range_firing_point": {
+  "collision_shapes": 7,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    60.0
+   ],
+   [
+    1,
+    60.0,
+    240.0
+   ],
+   [
+    2,
+    240.0,
+    1600.0
+   ]
+  ],
+  "markers": 8,
+  "materials": [
+   "Concrete",
+   "Paint_OD",
+   "Roof_OD",
+   "Canvas_Green",
+   "Sandbag",
+   "Signs",
+   "Kit_Palette"
+  ],
+  "size": [
+   16.6399993896484,
+   7.30000019073486,
+   5.51999998092651
+  ],
+  "static_bodies": 7,
+  "surfaces": [
+   7,
+   7,
+   4
+  ],
+  "tris": [
+   1516,
+   332,
+   200
+  ]
+ },
+ "range_target_line": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    60.0
+   ],
+   [
+    1,
+    60.0,
+    240.0
+   ],
+   [
+    2,
+    240.0,
+    1200.0
+   ]
+  ],
+  "markers": 6,
+  "materials": [
+   "Dirt",
+   "Timber",
+   "Signs",
+   "Plywood",
+   "Kit_Palette"
+  ],
+  "size": [
+   16.8999996185303,
+   1.89999997615814,
+   2.40000009536743
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   5,
+   5,
+   3
+  ],
+  "tris": [
+   332,
+   260,
+   96
+  ]
+ },
+ "range_tower": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    60.0
+   ],
+   [
+    1,
+    60.0,
+    240.0
+   ],
+   [
+    2,
+    240.0,
+    1600.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Concrete",
+   "Kit_Palette"
+  ],
+  "size": [
+   3.72598075866699,
+   6.05224132537842,
+   3.15956354141235
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   364,
+   364,
+   180
+  ]
+ },
+ "repair_bay": {
+  "collision_shapes": 9,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    60.0
+   ],
+   [
+    1,
+    60.0,
+    240.0
+   ],
+   [
+    2,
+    240.0,
+    1600.0
+   ]
+  ],
+  "markers": 3,
+  "materials": [
+   "Concrete",
+   "Paint_OD",
+   "Roof_OD",
+   "Kit_Palette"
+  ],
+  "size": [
+   11.039999961853,
+   7.72163534164429,
+   15.0
+  ],
+  "static_bodies": 9,
+  "surfaces": [
+   4,
+   4,
+   3
+  ],
+  "tris": [
+   428,
+   404,
+   140
+  ]
+ },
+ "road_asphalt_10m": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    80.0
+   ],
+   [
+    1,
+    80.0,
+    300.0
+   ],
+   [
+    2,
+    300.0,
+    2000.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Dirt",
+   "Gravel",
+   "Asphalt",
+   "Paint_RoadWhite"
+  ],
+  "size": [
+   13.0,
+   0.753500044345856,
+   10.0
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   4,
+   4,
+   3
+  ],
+  "tris": [
+   56,
+   56,
+   20
+  ]
+ },
+ "road_culvert": {
+  "collision_shapes": 2,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    50.0
+   ],
+   [
+    1,
+    50.0,
+    200.0
+   ],
+   [
+    2,
+    200.0,
+    900.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Concrete",
+   "Concrete_Dark"
+  ],
+  "size": [
+   3.42768406867981,
+   1.5,
+   12.0
+  ],
+  "static_bodies": 2,
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "tris": [
+   304,
+   172,
+   140
+  ]
+ },
+ "road_delineator": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    25.0
+   ],
+   [
+    1,
+    25.0,
+    70.0
+   ],
+   [
+    2,
+    70.0,
+    200.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette"
+  ],
+  "size": [
+   0.104999996721745,
+   1.29999995231628,
+   0.148000001907349
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "tris": [
+   68,
+   24,
+   12
+  ]
+ },
+ "road_dirt_10m": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    60.0
+   ],
+   [
+    1,
+    60.0,
+    220.0
+   ],
+   [
+    2,
+    220.0,
+    1200.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Dirt",
+   "Gravel_Dark"
+  ],
+  "size": [
+   3.5,
+   0.450000017881393,
+   10.0
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   1,
+   1
+  ],
+  "tris": [
+   34,
+   22,
+   22
+  ]
+ },
+ "road_gravel_10m": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    70.0
+   ],
+   [
+    1,
+    70.0,
+    260.0
+   ],
+   [
+    2,
+    260.0,
+    1500.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Dirt",
+   "Gravel",
+   "Gravel_Dark"
+  ],
+  "size": [
+   8.5,
+   0.612500011920929,
+   10.0
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   3,
+   2,
+   2
+  ],
+  "tris": [
+   32,
+   16,
+   16
+  ]
+ },
+ "sandbag_single": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Sandbag"
+  ],
+  "size": [
+   0.659999966621399,
+   0.129999995231628,
+   0.319999992847443
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "tris": [
+   136,
+   44,
+   12
+  ]
+ },
+ "sandbag_wall_2m": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    30.0
+   ],
+   [
+    1,
+    30.0,
+    120.0
+   ],
+   [
+    2,
+    120.0,
+    500.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Sandbag"
+  ],
+  "size": [
+   2.05650758743286,
+   0.987999975681305,
+   0.672148704528809
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "tris": [
+   5760,
+   352,
+   12
+  ]
+ },
+ "sandbag_wall_green_2m": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    30.0
+   ],
+   [
+    1,
+    30.0,
+    120.0
+   ],
+   [
+    2,
+    120.0,
+    500.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Sandbag_Green"
+  ],
+  "size": [
+   2.0589599609375,
+   0.987999975681305,
+   0.669261634349823
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "tris": [
+   5760,
+   352,
+   12
+  ]
+ },
+ "sandbag_wall_low_2m": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    30.0
+   ],
+   [
+    1,
+    30.0,
+    120.0
+   ],
+   [
+    2,
+    120.0,
+    500.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Sandbag"
+  ],
+  "size": [
+   2.05323839187622,
+   0.628000020980835,
+   0.670240223407745
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "tris": [
+   3600,
+   220,
+   12
+  ]
+ },
+ "shoot_house": {
+  "collision_shapes": 18,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    60.0
+   ],
+   [
+    1,
+    60.0,
+    240.0
+   ],
+   [
+    2,
+    240.0,
+    1600.0
+   ]
+  ],
+  "markers": 6,
+  "materials": [
+   "Concrete",
+   "Plywood",
+   "Timber",
+   "Kit_Palette"
+  ],
+  "size": [
+   12.6000003814697,
+   3.39999985694885,
+   9.60000038146973
+  ],
+  "static_bodies": 18,
+  "surfaces": [
+   4,
+   3,
+   2
+  ],
+  "tris": [
+   396,
+   276,
+   228
+  ]
+ },
+ "sign_checkpoint": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette",
+   "Signs"
+  ],
+  "size": [
+   1.39999997615814,
+   3.04999995231628,
+   0.0700000002980232
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   64,
+   32,
+   32
+  ]
+ },
+ "sign_no_entry": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette",
+   "Signs"
+  ],
+  "size": [
+   0.600000023841858,
+   3.0,
+   0.0700000002980232
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   144,
+   112,
+   112
+  ]
+ },
+ "sign_restricted": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette",
+   "Signs"
+  ],
+  "size": [
+   1.20000004768372,
+   3.0,
+   0.0700000002980232
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   64,
+   32,
+   32
+  ]
+ },
+ "sign_speed_15": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette",
+   "Signs"
+  ],
+  "size": [
+   0.600000023841858,
+   3.0,
+   0.0700000002980232
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   144,
+   112,
+   112
+  ]
+ },
+ "sign_speed_30": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette",
+   "Signs"
+  ],
+  "size": [
+   0.600000023841858,
+   3.0,
+   0.0700000002980232
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   144,
+   112,
+   112
+  ]
+ },
+ "sign_stop": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette",
+   "Signs"
+  ],
+  "size": [
+   0.69290965795517,
+   3.04645490646362,
+   0.0700000002980232
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   80,
+   48,
+   48
+  ]
+ },
+ "sign_warning": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette",
+   "Signs"
+  ],
+  "size": [
+   0.846000015735626,
+   3.10500001907349,
+   0.0700000002980232
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   60,
+   28,
+   28
+  ]
+ },
+ "sign_yield": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette",
+   "Signs"
+  ],
+  "size": [
+   0.864000022411346,
+   3.05100011825562,
+   0.0700000002980232
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "tris": [
+   60,
+   28,
+   28
+  ]
+ },
+ "supply_depot": {
+  "collision_shapes": 2,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    70.0
+   ],
+   [
+    1,
+    70.0,
+    280.0
+   ],
+   [
+    2,
+    280.0,
+    2000.0
+   ]
+  ],
+  "markers": 8,
+  "materials": [
+   "Concrete",
+   "Roof_Tan",
+   "Roof_Galv",
+   "Kit_Palette",
+   "Paint_Tan",
+   "Paint_OD",
+   "Signs"
+  ],
+  "size": [
+   20.7000007629395,
+   7.97428894042969,
+   18.0799999237061
+  ],
+  "static_bodies": 2,
+  "surfaces": [
+   7,
+   5,
+   5
+  ],
+  "tris": [
+   2948,
+   1004,
+   120
+  ]
+ },
+ "supply_pallet": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 1,
+  "materials": [
+   "Timber",
+   "Timber_Dark",
+   "Plywood",
+   "Kit_Palette"
+  ],
+  "size": [
+   1.20000004768372,
+   1.04999995231628,
+   0.819999992847443
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   4,
+   2,
+   2
+  ],
+  "tris": [
+   732,
+   72,
+   24
+  ]
+ },
+ "t_wall": {
+  "collision_shapes": 2,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    60.0
+   ],
+   [
+    1,
+    60.0,
+    220.0
+   ],
+   [
+    2,
+    220.0,
+    1500.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Concrete",
+   "Kit_Palette"
+  ],
+  "size": [
+   1.51999998092651,
+   3.76817154884338,
+   1.2279999256134
+  ],
+  "static_bodies": 2,
+  "surfaces": [
+   2,
+   1,
+   1
+  ],
+  "tris": [
+   164,
+   28,
+   28
+  ]
+ },
+ "tent_frame_10x6": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    30.0
+   ],
+   [
+    1,
+    30.0,
+    100.0
+   ],
+   [
+    2,
+    100.0,
+    400.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Canvas_Tan",
+   "Kit_Palette"
+  ],
+  "size": [
+   8.62853240966797,
+   3.25499987602234,
+   10.4399995803833
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "tris": [
+   488,
+   64,
+   40
+  ]
+ },
+ "tent_frame_6x4": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    30.0
+   ],
+   [
+    1,
+    30.0,
+    100.0
+   ],
+   [
+    2,
+    100.0,
+    400.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Canvas_OD",
+   "Kit_Palette",
+   "Canvas_Tan"
+  ],
+  "size": [
+   7.12853145599365,
+   2.91750001907349,
+   6.4399995803833
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   3,
+   2,
+   1
+  ],
+  "tris": [
+   488,
+   64,
+   40
+  ]
+ },
+ "traffic_cone": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    20.0
+   ],
+   [
+    1,
+    20.0,
+    60.0
+   ],
+   [
+    2,
+    60.0,
+    160.0
+   ]
+  ],
+  "markers": 0,
+  "materials": [
+   "Kit_Palette"
+  ],
+  "size": [
+   0.379999995231628,
+   0.75,
+   0.379999995231628
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "tris": [
+   200,
+   36,
+   32
+  ]
+ },
+ "training_facility": {
+  "collision_shapes": 3,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    70.0
+   ],
+   [
+    1,
+    70.0,
+    280.0
+   ],
+   [
+    2,
+    280.0,
+    2000.0
+   ]
+  ],
+  "markers": 4,
+  "materials": [
+   "Concrete",
+   "Concrete_Block",
+   "Roof_Tan",
+   "Kit_Palette",
+   "Signs",
+   "Concrete_Dark",
+   "Timber"
+  ],
+  "size": [
+   21.0499992370605,
+   4.79022645950317,
+   9.46999931335449
+  ],
+  "static_bodies": 3,
+  "surfaces": [
+   7,
+   5,
+   5
+  ],
+  "tris": [
+   1880,
+   616,
+   124
+  ]
+ },
+ "truck_6x6": {
+  "collision_shapes": 2,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    40.0
+   ],
+   [
+    1,
+    40.0,
+    160.0
+   ],
+   [
+    2,
+    160.0,
+    1500.0
+   ]
+  ],
+  "markers": 20,
+  "materials": [
+   "Kit_Palette",
+   "Paint_Green",
+   "Canvas_OD",
+   "Signs"
+  ],
+  "size": [
+   3.30999994277954,
+   3.64408659934998,
+   8.67000007629395
+  ],
+  "static_bodies": 2,
+  "surfaces": [
+   4,
+   3,
+   3
+  ],
+  "tris": [
+   4104,
+   902,
+   274
+  ]
+ },
+ "vehicle_depot": {
+  "collision_shapes": 2,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    70.0
+   ],
+   [
+    1,
+    70.0,
+    280.0
+   ],
+   [
+    2,
+    280.0,
+    2000.0
+   ]
+  ],
+  "markers": 10,
+  "materials": [
+   "Concrete",
+   "Roof_OD",
+   "Kit_Palette",
+   "Paint_OD",
+   "Signs",
+   "Concrete_Dark"
+  ],
+  "size": [
+   30.3000011444092,
+   10.0750007629395,
+   22.4200000762939
+  ],
+  "static_bodies": 2,
+  "surfaces": [
+   6,
+   5,
+   4
+  ],
+  "tris": [
+   3620,
+   922,
+   130
+  ]
+ },
+ "vehicle_parking_pad": {
+  "collision_shapes": 0,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    60.0
+   ],
+   [
+    1,
+    60.0,
+    250.0
+   ],
+   [
+    2,
+    250.0,
+    1500.0
+   ]
+  ],
+  "markers": 6,
+  "materials": [
+   "Concrete",
+   "Kit_Palette",
+   "Concrete_Dark"
+  ],
+  "size": [
+   24.1000003814697,
+   0.5,
+   14.0
+  ],
+  "static_bodies": 0,
+  "surfaces": [
+   3,
+   2,
+   1
+  ],
+  "tris": [
+   180,
+   108,
+   12
+  ]
+ },
+ "vehicle_ramp": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    60.0
+   ],
+   [
+    1,
+    60.0,
+    240.0
+   ],
+   [
+    2,
+    240.0,
+    1600.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Concrete",
+   "Kit_Palette"
+  ],
+  "size": [
+   4.40000009536743,
+   2.75,
+   17.0
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "tris": [
+   34,
+   34,
+   22
+  ]
+ },
+ "water_barrier": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    30.0
+   ],
+   [
+    1,
+    30.0,
+    100.0
+   ],
+   [
+    2,
+    100.0,
+    400.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Kit_Palette"
+  ],
+  "size": [
+   2.09314799308777,
+   1.02999997138977,
+   0.5
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "tris": [
+   148,
+   80,
+   28
+  ]
+ },
+ "wheel_apc": {
+  "collision_shapes": 0,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    40.0
+   ],
+   [
+    1,
+    40.0,
+    160.0
+   ],
+   [
+    2,
+    160.0,
+    800.0
+   ]
+  ],
+  "markers": 1,
+  "materials": [
+   "Kit_Palette",
+   "Paint_Green"
+  ],
+  "size": [
+   0.485000014305115,
+   1.2889324426651,
+   1.30000007152557
+  ],
+  "static_bodies": 0,
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "tris": [
+   496,
+   72,
+   28
+  ]
+ },
+ "wheel_truck": {
+  "collision_shapes": 0,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    40.0
+   ],
+   [
+    1,
+    40.0,
+    160.0
+   ],
+   [
+    2,
+    160.0,
+    800.0
+   ]
+  ],
+  "markers": 1,
+  "materials": [
+   "Kit_Palette",
+   "Paint_Green"
+  ],
+  "size": [
+   0.485000014305115,
+   1.33817291259766,
+   1.35000002384186
+  ],
+  "static_bodies": 0,
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "tris": [
+   496,
+   72,
+   28
+  ]
+ }
+}

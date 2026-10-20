@@ -1,0 +1,76 @@
+{
+ "id": "light_tower",
+ "family": "prop",
+ "display_name": "Mobile light tower",
+ "category": "Power",
+ "description": "Trailer light tower 2.6 x 1.4 m, mast raised to 9.0 m, four LED floodlights.",
+ "bounds_min": [
+  -1.66,
+  -1.19,
+  0.0
+ ],
+ "bounds_max": [
+  2.45,
+  1.19,
+  9.341
+ ],
+ "size_above_ground": [
+  4.11,
+  2.38,
+  9.341
+ ],
+ "footprint_xy": [
+  -1.66,
+  -1.19,
+  2.45,
+  1.19
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  516,
+  324,
+  72
+ ],
+ "surfaces": [
+  1,
+  1,
+  1
+ ],
+ "materials": [
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   160
+  ],
+  [
+   160,
+   1200
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.2,
+   0.0,
+   -0.65,
+   2.4,
+   1.5,
+   1.3
+  ],
+  [
+   -0.9,
+   1.5,
+   -0.1,
+   0.2,
+   7.6,
+   0.2
+  ]
+ ],
+ "markers": [],
+ "structure": null
+}

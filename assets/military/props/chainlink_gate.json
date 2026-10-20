@@ -1,0 +1,100 @@
+{
+ "id": "chainlink_gate",
+ "family": "prop",
+ "display_name": "Chain-link gate 4 m (closed)",
+ "category": "Fences",
+ "description": "Double swing gate, 4.0 m clear opening, 2.4 m high, two 2.0 m leaves (closed), hinge posts 0.10 m.",
+ "bounds_min": [
+  -2.113,
+  -0.309,
+  -0.6
+ ],
+ "bounds_max": [
+  2.113,
+  0.309,
+  3.107
+ ],
+ "size_above_ground": [
+  4.227,
+  0.618,
+  3.107
+ ],
+ "footprint_xy": [
+  -2.113,
+  -0.309,
+  2.113,
+  0.309
+ ],
+ "foundation_depth": 0.6,
+ "tris": [
+  492,
+  204,
+  44
+ ],
+ "surfaces": [
+  2,
+  2,
+  2
+ ],
+ "materials": [
+  "Chainlink",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   140
+  ],
+  [
+   140,
+   600
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -2.1,
+   0.0,
+   -0.04,
+   4.2,
+   2.4,
+   0.08
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SNAP_W",
+   "pos": [
+    -2.06,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": "fence joins the west hinge post"
+  },
+  {
+   "name": "SNAP_E",
+   "pos": [
+    2.06,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": "fence joins the east hinge post"
+  },
+  {
+   "name": "IP_Gate",
+   "pos": [
+    0,
+    1.5,
+    0
+   ],
+   "yaw": 180,
+   "note": "open / close the gate"
+  }
+ ],
+ "structure": null
+}

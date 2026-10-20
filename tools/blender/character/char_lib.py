@@ -538,3 +538,41 @@ def contact_sheet(paths, out, cols):
         r, c = divmod(i, cols)
         sheet[r * h:(r + 1) * h, c * w:(c + 1) * w] = a[:h, :w]
     return save_png(out, sheet)
+
+
+# Leg-influence fade for jackets: the hem follows the pelvis, not the thighs.
+JACKET_LEG_FADE = (0.74, 0.98, 0.05)
+
+
+def limit_leg_weights(obj, z_lo=0.80, z_hi=1.00, centre_drop=0.05):
+    """Fades the thigh bones' influence out above the hip joints and gives it to Hips:
+    full leg weight below z_lo, none above z_hi (smoothstep). Near the body's midline
+    (crotch / tailbone) the band is lowered by centre_drop so the crotch does not bulge
+    when both thighs flex. Automatic weights let the UpperLeg bones drive the belly and
+    waist (up to ~90 % at belt height), which collapsed the waist and flapped the jacket
+    hem whenever the legs flexed."""
+    hips = obj.vertex_groups.get("Hips")
+    legs = [g for g in obj.vertex_groups if g.name in ("LeftUpperLeg", "RightUpperLeg")]
+    if hips is None or not legs:
+        return
+    idx = {g.index: g for g in legs}
+    for v in obj.data.vertices:
+        c = min(abs(v.co.x) / 0.12, 1.0)
+        lo = z_lo - centre_drop * (1.0 - c)
+        hi = z_hi - centre_drop * (1.0 - c)
+        t = min(max((v.co.z - lo) / (hi - lo), 0.0), 1.0)
+        keep = 1.0 - t * t * (3 - 2 * t)
+        if keep >= 0.999:
+            continue
+        moved = 0.0
+        for g in v.groups:
+            if g.group in idx:
+                w = g.weight
+                idx[g.group].add([v.index], w * keep, "REPLACE")
+                moved += w * (1.0 - keep)
+        if moved > 0:
+            cur = 0.0
+            for g in v.groups:
+                if g.group == hips.index:
+                    cur = g.weight
+            hips.add([v.index], cur + moved, "REPLACE")

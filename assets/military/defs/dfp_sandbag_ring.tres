@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"dfp_sandbag_ring"
+display_name = "Fighting position (sandbags)"
+category = "Defences"
+description = "Circular sandbag fighting position, 3.0 m outer diameter, 1.0 m high, firing port forward, rear entrance."
+mesh_path = "res://assets/military/modules/dfp_sandbag_ring.glb"
+size = Vector3(3.2, 0.979, 2.801)
+max_slope_deg = 10
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-1.5, 0, -1.5, 3, 1, 3)])
+ramps = Array[AABB]([])

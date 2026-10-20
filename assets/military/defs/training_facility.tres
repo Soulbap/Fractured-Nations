@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"training_facility"
+display_name = "Training Facility"
+category = "Buildings"
+description = "Training centre: 14 x 8 m classroom building (two classrooms, 40 seats) on a plinth, 6 x 8 m covered briefing area with benches and a map board."
+mesh_path = "res://assets/military/buildings/training_facility.glb"
+size = Vector3(21.05, 4.29, 9.47)
+max_slope_deg = 6
+max_ground_gap = 0.8
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-7, -0.5, -4, 14, 4.6502, 8), AABB(-7.3, -0.5, -4.3, 20.9, 0.8, 8.6), AABB(7, 3.25, -4, 6.3, 0.12, 8)])
+ramps = Array[AABB]([])

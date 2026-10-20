@@ -1,0 +1,69 @@
+{
+ "id": "light_pole",
+ "family": "prop",
+ "display_name": "Light pole 8 m",
+ "category": "Power",
+ "description": "Galvanized 8 m light pole on a concrete footing, 1.2 m arm with LED luminaire.",
+ "bounds_min": [
+  -0.25,
+  -0.25,
+  -0.25
+ ],
+ "bounds_max": [
+  0.25,
+  1.625,
+  8.13
+ ],
+ "size_above_ground": [
+  0.5,
+  1.875,
+  8.13
+ ],
+ "footprint_xy": [
+  -0.25,
+  -0.25,
+  0.25,
+  1.625
+ ],
+ "foundation_depth": 0.25,
+ "tris": [
+  180,
+  116,
+  40
+ ],
+ "surfaces": [
+  2,
+  2,
+  2
+ ],
+ "materials": [
+  "Concrete",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   160
+  ],
+  [
+   160,
+   1200
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.1,
+   0.0,
+   -0.1,
+   0.2,
+   8.0,
+   0.2
+  ]
+ ],
+ "markers": [],
+ "structure": null
+}

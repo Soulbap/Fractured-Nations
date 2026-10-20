@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"mg_nest"
+display_name = "MG position with overhead cover"
+category = "Defences"
+description = "Machine-gun position 3.0 x 3.0 m: 1.0 m sandbag walls, 4 timber posts, plywood roof with sandbags at 1.6 m, 0.4 m firing slit forward."
+mesh_path = "res://assets/military/modules/mg_nest.glb"
+size = Vector3(3.4, 1.794, 3.2)
+max_slope_deg = 10
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-1.7, 0, -1.525, 3.4, 1, 0.35), AABB(-1.675, 0, -1.2, 0.35, 1, 2.4), AABB(1.325, 0, -1.2, 0.35, 1, 2.4), AABB(-1.7, 1.595, -1.6, 3.4, 0.25, 3.2)])
+ramps = Array[AABB]([])

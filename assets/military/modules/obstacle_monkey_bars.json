@@ -1,0 +1,73 @@
+{
+ "id": "obstacle_monkey_bars",
+ "family": "module",
+ "display_name": "Obstacle: monkey bars",
+ "category": "Training",
+ "description": "Steel monkey bars 4 m long, 2.2 m high.",
+ "bounds_min": [
+  -0.44,
+  -2.04,
+  -0.3
+ ],
+ "bounds_max": [
+  0.44,
+  2.04,
+  2.3
+ ],
+ "size_above_ground": [
+  0.88,
+  4.08,
+  2.3
+ ],
+ "footprint_xy": [
+  -0.44,
+  -2.04,
+  0.44,
+  2.04
+ ],
+ "foundation_depth": 0.3,
+ "tris": [
+  428,
+  120,
+  80
+ ],
+ "surfaces": [
+  1,
+  1,
+  1
+ ],
+ "materials": [
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   140
+  ],
+  [
+   140,
+   600
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.45,
+   -0.005,
+   -2.05,
+   0.9,
+   2.25,
+   4.1
+  ]
+ ],
+ "markers": [],
+ "structure": {
+  "category": "Training",
+  "max_slope_deg": 10.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.3
+ }
+}

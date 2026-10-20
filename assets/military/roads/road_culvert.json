@@ -1,0 +1,78 @@
+{
+ "id": "road_culvert",
+ "family": "road",
+ "display_name": "Culvert with headwalls",
+ "category": "Roads",
+ "description": "Concrete pipe culvert, 1.0 m bore, 9 m long under the road, headwalls 2.4 x 1.4 m with wing walls at both ends.",
+ "bounds_min": [
+  -1.714,
+  -6.0,
+  -0.3
+ ],
+ "bounds_max": [
+  1.714,
+  6.0,
+  1.2
+ ],
+ "size_above_ground": [
+  3.428,
+  12.0,
+  1.2
+ ],
+ "footprint_xy": [
+  -1.714,
+  -6.0,
+  1.714,
+  6.0
+ ],
+ "foundation_depth": 0.3,
+ "tris": [
+  304,
+  172,
+  140
+ ],
+ "surfaces": [
+  2,
+  2,
+  1
+ ],
+ "materials": [
+  "Concrete",
+  "Concrete_Dark"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   50
+  ],
+  [
+   50,
+   200
+  ],
+  [
+   200,
+   900
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.2,
+   -0.2,
+   4.495,
+   2.4,
+   1.4,
+   0.25
+  ],
+  [
+   -1.2,
+   -0.2,
+   -4.745,
+   2.4,
+   1.4,
+   0.25
+  ]
+ ],
+ "markers": [],
+ "structure": null,
+ "bore_m": 1.0
+}

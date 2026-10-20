@@ -1,0 +1,95 @@
+{
+ "id": "guard_booth",
+ "family": "prop",
+ "display_name": "Guard booth",
+ "category": "Checkpoint",
+ "description": "Steel sentry booth 1.6 x 1.6 m, 2.6 m high on a 0.15 m plinth, wrap-around windows, door at the back.",
+ "bounds_min": [
+  -1.0,
+  -1.0,
+  -0.3
+ ],
+ "bounds_max": [
+  1.0,
+  1.08,
+  2.68
+ ],
+ "size_above_ground": [
+  2.0,
+  2.08,
+  2.68
+ ],
+ "footprint_xy": [
+  -1.0,
+  -1.0,
+  1.0,
+  1.08
+ ],
+ "foundation_depth": 0.3,
+ "tris": [
+  296,
+  132,
+  36
+ ],
+ "surfaces": [
+  3,
+  3,
+  2
+ ],
+ "materials": [
+  "Concrete",
+  "Kit_Palette",
+  "Paint_OD"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   30
+  ],
+  [
+   30,
+   100
+  ],
+  [
+   100,
+   400
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.8,
+   -0.3,
+   -0.8,
+   1.6,
+   2.98,
+   1.6
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Door",
+   "pos": [
+    0,
+    -1.6,
+    0
+   ],
+   "yaw": 0,
+   "note": "booth door"
+  },
+  {
+   "name": "IP_Guard",
+   "pos": [
+    0,
+    0,
+    0.15
+   ],
+   "yaw": 0,
+   "note": "guard stands inside, facing the lane"
+  }
+ ],
+ "structure": {
+  "category": "Checkpoint",
+  "max_slope_deg": 8.0,
+  "blocks_navigation": true
+ }
+}

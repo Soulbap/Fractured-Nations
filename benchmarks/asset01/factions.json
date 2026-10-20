@@ -1,0 +1,46 @@
+{
+ "A_standard": {
+  "bones": 60,
+  "tris": [
+   61235,
+   18501,
+   3904
+  ]
+ },
+ "CN_rifleman": {
+  "bones": 60,
+  "clips": 19,
+  "errors": [],
+  "lod0_surfaces": 23,
+  "pieces": 10,
+  "tris": [
+   52296,
+   15834,
+   3389
+  ]
+ },
+ "NATO_rifleman": {
+  "bones": 60,
+  "clips": 19,
+  "errors": [],
+  "lod0_surfaces": 34,
+  "pieces": 13,
+  "tris": [
+   59950,
+   18218,
+   3906
+  ]
+ },
+ "RU_rifleman": {
+  "bones": 60,
+  "clips": 19,
+  "errors": [],
+  "lod0_surfaces": 24,
+  "pieces": 8,
+  "tris": [
+   51516,
+   15546,
+   3296
+  ]
+ }
+}

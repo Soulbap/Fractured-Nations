@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"checkpoint_station"
+display_name = "Guard checkpoint"
+category = "Checkpoint"
+description = "Entry control point, one 4.5 m lane: 8 x 12 m canopy, guard booth, boom barrier, two speed bumps, Jersey-barrier chicane, checkpoint and speed signs."
+mesh_path = "res://assets/military/modules/checkpoint_station.glb"
+size = Vector3(12, 5.6, 20)
+max_slope_deg = 4
+max_ground_gap = 0.4
+sink = 0.05
+blocks_navigation = false
+collision_boxes = Array[AABB]([AABB(-4.4, 0, -0.8, 1.6, 2.7, 1.6), AABB(-4.15, 0, 5.35, 0.3, 5, 0.3), AABB(-4.15, 0, -5.65, 0.3, 5, 0.3), AABB(3.85, 0, 5.35, 0.3, 5, 0.3), AABB(3.85, 0, -5.65, 0.3, 5, 0.3), AABB(-2.5, 0.045, -9.305, 3, 0.81, 0.61), AABB(0, 0.045, -8.305, 3, 0.81, 0.61)])
+ramps = Array[AABB]([])

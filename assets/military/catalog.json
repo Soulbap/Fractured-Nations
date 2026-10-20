@@ -1,0 +1,3168 @@
+{
+ "ammo_box_wood": {
+  "family": "prop",
+  "display_name": "Ammunition box (wooden)",
+  "category": "Ammunition",
+  "size_above_ground": [
+   0.674,
+   0.312,
+   0.255
+  ],
+  "footprint_xy": [
+   -0.336,
+   -0.156,
+   0.338,
+   0.156
+  ],
+  "tris": [
+   138,
+   12,
+   12
+  ],
+  "surfaces": [
+   3,
+   1,
+   1
+  ],
+  "materials": [
+   "Canvas_Tan",
+   "Paint_OD",
+   "Signs"
+  ],
+  "glb_bytes": 20772,
+  "glb": "res://assets/military/props/ammo_box_wood.glb"
+ },
+ "ammo_can": {
+  "family": "prop",
+  "display_name": "Ammunition can",
+  "category": "Ammunition",
+  "size_above_ground": [
+   0.31,
+   0.16,
+   0.204
+  ],
+  "footprint_xy": [
+   -0.155,
+   -0.08,
+   0.155,
+   0.08
+  ],
+  "tris": [
+   112,
+   24,
+   12
+  ],
+  "surfaces": [
+   2,
+   1,
+   1
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Paint_OD"
+  ],
+  "glb_bytes": 24488,
+  "glb": "res://assets/military/props/ammo_can.glb"
+ },
+ "ammo_magazine": {
+  "family": "module",
+  "display_name": "Ammunition storage bunker",
+  "category": "Ammunition",
+  "size_above_ground": [
+   15.087,
+   20.6,
+   9.0
+  ],
+  "footprint_xy": [
+   -7.543,
+   -9.6,
+   7.543,
+   11.0
+  ],
+  "tris": [
+   230,
+   142,
+   82
+  ],
+  "surfaces": [
+   5,
+   5,
+   3
+  ],
+  "materials": [
+   "Concrete",
+   "Dirt",
+   "Kit_Palette",
+   "Paint_OD",
+   "Signs"
+  ],
+  "glb_bytes": 53820,
+  "glb": "res://assets/military/modules/ammo_magazine.glb"
+ },
+ "ammo_pallet": {
+  "family": "prop",
+  "display_name": "Ammunition pallet",
+  "category": "Ammunition",
+  "size_above_ground": [
+   1.2,
+   0.815,
+   0.66
+  ],
+  "footprint_xy": [
+   -0.6,
+   -0.407,
+   0.6,
+   0.408
+  ],
+  "tris": [
+   962,
+   110,
+   24
+  ],
+  "surfaces": [
+   5,
+   3,
+   2
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Paint_OD",
+   "Signs",
+   "Timber",
+   "Timber_Dark"
+  ],
+  "glb_bytes": 141544,
+  "glb": "res://assets/military/props/ammo_pallet.glb"
+ },
+ "apc_8x8": {
+  "family": "vehicle",
+  "display_name": "Wheeled APC 8x8",
+  "category": "Vehicles",
+  "size_above_ground": [
+   3.27,
+   7.985,
+   4.8
+  ],
+  "footprint_xy": [
+   -1.635,
+   -4.01,
+   1.635,
+   3.975
+  ],
+  "tris": [
+   4944,
+   936,
+   300
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Paint_Green"
+  ],
+  "glb_bytes": 439776,
+  "glb": "res://assets/military/vehicles/apc_8x8.glb"
+ },
+ "barracks_block": {
+  "family": "building",
+  "display_name": "Barracks",
+  "category": "Buildings",
+  "size_above_ground": [
+   27.699,
+   9.52,
+   4.62
+  ],
+  "footprint_xy": [
+   -13.85,
+   -4.07,
+   13.85,
+   5.45
+  ],
+  "tris": [
+   4384,
+   1180,
+   136
+  ],
+  "surfaces": [
+   6,
+   4,
+   4
+  ],
+  "materials": [
+   "Concrete",
+   "Concrete_Dark",
+   "Kit_Palette",
+   "Paint_Tan",
+   "Roof_Tan",
+   "Signs"
+  ],
+  "glb_bytes": 499292,
+  "glb": "res://assets/military/buildings/barracks_block.glb"
+ },
+ "boom_barrier": {
+  "family": "prop",
+  "display_name": "Boom barrier 6 m",
+  "category": "Checkpoint",
+  "size_above_ground": [
+   6.8,
+   0.8,
+   1.2
+  ],
+  "footprint_xy": [
+   -0.4,
+   -0.4,
+   6.4,
+   0.4
+  ],
+  "tris": [
+   708,
+   264,
+   36
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Concrete",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 100168,
+  "glb": "res://assets/military/props/boom_barrier.glb"
+ },
+ "bridge_small": {
+  "family": "road",
+  "display_name": "Small road bridge 12 m",
+  "category": "Roads",
+  "size_above_ground": [
+   8.1,
+   19.2,
+   1.3
+  ],
+  "footprint_xy": [
+   -4.05,
+   -9.6,
+   4.05,
+   9.6
+  ],
+  "tris": [
+   432,
+   432,
+   168
+  ],
+  "surfaces": [
+   4,
+   4,
+   2
+  ],
+  "materials": [
+   "Asphalt",
+   "Concrete",
+   "Concrete_Dark",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 132764,
+  "glb": "res://assets/military/roads/bridge_small.glb"
+ },
+ "bunker_fighting": {
+  "family": "building",
+  "display_name": "Bunker / Fighting Position",
+  "category": "Defences",
+  "size_above_ground": [
+   6.4,
+   6.5,
+   2.105
+  ],
+  "footprint_xy": [
+   -3.2,
+   -3.3,
+   3.2,
+   3.2
+  ],
+  "tris": [
+   4764,
+   212,
+   144
+  ],
+  "surfaces": [
+   5,
+   5,
+   5
+  ],
+  "materials": [
+   "Concrete",
+   "Concrete_Dark",
+   "Dirt",
+   "Kit_Palette",
+   "Sandbag"
+  ],
+  "glb_bytes": 667468,
+  "glb": "res://assets/military/buildings/bunker_fighting.glb"
+ },
+ "camo_net_canopy": {
+  "family": "prop",
+  "display_name": "Camouflage net canopy",
+  "category": "Shelter",
+  "size_above_ground": [
+   10.007,
+   10.007,
+   3.243
+  ],
+  "footprint_xy": [
+   -5.004,
+   -5.004,
+   5.004,
+   5.004
+  ],
+  "tris": [
+   260,
+   228,
+   128
+  ],
+  "surfaces": [
+   3,
+   2,
+   1
+  ],
+  "materials": [
+   "Camo_Net",
+   "Canvas_Tan",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 39032,
+  "glb": "res://assets/military/props/camo_net_canopy.glb"
+ },
+ "chainlink_fence": {
+  "family": "prop",
+  "display_name": "Chain-link fence 3 m",
+  "category": "Fences",
+  "size_above_ground": [
+   3.067,
+   0.618,
+   2.807
+  ],
+  "footprint_xy": [
+   -1.534,
+   -0.309,
+   1.533,
+   0.309
+  ],
+  "tris": [
+   282,
+   62,
+   42
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Chainlink",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 38028,
+  "glb": "res://assets/military/props/chainlink_fence.glb"
+ },
+ "chainlink_gate": {
+  "family": "prop",
+  "display_name": "Chain-link gate 4 m (closed)",
+  "category": "Fences",
+  "size_above_ground": [
+   4.227,
+   0.618,
+   3.107
+  ],
+  "footprint_xy": [
+   -2.113,
+   -0.309,
+   2.113,
+   0.309
+  ],
+  "tris": [
+   492,
+   204,
+   44
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Chainlink",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 65184,
+  "glb": "res://assets/military/props/chainlink_gate.glb"
+ },
+ "checkpoint_station": {
+  "family": "module",
+  "display_name": "Guard checkpoint",
+  "category": "Checkpoint",
+  "size_above_ground": [
+   12.0,
+   20.0,
+   5.6
+  ],
+  "footprint_xy": [
+   -6.0,
+   -10.0,
+   6.0,
+   10.0
+  ],
+  "tris": [
+   444,
+   444,
+   248
+  ],
+  "surfaces": [
+   5,
+   5,
+   3
+  ],
+  "materials": [
+   "Asphalt",
+   "Concrete",
+   "Kit_Palette",
+   "Paint_OD",
+   "Signs"
+  ],
+  "glb_bytes": 112460,
+  "glb": "res://assets/military/modules/checkpoint_station.glb"
+ },
+ "comms_station": {
+  "family": "building",
+  "display_name": "Communications Station",
+  "category": "Buildings",
+  "size_above_ground": [
+   19.052,
+   15.712,
+   21.0
+  ],
+  "footprint_xy": [
+   -7.0,
+   -7.981,
+   12.052,
+   7.731
+  ],
+  "tris": [
+   1954,
+   506,
+   118
+  ],
+  "surfaces": [
+   6,
+   5,
+   4
+  ],
+  "materials": [
+   "Concrete",
+   "Container_OD",
+   "Gravel",
+   "Kit_Palette",
+   "Paint_OD",
+   "Signs"
+  ],
+  "glb_bytes": 219856,
+  "glb": "res://assets/military/buildings/comms_station.glb"
+ },
+ "comms_tower": {
+  "family": "module",
+  "display_name": "Communications tower 24 m",
+  "category": "Communications",
+  "size_above_ground": [
+   19.75,
+   22.767,
+   27.5
+  ],
+  "footprint_xy": [
+   -6.625,
+   -11.383,
+   13.125,
+   11.383
+  ],
+  "tris": [
+   1764,
+   348,
+   32
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Concrete",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 178064,
+  "glb": "res://assets/military/modules/comms_tower.glb"
+ },
+ "container_yard": {
+  "family": "module",
+  "display_name": "Container storage area",
+  "category": "Logistics",
+  "size_above_ground": [
+   28.2,
+   16.2,
+   8.0
+  ],
+  "footprint_xy": [
+   -14.1,
+   -8.1,
+   14.1,
+   8.1
+  ],
+  "tris": [
+   934,
+   246,
+   150
+  ],
+  "surfaces": [
+   8,
+   8,
+   4
+  ],
+  "materials": [
+   "Concrete",
+   "Container_Blue",
+   "Container_OD",
+   "Container_Rust",
+   "Container_Tan",
+   "Gravel",
+   "Kit_Palette",
+   "Signs"
+  ],
+  "glb_bytes": 136912,
+  "glb": "res://assets/military/modules/container_yard.glb"
+ },
+ "crate_large": {
+  "family": "prop",
+  "display_name": "Wooden crate (large)",
+  "category": "Logistics",
+  "size_above_ground": [
+   1.212,
+   0.812,
+   0.905
+  ],
+  "footprint_xy": [
+   -0.606,
+   -0.406,
+   0.606,
+   0.406
+  ],
+  "tris": [
+   110,
+   36,
+   36
+  ],
+  "surfaces": [
+   4,
+   2,
+   2
+  ],
+  "materials": [
+   "Plywood",
+   "Signs",
+   "Timber",
+   "Timber_Dark"
+  ],
+  "glb_bytes": 30712,
+  "glb": "res://assets/military/props/crate_large.glb"
+ },
+ "dfp_sandbag_ring": {
+  "family": "module",
+  "display_name": "Fighting position (sandbags)",
+  "category": "Defences",
+  "size_above_ground": [
+   3.2,
+   2.801,
+   0.979
+  ],
+  "footprint_xy": [
+   -1.6,
+   -1.336,
+   1.6,
+   1.465
+  ],
+  "tris": [
+   4764,
+   40,
+   40
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Dirt",
+   "Sandbag"
+  ],
+  "glb_bytes": 364996,
+  "glb": "res://assets/military/modules/dfp_sandbag_ring.glb"
+ },
+ "drum_pallet": {
+  "family": "prop",
+  "display_name": "Fuel drums on pallet",
+  "category": "Fuel",
+  "size_above_ground": [
+   1.22,
+   1.222,
+   1.024
+  ],
+  "footprint_xy": [
+   -0.61,
+   -0.61,
+   0.61,
+   0.612
+  ],
+  "tris": [
+   926,
+   158,
+   92
+  ],
+  "surfaces": [
+   4,
+   4,
+   3
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Paint_Green",
+   "Signs",
+   "Timber"
+  ],
+  "glb_bytes": 78328,
+  "glb": "res://assets/military/props/drum_pallet.glb"
+ },
+ "field_toilet": {
+  "family": "prop",
+  "display_name": "Field toilet",
+  "category": "Shelter",
+  "size_above_ground": [
+   1.12,
+   1.14,
+   2.65
+  ],
+  "footprint_xy": [
+   -0.56,
+   -0.56,
+   0.56,
+   0.58
+  ],
+  "tris": [
+   152,
+   112,
+   24
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Kit_Palette"
+  ],
+  "glb_bytes": 35400,
+  "glb": "res://assets/military/props/field_toilet.glb"
+ },
+ "fuel_bladder_berm": {
+  "family": "module",
+  "display_name": "Fuel bladder in bund",
+  "category": "Fuel",
+  "size_above_ground": [
+   15.8,
+   12.92,
+   1.6
+  ],
+  "footprint_xy": [
+   -7.9,
+   -6.4,
+   7.9,
+   6.52
+  ],
+  "tris": [
+   780,
+   296,
+   138
+  ],
+  "surfaces": [
+   3,
+   3,
+   3
+  ],
+  "materials": [
+   "Dirt",
+   "Kit_Palette",
+   "Signs"
+  ],
+  "glb_bytes": 73296,
+  "glb": "res://assets/military/modules/fuel_bladder_berm.glb"
+ },
+ "fuel_drum": {
+  "family": "prop",
+  "display_name": "Fuel drum 200 l",
+  "category": "Fuel",
+  "size_above_ground": [
+   0.6,
+   0.6,
+   0.895
+  ],
+  "footprint_xy": [
+   -0.3,
+   -0.3,
+   0.3,
+   0.3
+  ],
+  "tris": [
+   516,
+   132,
+   28
+  ],
+  "surfaces": [
+   2,
+   1,
+   1
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Paint_Green"
+  ],
+  "glb_bytes": 43112,
+  "glb": "res://assets/military/props/fuel_drum.glb"
+ },
+ "fuel_drum_red": {
+  "family": "prop",
+  "display_name": "Fuel drum 200 l (red)",
+  "category": "Fuel",
+  "size_above_ground": [
+   0.6,
+   0.6,
+   0.895
+  ],
+  "footprint_xy": [
+   -0.3,
+   -0.3,
+   0.3,
+   0.3
+  ],
+  "tris": [
+   516,
+   132,
+   28
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Kit_Palette"
+  ],
+  "glb_bytes": 39488,
+  "glb": "res://assets/military/props/fuel_drum_red.glb"
+ },
+ "fuel_point": {
+  "family": "module",
+  "display_name": "Vehicle fuel point",
+  "category": "Fuel",
+  "size_above_ground": [
+   14.0,
+   10.0,
+   5.6
+  ],
+  "footprint_xy": [
+   -7.0,
+   -5.0,
+   7.0,
+   5.0
+  ],
+  "tris": [
+   344,
+   236,
+   84
+  ],
+  "surfaces": [
+   4,
+   4,
+   3
+  ],
+  "materials": [
+   "Concrete",
+   "Concrete_Dark",
+   "Kit_Palette",
+   "Signs"
+  ],
+  "glb_bytes": 74788,
+  "glb": "res://assets/military/modules/fuel_point.glb"
+ },
+ "fuel_tank_skid": {
+  "family": "prop",
+  "display_name": "Fuel tank 10 000 l",
+  "category": "Fuel",
+  "size_above_ground": [
+   4.617,
+   2.2,
+   3.05
+  ],
+  "footprint_xy": [
+   -2.317,
+   -1.0,
+   2.3,
+   1.2
+  ],
+  "tris": [
+   800,
+   182,
+   40
+  ],
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Paint_OD",
+   "Signs"
+  ],
+  "glb_bytes": 79804,
+  "glb": "res://assets/military/props/fuel_tank_skid.glb"
+ },
+ "generator_60kw": {
+  "family": "prop",
+  "display_name": "Generator 60 kW",
+  "category": "Power",
+  "size_above_ground": [
+   2.7,
+   1.15,
+   2.13
+  ],
+  "footprint_xy": [
+   -1.35,
+   -0.575,
+   1.35,
+   0.575
+  ],
+  "tris": [
+   262,
+   96,
+   24
+  ],
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Paint_OD",
+   "Signs"
+  ],
+  "glb_bytes": 41760,
+  "glb": "res://assets/military/props/generator_60kw.glb"
+ },
+ "generator_60kw_tan": {
+  "family": "prop",
+  "display_name": "Generator 60 kW (tan)",
+  "category": "Power",
+  "size_above_ground": [
+   2.7,
+   1.15,
+   2.13
+  ],
+  "footprint_xy": [
+   -1.35,
+   -0.575,
+   1.35,
+   0.575
+  ],
+  "tris": [
+   262,
+   96,
+   24
+  ],
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Paint_Tan",
+   "Signs"
+  ],
+  "glb_bytes": 41784,
+  "glb": "res://assets/military/props/generator_60kw_tan.glb"
+ },
+ "guard_booth": {
+  "family": "prop",
+  "display_name": "Guard booth",
+  "category": "Checkpoint",
+  "size_above_ground": [
+   2.0,
+   2.08,
+   2.68
+  ],
+  "footprint_xy": [
+   -1.0,
+   -1.0,
+   1.0,
+   1.08
+  ],
+  "tris": [
+   296,
+   132,
+   36
+  ],
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "materials": [
+   "Concrete",
+   "Kit_Palette",
+   "Paint_OD"
+  ],
+  "glb_bytes": 65152,
+  "glb": "res://assets/military/props/guard_booth.glb"
+ },
+ "guard_tower_steel": {
+  "family": "building",
+  "display_name": "Guard Tower",
+  "category": "Defences",
+  "size_above_ground": [
+   4.952,
+   4.939,
+   8.8
+  ],
+  "footprint_xy": [
+   -2.474,
+   -2.477,
+   2.478,
+   2.463
+  ],
+  "tris": [
+   2788,
+   824,
+   212
+  ],
+  "surfaces": [
+   4,
+   4,
+   3
+  ],
+  "materials": [
+   "Concrete",
+   "Kit_Palette",
+   "Paint_OD",
+   "Sandbag"
+  ],
+  "glb_bytes": 347100,
+  "glb": "res://assets/military/buildings/guard_tower_steel.glb"
+ },
+ "guardrail_4m": {
+  "family": "road",
+  "display_name": "Guardrail 4 m",
+  "category": "Roads",
+  "size_above_ground": [
+   4.05,
+   0.29,
+   0.8
+  ],
+  "footprint_xy": [
+   -2.05,
+   -0.05,
+   2.0,
+   0.24
+  ],
+  "tris": [
+   72,
+   72,
+   48
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Kit_Palette"
+  ],
+  "glb_bytes": 27292,
+  "glb": "res://assets/military/roads/guardrail_4m.glb"
+ },
+ "guardrail_end": {
+  "family": "road",
+  "display_name": "Guardrail end terminal",
+  "category": "Roads",
+  "size_above_ground": [
+   4.05,
+   1.09,
+   0.8
+  ],
+  "footprint_xy": [
+   -2.05,
+   -0.05,
+   2.0,
+   1.04
+  ],
+  "tris": [
+   264,
+   264,
+   228
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Kit_Palette"
+  ],
+  "glb_bytes": 64388,
+  "glb": "res://assets/military/roads/guardrail_end.glb"
+ },
+ "hesco_mil1_1": {
+  "family": "prop",
+  "display_name": "HESCO cell 1.37 m",
+  "category": "Defences",
+  "size_above_ground": [
+   1.077,
+   1.08,
+   1.37
+  ],
+  "footprint_xy": [
+   -0.539,
+   -0.54,
+   0.539,
+   0.54
+  ],
+  "tris": [
+   140,
+   36,
+   24
+  ],
+  "surfaces": [
+   4,
+   3,
+   2
+  ],
+  "materials": [
+   "Dirt",
+   "Hesco_Liner",
+   "Hesco_Mesh",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 28104,
+  "glb": "res://assets/military/props/hesco_mil1_1.glb"
+ },
+ "hesco_mil1_5": {
+  "family": "prop",
+  "display_name": "HESCO wall 5.3 m (1.37 m)",
+  "category": "Defences",
+  "size_above_ground": [
+   5.317,
+   1.08,
+   1.37
+  ],
+  "footprint_xy": [
+   -2.659,
+   -0.54,
+   2.659,
+   0.54
+  ],
+  "tris": [
+   348,
+   36,
+   24
+  ],
+  "surfaces": [
+   4,
+   3,
+   2
+  ],
+  "materials": [
+   "Dirt",
+   "Hesco_Liner",
+   "Hesco_Mesh",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 44908,
+  "glb": "res://assets/military/props/hesco_mil1_5.glb"
+ },
+ "hesco_mil7_2": {
+  "family": "prop",
+  "display_name": "HESCO wall 4.3 m (2.21 m)",
+  "category": "Defences",
+  "size_above_ground": [
+   4.277,
+   2.15,
+   2.21
+  ],
+  "footprint_xy": [
+   -2.139,
+   -1.075,
+   2.139,
+   1.075
+  ],
+  "tris": [
+   192,
+   36,
+   24
+  ],
+  "surfaces": [
+   4,
+   3,
+   2
+  ],
+  "materials": [
+   "Dirt",
+   "Hesco_Liner",
+   "Hesco_Mesh",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 32424,
+  "glb": "res://assets/military/props/hesco_mil7_2.glb"
+ },
+ "hq_building": {
+  "family": "building",
+  "display_name": "Headquarters",
+  "category": "Buildings",
+  "size_above_ground": [
+   17.23,
+   14.36,
+   11.2
+  ],
+  "footprint_xy": [
+   -8.6,
+   -5.6,
+   8.63,
+   8.76
+  ],
+  "tris": [
+   4334,
+   1056,
+   156
+  ],
+  "surfaces": [
+   7,
+   7,
+   5
+  ],
+  "materials": [
+   "Concrete",
+   "Concrete_Block",
+   "Concrete_Dark",
+   "Kit_Palette",
+   "Paint_OD",
+   "Roof_OD",
+   "Signs"
+  ],
+  "glb_bytes": 481608,
+  "glb": "res://assets/military/buildings/hq_building.glb"
+ },
+ "ibc_tank": {
+  "family": "prop",
+  "display_name": "IBC water tank 1000 l",
+  "category": "Logistics",
+  "size_above_ground": [
+   1.22,
+   1.09,
+   1.165
+  ],
+  "footprint_xy": [
+   -0.61,
+   -0.51,
+   0.61,
+   0.58
+  ],
+  "tris": [
+   384,
+   56,
+   24
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Kit_Palette"
+  ],
+  "glb_bytes": 47288,
+  "glb": "res://assets/military/props/ibc_tank.glb"
+ },
+ "iso_container_20_blue": {
+  "family": "prop",
+  "display_name": "20 ft container (blue)",
+  "category": "Containers",
+  "size_above_ground": [
+   2.444,
+   6.125,
+   2.591
+  ],
+  "footprint_xy": [
+   -1.222,
+   -3.029,
+   1.222,
+   3.096
+  ],
+  "tris": [
+   1864,
+   240,
+   14
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Container_Blue",
+   "Kit_Palette",
+   "Signs"
+  ],
+  "glb_bytes": 206884,
+  "glb": "res://assets/military/props/iso_container_20_blue.glb"
+ },
+ "iso_container_20_od": {
+  "family": "prop",
+  "display_name": "20 ft container (olive)",
+  "category": "Containers",
+  "size_above_ground": [
+   2.444,
+   6.125,
+   2.591
+  ],
+  "footprint_xy": [
+   -1.222,
+   -3.029,
+   1.222,
+   3.096
+  ],
+  "tris": [
+   1864,
+   240,
+   14
+  ],
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "materials": [
+   "Container_OD",
+   "Kit_Palette",
+   "Paint_OD",
+   "Signs"
+  ],
+  "glb_bytes": 209008,
+  "glb": "res://assets/military/props/iso_container_20_od.glb"
+ },
+ "iso_container_20_rust": {
+  "family": "prop",
+  "display_name": "20 ft container (red)",
+  "category": "Containers",
+  "size_above_ground": [
+   2.444,
+   6.125,
+   2.591
+  ],
+  "footprint_xy": [
+   -1.222,
+   -3.029,
+   1.222,
+   3.096
+  ],
+  "tris": [
+   1864,
+   240,
+   14
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Container_Rust",
+   "Kit_Palette",
+   "Signs"
+  ],
+  "glb_bytes": 206872,
+  "glb": "res://assets/military/props/iso_container_20_rust.glb"
+ },
+ "iso_container_20_tan": {
+  "family": "prop",
+  "display_name": "20 ft container (tan)",
+  "category": "Containers",
+  "size_above_ground": [
+   2.444,
+   6.125,
+   2.591
+  ],
+  "footprint_xy": [
+   -1.222,
+   -3.029,
+   1.222,
+   3.096
+  ],
+  "tris": [
+   1864,
+   240,
+   14
+  ],
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "materials": [
+   "Container_Tan",
+   "Kit_Palette",
+   "Paint_Tan",
+   "Signs"
+  ],
+  "glb_bytes": 209012,
+  "glb": "res://assets/military/props/iso_container_20_tan.glb"
+ },
+ "iso_container_40_od": {
+  "family": "prop",
+  "display_name": "40 ft container (olive)",
+  "category": "Containers",
+  "size_above_ground": [
+   2.444,
+   12.26,
+   2.591
+  ],
+  "footprint_xy": [
+   -1.222,
+   -6.096,
+   1.222,
+   6.163
+  ],
+  "tris": [
+   1816,
+   240,
+   14
+  ],
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "materials": [
+   "Container_OD",
+   "Kit_Palette",
+   "Paint_OD",
+   "Signs"
+  ],
+  "glb_bytes": 204872,
+  "glb": "res://assets/military/props/iso_container_40_od.glb"
+ },
+ "iso_container_40_tan": {
+  "family": "prop",
+  "display_name": "40 ft container (tan)",
+  "category": "Containers",
+  "size_above_ground": [
+   2.444,
+   12.26,
+   2.591
+  ],
+  "footprint_xy": [
+   -1.222,
+   -6.096,
+   1.222,
+   6.163
+  ],
+  "tris": [
+   1816,
+   240,
+   14
+  ],
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "materials": [
+   "Container_Tan",
+   "Kit_Palette",
+   "Paint_Tan",
+   "Signs"
+  ],
+  "glb_bytes": 204876,
+  "glb": "res://assets/military/props/iso_container_40_tan.glb"
+ },
+ "jerrycan": {
+  "family": "prop",
+  "display_name": "Jerrycan 20 l",
+  "category": "Fuel",
+  "size_above_ground": [
+   0.345,
+   0.178,
+   0.485
+  ],
+  "footprint_xy": [
+   -0.172,
+   -0.089,
+   0.172,
+   0.089
+  ],
+  "tris": [
+   168,
+   12,
+   12
+  ],
+  "surfaces": [
+   2,
+   1,
+   1
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Paint_Green"
+  ],
+  "glb_bytes": 22924,
+  "glb": "res://assets/military/props/jerrycan.glb"
+ },
+ "jersey_barrier": {
+  "family": "prop",
+  "display_name": "Concrete barrier (F-shape)",
+  "category": "Road",
+  "size_above_ground": [
+   3.0,
+   0.616,
+   0.887
+  ],
+  "footprint_xy": [
+   -1.5,
+   -0.308,
+   1.5,
+   0.308
+  ],
+  "tris": [
+   164,
+   28,
+   28
+  ],
+  "surfaces": [
+   2,
+   1,
+   1
+  ],
+  "materials": [
+   "Concrete",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 21844,
+  "glb": "res://assets/military/props/jersey_barrier.glb"
+ },
+ "light_pole": {
+  "family": "prop",
+  "display_name": "Light pole 8 m",
+  "category": "Power",
+  "size_above_ground": [
+   0.5,
+   1.875,
+   8.13
+  ],
+  "footprint_xy": [
+   -0.25,
+   -0.25,
+   0.25,
+   1.625
+  ],
+  "tris": [
+   180,
+   116,
+   40
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Concrete",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 33788,
+  "glb": "res://assets/military/props/light_pole.glb"
+ },
+ "light_tower": {
+  "family": "prop",
+  "display_name": "Mobile light tower",
+  "category": "Power",
+  "size_above_ground": [
+   4.11,
+   2.38,
+   9.341
+  ],
+  "footprint_xy": [
+   -1.66,
+   -1.19,
+   2.45,
+   1.19
+  ],
+  "tris": [
+   516,
+   324,
+   72
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Kit_Palette"
+  ],
+  "glb_bytes": 77168,
+  "glb": "res://assets/military/props/light_tower.glb"
+ },
+ "medical_station": {
+  "family": "building",
+  "display_name": "Medical Station",
+  "category": "Buildings",
+  "size_above_ground": [
+   10.79,
+   19.52,
+   3.33
+  ],
+  "footprint_xy": [
+   -3.5,
+   -6.02,
+   7.29,
+   13.5
+  ],
+  "tris": [
+   1652,
+   282,
+   142
+  ],
+  "surfaces": [
+   7,
+   6,
+   5
+  ],
+  "materials": [
+   "Canvas_OD",
+   "Canvas_Tan",
+   "Canvas_White",
+   "Container_White",
+   "Kit_Palette",
+   "Signs",
+   "Timber_Dark"
+  ],
+  "glb_bytes": 150888,
+  "glb": "res://assets/military/buildings/medical_station.glb"
+ },
+ "mesh_fence_temporary": {
+  "family": "prop",
+  "display_name": "Temporary fence panel",
+  "category": "Fences",
+  "size_above_ground": [
+   4.11,
+   0.2,
+   2.1
+  ],
+  "footprint_xy": [
+   -2.055,
+   -0.1,
+   2.055,
+   0.1
+  ],
+  "tris": [
+   170,
+   170,
+   26
+  ],
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "materials": [
+   "Concrete_Dark",
+   "Hesco_Mesh",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 40772,
+  "glb": "res://assets/military/props/mesh_fence_temporary.glb"
+ },
+ "mg_nest": {
+  "family": "module",
+  "display_name": "MG position with overhead cover",
+  "category": "Defences",
+  "size_above_ground": [
+   3.4,
+   3.2,
+   1.794
+  ],
+  "footprint_xy": [
+   -1.7,
+   -1.6,
+   1.7,
+   1.6
+  ],
+  "tris": [
+   6252,
+   108,
+   60
+  ],
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "materials": [
+   "Plywood",
+   "Sandbag",
+   "Timber"
+  ],
+  "glb_bytes": 495292,
+  "glb": "res://assets/military/modules/mg_nest.glb"
+ },
+ "mout_wall_door": {
+  "family": "module",
+  "display_name": "MOUT wall (door)",
+  "category": "Training",
+  "size_above_ground": [
+   4.04,
+   0.26,
+   2.68
+  ],
+  "footprint_xy": [
+   -2.02,
+   -0.13,
+   2.02,
+   0.13
+  ],
+  "tris": [
+   48,
+   48,
+   36
+  ],
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "materials": [
+   "Concrete",
+   "Concrete_Block"
+  ],
+  "glb_bytes": 21620,
+  "glb": "res://assets/military/modules/mout_wall_door.glb"
+ },
+ "mout_wall_window": {
+  "family": "module",
+  "display_name": "MOUT wall (window)",
+  "category": "Training",
+  "size_above_ground": [
+   4.04,
+   0.26,
+   2.68
+  ],
+  "footprint_xy": [
+   -2.02,
+   -0.13,
+   2.02,
+   0.13
+  ],
+  "tris": [
+   72,
+   72,
+   48
+  ],
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "materials": [
+   "Concrete",
+   "Concrete_Block"
+  ],
+  "glb_bytes": 28708,
+  "glb": "res://assets/military/modules/mout_wall_window.glb"
+ },
+ "obstacle_balance": {
+  "family": "module",
+  "display_name": "Obstacle: balance logs",
+  "category": "Training",
+  "size_above_ground": [
+   2.59,
+   5.0,
+   1.1
+  ],
+  "footprint_xy": [
+   -1.295,
+   -2.5,
+   1.295,
+   2.5
+  ],
+  "tris": [
+   216,
+   168,
+   60
+  ],
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "materials": [
+   "Timber",
+   "Timber_Dark"
+  ],
+  "glb_bytes": 42176,
+  "glb": "res://assets/military/modules/obstacle_balance.glb"
+ },
+ "obstacle_crawl": {
+  "family": "module",
+  "display_name": "Obstacle: low crawl wire",
+  "category": "Training",
+  "size_above_ground": [
+   3.2,
+   8.2,
+   0.504
+  ],
+  "footprint_xy": [
+   -1.6,
+   -4.1,
+   1.6,
+   4.1
+  ],
+  "tris": [
+   744,
+   732,
+   12
+  ],
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "materials": [
+   "Dirt",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 125220,
+  "glb": "res://assets/military/modules/obstacle_crawl.glb"
+ },
+ "obstacle_monkey_bars": {
+  "family": "module",
+  "display_name": "Obstacle: monkey bars",
+  "category": "Training",
+  "size_above_ground": [
+   0.88,
+   4.08,
+   2.3
+  ],
+  "footprint_xy": [
+   -0.44,
+   -2.04,
+   0.44,
+   2.04
+  ],
+  "tris": [
+   428,
+   120,
+   80
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Kit_Palette"
+  ],
+  "glb_bytes": 53220,
+  "glb": "res://assets/military/modules/obstacle_monkey_bars.glb"
+ },
+ "obstacle_net": {
+  "family": "module",
+  "display_name": "Obstacle: cargo net A-frame",
+  "category": "Training",
+  "size_above_ground": [
+   3.2,
+   3.767,
+   4.59
+  ],
+  "footprint_xy": [
+   -1.6,
+   -1.884,
+   1.6,
+   1.884
+  ],
+  "tris": [
+   572,
+   104,
+   104
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Canvas_Tan",
+   "Hesco_Mesh",
+   "Timber_Dark"
+  ],
+  "glb_bytes": 70580,
+  "glb": "res://assets/military/modules/obstacle_net.glb"
+ },
+ "obstacle_tires": {
+  "family": "module",
+  "display_name": "Obstacle: tyre run",
+  "category": "Training",
+  "size_above_ground": [
+   1.741,
+   6.36,
+   0.23
+  ],
+  "footprint_xy": [
+   -0.82,
+   -3.18,
+   0.92,
+   3.18
+  ],
+  "tris": [
+   1536,
+   704,
+   320
+  ],
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "materials": [
+   "Dirt",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 165308,
+  "glb": "res://assets/military/modules/obstacle_tires.glb"
+ },
+ "obstacle_wall": {
+  "family": "module",
+  "display_name": "Obstacle: climbing wall",
+  "category": "Training",
+  "size_above_ground": [
+   3.05,
+   0.68,
+   2.4
+  ],
+  "footprint_xy": [
+   -1.525,
+   -0.34,
+   1.525,
+   0.34
+  ],
+  "tris": [
+   144,
+   120,
+   120
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Timber",
+   "Timber_Dark"
+  ],
+  "glb_bytes": 51976,
+  "glb": "res://assets/military/modules/obstacle_wall.glb"
+ },
+ "pallet_euro": {
+  "family": "prop",
+  "display_name": "EUR pallet",
+  "category": "Logistics",
+  "size_above_ground": [
+   1.2,
+   0.8,
+   0.144
+  ],
+  "footprint_xy": [
+   -0.6,
+   -0.4,
+   0.6,
+   0.4
+  ],
+  "tris": [
+   240,
+   12,
+   12
+  ],
+  "surfaces": [
+   2,
+   1,
+   1
+  ],
+  "materials": [
+   "Timber",
+   "Timber_Dark"
+  ],
+  "glb_bytes": 36880,
+  "glb": "res://assets/military/props/pallet_euro.glb"
+ },
+ "radio_mast": {
+  "family": "prop",
+  "display_name": "Telescopic radio mast 12 m",
+  "category": "Communications",
+  "size_above_ground": [
+   11.508,
+   10.0,
+   14.35
+  ],
+  "footprint_xy": [
+   -5.754,
+   -6.625,
+   5.754,
+   3.375
+  ],
+  "tris": [
+   504,
+   252,
+   60
+  ],
+  "surfaces": [
+   3,
+   3,
+   1
+  ],
+  "materials": [
+   "Concrete",
+   "Kit_Palette",
+   "Paint_OD"
+  ],
+  "glb_bytes": 72324,
+  "glb": "res://assets/military/props/radio_mast.glb"
+ },
+ "range_backstop": {
+  "family": "module",
+  "display_name": "Range backstop berm",
+  "category": "Training",
+  "size_above_ground": [
+   20.02,
+   8.0,
+   4.0
+  ],
+  "footprint_xy": [
+   -10.01,
+   -4.0,
+   10.01,
+   4.0
+  ],
+  "tris": [
+   156,
+   156,
+   36
+  ],
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "materials": [
+   "Dirt",
+   "Timber_Dark"
+  ],
+  "glb_bytes": 46504,
+  "glb": "res://assets/military/modules/range_backstop.glb"
+ },
+ "range_firing_point": {
+  "family": "module",
+  "display_name": "Range firing point (6 lanes)",
+  "category": "Training",
+  "size_above_ground": [
+   16.64,
+   5.52,
+   7.0
+  ],
+  "footprint_xy": [
+   -8.1,
+   -2.3,
+   8.54,
+   3.22
+  ],
+  "tris": [
+   1516,
+   332,
+   200
+  ],
+  "surfaces": [
+   7,
+   7,
+   4
+  ],
+  "materials": [
+   "Canvas_Green",
+   "Concrete",
+   "Kit_Palette",
+   "Paint_OD",
+   "Roof_OD",
+   "Sandbag",
+   "Signs"
+  ],
+  "glb_bytes": 161900,
+  "glb": "res://assets/military/modules/range_firing_point.glb"
+ },
+ "range_target_line": {
+  "family": "module",
+  "display_name": "Range target line (6 lanes)",
+  "category": "Training",
+  "size_above_ground": [
+   16.9,
+   2.4,
+   1.9
+  ],
+  "footprint_xy": [
+   -8.0,
+   -1.2,
+   8.9,
+   1.2
+  ],
+  "tris": [
+   332,
+   260,
+   96
+  ],
+  "surfaces": [
+   5,
+   5,
+   3
+  ],
+  "materials": [
+   "Dirt",
+   "Kit_Palette",
+   "Plywood",
+   "Signs",
+   "Timber"
+  ],
+  "glb_bytes": 75336,
+  "glb": "res://assets/military/modules/range_target_line.glb"
+ },
+ "range_tower": {
+  "family": "module",
+  "display_name": "Range control tower",
+  "category": "Training",
+  "size_above_ground": [
+   3.726,
+   3.16,
+   5.927
+  ],
+  "footprint_xy": [
+   -1.55,
+   -1.55,
+   2.176,
+   1.61
+  ],
+  "tris": [
+   364,
+   364,
+   180
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Concrete",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 88112,
+  "glb": "res://assets/military/modules/range_tower.glb"
+ },
+ "repair_bay": {
+  "family": "module",
+  "display_name": "Vehicle repair bay (open)",
+  "category": "Maintenance",
+  "size_above_ground": [
+   11.04,
+   15.0,
+   7.422
+  ],
+  "footprint_xy": [
+   -5.52,
+   -7.5,
+   5.52,
+   7.5
+  ],
+  "tris": [
+   428,
+   404,
+   140
+  ],
+  "surfaces": [
+   4,
+   4,
+   3
+  ],
+  "materials": [
+   "Concrete",
+   "Kit_Palette",
+   "Paint_OD",
+   "Roof_OD"
+  ],
+  "glb_bytes": 102636,
+  "glb": "res://assets/military/modules/repair_bay.glb"
+ },
+ "road_asphalt_10m": {
+  "family": "road",
+  "display_name": "Asphalt road section 10 m",
+  "category": "Roads",
+  "size_above_ground": [
+   13.0,
+   10.0,
+   0.154
+  ],
+  "footprint_xy": [
+   -6.5,
+   -5.0,
+   6.5,
+   5.0
+  ],
+  "tris": [
+   56,
+   56,
+   20
+  ],
+  "surfaces": [
+   4,
+   4,
+   3
+  ],
+  "materials": [
+   "Asphalt",
+   "Dirt",
+   "Gravel",
+   "Paint_RoadWhite"
+  ],
+  "glb_bytes": 26952,
+  "glb": "res://assets/military/roads/road_asphalt_10m.glb"
+ },
+ "road_culvert": {
+  "family": "road",
+  "display_name": "Culvert with headwalls",
+  "category": "Roads",
+  "size_above_ground": [
+   3.428,
+   12.0,
+   1.2
+  ],
+  "footprint_xy": [
+   -1.714,
+   -6.0,
+   1.714,
+   6.0
+  ],
+  "tris": [
+   304,
+   172,
+   140
+  ],
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "materials": [
+   "Concrete",
+   "Concrete_Dark"
+  ],
+  "glb_bytes": 60832,
+  "glb": "res://assets/military/roads/road_culvert.glb"
+ },
+ "road_delineator": {
+  "family": "road",
+  "display_name": "Delineator post",
+  "category": "Roads",
+  "size_above_ground": [
+   0.105,
+   0.148,
+   1.0
+  ],
+  "footprint_xy": [
+   -0.052,
+   -0.072,
+   0.052,
+   0.075
+  ],
+  "tris": [
+   68,
+   24,
+   12
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Kit_Palette"
+  ],
+  "glb_bytes": 17636,
+  "glb": "res://assets/military/roads/road_delineator.glb"
+ },
+ "road_dirt_10m": {
+  "family": "road",
+  "display_name": "Dirt track section 10 m",
+  "category": "Roads",
+  "size_above_ground": [
+   3.5,
+   10.0,
+   0.05
+  ],
+  "footprint_xy": [
+   -1.75,
+   -5.0,
+   1.75,
+   5.0
+  ],
+  "tris": [
+   34,
+   22,
+   22
+  ],
+  "surfaces": [
+   2,
+   1,
+   1
+  ],
+  "materials": [
+   "Dirt",
+   "Gravel_Dark"
+  ],
+  "glb_bytes": 14500,
+  "glb": "res://assets/military/roads/road_dirt_10m.glb"
+ },
+ "road_gravel_10m": {
+  "family": "road",
+  "display_name": "Gravel road section 10 m",
+  "category": "Roads",
+  "size_above_ground": [
+   8.5,
+   10.0,
+   0.112
+  ],
+  "footprint_xy": [
+   -4.25,
+   -5.0,
+   4.25,
+   5.0
+  ],
+  "tris": [
+   32,
+   16,
+   16
+  ],
+  "surfaces": [
+   3,
+   2,
+   2
+  ],
+  "materials": [
+   "Dirt",
+   "Gravel",
+   "Gravel_Dark"
+  ],
+  "glb_bytes": 15792,
+  "glb": "res://assets/military/roads/road_gravel_10m.glb"
+ },
+ "sandbag_single": {
+  "family": "prop",
+  "display_name": "Sandbag",
+  "category": "Defences",
+  "size_above_ground": [
+   0.66,
+   0.32,
+   0.13
+  ],
+  "footprint_xy": [
+   -0.3,
+   -0.16,
+   0.36,
+   0.16
+  ],
+  "tris": [
+   136,
+   44,
+   12
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Sandbag"
+  ],
+  "glb_bytes": 18300,
+  "glb": "res://assets/military/props/sandbag_single.glb"
+ },
+ "sandbag_wall_2m": {
+  "family": "prop",
+  "display_name": "Sandbag wall 2 m (1.0 m)",
+  "category": "Defences",
+  "size_above_ground": [
+   2.057,
+   0.672,
+   0.979
+  ],
+  "footprint_xy": [
+   -1.004,
+   -0.336,
+   1.053,
+   0.336
+  ],
+  "tris": [
+   5760,
+   352,
+   12
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Sandbag"
+  ],
+  "glb_bytes": 378180,
+  "glb": "res://assets/military/props/sandbag_wall_2m.glb"
+ },
+ "sandbag_wall_green_2m": {
+  "family": "prop",
+  "display_name": "Sandbag wall 2 m (green)",
+  "category": "Defences",
+  "size_above_ground": [
+   2.059,
+   0.669,
+   0.979
+  ],
+  "footprint_xy": [
+   -1.005,
+   -0.334,
+   1.054,
+   0.336
+  ],
+  "tris": [
+   5760,
+   352,
+   12
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Sandbag_Green"
+  ],
+  "glb_bytes": 378216,
+  "glb": "res://assets/military/props/sandbag_wall_green_2m.glb"
+ },
+ "sandbag_wall_low_2m": {
+  "family": "prop",
+  "display_name": "Sandbag wall 2 m (0.6 m)",
+  "category": "Defences",
+  "size_above_ground": [
+   2.053,
+   0.67,
+   0.619
+  ],
+  "footprint_xy": [
+   -1.003,
+   -0.337,
+   1.05,
+   0.334
+  ],
+  "tris": [
+   3600,
+   220,
+   12
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Sandbag"
+  ],
+  "glb_bytes": 237888,
+  "glb": "res://assets/military/props/sandbag_wall_low_2m.glb"
+ },
+ "shoot_house": {
+  "family": "module",
+  "display_name": "Shoot house (CQB)",
+  "category": "Training",
+  "size_above_ground": [
+   12.6,
+   9.6,
+   3.1
+  ],
+  "footprint_xy": [
+   -6.3,
+   -4.8,
+   6.3,
+   4.8
+  ],
+  "tris": [
+   396,
+   276,
+   228
+  ],
+  "surfaces": [
+   4,
+   3,
+   2
+  ],
+  "materials": [
+   "Concrete",
+   "Kit_Palette",
+   "Plywood",
+   "Timber"
+  ],
+  "glb_bytes": 132900,
+  "glb": "res://assets/military/modules/shoot_house.glb"
+ },
+ "sign_checkpoint": {
+  "family": "prop",
+  "display_name": "Checkpoint sign",
+  "category": "Signs",
+  "size_above_ground": [
+   1.4,
+   0.07,
+   2.55
+  ],
+  "footprint_xy": [
+   -0.7,
+   -0.03,
+   0.7,
+   0.04
+  ],
+  "tris": [
+   64,
+   32,
+   32
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Signs"
+  ],
+  "glb_bytes": 17200,
+  "glb": "res://assets/military/props/sign_checkpoint.glb"
+ },
+ "sign_no_entry": {
+  "family": "prop",
+  "display_name": "No entry sign",
+  "category": "Signs",
+  "size_above_ground": [
+   0.6,
+   0.07,
+   2.5
+  ],
+  "footprint_xy": [
+   -0.3,
+   -0.03,
+   0.3,
+   0.04
+  ],
+  "tris": [
+   144,
+   112,
+   112
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Signs"
+  ],
+  "glb_bytes": 32432,
+  "glb": "res://assets/military/props/sign_no_entry.glb"
+ },
+ "sign_restricted": {
+  "family": "prop",
+  "display_name": "Restricted area sign",
+  "category": "Signs",
+  "size_above_ground": [
+   1.2,
+   0.07,
+   2.5
+  ],
+  "footprint_xy": [
+   -0.6,
+   -0.03,
+   0.6,
+   0.04
+  ],
+  "tris": [
+   64,
+   32,
+   32
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Signs"
+  ],
+  "glb_bytes": 17132,
+  "glb": "res://assets/military/props/sign_restricted.glb"
+ },
+ "sign_speed_15": {
+  "family": "prop",
+  "display_name": "Speed limit 15",
+  "category": "Signs",
+  "size_above_ground": [
+   0.6,
+   0.07,
+   2.5
+  ],
+  "footprint_xy": [
+   -0.3,
+   -0.03,
+   0.3,
+   0.04
+  ],
+  "tris": [
+   144,
+   112,
+   112
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Signs"
+  ],
+  "glb_bytes": 32432,
+  "glb": "res://assets/military/props/sign_speed_15.glb"
+ },
+ "sign_speed_30": {
+  "family": "prop",
+  "display_name": "Speed limit 30",
+  "category": "Signs",
+  "size_above_ground": [
+   0.6,
+   0.07,
+   2.5
+  ],
+  "footprint_xy": [
+   -0.3,
+   -0.03,
+   0.3,
+   0.04
+  ],
+  "tris": [
+   144,
+   112,
+   112
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Signs"
+  ],
+  "glb_bytes": 32432,
+  "glb": "res://assets/military/props/sign_speed_30.glb"
+ },
+ "sign_stop": {
+  "family": "prop",
+  "display_name": "Stop sign",
+  "category": "Signs",
+  "size_above_ground": [
+   0.693,
+   0.07,
+   2.546
+  ],
+  "footprint_xy": [
+   -0.346,
+   -0.03,
+   0.346,
+   0.04
+  ],
+  "tris": [
+   80,
+   48,
+   48
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Signs"
+  ],
+  "glb_bytes": 20248,
+  "glb": "res://assets/military/props/sign_stop.glb"
+ },
+ "sign_warning": {
+  "family": "prop",
+  "display_name": "Danger sign",
+  "category": "Signs",
+  "size_above_ground": [
+   0.846,
+   0.07,
+   2.605
+  ],
+  "footprint_xy": [
+   -0.423,
+   -0.03,
+   0.423,
+   0.04
+  ],
+  "tris": [
+   60,
+   28,
+   28
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Signs"
+  ],
+  "glb_bytes": 16444,
+  "glb": "res://assets/military/props/sign_warning.glb"
+ },
+ "sign_yield": {
+  "family": "prop",
+  "display_name": "Give way sign",
+  "category": "Signs",
+  "size_above_ground": [
+   0.864,
+   0.07,
+   2.551
+  ],
+  "footprint_xy": [
+   -0.432,
+   -0.03,
+   0.432,
+   0.04
+  ],
+  "tris": [
+   60,
+   28,
+   28
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Signs"
+  ],
+  "glb_bytes": 16432,
+  "glb": "res://assets/military/props/sign_yield.glb"
+ },
+ "supply_depot": {
+  "family": "building",
+  "display_name": "Supply Depot",
+  "category": "Buildings",
+  "size_above_ground": [
+   20.7,
+   18.08,
+   7.374
+  ],
+  "footprint_xy": [
+   -10.35,
+   -7.48,
+   10.35,
+   10.6
+  ],
+  "tris": [
+   2948,
+   1004,
+   120
+  ],
+  "surfaces": [
+   7,
+   5,
+   5
+  ],
+  "materials": [
+   "Concrete",
+   "Kit_Palette",
+   "Paint_OD",
+   "Paint_Tan",
+   "Roof_Galv",
+   "Roof_Tan",
+   "Signs"
+  ],
+  "glb_bytes": 358112,
+  "glb": "res://assets/military/buildings/supply_depot.glb"
+ },
+ "supply_pallet": {
+  "family": "prop",
+  "display_name": "Supply pallet",
+  "category": "Logistics",
+  "size_above_ground": [
+   1.2,
+   0.82,
+   1.05
+  ],
+  "footprint_xy": [
+   -0.6,
+   -0.41,
+   0.6,
+   0.41
+  ],
+  "tris": [
+   732,
+   72,
+   24
+  ],
+  "surfaces": [
+   4,
+   2,
+   2
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Plywood",
+   "Timber",
+   "Timber_Dark"
+  ],
+  "glb_bytes": 107400,
+  "glb": "res://assets/military/props/supply_pallet.glb"
+ },
+ "t_wall": {
+  "family": "prop",
+  "display_name": "T-wall blast wall",
+  "category": "Defences",
+  "size_above_ground": [
+   1.52,
+   1.228,
+   3.768
+  ],
+  "footprint_xy": [
+   -0.76,
+   -0.614,
+   0.76,
+   0.614
+  ],
+  "tris": [
+   164,
+   28,
+   28
+  ],
+  "surfaces": [
+   2,
+   1,
+   1
+  ],
+  "materials": [
+   "Concrete",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 23988,
+  "glb": "res://assets/military/props/t_wall.glb"
+ },
+ "tent_frame_10x6": {
+  "family": "prop",
+  "display_name": "Frame tent 10 x 6 m",
+  "category": "Shelter",
+  "size_above_ground": [
+   8.629,
+   10.44,
+   3.18
+  ],
+  "footprint_xy": [
+   -4.314,
+   -5.22,
+   4.314,
+   5.22
+  ],
+  "tris": [
+   488,
+   64,
+   40
+  ],
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "materials": [
+   "Canvas_Tan",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 54120,
+  "glb": "res://assets/military/props/tent_frame_10x6.glb"
+ },
+ "tent_frame_6x4": {
+  "family": "prop",
+  "display_name": "Frame tent 6 x 4.5 m",
+  "category": "Shelter",
+  "size_above_ground": [
+   7.129,
+   6.44,
+   2.842
+  ],
+  "footprint_xy": [
+   -3.564,
+   -3.22,
+   3.564,
+   3.22
+  ],
+  "tris": [
+   488,
+   64,
+   40
+  ],
+  "surfaces": [
+   3,
+   2,
+   1
+  ],
+  "materials": [
+   "Canvas_OD",
+   "Canvas_Tan",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 55188,
+  "glb": "res://assets/military/props/tent_frame_6x4.glb"
+ },
+ "traffic_cone": {
+  "family": "prop",
+  "display_name": "Traffic cone",
+  "category": "Road",
+  "size_above_ground": [
+   0.38,
+   0.38,
+   0.75
+  ],
+  "footprint_xy": [
+   -0.19,
+   -0.19,
+   0.19,
+   0.19
+  ],
+  "tris": [
+   200,
+   36,
+   32
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Kit_Palette"
+  ],
+  "glb_bytes": 21832,
+  "glb": "res://assets/military/props/traffic_cone.glb"
+ },
+ "training_facility": {
+  "family": "building",
+  "display_name": "Training Facility",
+  "category": "Buildings",
+  "size_above_ground": [
+   21.05,
+   9.47,
+   4.29
+  ],
+  "footprint_xy": [
+   -7.45,
+   -4.47,
+   13.6,
+   5.0
+  ],
+  "tris": [
+   1880,
+   616,
+   124
+  ],
+  "surfaces": [
+   7,
+   5,
+   5
+  ],
+  "materials": [
+   "Concrete",
+   "Concrete_Block",
+   "Concrete_Dark",
+   "Kit_Palette",
+   "Roof_Tan",
+   "Signs",
+   "Timber"
+  ],
+  "glb_bytes": 240796,
+  "glb": "res://assets/military/buildings/training_facility.glb"
+ },
+ "truck_6x6": {
+  "family": "vehicle",
+  "display_name": "Logistics truck 6x6",
+  "category": "Vehicles",
+  "size_above_ground": [
+   3.31,
+   8.67,
+   3.6
+  ],
+  "footprint_xy": [
+   -1.655,
+   -4.275,
+   1.655,
+   4.395
+  ],
+  "tris": [
+   4104,
+   902,
+   274
+  ],
+  "surfaces": [
+   4,
+   3,
+   3
+  ],
+  "materials": [
+   "Canvas_OD",
+   "Kit_Palette",
+   "Paint_Green",
+   "Signs"
+  ],
+  "glb_bytes": 383696,
+  "glb": "res://assets/military/vehicles/truck_6x6.glb"
+ },
+ "vehicle_depot": {
+  "family": "building",
+  "display_name": "Vehicle Depot",
+  "category": "Buildings",
+  "size_above_ground": [
+   30.3,
+   22.42,
+   9.475
+  ],
+  "footprint_xy": [
+   -17.4,
+   -8.42,
+   12.9,
+   14.0
+  ],
+  "tris": [
+   3620,
+   922,
+   130
+  ],
+  "surfaces": [
+   6,
+   5,
+   4
+  ],
+  "materials": [
+   "Concrete",
+   "Concrete_Dark",
+   "Kit_Palette",
+   "Paint_OD",
+   "Roof_OD",
+   "Signs"
+  ],
+  "glb_bytes": 404816,
+  "glb": "res://assets/military/buildings/vehicle_depot.glb"
+ },
+ "vehicle_parking_pad": {
+  "family": "module",
+  "display_name": "Vehicle parking pad",
+  "category": "Vehicle training",
+  "size_above_ground": [
+   24.1,
+   14.0,
+   0.2
+  ],
+  "footprint_xy": [
+   -12.05,
+   -7.0,
+   12.05,
+   7.0
+  ],
+  "tris": [
+   180,
+   108,
+   12
+  ],
+  "surfaces": [
+   3,
+   2,
+   1
+  ],
+  "materials": [
+   "Concrete",
+   "Concrete_Dark",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 42052,
+  "glb": "res://assets/military/modules/vehicle_parking_pad.glb"
+ },
+ "vehicle_ramp": {
+  "family": "module",
+  "display_name": "Vehicle incline ramp (30 %)",
+  "category": "Vehicle training",
+  "size_above_ground": [
+   4.4,
+   17.0,
+   2.35
+  ],
+  "footprint_xy": [
+   -2.2,
+   -8.5,
+   2.2,
+   8.5
+  ],
+  "tris": [
+   34,
+   34,
+   22
+  ],
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "materials": [
+   "Concrete",
+   "Kit_Palette"
+  ],
+  "glb_bytes": 15452,
+  "glb": "res://assets/military/modules/vehicle_ramp.glb"
+ },
+ "water_barrier": {
+  "family": "prop",
+  "display_name": "Water-filled barrier",
+  "category": "Road",
+  "size_above_ground": [
+   2.093,
+   0.5,
+   1.03
+  ],
+  "footprint_xy": [
+   -1.047,
+   -0.25,
+   1.047,
+   0.25
+  ],
+  "tris": [
+   148,
+   80,
+   28
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Kit_Palette"
+  ],
+  "glb_bytes": 23024,
+  "glb": "res://assets/military/props/water_barrier.glb"
+ },
+ "wheel_apc": {
+  "family": "vehicle",
+  "display_name": "APC wheel",
+  "category": "Vehicles",
+  "size_above_ground": [
+   0.485,
+   1.3,
+   1.244
+  ],
+  "footprint_xy": [
+   -0.205,
+   -0.65,
+   0.28,
+   0.65
+  ],
+  "tris": [
+   496,
+   72,
+   28
+  ],
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Paint_Green"
+  ],
+  "glb_bytes": 45032,
+  "glb": "res://assets/military/vehicles/wheel_apc.glb"
+ },
+ "wheel_truck": {
+  "family": "vehicle",
+  "display_name": "Truck wheel 14.00R20",
+  "category": "Vehicles",
+  "size_above_ground": [
+   0.485,
+   1.35,
+   1.294
+  ],
+  "footprint_xy": [
+   -0.205,
+   -0.675,
+   0.28,
+   0.675
+  ],
+  "tris": [
+   496,
+   72,
+   28
+  ],
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "materials": [
+   "Kit_Palette",
+   "Paint_Green"
+  ],
+  "glb_bytes": 44852,
+  "glb": "res://assets/military/vehicles/wheel_truck.glb"
+ }
+}

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"obstacle_net"
+display_name = "Obstacle: cargo net A-frame"
+category = "Training"
+description = "Timber A-frame 4.5 m high with cargo nets on both faces."
+mesh_path = "res://assets/military/modules/obstacle_net.glb"
+size = Vector3(3.2, 4.59, 3.768)
+max_slope_deg = 10
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-1.6, 0, -0.15, 3.2, 4.5, 0.3)])
+ramps = Array[AABB]([])

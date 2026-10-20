@@ -1,0 +1,121 @@
+{
+ "id": "fuel_point",
+ "family": "module",
+ "display_name": "Vehicle fuel point",
+ "category": "Fuel",
+ "description": "Two-lane vehicle fuel point: 10 x 8 m canopy at 5 m, dispenser island, spill kit and fire point.",
+ "bounds_min": [
+  -7.0,
+  -5.0,
+  -0.3
+ ],
+ "bounds_max": [
+  7.0,
+  5.0,
+  5.6
+ ],
+ "size_above_ground": [
+  14.0,
+  10.0,
+  5.6
+ ],
+ "footprint_xy": [
+  -7.0,
+  -5.0,
+  7.0,
+  5.0
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  344,
+  236,
+  84
+ ],
+ "surfaces": [
+  4,
+  4,
+  3
+ ],
+ "materials": [
+  "Concrete",
+  "Concrete_Dark",
+  "Kit_Palette",
+  "Signs"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   60
+  ],
+  [
+   60,
+   240
+  ],
+  [
+   240,
+   1600
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.8,
+   0.0,
+   -2.5,
+   1.6,
+   0.22,
+   5.0
+  ],
+  [
+   -0.175,
+   0.0,
+   1.825,
+   0.35,
+   5.0,
+   0.35
+  ],
+  [
+   -0.175,
+   0.0,
+   -2.175,
+   0.35,
+   5.0,
+   0.35
+  ],
+  [
+   -5.0,
+   5.0,
+   -4.0,
+   10.0,
+   0.6,
+   8.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "VEH_Lane_W",
+   "pos": [
+    -2.8,
+    0,
+    0.06
+   ],
+   "yaw": 0,
+   "note": "vehicle refuels here (west lane, heading +Y)"
+  },
+  {
+   "name": "VEH_Lane_E",
+   "pos": [
+    2.8,
+    0,
+    0.06
+   ],
+   "yaw": 0,
+   "note": "vehicle refuels here (east lane)"
+  }
+ ],
+ "structure": {
+  "category": "Fuel",
+  "max_slope_deg": 3.0,
+  "blocks_navigation": false,
+  "max_ground_gap": 0.4
+ }
+}

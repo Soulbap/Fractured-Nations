@@ -1,0 +1,93 @@
+{
+ "id": "sandbag_wall_green_2m",
+ "family": "prop",
+ "display_name": "Sandbag wall 2 m (green)",
+ "category": "Defences",
+ "description": "Sandbag wall 2.0 m long, 8 courses (0.96 m high).",
+ "bounds_min": [
+  -1.005,
+  -0.334,
+  -0.009
+ ],
+ "bounds_max": [
+  1.054,
+  0.336,
+  0.979
+ ],
+ "size_above_ground": [
+  2.059,
+  0.669,
+  0.979
+ ],
+ "footprint_xy": [
+  -1.005,
+  -0.334,
+  1.054,
+  0.336
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  5760,
+  352,
+  12
+ ],
+ "surfaces": [
+  1,
+  1,
+  1
+ ],
+ "materials": [
+  "Sandbag_Green"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   30
+  ],
+  [
+   30,
+   120
+  ],
+  [
+   120,
+   500
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.0,
+   0.0,
+   -0.32,
+   2.0,
+   0.96,
+   0.64
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SNAP_W",
+   "pos": [
+    -1.0,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": ""
+  },
+  {
+   "name": "SNAP_E",
+   "pos": [
+    1.0,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": ""
+  }
+ ],
+ "structure": null,
+ "module": {
+  "length": 2.0,
+  "height": 0.96
+ }
+}

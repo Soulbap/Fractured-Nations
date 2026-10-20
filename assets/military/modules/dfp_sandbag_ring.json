@@ -1,0 +1,105 @@
+{
+ "id": "dfp_sandbag_ring",
+ "family": "module",
+ "display_name": "Fighting position (sandbags)",
+ "category": "Defences",
+ "description": "Circular sandbag fighting position, 3.0 m outer diameter, 1.0 m high, firing port forward, rear entrance.",
+ "bounds_min": [
+  -1.6,
+  -1.336,
+  -0.01
+ ],
+ "bounds_max": [
+  1.6,
+  1.465,
+  0.979
+ ],
+ "size_above_ground": [
+  3.2,
+  2.801,
+  0.979
+ ],
+ "footprint_xy": [
+  -1.6,
+  -1.336,
+  1.6,
+  1.465
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  4764,
+  40,
+  40
+ ],
+ "surfaces": [
+  2,
+  2,
+  2
+ ],
+ "materials": [
+  "Dirt",
+  "Sandbag"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   160
+  ],
+  [
+   160,
+   800
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.5,
+   0.0,
+   -1.5,
+   3.0,
+   1.0,
+   3.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Firing_1",
+   "pos": [
+    -0.4,
+    0.6,
+    0
+   ],
+   "yaw": 0,
+   "note": "rifleman, faces the port (+Y)"
+  },
+  {
+   "name": "IP_Firing_2",
+   "pos": [
+    0.4,
+    0.6,
+    0
+   ],
+   "yaw": 0,
+   "note": ""
+  },
+  {
+   "name": "IP_Entrance",
+   "pos": [
+    0,
+    -2.0,
+    0
+   ],
+   "yaw": 0,
+   "note": ""
+  }
+ ],
+ "structure": {
+  "category": "Defences",
+  "max_slope_deg": 10.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.3
+ }
+}

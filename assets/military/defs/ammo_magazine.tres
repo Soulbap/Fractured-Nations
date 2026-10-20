@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"ammo_magazine"
+display_name = "Ammunition storage bunker"
+category = "Ammunition"
+description = "Earth-covered magazine: 6 m wide steel arch, 12 m deep, earth mound 0.6 m over the crown, concrete headwall with 2.4 x 2.6 m steel double door, two lightning masts."
+mesh_path = "res://assets/military/modules/ammo_magazine.glb"
+size = Vector3(15.086, 9, 20.6)
+max_slope_deg = 4
+max_ground_gap = 0.8
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-6.5, 0, -6, 13, 4, 12), AABB(-4.2, 0, -6.4, 8.4, 4.4, 0.4)])
+ramps = Array[AABB]([])

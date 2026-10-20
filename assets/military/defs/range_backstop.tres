@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"range_backstop"
+display_name = "Range backstop berm"
+category = "Training"
+description = "Earth backstop berm 20 m x 8 m base, 4 m high, behind the target lines (impact face toward -Y)."
+mesh_path = "res://assets/military/modules/range_backstop.glb"
+size = Vector3(20.02, 4, 8)
+max_slope_deg = 10
+max_ground_gap = 1
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-10, 0, -4, 20, 4, 8)])
+ramps = Array[AABB]([])

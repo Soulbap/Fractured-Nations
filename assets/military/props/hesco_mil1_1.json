@@ -1,0 +1,98 @@
+{
+ "id": "hesco_mil1_1",
+ "family": "prop",
+ "display_name": "HESCO cell 1.37 m",
+ "category": "Defences",
+ "description": "1-cell defensive bastion, cell 1.06 x 1.06 m, 1.37 m high (1.06 m long).",
+ "bounds_min": [
+  -0.539,
+  -0.54,
+  0.0
+ ],
+ "bounds_max": [
+  0.539,
+  0.54,
+  1.37
+ ],
+ "size_above_ground": [
+  1.077,
+  1.08,
+  1.37
+ ],
+ "footprint_xy": [
+  -0.539,
+  -0.54,
+  0.539,
+  0.54
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  140,
+  36,
+  24
+ ],
+ "surfaces": [
+  4,
+  3,
+  2
+ ],
+ "materials": [
+  "Dirt",
+  "Hesco_Liner",
+  "Hesco_Mesh",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   50
+  ],
+  [
+   50,
+   180
+  ],
+  [
+   180,
+   1200
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.53,
+   0.0,
+   -0.53,
+   1.06,
+   1.37,
+   1.06
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SNAP_W",
+   "pos": [
+    -0.53,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": "next bastion joins here (west end)"
+  },
+  {
+   "name": "SNAP_E",
+   "pos": [
+    0.53,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": "next bastion joins here (east end)"
+  }
+ ],
+ "structure": null,
+ "module": {
+  "length": 1.06,
+  "depth": 1.06,
+  "height": 1.37,
+  "cells": 1
+ }
+}

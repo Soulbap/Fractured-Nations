@@ -40,6 +40,13 @@ const TABLE := {
 	"SkinBody": [Color(0.76, 0.58, 0.47), 0.60, 0.0, "", "", 1.0],
 	"Eye": [Color(0.80, 0.77, 0.72), 0.20, 0.0, "", "", 1.0],
 	"Iris": [Color(0.10, 0.12, 0.13), 0.10, 0.0, "", "", 1.0],
+	# ASSET-PRODUCTION-01 faction families (fixed per family, not swapped by faction id).
+	"Camo_NATO": [Color(1, 1, 1), 0.88, 0.0, "camo_nato_albedo.png", "fabric_ripstop_normal.png", 0.6],
+	"Camo_EMR": [Color(1, 1, 1), 0.88, 0.0, "camo_emr_albedo.png", "fabric_ripstop_normal.png", 0.6],
+	"Camo_Type21": [Color(1, 1, 1), 0.88, 0.0, "camo_type21_albedo.png", "fabric_ripstop_normal.png", 0.6],
+	"Fabric_Coyote": [Color(0.55, 0.47, 0.35), 0.90, 0.0, "", "fabric_ripstop_normal.png", 0.6],
+	"Polymer_Tan": [Color(0.62, 0.53, 0.38), 0.68, 0.0, "polymer_albedo.png", "polymer_normal.png", 0.7],
+	"Polymer_Plum": [Color(0.32, 0.14, 0.12), 0.60, 0.0, "polymer_albedo.png", "polymer_normal.png", 0.7],
 }
 
 ## Camouflage per faction index (WorldState faction ids). Unknown factions use M23.

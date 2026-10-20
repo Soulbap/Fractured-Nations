@@ -1,0 +1,196 @@
+{
+ "id": "vehicle_depot",
+ "family": "building",
+ "display_name": "Vehicle Depot",
+ "category": "Buildings",
+ "description": "Motor pool maintenance hall 25 x 16 m, eaves 6.5 m: three vehicle bays with 4.6 x 5.0 m doors, 4 m lean-to office/workshop on the west side, 6 m concrete apron with drain and bay lines.",
+ "bounds_min": [
+  -17.4,
+  -8.42,
+  -0.6
+ ],
+ "bounds_max": [
+  12.9,
+  14.0,
+  9.475
+ ],
+ "size_above_ground": [
+  30.3,
+  22.42,
+  9.475
+ ],
+ "footprint_xy": [
+  -17.4,
+  -8.42,
+  12.9,
+  14.0
+ ],
+ "foundation_depth": 0.6,
+ "tris": [
+  3620,
+  922,
+  130
+ ],
+ "surfaces": [
+  6,
+  5,
+  4
+ ],
+ "materials": [
+  "Concrete",
+  "Concrete_Dark",
+  "Kit_Palette",
+  "Paint_OD",
+  "Roof_OD",
+  "Signs"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   70
+  ],
+  [
+   70,
+   280
+  ],
+  [
+   280,
+   2000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -12.5,
+   -0.6,
+   -8.0,
+   25.0,
+   8.8005,
+   16.0
+  ],
+  [
+   -16.5,
+   -0.6,
+   -6.0,
+   4.0,
+   4.5,
+   12.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "VEH_Bay_1",
+   "pos": [
+    -8.0,
+    20.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "vehicle waits here, faces the bay door"
+  },
+  {
+   "name": "IP_Bay_1",
+   "pos": [
+    -11.0,
+    9.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "bay door control"
+  },
+  {
+   "name": "VEH_Bay_2",
+   "pos": [
+    0.0,
+    20.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "vehicle waits here, faces the bay door"
+  },
+  {
+   "name": "IP_Bay_2",
+   "pos": [
+    -3.0,
+    9.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "bay door control"
+  },
+  {
+   "name": "VEH_Bay_3",
+   "pos": [
+    8.0,
+    20.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "vehicle waits here, faces the bay door"
+  },
+  {
+   "name": "IP_Bay_3",
+   "pos": [
+    5.0,
+    9.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "bay door control"
+  },
+  {
+   "name": "IP_Office",
+   "pos": [
+    -18.1,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": "workshop office door"
+  },
+  {
+   "name": "IP_Door",
+   "pos": [
+    11.2,
+    9.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "personnel door"
+  },
+  {
+   "name": "ATT_Repair_Bay_E",
+   "pos": [
+    18.5,
+    4.0,
+    0
+   ],
+   "yaw": -90,
+   "note": "open repair shelter / wash point (east)"
+  },
+  {
+   "name": "ATT_Fuel_Point",
+   "pos": [
+    20.5,
+    18.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "vehicle fuel point"
+  }
+ ],
+ "structure": {
+  "category": "Buildings",
+  "max_slope_deg": 5.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 1.0
+ },
+ "function": {
+  "role": "maintenance",
+  "bays": 3,
+  "bay_door_m": [
+   4.6,
+   5.0
+  ],
+  "max_vehicle": "8x8 APC / 6x6 truck"
+ }
+}

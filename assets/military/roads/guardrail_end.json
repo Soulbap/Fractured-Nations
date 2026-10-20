@@ -1,0 +1,79 @@
+{
+ "id": "guardrail_end",
+ "family": "road",
+ "display_name": "Guardrail end terminal",
+ "category": "Roads",
+ "description": "W-beam guardrail terminal (4 m flare to the ground), rail centre 0.65 m, posts C100 every 2 m driven 1.0 m.",
+ "bounds_min": [
+  -2.05,
+  -0.05,
+  -1.0
+ ],
+ "bounds_max": [
+  2.0,
+  1.04,
+  0.8
+ ],
+ "size_above_ground": [
+  4.05,
+  1.09,
+  0.8
+ ],
+ "footprint_xy": [
+  -2.05,
+  -0.05,
+  2.0,
+  1.04
+ ],
+ "foundation_depth": 1.0,
+ "tris": [
+  264,
+  264,
+  228
+ ],
+ "surfaces": [
+  1,
+  1,
+  1
+ ],
+ "materials": [
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   50
+  ],
+  [
+   50,
+   200
+  ],
+  [
+   200,
+   900
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -2.0,
+   0.0,
+   -0.3,
+   4.0,
+   0.8,
+   0.3
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SNAP_W",
+   "pos": [
+    -2.0,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": ""
+  }
+ ],
+ "structure": null
+}

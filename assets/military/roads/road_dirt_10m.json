@@ -1,0 +1,96 @@
+{
+ "id": "road_dirt_10m",
+ "family": "road",
+ "display_name": "Dirt track section 10 m",
+ "category": "Roads",
+ "description": "Dirt track, 10 m straight section: 3.5 m wide, two 0.45 m wheel ruts 0.06 m deep at 1.9 m track, raised centre strip.",
+ "bounds_min": [
+  -1.75,
+  -5.0,
+  -0.4
+ ],
+ "bounds_max": [
+  1.75,
+  5.0,
+  0.05
+ ],
+ "size_above_ground": [
+  3.5,
+  10.0,
+  0.05
+ ],
+ "footprint_xy": [
+  -1.75,
+  -5.0,
+  1.75,
+  5.0
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  34,
+  22,
+  22
+ ],
+ "surfaces": [
+  2,
+  1,
+  1
+ ],
+ "materials": [
+  "Dirt",
+  "Gravel_Dark"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   60
+  ],
+  [
+   60,
+   220
+  ],
+  [
+   220,
+   1200
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.75,
+   -0.17,
+   -5.0,
+   3.5,
+   0.2,
+   10.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SNAP_S",
+   "pos": [
+    0,
+    -5.0,
+    0
+   ],
+   "yaw": 180,
+   "note": ""
+  },
+  {
+   "name": "SNAP_N",
+   "pos": [
+    0,
+    5.0,
+    0
+   ],
+   "yaw": 0,
+   "note": ""
+  }
+ ],
+ "structure": null,
+ "profile": {
+  "width_m": 3.5,
+  "track_m": 1.9,
+  "rut_m": 0.45,
+  "rut_depth_m": 0.06
+ }
+}

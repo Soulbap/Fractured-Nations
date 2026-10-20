@@ -1,0 +1,68 @@
+{
+ "id": "traffic_cone",
+ "family": "prop",
+ "display_name": "Traffic cone",
+ "category": "Road",
+ "description": "Traffic cone 0.75 m with reflective bands.",
+ "bounds_min": [
+  -0.19,
+  -0.19,
+  0.0
+ ],
+ "bounds_max": [
+  0.19,
+  0.19,
+  0.75
+ ],
+ "size_above_ground": [
+  0.38,
+  0.38,
+  0.75
+ ],
+ "footprint_xy": [
+  -0.19,
+  -0.19,
+  0.19,
+  0.19
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  200,
+  36,
+  32
+ ],
+ "surfaces": [
+  1,
+  1,
+  1
+ ],
+ "materials": [
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   20
+  ],
+  [
+   20,
+   60
+  ],
+  [
+   60,
+   160
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.19,
+   0.0,
+   -0.19,
+   0.38,
+   0.75,
+   0.38
+  ]
+ ],
+ "markers": [],
+ "structure": null
+}

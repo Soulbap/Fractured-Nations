@@ -1,30 +1,30 @@
 {
  "body_tris": {
-  "body_torso": 3686,
-  "body_arms": 4236,
-  "body_legs": 6236,
+  "body_torso": 5038,
+  "body_arms": 4244,
+  "body_legs": 4876,
   "body_feet": 1642,
   "body_hands": 4998,
   "body_head": 5340
  },
- "t_body": 16.7,
+ "t_body": 18.9,
  "uniform_tris": {
   "jacket": 10044,
   "trousers": 8000,
   "boots": 3600,
   "gloves": 4000
  },
- "t_uniform": 37.5,
+ "t_uniform": 47.2,
  "gear_seconds": {
-  "vest_standard": 13.7,
-  "vest_heavy": 13.8,
+  "vest_standard": 18.7,
+  "vest_heavy": 16.6,
   "belt_standard": 0.6,
-  "belt_heavy": 0.6,
-  "pack_assault": 6.3,
-  "pack_ruck": 7.2,
-  "helmet_covered": 2.6,
-  "helmet_bare": 1.8,
-  "eyepro": 0.2
+  "belt_heavy": 0.7,
+  "pack_assault": 7.4,
+  "pack_ruck": 8.7,
+  "helmet_covered": 2.8,
+  "helmet_bare": 1.9,
+  "eyepro": 0.3
  },
  "gear_tris": {
   "vest_standard": 6676,
@@ -41,7 +41,7 @@
   "foregrip": 148,
   "laser": 224
  },
- "t_gear": 84.7,
+ "t_gear": 105.3,
  "anim_check": {
   "Idle": {
    "support_hand_err_mm": 0.0
@@ -135,10 +135,10 @@
    "stance_slip_p90_ms": 1.145
   }
  },
- "t_anim": 87.5,
+ "t_anim": 108.3,
  "export": {
   "rig": {
-   "bytes": 4619888,
+   "bytes": 4627976,
    "meshes": [
     "Char_Head_LOD0",
     "Char_Head_LOD1",
@@ -182,7 +182,7 @@
    ]
   },
   "uniform_jacket": {
-   "bytes": 792880,
+   "bytes": 784648,
    "lod_tris": [
     10044,
     3012,
@@ -190,7 +190,7 @@
    ]
   },
   "uniform_trousers": {
-   "bytes": 582284,
+   "bytes": 578132,
    "lod_tris": [
     8000,
     2400,
@@ -214,7 +214,7 @@
    ]
   },
   "vest_standard": {
-   "bytes": 521404,
+   "bytes": 523732,
    "lod_tris": [
     6676,
     2002,
@@ -222,7 +222,7 @@
    ]
   },
   "vest_heavy": {
-   "bytes": 590648,
+   "bytes": 587188,
    "lod_tris": [
     7360,
     2208,
@@ -230,7 +230,7 @@
    ]
   },
   "belt_standard": {
-   "bytes": 293624,
+   "bytes": 292196,
    "lod_tris": [
     2956,
     886,
@@ -238,11 +238,11 @@
    ]
   },
   "belt_heavy": {
-   "bytes": 298124,
+   "bytes": 297344,
    "lod_tris": [
     3396,
     1018,
-    220
+    219
    ]
   },
   "helmet_covered": {
@@ -270,7 +270,7 @@
    ]
   },
   "pack_assault": {
-   "bytes": 312480,
+   "bytes": 313492,
    "lod_tris": [
     5220,
     1566,
@@ -278,7 +278,7 @@
    ]
   },
   "pack_ruck": {
-   "bytes": 371788,
+   "bytes": 372836,
    "lod_tris": [
     7476,
     2242,
@@ -286,7 +286,7 @@
    ]
   },
   "carbine": {
-   "bytes": 793264,
+   "bytes": 793744,
    "lod_tris": [
     7296,
     2188,
@@ -294,7 +294,7 @@
    ]
   },
   "optic_reddot": {
-   "bytes": 57484,
+   "bytes": 57540,
    "lod_tris": [
     556,
     200,
@@ -318,5 +318,5 @@
    ]
   }
  },
- "t_total": 110.1
+ "t_total": 115.8
 }

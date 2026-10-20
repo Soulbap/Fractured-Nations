@@ -1,0 +1,273 @@
+{
+ "id": "shoot_house",
+ "family": "module",
+ "display_name": "Shoot house (CQB)",
+ "category": "Training",
+ "description": "Close-quarters battle house 12 x 9 m, 2.4 m plywood walls on timber framing, four rooms, corridor, open top, observation catwalk.",
+ "bounds_min": [
+  -6.3,
+  -4.8,
+  -0.3
+ ],
+ "bounds_max": [
+  6.3,
+  4.8,
+  3.1
+ ],
+ "size_above_ground": [
+  12.6,
+  9.6,
+  3.1
+ ],
+ "footprint_xy": [
+  -6.3,
+  -4.8,
+  6.3,
+  4.8
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  396,
+  276,
+  228
+ ],
+ "surfaces": [
+  4,
+  3,
+  2
+ ],
+ "materials": [
+  "Concrete",
+  "Kit_Palette",
+  "Plywood",
+  "Timber"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   60
+  ],
+  [
+   60,
+   240
+  ],
+  [
+   240,
+   1600
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -6.06,
+   0.0,
+   4.44,
+   5.12,
+   2.4,
+   0.12
+  ],
+  [
+   -0.06,
+   0.0,
+   4.44,
+   6.12,
+   2.4,
+   0.12
+  ],
+  [
+   -6.06,
+   0.0,
+   -4.56,
+   5.52,
+   2.4,
+   0.12
+  ],
+  [
+   0.54,
+   0.0,
+   -4.56,
+   5.52,
+   2.4,
+   0.12
+  ],
+  [
+   -6.06,
+   0.0,
+   -4.56,
+   0.12,
+   2.4,
+   9.12
+  ],
+  [
+   5.94,
+   0.0,
+   -4.56,
+   0.12,
+   2.4,
+   9.12
+  ],
+  [
+   -6.06,
+   0.0,
+   -0.66,
+   2.52,
+   2.4,
+   0.12
+  ],
+  [
+   -2.66,
+   0.0,
+   -0.66,
+   1.52,
+   2.4,
+   0.12
+  ],
+  [
+   1.14,
+   0.0,
+   -0.66,
+   1.52,
+   2.4,
+   0.12
+  ],
+  [
+   3.54,
+   0.0,
+   -0.66,
+   2.52,
+   2.4,
+   0.12
+  ],
+  [
+   -6.06,
+   0.0,
+   1.14,
+   2.52,
+   2.4,
+   0.12
+  ],
+  [
+   -2.66,
+   0.0,
+   1.14,
+   1.52,
+   2.4,
+   0.12
+  ],
+  [
+   1.14,
+   0.0,
+   1.14,
+   1.52,
+   2.4,
+   0.12
+  ],
+  [
+   3.54,
+   0.0,
+   1.14,
+   2.52,
+   2.4,
+   0.12
+  ],
+  [
+   -1.26,
+   0.0,
+   -4.56,
+   0.12,
+   2.4,
+   4.02
+  ],
+  [
+   1.14,
+   0.0,
+   -4.56,
+   0.12,
+   2.4,
+   4.02
+  ],
+  [
+   -1.26,
+   0.0,
+   1.14,
+   0.12,
+   2.4,
+   3.42
+  ],
+  [
+   1.14,
+   0.0,
+   1.14,
+   0.12,
+   2.4,
+   3.42
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Entry",
+   "pos": [
+    0,
+    6.0,
+    0
+   ],
+   "yaw": 180,
+   "note": "stack-up point at the front entrance"
+  },
+  {
+   "name": "IP_Rear_Entry",
+   "pos": [
+    -0.5,
+    -6.0,
+    0
+   ],
+   "yaw": 0,
+   "note": ""
+  },
+  {
+   "name": "IP_Room_1",
+   "pos": [
+    -3.6,
+    2.5,
+    0.05
+   ],
+   "yaw": 0,
+   "note": "room centre (target placement)"
+  },
+  {
+   "name": "IP_Room_2",
+   "pos": [
+    3.6,
+    2.5,
+    0.05
+   ],
+   "yaw": 0,
+   "note": "room centre (target placement)"
+  },
+  {
+   "name": "IP_Room_3",
+   "pos": [
+    -3.6,
+    -2.8,
+    0.05
+   ],
+   "yaw": 0,
+   "note": "room centre (target placement)"
+  },
+  {
+   "name": "IP_Room_4",
+   "pos": [
+    3.6,
+    -2.8,
+    0.05
+   ],
+   "yaw": 0,
+   "note": "room centre (target placement)"
+  }
+ ],
+ "structure": {
+  "category": "Training",
+  "max_slope_deg": 5.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.4
+ }
+}

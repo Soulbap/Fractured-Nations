@@ -1,0 +1,89 @@
+{
+ "id": "water_barrier",
+ "family": "prop",
+ "display_name": "Water-filled barrier",
+ "category": "Road",
+ "description": "Plastic water-filled barrier 2.0 x 0.5 x 1.0 m (red/white alternating).",
+ "bounds_min": [
+  -1.047,
+  -0.25,
+  0.0
+ ],
+ "bounds_max": [
+  1.047,
+  0.25,
+  1.03
+ ],
+ "size_above_ground": [
+  2.093,
+  0.5,
+  1.03
+ ],
+ "footprint_xy": [
+  -1.047,
+  -0.25,
+  1.047,
+  0.25
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  148,
+  80,
+  28
+ ],
+ "surfaces": [
+  1,
+  1,
+  1
+ ],
+ "materials": [
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   30
+  ],
+  [
+   30,
+   100
+  ],
+  [
+   100,
+   400
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.0,
+   0.0,
+   -0.25,
+   2.0,
+   1.0,
+   0.5
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SNAP_W",
+   "pos": [
+    -1.0,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": ""
+  },
+  {
+   "name": "SNAP_E",
+   "pos": [
+    1.0,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": ""
+  }
+ ],
+ "structure": null
+}

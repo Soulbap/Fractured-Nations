@@ -1,0 +1,171 @@
+{
+ "id": "repair_bay",
+ "family": "module",
+ "display_name": "Vehicle repair bay (open)",
+ "category": "Maintenance",
+ "description": "Open maintenance shelter 10 x 14 m, 6.0 m clear height, inspection pit 1 x 6 m, 5 t gantry beam and hoist.",
+ "bounds_min": [
+  -5.52,
+  -7.5,
+  -0.3
+ ],
+ "bounds_max": [
+  5.52,
+  7.5,
+  7.422
+ ],
+ "size_above_ground": [
+  11.04,
+  15.0,
+  7.422
+ ],
+ "footprint_xy": [
+  -5.52,
+  -7.5,
+  5.52,
+  7.5
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  428,
+  404,
+  140
+ ],
+ "surfaces": [
+  4,
+  4,
+  3
+ ],
+ "materials": [
+  "Concrete",
+  "Kit_Palette",
+  "Paint_OD",
+  "Roof_OD"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   60
+  ],
+  [
+   60,
+   240
+  ],
+  [
+   240,
+   1600
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -5.125,
+   0.0,
+   6.875,
+   0.25,
+   6.0,
+   0.25
+  ],
+  [
+   4.875,
+   0.0,
+   6.875,
+   0.25,
+   6.0,
+   0.25
+  ],
+  [
+   -5.125,
+   0.0,
+   2.2083,
+   0.25,
+   6.0,
+   0.25
+  ],
+  [
+   4.875,
+   0.0,
+   2.2083,
+   0.25,
+   6.0,
+   0.25
+  ],
+  [
+   -5.125,
+   0.0,
+   -2.4583,
+   0.25,
+   6.0,
+   0.25
+  ],
+  [
+   4.875,
+   0.0,
+   -2.4583,
+   0.25,
+   6.0,
+   0.25
+  ],
+  [
+   -5.125,
+   0.0,
+   -7.125,
+   0.25,
+   6.0,
+   0.25
+  ],
+  [
+   4.875,
+   0.0,
+   -7.125,
+   0.25,
+   6.0,
+   0.25
+  ],
+  [
+   -5.5,
+   -0.3,
+   -7.5,
+   11.0,
+   0.4,
+   15.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "VEH_Pit",
+   "pos": [
+    0,
+    0,
+    0.1
+   ],
+   "yaw": 0,
+   "note": "vehicle over the inspection pit, nose +Y"
+  },
+  {
+   "name": "VEH_Bay_2",
+   "pos": [
+    3.0,
+    0,
+    0.1
+   ],
+   "yaw": 0,
+   "note": "second vehicle position"
+  },
+  {
+   "name": "IP_Tools",
+   "pos": [
+    3.5,
+    -3.7,
+    0.1
+   ],
+   "yaw": -90,
+   "note": ""
+  }
+ ],
+ "structure": {
+  "category": "Maintenance",
+  "max_slope_deg": 4.0,
+  "blocks_navigation": false,
+  "max_ground_gap": 0.5
+ }
+}

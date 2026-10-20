@@ -1,0 +1,127 @@
+{
+ "id": "vehicle_parking_pad",
+ "family": "module",
+ "display_name": "Vehicle parking pad",
+ "category": "Vehicle training",
+ "description": "Concrete vehicle park 24 x 14 m, six 4 x 8 m bays with yellow lines and wheel stops, drive lane in front.",
+ "bounds_min": [
+  -12.05,
+  -7.0,
+  -0.3
+ ],
+ "bounds_max": [
+  12.05,
+  7.0,
+  0.2
+ ],
+ "size_above_ground": [
+  24.1,
+  14.0,
+  0.2
+ ],
+ "footprint_xy": [
+  -12.05,
+  -7.0,
+  12.05,
+  7.0
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  180,
+  108,
+  12
+ ],
+ "surfaces": [
+  3,
+  2,
+  1
+ ],
+ "materials": [
+  "Concrete",
+  "Concrete_Dark",
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   60
+  ],
+  [
+   60,
+   250
+  ],
+  [
+   250,
+   1500
+  ]
+ ],
+ "collision_boxes_godot": [],
+ "markers": [
+  {
+   "name": "VEH_Bay_1",
+   "pos": [
+    -10.0,
+    -2.5,
+    0.08
+   ],
+   "yaw": 180,
+   "note": "parked vehicle, nose to the wheel stop"
+  },
+  {
+   "name": "VEH_Bay_2",
+   "pos": [
+    -6.0,
+    -2.5,
+    0.08
+   ],
+   "yaw": 180,
+   "note": "parked vehicle, nose to the wheel stop"
+  },
+  {
+   "name": "VEH_Bay_3",
+   "pos": [
+    -2.0,
+    -2.5,
+    0.08
+   ],
+   "yaw": 180,
+   "note": "parked vehicle, nose to the wheel stop"
+  },
+  {
+   "name": "VEH_Bay_4",
+   "pos": [
+    2.0,
+    -2.5,
+    0.08
+   ],
+   "yaw": 180,
+   "note": "parked vehicle, nose to the wheel stop"
+  },
+  {
+   "name": "VEH_Bay_5",
+   "pos": [
+    6.0,
+    -2.5,
+    0.08
+   ],
+   "yaw": 180,
+   "note": "parked vehicle, nose to the wheel stop"
+  },
+  {
+   "name": "VEH_Bay_6",
+   "pos": [
+    10.0,
+    -2.5,
+    0.08
+   ],
+   "yaw": 180,
+   "note": "parked vehicle, nose to the wheel stop"
+  }
+ ],
+ "structure": {
+  "category": "Vehicle training",
+  "max_slope_deg": 3.0,
+  "blocks_navigation": false,
+  "max_ground_gap": 0.3
+ }
+}

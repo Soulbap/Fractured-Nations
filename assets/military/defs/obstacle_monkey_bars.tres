@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"obstacle_monkey_bars"
+display_name = "Obstacle: monkey bars"
+category = "Training"
+description = "Steel monkey bars 4 m long, 2.2 m high."
+mesh_path = "res://assets/military/modules/obstacle_monkey_bars.glb"
+size = Vector3(0.88, 2.3, 4.08)
+max_slope_deg = 10
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-0.45, -0.005, -2.05, 0.9, 2.25, 4.1)])
+ramps = Array[AABB]([])

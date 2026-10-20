@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"mout_wall_window"
+display_name = "MOUT wall (window)"
+category = "Training"
+description = "Concrete-block urban training wall 4.0 x 0.2 x 2.6 m with a window opening."
+mesh_path = "res://assets/military/modules/mout_wall_window.glb"
+size = Vector3(4.04, 2.68, 0.26)
+max_slope_deg = 6
+max_ground_gap = 0.4
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-2, 0, -0.1, 4, 2.6, 0.2)])
+ramps = Array[AABB]([])

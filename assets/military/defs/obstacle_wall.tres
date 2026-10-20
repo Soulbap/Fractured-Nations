@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"obstacle_wall"
+display_name = "Obstacle: climbing wall"
+category = "Training"
+description = "Timber climbing wall 3.0 m wide x 2.1 m high with foot boards."
+mesh_path = "res://assets/military/modules/obstacle_wall.glb"
+size = Vector3(3.05, 2.4, 0.68)
+max_slope_deg = 10
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-1.5, 0, -0.1, 3, 2.1, 0.2)])
+ramps = Array[AABB]([])

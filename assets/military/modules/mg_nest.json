@@ -1,0 +1,120 @@
+{
+ "id": "mg_nest",
+ "family": "module",
+ "display_name": "MG position with overhead cover",
+ "category": "Defences",
+ "description": "Machine-gun position 3.0 x 3.0 m: 1.0 m sandbag walls, 4 timber posts, plywood roof with sandbags at 1.6 m, 0.4 m firing slit forward.",
+ "bounds_min": [
+  -1.7,
+  -1.6,
+  -0.009
+ ],
+ "bounds_max": [
+  1.7,
+  1.6,
+  1.794
+ ],
+ "size_above_ground": [
+  3.4,
+  3.2,
+  1.794
+ ],
+ "footprint_xy": [
+  -1.7,
+  -1.6,
+  1.7,
+  1.6
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  6252,
+  108,
+  60
+ ],
+ "surfaces": [
+  3,
+  3,
+  2
+ ],
+ "materials": [
+  "Plywood",
+  "Sandbag",
+  "Timber"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   160
+  ],
+  [
+   160,
+   800
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.7,
+   0.0,
+   -1.525,
+   3.4,
+   1.0,
+   0.35
+  ],
+  [
+   -1.675,
+   0.0,
+   -1.2,
+   0.35,
+   1.0,
+   2.4
+  ],
+  [
+   1.325,
+   0.0,
+   -1.2,
+   0.35,
+   1.0,
+   2.4
+  ],
+  [
+   -1.7,
+   1.595,
+   -1.6,
+   3.4,
+   0.25,
+   3.2
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Gunner",
+   "pos": [
+    0,
+    0.7,
+    0
+   ],
+   "yaw": 0,
+   "note": "gunner, weapon on the parapet (+Y)"
+  },
+  {
+   "name": "IP_Entrance",
+   "pos": [
+    0,
+    -2.0,
+    0
+   ],
+   "yaw": 0,
+   "note": ""
+  }
+ ],
+ "structure": {
+  "category": "Defences",
+  "max_slope_deg": 10.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.3
+ }
+}

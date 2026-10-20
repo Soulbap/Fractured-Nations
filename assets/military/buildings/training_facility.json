@@ -1,0 +1,141 @@
+{
+ "id": "training_facility",
+ "family": "building",
+ "display_name": "Training Facility",
+ "category": "Buildings",
+ "description": "Training centre: 14 x 8 m classroom building (two classrooms, 40 seats) on a plinth, 6 x 8 m covered briefing area with benches and a map board.",
+ "bounds_min": [
+  -7.45,
+  -4.47,
+  -0.5
+ ],
+ "bounds_max": [
+  13.6,
+  5.0,
+  4.29
+ ],
+ "size_above_ground": [
+  21.05,
+  9.47,
+  4.29
+ ],
+ "footprint_xy": [
+  -7.45,
+  -4.47,
+  13.6,
+  5.0
+ ],
+ "foundation_depth": 0.5,
+ "tris": [
+  1880,
+  616,
+  124
+ ],
+ "surfaces": [
+  7,
+  5,
+  5
+ ],
+ "materials": [
+  "Concrete",
+  "Concrete_Block",
+  "Concrete_Dark",
+  "Kit_Palette",
+  "Roof_Tan",
+  "Signs",
+  "Timber"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   70
+  ],
+  [
+   70,
+   280
+  ],
+  [
+   280,
+   2000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -7.0,
+   -0.5,
+   -4.0,
+   14.0,
+   4.6502,
+   8.0
+  ],
+  [
+   -7.3,
+   -0.5,
+   -4.3,
+   20.9,
+   0.8,
+   8.6
+  ],
+  [
+   7.0,
+   3.25,
+   -4.0,
+   6.3,
+   0.12,
+   8.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Classroom_1",
+   "pos": [
+    3.5,
+    6.0,
+    0
+   ],
+   "yaw": 180,
+   "note": ""
+  },
+  {
+   "name": "IP_Classroom_2",
+   "pos": [
+    -3.5,
+    6.0,
+    0
+   ],
+   "yaw": 180,
+   "note": ""
+  },
+  {
+   "name": "IP_Briefing",
+   "pos": [
+    10.4,
+    0,
+    0.3
+   ],
+   "yaw": 90,
+   "note": "instructor position at the map board"
+  },
+  {
+   "name": "ATT_Range_Access",
+   "pos": [
+    17.3,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": "path to ranges / training areas"
+  }
+ ],
+ "structure": {
+  "category": "Buildings",
+  "max_slope_deg": 6.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.8
+ },
+ "function": {
+  "role": "training",
+  "seats": 40,
+  "classrooms": 2
+ }
+}

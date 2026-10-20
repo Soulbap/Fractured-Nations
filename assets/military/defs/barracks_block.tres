@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"barracks_block"
+display_name = "Barracks"
+category = "Buildings"
+description = "Prefabricated barracks 24.0 x 7.2 m (8 rooms, 32 beds): sandwich-panel walls on block piers, floor 0.5 m, gable roof, doors at the front centre and both gable ends."
+mesh_path = "res://assets/military/buildings/barracks_block.glb"
+size = Vector3(27.7, 4.62, 9.52)
+max_slope_deg = 6
+max_ground_gap = 0.8
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-12, -0.45, -3.6, 24, 4.7146, 7.2), AABB(-0.8, 0, -4.6, 1.6, 0.5, 1), AABB(-13, 0, -0.8, 1, 0.5, 1.6), AABB(12, 0, -0.8, 1, 0.5, 1.6)])
+ramps = Array[AABB]([])

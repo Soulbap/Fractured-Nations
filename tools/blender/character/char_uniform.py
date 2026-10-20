@@ -34,6 +34,13 @@ def jacket_sdf(P, seed=31):
     d = B.torso_sdf(P, 0.017)
     # The jacket hangs straight from the chest to the hem (no waist).
     d = D.smin(d, D.ellipsoid(P, (0, -0.004, 1.06), (0.163, 0.120, 0.30)), 0.05)
+    # Lower jacket hangs straight: vertical sides and a level hem (rounded box), no
+    # ballooning under the belt.
+    d = D.smin(d, D.box(P, (0, -0.006, 0.990), (0.166, 0.118, 0.230), 0.060), 0.04)
+    # The hem wraps over the tops of the trouser legs, so the trousers never poke
+    # through the jacket at the hips (clean, straight hem line).
+    for side in (-1, 1):
+        d = D.smin(d, D.smax(B.leg_sdf(P, side, 0.025), 0.862 - Z, 0.004), 0.02)
     arms = None
     for side, s in ((-1, "Left"), (1, "Right")):
         a = B.arm_sdf(P, side, 0.012)
@@ -81,7 +88,7 @@ def jacket_sdf(P, seed=31):
 def trousers_sdf(P, seed=37):
     j = S.joints()
     X, Y, Z = P
-    pelvis = D.smax(B.torso_sdf(P, 0.016), Z - 1.080, 0.01)
+    pelvis = D.smax(B.torso_sdf(P, 0.017), Z - 1.080, 0.01)
     d = pelvis
     for side, s in ((-1, "Left"), (1, "Right")):
         hip, kn, an = j[s + "UpperLeg"], j[s + "LowerLeg"], j[s + "Foot"]
@@ -92,12 +99,12 @@ def trousers_sdf(P, seed=37):
         lg = D.smin(lg, D.ellipsoid(P, _v(kn + Vector((0, 0.052, 0.012))), (0.056, 0.026, 0.075)), 0.014)
         # Thigh cargo pocket (outer side) with a flap.
         tp = hip.lerp(kn, 0.48)
-        lg = D.smin(lg, D.box(P, _v(tp + Vector((side * 0.088, 0.010, 0))), (0.016, 0.070, 0.088), 0.010), 0.012)
-        lg = D.smin(lg, D.box(P, _v(tp + Vector((side * 0.098, 0.010, 0.080))), (0.010, 0.074, 0.016), 0.006), 0.004)
+        lg = D.smin(lg, D.box(P, _v(tp + Vector((side * 0.070, 0.018, 0))), (0.012, 0.064, 0.084), 0.010), 0.016)
+        lg = D.smin(lg, D.box(P, _v(tp + Vector((side * 0.077, 0.018, 0.076))), (0.009, 0.068, 0.015), 0.006), 0.004)
         # Lower-leg pocket.
         cp = kn.lerp(an, 0.62)
         lg = D.smin(lg, D.box(P, _v(cp + Vector((side * 0.058, 0.004, 0))), (0.012, 0.048, 0.058), 0.008), 0.01)
-        d = D.smin(d, lg, 0.05)
+        d = D.smin(d, lg, 0.04)
     # Waistband.
     d = D.smin(d, D.smax(B.torso_sdf(P, 0.021), np.abs(Z - 1.064) - 0.016, 0.004), 0.004)
     d = D.smax(d, Z - 1.080, 0.006)

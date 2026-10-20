@@ -1,0 +1,118 @@
+{
+ "id": "bunker_fighting",
+ "family": "building",
+ "display_name": "Bunker / Fighting Position",
+ "category": "Defences",
+ "description": "Reinforced-concrete bunker 4.0 x 4.0 x 1.6 m above ground (0.6 m below), firing slits front and sides, sandbag roof cover, rear entrance with sandbag walls.",
+ "bounds_min": [
+  -3.2,
+  -3.3,
+  -0.6
+ ],
+ "bounds_max": [
+  3.2,
+  3.2,
+  2.105
+ ],
+ "size_above_ground": [
+  6.4,
+  6.5,
+  2.105
+ ],
+ "footprint_xy": [
+  -3.2,
+  -3.3,
+  3.2,
+  3.2
+ ],
+ "foundation_depth": 0.6,
+ "tris": [
+  4764,
+  212,
+  144
+ ],
+ "surfaces": [
+  5,
+  5,
+  5
+ ],
+ "materials": [
+  "Concrete",
+  "Concrete_Dark",
+  "Dirt",
+  "Kit_Palette",
+  "Sandbag"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   70
+  ],
+  [
+   70,
+   280
+  ],
+  [
+   280,
+   2000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -2.0,
+   -0.6,
+   -2.0,
+   4.0,
+   2.7,
+   4.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Entrance",
+   "pos": [
+    0,
+    -4.2,
+    0
+   ],
+   "yaw": 0,
+   "note": "rear entrance"
+  },
+  {
+   "name": "IP_FiringPort_Front",
+   "pos": [
+    0,
+    1.4,
+    0.0
+   ],
+   "yaw": 0,
+   "note": "rifleman at the front slit (floor at 0.0 m)"
+  },
+  {
+   "name": "IP_FiringPort_W",
+   "pos": [
+    -1.4,
+    0,
+    0.0
+   ],
+   "yaw": 90,
+   "note": ""
+  },
+  {
+   "name": "IP_FiringPort_E",
+   "pos": [
+    1.4,
+    0,
+    0.0
+   ],
+   "yaw": -90,
+   "note": ""
+  }
+ ],
+ "structure": {
+  "category": "Defences",
+  "max_slope_deg": 8.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.8
+ }
+}

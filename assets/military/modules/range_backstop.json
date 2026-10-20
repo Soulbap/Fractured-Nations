@@ -1,0 +1,74 @@
+{
+ "id": "range_backstop",
+ "family": "module",
+ "display_name": "Range backstop berm",
+ "category": "Training",
+ "description": "Earth backstop berm 20 m x 8 m base, 4 m high, behind the target lines (impact face toward -Y).",
+ "bounds_min": [
+  -10.01,
+  -4.0,
+  -0.2
+ ],
+ "bounds_max": [
+  10.01,
+  4.0,
+  4.0
+ ],
+ "size_above_ground": [
+  20.02,
+  8.0,
+  4.0
+ ],
+ "footprint_xy": [
+  -10.01,
+  -4.0,
+  10.01,
+  4.0
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  156,
+  156,
+  36
+ ],
+ "surfaces": [
+  2,
+  2,
+  1
+ ],
+ "materials": [
+  "Dirt",
+  "Timber_Dark"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   80
+  ],
+  [
+   80,
+   320
+  ],
+  [
+   320,
+   2000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -10.0,
+   0.0,
+   -4.0,
+   20.0,
+   4.0,
+   8.0
+  ]
+ ],
+ "markers": [],
+ "structure": {
+  "category": "Training",
+  "max_slope_deg": 10.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 1.0
+ }
+}

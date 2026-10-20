@@ -1,0 +1,113 @@
+{
+ "id": "fuel_bladder_berm",
+ "family": "module",
+ "display_name": "Fuel bladder in bund",
+ "category": "Fuel",
+ "description": "Bulk fuel storage: 50 m3 collapsible fabric tank (9 x 6 m, 1.2 m high) inside a 1.2 m earth bund 13 x 10 m with liner.",
+ "bounds_min": [
+  -7.9,
+  -6.4,
+  -1.18
+ ],
+ "bounds_max": [
+  7.9,
+  6.52,
+  1.6
+ ],
+ "size_above_ground": [
+  15.8,
+  12.92,
+  1.6
+ ],
+ "footprint_xy": [
+  -7.9,
+  -6.4,
+  7.9,
+  6.52
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  780,
+  296,
+  138
+ ],
+ "surfaces": [
+  3,
+  3,
+  3
+ ],
+ "materials": [
+  "Dirt",
+  "Kit_Palette",
+  "Signs"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   60
+  ],
+  [
+   60,
+   240
+  ],
+  [
+   240,
+   1500
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -6.5,
+   0.0,
+   3.6,
+   13.0,
+   1.2,
+   2.8
+  ],
+  [
+   -6.5,
+   0.0,
+   -6.4,
+   13.0,
+   1.2,
+   2.8
+  ],
+  [
+   -4.5,
+   0.0,
+   -3.0,
+   9.0,
+   1.2,
+   6.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "IP_Manifold",
+   "pos": [
+    5.5,
+    -6.6,
+    0
+   ],
+   "yaw": 0,
+   "note": "hose manifold / pump connection"
+  },
+  {
+   "name": "VEH_Tanker",
+   "pos": [
+    8.0,
+    -9.0,
+    0
+   ],
+   "yaw": 90,
+   "note": "fuel tanker connects here"
+  }
+ ],
+ "structure": {
+  "category": "Fuel",
+  "max_slope_deg": 4.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.5
+ },
+ "capacity_m3": 50
+}
