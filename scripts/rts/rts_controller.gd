@@ -135,7 +135,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("select_all"):
 		var ids := []
 		for u in sim.state.soldiers():
-			if _can_command(u.id):
+			if _can_command(u.id) and u.alive:
 				ids.append(u.id)
 		select(ids)
 	elif event.is_action_pressed("ui_cancel"):
@@ -156,7 +156,8 @@ func select(p_ids: Array) -> void:
 			v.selected = false
 	selected.clear()
 	for id in ids:
-		if sim.state.get_unit(id) == null or selected.has(id):
+		var su := sim.state.get_unit(id)
+		if su == null or not su.alive or selected.has(id):
 			continue
 		selected.append(id)
 		var v := sim.view_of(id)
@@ -169,6 +170,14 @@ func select(p_ids: Array) -> void:
 func _on_view_added(id: int, view: Node3D) -> void:
 	if selected.has(id) and "selected" in view:
 		view.selected = true
+
+
+## COMBAT-01a: casualties leave the selection.
+func on_unit_died(u: UnitState) -> void:
+	if selected.has(u.id):
+		var ids := Array(selected)
+		ids.erase(u.id)
+		select(ids)
 
 
 func first_selected_soldier() -> int:
@@ -377,6 +386,8 @@ func _unit_at(screen_pos: Vector2) -> int:
 	var best_d := INF
 	# Positions come from the records, so units in either tier are pickable.
 	for u: UnitState in sim.state.units.values():
+		if not u.alive:
+			continue
 		var id := u.id
 		var p := u.position + Vector3.UP * (1.0 if u.kind == UnitState.Kind.SOLDIER else 1.3)
 		if cam.is_position_behind(p):
@@ -411,6 +422,8 @@ func _box_select(rect: Rect2, add: bool) -> void:
 	var cam := rig.camera
 	var ids := Array(selected) if add else []
 	for u: UnitState in sim.state.units.values():
+		if not u.alive:
+			continue
 		var p := u.position + Vector3.UP
 		if cam.is_position_behind(p):
 			continue

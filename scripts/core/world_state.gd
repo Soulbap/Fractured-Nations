@@ -14,6 +14,15 @@ signal order_changed(unit: UnitState)
 signal squad_changed(squad: SquadState)
 ## apply_snapshot() replaced the state of existing records in place (load).
 signal restored
+## COMBAT-01a events, emitted by CombatSim (presentation listens; no authority there).
+## shot: {shooter, origin, end, dir, hit_unit, zone, blocker, distance, damage, killed, counter}
+signal shot_fired(shot: Dictionary)
+signal unit_damaged(unit: UnitState, amount: float, zone: int, source_id: int)
+signal unit_died(unit: UnitState)
+signal reload_started(unit: UnitState)
+signal reload_finished(unit: UnitState)
+## Seed for combat randomness (spread), so shots are reproducible.
+var world_seed := 1
 
 const FACTION_NAMES: Array[String] = ["North", "South"]
 const FACTION_COLORS: Array[Color] = [Color(0.3, 0.55, 1.0), Color(1.0, 0.4, 0.2)]
@@ -88,7 +97,7 @@ func count_of(kind: UnitState.Kind) -> int:
 ## the player leaves.
 func issue_move(id: int, target: Vector3) -> bool:
 	var u := get_unit(id)
-	if u == null or u.kind != UnitState.Kind.SOLDIER:
+	if u == null or u.kind != UnitState.Kind.SOLDIER or not u.alive:
 		return false
 	u.order = UnitState.Order.MOVE
 	u.order_target = target
@@ -183,6 +192,17 @@ func set_leader(squad_id: int, unit_id: int) -> bool:
 	return true
 
 
+## COMBAT-01a: a killed soldier leaves its squad's members (formation slots, orders) and
+## is listed among the squad's fallen.
+func mark_fallen(unit_id: int) -> void:
+	var sq := squad_of(unit_id)
+	if sq == null:
+		return
+	if not sq.fallen.has(unit_id):
+		sq.fallen.append(unit_id)
+	_drop_member(sq, unit_id)
+
+
 func _drop_member(sq: SquadState, unit_id: int) -> void:
 	var i := sq.members.find(unit_id)
 	if i >= 0:
@@ -270,6 +290,7 @@ func apply_snapshot(snap: Dictionary) -> Dictionary:
 		u.order = fresh.order
 		u.order_target = fresh.order_target
 		u.move_state = fresh.move_state
+		u.copy_combat_from(fresh.to_dict())
 		updated += 1
 	var removed := 0
 	for id in units.keys():

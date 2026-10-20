@@ -1,0 +1,148 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.351 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3070
+
+WARNING: instance_reset_physics_interpolation() is deprecated.
+   at: _instance_reset_physics_interpolation_bind_compat_104269 (servers/rendering/rendering_server.compat.inc:62)
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
+StructureManager: water index 2568 triangles in 2115 cells
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] bake_area (res://scripts/world/area_navigation.gd:115)
+       [1] _rebake (res://scripts/core/detail_manager.gd:197)
+       [2] _update (res://scripts/core/detail_manager.gd:160)
+       [3] activate_at (res://scripts/core/detail_manager.gd:129)
+       [4] _start_large_world (res://scripts/game/core_demo.gd:218)
+       [5] _ready (res://scripts/game/core_demo.gd:106)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] bake_area (res://scripts/world/area_navigation.gd:115)
+       [1] _rebake (res://scripts/core/detail_manager.gd:197)
+       [2] _update (res://scripts/core/detail_manager.gd:160)
+       [3] activate_at (res://scripts/core/detail_manager.gd:129)
+       [4] _start_large_world (res://scripts/game/core_demo.gd:218)
+       [5] _ready (res://scripts/game/core_demo.gd:106)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] bake_area (res://scripts/world/area_navigation.gd:115)
+       [1] _rebake (res://scripts/core/detail_manager.gd:197)
+       [2] _update (res://scripts/core/detail_manager.gd:160)
+       [3] activate_at (res://scripts/core/detail_manager.gd:129)
+       [4] _start_large_world (res://scripts/game/core_demo.gd:218)
+       [5] _ready (res://scripts/game/core_demo.gd:106)
+CORE nav: {"area_m":440.0,"async":false,"bake_ms":238.989,"center":[-7107.5,-7592.0],"collision_ms":312.856,"faces":101250,"polygons":1115,"recenter":"sync","source_ms":114.037,"structure_obstructions":0,"tree_obstructions":24,"vehicle_obstructions":1}
+CORE spawn: {"sites":[[-7100.0,-7600.0],[-3100.0,3700.0],[7900.0,200.0]],"soldiers":28,"squads":3,"vehicles":3}
+UNIT startup {"rts_zoom_start":80.0,"soldiers":28,"squads":[{"faction":0,"formation":"Line","leader":1,"members":8,"name":"Alpha","order":"None"},{"faction":0,"formation":"Line","leader":9,"members":4,"name":"Bravo","order":"Move"},{"faction":1,"formation":"Line","leader":18,"members":4,"name":"Sierra","order":"None"}],"zoom_default":80.0,"zoom_max":200.0,"zoom_min":5.0}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT setup {"area":{"height_range_40m":0.54,"pos":[-1106.8,165.2,-7885.3],"road_m":1e99999,"settlement":"Bruvoll","settlement_edge_m":1556.0,"slope_deg":0.1,"solids_30m":{"houses":0,"rocks":0,"trees":0},"solids_60m":{"houses":0,"rocks":0,"trees":0}},"base_center":[-1412.3,167.6,-8342.6],"bodies_in_squads":16,"structures":2}
+UNIT selection {"after_panel_shift_click":[1,2],"ctrl_click_squads":[1],"selected_soldiers":12,"single_click_individual":{"ok":true,"selected":12}}
+UNIT move_line_8 {"done":true,"final":{"arrived":8,"blocked":[],"distinct_targets":true,"max_slot_error_m":1.29,"members":8,"min_pair_m":2.18},"frames":990,"min_pair_during_m":0.89,"seconds":16.535,"status":["DONE"],"worst_physics_wait_ms":24.5}
+UNIT move_column {"done":true,"final":{"arrived":8,"blocked":[],"distinct_targets":true,"max_slot_error_m":1.29,"members":8,"min_pair_m":2.95},"formation":"Column","frames":928,"min_pair_during_m":0.74,"seconds":15.493,"status":["DONE"],"worst_physics_wait_ms":17.8}
+UNIT two_squads_pass {"done":true,"frames":1426,"min_cross_pair_m":0.89,"min_pair_during_m":0.9,"seconds":23.798,"status":["DONE","DONE"],"worst_physics_wait_ms":18.3}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT around_structure {"done":true,"final":{"arrived":8,"blocked":[],"distinct_targets":true,"max_slot_error_m":1.29,"members":8,"min_pair_m":2.75},"frames":1696,"frames_in_structure":0,"inside_base":8,"min_pair_during_m":0.74,"seconds":28.553,"status":["DONE"],"worst_physics_wait_ms":395.9}
+UNIT hold {"max_drift_3s_m":0.0,"members_with_orders":0,"order":"Hold"}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT FAILED CHECK: Follow re-issued orders too often ({"alpha_status":"DONE","bravo_behind_leader":4,"final_min_pair_m":2.91,"follow_order":true,"max_dist_to_alpha_leader_m":9.9,"min_pair_during_m":0.89,"orders_per_soldier_per_10s_walking":8.74,"orders_while_alpha_stands_6s":1,"orders_while_alpha_walks":68,"orders_while_settling_6s":5,"seconds":31.4,"walk_s":19.4})
+UNIT follow {"alpha_status":"DONE","bravo_behind_leader":4,"final_min_pair_m":2.91,"follow_order":true,"max_dist_to_alpha_leader_m":9.9,"min_pair_during_m":0.89,"orders_per_soldier_per_10s_walking":8.74,"orders_while_alpha_stands_6s":1,"orders_while_alpha_walks":68,"orders_while_settling_6s":5,"seconds":31.4,"walk_s":19.4}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT regroup {"detached_after":0,"detached_before":7,"done":true,"min_pair_m":2.4,"seconds":6.037,"spread_after_m":13.0,"spread_before_m":23.9}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Navigation region synchronization had 2 edge error(s).
+More than 2 edges tried to occupy the same map rasterization space.
+This causes a logical error in the navigation mesh geometry and is commonly caused by overlap or too densely placed edges.
+Consider baking with a higher 'cell_size', greater geometry margin, and less detailed bake objects to cause fewer edges.
+Consider lowering the 'navigation/3d/merge_rasterizer_cell_scale' in the project settings.
+This warning can be toggled under 'navigation/3d/warnings/navmesh_edge_merge_errors' in the project settings.
+   at: _build_step_find_edge_connection_pairs (modules/navigation_3d/3d/nav_region_builder_3d.cpp:219)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Navigation region synchronization had 2 edge error(s).
+More than 2 edges tried to occupy the same map rasterization space.
+This causes a logical error in the navigation mesh geometry and is commonly caused by overlap or too densely placed edges.
+Consider baking with a higher 'cell_size', greater geometry margin, and less detailed bake objects to cause fewer edges.
+Consider lowering the 'navigation/3d/merge_rasterizer_cell_scale' in the project settings.
+This warning can be toggled under 'navigation/3d/warnings/navmesh_edge_merge_errors' in the project settings.
+   at: _build_step_find_edge_connection_pairs (modules/navigation_3d/3d/nav_region_builder_3d.cpp:219)
+UNIT blocked_report {"blocked":[9,10,11,12],"frames_in_structure":0,"members":4,"panel_text":"Bravo  [N]  4  Line  Move · 4 blocked","seconds":8.848,"status":"PARTIAL"}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT possession {"others_moving_or_arrived":7,"others_same_target":7,"possessed":true,"possessed_arrived":true,"possessed_moved_without_input_m":0.06,"possessed_order_kept":true,"squad_done_after_release":true,"squad_order":"Move"}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT long_jump {"abstract_while_away":8,"bodies_after_return":8,"camera_dist_m":12103.0,"done_after_return":true,"final":{"arrived":8,"blocked":[],"distinct_targets":true,"max_slot_error_m":0.0,"members":8,"min_pair_m":3.0},"jump_back_worst_ms":403.9,"jump_out_worst_ms":400.9,"min_pair_while_abstract_m":1.5,"squad_record_unchanged":true}
+BASE Saved 2 structures, 31 units, 3 squads to user://saves/ref_20km
+BASE Loaded 2 structures, 31 units, 3 squads
+UNIT save_load {"bytes":18593,"formation_after_load":"Column","max_position_error_m":0.15,"order_after_load":"Move","path":"C:/Users/Hafnor/AppData/Roaming/Godot/app_userdata/Fractured Nations/saves/ref_20km/world.json","resumed_and_done":true,"squads_identical":true}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT zoom {"camera_clearance_at_min_m":2.45,"camera_inside_structure":false,"pan_at_min_m":2.72,"pick_at_200m":true,"reached_max":200.0,"reached_min":5.0}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT performance {"fps_in_squad":{"draw_calls":1282.0,"frame_ms_avg":3.21,"frame_ms_max":4.43,"frame_ms_p99":4.38,"frames":240,"nav_ms":0.09,"physics_ms":1.02},"order_move_8_cost_ms":0.088,"rts_15m_base":{"draw_calls":249.0,"frame_ms_avg":2.39,"frame_ms_max":2.79,"frame_ms_p99":2.76,"frames":200,"nav_ms":0.0,"physics_ms":0.27},"rts_200m":{"draw_calls":328.0,"frame_ms_avg":1.91,"frame_ms_max":3.05,"frame_ms_p99":2.89,"frames":200,"nav_ms":0.1,"physics_ms":1.01},"rts_80m_three_squads_moving":{"draw_calls":399.0,"frame_ms_avg":2.18,"frame_ms_max":3.13,"frame_ms_p99":3.09,"frames":300,"nav_ms":0.06,"physics_ms":0.97},"squad_update_cost_ms":0.015}
+UNIT FAIL ["Follow re-issued orders too often ({\"alpha_status\":\"DONE\",\"bravo_behind_leader\":4,\"final_min_pair_m\":2.91,\"follow_order\":true,\"max_dist_to_alpha_leader_m\":9.9,\"min_pair_during_m\":0.89,\"orders_per_soldier_per_10s_walking\":8.74,\"orders_while_alpha_stands_6s\":1,\"orders_while_alpha_walks\":68,\"orders_while_settling_6s\":5,\"seconds\":31.4,\"walk_s\":19.4})"]

@@ -41,6 +41,15 @@ var selected := false:
 var _safe_velocity := Vector3.ZERO
 var _applied_target := Vector3.INF
 var _empty_path_s := 0.0
+## Scripted tests run in a window that may not hold OS mouse capture; they clear this so
+## the trigger works without it. Always true in play.
+static var require_mouse_capture := true
+## COMBAT-01a first-person weapon: the viewmodel exists while possessed.
+var viewmodel: Viewmodel
+## The trigger only works after it was released once with the mouse captured (the click
+## that captures the mouse must not fire).
+var _trigger_armed := false
+var _fov_hip := 75.0
 var _progress_ref := Vector3.INF
 var _progress_t := 0.0
 var _stuck_stage := 0
@@ -48,6 +57,7 @@ var _unstick_left := 0.0
 
 
 func _ready() -> void:
+	ensure_combat_actions()
 	player_controlled = false
 	super()
 	nav.velocity_computed.connect(_on_velocity_computed)
@@ -88,6 +98,7 @@ func _physics_process(delta: float) -> void:
 		# Let the avoidance simulation know where the player is heading.
 		if nav.avoidance_enabled:
 			nav.velocity = Vector3(velocity.x, 0.0, velocity.z)
+		_player_weapon(delta)
 	else:
 		_ai_step(delta)
 	_sync_state()
@@ -222,5 +233,85 @@ func _on_possession_changed(controlled: bool) -> void:
 	if is_node_ready():
 		UnitVisuals.set_shadows_only(visual, controlled)
 		ring.visible = not controlled
+		_set_viewmodel(controlled)
 	if unit:
 		unit.player_controlled = controlled
+
+
+# --- First-person weapon (COMBAT-01a) ------------------------------------------------
+
+## LMB fire (held = automatic when the rifle is in auto), R reload, V fire mode, RMB aim.
+## The shot leaves from the eye along the view; CombatSim resolves it like any other.
+func _player_weapon(delta: float) -> void:
+	if unit == null or not unit.alive or sim == null:
+		return
+	var captured := Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or not require_mouse_capture
+	var held := Input.is_action_pressed("fire")
+	if not captured:
+		_trigger_armed = false
+	elif not held:
+		_trigger_armed = true
+	var aiming := captured and Input.is_action_pressed("aim")
+	if viewmodel:
+		viewmodel.aiming = aiming
+	camera.fov = lerpf(camera.fov, 42.0 if aiming else _fov_hip, clampf(delta * 12.0, 0.0, 1.0))
+	if not captured:
+		return
+	if Input.is_action_just_pressed("reload"):
+		sim.combat.request_reload(unit.id)
+	if Input.is_action_just_pressed("fire_mode"):
+		sim.combat.set_fire_mode(unit.id, not unit.fire_auto)
+	if not _trigger_armed or not held:
+		return
+	if not unit.fire_auto and not Input.is_action_just_pressed("fire"):
+		return
+	var shot := sim.combat.request_fire(unit.id, camera.global_position, -camera.global_basis.z, CombatSim.Source.PLAYER)
+	if shot.get("fired", false):
+		_recoil()
+
+
+func _recoil() -> void:
+	var def := sim.combat.weapon(unit.weapon_id)
+	if def == null:
+		return
+	head.rotation.x = clampf(head.rotation.x + deg_to_rad(def.recoil_pitch_deg), -deg_to_rad(max_pitch_deg), deg_to_rad(max_pitch_deg))
+	rotate_y(deg_to_rad(randf_range(-def.recoil_yaw_deg, def.recoil_yaw_deg)))
+	if viewmodel:
+		viewmodel.kick()
+
+
+func _set_viewmodel(on: bool) -> void:
+	if on and viewmodel == null and unit and unit.weapon_id != &"":
+		viewmodel = Viewmodel.new()
+		camera.add_child(viewmodel)
+		camera.near = 0.03
+		_fov_hip = camera.fov
+	elif not on and viewmodel:
+		viewmodel.queue_free()
+		viewmodel = null
+		camera.fov = _fov_hip
+
+
+## Where shots visibly leave this soldier: the first-person muzzle while possessed, else
+## the carbine muzzle of the third-person model.
+func muzzle_position() -> Vector3:
+	if viewmodel and player_controlled:
+		return viewmodel.muzzle.global_position
+	return global_transform * Vector3(0.03, 1.22, -0.80)
+
+
+static func ensure_combat_actions() -> void:
+	var keys := {"reload": KEY_R, "fire_mode": KEY_V}
+	for action in keys:
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+			var ev := InputEventKey.new()
+			ev.physical_keycode = keys[action]
+			InputMap.action_add_event(action, ev)
+	var buttons := {"fire": MOUSE_BUTTON_LEFT, "aim": MOUSE_BUTTON_RIGHT}
+	for action in buttons:
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+			var mb := InputEventMouseButton.new()
+			mb.button_index = buttons[action]
+			InputMap.action_add_event(action, mb)

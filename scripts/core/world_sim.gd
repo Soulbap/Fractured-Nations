@@ -25,6 +25,10 @@ signal view_added(id: int, view: Node3D)
 var state := WorldState.new()
 ## UNIT-01A: turns squad orders (state.squads) into per-unit move orders.
 var squads := SquadControl.new(self)
+## COMBAT-01a: firing, reloading, damage and death (the one combat authority).
+var combat := CombatSim.new(self)
+## Parent of bodies and proxies (corpse markers are created here).
+var units_root: Node3D
 ## id -> Node3D body (detailed tier)
 var bodies := {}
 ## id -> UnitProxy (abstract tier visual; a unit has a body or a proxy, never both)
@@ -71,6 +75,26 @@ func view_of(id: int) -> Node3D:
 func _ready() -> void:
 	state.restored.connect(_on_restored)
 	state.unit_removed.connect(_on_unit_removed)
+	state.unit_died.connect(_on_unit_died)
+
+
+## A soldier died: its body (if any) goes, a corpse marker (UnitProxy) stays in the world.
+func _on_unit_died(u: UnitState) -> void:
+	var b: Node3D = bodies.get(u.id)
+	var parent: Node = units_root
+	if b:
+		parent = b.get_parent()
+		unregister_body(u.id)
+		b.get_parent().remove_child(b)
+		b.queue_free()
+	var old: Node3D = proxies.get(u.id)
+	if old:
+		unregister_proxy(u.id)
+		old.queue_free()
+	if parent:
+		var corpse := UnitProxy.new()
+		parent.add_child(corpse)
+		corpse.bind(u, self)
 
 
 ## A record went away (load without that unit): its body or proxy goes too.
@@ -85,9 +109,10 @@ func _on_unit_removed(id: int) -> void:
 func _physics_process(delta: float) -> void:
 	state.time += delta
 	for u in state.units.values():
-		if not u.has_body:
+		if not u.has_body and u.alive:
 			_abstract_step(u, delta)
 	squads.update(delta)
+	combat.update(delta)
 
 
 ## A save was loaded into the existing records: bodies would write their old position

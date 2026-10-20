@@ -56,6 +56,9 @@ var _large_selftest: LargeWorldSelfTest
 var _base_selftest: BaseSelfTest
 var _integration_selftest: IntegrationSelfTest
 var _squad_selftest: SquadSelfTest
+var _combat_selftest: CombatSelfTest
+## COMBAT-01a shot effects (muzzle flash, tracer, impact, sound).
+var combat_fx: CombatFX
 
 
 func _ready() -> void:
@@ -98,6 +101,7 @@ func _ready() -> void:
 	hud.detail = detail
 	if structures:
 		_setup_construction()
+	_setup_combat()
 	if detail:
 		_start_large_world(collider_streamer)
 		return
@@ -156,6 +160,22 @@ func _setup_construction() -> void:
 	hud.construction = construction
 
 
+## COMBAT-01a: the combat authority reads world data (terrain, vegetation, structures);
+## effects and HUD listen to its events; deaths reach the game and the RTS selection.
+func _setup_combat() -> void:
+	sim.units_root = units_root
+	sim.combat.line.setup(sim.state, terrain, vegetation, structures)
+	combat_fx = CombatFX.new()
+	combat_fx.name = "CombatFX"
+	add_child(combat_fx)
+	combat_fx.setup(sim, game)
+	sim.state.shot_fired.connect(hud.on_shot)
+	sim.state.unit_damaged.connect(hud.on_damaged)
+	sim.state.unit_died.connect(game.on_unit_died)
+	sim.state.unit_died.connect(rts.on_unit_died)
+	game.possessed_died.connect(hud.on_possessed_died)
+
+
 ## Small world: one fixed navmesh area, rebaked with the structures inside it.
 func _rebake_small_area() -> void:
 	var obstacles := []
@@ -212,6 +232,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	if "--large-test" in args:
 		_large_selftest = LargeWorldSelfTest.new(self)
 		_large_selftest.run.call_deferred(args)
+	elif "--combat-test" in args:
+		_combat_selftest = CombatSelfTest.new(self)
+		_combat_selftest.run.call_deferred(args)
 	elif "--squad-test" in args:
 		_squad_selftest = SquadSelfTest.new(self)
 		_squad_selftest.run.call_deferred(args)
@@ -234,6 +257,7 @@ func _spawn_large_world() -> void:
 	_spawn_group(sites[2].position + Vector3(12, 0, 0), 1, 4, 4, -PI * 0.5)
 	_spawn_vehicle(sites[2].position + Vector3(0, 0, 22), 0, 0.3, 2)
 	_make_squads()
+	sim.combat.equip_all(&"rifle")
 	spawn_info = {"soldiers": sim.state.count_of(UnitState.Kind.SOLDIER), "vehicles": sim.state.count_of(UnitState.Kind.VEHICLE),
 		"squads": sim.state.squads.size(),
 		"sites": sites.map(func(s: Dictionary) -> Array: return [s.position.x, s.position.z])}
@@ -304,6 +328,7 @@ func _spawn_units() -> void:
 	# North on the base pad facing the road (north = -Z); South 150 m east, facing west.
 	_spawn_faction(0, c + Vector3(0, 0, 10), Vector3(1, 0, 0), 0.0, c + Vector3(-28, 0, 14), 0.0)
 	_spawn_faction(1, c + Vector3(150, 0, -40), Vector3(0, 0, 1), PI * 0.5, c + Vector3(175, 0, -22), PI * 0.5)
+	sim.combat.equip_all(&"rifle")
 	spawn_info = {"soldiers": sim.state.count_of(UnitState.Kind.SOLDIER), "vehicles": sim.state.count_of(UnitState.Kind.VEHICLE),
 		"bodies": sim.bodies.size(), "area_center": [c.x, c.y, c.z]}
 

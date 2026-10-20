@@ -10,6 +10,7 @@ extends Node
 
 signal mode_changed(mode: int)
 signal possessed_changed(unit_id: int)
+signal possessed_died(unit_id: int)
 
 enum Mode { FPS, RTS }
 
@@ -67,7 +68,7 @@ func toggle() -> void:
 ## Takes direct control of a soldier and switches to its first-person camera.
 func possess(id: int) -> bool:
 	var unit := sim.state.get_unit(id)
-	if unit == null or unit.kind != UnitState.Kind.SOLDIER:
+	if unit == null or unit.kind != UnitState.Kind.SOLDIER or not unit.alive:
 		return false
 	var body := sim.body_of(id) as SoldierBody
 	if body == null and detail:
@@ -105,6 +106,9 @@ func enter_rts() -> void:
 	if body:
 		body.player_controlled = false
 		rts_camera.frame(body.global_position, body.rotation.y)
+	elif sim.state.get_unit(possessed_id):
+		var u := sim.state.get_unit(possessed_id)
+		rts_camera.frame(u.position, u.yaw)
 	rts_camera.set_active(true)
 	mode = Mode.RTS
 	_set_active_camera(rts_camera.camera)
@@ -117,7 +121,8 @@ func enter_rts() -> void:
 func possess_next(step := 1) -> bool:
 	var ids: Array = []
 	for u in sim.state.soldiers():
-		ids.append(u.id)
+		if u.alive or u.id == possessed_id:
+			ids.append(u.id)
 	if ids.is_empty():
 		return false
 	var i := ids.find(possessed_id)
@@ -135,11 +140,24 @@ func jump_to_site(index: int) -> bool:
 	var best := -1
 	var best_d := INF
 	for u in sim.state.soldiers():
+		if not u.alive:
+			continue
 		var d := Vector2(u.position.x - pos.x, u.position.z - pos.z).length()
 		if d < best_d:
 			best_d = d
 			best = u.id
 	return best > 0 and possess(best)
+
+
+## COMBAT-01a: the possessed soldier died - back to the tactical view, where the player
+## can pick another living soldier. Its record stays (a casualty marker in the world).
+func on_unit_died(u: UnitState) -> void:
+	if u.id != possessed_id:
+		return
+	if mode == Mode.FPS:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		enter_rts()
+	possessed_died.emit(u.id)
 
 
 func possessed_body() -> SoldierBody:

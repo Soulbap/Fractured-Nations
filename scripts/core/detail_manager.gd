@@ -162,7 +162,7 @@ func _update(force: bool) -> void:
 			return
 	var promoted := 0
 	for u in sim.state.units.values():
-		if not u.has_body and _flat_dist(u.position, observer) <= promote_radius:
+		if not u.has_body and u.alive and _flat_dist(u.position, observer) <= promote_radius:
 			_promote(u)
 			promoted += 1
 	if promoted > 0 or demoted > 0:

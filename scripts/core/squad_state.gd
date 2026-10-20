@@ -39,6 +39,8 @@ var detached := PackedInt32Array()
 var status := Status.IDLE
 ## Members that reported BLOCKED on the current order (genuinely unreachable slot).
 var blocked := PackedInt32Array()
+## COMBAT-01a: members killed (no longer in `members`; identity kept for the record).
+var fallen := PackedInt32Array()
 
 
 func has_member(unit_id: int) -> bool:
@@ -63,7 +65,7 @@ func to_dict() -> Dictionary:
 		"leader": leader_id, "order": order, "order_target": order_target, "order_yaw": order_yaw,
 		"follow_unit": follow_unit_id, "follow_squad": follow_squad_id,
 		"formation": formation, "spacing": spacing, "detached": Array(detached),
-		"status": status, "blocked": Array(blocked),
+		"status": status, "blocked": Array(blocked), "fallen": Array(fallen),
 	}
 
 
@@ -84,4 +86,5 @@ static func from_dict(d: Dictionary) -> SquadState:
 	s.detached = PackedInt32Array(d.get("detached", []))
 	s.status = d.get("status", Status.IDLE)
 	s.blocked = PackedInt32Array(d.get("blocked", []))
+	s.fallen = PackedInt32Array(d.get("fallen", []))
 	return s

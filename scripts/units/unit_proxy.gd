@@ -17,6 +17,8 @@ var selected := false:
 
 var ring: MeshInstance3D
 var _marker: MeshInstance3D
+## COMBAT-01a: the marker shows a casualty (lying, dark, no ring) once the unit is dead.
+var _shows_dead := false
 
 
 func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
@@ -51,6 +53,8 @@ func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
 	add_child(ring)
 	UnitVisuals.style_ring(ring, unit.faction, selected)
 	_follow()
+	if not unit.alive:
+		_show_dead()
 	sim.register_proxy(unit.id, self)
 
 
@@ -61,7 +65,22 @@ func _exit_tree() -> void:
 
 func _process(_delta: float) -> void:
 	_follow()
-	UnitVisuals.scale_ring_for_camera(ring, selected)
+	if not unit.alive and not _shows_dead:
+		_show_dead()
+	if ring.visible:
+		UnitVisuals.scale_ring_for_camera(ring, selected)
+
+
+## Casualty marker: the capsule lies on the ground in a darkened uniform colour.
+func _show_dead() -> void:
+	_shows_dead = true
+	ring.visible = false
+	if not unit.is_vehicle():
+		_marker.rotation = Vector3(PI * 0.5, 0.0, 0.0)
+		_marker.position = Vector3(0.0, 0.3, 0.0)
+	var mat := _marker.material_override as StandardMaterial3D
+	if mat:
+		mat.albedo_color = UnitVisuals.uniform_color(unit.faction).darkened(0.45)
 
 
 func _follow() -> void:

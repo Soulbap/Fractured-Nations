@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_def.gd" id="1_wdef"]
+
+[resource]
+script = ExtResource("1_wdef")
+id = &"rifle"
+display_name = "Carbine 5.56"
+rounds_per_minute = 700.0
+allow_auto = true
+default_mode = 1
+magazine_size = 30
+reserve_start = 120
+reload_time = 2.4
+damage = 34.0
+head_multiplier = 2.5
+body_multiplier = 1.0
+falloff_start = 120.0
+falloff_end = 400.0
+min_damage_fraction = 0.6
+max_range = 600.0
+effective_range = 300.0
+spread_base_deg = 0.06
+spread_moving_deg = 1.2
+spread_bloom_deg = 0.22
+spread_bloom_max_deg = 1.8
+spread_recovery_deg_s = 4.0
+recoil_pitch_deg = 0.55
+recoil_yaw_deg = 0.25

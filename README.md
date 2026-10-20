@@ -3,7 +3,11 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **UNIT-01A** — squads with tactical orders (move in line or column, hold, follow,
+Current state: **COMBAT-01a** — the first rifle: possess a soldier, aim, fire (semi / auto),
+reload and kill; hits and cover are resolved from world data, so they work at any range and
+with or without the camera nearby; see [docs/COMBAT-01A_REPORT.md](docs/COMBAT-01A_REPORT.md).
+
+Before that, **UNIT-01A** — squads with tactical orders (move in line or column, hold, follow,
 regroup) on top of the soldiers, persistent through FPS possession, the abstract tier and
 save/load; see [docs/UNIT-01A_REPORT.md](docs/UNIT-01A_REPORT.md).
 
@@ -62,6 +66,8 @@ uniforms) share the world and some soldiers already have move orders. The contro
 |---|---|
 | Mouse | Look (click to capture, Esc to release) |
 | W A S D / Shift / Space | Move / sprint / jump |
+| LMB (hold in auto) / RMB | Fire / aim (narrower view) |
+| R / V | Reload / semi or automatic fire |
 | **Tab** | Switch to the tactical camera (the soldier returns to the simulation) |
 | F | Debug fly / noclip |
 | F3 | Performance overlay |
