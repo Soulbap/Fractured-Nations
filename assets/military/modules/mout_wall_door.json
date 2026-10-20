@@ -91,5 +91,18 @@
   "max_slope_deg": 6.0,
   "blocks_navigation": true,
   "max_ground_gap": 0.4
+ },
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "mout_wall_door_LOD0: duplicate verts=4 loose verts=0"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: mout_wall_door_LOD0 (18 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

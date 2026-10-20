@@ -60,6 +60,19 @@
   "category": "Training",
   "max_slope_deg": 10.0,
   "blocks_navigation": false,
-  "max_ground_gap": 0.3
+  "max_ground_gap": 0.3,
+  "walkable": true
+ },
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "obstacle_crawl_LOD0: duplicate verts=8 loose verts=0",
+   "obstacle_crawl_LOD0: 72 n-gons"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

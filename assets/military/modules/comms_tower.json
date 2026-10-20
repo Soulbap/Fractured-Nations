@@ -81,5 +81,22 @@
   "max_slope_deg": 8.0,
   "blocks_navigation": true,
   "max_ground_gap": 0.3
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: comms_tower_LOD0 (10 overlapping coplanar tri pairs)",
+   "floating/detached part in comms_tower_LOD0 (8 verts at [0.0, 0.55, 22.0])",
+   "floating/detached part in comms_tower_LOD0 (8 verts at [-0.476, -0.275, 22.0])",
+   "floating/detached part in comms_tower_LOD0 (8 verts at [0.476, -0.275, 22.0])"
+  ],
+  "warnings": [
+   "comms_tower_LOD0: duplicate verts=282 loose verts=0",
+   "comms_tower_LOD0: 24 n-gons"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

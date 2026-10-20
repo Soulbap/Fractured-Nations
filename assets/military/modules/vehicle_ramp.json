@@ -109,5 +109,20 @@
     7.0
    ]
   ]
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "vehicle_ramp_LOD0: 6 edges with inconsistent face winding",
+   "z-fighting: vehicle_ramp_LOD0 (4 overlapping coplanar tri pairs)",
+   "floating/detached part in vehicle_ramp_LOD0 (8 verts at [-2.1, 0.0, 1.3])"
+  ],
+  "warnings": [
+   "1 parts fully enclosed, not touching (eyes/internals?): ['vehicle_ramp_LOD0']"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

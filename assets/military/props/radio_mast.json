@@ -66,5 +66,19 @@
   ]
  ],
  "markers": [],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: radio_mast_LOD0 (14 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "radio_mast_LOD0: duplicate verts=1 loose verts=0",
+   "radio_mast_LOD0: 32 n-gons"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

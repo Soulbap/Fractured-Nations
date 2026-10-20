@@ -72,5 +72,18 @@
   ]
  ],
  "markers": [],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: light_tower_LOD0 (12 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "light_tower_LOD0: 18 n-gons"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

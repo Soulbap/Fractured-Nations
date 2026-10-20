@@ -10,6 +10,14 @@ Options:
     --export         write GLB + JSON (+ StructureDef for buildings/modules) + Godot materials
     --previews DIR   Blender preview renders (contact sheet per asset) into DIR
     --lods           also render a LOD0/LOD1/LOD2 strip per asset (with --previews)
+    --qa             BLENDER-SKILLS-01 review gate on LOD0 (ap_qa: z-fighting, detached parts,
+                     normals, topology, UVs, budget); results into the sidecar ("qa") when
+                     exporting and into --qa-report (default benchmarks/asset01/qa_report.json)
+    --qa-strict      exit 1 when any asset fails the gate
+    --qa-baseline P  with --qa-strict: fail only on findings that are new against this
+                     recorded report (benchmarks/asset01/qa_baseline.json = the known backlog)
+    --qa-sheets DIR  also render a random-colour review sheet per asset into DIR
+    --qa-report P    where the run's QA summary is written
     --list           print the registered asset ids and exit
 """
 import importlib
@@ -44,16 +52,20 @@ BLEND_DIR = os.path.join(OUT, "blender")
 
 def parse_args():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-    o = {"family": None, "only": None, "textures": False, "export": False, "previews": None, "lods": False, "list": False}
+    o = {"family": None, "only": None, "textures": False, "export": False, "previews": None, "lods": False, "list": False,
+         "qa": False, "qa-strict": False, "qa-sheets": None, "qa-report": os.path.join(REPO, "benchmarks", "asset01", "qa_report.json"),
+         "qa-baseline": None}
     i = 0
     while i < len(argv):
         a = argv[i]
-        if a in ("--family", "--only", "--previews"):
+        if a in ("--family", "--only", "--previews", "--qa-sheets", "--qa-report", "--qa-baseline"):
             o[a[2:]] = argv[i + 1]
             i += 1
         elif a[2:] in o:
             o[a[2:]] = True
         i += 1
+    if o["qa-strict"] or o["qa-sheets"]:
+        o["qa"] = True
     return o
 
 
@@ -108,6 +120,16 @@ def main():
         AM.build_palette(TEX_DIR)
     log = {"assets": {}}
     metas = []
+    qa_report = {"assets": {}, "failed": [], "new_findings": {}, "check": None}
+    baseline = {}
+    if o["qa"]:
+        import ap_qa as Q
+        importlib.reload(Q)
+        qa_report["check"] = dict(Q.CHECK)
+        if o["qa-baseline"] and os.path.exists(o["qa-baseline"]):
+            with open(o["qa-baseline"], encoding="utf-8") as f:
+                baseline = json.load(f).get("assets", {})
+            qa_report["baseline"] = o["qa-baseline"]
     for aid, fam, fn in todo:
         t = time.time()
         L.clear_scene()
@@ -115,12 +137,32 @@ def main():
         asset = fn(A)
         asset.build(coll, TEX_DIR)
         entry = {"tris": [L.tri_count(x) if x else 0 for x in asset.objs]}
+        qa = None
+        if o["qa"]:
+            qa = Q.check_asset(asset, o["qa-sheets"])
+            qa_report["assets"][aid] = qa
+            if not qa["pass"]:
+                qa_report["failed"].append(aid)
+            new = Q.new_findings(qa, baseline.get(aid)) if baseline else qa["errors"]
+            if new:
+                qa_report["new_findings"][aid] = new
+            entry["qa"] = {"pass": qa["pass"], "errors": len(qa["errors"]), "new": len(new), "warnings": len(qa["warnings"]),
+                           "over_budget": qa["stats"].get("over_budget", [])}
         if o["export"]:
             meta = asset.export(os.path.join(OUT, FAMILY_DIRS[fam]), coll)
             metas.append(meta)
             if fam in ("building", "module") and asset.structure is not None:
                 A.write_structure_def(meta, DEF_DIR, "res://assets/military/%s/%s.glb" % (FAMILY_DIRS[fam], aid))
             entry["size"] = meta["size_above_ground"]
+            if qa is not None:
+                # The gate's verdict travels with the asset (sidecar), like its other numbers.
+                sidecar = os.path.join(OUT, FAMILY_DIRS[fam], aid + ".json")
+                with open(sidecar, encoding="utf-8") as f:
+                    side = json.load(f)
+                side["qa"] = {k: qa[k] for k in ("pass", "errors", "warnings", "accepted", "eps", "tol")}
+                side["qa"]["over_budget"] = qa["stats"].get("over_budget", [])
+                with open(sidecar, "w", encoding="utf-8") as f:
+                    json.dump(side, f, indent=1)
         if o["previews"]:
             d = os.path.abspath(o["previews"])
             os.makedirs(d, exist_ok=True)
@@ -135,8 +177,19 @@ def main():
         AM.write_godot_materials(MAT_DIR, TEX_DIR)
         if metas:
             update_catalog(metas)
+    if o["qa"]:
+        qa_report["checked"] = len(qa_report["assets"])
+        os.makedirs(os.path.dirname(o["qa-report"]), exist_ok=True)
+        with open(o["qa-report"], "w", encoding="utf-8") as f:
+            json.dump(qa_report, f, indent=1)
+        log["qa"] = {"checked": qa_report["checked"], "failed": qa_report["failed"], "new_findings": sorted(qa_report["new_findings"]),
+                     "report": o["qa-report"]}
     log["t_total"] = round(time.time() - t0, 1)
     print("FNBUILD", json.dumps(log))
+    # Strict: with a baseline, only new defects fail the build (the backlog is tracked, not
+    # re-reported); without one, any failing asset does.
+    if o["qa-strict"] and (qa_report["new_findings"] if baseline else qa_report["failed"]):
+        sys.exit(1)
 
 
 

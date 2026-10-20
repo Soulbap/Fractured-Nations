@@ -94,5 +94,18 @@
   "depth": 1.06,
   "height": 1.37,
   "cells": 5
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: hesco_mil1_5_LOD0 (173 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "hesco_mil1_5_LOD0: 24 n-gons"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

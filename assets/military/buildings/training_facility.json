@@ -137,5 +137,23 @@
   "role": "training",
   "seats": 40,
   "classrooms": 2
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: training_facility_LOD0 (66 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "training_facility_LOD0: duplicate verts=16 loose verts=0",
+   "training_facility_LOD0: 50 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: training_facility_LOD0 (155 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": [
+   "materials 7 > 6 (merge/atlas)"
+  ]
  }
 }

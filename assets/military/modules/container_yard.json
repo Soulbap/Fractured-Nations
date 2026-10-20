@@ -205,5 +205,22 @@
   "max_slope_deg": 3.0,
   "blocks_navigation": true,
   "max_ground_gap": 0.4
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: container_yard_LOD0 (400 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "container_yard_LOD0: 4 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: container_yard_LOD0 (86 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": [
+   "materials 8 > 6 (merge/atlas)"
+  ]
  }
 }

@@ -65,5 +65,20 @@
   ]
  ],
  "markers": [],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: light_pole_LOD0 (11 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "light_pole_LOD0: 6 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: light_pole_LOD0 (18 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

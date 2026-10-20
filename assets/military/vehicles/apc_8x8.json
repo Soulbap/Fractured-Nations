@@ -410,5 +410,22 @@
   "track_m": 2.35,
   "crew": 3,
   "troops": 8
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: apc_8x8_LOD0 (92 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "apc_8x8_LOD0: duplicate verts=8 loose verts=0",
+   "apc_8x8_LOD0: 98 n-gons",
+   "1 parts fully enclosed, not touching (eyes/internals?): ['apc_8x8_LOD0']"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: apc_8x8_LOD0 (75 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

@@ -60,6 +60,20 @@
   "category": "Training",
   "max_slope_deg": 10.0,
   "blocks_navigation": false,
-  "max_ground_gap": 0.3
+  "max_ground_gap": 0.3,
+  "walkable": true
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: obstacle_tires_LOD0 (282 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "obstacle_tires_LOD0: 64 n-gons"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

@@ -93,5 +93,21 @@
   "length": 12.192,
   "width": 2.438,
   "height": 2.591
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: iso_container_40_od_LOD0 (72 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "iso_container_40_od_LOD0: duplicate verts=14 loose verts=0",
+   "iso_container_40_od_LOD0: 8 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: iso_container_40_od_LOD0 (146 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

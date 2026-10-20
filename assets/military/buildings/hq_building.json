@@ -167,5 +167,27 @@
   "role": "command",
   "floor_area_m2": 160.0,
   "staff": 25
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: hq_building_LOD0 (133 overlapping coplanar tri pairs)",
+   "floating/detached part in hq_building_LOD0 (24 verts at [6.4, 5.11, 2.1])",
+   "floating/detached part in hq_building_LOD0 (24 verts at [4.0, 5.11, 2.1])",
+   "floating/detached part in hq_building_LOD0 (24 verts at [-4.0, 5.11, 2.1])",
+   "floating/detached part in hq_building_LOD0 (24 verts at [-6.4, 5.11, 2.1])"
+  ],
+  "warnings": [
+   "hq_building_LOD0: duplicate verts=22 loose verts=0",
+   "hq_building_LOD0: 196 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: hq_building_LOD0 (249 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": [
+   "materials 7 > 6 (merge/atlas)"
+  ]
  }
 }

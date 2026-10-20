@@ -78,5 +78,20 @@
    "note": "forklift / pallet jack entry side"
   }
  ],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: supply_pallet_LOD0 (88 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "supply_pallet_LOD0: duplicate verts=36 loose verts=0"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: supply_pallet_LOD0 (106 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

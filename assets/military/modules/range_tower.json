@@ -91,5 +91,21 @@
   "max_slope_deg": 8.0,
   "blocks_navigation": true,
   "max_ground_gap": 0.4
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "floating/detached part in range_tower_LOD0 (8 verts at [-0.9, 1.45, 5.75])",
+   "floating/detached part in range_tower_LOD0 (8 verts at [0.9, 1.45, 5.75])"
+  ],
+  "warnings": [
+   "range_tower_LOD0: 4 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: range_tower_LOD0 (8 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

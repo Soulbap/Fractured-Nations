@@ -201,6 +201,7 @@ def obstacle_crawl(A):
     a.box((3.2, 8.2, 0.03), (0, 0, 0.0), "Dirt", ALL)
     a.lod_ranges = [[0, 40], [40, 140], [140, 600]]
     a.structure = _st("Training", 10.0, 0.3, nav=False)
+    a.structure["walkable"] = True  # WORLD-INTEGRATION-03: soldiers crawl / walk through it
     return a
 
 
@@ -213,6 +214,7 @@ def obstacle_tires(A):
             a.cyl(0.22, 0.22, 0.23, (sx + (0.1 if i % 2 else 0), y, 0.115), "Dirt", L01, segs=12)
     a.lod_ranges = [[0, 40], [40, 140], [140, 600]]
     a.structure = _st("Training", 10.0, 0.3, nav=False)
+    a.structure["walkable"] = True  # WORLD-INTEGRATION-03
     return a
 
 
@@ -367,6 +369,9 @@ def vehicle_parking_pad(A):
         a.marker("VEH_Bay_%d" % (i + 1), (-W / 2 + 2.0 + i * 4.0, -D / 2 + 4.5, 0.08), 180, "parked vehicle, nose to the wheel stop")
     a.lod_ranges = [[0, 60], [60, 250], [250, 1500]]
     a.structure = _st("Vehicle training", 3.0, 0.3, nav=False)
+    # WORLD-INTEGRATION-03: a walkable slab, sunk so its top sits a few cm above the pad.
+    a.structure["walkable"] = True
+    a.structure["sink"] = 0.15
     return a
 
 

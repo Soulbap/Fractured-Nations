@@ -147,5 +147,24 @@
   "role": "medical",
   "beds": 8,
   "treatment_bays": 2
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: medical_station_LOD0 (4 overlapping coplanar tri pairs)",
+   "floating/detached part in medical_station_LOD0 (4 verts at [0.0, 0.0, 3.33])"
+  ],
+  "warnings": [
+   "medical_station_LOD0: duplicate verts=34 loose verts=0",
+   "medical_station_LOD0: 16 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: medical_station_LOD0 (52 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": [
+   "materials 7 > 6 (merge/atlas)"
+  ]
  }
 }

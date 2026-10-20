@@ -103,5 +103,23 @@
   "blocks_navigation": true,
   "max_ground_gap": 0.8
  },
- "capacity_t_neq": 20
+ "capacity_t_neq": 20,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: ammo_magazine_LOD0 (1 overlapping coplanar tri pairs)",
+   "floating/detached part in ammo_magazine_LOD0 (12 verts at [-7.5, 0.0, 4.5])",
+   "floating/detached part in ammo_magazine_LOD0 (12 verts at [7.5, 0.0, 4.5])"
+  ],
+  "warnings": [
+   "ammo_magazine_LOD0: duplicate verts=2 loose verts=0",
+   "ammo_magazine_LOD0: 6 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: ammo_magazine_LOD0 (16 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

@@ -125,5 +125,21 @@
  "function": {
   "role": "communications",
   "mast_m": 18
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: comms_station_LOD0 (17 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "comms_station_LOD0: duplicate verts=212 loose verts=0",
+   "comms_station_LOD0: 36 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: comms_station_LOD0 (21 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

@@ -81,5 +81,17 @@
   "max_slope_deg": 10.0,
   "blocks_navigation": true,
   "max_ground_gap": 0.3
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "floating/detached part in obstacle_wall_LOD0 (8 verts at [0.0, -0.3, 0.6])",
+   "floating/detached part in obstacle_wall_LOD0 (8 verts at [0.0, 0.3, 0.6])"
+  ],
+  "warnings": [],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

@@ -114,5 +114,18 @@
   "max_slope_deg": 8.0,
   "blocks_navigation": true,
   "max_ground_gap": 0.8
+ },
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "bunker_fighting_LOD0: duplicate verts=2 loose verts=0"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: bunker_fighting_LOD0 (16 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

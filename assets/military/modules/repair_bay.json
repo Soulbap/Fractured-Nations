@@ -167,5 +167,22 @@
   "max_slope_deg": 4.0,
   "blocks_navigation": false,
   "max_ground_gap": 0.5
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: repair_bay_LOD0 (6 overlapping coplanar tri pairs)",
+   "floating/detached part in repair_bay_LOD0 (8 verts at [0.0, 0.0, 5.7])"
+  ],
+  "warnings": [
+   "repair_bay_LOD0: duplicate verts=16 loose verts=0",
+   "repair_bay_LOD0: 2 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: repair_bay_LOD0 (44 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

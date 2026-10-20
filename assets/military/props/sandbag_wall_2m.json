@@ -5,24 +5,24 @@
  "category": "Defences",
  "description": "Sandbag wall 2.0 m long, 8 courses (0.96 m high).",
  "bounds_min": [
-  -1.004,
+  -0.998,
   -0.336,
   -0.009
  ],
  "bounds_max": [
-  1.053,
+  1.051,
   0.336,
   0.979
  ],
  "size_above_ground": [
-  2.057,
+  2.049,
   0.672,
   0.979
  ],
  "footprint_xy": [
-  -1.004,
+  -0.998,
   -0.336,
-  1.053,
+  1.051,
   0.336
  ],
  "foundation_depth": 0.0,
@@ -89,5 +89,14 @@
  "module": {
   "length": 2.0,
   "height": 0.96
+ },
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

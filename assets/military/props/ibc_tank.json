@@ -64,5 +64,19 @@
   ]
  ],
  "markers": [],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "ibc_tank_LOD0: duplicate verts=40 loose verts=0",
+   "ibc_tank_LOD0: 4 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: ibc_tank_LOD0 (26 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

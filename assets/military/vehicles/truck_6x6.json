@@ -291,5 +291,25 @@
   "track_m": 2.11,
   "payload_t": 10,
   "crew": 2
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: truck_6x6_LOD0 (78 overlapping coplanar tri pairs)",
+   "floating/detached part in truck_6x6_LOD0 (28 verts at [-0.925, 0.85, 0.75])",
+   "floating/detached part in truck_6x6_LOD0 (8 verts at [0.0, -4.15, 0.95])",
+   "floating/detached part in truck_6x6_LOD0 (24 verts at [0.925, 0.8, 0.7])"
+  ],
+  "warnings": [
+   "truck_6x6_LOD0: duplicate verts=12 loose verts=0",
+   "truck_6x6_LOD0: 58 n-gons",
+   "2 parts fully enclosed, not touching (eyes/internals?): ['truck_6x6_LOD0', 'truck_6x6_LOD0']"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: truck_6x6_LOD0 (36 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

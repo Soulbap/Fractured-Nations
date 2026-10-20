@@ -116,5 +116,14 @@
   "max_slope_deg": 10.0,
   "blocks_navigation": true,
   "max_ground_gap": 0.3
+ },
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

@@ -91,5 +91,18 @@
   "category": "Checkpoint",
   "max_slope_deg": 8.0,
   "blocks_navigation": true
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: guard_booth_LOD0 (26 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [],
+  "accepted": [
+   "hidden back-to-back faces: guard_booth_LOD0 (28 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

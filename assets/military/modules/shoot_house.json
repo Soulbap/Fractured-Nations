@@ -269,5 +269,16 @@
   "max_slope_deg": 5.0,
   "blocks_navigation": true,
   "max_ground_gap": 0.4
+ },
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [],
+  "accepted": [
+   "hidden back-to-back faces: shoot_house_LOD0 (38 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

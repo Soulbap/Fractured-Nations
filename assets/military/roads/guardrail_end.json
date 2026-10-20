@@ -75,5 +75,18 @@
    "note": ""
   }
  ],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "guardrail_end_LOD0: duplicate verts=63 loose verts=0"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: guardrail_end_LOD0 (144 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

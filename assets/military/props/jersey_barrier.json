@@ -90,5 +90,18 @@
  "module": {
   "length": 3.0,
   "height": 0.81
+ },
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "jersey_barrier_LOD0: 6 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: jersey_barrier_LOD0 (12 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }
