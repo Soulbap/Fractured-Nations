@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "Glass_Dark"
+cull_mode = 2
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.2716998, 0.29337206, 0.3133042, 1)
+roughness = 0.15

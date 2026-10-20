@@ -1,0 +1,38 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/world/water.gdshader" id="1_hrfj3"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_57c3v"]
+seed = 7
+frequency = 0.02
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_0xk82"]
+noise = SubResource("FastNoiseLite_57c3v")
+seamless = true
+as_normal_map = true
+bump_strength = 6.0
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_h1cm0"]
+seed = 8
+frequency = 0.045
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_xvsbw"]
+noise = SubResource("FastNoiseLite_h1cm0")
+seamless = true
+as_normal_map = true
+bump_strength = 3.0
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_hrfj3")
+shader_parameter/deep_color = null
+shader_parameter/shallow_color = null
+shader_parameter/depth_scale = null
+shader_parameter/edge_fade_m = null
+shader_parameter/normal_a = SubResource("NoiseTexture2D_0xk82")
+shader_parameter/normal_b = SubResource("NoiseTexture2D_xvsbw")
+shader_parameter/flow_speed = 0.0
+shader_parameter/wind_speed = 0.02
+shader_parameter/normal_strength = null

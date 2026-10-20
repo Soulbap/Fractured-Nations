@@ -1,0 +1,21 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/environment/foliage.gdshader" id="1_aaxn7"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/spruce_b_impostor.png" id="2_yff11"]
+
+[resource]
+resource_name = "Impostor_spruce_b"
+render_priority = 0
+shader = ExtResource("1_aaxn7")
+shader_parameter/wind_strength = 0.06
+shader_parameter/wind_speed = null
+shader_parameter/sway_height = 16.0
+shader_parameter/wind_dir = null
+shader_parameter/albedo_tex = ExtResource("2_yff11")
+shader_parameter/use_normal_tex = false
+shader_parameter/tint = Color(0.72, 0.74, 0.7, 1)
+shader_parameter/alpha_cut = 0.5
+shader_parameter/translucency = 0.2
+shader_parameter/roughness_value = null
+shader_parameter/flutter = 0.0
+shader_parameter/normal_up_blend = 0.45

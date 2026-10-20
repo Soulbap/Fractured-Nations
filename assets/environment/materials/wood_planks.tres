@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "Wood_Planks"
+cull_mode = 2
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.6342527, 0.58383155, 0.5271128, 1)
+roughness = 0.9

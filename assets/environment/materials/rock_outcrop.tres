@@ -1,0 +1,20 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/environment/rock.gdshader" id="1_iwkyr"]
+[ext_resource type="Texture2D" path="res://assets/terrain/textures/ground037_alb_ht.png" id="2_6lk2r"]
+[ext_resource type="Texture2D" path="res://assets/terrain/textures/rock023_alb_ht.png" id="3_105le"]
+[ext_resource type="Texture2D" path="res://assets/terrain/textures/rock023_nrm_rgh.png" id="4_vhmqe"]
+
+[resource]
+resource_name = "Rock_Outcrop"
+render_priority = 0
+shader = ExtResource("1_iwkyr")
+shader_parameter/rock_albedo = ExtResource("3_105le")
+shader_parameter/rock_normal = ExtResource("4_vhmqe")
+shader_parameter/moss_albedo = ExtResource("2_6lk2r")
+shader_parameter/rock_scale = 0.3
+shader_parameter/moss_scale = null
+shader_parameter/rock_tint = null
+shader_parameter/lichen_color = null
+shader_parameter/moss_amount = 0.45
+shader_parameter/lichen_amount = 0.6

@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/bridge_concrete_lod0.res" id="1_jfuld"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/bridge_concrete_lod1.res" id="2_77ylq"]
+
+[node name="BridgeConcrete" type="Node3D" unique_id=1639791602]
+
+[node name="bridge_concrete_LOD0" type="MeshInstance3D" parent="." unique_id=590189262]
+mesh = ExtResource("1_jfuld")
+
+[node name="bridge_concrete_LOD1" type="MeshInstance3D" parent="." unique_id=1463867984]
+mesh = ExtResource("2_77ylq")

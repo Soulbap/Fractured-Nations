@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/bridge_timber_lod0.res" id="1_l40gb"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/bridge_timber_lod1.res" id="2_cifc1"]
+
+[node name="BridgeTimber" type="Node3D" unique_id=1660286608]
+
+[node name="bridge_timber_LOD0" type="MeshInstance3D" parent="." unique_id=328472234]
+mesh = ExtResource("1_l40gb")
+
+[node name="bridge_timber_LOD1" type="MeshInstance3D" parent="." unique_id=1266099173]
+mesh = ExtResource("2_cifc1")

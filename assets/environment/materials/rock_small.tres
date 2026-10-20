@@ -1,0 +1,20 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/environment/rock.gdshader" id="1_koiqp"]
+[ext_resource type="Texture2D" path="res://assets/terrain/textures/ground037_alb_ht.png" id="2_fl52l"]
+[ext_resource type="Texture2D" path="res://assets/terrain/textures/rock023_alb_ht.png" id="3_etltg"]
+[ext_resource type="Texture2D" path="res://assets/terrain/textures/rock023_nrm_rgh.png" id="4_iwj51"]
+
+[resource]
+resource_name = "Rock_Small"
+render_priority = 0
+shader = ExtResource("1_koiqp")
+shader_parameter/rock_albedo = ExtResource("3_etltg")
+shader_parameter/rock_normal = ExtResource("4_iwj51")
+shader_parameter/moss_albedo = ExtResource("2_fl52l")
+shader_parameter/rock_scale = 0.6
+shader_parameter/moss_scale = null
+shader_parameter/rock_tint = null
+shader_parameter/lichen_color = null
+shader_parameter/moss_amount = 0.3
+shader_parameter/lichen_amount = null
