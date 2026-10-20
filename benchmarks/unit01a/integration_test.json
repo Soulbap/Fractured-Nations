@@ -1,0 +1,943 @@
+{
+  "abstract_blocking": {
+    "a_has_body": false,
+    "a_pos_rel": [
+      14.2,
+      -36.0
+    ],
+    "a_state": 1,
+    "b_has_body": false,
+    "b_pos_rel": [
+      0.5,
+      10.0
+    ],
+    "b_state": 2,
+    "camera_dist_m": 12103.0,
+    "frames_inside_wall": 0,
+    "seconds": 25.001
+  },
+  "env_road": {
+    "building": true,
+    "building_reason": "",
+    "line": {
+      "built": true,
+      "built_modules": 16,
+      "corner_gap_m": 0.0,
+      "length_m": 48.0,
+      "max_joint_error_m": 0.0003,
+      "modules": 16,
+      "points": 3,
+      "removed": 0,
+      "type": "fence"
+    },
+    "line_y_minus_ground": [
+      -0.09,
+      0.02
+    ],
+    "spot": {
+      "height_range_40m": 1.7,
+      "pos": [
+        -8444.3,
+        446.8,
+        -7209.1
+      ],
+      "road_m": 20.0,
+      "settlement": "Vestli",
+      "settlement_edge_m": 2739.0,
+      "slope_deg": 2.1,
+      "solids_30m": {
+        "houses": 0,
+        "rocks": 0,
+        "trees": 57
+      },
+      "solids_60m": {
+        "houses": 0,
+        "rocks": 2,
+        "trees": 235
+      }
+    }
+  },
+  "env_settlement": {
+    "building": true,
+    "building_reason": "",
+    "line": {
+      "built": true,
+      "built_modules": 16,
+      "corner_gap_m": 0.0,
+      "length_m": 48.0,
+      "max_joint_error_m": 0.0002,
+      "modules": 16,
+      "points": 3,
+      "removed": 0,
+      "type": "fence"
+    },
+    "line_y_minus_ground": [
+      -0.03,
+      0.0
+    ],
+    "spot": {
+      "height_range_40m": 1.14,
+      "pos": [
+        -5020.0,
+        404.4,
+        -8634.6
+      ],
+      "road_m": 20.0,
+      "settlement": "Nordvik",
+      "settlement_edge_m": -140.0,
+      "slope_deg": 1.2,
+      "solids_30m": {
+        "houses": 0,
+        "rocks": 0,
+        "trees": 7
+      },
+      "solids_60m": {
+        "houses": 2,
+        "rocks": 0,
+        "trees": 24
+      }
+    }
+  },
+  "env_slope": {
+    "building": true,
+    "building_reason": "",
+    "fence": {
+      "built": true,
+      "built_modules": 7,
+      "corner_gap_m": 0.0,
+      "length_m": 21.0,
+      "max_joint_error_m": 0.0,
+      "modules": 7,
+      "points": 2,
+      "removed": 0,
+      "type": "fence"
+    },
+    "line": {
+      "built": true,
+      "built_modules": 48,
+      "corner_gap_m": 0.0002,
+      "length_m": 49.82,
+      "max_joint_error_m": 0.0004,
+      "modules": 48,
+      "points": 3,
+      "removed": 0,
+      "type": "hesco"
+    },
+    "line_y_minus_ground": [
+      -0.09,
+      -0.07
+    ],
+    "max_module_ground_gap_m": 0.08,
+    "spot": {
+      "height_range_40m": 5.71,
+      "pos": [
+        -7218.0,
+        413.8,
+        -7114.1
+      ],
+      "road_m": 1e99999,
+      "settlement": "Nordvik",
+      "settlement_edge_m": 2490.0,
+      "slope_deg": 5.9,
+      "solids_30m": {
+        "houses": 0,
+        "rocks": 0,
+        "trees": 0
+      },
+      "solids_60m": {
+        "houses": 0,
+        "rocks": 0,
+        "trees": 0
+      }
+    }
+  },
+  "environments": {
+    "forest": {
+      "height_range_40m": 1.23,
+      "pos": [
+        -7240.8,
+        447.6,
+        -8079.8
+      ],
+      "road_m": 1e99999,
+      "settlement": "Nordvik",
+      "settlement_edge_m": 2120.0,
+      "slope_deg": 1.3,
+      "solids_30m": {
+        "houses": 0,
+        "rocks": 0,
+        "trees": 42
+      },
+      "solids_60m": {
+        "houses": 0,
+        "rocks": 1,
+        "trees": 165
+      }
+    },
+    "meadow": {
+      "height_range_40m": 0.54,
+      "pos": [
+        -1106.8,
+        165.2,
+        -7885.3
+      ],
+      "road_m": 1e99999,
+      "settlement": "Bruvoll",
+      "settlement_edge_m": 1556.0,
+      "slope_deg": 0.1,
+      "solids_30m": {
+        "houses": 0,
+        "rocks": 0,
+        "trees": 0
+      },
+      "solids_60m": {
+        "houses": 0,
+        "rocks": 0,
+        "trees": 0
+      }
+    },
+    "road": {
+      "height_range_40m": 1.7,
+      "pos": [
+        -8444.3,
+        446.8,
+        -7209.1
+      ],
+      "road_m": 20.0,
+      "settlement": "Vestli",
+      "settlement_edge_m": 2739.0,
+      "slope_deg": 2.1,
+      "solids_30m": {
+        "houses": 0,
+        "rocks": 0,
+        "trees": 57
+      },
+      "solids_60m": {
+        "houses": 0,
+        "rocks": 2,
+        "trees": 235
+      }
+    },
+    "search_ms": 27,
+    "settlement": {
+      "height_range_40m": 1.14,
+      "pos": [
+        -5020.0,
+        404.4,
+        -8634.6
+      ],
+      "road_m": 20.0,
+      "settlement": "Nordvik",
+      "settlement_edge_m": -140.0,
+      "slope_deg": 1.2,
+      "solids_30m": {
+        "houses": 0,
+        "rocks": 0,
+        "trees": 7
+      },
+      "solids_60m": {
+        "houses": 2,
+        "rocks": 0,
+        "trees": 24
+      }
+    },
+    "slope": {
+      "height_range_40m": 5.71,
+      "pos": [
+        -7218.0,
+        413.8,
+        -7114.1
+      ],
+      "road_m": 1e99999,
+      "settlement": "Nordvik",
+      "settlement_edge_m": 2490.0,
+      "slope_deg": 5.9,
+      "solids_30m": {
+        "houses": 0,
+        "rocks": 0,
+        "trees": 0
+      },
+      "solids_60m": {
+        "houses": 0,
+        "rocks": 0,
+        "trees": 0
+      }
+    }
+  },
+  "failures": [],
+  "forest_clearing": {
+    "barracks_on_trunk": true,
+    "built": {
+      "barracks": true,
+      "command_post": true,
+      "fence": {
+        "built": true,
+        "built_modules": 37,
+        "corner_gap_m": 0.0,
+        "length_m": 111.0,
+        "max_joint_error_m": 0.0004,
+        "modules": 37,
+        "points": 6,
+        "removed": 0,
+        "type": "fence"
+      },
+      "gate": true,
+      "tower": true
+    },
+    "center": "(-7240.77, 447.649, -8079.775)",
+    "check_struct": 2,
+    "clearing_toggle_off": true,
+    "clearing_toggle_on": true,
+    "clearings_added": 42,
+    "collider_count_near": 80,
+    "drawn_instances_base_cells": 416,
+    "fence2": {
+      "built": true,
+      "built_modules": 1,
+      "corner_gap_m": 0.0,
+      "length_m": 6.0,
+      "max_joint_error_m": 0.0002,
+      "modules": 2,
+      "points": 2,
+      "removed": 1,
+      "type": "fence"
+    },
+    "fence_ids": [
+      3,
+      5
+    ],
+    "gate_post_to_fence_end_m": 0.0,
+    "inside": "(-7237.038, 447.6765, -8091.397)",
+    "off_built": false,
+    "off_reason": "blocked by a tree (pine a; C turns clearing on)",
+    "outside": "(-7248.825, 447.2389, -8058.441)",
+    "solids_15m_after": {
+      "houses": 0,
+      "rocks": 0,
+      "trees": 2
+    },
+    "square_trunks_after": 5,
+    "square_trunks_before": 17,
+    "trunks_left_in_footprints": 0,
+    "yaw": 0.3
+  },
+  "groundwork": {
+    "blend_collision_error_m": 0.03,
+    "blend_collision_probes": 8,
+    "built": true,
+    "center": "(-9317.311, 494.5372, -6681.56)",
+    "check": {
+      "level_m": 0.65,
+      "pad_y": 494.6
+    },
+    "collision_readback_delta_m": 0.0,
+    "fence_ground_gap_after_m": 0.0,
+    "footprint_corner_error_m": 0.021,
+    "max_terrain_change_m": 0.56,
+    "nav_faces_patch_error_m": 0.0,
+    "old_rule": "refused (uneven 1.3 m > 0.7 m)",
+    "place_call_ms": 47.037,
+    "rebuilt": true,
+    "restored_max_diff_m": 0.0,
+    "slope_5m_deg": 10.8,
+    "spot": {
+      "height_range_40m": 9.99,
+      "pos": [
+        -9317.3,
+        494.5,
+        -6681.6
+      ],
+      "road_m": 1e99999,
+      "settlement": "Vestli",
+      "settlement_edge_m": 2451.0,
+      "slope_deg": 11.0,
+      "solids_30m": {
+        "houses": 0,
+        "rocks": 0,
+        "trees": 0
+      },
+      "solids_60m": {
+        "houses": 0,
+        "rocks": 1,
+        "trees": 22
+      }
+    },
+    "timings": {
+      "cells_ms": 0.206,
+      "collision_patch_delta_m": 0.622772216796875,
+      "grass_ms": 1.318,
+      "grass_paint_ms": 0.232,
+      "level_ms": 3.779,
+      "level_shapes": 4,
+      "level_vertices": 36
+    }
+  },
+  "open_base": {
+    "concrete": {
+      "built": true,
+      "built_modules": 5,
+      "corner_gap_m": 0.0,
+      "length_m": 15.0,
+      "max_joint_error_m": 0.0,
+      "modules": 5,
+      "points": 3,
+      "removed": 0,
+      "type": "concrete_barrier"
+    },
+    "perimeter": {
+      "built": true,
+      "built_modules": 302,
+      "corner_gap_m": 0.0005,
+      "length_m": 320.16,
+      "max_joint_error_m": 0.001,
+      "modules": 302,
+      "points": 5,
+      "removed": 0,
+      "type": "hesco"
+    },
+    "placed": [
+      "cp",
+      "b1",
+      "b2",
+      "b3",
+      "storage",
+      "shelter",
+      "t1",
+      "t2"
+    ],
+    "structures": 25
+  },
+  "pass": true,
+  "performance": {
+    "dense_forest_spot": {
+      "height_range_40m": 6.68,
+      "pos": [
+        -6306.8,
+        421.5,
+        -7495.6
+      ],
+      "road_m": 228.1,
+      "settlement": "Nordvik",
+      "settlement_edge_m": 1531.0,
+      "slope_deg": 8.4,
+      "solids_30m": {
+        "houses": 0,
+        "rocks": 0,
+        "trees": 71
+      },
+      "solids_60m": {
+        "houses": 0,
+        "rocks": 1,
+        "trees": 271
+      }
+    },
+    "fps_dense_forest": {
+      "draw_calls": 1183.0,
+      "frame_ms_avg": 9.48,
+      "frame_ms_max": 10.06,
+      "frame_ms_p99": 9.99,
+      "frames": 240,
+      "nav_ms": 0.08,
+      "physics_ms": 0.44,
+      "veg": {
+        "active_cells": 236,
+        "active_instances": 64002,
+        "active_mmis": 1229,
+        "loaded_chunks": 25,
+        "loading_chunks": 0,
+        "queued": 0,
+        "worst_activation_ms": 3.23
+      }
+    },
+    "fps_in_base": {
+      "draw_calls": 817.0,
+      "frame_ms_avg": 1.99,
+      "frame_ms_max": 2.48,
+      "frame_ms_p99": 2.45,
+      "frames": 240,
+      "nav_ms": 0.05,
+      "physics_ms": 0.44
+    },
+    "fps_wall": {
+      "passed": false,
+      "stopped_z_from_wall": 0.88
+    },
+    "placement": {
+      "nav": {
+        "area_m": 440.0,
+        "async": true,
+        "async_done_ms": 134.226,
+        "bake_ms": 6.837,
+        "center": [
+          -1106.78625488281,
+          -7885.28759765625
+        ],
+        "faces": 101250,
+        "polygons": 6319,
+        "source_ms": 6.827,
+        "structure_obstructions": 321,
+        "tree_obstructions": 913,
+        "vehicle_obstructions": 0
+      },
+      "timings": {
+        "cells_ms": 21.726,
+        "collision_patch_delta_m": 0.051300048828125,
+        "grass_ms": 4.228,
+        "grass_paint_ms": 3.197,
+        "level_ms": 7.496,
+        "level_shapes": 4,
+        "level_vertices": 35
+      },
+      "worst_frame_ms": 32.6
+    },
+    "removal": {
+      "worst_frame_ms": 26.2
+    },
+    "rts_150m": {
+      "draw_calls": 346.0,
+      "frame_ms_avg": 1.84,
+      "frame_ms_max": 2.3,
+      "frame_ms_p99": 2.26,
+      "frames": 240,
+      "nav_ms": 0.51,
+      "physics_ms": 8.85
+    },
+    "rts_15m": {
+      "draw_calls": 313.0,
+      "frame_ms_avg": 2.09,
+      "frame_ms_max": 2.47,
+      "frame_ms_p99": 2.39,
+      "frames": 120,
+      "nav_ms": 0.07,
+      "physics_ms": 0.43
+    },
+    "rts_300m": {
+      "draw_calls": 354.0,
+      "frame_ms_avg": 1.92,
+      "frame_ms_max": 2.33,
+      "frame_ms_p99": 2.27,
+      "frames": 240,
+      "nav_ms": 0.07,
+      "physics_ms": 0.43
+    },
+    "rts_jump_to_forest": {
+      "dist_m": 800.0,
+      "nav": {
+        "area_m": 440.0,
+        "async": true,
+        "async_done_ms": 443.372,
+        "bake_ms": 122.364,
+        "center": [
+          -6306.84423828125,
+          -7495.5791015625
+        ],
+        "collision_ms": 398.646,
+        "faces": 101250,
+        "polygons": 23971,
+        "recenter": "async",
+        "recenter_wait_ms": 331.206,
+        "source_ms": 122.351,
+        "structure_obstructions": 0,
+        "tree_obstructions": 4572,
+        "vehicle_obstructions": 0
+      },
+      "worst_frame_ms": 410.4
+    }
+  },
+  "save_load": {
+    "bytes": 60254,
+    "clearings": 459,
+    "format": 2,
+    "groundwork_cleared_vs_saved_m": 0.56,
+    "groundwork_loaded_vs_saved_m": 0.0,
+    "identical_after_load": true,
+    "max_instance_offset_m": 0.0011,
+    "nav_structure_obstructions": 48,
+    "path": "C:/Users/Hafnor/AppData/Roaming/Godot/app_userdata/Fractured Nations/saves/ref_20km/construction.json",
+    "square_trunks_after_clear": 17,
+    "square_trunks_after_load": 5,
+    "square_trunks_built": 5
+  },
+  "soldier_out_of_open_base": {
+    "agent_path_rel": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        -0.1,
+        0.1
+      ],
+      [
+        -11.7,
+        9.1
+      ],
+      [
+        -12.4,
+        11.3
+      ],
+      [
+        -11.7,
+        12.8
+      ],
+      [
+        -5.3,
+        16.5
+      ],
+      [
+        -1.6,
+        18.7
+      ],
+      [
+        0.6,
+        19.9
+      ],
+      [
+        8.2,
+        26.4
+      ],
+      [
+        13.3,
+        30.7
+      ],
+      [
+        16.0,
+        33.0
+      ]
+    ],
+    "end_error_m": 1.23,
+    "frames_inside_walls": 0,
+    "has_body": true,
+    "map_path_rel": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        -0.1,
+        0.1
+      ],
+      [
+        -11.7,
+        9.1
+      ],
+      [
+        -12.4,
+        11.3
+      ],
+      [
+        -11.7,
+        12.8
+      ],
+      [
+        -5.3,
+        16.5
+      ],
+      [
+        -1.6,
+        18.7
+      ],
+      [
+        0.6,
+        19.9
+      ],
+      [
+        8.2,
+        26.4
+      ],
+      [
+        13.3,
+        30.7
+      ],
+      [
+        16.0,
+        33.0
+      ]
+    ],
+    "path_len_m": 53.2,
+    "path_points": 11,
+    "seconds": 11.464,
+    "state": 2,
+    "straight_m": 36.7,
+    "structure_obstructions": 321,
+    "trail_rel": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        -7.0,
+        5.5
+      ],
+      [
+        -11.6,
+        12.2
+      ],
+      [
+        -4.1,
+        17.1
+      ],
+      [
+        3.2,
+        22.3
+      ],
+      [
+        10.1,
+        28.0
+      ]
+    ],
+    "worst_physics_wait_ms": 16.8
+  },
+  "soldier_through_gate": {
+    "agent_path_rel": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        -0.6,
+        0.5
+      ],
+      [
+        -5.4,
+        4.7
+      ],
+      [
+        -5.4,
+        9.9
+      ],
+      [
+        -4.8,
+        11.4
+      ],
+      [
+        -4.4,
+        12.6
+      ],
+      [
+        -2.0,
+        19.3
+      ],
+      [
+        -0.1,
+        24.4
+      ],
+      [
+        0.6,
+        26.4
+      ],
+      [
+        -0.1,
+        27.9
+      ],
+      [
+        -2.1,
+        28.8
+      ],
+      [
+        -4.1,
+        29.6
+      ],
+      [
+        -4.6,
+        29.9
+      ],
+      [
+        -9.6,
+        32.0
+      ],
+      [
+        -11.8,
+        33.0
+      ]
+    ],
+    "end_error_m": 1.24,
+    "frames_inside_walls": 0,
+    "has_body": true,
+    "map_path_rel": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        -0.6,
+        0.5
+      ],
+      [
+        -5.4,
+        4.7
+      ],
+      [
+        -5.4,
+        9.9
+      ],
+      [
+        -4.8,
+        11.4
+      ],
+      [
+        -4.4,
+        12.6
+      ],
+      [
+        -2.0,
+        19.3
+      ],
+      [
+        -0.1,
+        24.4
+      ],
+      [
+        0.6,
+        26.4
+      ],
+      [
+        -0.1,
+        27.9
+      ],
+      [
+        -2.1,
+        28.8
+      ],
+      [
+        -4.1,
+        29.6
+      ],
+      [
+        -4.6,
+        29.9
+      ],
+      [
+        -9.6,
+        32.0
+      ],
+      [
+        -11.8,
+        33.0
+      ]
+    ],
+    "path_len_m": 44.3,
+    "path_points": 15,
+    "seconds": 9.45,
+    "state": 2,
+    "straight_m": 35.0,
+    "structure_obstructions": 48,
+    "trail_rel": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        -5.0,
+        6.7
+      ],
+      [
+        -3.3,
+        15.4
+      ],
+      [
+        -0.3,
+        23.8
+      ],
+      [
+        -4.7,
+        29.9
+      ]
+    ],
+    "worst_physics_wait_ms": 30.0
+  },
+  "startup": {
+    "main_scene": "res://scenes/game/world_ref_20km.tscn",
+    "mode": 0,
+    "possessed": 1,
+    "roads_cells": 5667,
+    "settlements": 26,
+    "units": 31,
+    "water_cells": 2115,
+    "world": "ref_20km",
+    "world_m": 20000.0,
+    "zoom_max": 200.0,
+    "zoom_min": 5.0
+  },
+  "travel_and_return": {
+    "away": {
+      "collision_cells": 0,
+      "collision_shapes": 0,
+      "drawn_instances": 0,
+      "indexed_cells": 8,
+      "instances": 451,
+      "multimeshes": 0,
+      "structures": 25,
+      "visible_cells": 0
+    },
+    "back": {
+      "collision_cells": 2,
+      "collision_shapes": 55,
+      "drawn_instances": 115,
+      "indexed_cells": 8,
+      "instances": 451,
+      "multimeshes": 12,
+      "structures": 25,
+      "visible_cells": 5
+    },
+    "drawn_instances_base_cells_after": 416,
+    "drawn_instances_base_cells_before": 416,
+    "far_dist_m": 22868.0,
+    "forest_chunk_unloaded_while_away": true,
+    "instance_transforms_identical": true,
+    "jump_back_worst_ms": 401.9,
+    "jump_out_worst_ms": 397.1,
+    "nav_back": {
+      "area_m": 440.0,
+      "async": true,
+      "async_done_ms": 315.409,
+      "bake_ms": 121.62,
+      "center": [
+        -7237.03759765625,
+        -8091.39697265625
+      ],
+      "collision_ms": 392.08,
+      "faces": 101700,
+      "polygons": 12017,
+      "recenter": "async",
+      "recenter_wait_ms": 200.145,
+      "source_ms": 121.608,
+      "structure_obstructions": 48,
+      "tree_obstructions": 2154,
+      "vehicle_obstructions": 0
+    },
+    "records_identical": true,
+    "trunks_in_cleared_footprint_before_after": [
+      0,
+      0
+    ],
+    "veg_away": {
+      "active_cells": 252,
+      "active_instances": 71783,
+      "active_mmis": 1270,
+      "loaded_chunks": 16,
+      "loading_chunks": 0,
+      "queued": 0,
+      "worst_activation_ms": 0.41
+    },
+    "veg_back": {
+      "active_cells": 248,
+      "active_instances": 68320,
+      "active_mmis": 980,
+      "loaded_chunks": 16,
+      "loading_chunks": 0,
+      "queued": 0,
+      "worst_activation_ms": 3.35
+    }
+  },
+  "water": {
+    "reason": "water",
+    "spot": [
+      -1891.9,
+      141.5,
+      -9367.9
+    ],
+    "terrain_h": 141.47,
+    "water_h": 144.66
+  }
+}

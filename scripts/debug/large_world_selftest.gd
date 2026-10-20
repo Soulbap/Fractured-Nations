@@ -35,7 +35,7 @@ func run(args: PackedStringArray) -> void:
 	var veg := demo.vegetation
 	await _physics(60)
 
-	# 1. Layout: 26 soldiers + 3 vehicles at three sites kilometers apart; detail only at A.
+	# 1. Layout: 28 soldiers (UNIT-01A: 12 at site A for squads Alpha and Bravo) + 3 vehicles at three sites kilometers apart; detail only at A.
 	var sites := demo.sites
 	var site_d := []
 	for i in 3:
@@ -59,7 +59,7 @@ func run(args: PackedStringArray) -> void:
 		"soldiers_per_site": per_site, "site_distances_m": site_d, "bodies": sim.bodies.size(), "proxies": sim.proxies.size(),
 		"bodies_at_site_a": near_a_bodies, "soldiers_on_floor": [floor_ok, floor_n], "terrain_collision_mode": demo.terrain.collision_mode,
 		"nav_first_bake": demo.nav_info, "possessed": game.possessed_id, "mode": game.mode})
-	_expect(state.count_of(UnitState.Kind.SOLDIER) == 26 and per_site == [10, 8, 8], "unexpected soldier layout %s" % str(per_site))
+	_expect(state.count_of(UnitState.Kind.SOLDIER) == 28 and per_site == [12, 8, 8], "unexpected soldier layout %s" % str(per_site))
 	_expect(sim.bodies.size() + sim.proxies.size() == state.units.size(), "a unit has neither a body nor a proxy")
 	_expect(sim.bodies.size() == near_a_bodies and sim.bodies.size() > 0 and sim.bodies.size() < state.units.size(), "bodies exist away from the camera")
 	_expect(floor_ok == floor_n and floor_n > 0, "%d of %d soldiers not on the floor at start" % [floor_n - floor_ok, floor_n])
@@ -219,11 +219,12 @@ func run(args: PackedStringArray) -> void:
 		_press(KEY_TAB)
 		await _physics(3)
 
-	# 7. N cycles through every soldier of the world, 26 presses visit each once.
+	# 7. N cycles through every soldier of the world, one press per soldier visits each once.
 	var seen := {}
 	var far_jumps := 0
 	var last_pos := state.get_unit(game.possessed_id).position
-	for i in 26:
+	var n_soldiers := state.count_of(UnitState.Kind.SOLDIER)
+	for i in n_soldiers:
 		_press(KEY_N)
 		await _physics(1)
 		var cu := state.get_unit(game.possessed_id)
@@ -235,7 +236,7 @@ func run(args: PackedStringArray) -> void:
 	var cb := game.possessed_body()
 	_log("cycle_all_soldiers", {"distinct_visited": seen.size(), "far_jumps_over_1km": far_jumps, "final_on_floor": cb != null and cb.is_on_floor(),
 		"bodies": sim.bodies.size(), "proxies": sim.proxies.size(), "unique_units": state.units.size()})
-	_expect(seen.size() == 26, "N visited %d of 26 soldiers" % seen.size())
+	_expect(seen.size() == n_soldiers, "N visited %d of %d soldiers" % [seen.size(), n_soldiers])
 	_expect(sim.bodies.size() + sim.proxies.size() == state.units.size() and cb != null and cb.is_on_floor(), "tier bookkeeping broken after cycling")
 
 	# 8. Return to site A (key 1) and compare every unit with what we left.

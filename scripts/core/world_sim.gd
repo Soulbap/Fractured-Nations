@@ -23,6 +23,8 @@ signal view_added(id: int, view: Node3D)
 @export var abstract_arrive_m := 1.0
 
 var state := WorldState.new()
+## UNIT-01A: turns squad orders (state.squads) into per-unit move orders.
+var squads := SquadControl.new(self)
 ## id -> Node3D body (detailed tier)
 var bodies := {}
 ## id -> UnitProxy (abstract tier visual; a unit has a body or a proxy, never both)
@@ -66,11 +68,42 @@ func view_of(id: int) -> Node3D:
 	return bodies.get(id) if bodies.has(id) else proxies.get(id)
 
 
+func _ready() -> void:
+	state.restored.connect(_on_restored)
+	state.unit_removed.connect(_on_unit_removed)
+
+
+## A record went away (load without that unit): its body or proxy goes too.
+func _on_unit_removed(id: int) -> void:
+	for reg: Dictionary in [bodies, proxies]:
+		var n: Node3D = reg.get(id)
+		if n:
+			reg.erase(id)
+			n.queue_free()
+
+
 func _physics_process(delta: float) -> void:
 	state.time += delta
 	for u in state.units.values():
 		if not u.has_body:
 			_abstract_step(u, delta)
+	squads.update(delta)
+
+
+## A save was loaded into the existing records: bodies would write their old position
+## back on the next tick, so they jump to the loaded one first.
+func _on_restored() -> void:
+	for id in bodies:
+		var b: Node3D = bodies[id]
+		var u := state.get_unit(id)
+		if u == null:
+			continue
+		if b is SoldierBody:
+			(b as SoldierBody).teleport(u.position, u.yaw)
+			(b as SoldierBody).reset_order_tracking()
+		else:
+			b.global_position = u.position
+			b.rotation.y = u.yaw
 
 
 func _abstract_step(u: UnitState, delta: float) -> void:

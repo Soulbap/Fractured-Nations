@@ -50,7 +50,7 @@ func run(args: PackedStringArray) -> void:
 	await _frames(2)
 	var zmin := rig.zoom
 	_log("rts_zoom_limits", {"zoom_min_property": rig.zoom_min, "zoom_max_property": rig.zoom_max, "reached_max": snappedf(zmax, 0.01), "reached_min": snappedf(zmin, 0.01)})
-	_expect(is_equal_approx(zmax, 300.0) and is_equal_approx(zmin, 15.0), "zoom limits not 15..300 m (%.1f..%.1f)" % [zmin, zmax])
+	_expect(is_equal_approx(zmax, rig.zoom_max) and is_equal_approx(zmin, rig.zoom_min) and is_equal_approx(rig.zoom_min, 5.0) and is_equal_approx(rig.zoom_max, 200.0), "zoom limits not 5..200 m (%.1f..%.1f)" % [zmin, zmax])
 
 	# 1. Construction mode with B.
 	rig.frame(base, 0.0, 140.0)

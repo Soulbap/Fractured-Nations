@@ -18,6 +18,13 @@ extends FPSController
 @export var turn_speed := 8.0
 ## Repath attempts before an order with no navigation path is reported as BLOCKED.
 @export var max_empty_path_s := 4.0
+## UNIT-01A stuck handling: a soldier that walks but gains less than stuck_progress_m in
+## stuck_s first re-queries its path and ignores crowd avoidance for unstick_s (two
+## agents can hold each other in a narrow gap); still stuck after another stuck_s, the
+## order ends as BLOCKED instead of walking in place forever.
+@export var stuck_s := 3.0
+@export var stuck_progress_m := 0.8
+@export var unstick_s := 1.5
 
 var unit: UnitState
 var sim: WorldSim
@@ -34,6 +41,10 @@ var selected := false:
 var _safe_velocity := Vector3.ZERO
 var _applied_target := Vector3.INF
 var _empty_path_s := 0.0
+var _progress_ref := Vector3.INF
+var _progress_t := 0.0
+var _stuck_stage := 0
+var _unstick_left := 0.0
 
 
 func _ready() -> void:
@@ -90,6 +101,7 @@ func _ai_step(delta: float) -> void:
 			nav.target_position = unit.order_target
 			unit.move_state = UnitState.MoveState.MOVING
 			_empty_path_s = 0.0
+			_reset_stuck()
 		var flat := unit.order_target - global_position
 		flat.y = 0.0
 		var remaining := flat.length()
@@ -125,13 +137,51 @@ func _ai_step(delta: float) -> void:
 				dir = dir.normalized()
 				desired = dir * walk_speed
 				_face(dir, delta)
+		if desired != Vector3.ZERO and unit.order == UnitState.Order.MOVE:
+			_check_stuck(delta, remaining)
 	else:
 		_applied_target = Vector3.INF
+	if _unstick_left > 0.0:
+		_unstick_left -= delta
+		_apply_velocity(desired, delta)
+		return
 	if nav.avoidance_enabled:
 		nav.velocity = desired
 		_apply_velocity(_safe_velocity if desired != Vector3.ZERO else Vector3.ZERO, delta)
 	else:
 		_apply_velocity(desired, delta)
+
+
+## The record's order was replaced from outside (load): apply it afresh.
+func reset_order_tracking() -> void:
+	_applied_target = Vector3.INF
+	_safe_velocity = Vector3.ZERO
+	_empty_path_s = 0.0
+	_reset_stuck()
+
+
+func _reset_stuck() -> void:
+	_progress_ref = global_position
+	_progress_t = 0.0
+	_stuck_stage = 0
+	_unstick_left = 0.0
+
+
+func _check_stuck(delta: float, remaining: float) -> void:
+	if not _progress_ref.is_finite() or global_position.distance_to(_progress_ref) > stuck_progress_m:
+		_progress_ref = global_position
+		_progress_t = 0.0
+		return
+	_progress_t += delta
+	if _progress_t < stuck_s:
+		return
+	_progress_t = 0.0
+	if _stuck_stage == 0:
+		_stuck_stage = 1
+		nav.target_position = unit.order_target
+		_unstick_left = unstick_s
+	else:
+		_finish_order(remaining)
 
 
 func _finish_order(remaining: float) -> void:

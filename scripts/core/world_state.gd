@@ -10,6 +10,10 @@ extends RefCounted
 signal unit_added(unit: UnitState)
 signal unit_removed(id: int)
 signal order_changed(unit: UnitState)
+## UNIT-01A: a squad was created, removed, or its order / formation / membership changed.
+signal squad_changed(squad: SquadState)
+## apply_snapshot() replaced the state of existing records in place (load).
+signal restored
 
 const FACTION_NAMES: Array[String] = ["North", "South"]
 const FACTION_COLORS: Array[Color] = [Color(0.3, 0.55, 1.0), Color(1.0, 0.4, 0.2)]
@@ -20,7 +24,10 @@ var units := {}
 var time := 0.0
 ## Placed structures (WORLD-BASE-01): buildings and defensive lines, same no-node rule.
 var construction := ConstructionState.new()
+## UNIT-01A: squad id -> SquadState. Soldiers stay in `units`; a squad lists member ids.
+var squads := {}
 var _next_id := 1
+var _next_squad_id := 1
 
 
 func add_unit(kind: UnitState.Kind, faction: int, position: Vector3, yaw := 0.0, unit_name := "") -> UnitState:
@@ -40,6 +47,9 @@ func add_unit(kind: UnitState.Kind, faction: int, position: Vector3, yaw := 0.0,
 
 func remove_unit(id: int) -> void:
 	if units.erase(id):
+		for sq: SquadState in squads.values():
+			if sq.has_member(id):
+				_drop_member(sq, id)
 		unit_removed.emit(id)
 
 
@@ -109,6 +119,84 @@ func issue_group_move(ids: Array, target: Vector3, spacing := 2.5) -> int:
 	return movers.size()
 
 
+## Individual orders for soldiers that may belong to squads: they leave their squad's
+## order (detached) until the squad gets its next order.
+func issue_individual_moves(ids: Array, target: Vector3, spacing := 2.5) -> int:
+	for id in ids:
+		detach(id)
+	return issue_group_move(ids, target, spacing)
+
+
+func detach(unit_id: int) -> void:
+	var sq := squad_of(unit_id)
+	if sq and not sq.detached.has(unit_id):
+		sq.detached.append(unit_id)
+		squad_changed.emit(sq)
+
+
+# --- Squads (UNIT-01A) ------------------------------------------------------------
+
+## Creates a squad from soldiers that are not in another squad yet. The leader defaults
+## to the first member.
+func add_squad(squad_name: String, faction: int, member_ids: Array, leader := -1) -> SquadState:
+	var sq := SquadState.new()
+	sq.id = _next_squad_id
+	_next_squad_id += 1
+	sq.squad_name = squad_name
+	sq.faction = faction
+	for id in member_ids:
+		var u := get_unit(id)
+		if u and u.kind == UnitState.Kind.SOLDIER and squad_of(id) == null:
+			sq.members.append(id)
+	if sq.members.is_empty():
+		return null
+	sq.leader_id = leader if sq.members.has(leader) else sq.members[0]
+	squads[sq.id] = sq
+	squad_changed.emit(sq)
+	return sq
+
+
+func get_squad(id: int) -> SquadState:
+	return squads.get(id)
+
+
+## The squad a unit belongs to, or null.
+func squad_of(unit_id: int) -> SquadState:
+	for sq: SquadState in squads.values():
+		if sq.has_member(unit_id):
+			return sq
+	return null
+
+
+func all_squads() -> Array:
+	var out := squads.values()
+	out.sort_custom(func(a: SquadState, b: SquadState) -> bool: return a.id < b.id)
+	return out
+
+
+func set_leader(squad_id: int, unit_id: int) -> bool:
+	var sq := get_squad(squad_id)
+	if sq == null or not sq.has_member(unit_id):
+		return false
+	sq.leader_id = unit_id
+	squad_changed.emit(sq)
+	return true
+
+
+func _drop_member(sq: SquadState, unit_id: int) -> void:
+	var i := sq.members.find(unit_id)
+	if i >= 0:
+		sq.members.remove_at(i)
+	i = sq.detached.find(unit_id)
+	if i >= 0:
+		sq.detached.remove_at(i)
+	if sq.members.is_empty():
+		squads.erase(sq.id)
+	elif sq.leader_id == unit_id:
+		sq.leader_id = sq.members[0]
+	squad_changed.emit(sq)
+
+
 func halt(id: int) -> void:
 	var u := get_unit(id)
 	if u == null:
@@ -132,7 +220,11 @@ func snapshot() -> Dictionary:
 	var list := []
 	for u in all_units():
 		list.append(u.to_dict())
-	return {"time": time, "next_id": _next_id, "units": list, "construction": construction.to_dict()}
+	var sq_list := []
+	for sq in all_squads():
+		sq_list.append(sq.to_dict())
+	return {"time": time, "next_id": _next_id, "units": list, "construction": construction.to_dict(),
+		"squads": sq_list, "next_squad_id": _next_squad_id}
 
 
 func restore(snap: Dictionary) -> void:
@@ -145,3 +237,79 @@ func restore(snap: Dictionary) -> void:
 		unit_added.emit(u)
 	if snap.has("construction"):
 		construction.from_dict(snap.construction)
+	_restore_squads(snap)
+
+
+## Loads a snapshot without replacing the record objects of units that exist in both:
+## their fields are overwritten in place, so bodies and proxies that hold them stay
+## valid. Units only in the snapshot are added, units missing from it removed. Squads are
+## replaced. Construction is saved separately (ConstructionState JSON) and not touched.
+## Returns {updated, added, removed}.
+func apply_snapshot(snap: Dictionary) -> Dictionary:
+	var seen := {}
+	var added := 0
+	var updated := 0
+	for d in snap.get("units", []):
+		var fresh := UnitState.from_dict(d)
+		seen[fresh.id] = true
+		var u := get_unit(fresh.id)
+		if u == null:
+			units[fresh.id] = fresh
+			added += 1
+			unit_added.emit(fresh)
+			continue
+		u.unit_name = fresh.unit_name
+		u.kind = fresh.kind
+		u.faction = fresh.faction
+		u.position = fresh.position
+		u.yaw = fresh.yaw
+		u.velocity = Vector3.ZERO
+		u.health = fresh.health
+		u.max_health = fresh.max_health
+		u.speed = fresh.speed
+		u.order = fresh.order
+		u.order_target = fresh.order_target
+		u.move_state = fresh.move_state
+		updated += 1
+	var removed := 0
+	for id in units.keys():
+		if not seen.has(id):
+			remove_unit(id)
+			removed += 1
+	time = snap.get("time", time)
+	_next_id = maxi(_next_id, snap.get("next_id", 1))
+	_restore_squads(snap)
+	restored.emit()
+	return {"updated": updated, "added": added, "removed": removed}
+
+
+func _restore_squads(snap: Dictionary) -> void:
+	squads.clear()
+	for d in snap.get("squads", []):
+		var sq := SquadState.from_dict(d)
+		squads[sq.id] = sq
+	_next_squad_id = snap.get("next_squad_id", squads.size() + 1)
+	for sq: SquadState in squads.values():
+		squad_changed.emit(sq)
+
+
+## Text save of units and squads (var_to_str keeps Vector3 and packed arrays exact).
+func save_file(path: String) -> Error:
+	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
+	var snap := snapshot()
+	snap.erase("construction")
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f == null:
+		return FileAccess.get_open_error()
+	f.store_string(var_to_str(snap))
+	f.close()
+	return OK
+
+
+func load_file(path: String) -> Variant:
+	if not FileAccess.file_exists(path):
+		return ERR_FILE_NOT_FOUND
+	var snap: Variant = str_to_var(FileAccess.get_file_as_string(path))
+	if not snap is Dictionary:
+		return ERR_PARSE_ERROR
+	return apply_snapshot(snap)

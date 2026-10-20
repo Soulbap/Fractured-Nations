@@ -13,7 +13,8 @@
 ##
 ## Command line (after "--"): --core-test [--shots]  scripted checks, see CoreSelfTest;
 ## --large-test [--shots]  the 20 km checks, see LargeWorldSelfTest; --base-test, see BaseSelfTest;
-## --integration-test [--shots]  construction on the reference world, see IntegrationSelfTest.
+## --integration-test [--shots]  construction on the reference world, see IntegrationSelfTest;
+## --squad-test [--shots]  UNIT-01A squads and orders, see SquadSelfTest.
 class_name CoreDemo
 extends Node3D
 
@@ -54,6 +55,7 @@ var _selftest: CoreSelfTest
 var _large_selftest: LargeWorldSelfTest
 var _base_selftest: BaseSelfTest
 var _integration_selftest: IntegrationSelfTest
+var _squad_selftest: SquadSelfTest
 
 
 func _ready() -> void:
@@ -147,6 +149,7 @@ func _setup_construction() -> void:
 		construction.game = game
 		construction.terrain = terrain
 		construction.save_path = "user://saves/%s/construction.json" % config.world_name
+		construction.world_state = sim.state
 		game.mode_changed.connect(func(m: int) -> void:
 			if m != GameController.Mode.RTS and construction.active:
 				construction.set_active(false))
@@ -209,6 +212,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	if "--large-test" in args:
 		_large_selftest = LargeWorldSelfTest.new(self)
 		_large_selftest.run.call_deferred(args)
+	elif "--squad-test" in args:
+		_squad_selftest = SquadSelfTest.new(self)
+		_squad_selftest.run.call_deferred(args)
 	elif "--integration-test" in args:
 		_integration_selftest = IntegrationSelfTest.new(self)
 		_integration_selftest.run.call_deferred(args)
@@ -218,16 +224,34 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 
 
 func _spawn_large_world() -> void:
-	# Site A: 10 North. Site B: 8 South. Site C: 4 North facing 4 South. One vehicle each.
-	_spawn_group(sites[0].position + Vector3(0, 0, 8), 0, 10, 5, 0.0)
+	# Site A: 12 North (squads Alpha 8 + Bravo 4). Site B: 8 South (4 in squad Sierra). Site C:
+	# 4 North facing 4 South, unorganized. One vehicle each.
+	_spawn_group(sites[0].position + Vector3(0, 0, 8), 0, 12, 6, 0.0)
 	_spawn_vehicle(sites[0].position + Vector3(-26, 0, 14), 0, 0.0, 0)
 	_spawn_group(sites[1].position + Vector3(0, 0, 8), 1, 8, 4, 0.0)
 	_spawn_vehicle(sites[1].position + Vector3(24, 0, 12), 1, PI * 0.5, 1)
 	_spawn_group(sites[2].position + Vector3(-12, 0, 0), 0, 4, 4, PI * 0.5)
 	_spawn_group(sites[2].position + Vector3(12, 0, 0), 1, 4, 4, -PI * 0.5)
 	_spawn_vehicle(sites[2].position + Vector3(0, 0, 22), 0, 0.3, 2)
+	_make_squads()
 	spawn_info = {"soldiers": sim.state.count_of(UnitState.Kind.SOLDIER), "vehicles": sim.state.count_of(UnitState.Kind.VEHICLE),
+		"squads": sim.state.squads.size(),
 		"sites": sites.map(func(s: Dictionary) -> Array: return [s.position.x, s.position.z])}
+
+
+## UNIT-01A test squads from the soldiers standing at sites A and B.
+func _make_squads() -> void:
+	var a: Array = _soldiers_near(sites[0].position)
+	sim.state.add_squad("Alpha", 0, a.slice(0, 8).map(func(u: UnitState) -> int: return u.id))
+	sim.state.add_squad("Bravo", 0, a.slice(8, 12).map(func(u: UnitState) -> int: return u.id))
+	var b: Array = _soldiers_near(sites[1].position)
+	# The other four South soldiers at B keep their individual start order (WORLD-CORE-02 test).
+	sim.state.add_squad("Sierra", 1, b.slice(4, 8).map(func(u: UnitState) -> int: return u.id))
+
+
+func _soldiers_near(p: Vector3) -> Array:
+	return sim.state.units_where(func(u: UnitState) -> bool:
+		return u.kind == UnitState.Kind.SOLDIER and Vector2(u.position.x - p.x, u.position.z - p.z).length() < 60.0)
 
 
 ## Rows of soldiers around origin; yaw 0 faces -Z, rows extend along the facing's right.
@@ -246,14 +270,13 @@ func _spawn_vehicle(pos: Vector3, faction: int, yaw: float, site: int) -> void:
 		"%s-V%d" % ["ABC"[site], site + 1])
 
 
-## Orders that run from the start: 3 soldiers at site A walk 60 m, 4 South soldiers at
+## Orders that run from the start: squad Bravo at site A walks 60 m, 4 South soldiers at
 ## site B walk 300 m (abstract tier, nobody is watching), 3 at site C walk 250 m.
 func _issue_large_orders() -> void:
-	var by_site := func(i: int) -> Array:
-		return sim.state.units_where(func(u: UnitState) -> bool:
-			return u.kind == UnitState.Kind.SOLDIER and Vector2(u.position.x - sites[i].position.x, u.position.z - sites[i].position.z).length() < 60.0)
-	var a: Array = by_site.call(0)
-	sim.state.issue_group_move([a[7].id, a[8].id, a[9].id], on_ground(sites[0].position.x + 55.0, sites[0].position.z - 40.0), 3.0)
+	var by_site := func(i: int) -> Array: return _soldiers_near(sites[i].position)
+	for sq: SquadState in sim.state.all_squads():
+		if sq.squad_name == "Bravo":
+			sim.squads.order_move([sq.id], on_ground(sites[0].position.x + 55.0, sites[0].position.z - 40.0))
 	var b: Array = by_site.call(1)
 	sim.state.issue_group_move([b[0].id, b[1].id, b[2].id, b[3].id], on_ground(sites[1].position.x - 220.0, sites[1].position.z - 200.0), 3.0)
 	var c: Array = by_site.call(2)

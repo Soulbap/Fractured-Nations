@@ -2,7 +2,14 @@
 ##
 ## Selection is screen-space (nearest projected unit within a few pixels, or a drag
 ## box), which works at any zoom. Orders go to WorldState only; nothing here moves a
-## unit. The ground point of a move order comes from a physics ray against the terrain
+## unit.
+##
+## UNIT-01A squads: a squad counts as selected when all its members are (Ctrl+click on a
+## soldier or the squad panel selects them). Orders go to selected squads as squad
+## orders (formation slots, see SquadControl) and to the other selected soldiers as
+## individual orders, which detach them from their squad order. Keys: RMB move, H hold,
+## F then click a unit = follow it (or its squad), G regroup on the leader, Shift+G
+## regroup at the cursor, V line / column, [ ] spacing. The ground point of a move order comes from a physics ray against the terrain
 ## collision, with Terrain3D's height-map ray march as fallback.
 class_name RTSController
 extends Node
@@ -33,6 +40,11 @@ var drag_start := Vector2.INF
 var drag_current := Vector2.ZERO
 var dragging := false
 var last_order_target := Vector3.INF
+## Waiting for a click on the unit to follow (F).
+var follow_pick := false
+## Short feedback line for the HUD.
+var message := ""
+var _message_until := 0.0
 
 var _marker: MeshInstance3D
 var _marker_until := 0.0
@@ -40,6 +52,7 @@ var _marker_until := 0.0
 
 func _ready() -> void:
 	GameController.ensure_input_actions()
+	_ensure_squad_actions()
 	set_process_unhandled_input(false)
 	_marker = MeshInstance3D.new()
 	var cyl := CylinderMesh.new()
@@ -59,6 +72,7 @@ func set_active(on: bool) -> void:
 	set_process_unhandled_input(on)
 	if not on:
 		_end_drag()
+		follow_pick = false
 
 
 func _process(_delta: float) -> void:
@@ -68,6 +82,10 @@ func _process(_delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT and follow_pick:
+			if event.pressed:
+				order_follow_at(event.position)
+			return
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
 				drag_start = event.position
@@ -82,7 +100,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				if dragging:
 					_box_select(Rect2(drag_start, drag_current - drag_start).abs(), event.shift_pressed)
 				elif drag_start != Vector2.INF:
-					_click_select(event.position, event.shift_pressed)
+					if event.ctrl_pressed:
+						_click_select_squad(event.position, event.shift_pressed)
+					else:
+						_click_select(event.position, event.shift_pressed)
 				_end_drag()
 		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 			order_move_at(event.position)
@@ -95,8 +116,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		if id > 0:
 			possess_requested.emit(id)
 	elif event.is_action_pressed("halt"):
-		for id in selected:
-			sim.state.halt(id)
+		order_hold()
+	elif event.is_action_pressed("squad_follow"):
+		if selected_squads().is_empty():
+			_say("Follow: select a squad first")
+		else:
+			follow_pick = true
+			_say("Follow: click the soldier or squad to follow (Esc cancels)")
+	elif event.is_action_pressed("squad_regroup"):
+		var at := ground_point(get_viewport().get_mouse_position()) if Input.is_key_pressed(KEY_SHIFT) else Vector3.INF
+		order_regroup(at)
+	elif event.is_action_pressed("squad_formation"):
+		toggle_formation()
+	elif event.is_action_pressed("squad_spacing_down"):
+		change_spacing(-0.5)
+	elif event.is_action_pressed("squad_spacing_up"):
+		change_spacing(0.5)
 	elif event.is_action_pressed("select_all"):
 		var ids := []
 		for u in sim.state.soldiers():
@@ -104,10 +139,17 @@ func _unhandled_input(event: InputEvent) -> void:
 				ids.append(u.id)
 		select(ids)
 	elif event.is_action_pressed("ui_cancel"):
-		select([])
+		if follow_pick:
+			follow_pick = false
+			_say("Follow cancelled")
+		else:
+			select([])
 
 
-func select(ids: Array) -> void:
+func select(p_ids: Array) -> void:
+	# Callers build the new list from Array(selected), which is the same array, not a
+	# copy: take a copy before clearing (UNIT-01A; Shift+click add selected nothing).
+	var ids := p_ids.duplicate()
 	for id in selected:
 		var v := sim.view_of(id)
 		if v and "selected" in v:
@@ -137,17 +179,23 @@ func first_selected_soldier() -> int:
 	return -1
 
 
-## Issues a group move order to the selected soldiers toward the ground under a
-## screen position. Returns the number of soldiers ordered.
+## Issues a move order toward the ground under a screen position: squad orders for the
+## selected squads, individual orders for the other selected soldiers. Returns the
+## number of soldiers ordered.
 func order_move_at(screen_pos: Vector2) -> int:
 	var hit := ground_point(screen_pos)
 	if not hit.is_finite():
 		return 0
-	var ids := []
-	for id in selected:
-		if _can_command(id):
-			ids.append(id)
-	var n := sim.state.issue_group_move(ids, hit, formation_spacing)
+	return order_move(hit)
+
+
+func order_move(hit: Vector3) -> int:
+	var sqs := selected_squads()
+	var n := sim.squads.order_move(sqs, hit) if not sqs.is_empty() else 0
+	var loose := loose_selected()
+	if not loose.is_empty():
+		var at := hit if sqs.is_empty() else hit + _beside_squads(sqs)
+		n += sim.state.issue_individual_moves(loose, at, formation_spacing)
 	if n > 0:
 		last_order_target = hit
 		_marker.global_position = hit + Vector3.UP * 0.1
@@ -155,6 +203,144 @@ func order_move_at(screen_pos: Vector2) -> int:
 		_marker_until = Time.get_ticks_msec() / 1000.0 + 2.5
 		order_issued.emit(n, hit)
 	return n
+
+
+## H: selected squads hold; other selected soldiers stop.
+func order_hold() -> void:
+	sim.squads.order_hold(selected_squads())
+	for id in loose_selected():
+		sim.state.detach(id)
+		sim.state.halt(id)
+	_say("Hold" if not selected.is_empty() else "Nothing selected")
+
+
+## F + click: the selected squads follow the clicked soldier (its squad if it has one).
+func order_follow_at(screen_pos: Vector2) -> int:
+	follow_pick = false
+	var id := _unit_at(screen_pos)
+	return order_follow(id)
+
+
+func order_follow(id: int) -> int:
+	var u := sim.state.get_unit(id)
+	if u == null or u.kind != UnitState.Kind.SOLDIER:
+		_say("Follow: no soldier there")
+		return 0
+	var n := sim.squads.order_follow(selected_squads(), id)
+	var sq := sim.state.squad_of(id)
+	_say(("Following %s" % (sq.squad_name if sq else u.unit_name)) if n > 0 else "Follow: a squad cannot follow itself")
+	return n
+
+
+func order_regroup(at := Vector3.INF) -> int:
+	var sqs := selected_squads()
+	if sqs.is_empty():
+		_say("Regroup: select a squad first")
+		return 0
+	var n := sim.squads.order_regroup(sqs, at)
+	_say("Regroup %s" % ("at the cursor" if at.is_finite() else "on the leader"))
+	return n
+
+
+func toggle_formation() -> void:
+	var sqs := selected_squads()
+	if sqs.is_empty():
+		return
+	var first := sim.state.get_squad(sqs[0])
+	var f := SquadState.Formation.COLUMN if first.formation == SquadState.Formation.LINE else SquadState.Formation.LINE
+	sim.squads.set_formation(sqs, f)
+	_say("Formation: %s" % SquadState.FORMATION_NAMES[f])
+
+
+func change_spacing(delta: float) -> void:
+	var sqs := selected_squads()
+	if sqs.is_empty():
+		return
+	var first := sim.state.get_squad(sqs[0])
+	sim.squads.set_spacing(sqs, first.spacing + delta)
+	_say("Spacing %.1f m" % sim.state.get_squad(sqs[0]).spacing)
+
+
+## Squads whose members are all selected (commandable), in id order.
+func selected_squads() -> Array:
+	var out := []
+	for sq: SquadState in sim.state.all_squads():
+		if not _can_command(sq.leader_id):
+			continue
+		var all := true
+		for id in sq.members:
+			if not selected.has(id):
+				all = false
+				break
+		if all:
+			out.append(sq.id)
+	return out
+
+
+## Selected commandable soldiers that are not part of a fully selected squad.
+func loose_selected() -> Array:
+	var in_sq := {}
+	for sid in selected_squads():
+		for id in sim.state.get_squad(sid).members:
+			in_sq[id] = true
+	var out := []
+	for id in selected:
+		var u := sim.state.get_unit(id)
+		if u and u.kind == UnitState.Kind.SOLDIER and not in_sq.has(id) and _can_command(id):
+			out.append(id)
+	return out
+
+
+## Selects whole squads (add: keep the current selection).
+func select_squads(squad_ids: Array, add := false) -> void:
+	var ids := Array(selected) if add else []
+	for sid in squad_ids:
+		var sq := sim.state.get_squad(sid)
+		if sq == null:
+			continue
+		for id in sq.members:
+			if not ids.has(id):
+				ids.append(id)
+	select(ids)
+
+
+func _click_select_squad(screen_pos: Vector2, add: bool) -> void:
+	var sq := sim.state.squad_of(_unit_at(screen_pos))
+	if sq:
+		select_squads([sq.id], add)
+	else:
+		_click_select(screen_pos, add)
+
+
+## Loose soldiers ordered together with squads stand next to them, not on top.
+func _beside_squads(sqs: Array) -> Vector3:
+	var sq := sim.state.get_squad(sqs[-1])
+	var right := SquadControl._right(sq.order_yaw)
+	var width := 0.0
+	for sid in sqs:
+		width += sim.squads._width(sim.state.get_squad(sid)) + sim.squads.squad_gap
+	return right * (width * 0.5 + formation_spacing * 2.0)
+
+
+func _say(text: String) -> void:
+	message = text
+	_message_until = Time.get_ticks_msec() / 1000.0 + 3.0
+
+
+func current_message() -> String:
+	return message if Time.get_ticks_msec() / 1000.0 < _message_until else ""
+
+
+static func _ensure_squad_actions() -> void:
+	var binds := {"squad_follow": KEY_F, "squad_regroup": KEY_G, "squad_formation": KEY_V,
+		"squad_spacing_down": KEY_BRACKETLEFT, "squad_spacing_up": KEY_BRACKETRIGHT}
+	for action in binds:
+		if InputMap.has_action(action):
+			continue
+		InputMap.add_action(action)
+		var ev := InputEventKey.new()
+		ev.physical_keycode = binds[action]
+		InputMap.action_add_event(action, ev)
 
 
 ## World position of the terrain under a screen point, or Vector3.INF.

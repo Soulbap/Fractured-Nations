@@ -3,7 +3,11 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **WORLD-INTEGRATION-01** — the construction system and the FPS/RTS game run on
+Current state: **UNIT-01A** — squads with tactical orders (move in line or column, hold, follow,
+regroup) on top of the soldiers, persistent through FPS possession, the abstract tier and
+save/load; see [docs/UNIT-01A_REPORT.md](docs/UNIT-01A_REPORT.md).
+
+Before that, **WORLD-INTEGRATION-01** — the construction system and the FPS/RTS game run on
 the reference world `ref_20km`, which is now the main scene (see
 [docs/WORLD-INTEGRATION-01_REPORT.md](docs/WORLD-INTEGRATION-01_REPORT.md) and
 [docs/WORLD-TERRAIN-01_REPORT.md](docs/WORLD-TERRAIN-01_REPORT.md)), on top of
@@ -66,13 +70,20 @@ uniforms) share the world and some soldiers already have move orders. The contro
 |---|---|
 | W A S D (Shift faster) | Pan |
 | Q / E, middle-mouse drag | Rotate |
-| Mouse wheel | Zoom (15–300 m, `RTSCamera.zoom_min` / `zoom_max`) |
+| Mouse wheel | Zoom (5–200 m, starts at 80 m; `RTSCamera.zoom_min` / `zoom_max` / `zoom_default`) |
 | **B** | Construction mode (see below) |
 | Left click / drag box, Shift+click | Select soldiers and vehicles / add to selection, Ctrl+A all soldiers |
-| Right click | Move order for the selected soldiers (grid formation at the clicked point) |
-| H | Halt the selected soldiers |
+| Ctrl+click, squad panel (left) | Select a soldier's whole squad; Shift adds more squads |
+| Right click | Move: selected squads walk in formation to the point (side by side if several); other selected soldiers get individual orders and leave their squad's order until its next one |
+| H | Hold: selected squads stop and stay; other selected soldiers stop |
+| F, then click a soldier | Selected squads follow that soldier, or its squad (its leader) |
+| G / Shift+G | Regroup selected squads on their leader / at the cursor |
+| V, [ and ] | Line or column formation, spacing −/+ 0.5 m (1.5–10 m) |
 | P, Enter or double-click | Possess the selected soldier (first person) |
 | **Tab** | Return to the soldier you last controlled |
+
+F5 / F9 also save and load units and squads (`user://saves/<world>/world.json`, next to the
+construction file).
 
 ### Construction (WORLD-BASE-01, RTS)
 

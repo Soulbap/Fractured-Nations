@@ -44,7 +44,7 @@ func run(args: PackedStringArray) -> void:
 		"mode": game.mode, "zoom_min": rig.zoom_min, "zoom_max": rig.zoom_max, "water_cells": sm._water.size(),
 		"roads_cells": _road_grid.size(), "settlements": _settlements.size()})
 	_expect(demo.config.world_name == "ref_20km" and game.possessed_body() != null, "game did not start possessing a soldier on ref_20km")
-	_expect(is_equal_approx(rig.zoom_min, 15.0) and is_equal_approx(rig.zoom_max, 300.0), "RTS zoom limits are not 15..300 m")
+	_expect(is_equal_approx(rig.zoom_min, 5.0) and is_equal_approx(rig.zoom_max, 200.0), "RTS zoom limits are not 5..200 m")
 	_expect(sm._water.size() > 0, "no water surfaces indexed for placement")
 	_press(KEY_TAB)
 	await _physics(3)

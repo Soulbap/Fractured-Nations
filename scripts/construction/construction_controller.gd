@@ -28,6 +28,8 @@ enum Tool { NONE, PLACE, DELETE }
 @export var terrain: Terrain3D
 ## Quick save target (F5 save, F9 load).
 @export var save_path := "user://saves/construction.json"
+## UNIT-01A: when set, F5 / F9 also save and load units and squads (world.json).
+var world_state: WorldState
 @export var rotate_step_deg := 15.0
 @export var angle_snap_deg := 15.0
 @export var max_line_modules := 800
@@ -178,15 +180,28 @@ func clear_tool() -> void:
 
 func save() -> bool:
 	var err := structures.state.save_json(save_path)
-	_say("Saved %d structures to %s" % [structures.state.count(), save_path] if err == OK else "Save failed (%s)" % error_string(err))
+	var units := ""
+	if world_state:
+		var werr := world_state.save_file(world_save_path())
+		units = ", %d units, %d squads" % [world_state.units.size(), world_state.squads.size()] if werr == OK else ", units: save failed (%s)" % error_string(werr)
+	_say(("Saved %d structures%s to %s" % [structures.state.count(), units, save_path.get_base_dir()]) if err == OK else "Save failed (%s)" % error_string(err))
 	return err == OK
 
 
 func load_saved() -> bool:
 	cancel()
+	var units := ""
+	if world_state and FileAccess.file_exists(world_save_path()):
+		var r: Variant = world_state.load_file(world_save_path())
+		units = (", %d units, %d squads" % [world_state.units.size(), world_state.squads.size()]) if r is Dictionary else ", units: load failed"
 	var err := structures.state.load_json(save_path)
-	_say("Loaded %d structures" % structures.state.count() if err == OK else "Load failed (%s)" % error_string(err))
+	_say(("Loaded %d structures%s" % [structures.state.count(), units]) if err == OK else "Load failed (%s)" % error_string(err))
 	return err == OK
+
+
+## UNIT-01A: units and squads are saved next to the construction file.
+func world_save_path() -> String:
+	return save_path.get_base_dir().path_join("world.json")
 
 
 func _say(text: String) -> void:

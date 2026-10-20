@@ -8,10 +8,12 @@ class_name RTSCamera
 extends Node3D
 
 @export var terrain: Terrain3D
-## Closest zoom distance (m). WORLD-BASE-01: ~15 m keeps construction previews readable.
-@export var zoom_min := 15.0
+## Closest zoom distance (m). UNIT-01A: 5 m, close enough to read a single soldier.
+@export var zoom_min := 5.0
 ## Farthest zoom distance (m). Large-scale overview belongs to the future 2D strategic map.
-@export var zoom_max := 300.0
+@export var zoom_max := 200.0
+## Zoom distance at start (m).
+@export var zoom_default := 80.0
 @export var zoom_factor := 1.15
 ## Pan speed as a fraction of the zoom distance per second.
 @export var pan_speed := 0.9
@@ -20,18 +22,26 @@ extends Node3D
 @export var pitch_near_deg := 28.0
 @export var pitch_far_deg := 65.0
 @export var ground_clearance := 3.0
+## Clearance above the terrain at the closest zoom (blends to ground_clearance by 40 m).
+@export var ground_clearance_near := 1.2
+## Below this zoom the camera is kept in front of whatever stands between it and the
+## focus (structures, trees, terrain) with one physics ray per frame.
+@export var collision_below_zoom := 40.0
+## Distance kept from a hit surface (m).
+@export var collision_margin := 0.4
 ## Focus is clamped to this half extent (map half size) when > 0.
 @export var map_half_size := 0.0
 
 var focus := Vector3.ZERO
 var yaw := 0.0
-var zoom := 70.0
+var zoom := 80.0
 var active := false
 
 @onready var camera: Camera3D = $Camera3D
 
 
 func _ready() -> void:
+	zoom = clampf(zoom_default, zoom_min, zoom_max)
 	FPSController.ensure_input_actions()
 	GameController.ensure_input_actions()
 	set_process(false)
@@ -100,8 +110,30 @@ func _update_transform() -> void:
 	var pitch := deg_to_rad(lerpf(pitch_near_deg, pitch_far_deg, clampf(t, 0.0, 1.0)))
 	var back := Vector3(sin(yaw), 0.0, cos(yaw))
 	var pos := focus + back * cos(pitch) * zoom + Vector3.UP * sin(pitch) * zoom
+	var clearance := lerpf(ground_clearance_near, ground_clearance, clampf((zoom - zoom_min) / maxf(collision_below_zoom - zoom_min, 0.01), 0.0, 1.0))
 	var gh := _ground_height(pos)
-	if not is_nan(gh) and pos.y < gh + ground_clearance:
-		pos.y = gh + ground_clearance
+	if not is_nan(gh) and pos.y < gh + clearance:
+		pos.y = gh + clearance
+	if zoom < collision_below_zoom and is_inside_tree():
+		pos = _avoid_obstacles(focus + Vector3.UP * 1.6, pos)
 	camera.global_position = pos
 	camera.look_at(focus, Vector3.UP)
+
+
+## Pulls the camera in front of the first static obstacle between the focus and pos.
+## Soldiers and vehicles (character / rigid bodies) are ignored.
+func _avoid_obstacles(from: Vector3, pos: Vector3) -> Vector3:
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsRayQueryParameters3D.create(from, pos)
+	var exclude: Array[RID] = []
+	for i in 4:
+		q.exclude = exclude
+		var hit := space.intersect_ray(q)
+		if hit.is_empty():
+			return pos
+		if hit.collider is CharacterBody3D or hit.collider is RigidBody3D:
+			exclude.append(hit.rid)
+			continue
+		var dir := (pos - from).normalized()
+		return (hit.position as Vector3) - dir * collision_margin
+	return pos
