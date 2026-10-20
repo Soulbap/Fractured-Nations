@@ -5,26 +5,26 @@
   "body_legs": 6236,
   "body_feet": 1642,
   "body_hands": 4998,
-  "body_head": 5244
+  "body_head": 5340
  },
- "t_body": 18.8,
+ "t_body": 16.7,
  "uniform_tris": {
   "jacket": 10044,
   "trousers": 8000,
   "boots": 3600,
   "gloves": 4000
  },
- "t_uniform": 43.2,
+ "t_uniform": 37.5,
  "gear_seconds": {
-  "vest_standard": 16.1,
-  "vest_heavy": 16.8,
-  "belt_standard": 0.7,
-  "belt_heavy": 0.7,
-  "pack_assault": 7.7,
-  "pack_ruck": 8.7,
-  "helmet_covered": 3.0,
-  "helmet_bare": 2.0,
-  "eyepro": 0.3
+  "vest_standard": 13.7,
+  "vest_heavy": 13.8,
+  "belt_standard": 0.6,
+  "belt_heavy": 0.6,
+  "pack_assault": 6.3,
+  "pack_ruck": 7.2,
+  "helmet_covered": 2.6,
+  "helmet_bare": 1.8,
+  "eyepro": 0.2
  },
  "gear_tris": {
   "vest_standard": 6676,
@@ -41,7 +41,7 @@
   "foregrip": 148,
   "laser": 224
  },
- "t_gear": 99.8,
+ "t_gear": 84.7,
  "anim_check": {
   "Idle": {
    "support_hand_err_mm": 0.0
@@ -68,6 +68,26 @@
    "support_hand_err_mm": 0.0,
    "stance_slip_mean_ms": 0.068,
    "stance_slip_p90_ms": 0.437
+  },
+  "Jog_F": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.165,
+   "stance_slip_p90_ms": 0.827
+  },
+  "Jog_B": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.158,
+   "stance_slip_p90_ms": 0.788
+  },
+  "Jog_L": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.145,
+   "stance_slip_p90_ms": 0.804
+  },
+  "Jog_R": {
+   "support_hand_err_mm": 0.0,
+   "stance_slip_mean_ms": 0.134,
+   "stance_slip_p90_ms": 0.782
   },
   "Run_F": {
    "support_hand_err_mm": 0.0,
@@ -115,10 +135,10 @@
    "stance_slip_p90_ms": 1.145
   }
  },
- "t_anim": 102.2,
+ "t_anim": 87.5,
  "export": {
   "rig": {
-   "bytes": 4141404,
+   "bytes": 4619888,
    "meshes": [
     "Char_Head_LOD0",
     "Char_Head_LOD1",
@@ -146,6 +166,10 @@
     "CrouchWalk_R",
     "Crouch_Idle",
     "Idle",
+    "Jog_B",
+    "Jog_F",
+    "Jog_L",
+    "Jog_R",
     "Run_B",
     "Run_F",
     "Run_L",
@@ -262,7 +286,7 @@
    ]
   },
   "carbine": {
-   "bytes": 793360,
+   "bytes": 793264,
    "lod_tris": [
     7296,
     2188,
@@ -270,11 +294,11 @@
    ]
   },
   "optic_reddot": {
-   "bytes": 57448,
+   "bytes": 57484,
    "lod_tris": [
     556,
     200,
-    57
+    56
    ]
   },
   "foregrip": {
@@ -286,7 +310,7 @@
    ]
   },
   "laser": {
-   "bytes": 37428,
+   "bytes": 37524,
    "lod_tris": [
     224,
     200,
@@ -294,5 +318,5 @@
    ]
   }
  },
- "t_total": 126.1
+ "t_total": 110.1
 }

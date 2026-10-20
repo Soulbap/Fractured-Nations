@@ -31,6 +31,7 @@ LOCO_FRAMES = 32
 # swing lift m, hip drop m, bob m, forward lean deg, crouch
 GAIT = {
     "Walk":   dict(speed=1.40, period=1.00, duty=0.60, offset=0.00, lift=0.09, drop=0.035, bob=0.018, lean=3.0),
+    "Jog":    dict(speed=3.00, period=0.78, duty=0.32, offset=-0.06, lift=0.13, drop=0.062, bob=0.026, lean=6.0),
     "Run":    dict(speed=4.50, period=0.70, duty=0.22, offset=-0.09, lift=0.17, drop=0.075, bob=0.030, lean=9.0),
     "Sprint": dict(speed=7.50, period=0.62, duty=0.16, offset=-0.10, lift=0.22, drop=0.085, bob=0.032, lean=15.0),
     "CrouchWalk": dict(speed=1.20, period=1.05, duty=0.62, offset=0.02, lift=0.08, drop=0.300, bob=0.012, lean=16.0),
@@ -231,15 +232,23 @@ def weapon_pose(kind, stance=None):
 def apply_grip_fingers(P):
     """Static finger curls: right hand closes on the pistol grip with the index finger
     straight along the receiver (trigger discipline), left hand wraps the handguard."""
+    # Curl = rotation about the finger bone's X (towards the palm), degrees per segment.
+    # Tuned on close-up renders: three fingers closed on the pistol grip, support fingers
+    # wrapped over the handguard. The firing index is lifted 22 deg towards the thumb so
+    # it lies along the receiver above the trigger guard.
     curl = {
-        "Right": {"Index": (14, 8, 6), "Middle": (62, 72, 38), "Ring": (66, 74, 38), "Little": (70, 72, 36)},
-        "Left": {"Index": (38, 46, 26), "Middle": (44, 52, 28), "Ring": (48, 54, 28), "Little": (52, 54, 26)},
+        "Right": {"Index": (6, 4, 4), "Middle": (76, 86, 52), "Ring": (80, 86, 50), "Little": (84, 84, 48)},
+        "Left": {"Index": (56, 66, 42), "Middle": (62, 72, 46), "Ring": (66, 74, 46), "Little": (70, 74, 44)},
     }
-    thumb = {"Right": (10, 25, 30), "Left": (6, 15, 18)}
+    lift = {"Right": {"Index": 22.0}}
+    thumb = {"Right": (22, 34, 28), "Left": (12, 22, 18)}
     for side, fingers in curl.items():
         for f, angs in fingers.items():
             for seg, a in zip(S.FINGER_SEGS, angs):
-                P.local_rot(side + f + seg, _q((1, 0, 0), -a))
+                q = _q((1, 0, 0), -a)
+                if seg == "Proximal" and f in lift.get(side, {}):
+                    q = _q((0, 0, 1), lift[side][f]) @ q
+                P.local_rot(side + f + seg, q)
         for seg, a in zip(S.THUMB_SEGS, thumb[side]):
             P.local_rot(side + "Thumb" + seg, _q((1, 0, 0), -a))
 
@@ -402,7 +411,7 @@ def clip_list():
     """(clip name, frames, loop, generator(P, phase))."""
     out = [("Idle", 120, True, lambda P, ph: idle_frame(P, ph)),
            ("Crouch_Idle", 120, True, lambda P, ph: idle_frame(P, ph, crouch=True))]
-    for gname in ("Walk", "Run"):
+    for gname in ("Walk", "Jog", "Run"):
         for dn, dv in DIRS.items():
             out.append((f"{gname}_{dn}", LOCO_FRAMES, True,
                         lambda P, ph, g=GAIT[gname], d=dv: gait_frame(P, g, d, ph, "low")))

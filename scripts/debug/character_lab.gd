@@ -304,7 +304,7 @@ func _run_checks() -> void:
 	# Feet: stance foot speed vs ground (no sliding when the body moves at the clip speed).
 	_set_speed(0.0)
 	var slide := {}
-	for state in [["walk", 1.4], ["run", 4.5], ["walk_slow", 1.0], ["run_mid", 3.0]]:
+	for state in [["v1.0", 1.0], ["v1.4", 1.4], ["v2.2", 2.2], ["v3.0", 3.0], ["v3.7", 3.7], ["v4.5", 4.5], ["v6.0", 6.0]]:
 		slide[state[0]] = await _foot_slide(chars[0], state[1])
 	_log("foot_slide", slide)
 	# LOD ranges and material sharing.
@@ -369,37 +369,33 @@ func _alignment(c: InfantryCharacter) -> Dictionary:
 	return out
 
 
-## Moves the character at speed v for a while and measures the horizontal world speed of
-## the planted (lowest) foot. Ideal is 0.
+## Moves the character at speed v for 2 s and records the horizontal world speed of the
+## lower foot every frame. A planted foot is still, so the 25th percentile of those speeds
+## (the planted part of each step) is the slide; 0 is ideal. Robust to swing frames.
 func _foot_slide(c: InfantryCharacter, v: float) -> Dictionary:
 	var sk := c.skeleton
 	var start := c.global_position
 	c.debug_velocity = -c.global_basis.z * v
-	await _wait(0.6)
-	var worst := 0.0
-	var acc := 0.0
-	var n := 0
+	await _wait(0.8)
+	var speeds: Array[float] = []
 	var prev := {}
 	var t := 0.0
-	while t < 1.5:
+	while t < 2.0:
 		var dt := await _frame_delta()
 		c.global_position += c.debug_velocity * dt
 		t += dt
-		# Planted foot = the lower ankle while it is at standing height (rest 0.088 m).
 		var pts := {}
 		for b in ["LeftFoot", "RightFoot"]:
 			pts[b] = (sk.global_transform * sk.get_bone_global_pose(sk.find_bone(b))).origin
 		var low: String = "LeftFoot" if pts.LeftFoot.y < pts.RightFoot.y else "RightFoot"
-		var p: Vector3 = pts[low]
-		if prev.has(low) and p.y - c.global_position.y < 0.097 and dt > 0:
-			var sp := Vector2(p.x - prev[low].x, p.z - prev[low].z).length() / dt
-			worst = maxf(worst, sp)
-			acc += sp
-			n += 1
+		if prev.has(low) and dt > 0:
+			speeds.append(Vector2(pts[low].x - prev[low].x, pts[low].z - prev[low].z).length() / dt)
 		prev = pts
 	c.debug_velocity = Vector3.ZERO
 	c.global_position = start
-	return {"mean_planted_speed": snappedf(acc / maxf(n, 1), 0.01), "max": snappedf(worst, 0.01), "samples": n, "body_speed": v}
+	speeds.sort()
+	var p25 := speeds[int(speeds.size() * 0.25)] if speeds.size() > 0 else 0.0
+	return {"body_speed": v, "planted_p25_ms": snappedf(p25, 0.01), "ratio": snappedf(p25 / v, 0.01), "samples": speeds.size()}
 
 
 # ------------------------------------------------------------------------------ perf

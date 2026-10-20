@@ -145,6 +145,7 @@ characters beyond 45 m is advanced every third frame.
 |---|---|---|---|
 | `Idle`, `Crouch_Idle` | 120 | yes | low-ready weapon carry |
 | `Walk_F/B/L/R` | 32 | yes | 1.40 m/s, one gait cycle |
+| `Jog_F/B/L/R` | 32 | yes | 3.00 m/s, bridges walk and run in the blend space |
 | `Run_F/B/L/R` | 32 | yes | 4.50 m/s (gameplay walk speed) |
 | `Sprint_F` | 32 | yes | 7.50 m/s, weapon across the chest |
 | `CrouchWalk_F/B/L/R` | 32 | yes | 1.20 m/s |

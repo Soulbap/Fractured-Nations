@@ -221,35 +221,44 @@ def split_regions(body, coll):
 
 
 HEAD_C = Vector((0.0, -0.008, 1.690))
-EYE_OFF = (0.0315, 0.0690, 0.002)
+EYE_OFF = (0.0315, 0.0630, 0.002)
+EYE_R = 0.0118
 
 
 def head_sdf(P):
+    """Head + neck: cranium, forehead, zygomatic arch and cheek pads, one smooth mandible
+    with chin, brow ridge, eye sockets with lids, nose (bridge, tip, alae, nostrils), lips
+    with a mouth line, ears. All offsets in metres from HEAD_C (front = +Y)."""
     H = HEAD_C
 
     def p(x, y, z):
         return (H.x + x, H.y + y, H.z + z)
 
-    d = D.ellipsoid(P, p(0, -0.014, 0.026), (0.074, 0.097, 0.088))
-    d = D.smin(d, D.ellipsoid(P, p(0, 0.036, 0.032), (0.064, 0.050, 0.062)), 0.03)
-    d = D.smin(d, D.ellipsoid(P, p(0, 0.032, -0.030), (0.061, 0.058, 0.058)), 0.03)
-    # Jaw: angles, body, chin.
+    d = D.ellipsoid(P, p(0, -0.016, 0.026), (0.073, 0.095, 0.089))
+    d = D.smin(d, D.ellipsoid(P, p(0, 0.028, 0.032), (0.065, 0.056, 0.064)), 0.03)        # forehead
+    d = D.smin(d, D.ellipsoid(P, p(0, 0.028, -0.024), (0.063, 0.060, 0.050)), 0.03)       # midface
     for sd in (-1, 1):
-        d = D.smin(d, D.round_cone(P, p(sd * 0.052, -0.008, -0.060), p(sd * 0.020, 0.070, -0.094), 0.017, 0.014), 0.025)
-        d = D.smin(d, D.ellipsoid(P, p(sd * 0.044, 0.052, -0.004), (0.022, 0.020, 0.016)), 0.015)   # cheekbone
-    d = D.smin(d, D.ellipsoid(P, p(0, 0.072, -0.094), (0.022, 0.016, 0.017)), 0.02)                 # chin
-    d = D.smin(d, D.capsule(P, p(-0.044, 0.078, 0.024), p(0.044, 0.078, 0.024), 0.0115), 0.018)      # brow ridge
-    # Eye sockets.
+        d = D.smin(d, D.ellipsoid(P, p(sd * 0.046, 0.048, -0.004), (0.024, 0.022, 0.017)), 0.02)   # zygoma
+        d = D.smin(d, D.ellipsoid(P, p(sd * 0.035, 0.056, -0.040), (0.025, 0.022, 0.025)), 0.025)  # cheek pad
+        d = D.smin(d, D.sphere(P, p(sd * 0.050, -0.006, -0.062), 0.017), 0.03)                    # jaw angle
+    d = D.smin(d, D.ellipsoid(P, p(0, 0.028, -0.071), (0.052, 0.054, 0.033)), 0.035)      # mandible
+    d = D.smin(d, D.ellipsoid(P, p(0, 0.072, -0.092), (0.024, 0.019, 0.020)), 0.025)      # chin
+    d = D.smin(d, D.capsule(P, p(-0.040, 0.074, 0.025), p(0.040, 0.074, 0.025), 0.0115), 0.02)  # brow ridge
+    # Eye sockets (shallow) and lids around the eyeballs.
     for sd in (-1, 1):
-        d = D.smax(d, -D.ellipsoid(P, p(sd * EYE_OFF[0], EYE_OFF[1] + 0.012, EYE_OFF[2]), (0.019, 0.014, 0.0135)), 0.007)
-    # Nose.
-    d = D.smin(d, D.round_cone(P, p(0, 0.083, 0.008), p(0, 0.101, -0.033), 0.0080, 0.0100), 0.012)
+        e = p(sd * EYE_OFF[0], EYE_OFF[1], EYE_OFF[2])
+        d = D.smax(d, -D.ellipsoid(P, (e[0], e[1] + 0.011, e[2]), (0.017, 0.012, 0.0125)), 0.007)
+        d = D.smin(d, D.capsule(P, (e[0] - sd * 0.011, e[1] + 0.0085, e[2] + 0.0062), (e[0] + sd * 0.011, e[1] + 0.0085, e[2] + 0.0055), 0.0038), 0.006)
+        d = D.smin(d, D.capsule(P, (e[0] - sd * 0.010, e[1] + 0.0090, e[2] - 0.0072), (e[0] + sd * 0.010, e[1] + 0.0085, e[2] - 0.0068), 0.0030), 0.006)
+    # Nose: bridge to a rounded tip, alae and nostrils.
+    d = D.smin(d, D.round_cone(P, p(0, 0.078, 0.010), p(0, 0.100, -0.030), 0.0075, 0.0106), 0.010)
     for sd in (-1, 1):
-        d = D.smin(d, D.sphere(P, p(sd * 0.0125, 0.089, -0.038), 0.0074), 0.007)
-    # Lips.
-    d = D.smin(d, D.ellipsoid(P, p(0, 0.081, -0.058), (0.020, 0.009, 0.0065)), 0.008)
-    d = D.smin(d, D.ellipsoid(P, p(0, 0.078, -0.069), (0.017, 0.009, 0.0065)), 0.008)
-    d = D.smax(d, -D.capsule(P, p(-0.018, 0.091, -0.0635), p(0.018, 0.091, -0.0635), 0.0016), 0.002)
+        d = D.smin(d, D.sphere(P, p(sd * 0.0125, 0.086, -0.035), 0.0080), 0.006)
+        d = D.smax(d, -D.sphere(P, p(sd * 0.0068, 0.094, -0.041), 0.0030), 0.002)
+    # Lips and mouth line.
+    d = D.smin(d, D.ellipsoid(P, p(0, 0.083, -0.054), (0.0190, 0.0090, 0.0066)), 0.007)
+    d = D.smin(d, D.ellipsoid(P, p(0, 0.081, -0.0660), (0.0165, 0.0095, 0.0062)), 0.007)
+    d = D.smax(d, -D.capsule(P, p(-0.0165, 0.090, -0.0600), p(0.0165, 0.090, -0.0600), 0.0012), 0.0015)
     # Ears.
     for sd in (-1, 1):
         ear = D.ellipsoid(P, p(sd * 0.074, -0.014, -0.004), (0.011, 0.021, 0.031))
@@ -268,9 +277,10 @@ def build_head(coll, skin_mat, eye_mat, iris_mat):
     _head_uv(obj)
     bm = bmesh.new()
     for sd in (-1, 1):
-        L.bm_sphere(bm, 0.0118, (sd * EYE_OFF[0], HEAD_C.y + EYE_OFF[1], HEAD_C.z + EYE_OFF[2]), segs=14, rings=10)
-        L.bm_sphere(bm, 0.0052, (sd * EYE_OFF[0], HEAD_C.y + EYE_OFF[1] + 0.0098, HEAD_C.z + EYE_OFF[2]),
-                    scale=(1, 0.35, 1), segs=12, rings=6, mat=1)
+        L.bm_sphere(bm, EYE_R, (sd * EYE_OFF[0], HEAD_C.y + EYE_OFF[1], HEAD_C.z + EYE_OFF[2]), segs=14, rings=10)
+        # Iris/pupil: a small dome that sits just proud of the sclera (no z-fighting).
+        L.bm_sphere(bm, 0.0054, (sd * EYE_OFF[0], HEAD_C.y + EYE_OFF[1] + EYE_R - 0.0046, HEAD_C.z + EYE_OFF[2]),
+                    segs=12, rings=8, mat=1)
     eyes = L.new_object("Char_Eyes", bm, coll, [eye_mat, iris_mat])
     L.box_uv(eyes, 1.0)
     for p in eyes.data.polygons:
@@ -313,7 +323,7 @@ def make_skin_texture(path, n=512, seed=3):
     stub = stub * (0.6 + 0.4 * L.fbm(n, 2.5, 2, seed + 9))
     rgb = mix(rgb, (0.36, 0.27, 0.21), 0.28 * stub)
     lips = g(z, 1.627, 0.0075) * g(aa, 0.0, 0.20)
-    rgb = mix(rgb, (0.64, 0.38, 0.35), 0.40 * lips)
+    rgb = mix(rgb, (0.66, 0.40, 0.37), 0.50 * lips)
     brow = g(z, 1.712, 0.0055) * g(aa, 0.42, 0.16) * sm((aa - 0.12) / 0.06)
     rgb = mix(rgb, (0.24, 0.17, 0.12), 0.70 * brow)
     # Short hair: hairline at the forehead, above the ears, back of the head.

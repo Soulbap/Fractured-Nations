@@ -25,7 +25,7 @@ const LOD_MARGIN := 1.0
 const ANIM_FAR_DISTANCE := 45.0
 const ANIM_FAR_STEP := 3
 ## Gait table (speed m/s -> stride m per cycle), mirrors animation_meta.json "gait".
-const GAIT_FALLBACK := {"Walk": [1.40, 1.00], "Run": [4.50, 0.70], "Sprint": [7.50, 0.62], "CrouchWalk": [1.20, 1.05]}
+const GAIT_FALLBACK := {"Walk": [1.40, 1.00], "Jog": [3.00, 0.78], "Run": [4.50, 0.70], "Sprint": [7.50, 0.62], "CrouchWalk": [1.20, 1.05]}
 const LOCO_CLIP_S := 32.0 / 30.0
 
 @export var loadout: InfantryLoadout
@@ -242,11 +242,12 @@ static func _prepare_shared() -> void:
 			for k in meta.gait:
 				gait[k] = [float(meta.gait[k].speed), float(meta.gait[k].period)]
 	_strides = {
-		"stand": [[gait.Walk[0], gait.Walk[0] * gait.Walk[1]], [gait.Run[0], gait.Run[0] * gait.Run[1]],
+		"stand": [[gait.Walk[0], gait.Walk[0] * gait.Walk[1]], [gait.Jog[0], gait.Jog[0] * gait.Jog[1]], [gait.Run[0], gait.Run[0] * gait.Run[1]],
 				[gait.Sprint[0], gait.Sprint[0] * gait.Sprint[1]]],
 		"crouch": [[gait.CrouchWalk[0], gait.CrouchWalk[0] * gait.CrouchWalk[1]]],
 	}
 	var walk: float = gait.Walk[0]
+	var jog: float = gait.Jog[0]
 	var run: float = gait.Run[0]
 	var cw: float = gait.CrouchWalk[0]
 	var loco := AnimationNodeBlendSpace2D.new()
@@ -254,6 +255,7 @@ static func _prepare_shared() -> void:
 	loco.min_space = Vector2(-run, -run)
 	loco.max_space = Vector2(run, gait.Sprint[0])
 	for p in [["Walk_F", Vector2(0, walk)], ["Walk_B", Vector2(0, -walk)], ["Walk_L", Vector2(-walk, 0)], ["Walk_R", Vector2(walk, 0)],
+			["Jog_F", Vector2(0, jog)], ["Jog_B", Vector2(0, -jog)], ["Jog_L", Vector2(-jog, 0)], ["Jog_R", Vector2(jog, 0)],
 			["Run_F", Vector2(0, run)], ["Run_B", Vector2(0, -run)], ["Run_L", Vector2(-run, 0)], ["Run_R", Vector2(run, 0)],
 			["Sprint_F", Vector2(0, gait.Sprint[0])]]:
 		loco.add_blend_point(_anim(p[0]), p[1])
