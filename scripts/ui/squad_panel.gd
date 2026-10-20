@@ -51,7 +51,8 @@ func _process(delta: float) -> void:
 	if _timer > 0.0 or sim == null or rts == null:
 		return
 	_timer = 0.25
-	var squads := sim.state.all_squads()
+	# Only the squads the player may command (all of them in the old test layouts).
+	var squads := sim.state.all_squads().filter(func(sq: SquadState) -> bool: return rts._can_command(sq.leader_id))
 	var ids := {}
 	for sq: SquadState in squads:
 		ids[sq.id] = true

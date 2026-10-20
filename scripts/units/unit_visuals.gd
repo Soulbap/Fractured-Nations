@@ -7,8 +7,8 @@
 class_name UnitVisuals
 extends RefCounted
 
-## Uniform colours per faction: North olive green, South desert khaki.
-const UNIFORM_COLORS: Array[Color] = [Color(0.30, 0.36, 0.24), Color(0.60, 0.52, 0.36)]
+## Uniform colours per faction: North olive green, South desert khaki, East grey-blue.
+const UNIFORM_COLORS: Array[Color] = [Color(0.30, 0.36, 0.24), Color(0.60, 0.52, 0.36), Color(0.36, 0.40, 0.46)]
 
 
 static func uniform_color(faction: int) -> Color:

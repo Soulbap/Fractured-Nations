@@ -62,6 +62,14 @@ var _combat_selftest: CombatSelfTest
 var _combat_ai_selftest: CombatAISelfTest
 var _combat_scale_selftest: CombatScaleSelfTest
 var _combat_tactics_selftest: CombatTacticsSelfTest
+var _sandbox_selftest: SandboxSelfTest
+## WORLD-SANDBOX-01: true when the game runs the three-faction war (the default).
+var sandbox := false
+var routes: StrategicRoutes
+var strategic_map: StrategicMap
+## Scripted tests of earlier milestones keep their fixed layout (no war).
+const LEGACY_TESTS: Array[String] = ["--core-test", "--large-test", "--combat-test", "--combat-ai-test", "--combat-scale-test",
+	"--combat-tactics-test", "--squad-test", "--integration-test", "--base-test"]
 ## COMBAT-01a shot effects (muzzle flash, tracer, impact, sound).
 var combat_fx: CombatFX
 
@@ -181,6 +189,22 @@ func _setup_combat() -> void:
 	game.possessed_died.connect(hud.on_possessed_died)
 
 
+## WORLD-SANDBOX-01: release the streamed ground shapes before the world is torn down
+## (freeing them after Terrain3D crashed the engine on exit).
+func shutdown_cleanup() -> void:
+	if detail and detail.ground:
+		var g := detail.ground
+		detail.ground = null
+		for c in g.get_children():
+			c.free()
+		g.free()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_PREDELETE:
+		shutdown_cleanup()
+
+
 ## Small world: one fixed navmesh area, rebaked with the structures inside it.
 func _rebake_small_area() -> void:
 	var obstacles := []
@@ -214,22 +238,31 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 		var c := on_ground(w.x, w.y, 0.0)
 		sites.append({"name": "Site %s" % "ABC"[i], "position": c, "radius": n.z})
 	game.sites = sites
-	_spawn_large_world()
+	var args := OS.get_cmdline_user_args()
+	# WORLD-SANDBOX-01: the game is the three-faction war unless an earlier milestone's
+	# scripted test asks for its own fixed layout.
+	sandbox = not Array(args).any(func(a: String) -> bool: return LEGACY_TESTS.has(a))
+	if sandbox:
+		_start_sandbox()
+	else:
+		_spawn_large_world()
 	detail.create_missing_proxies()
-	if initial_orders:
+	if initial_orders and not sandbox:
 		_issue_large_orders()
 	area_center = sites[0].position
 	var first := _first_soldier_of(0)
-	detail.activate_at(first.position)
+	var start_at := sim.state.war.objective(sim.state.war.faction(0).hq_objective).position if sandbox else first.position
+	detail.activate_at(start_at)
 	nav_info = detail.last_bake
 	print("CORE nav: ", JSON.stringify(nav_info))
 	print("CORE spawn: ", JSON.stringify(spawn_info))
-	if start_in_first_person and first:
+	if start_in_first_person and first and not sandbox:
 		game.possess(first.id)
 	else:
 		game.possessed_id = first.id if first else -1
 		game.enter_rts()
-	var args := OS.get_cmdline_user_args()
+		if sandbox:
+			rts_camera.frame(start_at, 0.0, 120.0)
 	if structures:
 		structures.area_changed.connect(detail.structures_changed)
 		if "--load-construction" in args and construction:
@@ -258,6 +291,126 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--base-test" in args:
 		_base_selftest = BaseSelfTest.new(self)
 		_base_selftest.run.call_deferred(args)
+	elif "--sandbox-test" in args:
+		_sandbox_selftest = SandboxSelfTest.new(self)
+		_sandbox_selftest.run.call_deferred(args)
+
+
+## WORLD-SANDBOX-01: the strategic route grid (cached in user://), the war state and the
+## starting forces.
+func _start_sandbox() -> void:
+	routes = StrategicRoutes.new()
+	var src := "res://worlds/%s/source/" % config.world_name
+	routes.setup(terrain, config.half_size(), src, "user://strategic/%s_grid.bin" % config.world_name)
+	sim.war.setup(routes)
+	spawn_info = SandboxSetup.create(self, routes)
+	spawn_info["route_grid"] = {"ms": snappedf(routes.build_ms, 0.1), "cached": routes.loaded_from_cache, "size": [routes.size.x, routes.size.y]}
+	sim.war.enabled = true
+	# The player commands the player's faction only (the AI factions' soldiers can be
+	# watched, not ordered or possessed).
+	rts.command_any_faction = false
+	rts.player_faction = sim.state.war.player_faction
+	# Terrain collision streamed in pieces, navmesh source on a worker: no stall when the
+	# map jumps the camera or the player possesses a soldier far away.
+	var cargs := OS.get_cmdline_user_args()
+	if not "--no-ground-stream" in cargs:
+		terrain.collision_mode = Terrain3DCollision.DISABLED
+		var gs := TerrainCollisionStreamer.new()
+		gs.name = "GroundCollision"
+		add_child(gs)
+		gs.setup(terrain)
+		gs.radius = detail.collision_radius
+		detail.ground = gs
+	navigation.threaded_source = not "--no-thread-nav" in cargs
+	# Distant battles are fought at full perception rate: the war's outcome must not depend
+	# on where the camera happens to be (COMBAT-02's distance LOD saved ~20 % at 100 v 100).
+	sim.brain.distance_lod = false
+	_setup_map()
+
+
+## The strategic map on its own canvas layer above the HUD.
+func _setup_map() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 60
+	layer.name = "StrategicMapLayer"
+	add_child(layer)
+	strategic_map = StrategicMap.new()
+	strategic_map.visible = false
+	layer.add_child(strategic_map)
+	strategic_map.setup(self)
+	strategic_map.closed.connect(_on_map_closed)
+	hud.war_sim = sim.war
+
+
+## M: the strategic map. From first person the game goes to the tactical view first (the
+## map commands the faction; the soldier returns to the simulation like on Tab).
+func toggle_map() -> void:
+	if strategic_map == null:
+		return
+	if strategic_map.visible:
+		strategic_map.close()
+		return
+	if game.mode == GameController.Mode.FPS:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		game.enter_rts()
+	if construction and construction.active:
+		construction.set_active(false)
+	rts.set_active(false)
+	rts_camera.set_process(false)
+	rts_camera.set_process_unhandled_input(false)
+	strategic_map.visible = true
+	strategic_map.grab_focus()
+
+
+func _on_map_closed() -> void:
+	if game.mode == GameController.Mode.RTS:
+		rts_camera.set_active(true)
+		rts.set_active(true)
+
+
+## Time compression for the long marches of the war: 1, 2, 4, 8 x (first person: 1 x).
+## Godot's time_scale alone stretches every physics step (8 x = 0.13 s steps: coarser
+## movement, fewer shots); here the tick rate rises with it, so each step stays 1/60 s and
+## the simulation is the same as at 1 x, only more of it per second (if the CPU cannot keep
+## up, the war simply runs a little slower than the nominal factor).
+func set_time_speed(step: int) -> void:
+	var levels := [1.0, 2.0, 4.0, 8.0]
+	var i := levels.find(Engine.time_scale)
+	i = clampi((i if i >= 0 else 0) + step, 0, levels.size() - 1)
+	if game.mode == GameController.Mode.FPS:
+		i = 0
+	apply_time_scale(levels[i])
+
+
+static func apply_time_scale(k: float) -> void:
+	Engine.physics_ticks_per_second = int(60.0 * k)
+	Engine.time_scale = k
+	Engine.max_physics_steps_per_frame = clampi(int(8.0 * k), 8, 64)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not sandbox or not (event is InputEventKey) or not event.pressed or event.echo:
+		return
+	match event.physical_keycode:
+		KEY_M:
+			toggle_map()
+			get_viewport().set_input_as_handled()
+		KEY_ESCAPE:
+			if strategic_map and strategic_map.visible:
+				strategic_map.close()
+				get_viewport().set_input_as_handled()
+		KEY_COMMA:
+			set_time_speed(-1)
+			get_viewport().set_input_as_handled()
+		KEY_PERIOD:
+			set_time_speed(1)
+			get_viewport().set_input_as_handled()
+
+
+func _process(_delta: float) -> void:
+	# First person always runs in real time.
+	if sandbox and game.mode == GameController.Mode.FPS and Engine.time_scale != 1.0:
+		apply_time_scale(1.0)
 
 
 func _spawn_large_world() -> void:

@@ -24,6 +24,14 @@ var kills_seen := 0
 ## COMBAT-01b optional AI overlay (F4): state, target, sight and why a soldier is not
 ## firing, for every soldier near the camera, plus the brain's cost counters.
 var combat_debug := false
+## WORLD-SANDBOX-01: the war (null outside the sandbox) and its recent notifications.
+var war_sim: WarSim:
+	set(v):
+		war_sim = v
+		if v and not v.event_logged.is_connected(_on_war_event):
+			v.event_logged.connect(_on_war_event)
+var _notes: Array = []
+var _notes_box: VBoxContainer
 
 
 class Overlay extends Control:
@@ -228,6 +236,45 @@ func _ready() -> void:
 	squad_panel.position = Vector2(12, 250)
 	squad_panel.visible = false
 	add_child(squad_panel)
+	_notes_box = VBoxContainer.new()
+	_notes_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_notes_box.add_theme_constant_override("separation", 3)
+	add_child(_notes_box)
+
+
+## A war event the player's faction learns about: a short notification at the top of the
+## screen (RTS and FPS) for 9 s.
+func _on_war_event(e: Dictionary) -> void:
+	if war_sim == null or (e.faction >= 0 and e.faction != war_sim.war.player_faction):
+		return
+	if e.kind in ["op_start", "info"] and e.faction < 0:
+		return
+	var l := Label.new()
+	l.text = e.text
+	l.add_theme_font_size_override("font_size", 15)
+	var col := Color(0.92, 0.92, 0.88)
+	match e.kind:
+		"captured":
+			col = Color(1.0, 0.85, 0.4)
+		"contested", "threat", "attack":
+			col = Color(1.0, 0.6, 0.5)
+		"op_done", "reinforcements":
+			col = Color(0.6, 0.95, 0.6)
+		"op_failed":
+			col = Color(1.0, 0.45, 0.45)
+	l.add_theme_color_override("font_color", col)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0, 0, 0, 0.6)
+	sb.content_margin_left = 10
+	sb.content_margin_right = 10
+	sb.content_margin_top = 3
+	sb.content_margin_bottom = 3
+	l.add_theme_stylebox_override("normal", sb)
+	_notes_box.add_child(l)
+	_notes.append([l, Time.get_ticks_msec() / 1000.0 + 9.0])
+	while _notes.size() > 4:
+		_notes[0][0].queue_free()
+		_notes.pop_front()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -237,6 +284,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(_delta: float) -> void:
+	var now_s := Time.get_ticks_msec() / 1000.0
+	while not _notes.is_empty() and _notes[0][1] < now_s:
+		_notes[0][0].queue_free()
+		_notes.pop_front()
+	_notes_box.position = Vector2(get_viewport().get_visible_rect().size.x * 0.5 - _notes_box.size.x * 0.5, 54)
 	if squad_panel.rts == null and rts:
 		squad_panel.rts = rts
 		squad_panel.sim = sim
@@ -334,6 +386,18 @@ func _text() -> String:
 		lines.append("Structures %d (%d modules)  drawn cells %d  collision cells %d" % [cs.structures, cs.instances, cs.visible_cells, cs.collision_cells])
 		if construction.message != "" and not construction.active:
 			lines.append(construction.message)
+	if war_sim and war_sim.enabled:
+		var war := war_sim.war
+		var pf := war.player_faction
+		var f := war.faction(pf)
+		var soldiers := 0
+		for sq: SquadState in war_sim.squads_of(pf):
+			soldiers += sq.members.size()
+		var parts: Array[String] = []
+		for fs: FactionState in war.factions.values():
+			parts.append("%s %d" % [fs.faction_name, war.owned_by(fs.id).size()])
+		lines.append("WAR  you: %s · %d soldiers, %d reserve, %d fallen · objectives %s · %d operations · speed %dx  |  M strategic map, , . time speed" % [
+			f.faction_name, soldiers, f.reserves, f.casualties, " / ".join(parts), war.active_operations(pf).size(), int(Engine.time_scale)])
 	if detail:
 		var u := sim.state.get_unit(game.possessed_id)
 		var where := "-"

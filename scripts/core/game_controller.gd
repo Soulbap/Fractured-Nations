@@ -70,10 +70,14 @@ func possess(id: int) -> bool:
 	var unit := sim.state.get_unit(id)
 	if unit == null or unit.kind != UnitState.Kind.SOLDIER or not unit.alive:
 		return false
+	# WORLD-SANDBOX-01: in the war the player commands (and possesses) only the player's
+	# own faction.
+	if not _commandable(unit):
+		return false
 	var body := sim.body_of(id) as SoldierBody
 	if body == null and detail:
 		# The unit is in the abstract tier: build the detailed world around it first.
-		detail.activate_at(unit.position)
+		detail.activate_at(unit.position, id)
 		body = sim.body_of(id) as SoldierBody
 	if body == null:
 		return false
@@ -124,7 +128,7 @@ func enter_rts() -> void:
 func possess_next(step := 1) -> bool:
 	var ids: Array = []
 	for u in sim.state.soldiers():
-		if u.alive or u.id == possessed_id:
+		if (u.alive and _commandable(u)) or u.id == possessed_id:
 			ids.append(u.id)
 	if ids.is_empty():
 		return false
@@ -143,7 +147,7 @@ func jump_to_site(index: int) -> bool:
 	var best := -1
 	var best_d := INF
 	for u in sim.state.soldiers():
-		if not u.alive:
+		if not u.alive or not _commandable(u):
 			continue
 		var d := Vector2(u.position.x - pos.x, u.position.z - pos.z).length()
 		if d < best_d:
@@ -161,6 +165,11 @@ func on_unit_died(u: UnitState) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		enter_rts()
 	possessed_died.emit(u.id)
+
+
+func _commandable(u: UnitState) -> bool:
+	var war := sim.state.war
+	return not war.active or u.faction == war.player_faction
 
 
 func possessed_body() -> SoldierBody:

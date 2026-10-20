@@ -46,6 +46,13 @@ var blocked := PackedInt32Array()
 ## COMBAT-01a: members killed (no longer in `members`; identity kept for the record).
 var fallen := PackedInt32Array()
 var roe := Roe.WEAPONS_FREE
+## WORLD-SANDBOX-01: operation the squad serves (-1 = none: the player's or idle), the
+## long-distance route it follows (waypoints from StrategicRoutes; SquadControl walks
+## them one by one with ordinary squad Move orders) and the objective it garrisons.
+var op_id := -1
+var route := PackedVector3Array()
+var route_i := 0
+var station_objective := -1
 
 
 func has_member(unit_id: int) -> bool:
@@ -75,6 +82,7 @@ func to_dict() -> Dictionary:
 		"follow_unit": follow_unit_id, "follow_squad": follow_squad_id,
 		"formation": formation, "spacing": spacing, "detached": Array(detached),
 		"status": status, "blocked": Array(blocked), "fallen": Array(fallen), "roe": roe,
+		"op": op_id, "route": Array(route), "route_i": route_i, "station": station_objective,
 	}
 
 
@@ -97,4 +105,8 @@ static func from_dict(d: Dictionary) -> SquadState:
 	s.blocked = PackedInt32Array(d.get("blocked", []))
 	s.fallen = PackedInt32Array(d.get("fallen", []))
 	s.roe = d.get("roe", Roe.WEAPONS_FREE)
+	s.op_id = d.get("op", -1)
+	s.route = PackedVector3Array(d.get("route", []))
+	s.route_i = d.get("route_i", 0)
+	s.station_objective = d.get("station", -1)
 	return s

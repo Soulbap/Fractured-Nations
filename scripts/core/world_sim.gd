@@ -29,6 +29,9 @@ var squads := SquadControl.new(self)
 var combat := CombatSim.new(self)
 ## COMBAT-01b: soldiers' own perception, target choice and firing (through `combat`).
 var brain := CombatBrain.new(self)
+## WORLD-SANDBOX-01: the strategic simulation (capture, operations, faction AI, reserves,
+## intelligence); idle unless the world has an active war (state.war.active).
+var war := WarSim.new(self)
 ## Parent of bodies and proxies (corpse markers are created here).
 var units_root: Node3D
 ## id -> Node3D body (detailed tier)
@@ -39,6 +42,10 @@ var proxies := {}
 var detail: DetailManager
 ## Set when construction exists: abstract units do not pass through structures.
 var structures: StructureManager
+## Abstract units sliding along an obstacle: unit id -> side (+1 / -1).
+var _slide := {}
+## Length of the last simulation step (s).
+var last_delta := 0.0
 
 
 func register_body(id: int, body: Node3D) -> void:
@@ -112,11 +119,13 @@ func _on_unit_removed(id: int) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	last_delta = delta
 	state.time += delta
 	for u in state.units.values():
 		if not u.has_body and u.alive:
 			_abstract_step(u, delta)
 	squads.update(delta)
+	war.update(delta)
 	brain.update(delta)
 	combat.update(delta)
 
@@ -191,13 +200,26 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 ## again when it becomes detailed near the camera.
 func _free_direction(u: UnitState, dir: Vector3, step: float) -> Vector3:
 	var p := Vector2(u.position.x, u.position.z)
-	var look := maxf(step, 0.5)
+	var look := maxf(step, 1.0)
 	if structures.blocks_point(p):
 		return dir  # already inside a footprint (built around it): let it walk out
-	for deg: float in [0.0, 45.0, -45.0, 90.0, -90.0]:
-		var d := dir.rotated(Vector3.UP, deg_to_rad(deg))
-		if not structures.blocks_point(p + Vector2(d.x, d.z) * look):
-			return d
+	if not structures.blocks_point(p + Vector2(dir.x, dir.z) * look):
+		_slide.erase(u.id)
+		return dir
+	# WORLD-SANDBOX-01: follow the obstacle on one side until the way to the target is
+	# free again (a gate in a HESCO perimeter, the end of a wall). Choosing a side anew
+	# every step made units slide back and forth in front of a wall forever.
+	var side: int = _slide.get(u.id, 0)
+	for attempt in 2:
+		if side == 0:
+			side = 1 if not structures.blocks_point(p + Vector2(dir.rotated(Vector3.UP, deg_to_rad(45.0)).x, dir.rotated(Vector3.UP, deg_to_rad(45.0)).z) * look) else -1
+		for deg: float in [45.0, 90.0, 135.0]:
+			var d := dir.rotated(Vector3.UP, deg_to_rad(deg * side))
+			if not structures.blocks_point(p + Vector2(d.x, d.z) * look):
+				_slide[u.id] = side
+				return d
+		side = -side
+	_slide.erase(u.id)
 	return Vector3.ZERO
 
 

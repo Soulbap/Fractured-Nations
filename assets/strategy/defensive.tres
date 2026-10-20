@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="FactionProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/faction_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "Defensive"
+decision_s = 45.0
+max_attacks = 1
+hq_squads = 2
+garrison_squads = 1
+garrison_min_value = 1
+attack_ratio = 2.0
+min_attack_soldiers = 16
+max_attack_distance = 6000.0
+recovery_s = 360.0
+w_value = 3.0
+w_distance = 1.6
+w_neutral = 2.0
+w_enemy = 0.5
+w_retake = 3.0
+threat_radius = 900.0
+threat_ratio = 1.3
+min_squad_size = 4

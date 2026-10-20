@@ -3,7 +3,16 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **COMBAT-02** — larger and smarter infantry fights: 100 v 100 and several
+Current state: **WORLD-SANDBOX-01** — the first playable persistent war. Three factions
+(North = you, South = aggressive AI, East = defensive AI) fight for twelve strategic objectives
+(bases, towns, river bridges, villages) across the whole 20 x 20 km world. Forces march along
+planned routes (roads and bridges, never through lakes, the river or cliffs), capture ground by
+driving defenders out, reinforce, recover and run out of reserves. You command your faction on a
+strategic map (M), in the tactical view and in first person - the same soldiers in the same
+world, which keeps fighting wherever you are and is saved with F5. See
+[docs/WORLD-SANDBOX-01_REPORT.md](docs/WORLD-SANDBOX-01_REPORT.md).
+
+Before that, **COMBAT-02** — larger and smarter infantry fights: 100 v 100 and several
 battles kilometres apart run at about 3.3 ms average frame time; soldiers who come under fire
 work out roughly where it comes from and take nearby cover (HESCO, buildings, rocks, trees,
 terrain) and fight from it, within what their squad order allows (Hold keeps its area, Move and
@@ -69,11 +78,29 @@ generator runs in Blender's Python):
 bash tools/terrain_ref/build_ref_world.sh
 ```
 
-Then press **F5**. You start in first person as a North soldier at the first of the three
-playable sites of the 20 km world (keys 1 / 2 / 3 jump between them). The small
-`scenes/game/core_demo.tscn` (2 km world, committed data, no build needed) still runs on its
-own. In both, two factions (North, blue rings / olive uniforms; South, orange rings / khaki
-uniforms) share the world and some soldiers already have move orders. The controls are the same.
+Then press **F5**. The war starts at once: you are North (blue), in the tactical view over
+your HQ; South (orange, aggressive) and East (green, defensive) are AI factions that plan and
+launch their own operations. Press **M** for the strategic map. The first start builds the
+strategic route grid (about 1 s) and caches it in `user://strategic/`. The scripted tests of
+earlier milestones (`--squad-test`, `--combat-test` ...) still use their own fixed two-faction
+layout. The small `scenes/game/core_demo.tscn` (2 km world, no build needed) still runs on its
+own with that layout.
+
+| Key | Strategic map (M) |
+|---|---|
+| M / Esc | Open / close the map (from first person the game switches to the tactical view first) |
+| Wheel, middle-drag or WASD, Home | Zoom, pan, whole map |
+| LMB, LMB-drag, Shift | Select your squads (or an objective), box select, add |
+| RMB | Order the selected squads: on an enemy or neutral objective = **attack**, on your own = **reinforce**, on open ground = **move** (all as operations with planned routes) |
+| Buttons | Attack / Defend / Reinforce the selected objective, Cancel op, View |
+| G, "Go" in the operation list | Jump the tactical camera there (closes the map) |
+| , and . | Time compression 1 / 2 / 4 / 8 x (first person always runs at 1 x) |
+
+The map shows territory (each objective's area in its owner's colour), objectives with capture
+progress and a blinking ring while contested, your squads (NATO symbols with strength), enemy
+forces your soldiers have seen (diamonds; they fade when not seen for a while), your operations
+with their routes, and the war log. A direct RTS order (move, hold, follow, regroup) takes a
+squad out of its operation: your command always wins.
 
 | Key | First person (possessing a soldier) |
 |---|---|
@@ -84,6 +111,7 @@ uniforms) share the world and some soldiers already have move orders. The contro
 | **Tab** | Switch to the tactical camera (the soldier returns to the simulation) |
 | F | Debug fly / noclip |
 | F3 | Performance overlay |
+| M | Strategic map (WORLD-SANDBOX-01 war) |
 | F4 | AI combat debug overlay (both views): state, target, why a soldier is not firing; COMBAT-02: tactical state, threat direction (orange), chosen cover (green ring), reaction path (dashed), "AI reaction" vs "order", cover reasons |
 
 | Key | Tactical (RTS) |
@@ -126,7 +154,8 @@ Assets are generated in Blender by `tools/blender/structures/*.py` (sources in
 root, after the world build): `bash benchmarks/wi01/run_test.sh integration --shots`
 (construction in five terrain types, clearing, navigation, persistence, performance),
 `... base` (the WORLD-BASE-01 checks) and `... large` (the WORLD-CORE-02 checks). The newest
-runner, `bash benchmarks/combat02/run_test.sh <kind>`, also takes `combat-tactics` (COMBAT-02
+runner, `bash benchmarks/sandbox01/run_test.sh <kind>`, also takes `sandbox` (WORLD-SANDBOX-01
+war scenarios, `--only a,b`), `combat-tactics` (COMBAT-02
 reactions and cover), `combat-scale` (COMBAT-02 16 / 50 / 100 v N, two battles), `combat-ai`
 (COMBAT-01b AI firefights), `combat` (COMBAT-01a) and `squad` (UNIT-01A).
 

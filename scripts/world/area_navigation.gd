@@ -25,6 +25,8 @@ var _pending := 0
 var _serial := 0
 var _faces := PackedVector3Array()
 var _faces_key := []
+## WORLD-SANDBOX-01: build the source geometry of async bakes on a worker thread.
+var threaded_source := false
 
 
 func has_pending_bake() -> bool:
@@ -77,6 +79,38 @@ func bake_area(center: Vector3, size: float, obstacles: Array = [], async := fal
 	var aabb := AABB(Vector3(center.x - half, -2000.0, center.z - half), Vector3(size, 6000.0, size))
 	# Terrain does not change at runtime: reuse the faces when only obstacles changed.
 	var key := [center.x, center.z, size]
+	if async and threaded_source and key != _faces_key:
+		# WORLD-SANDBOX-01: terrain faces and tree obstructions (~115 ms) on a worker too;
+		# the bake continues there. The previous navmesh stays active meanwhile.
+		_serial += 1
+		var tserial := _serial
+		_pending += 1
+		var task_holder := [-1]
+		task_holder[0] = WorkerThreadPool.add_task(func() -> void:
+			var faces2 := terrain.generate_nav_mesh_source_geometry(aabb, false)
+			var src2 := NavigationMeshSourceGeometryData3D.new()
+			src2.add_faces(faces2, Transform3D.IDENTITY)
+			var trees2 := _add_tree_obstructions(src2, center, half)
+			for ob in obstacles:
+				src2.add_projected_obstruction(_rect(ob.position, ob.yaw, ob.size), ob.position.y - 2.0, 6.0, false)
+			var nm2 := _new_navmesh()
+			NavigationServer3D.bake_from_source_geometry_data(nm2, src2)
+			(func() -> void:
+				# Collect the finished task (an uncollected WorkerThreadPool task crashed
+				# the engine on exit).
+				if task_holder[0] >= 0:
+					WorkerThreadPool.wait_for_task_completion(task_holder[0])
+				if tserial == _serial:
+					navigation_mesh = nm2
+					_faces = faces2
+					_faces_key = key
+				_pending -= 1
+				last_bake["async_done_ms"] = (Time.get_ticks_usec() - t0) / 1000.0
+				last_bake["tree_obstructions"] = trees2
+				last_bake["polygons"] = nm2.get_polygon_count()).call_deferred())
+		last_bake = {"bake_ms": (Time.get_ticks_usec() - t0) / 1000.0, "source_ms": 0.0, "async": true, "threaded_source": true,
+			"area_m": size, "center": [center.x, center.z], "vehicle_obstructions": obstacles.size()}
+		return last_bake
 	if key != _faces_key:
 		_faces = terrain.generate_nav_mesh_source_geometry(aabb, false)
 		_faces_key = key
@@ -86,18 +120,7 @@ func bake_area(center: Vector3, size: float, obstacles: Array = [], async := fal
 	var trees := _add_tree_obstructions(src, center, half)
 	for ob in obstacles:
 		src.add_projected_obstruction(_rect(ob.position, ob.yaw, ob.size), ob.position.y - 2.0, 6.0, false)
-	var nm := NavigationMesh.new()
-	nm.cell_size = cell_size
-	nm.cell_height = 0.25
-	nm.agent_radius = agent_radius
-	nm.agent_height = 1.8
-	nm.agent_max_climb = 0.6
-	nm.agent_max_slope = 45.0
-	nm.region_min_size = 4.0
-	nm.edge_max_length = 12.0
-	nm.detail_sample_distance = 6.0
-	nm.detail_sample_max_error = 1.0
-	nm.filter_walkable_low_height_spans = true
+	var nm := _new_navmesh()
 	var t_src := Time.get_ticks_usec()
 	_serial += 1
 	var serial := _serial
@@ -119,6 +142,22 @@ func bake_area(center: Vector3, size: float, obstacles: Array = [], async := fal
 		"source_ms": (t_src - t0) / 1000.0, "async": async,
 		"area_m": size, "center": [center.x, center.z]}
 	return last_bake
+
+
+func _new_navmesh() -> NavigationMesh:
+	var nm := NavigationMesh.new()
+	nm.cell_size = cell_size
+	nm.cell_height = 0.25
+	nm.agent_radius = agent_radius
+	nm.agent_height = 1.8
+	nm.agent_max_climb = 0.6
+	nm.agent_max_slope = 45.0
+	nm.region_min_size = 4.0
+	nm.edge_max_length = 12.0
+	nm.detail_sample_distance = 6.0
+	nm.detail_sample_max_error = 1.0
+	nm.filter_walkable_low_height_spans = true
+	return nm
 
 
 func _add_tree_obstructions(src: NavigationMeshSourceGeometryData3D, center: Vector3, half: float) -> int:

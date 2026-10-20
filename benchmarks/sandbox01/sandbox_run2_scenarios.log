@@ -1,0 +1,197 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.351 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3070
+
+WARNING: instance_reset_physics_interpolation() is deprecated.
+   at: _instance_reset_physics_interpolation_bind_compat_104269 (servers/rendering/rendering_server.compat.inc:62)
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
+StructureManager: water index 2568 triangles in 2115 cells
+CORE nav: {"area_m":440.0,"async":true,"bake_ms":0.009,"center":[-7100.0,-7600.0],"recenter":"async","source_ms":0.0,"structure_obstructions":192,"threaded_source":true,"vehicle_obstructions":0}
+CORE spawn: {"factions":3,"objectives":12,"route_grid":{"cached":true,"ms":23.3,"size":[400,400]},"soldiers":120,"squads":15}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+SANDBOX setup {"factions":3,"objectives":12,"route_grid":{"cached":true,"ms":23.3,"size":[400,400]},"soldiers":120,"squads":15,"summary":{"ai_us_max":0,"factions":{"East":{"casualties":0,"kills":0,"last_decision":"","objectives":3,"ops":[0,0,0],"reserves":40,"soldiers":40,"squads":5},"North":{"casualties":0,"kills":0,"last_decision":"","objectives":3,"ops":[0,0,0],"reserves":32,"soldiers":40,"squads":5},"South":{"casualties":0,"kills":0,"last_decision":"","objectives":2,"ops":[0,0,0],"reserves":40,"soldiers":40,"squads":5}},"objectives":{"Centre Bridge":"-","East HQ":"East","Elvetun":"North","Haugen":"-","North Bridge":"North","North HQ":"North","Sentrum":"-","South Bridge":"-","South HQ":"South","Verket":"South","Ødegård":"East","Østby":"East"},"ops":[],"ops_active":0,"ops_total":0,"reroutes":0,"routes":{"ms_avg":0.0,"ms_max":0.0,"planned":0},"time":0.5,"update_us_avg":3.0,"update_us_max":4}}
+SANDBOX routes {"grid":{"bridges":4,"cached":true,"ms":23.3},"pairs":[{"bridge_near_crossing":1,"from":"North HQ","length_km":20.74,"ms":1.94,"river_crossings":1,"samples_impassable":0,"samples_in_water":0,"straight_km":16.91,"to":"East HQ","waypoints":176},{"bridge_near_crossing":0,"from":"South HQ","length_km":16.61,"ms":2.02,"river_crossings":1,"samples_impassable":0,"samples_in_water":0,"straight_km":11.54,"to":"East HQ","waypoints":147},{"bridge_near_crossing":-1,"from":"North HQ","length_km":14.57,"ms":1.2,"river_crossings":0,"samples_impassable":0,"samples_in_water":0,"straight_km":11.99,"to":"South HQ","waypoints":128},{"bridge_near_crossing":2,"from":"Sentrum","length_km":6.06,"ms":0.36,"river_crossings":1,"samples_impassable":0,"samples_in_water":0,"straight_km":5.56,"to":"Østby","waypoints":47},{"bridge_near_crossing":0,"from":"East HQ","length_km":11.69,"ms":0.95,"river_crossings":1,"samples_impassable":0,"samples_in_water":0,"straight_km":10.17,"to":"Verket","waypoints":80},{"bridge_near_crossing":1,"from":"Elvetun","length_km":11.33,"ms":0.84,"river_crossings":1,"samples_impassable":0,"samples_in_water":0,"straight_km":9.16,"to":"Ødegård","waypoints":112}]}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Navigation region synchronization had 2 edge error(s).
+More than 2 edges tried to occupy the same map rasterization space.
+This causes a logical error in the navigation mesh geometry and is commonly caused by overlap or too densely placed edges.
+Consider baking with a higher 'cell_size', greater geometry margin, and less detailed bake objects to cause fewer edges.
+Consider lowering the 'navigation/3d/merge_rasterizer_cell_scale' in the project settings.
+This warning can be toggled under 'navigation/3d/warnings/navmesh_edge_merge_errors' in the project settings.
+   at: _build_step_find_edge_connection_pairs (modules/navigation_3d/3d/nav_region_builder_3d.cpp:219)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+SANDBOX transitions {"jumps":[{"avg_ms":1.7,"bakes":0,"first5_ms":[1.3,1.7,1.7,1.8,2.7],"frames":2358,"frames_over_33ms":0,"last_bake":{"area_m":440.0,"async":true,"async_done_ms":435.719,"bake_ms":0.009,"center":[-7100.0,-7600.0],"collision":"streamed","collision_ms":0.111,"polygons":1103,"recenter":"async","recenter_wait_ms":446.52,"source_ms":0.0,"structure_obstructions":192,"threaded_source":true,"tree_obstructions":23,"vehicle_obstructions":0},"max_ms":6.6,"p99_ms":3.0,"promoted":0,"to":"North HQ"},{"avg_ms":1.74,"bakes":1,"first5_ms":[28.0,13.0,2.2,5.1,2.0],"frames":2297,"frames_over_33ms":0,"last_bake":{"area_m":440.0,"async":true,"async_done_ms":235.657,"bake_ms":0.007,"center":[7900.0,200.0],"collision":"streamed","collision_ms":0.03,"polygons":1254,"recenter":"async","recenter_wait_ms":248.178,"source_ms":0.0,"structure_obstructions":192,"threaded_source":true,"tree_obstructions":16,"vehicle_obstructions":0},"max_ms":28.0,"p99_ms":3.0,"promoted":24,"to":"East HQ"},{"avg_ms":1.69,"bakes":1,"first5_ms":[28.9,13.3,1.8,5.3,1.6],"frames":2372,"frames_over_33ms":0,"last_bake":{"area_m":440.0,"async":true,"async_done_ms":217.698,"bake_ms":0.007,"center":[-900.0,-1800.0],"collision":"streamed","collision_ms":0.027,"polygons":4512,"recenter":"async","recenter_wait_ms":233.456,"source_ms":0.0,"structure_obstructions":0,"threaded_source":true,"tree_obstructions":279,"vehicle_obstructions":0},"max_ms":28.9,"p99_ms":2.5,"promoted":0,"to":"Sentrum"},{"avg_ms":1.8,"bakes":1,"first5_ms":[19.4,8.1,9.1,2.5,1.6],"frames":2222,"frames_over_33ms":0,"last_bake":{"area_m":440.0,"async":true,"async_done_ms":235.3,"bake_ms":0.007,"center":[-3100.0,3700.0],"collision":"streamed","collision_ms":0.069,"polygons":1847,"recenter":"async","recenter_wait_ms":250.33,"source_ms":0.0,"structure_obstructions":192,"threaded_source":true,"tree_obstructions":132,"vehicle_obstructions":0},"max_ms":19.4,"p99_ms":3.2,"promoted":32,"to":"South HQ"},{"avg_ms":1.96,"bakes":1,"first5_ms":[28.6,12.8,1.7,5.7,1.4],"frames":2044,"frames_over_33ms":0,"last_bake":{"area_m":440.0,"async":true,"async_done_ms":232.39,"bake_ms":0.007,"center":[69.504997253418,-6734.51513671875],"collision":"streamed","collision_ms":0.029,"polygons":3365,"recenter":"async","recenter_wait_ms":248.232,"source_ms":0.0,"structure_obstructions":0,"threaded_source":true,"tree_obstructions":182,"vehicle_obstructions":0},"max_ms":28.6,"p99_ms":6.2,"promoted":8,"to":"North Bridge"}],"possess_far":{"avg_ms":1.97,"first5_ms":[16.1,15.6,1.8,2.6,1.5],"frames":2025,"frames_over_33ms":0,"last_bake":{"area_m":440.0,"async":true,"async_done_ms":235.583,"bake_ms":0.007,"center":[-7090.5,-7600.0],"collision":"streamed","collision_ms":0.029,"polygons":992,"recenter":"async","recenter_wait_ms":242.945,"source_ms":0.0,"structure_obstructions":192,"threaded_source":true,"tree_obstructions":24,"vehicle_obstructions":0},"max_ms":16.1,"on_ground":true,"p99_ms":3.3,"possess_call_ms":6.1,"possessed":true}}
+SANDBOX shot: res://docs/sandbox01/s01_01_strategic_map_start.jpg
+SANDBOX shot: res://docs/sandbox01/s01_02_objectives_and_borders.jpg
+SANDBOX shot: res://docs/sandbox01/s01_04_operation_planned.jpg
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+SANDBOX shot: res://docs/sandbox01/s01_05_forces_on_strategic_route.jpg
+SANDBOX shot: res://docs/sandbox01/s01_07_territory_changed.jpg
+SANDBOX player_offensive {"attackers_left":14,"consistency":{"count":0,"problems":[]},"contested_seen":true,"defenders_left":0,"events":["0 The war begins: North (you), South (aggressive), East (defensive)","27 Attack #1: Sentrum, 2 squads, 16 soldiers","28 Attack #2: Haugen, 3 squads, 24 soldiers","80 North attacks Haugen","122 Haugen is contested (North, South)","206 North captured Haugen from South","206 Attack #2 Haugen completed: Haugen captured"],"haugen_owner":"North","op":{"id":2,"losses":10,"outcome":"Haugen captured","phase":"completed","phases_seen":["engaging","securing","completed"],"start_strength":24},"warp":[{"real_s":4.4,"sim_s":70.1,"speed":15.9},{"real_s":8.9,"sim_s":107.0,"speed":12.0}]}
+SANDBOX reinforcement {"consistency":{"count":0,"problems":[]},"elvetun_owner":"North","reinforce_op":{"arrived_after_s":844.0,"outcome":"Elvetun captured","phase":"completed","type":"Attack"},"reinforcement_shots":79,"reinforcements_left":16,"route":{"impassable_samples":0,"length_km":3.7,"waypoints":42},"south_attack":{"outcome":"too many losses (5 of 16 left)","phase":"failed"},"south_left":0,"travel":{"closest_m":40.0,"samples_in_water":0,"start_m":3135.0},"warp":{"real_s":60.3,"sim_s":964.3,"speed":16.0}}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+SANDBOX shot: res://docs/sandbox01/s01_06_objective_under_attack.jpg
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Navigation region synchronization had 2 edge error(s).
+More than 2 edges tried to occupy the same map rasterization space.
+This causes a logical error in the navigation mesh geometry and is commonly caused by overlap or too densely placed edges.
+Consider baking with a higher 'cell_size', greater geometry margin, and less detailed bake objects to cause fewer edges.
+Consider lowering the 'navigation/3d/merge_rasterizer_cell_scale' in the project settings.
+This warning can be toggled under 'navigation/3d/warnings/navmesh_edge_merge_errors' in the project settings.
+   at: _build_step_find_edge_connection_pairs (modules/navigation_3d/3d/nav_region_builder_3d.cpp:219)
+SANDBOX shot: res://docs/sandbox01/s01_08_rts_active_operation.jpg
+SANDBOX shot: res://docs/sandbox01/s01_09_fps_same_operation.jpg
+SANDBOX map_rts_fps {"back_on_map":true,"consistency":{"count":0,"problems":[]},"damage_events":8,"damaging_shots":8,"duplicate_shot_counters":0,"jump_frames":{"avg_ms":2.11,"first5_ms":[32.7,14.3,2.5,7.4,2.3],"frames":1420,"frames_over_33ms":0,"max_ms":32.7,"p99_ms":6.8},"op_still_active_or_done":"engaging","possession":{"had_body_before":true,"op_kept":true,"player_shots":2,"possessed":true},"squads":[30,30],"units":[272,272]}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+SANDBOX navigation_march {"arrived":"completed","crossed_river":true,"dist_to_goal_m":10.7,"in_water":0,"near_bridge":1,"on_impassable_cells":0,"route_km":12.56,"route_skips":2,"samples":154448,"warp":{"real_s":83.9,"sim_s":2685.9,"speed":32.0},"waypoints":117}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+BASE Saved 24 structures, 280 units, 29 squads to user://saves/ref_20km
+BASE Loaded 24 structures, 280 units, 29 squads
+SANDBOX save_load_war {"active_ops_at_save":4,"changed_before_load":72,"consistency_after":{"count":0,"problems":[]},"difference_count":0,"differences":[],"keys_compared":336,"summary":{"ai_us_max":3930,"factions":{"East":{"casualties":0,"kills":0,"last_decision":"1 attacks running","objectives":3,"ops":[1,0,0],"reserves":8,"soldiers":72,"squads":9},"North":{"casualties":33,"kills":38,"last_decision":"","objectives":4,"ops":[4,3,1],"reserves":32,"soldiers":71,"squads":11},"South":{"casualties":37,"kills":32,"last_decision":"2 attacks running","objectives":4,"ops":[6,2,1],"reserves":8,"soldiers":67,"squads":9}},"objectives":{"Centre Bridge":"South","East HQ":"East","Elvetun":"North","Haugen":"North","North Bridge":"North","North HQ":"North","Sentrum":"South","South Bridge":"-","South HQ":"South","Verket":"South","Ødegård":"East","Østby":"East"},"ops":["#8 E Attack South Bridge moving: 2 sq, 16/16, 6567 m","#9 S Attack South Bridge moving: 2 sq, 16/16, 573 m","#10 S Reinforce Sentrum moving: 1 sq, 8/8, 4871 m","#11 S Attack East HQ moving: 3 sq, 19/19, 7725 m"],"ops_active":4,"ops_total":11,"reroutes":0,"routes":{"ms_avg":0.62,"ms_max":2.02,"planned":32},"time":4318.9,"update_us_avg":1092.0,"update_us_max":11232},"war_continues":true}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)

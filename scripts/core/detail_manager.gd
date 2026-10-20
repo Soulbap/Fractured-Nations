@@ -47,6 +47,11 @@ const VEHICLE_SCENE := preload("res://scenes/units/vehicle.tscn")
 ## walking, RTS jumps); units in the new area get bodies once it is ready. Possession
 ## (activate_at) stays synchronous because the body needs ground and a path at once.
 @export var async_recenter := true
+## WORLD-SANDBOX-01: terrain collision built in pieces around the observer instead of
+## Terrain3D's all-at-once rebuild (null: Terrain3D's dynamic collision, as before).
+var ground: TerrainCollisionStreamer
+## Units waiting for the ground under them before they get a body (statistics).
+var promotions_waiting := 0
 
 var observer := Vector3.ZERO
 ## Invisible camera that Terrain3D follows (collision + LOD) while the tactical camera is active.
@@ -94,6 +99,10 @@ func observer_position() -> Vector3:
 
 func _physics_process(delta: float) -> void:
 	observer = observer_position()
+	if ground:
+		if not ground._center.is_finite() or _flat_dist(ground._center, observer) > ground.chunk_m * 0.5:
+			ground.set_center(observer)
+		ground.step()
 	if _last_observer.is_finite() and delta > 0.0:
 		_speed = lerpf(_speed, observer.distance_to(_last_observer) / delta, 0.3)
 	_last_observer = observer
@@ -119,13 +128,26 @@ func structures_changed(rect: Rect2, delay := 0.4) -> void:
 ## Forces the detailed tier to exist around a position right now (used before possessing
 ## or framing a unit that is currently abstract). Synchronous: bakes the navmesh for the
 ## area, builds terrain collision there and gives every unit in range a body.
-func activate_at(pos: Vector3) -> void:
+func activate_at(pos: Vector3, need_id := -1) -> void:
 	observer = pos
 	_last_observer = pos
 	_speed = 0.0
 	_follow_observer()
 	# Terrain3D builds collision around its camera, which may still be a body far away.
 	terrain.set_camera(anchor_cam)
+	if ground:
+		# WORLD-SANDBOX-01: no stall. Ground under the spot now, the rest of the ring over
+		# the next frames; the navmesh re-centres on a worker. The unit to be possessed
+		# gets its body at once; the others as soon as the area is ready.
+		ground.set_center(pos)
+		ground.ensure_now(pos, 40.0)
+		if _flat_dist(nav_center, pos) > 1.0 and not _recenter_to.is_finite():
+			_rebake(true, true)
+		var u := sim.state.get_unit(need_id)
+		if u and not u.has_body and u.alive:
+			_promote(u)
+			promotions += 1
+		return
 	_update(true)
 
 
@@ -163,8 +185,12 @@ func _update(force: bool) -> void:
 		if _recenter_to.is_finite():
 			return
 	var promoted := 0
+	promotions_waiting = 0
 	for u in sim.state.units.values():
 		if not u.has_body and u.alive and _flat_dist(u.position, observer) <= promote_radius:
+			if ground and not ground.ready_at(u.position):
+				promotions_waiting += 1
+				continue
 			_promote(u)
 			promoted += 1
 	if promoted > 0 or demoted > 0:
@@ -223,6 +249,11 @@ func _finish_recenter() -> void:
 ## bodies promoted in the same tick have ground under them.
 func _update_collision() -> void:
 	var t := Time.get_ticks_usec()
+	if ground:
+		ground.set_center(observer)
+		last_bake["collision_ms"] = (Time.get_ticks_usec() - t) / 1000.0
+		last_bake["collision"] = "streamed"
+		return
 	terrain.collision_radius = collision_radius
 	terrain.collision.update(true)
 	last_bake["collision_ms"] = (Time.get_ticks_usec() - t) / 1000.0

@@ -32,6 +32,16 @@ var follow_drift_m := 6.0
 ## Gap between squads that are ordered to the same point.
 var squad_gap := 5.0
 var update_interval := 0.5
+## WORLD-SANDBOX-01 routes: the next waypoint is ordered when the squad's leader is this
+## close to the current one (the squad keeps walking instead of stopping at each).
+var route_reach_m := 30.0
+## A leg whose leader gains nothing for this long counts as done (s).
+var route_stall_s := 25.0
+var route_skips := 0
+var _leg_progress := {}
+## Emitted when a squad reached the last waypoint of its route (WarSim advances its
+## operation).
+signal route_finished(squad: SquadState)
 
 var sim: WorldSim
 var _timer := 0.0
@@ -79,6 +89,77 @@ func order_move(squad_ids: Array, target: Vector3) -> int:
 		sq.follow_squad_id = -1
 		n += _send_to_slots(sq, centre, yaw, true)
 	return n
+
+
+# --- Routes (WORLD-SANDBOX-01) ---------------------------------------------------
+
+## Sends squads along a route of waypoints: one ordinary squad Move order per waypoint,
+## the next one given as the leader comes within route_reach_m (column formation on the
+## march). The squad's order is MOVE throughout, so bodies, the abstract tier, cover
+## reactions and the HUD treat it like any other move.
+func follow_route(sq: SquadState, route: PackedVector3Array, formation := SquadState.Formation.COLUMN) -> void:
+	sq.route = route
+	sq.route_i = 0
+	if route.is_empty():
+		return
+	sq.formation = formation
+	_route_leg(sq)
+
+
+## Drops a squad's route (its current order stays as it is).
+func clear_route(sq: SquadState) -> void:
+	sq.route = PackedVector3Array()
+	sq.route_i = 0
+
+
+func _route_leg(sq: SquadState) -> void:
+	var target := sq.route[sq.route_i]
+	var from := _centroid(sq) if sq.route_i == 0 else sq.route[sq.route_i - 1]
+	_order_move_one(sq, target, _yaw_towards(from, target, sq.order_yaw))
+
+
+func _update_route(sq: SquadState) -> void:
+	var leader := sim.state.get_unit(sq.leader_id)
+	if leader == null:
+		return
+	var target := sq.route[sq.route_i]
+	var last := sq.route_i >= sq.route.size() - 1
+	var reach := 6.0 if last else route_reach_m
+	var close := _flat(leader.position, target) <= reach
+	# Done with the leg: close enough, or the squad's move finished / got stuck there, or
+	# the leader made no progress for route_stall_s (an obstacle the abstract tier does not
+	# get round): the next waypoint is tried.
+	var finished := sq.order == SquadState.Order.MOVE and sq.status != SquadState.Status.MOVING
+	var d := _flat(leader.position, target)
+	var prog: Array = _leg_progress.get(sq.id, [INF, sim.state.time, -1])
+	if prog[2] != sq.route_i or d < prog[0] - 2.0:
+		_leg_progress[sq.id] = [d, sim.state.time, sq.route_i]
+	elif sim.state.time - prog[1] > route_stall_s:
+		finished = true
+		route_skips += 1
+		_leg_progress.erase(sq.id)
+	if not close and not finished:
+		# A squad whose order was replaced (Hold, Follow, a player Move) keeps no route.
+		if sq.order != SquadState.Order.MOVE:
+			clear_route(sq)
+		return
+	if last:
+		if finished or _flat(_centroid(sq), target) <= reach + sq.spacing * sq.members.size() * 0.5:
+			clear_route(sq)
+			route_finished.emit(sq)
+		return
+	sq.route_i += 1
+	_route_leg(sq)
+
+
+## A squad Move for one squad that keeps its route, operation and detachment state.
+func _order_move_one(sq: SquadState, target: Vector3, yaw: float) -> void:
+	sq.order = SquadState.Order.MOVE
+	sq.order_target = target
+	sq.order_yaw = yaw
+	sq.follow_unit_id = -1
+	sq.follow_squad_id = -1
+	_send_to_slots(sq, target, yaw, true)
 
 
 ## Stop where they are and stay.
@@ -191,6 +272,8 @@ func update(delta: float) -> void:
 	for sq: SquadState in sim.state.squads.values():
 		if sq.order == SquadState.Order.FOLLOW and follow_now:
 			_update_follow(sq, false)
+		if not sq.route.is_empty():
+			_update_route(sq)
 		_update_status(sq)
 
 

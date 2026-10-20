@@ -203,6 +203,7 @@ func order_move_at(screen_pos: Vector2) -> int:
 
 func order_move(hit: Vector3) -> int:
 	var sqs := selected_squads()
+	_player_takes(sqs)
 	var n := sim.squads.order_move(sqs, hit) if not sqs.is_empty() else 0
 	var loose := loose_selected()
 	if not loose.is_empty():
@@ -219,6 +220,7 @@ func order_move(hit: Vector3) -> int:
 
 ## H: selected squads hold; other selected soldiers stop.
 func order_hold() -> void:
+	_player_takes(selected_squads())
 	sim.squads.order_hold(selected_squads())
 	for id in loose_selected():
 		sim.state.detach(id)
@@ -238,6 +240,7 @@ func order_follow(id: int) -> int:
 	if u == null or u.kind != UnitState.Kind.SOLDIER:
 		_say("Follow: no soldier there")
 		return 0
+	_player_takes(selected_squads())
 	var n := sim.squads.order_follow(selected_squads(), id)
 	var sq := sim.state.squad_of(id)
 	_say(("Following %s" % (sq.squad_name if sq else u.unit_name)) if n > 0 else "Follow: a squad cannot follow itself")
@@ -249,6 +252,7 @@ func order_regroup(at := Vector3.INF) -> int:
 	if sqs.is_empty():
 		_say("Regroup: select a squad first")
 		return 0
+	_player_takes(sqs)
 	var n := sim.squads.order_regroup(sqs, at)
 	_say("Regroup %s" % ("at the cursor" if at.is_finite() else "on the leader"))
 	return n
@@ -349,6 +353,14 @@ func _beside_squads(sqs: Array) -> Vector3:
 	for sid in sqs:
 		width += sim.squads._width(sim.state.get_squad(sid)) + sim.squads.squad_gap
 	return right * (width * 0.5 + formation_spacing * 2.0)
+
+
+## WORLD-SANDBOX-01: a direct order from the player takes the squads out of whatever
+## operation they served (the player's command always wins; the operation continues with
+## its other squads or ends).
+func _player_takes(squad_ids: Array) -> void:
+	if sim.war:
+		sim.war.release_squads(squad_ids, "player order")
 
 
 func _say(text: String) -> void:

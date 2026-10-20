@@ -14,6 +14,8 @@ signal order_changed(unit: UnitState)
 signal squad_changed(squad: SquadState)
 ## apply_snapshot() replaced the state of existing records in place (load).
 signal restored
+## save_file() took its snapshot (tests compare against exactly that state).
+signal saving
 ## COMBAT-01a events, emitted by CombatSim (presentation listens; no authority there).
 ## shot: {shooter, origin, end, dir, hit_unit, zone, blocker, distance, damage, killed, counter}
 signal shot_fired(shot: Dictionary)
@@ -24,8 +26,9 @@ signal reload_finished(unit: UnitState)
 ## Seed for combat randomness (spread), so shots are reproducible.
 var world_seed := 1
 
-const FACTION_NAMES: Array[String] = ["North", "South"]
-const FACTION_COLORS: Array[Color] = [Color(0.3, 0.55, 1.0), Color(1.0, 0.4, 0.2)]
+## WORLD-SANDBOX-01: three factions (North is the player's by default).
+const FACTION_NAMES: Array[String] = ["North", "South", "East"]
+const FACTION_COLORS: Array[Color] = [Color(0.3, 0.55, 1.0), Color(1.0, 0.4, 0.2), Color(0.25, 0.85, 0.55)]
 
 ## id -> UnitState
 var units := {}
@@ -35,6 +38,8 @@ var time := 0.0
 var construction := ConstructionState.new()
 ## UNIT-01A: squad id -> SquadState. Soldiers stay in `units`; a squad lists member ids.
 var squads := {}
+## WORLD-SANDBOX-01: factions, strategic objectives, operations and the war log.
+var war := WarState.new()
 var _next_id := 1
 var _next_squad_id := 1
 ## COMBAT-02: unit id -> SquadState, rebuilt when membership changes (squad_of was a
@@ -269,7 +274,7 @@ func snapshot() -> Dictionary:
 	for sq in all_squads():
 		sq_list.append(sq.to_dict())
 	return {"time": time, "next_id": _next_id, "units": list, "construction": construction.to_dict(),
-		"squads": sq_list, "next_squad_id": _next_squad_id}
+		"squads": sq_list, "next_squad_id": _next_squad_id, "war": war.to_dict()}
 
 
 func restore(snap: Dictionary) -> void:
@@ -283,6 +288,8 @@ func restore(snap: Dictionary) -> void:
 	if snap.has("construction"):
 		construction.from_dict(snap.construction)
 	_restore_squads(snap)
+	if snap.has("war"):
+		war.from_dict(snap.war)
 
 
 ## Loads a snapshot without replacing the record objects of units that exist in both:
@@ -325,6 +332,8 @@ func apply_snapshot(snap: Dictionary) -> Dictionary:
 	time = snap.get("time", time)
 	_next_id = maxi(_next_id, snap.get("next_id", 1))
 	_restore_squads(snap)
+	if snap.has("war"):
+		war.from_dict(snap.war)
 	restored.emit()
 	return {"updated": updated, "added": added, "removed": removed}
 
@@ -344,6 +353,7 @@ func _restore_squads(snap: Dictionary) -> void:
 func save_file(path: String) -> Error:
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	var snap := snapshot()
+	saving.emit()
 	snap.erase("construction")
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f == null:
