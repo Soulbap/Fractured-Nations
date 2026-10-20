@@ -1,0 +1,48 @@
+{
+ "iso_container_20_od": {
+  "collision_shapes": 1,
+  "errors": [],
+  "lod_ranges": [
+   [
+    0,
+    0.0,
+    35.0
+   ],
+   [
+    1,
+    35.0,
+    120.0
+   ],
+   [
+    2,
+    120.0,
+    600.0
+   ]
+  ],
+  "markers": 2,
+  "materials": [
+   "Steel_Dark",
+   "Paint_Black",
+   "Paint_OD",
+   "Container_OD",
+   "Steel_Galv",
+   "Signs"
+  ],
+  "size": [
+   2.44400000572205,
+   2.59100008010864,
+   6.1254997253418
+  ],
+  "static_bodies": 1,
+  "surfaces": [
+   5,
+   3,
+   2
+  ],
+  "tris": [
+   1864,
+   240,
+   14
+  ]
+ }
+}

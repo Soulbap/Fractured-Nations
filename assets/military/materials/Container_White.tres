@@ -1,0 +1,17 @@
+[gd_resource type="StandardMaterial3D" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/military/textures/paint.png" id="1_alb"]
+[ext_resource type="Texture2D" path="res://assets/military/textures/container_ribs_normal.png" id="2_nrm"]
+
+[resource]
+resource_name = "Container_White"
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.8000, 0.8000, 0.7700, 1)
+albedo_texture = ExtResource("1_alb")
+roughness = 0.640
+metallic = 0.100
+metallic_specular = 0.5
+normal_enabled = true
+normal_scale = 1.000
+normal_texture = ExtResource("2_nrm")
+texture_filter = 5

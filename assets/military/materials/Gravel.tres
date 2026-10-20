@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/military/textures/gravel.png" id="1_alb"]
+[ext_resource type="Texture2D" path="res://assets/military/textures/gravel_normal.png" id="2_nrm"]
+
+[resource]
+resource_name = "Gravel"
+vertex_color_use_as_albedo = true
+albedo_color = Color(1.0000, 1.0000, 1.0000, 1)
+albedo_texture = ExtResource("1_alb")
+roughness = 0.950
+metallic = 0.000
+normal_enabled = true
+normal_scale = 1.000
+normal_texture = ExtResource("2_nrm")
+texture_filter = 5
