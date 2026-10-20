@@ -1,0 +1,225 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.351 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3070
+
+WARNING: instance_reset_physics_interpolation() is deprecated.
+   at: _instance_reset_physics_interpolation_bind_compat_104269 (servers/rendering/rendering_server.compat.inc:62)
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
+StructureManager: water index 2568 triangles in 2115 cells
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] bake_area (res://scripts/world/area_navigation.gd:115)
+       [1] _rebake (res://scripts/core/detail_manager.gd:198)
+       [2] _update (res://scripts/core/detail_manager.gd:162)
+       [3] activate_at (res://scripts/core/detail_manager.gd:129)
+       [4] _start_large_world (res://scripts/game/core_demo.gd:223)
+       [5] _ready (res://scripts/game/core_demo.gd:111)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] bake_area (res://scripts/world/area_navigation.gd:115)
+       [1] _rebake (res://scripts/core/detail_manager.gd:198)
+       [2] _update (res://scripts/core/detail_manager.gd:162)
+       [3] activate_at (res://scripts/core/detail_manager.gd:129)
+       [4] _start_large_world (res://scripts/game/core_demo.gd:223)
+       [5] _ready (res://scripts/game/core_demo.gd:111)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] bake_area (res://scripts/world/area_navigation.gd:115)
+       [1] _rebake (res://scripts/core/detail_manager.gd:198)
+       [2] _update (res://scripts/core/detail_manager.gd:162)
+       [3] activate_at (res://scripts/core/detail_manager.gd:129)
+       [4] _start_large_world (res://scripts/game/core_demo.gd:223)
+       [5] _ready (res://scripts/game/core_demo.gd:111)
+CORE nav: {"area_m":440.0,"async":false,"bake_ms":235.746,"center":[-7107.5,-7592.0],"collision_ms":308.406,"faces":101250,"polygons":1115,"recenter":"sync","source_ms":113.204,"structure_obstructions":0,"tree_obstructions":24,"vehicle_obstructions":1}
+CORE spawn: {"sites":[[-7100.0,-7600.0],[-3100.0,3700.0],[7900.0,200.0]],"soldiers":28,"squads":3,"vehicles":3}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC startup {"area":{"height_range_40m":0.54,"pos":[-1106.8,165.2,-7885.3],"road_m":1e99999,"settlement":"Bruvoll","settlement_edge_m":1556.0,"slope_deg":0.1,"solids_30m":{"houses":0,"rocks":0,"trees":0},"solids_60m":{"houses":0,"rocks":0,"trees":0}},"tactics":{"calm_s":10.0,"cover_budget":16,"cover_radius":{"follow":8.0,"hold":12.0,"move":6.0,"regroup":5.0},"min_dwell_s":6.0,"near_miss_m":3.0,"react_s":{"follow":8.0,"move":5.0,"regroup":4.0},"under_fire_s":6.0}}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC cover_evaluation {"behind_wall_threat_north":{"can_fire":true,"protected":false},"behind_wall_threat_south":{"blocker":"structure","can_fire":true,"protected":true},"first_module":[-1112.8,165.2,-7891.3],"in_front_of_wall_threat_south":{"can_fire":true,"protected":false},"index_cells":1,"open_ground":{"can_fire":true,"protected":false},"raw_torso_line_behind":{"blocker":"structure","distance":0.567878484725952,"hit_unit":-1,"point":"(-1106.786, 166.3061, -7890.755)","structure_id":1,"zone":0},"short_probe":"structure","structures":1,"wall_modules":12,"wall_y_vs_ground":165.19}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC shot: res://docs/combat02/c02_01_open_before_reaction.jpg
+TAC shot: res://docs/combat02/c02_02_moving_to_cover_f4.jpg
+TAC shot: res://docs/combat02/c02_02_moving_to_cover.jpg
+TAC shot: res://docs/combat02/c02_03_fighting_from_hesco.jpg
+TAC shot: res://docs/combat02/c02_08_f4_tactical_diagnostics.jpg
+TAC shot: res://docs/combat02/c02_06_fps_possession_in_firefight.jpg
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC open_to_cover {"cover_min_pair_m":2.19,"cover_moves_per_soldier_max":1,"cover_stats":{"evaluations":144,"found":7,"none":43,"searches":50,"unreachable":0},"first_seconds":{"in_cover_half":3.36666666666679,"seek":1.08333333333335,"under_fire":1.08333333333335},"in_cover_end":6,"longest_seek_s":1.8,"north_shots_from_cover":380,"notes":["North-OC-1: in cover / staying: here 0 m (can fire)","North-OC-2: in cover / cover: structure 9 m (can fire)","North-OC-3: in cover / cover: structure 9 m (can fire)","North-OC-4: in cover / cover: structure 9 m (can fire)","North-OC-5: in cover / cover: structure 9 m (can fire)","North-OC-6: in cover / cover: structure 9 m (can fire)"],"own_cover_hits":0,"own_cover_holds":0,"possession":{"possessed":true,"reacting_after":false,"tactic_after":"-","tactic_while_possessed_1s":"-"},"seeking_end":0,"south_hits_on_north_after_cover":14,"south_seeing_north":6,"stats":{"damage_events":74,"damaging_shots":74,"shots":846,"sides":[{"alive":6,"fallen":0,"hits":59,"mean_ground_y":165.29,"misses_long":315,"misses_short":49,"shots":423,"squad":"North-OC"},{"alive":6,"fallen":0,"hits":15,"mean_ground_y":165.39,"misses_long":251,"misses_short":157,"shots":423,"squad":"Threat"}]},"unprotected_in_cover":[]}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC shot: res://docs/combat02/c02_03b_hold_fire_in_cover.jpg
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC hold_fire_defensive {"cover_min_pair_m":3.02,"cover_moves_per_soldier_max":1,"cover_stats":{"evaluations":88,"found":6,"none":0,"searches":6,"unreachable":0},"first_seconds":{"in_cover_half":3.23333333333315,"seek":1.2166666666666,"under_fire":0.93333333333328},"in_cover_end":6,"longest_seek_s":1.8,"north_shots_from_cover":0,"notes":["North-HF-1: in cover / cover: structure 9 m (can fire)","North-HF-2: in cover / cover: structure 9 m (can fire)","North-HF-3: in cover / cover: structure 9 m (can fire)","North-HF-4: in cover / cover: structure 9 m (can fire)","North-HF-5: in cover / cover: structure 9 m (can fire)","North-HF-6: in cover / cover: structure 9 m (can fire)"],"own_cover_hits":0,"own_cover_holds":0,"possession":{},"seeking_end":0,"south_hits_on_north_after_cover":11,"south_seeing_north":6,"stats":{"damage_events":14,"damaging_shots":14,"shots":425,"sides":[{"alive":6,"fallen":0,"hits":0,"mean_ground_y":165.29,"misses_long":0,"misses_short":0,"shots":0,"squad":"North-HF"},{"alive":6,"fallen":0,"hits":14,"mean_ground_y":165.39,"misses_long":270,"misses_short":141,"shots":425,"squad":"Threat"}]},"unprotected_in_cover":[]}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC shot: res://docs/combat02/c02_03c_staying_behind_hesco.jpg
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC stay_in_cover {"in_cover":4,"max_drift_m":0.0,"notes":["staying: here 0 m (can fire)","staying: here 0 m (can fire)","staying: here 0 m (can fire)","staying: here 0 m (can fire)"],"shots":144,"unprotected":[]}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC wrong_side_of_wall {"in_cover":4,"notes":["cover: structure 4 m (can fire)","cover: structure 4 m (can fire)","cover: structure 4 m (can fire)","cover: structure 4 m (can fire)"],"positions_z_rel_wall":[1.4,1.3,1.7,1.2],"unprotected_in_cover_samples":0}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC unreachable_cover {"chose_inside_ring":0,"note":"cover: structure 10 m (can fire)","position":[-1099.7,165.2,-7880.9],"searches":17,"tactic":"in cover","unreachable_rejected":1}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC no_stacking {"cover_min_pair_m":1.18,"in_cover":6,"notes":["cover: structure 8 m (can fire)","cover: structure 8 m (can fire)","cover: structure 8 m (can fire)","cover: structure 8 m (can fire)","cover: structure 10 m (can fire)","cover: structure 11 m (can fire)","no usable cover within hold (taken by North-NS-2)","no usable cover within hold (taken by North-NS-4)"],"position_min_pair_m":1.1,"with_cover":6}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC shot: res://docs/combat02/c02_04_hold_squad_keeps_its_area.jpg
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC hold_area {"max_distance_after_return_m":1.0,"max_distance_from_held_spot_m":7.6,"radius_m":12.0,"reacted":5,"returned_after_s":11.8,"squad_order":"Hold","unit_orders":0}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC move_continues {"dist_to_destination_m":2.0,"events":[{"t":202.43,"text":"under fire from 128 m","unit":"North-MV-5"},{"t":202.43,"text":"under fire from 131 m","unit":"North-MV-6"},{"t":207.07,"text":"under fire from 121 m","unit":"North-MV-6"},{"t":214.73,"text":"cover: structure 4 m (can fire)","unit":"North-MV-1"},{"t":214.75,"text":"cover: structure 5 m (can fire)","unit":"North-MV-2"},{"t":214.77,"text":"cover: structure 5 m (can fire)","unit":"North-MV-3"},{"t":216.75,"text":"in cover","unit":"North-MV-2"},{"t":217.43,"text":"in cover","unit":"North-MV-3"},{"t":230.47,"text":"under fire from 116 m","unit":"North-MV-3"},{"t":230.47,"text":"under fire from 122 m","unit":"North-MV-4"},{"t":230.47,"text":"under fire from 125 m","unit":"North-MV-5"},{"t":230.47,"text":"under fire from 128 m","unit":"North-MV-6"}],"limit_s":5.0,"longest_reaction_s":5.0,"seconds":30.0,"shots_while_moving":195,"soldiers_that_reacted":3,"squad_order":"Move","status":"DONE"}
+TAC follow_continues {"follow_order":"Follow","leader_status":"DONE","max_dist_to_leader_m":15.5,"orders_while_leader_stands_8s":0,"reactions":{}}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+BASE Saved 1 structures, 43 units, 5 squads to user://saves/ref_20km
+BASE Loaded 1 structures, 43 units, 5 squads
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC save_load_tactics {"damage_events":1,"damaging_shots":1,"dead_when_saved":5,"differences":[],"shots_after_load":16,"shots_by_dead_after_load":0,"tactics_after_load":{"in cover":4,"seeking cover":2},"tactics_when_saved":{"seeking cover":5}}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC tiers_with_tactics {"demotions":38,"health_vs_shot_damage_mismatch":0,"phases":[{"camera":"12 km away","shots":174,"test_bodies":0},{"camera":"at the fight","shots":195,"test_bodies":16},{"camera":"12 km away","shots":102,"test_bodies":0},{"camera":"at the fight","shots":169,"test_bodies":16}],"promotions":38,"stats":{"blockers":{"range":70,"terrain":410,"tree":43,"unit":117},"brain":{"acquisitions":0,"ai_shots":640,"cover":{"evaluations":54,"found":0,"none":54,"searches":54,"unreachable":0},"dropped":0,"friendly_holds":0,"line_cells":{"load_us_avg":810.5,"load_us_max":1989,"loads":113},"own_cover_holds":0,"prof_us_max":{"cover":233,"engage":1574,"perceive":696,"warm":6},"prof_us_per_frame":{"cover":4.5,"engage":287.1,"fire":172.3,"friendly":10.8,"grid":45.3,"perceive":122.1,"shot_events":14.0,"warm":0.9},"shot_budget_waits":0,"sight_checks":576,"sight_checks_per_frame":0.6,"sight_us_avg":104.2,"states":{"dead":4,"engaging":16,"idle":24},"switches":0,"tactics":{},"update_us_avg":463.9,"update_us_max":1717,"warm":{"cells":0,"queued":0,"waits":0}},"counter_gaps":0,"damage_events":117,"damaging_shots":117,"duplicate_counters":0,"hit_ratio":0.183,"hits":117,"rate_violations":0,"reloads":0,"shots":640,"sides":[{"alive":8,"fallen":0,"hits":66,"mean_ground_y":165.23,"misses_long":226,"misses_short":30,"shots":322,"squad":"North-T"},{"alive":8,"fallen":0,"hits":51,"mean_ground_y":165.27,"misses_long":241,"misses_short":26,"shots":318,"squad":"South-T"}]}}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+TAC shot: res://docs/combat02/c02_07_squad_panel_many_squads.jpg
+TAC squad_panel {"hud_text_top":419.0,"overlap_px":0.0,"panel_bottom":403.0,"row":"Extra-0  [N]  4  Line  None   | 4 engaging, 2 under fire","squads":9}
+TAC PASS []

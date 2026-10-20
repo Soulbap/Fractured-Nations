@@ -1,23 +1,34 @@
-## Autonomous soldier combat (COMBAT-01b): perception, target choice and firing.
+## Autonomous soldier combat: perception, target choice, firing (COMBAT-01b) and basic
+## tactical reactions to incoming fire (COMBAT-02).
 ##
 ## Works on UnitState records only - never on bodies, proxies or the camera - so a
 ## soldier fights the same way in the detailed and the abstract tier and nothing changes
 ## when it is promoted, demoted, saved or loaded. Every shot goes through
 ## CombatSim.request_fire(..., Source.AI): the same weapon, ammunition, reload, spread,
-## damage and line-of-fire resolution as the player's rifle. The brain only decides
-## when and where to pull the trigger; it never moves a soldier (squad and unit orders
-## stay in charge of movement) and never touches the possessed soldier.
+## damage and line-of-fire resolution as the player's rifle. The possessed soldier is
+## never touched.
 ##
-## Per soldier the state is small (UnitState.ai_state and the target fields):
+## Combat state per soldier (UnitState.ai_state and the target fields):
 ##   IDLE / OBSERVING -> ENGAGING (visible enemy) -> LOST_TARGET (hidden, remembered for
 ##   target_memory_s) -> OBSERVING (looks at the last known position) -> IDLE;
 ##   RELOADING while a magazine change runs; DEAD; PLAYER while possessed.
 ##
+## Tactical reaction per soldier (UnitState.tactic, COMBAT-02):
+##   NONE -> (under fire: shots passing close, hits, a squad mate under fire) a local cover
+##   search -> SEEK_COVER (walking to it) -> IN_COVER (fights from there) -> back to NONE
+##   when the reaction's time is up (Move / Follow / Regroup) or, holding an area, after a
+##   calm period through RETURNING to the held spot. The reaction moves the soldier only
+##   through UnitState.react_target, a temporary goal the body / abstract step prefers to
+##   the order; the order itself and the squad's order are never changed here, and any
+##   new player order ends the reaction (WorldState.issue_move / halt).
+##
 ## Cost: perception runs perception_hz times per second per soldier, staggered over the
-## physics frames (round robin), with at most los_budget sight checks per frame across
-## all soldiers. Candidates come from a coarse grid of living soldiers, nearest first,
-## inside the field of view or the close-awareness radius. Firing decisions run every
-## frame but cost nothing until a shot is due.
+## physics frames (round robin) with at most los_budget sight checks per frame. Candidates
+## come from a per-faction grid, nearest first, without sorting everyone. Per frame only
+## soldiers with something to do (a target, a reload, a reaction, a look direction) are
+## processed. Cover searches are spread over frames (cover_budget evaluations per frame).
+## Vegetation cells are filled ahead of sight lines (warm_cells_per_frame), so the first
+## look into a forest does not stall a frame.
 class_name CombatBrain
 extends RefCounted
 
@@ -45,6 +56,18 @@ var watch_after_lost_s := 8.0
 var hearing_m := 150.0
 ## Squad mates within this distance are told where a newly seen enemy is (m).
 var contact_share_m := 120.0
+## Idle soldiers' attention sweeps this far to each side of their heading, once per
+## idle_scan_s (degrees, seconds).
+var idle_scan_deg := 110.0
+var idle_scan_s := 8.0
+## Vegetation cells filled per physics frame ahead of sight lines.
+var warm_cells_per_frame := 1
+## Soldiers farther than far_m from the observer (the active camera's focus or the
+## possessed soldier) perceive at half rate. Saves time in distant battles; the outcome
+## of a distant fight then depends a little on where the camera was (off: identical
+## wherever the camera is).
+var distance_lod := true
+var far_m := 700.0
 
 # --- Engagement ------------------------------------------------------------------------
 ## Targets farther than this are tracked but not fired at (m).
@@ -61,8 +84,49 @@ var aim_error_moving_deg := 1.2
 var track_lag_s := 0.2
 ## Extra clearance kept around friends in the line of fire (m), for the weapon spread.
 var friendly_margin_m := 0.5
+## At most this many AI shots per physics frame; a soldier over the budget fires one
+## frame later (its fire interval is kept). Bursts of many shooters falling on the same
+## frame were the largest frame spikes at 100 v 100.
+var ai_shot_budget := 10
 ## A partly emptied magazine is refilled when no enemy is in sight below this fraction.
 var tactical_reload_fraction := 0.5
+
+# --- Tactical reactions (COMBAT-02) ---------------------------------------------------
+var tactics_enabled := true
+## A shot passing this close (or a hit) puts a soldier under fire (m).
+var near_miss_m := 3.0
+## Under fire lasts this long after the last such shot (s).
+var under_fire_s := 6.0
+## Squad mates this close to a soldier that comes under fire are alerted too (m).
+var squad_alert_m := 30.0
+## Cover search radius and reaction time per order: holding an area / walking a Move
+## order / following / regrouping. Holding has no time limit (it returns when calm).
+var cover_radius_hold := 12.0
+var cover_radius_move := 6.0
+var cover_radius_follow := 8.0
+var cover_radius_regroup := 5.0
+var react_s_move := 5.0
+var react_s_follow := 8.0
+var react_s_regroup := 4.0
+## A brief Move / Regroup reaction is not repeated before this pause (s).
+var move_react_cooldown_s := 12.0
+## No threat for this long: the reaction ends (holding: back to the held spot) (s).
+var calm_s := 10.0
+## Cover is kept at least this long before a better spot is considered (s), and its
+## protection re-checked this often.
+var min_dwell_s := 6.0
+var recheck_s := 4.0
+## Cover candidate evaluations per physics frame for all soldiers together.
+var cover_budget := 16
+## Cover counts when the blocker is this close to the soldier (m): structures, rocks and
+## trunks / terrain (a reverse slope protects from a little farther).
+var cover_contact_m := 6.0
+var cover_terrain_m := 15.0
+## A cover spot that could not be reached is not chosen again for this long (s).
+var bad_cover_s := 30.0
+var max_cover_candidates := 14
+## Two soldiers do not take cover spots closer than this (m).
+var cover_spacing_m := 1.1
 
 # --- Measurements ---------------------------------------------------------------------
 var sight_checks := 0
@@ -73,10 +137,22 @@ var update_usec_max := 0
 var frames := 0
 var ai_shots := 0
 var friendly_holds := 0
+var own_cover_holds := 0
 var acquisitions := 0
 var target_switches := 0
 var dropped_targets := 0
+var cover_searches := 0
+var cover_evals := 0
+var cover_found := 0
+var cover_none := 0
+var cover_unreachable := 0
+var warm_cells := 0
+var warm_waits := 0
 var last_frame_checks := 0
+## Profiling (usec totals since reset_stats): where update() spends its time.
+var prof := {"perceive": 0, "engage": 0, "fire": 0, "friendly": 0, "grid": 0, "cover": 0, "warm": 0, "shot_events": 0}
+## Largest single-frame time per section (usec) since reset_stats.
+var prof_max := {"perceive": 0, "engage": 0, "cover": 0, "warm": 0}
 var last_frame_usec := 0
 ## Recent decisions for the debug overlay / log: {t, unit, text}. Short ring buffer.
 var events: Array[Dictionary] = []
@@ -84,11 +160,32 @@ var log_events := false
 
 var sim: WorldSim
 var _queue: PackedInt32Array = PackedInt32Array()
+var _queue_dirty := true
 var _qi := 0
 var _accum := 0.0
+## 64 m cells -> soldiers (all factions), and per faction 128 m cells -> soldiers.
 var _grid := {}
+var _fgrid := {}
 var _grid_frame := -1
+## Cover searches in progress: unit id -> {cands, i, accepted, mode, center, radius, limit, threat}.
+var _searches := {}
+## unit id -> [[position, until], ...] cover spots that could not be reached.
+var _bad_cover := {}
+var _warm_queue: Array[Vector2i] = []
+var _warm_set := {}
+var _extent := {}
+var _lod_skip := {}
+## Reserved cover spots [position, unit] (rebuilt with the grid every frame; a soldier
+## walking to its cover is far from the spot, so the position grid does not find it).
+var _covers: Array = []
+var _shots_left := 0
+var _ei := 0
+var budget_waits := 0
+## Recent shots [origin, shooter faction, time] for hearing (checked by soldiers without
+## a target at their perception update instead of every shot scanning every listener).
+var _recent_shots: Array = []
 const GRID := 64.0
+const FGRID := 128.0
 const MAX_EVENTS := 200
 
 
@@ -96,11 +193,19 @@ func _init(p_sim: WorldSim) -> void:
 	sim = p_sim
 
 
-## Hearing and being hit turn a soldier towards the source (no position knowledge).
+## Hearing, hits and deaths feed the soldiers' awareness; membership changes rebuild the
+## perception queue.
 func connect_signals() -> void:
 	sim.state.shot_fired.connect(_on_shot)
 	sim.state.unit_damaged.connect(_on_damaged)
 	sim.state.unit_died.connect(_on_died)
+	sim.state.unit_added.connect(func(_u: UnitState) -> void: _queue_dirty = true)
+	sim.state.unit_removed.connect(func(id: int) -> void:
+		_queue_dirty = true
+		_searches.erase(id))
+	sim.state.restored.connect(func() -> void:
+		_queue_dirty = true
+		_searches.clear())
 
 
 func reset_stats() -> void:
@@ -112,9 +217,22 @@ func reset_stats() -> void:
 	frames = 0
 	ai_shots = 0
 	friendly_holds = 0
+	own_cover_holds = 0
 	acquisitions = 0
 	target_switches = 0
 	dropped_targets = 0
+	cover_searches = 0
+	cover_evals = 0
+	cover_found = 0
+	cover_none = 0
+	cover_unreachable = 0
+	warm_cells = 0
+	warm_waits = 0
+	budget_waits = 0
+	for k in prof:
+		prof[k] = 0
+	for k in prof_max:
+		prof_max[k] = 0
 
 
 func update(delta: float) -> void:
@@ -122,9 +240,17 @@ func update(delta: float) -> void:
 		return
 	var t0 := Time.get_ticks_usec()
 	var checks0 := sight_checks
-	if _queue.size() != _living_count() or Engine.get_physics_frames() % 120 == 0:
+	if _queue_dirty or Engine.get_physics_frames() % 120 == 0:
 		_rebuild_queue()
-	# Perception: each soldier perception_hz times per second, spread over the frames.
+	_ensure_grid()
+	var tw := Time.get_ticks_usec()
+	_warm_step()
+	var tq := Time.get_ticks_usec()
+	prof.warm += tq - tw
+	prof_max.warm = maxi(prof_max.warm, tq - tw)
+	_prune_recent_shots()
+	# Perception (and the tactical decision): each soldier perception_hz times per
+	# second, spread over the frames.
 	_accum = minf(_accum + delta * perception_hz * _queue.size(), float(_queue.size()))
 	var budget := los_budget
 	while _accum >= 1.0 and budget > 0 and not _queue.is_empty():
@@ -132,17 +258,56 @@ func update(delta: float) -> void:
 		_qi = _qi % _queue.size()
 		var u := sim.state.get_unit(_queue[_qi])
 		_qi += 1
-		if u:
-			budget -= _perceive(u, budget)
-	# Engagement: every frame, cheap until a shot is due.
-	for u: UnitState in sim.state.units.values():
-		if u.kind == UnitState.Kind.SOLDIER:
-			_engage(u)
+		if u == null:
+			continue
+		# Far from the observer, every other turn is skipped: half the perception rate
+		# for distant battles (they still fight; reactions are a little slower).
+		if distance_lod and _is_far(u):
+			_lod_skip[u.id] = not _lod_skip.get(u.id, false)
+			if _lod_skip[u.id]:
+				continue
+		budget -= _perceive(u, budget)
+		if tactics_enabled:
+			_tactics(u)
+	var tp := Time.get_ticks_usec()
+	prof.perceive += tp - tq
+	prof_max.perceive = maxi(prof_max.perceive, tp - tq)
+	if tactics_enabled:
+		_search_step()
+	var tc := Time.get_ticks_usec()
+	prof.cover += tc - tp
+	prof_max.cover = maxi(prof_max.cover, tc - tp)
+	# Engagement: every frame for soldiers with something to do. The start rotates so
+	# the shot budget does not always favour the same soldiers.
+	var now := sim.state.time
+	_shots_left = ai_shot_budget
+	var nq := _queue.size()
+	_ei = (_ei + 1) % maxi(nq, 1)
+	for j in nq:
+		var id := _queue[(_ei + j) % nq]
+		var u := sim.state.get_unit(id)
+		if u == null:
+			continue
+		if u.target_id < 0 and not u.is_reloading() and u.watch_until < now and not u.player_controlled \
+				and (u.mag * 2 >= _mag_size(u) or u.reserve <= 0):
+			if u.ai_state != UnitState.AiState.IDLE:
+				u.ai_state = UnitState.AiState.IDLE
+				u.ai_reason = "no target"
+				u.watch_yaw = NAN
+			continue
+		_engage(u)
+	prof.engage += Time.get_ticks_usec() - tc
+	prof_max.engage = maxi(prof_max.engage, Time.get_ticks_usec() - tc)
 	last_frame_checks = sight_checks - checks0
 	last_frame_usec = Time.get_ticks_usec() - t0
 	update_usec += last_frame_usec
 	update_usec_max = maxi(update_usec_max, last_frame_usec)
 	frames += 1
+
+
+func _mag_size(u: UnitState) -> int:
+	var def := sim.combat.weapon(u.weapon_id)
+	return def.magazine_size if def else 0
 
 
 # --- Perception ------------------------------------------------------------------------
@@ -157,6 +322,18 @@ func _perceive(u: UnitState, budget: int) -> int:
 	perception_updates += 1
 	var now := sim.state.time
 	var eye := CombatSim.eye_of(u)
+	# Hearing: the nearest recent enemy shot within hearing_m turns an idle soldier.
+	if u.target_id < 0 and u.watch_until < now:
+		var heard := Vector3.INF
+		var hd := hearing_m
+		for r: Array in _recent_shots:
+			if r[1] != u.faction:
+				var d := _flat(u.position, r[0])
+				if d < hd:
+					hd = d
+					heard = r[0]
+		if heard.is_finite():
+			_watch(u, heard, 5.0)
 	var used := 0
 	var cur := sim.state.get_unit(u.target_id)
 	if cur and (not cur.alive or cur.faction == u.faction):
@@ -166,26 +343,27 @@ func _perceive(u: UnitState, budget: int) -> int:
 	var cur_dist := INF
 	if cur:
 		cur_dist = _flat(u.position, cur.position)
-		if cur_dist <= sight_range:
+		if cur_dist <= sight_range and _line_warm(eye, cur.position):
 			var s := _see(eye, cur, u.target_aim_y)
 			used += s.checks
 			cur_visible = s.visible
 			if cur_visible:
 				u.target_aim_y = s.aim_y
+		elif cur_dist <= sight_range:
+			cur_visible = u.target_visible  # cells still filling: keep the last answer
 	# Look for a (closer) enemy: always when the target is hidden or missing, otherwise
 	# only among enemies clearly closer than the current one.
 	var best: UnitState = null
 	var best_aim := 1.0
 	var tried := 0
-	for c: UnitState in _enemies_near(u, sight_range):
+	var max_d := cur_dist * switch_ratio if cur_visible else sight_range
+	for c: UnitState in _candidates(u, max_d, max_candidates + 1):
 		if used >= budget or tried >= max_candidates:
 			break
 		if c == cur:
 			continue
-		var d := _flat(u.position, c.position)
-		if cur_visible and d >= cur_dist * switch_ratio:
-			break  # sorted by distance: nobody closer enough follows
-		if d > awareness_m and not _in_fov(u, c.position):
+		if not _line_warm(eye, c.position):
+			warm_waits += 1
 			continue
 		tried += 1
 		var s := _see(eye, c, 1.55)
@@ -207,6 +385,46 @@ func _perceive(u: UnitState, budget: int) -> int:
 	else:
 		u.target_visible = false
 	return used
+
+
+## Up to k living enemies within max_d, nearest first, that the soldier can notice (in
+## its field of view, or within awareness_m). Per-faction 128 m grid; no full sort.
+func _candidates(u: UnitState, max_d: float, k: int) -> Array:
+	var out := []
+	var dists := PackedFloat32Array()
+	var p := u.position
+	var look := look_yaw(u)
+	var fx := -sin(look)
+	var fz := -cos(look)
+	var cos_half := cos(deg_to_rad(fov_deg * 0.5))
+	var r2 := max_d * max_d
+	var aw2 := awareness_m * awareness_m
+	var c0 := Vector2i(floori((p.x - max_d) / FGRID), floori((p.z - max_d) / FGRID))
+	var c1 := Vector2i(floori((p.x + max_d) / FGRID), floori((p.z + max_d) / FGRID))
+	for f: int in _fgrid:
+		if f == u.faction:
+			continue
+		var cells: Dictionary = _fgrid[f]
+		for x in range(c0.x, c1.x + 1):
+			for z in range(c0.y, c1.y + 1):
+				var arr: Array = cells.get(Vector2i(x, z), [])
+				for c: UnitState in arr:
+					var dx := c.position.x - p.x
+					var dz := c.position.z - p.z
+					var d2 := dx * dx + dz * dz
+					if d2 > r2:
+						continue
+					if d2 > aw2 and (dx * fx + dz * fz) < cos_half * sqrt(d2):
+						continue
+					if out.size() >= k and d2 >= dists[k - 1]:
+						continue
+					var i := dists.bsearch(d2)
+					dists.insert(i, d2)
+					out.insert(i, c)
+					if out.size() > k:
+						out.pop_back()
+						dists.remove_at(k)
+	return out
 
 
 ## Sight from an eye to a soldier: first the height that was visible last time, then
@@ -251,6 +469,10 @@ func _acquire(u: UnitState, t: UnitState, aim_y: float) -> void:
 		u.burst_left = 0
 		_event(u, "sees %s at %.0f m" % [t.unit_name, d])
 		_share_contact(u, t)
+		# Shots that miss fly on: fill the vegetation cells beyond the target too.
+		var eye := CombatSim.eye_of(u)
+		var far := eye + (t.position - u.position).normalized() * 600.0
+		_line_warm(eye, far)
 	u.target_aim_y = aim_y
 	u.target_seen_at = now
 	u.target_last_pos = t.position
@@ -289,21 +511,38 @@ func _watch(u: UnitState, at: Vector3, seconds: float) -> void:
 	u.watch_until = sim.state.time + seconds
 
 
+## Every shot: enemies of the shooter within hearing_m look towards it; enemies it
+## passed within near_miss_m (or hit) come under fire.
 func _on_shot(shot: Dictionary) -> void:
 	if not enabled:
 		return
+	var t0 := Time.get_ticks_usec()
 	var s := sim.state.get_unit(shot.shooter)
 	if s == null:
 		return
 	var origin: Vector3 = shot.origin
+	var end: Vector3 = shot.end
 	_ensure_grid()
-	for u: UnitState in _near(origin, hearing_m):
-		if u.faction != s.faction and u.target_id < 0 and not u.player_controlled and u.watch_until < sim.state.time:
-			_watch(u, origin, 5.0)
+	_recent_shots.append([origin, s.faction, sim.state.time])
+	if tactics_enabled:
+		var a := Vector2(origin.x, origin.z)
+		var b := Vector2(end.x, end.z)
+		if a.distance_to(b) > 450.0:
+			b = a + (b - a).normalized() * 450.0
+		for u: UnitState in units_near_segment(a, b, near_miss_m):
+			if u.faction != s.faction and u.alive and not u.player_controlled:
+				# Vertical check too: a shot far overhead does not count.
+				var pts := Geometry3D.get_closest_points_between_segments(origin, end, u.position, u.position + Vector3.UP * 1.8)
+				if pts[0].distance_to(pts[1]) <= near_miss_m:
+					_under_fire(u, origin)
+	prof.shot_events += Time.get_ticks_usec() - t0
 
 
-## A soldier died: everyone tracking it lets go at once (not at their next update).
+## A soldier died: everyone tracking it lets go at once (not at their next update); its
+## cover search and reservation go.
 func _on_died(t: UnitState) -> void:
+	_searches.erase(t.id)
+	t.clear_reaction()
 	for u: UnitState in sim.state.units.values():
 		if u.target_id == t.id:
 			_drop_target(u, "target down")
@@ -315,18 +554,52 @@ func _on_damaged(t: UnitState, _amount: float, _zone: int, source_id: int) -> vo
 		return
 	if t.target_id < 0 or not t.target_visible:
 		_watch(t, s.position, 5.0)
+	if tactics_enabled and s.faction != t.faction:
+		_under_fire(t, CombatSim.eye_of(s))
 
 
-## Living enemy soldiers within r, nearest first (coarse grid, no global scan).
-func _enemies_near(u: UnitState, r: float) -> Array:
-	_ensure_grid()
-	var out := []
-	for c: UnitState in _near(u.position, r):
-		if c.faction != u.faction:
-			out.append(c)
-	var p := u.position
-	out.sort_custom(func(a: UnitState, b: UnitState) -> bool: return _flat(a.position, p) < _flat(b.position, p))
-	return out
+## Under fire: the soldier knows roughly where from (the shooter's position, blurred by a
+## seeded error of up to 8 % of the distance sideways), not who or exactly where.
+func _under_fire(u: UnitState, from: Vector3, alert_squad := true) -> void:
+	var now := sim.state.time
+	var first := u.under_fire_until < now
+	u.under_fire_until = now + under_fire_s
+	u.threat_at = now
+	if first or not u.threat_pos.is_finite() or _flat(u.threat_pos, from) > 30.0:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash([sim.state.world_seed, u.id, int(now * 4.0), 31])
+		var d := _flat(u.position, from)
+		var side := Vector3(-(from.z - u.position.z), 0.0, from.x - u.position.x).normalized()
+		u.threat_pos = Vector3(from.x, from.y - CombatSim.EYE_HEIGHT, from.z) + side * rng.randf_range(-0.08, 0.08) * d
+	if u.target_id < 0:
+		_watch(u, u.threat_pos, 5.0)
+	if first:
+		_event(u, "under fire from %.0f m" % _flat(u.position, from))
+		if alert_squad:
+			var sq := sim.state.squad_of(u.id)
+			if sq:
+				for id in sq.members:
+					var m := sim.state.get_unit(id)
+					if m and m != u and not m.player_controlled and m.under_fire_until < now and _flat(m.position, u.position) <= squad_alert_m:
+						_under_fire(m, from, false)
+						m.under_fire_until = now + under_fire_s * 0.6
+
+
+# --- Spatial index ---------------------------------------------------------------------
+
+func _prune_recent_shots() -> void:
+	var now := sim.state.time
+	var keep := []
+	for r: Array in _recent_shots:
+		if now - r[2] <= 1.0:
+			keep.append(r)
+	_recent_shots = keep.slice(-96) if keep.size() > 96 else keep
+
+
+func _is_far(u: UnitState) -> bool:
+	if sim.detail == null:
+		return false
+	return _flat(u.position, sim.detail.observer) > far_m
 
 
 func _near(p: Vector3, r: float) -> Array:
@@ -341,22 +614,61 @@ func _near(p: Vector3, r: float) -> Array:
 	return out
 
 
+## Living soldiers whose position lies within r of the 2D segment a-b (r up to a few
+## metres): the cells the segment crosses plus their neighbours. Used by LineOfFire for
+## shots (instead of scanning every unit) and for near misses.
+func units_near_segment(a: Vector2, b: Vector2, r: float) -> Array:
+	_ensure_grid()
+	var cells := {}
+	var seg := b - a
+	# Samples at most one cell apart, each with its 3 x 3 neighbourhood: any point within
+	# r (a few metres) of the segment lies in one of these cells.
+	var n := maxi(1, ceili(seg.length() / GRID))
+	for k in n + 1:
+		var q := a + seg * (float(k) / n)
+		var c := Vector2i(floori(q.x / GRID), floori(q.y / GRID))
+		for dx in range(-1, 2):
+			for dz in range(-1, 2):
+				cells[c + Vector2i(dx, dz)] = true
+	var out := []
+	for c: Vector2i in cells:
+		for u: UnitState in _grid.get(c, []):
+			if LineOfFire._point_segment_dist2d(Vector2(u.position.x, u.position.z), a, b) <= r:
+				out.append(u)
+	return out
+
+
 func _ensure_grid() -> void:
 	var f := Engine.get_physics_frames()
 	if f == _grid_frame:
 		return
+	var tg := Time.get_ticks_usec()
 	_grid_frame = f
 	_grid.clear()
+	_fgrid.clear()
+	_covers.clear()
 	for u: UnitState in sim.state.units.values():
 		if u.alive and u.kind == UnitState.Kind.SOLDIER:
+			if u.cover_pos.is_finite():
+				_covers.append([u.cover_pos, u])
 			var k := Vector2i(floori(u.position.x / GRID), floori(u.position.z / GRID))
 			if not _grid.has(k):
 				_grid[k] = []
 			_grid[k].append(u)
+			if not _fgrid.has(u.faction):
+				_fgrid[u.faction] = {}
+			var fk := Vector2i(floori(u.position.x / FGRID), floori(u.position.z / FGRID))
+			var cells: Dictionary = _fgrid[u.faction]
+			if not cells.has(fk):
+				cells[fk] = []
+			cells[fk].append(u)
+	prof.grid += Time.get_ticks_usec() - tg
 
 
 ## Where the soldier is looking: at its target, else where it was told / heard to look,
-## else straight ahead.
+## else scanning around its heading (COMBAT-02: idle soldiers sweep idle_scan_deg to
+## each side over idle_scan_s, so one that ended up facing the wrong way is not blind
+## behind it for good; the body does not turn for this).
 func look_yaw(u: UnitState) -> float:
 	if u.target_id > 0 and u.target_last_pos.is_finite():
 		var d := u.target_last_pos - u.position
@@ -364,13 +676,7 @@ func look_yaw(u: UnitState) -> float:
 			return atan2(-d.x, -d.z)
 	if not is_nan(u.watch_yaw) and u.watch_until >= sim.state.time:
 		return u.watch_yaw
-	return u.yaw
-
-
-func _in_fov(u: UnitState, p: Vector3) -> bool:
-	var d := Vector3(p.x - u.position.x, 0.0, p.z - u.position.z)
-	var yaw := atan2(-d.x, -d.z)
-	return absf(angle_difference(look_yaw(u), yaw)) <= deg_to_rad(fov_deg * 0.5)
+	return u.yaw + deg_to_rad(idle_scan_deg) * sin(TAU * sim.state.time / idle_scan_s + u.id * 1.7)
 
 
 func _rebuild_queue() -> void:
@@ -379,14 +685,441 @@ func _rebuild_queue() -> void:
 		if u.alive and u.kind == UnitState.Kind.SOLDIER:
 			_queue.append(u.id)
 	_qi = _qi % maxi(_queue.size(), 1)
+	_queue_dirty = false
 
 
-func _living_count() -> int:
+# --- Vegetation warm-up ------------------------------------------------------------------
+
+## True when every vegetation cell along the line is filled; otherwise queues the missing
+## ones (filled warm_cells_per_frame per frame) and returns false.
+func _line_warm(a: Vector3, b: Vector3) -> bool:
+	var line := sim.combat.line
+	if line.vegetation == null:
+		return true
+	var ready := true
+	var cs: float = line.vegetation.cell_size_m
+	var n := maxi(1, ceili(_flat(a, b) / (cs * 0.5)))
+	for k in n + 1:
+		var q := a.lerp(b, float(k) / n)
+		var c := Vector2i(floori(q.x / cs), floori(q.z / cs))
+		for d: Vector2i in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var cc := c + d
+			if not line.cell_ready(cc):
+				ready = false
+				if not _warm_set.has(cc):
+					_warm_set[cc] = true
+					_warm_queue.append(cc)
+	return ready
+
+
+func _warm_step() -> void:
 	var n := 0
-	for u: UnitState in sim.state.units.values():
-		if u.alive and u.kind == UnitState.Kind.SOLDIER:
+	while n < warm_cells_per_frame and not _warm_queue.is_empty():
+		var c: Vector2i = _warm_queue.pop_front()
+		_warm_set.erase(c)
+		if not sim.combat.line.cell_ready(c):
+			sim.combat.line.warm(c)
+			warm_cells += 1
 			n += 1
-	return n
+
+
+# --- Tactical reactions (COMBAT-02) ------------------------------------------------------
+
+## What the soldier's order allows: "hold" (an area, no time limit), "move", "follow",
+## "regroup" (brief reactions near where it is), "player" (none).
+func order_mode(u: UnitState) -> String:
+	if u.player_controlled:
+		return "player"
+	var sq := sim.state.squad_of(u.id)
+	if sq and not sq.is_detached(u.id):
+		match sq.order:
+			SquadState.Order.FOLLOW:
+				return "follow"
+			SquadState.Order.REGROUP:
+				return "regroup" if u.order == UnitState.Order.MOVE else "hold"
+			SquadState.Order.MOVE:
+				return "move" if u.order == UnitState.Order.MOVE else "hold"
+	return "move" if u.order == UnitState.Order.MOVE else "hold"
+
+
+func _tactics(u: UnitState) -> void:
+	if not u.alive:
+		return
+	var now := sim.state.time
+	var mode := order_mode(u)
+	if mode == "player":
+		if u.tactic != UnitState.Tactic.NONE or u.is_reacting():
+			u.clear_reaction()
+		_searches.erase(u.id)
+		return
+	var threatened := u.under_fire_until >= now and u.threat_pos.is_finite()
+	match u.tactic:
+		UnitState.Tactic.NONE:
+			if u.is_reacting():
+				u.clear_reaction()
+			if threatened and now >= u.tactic_cooldown_until and not _searches.has(u.id):
+				_start_search(u, mode)
+			elif mode == "hold" and not threatened and now - u.threat_at > calm_s and u.anchor_pos.is_finite() 					and _flat(u.position, u.anchor_pos) > 2.5 and now >= u.tactic_cooldown_until:
+				# A reaction that ended away from the held spot (cover not reached, cover no
+				# longer useful): walk back once it is calm.
+				u.tactic = UnitState.Tactic.RETURNING
+				u.tactic_since = now
+				u.react_target = u.anchor_pos
+				u.react_state = UnitState.ReactState.MOVING
+				u.cover_note = "calm: back to the held position"
+		UnitState.Tactic.SEEK_COVER:
+			if _searches.has(u.id):
+				return
+			if u.react_state == UnitState.ReactState.ARRIVED:
+				u.tactic = UnitState.Tactic.IN_COVER
+				u.tactic_since = now
+				u.cover_checked_at = now
+				_event(u, "in cover")
+			elif u.react_state == UnitState.ReactState.FAILED or now - u.tactic_since > 20.0:
+				_mark_bad(u, u.cover_pos)
+				cover_unreachable += 1
+				u.cover_note = "could not reach cover: rejected for %.0f s" % bad_cover_s
+				_end_reaction(u, 1.0)
+			elif now > u.react_until:
+				u.cover_note = "reaction time over: order resumes"
+				_end_reaction(u, move_react_cooldown_s)
+		UnitState.Tactic.IN_COVER:
+			if now > u.react_until:
+				u.cover_note = "reaction time over: order resumes"
+				_end_reaction(u, move_react_cooldown_s)
+			elif now - u.threat_at > calm_s:
+				var anchor := u.anchor_pos
+				if mode == "hold" and anchor.is_finite() and _flat(u.position, anchor) > 2.0:
+					u.tactic = UnitState.Tactic.RETURNING
+					u.tactic_since = now
+					u.react_target = anchor
+					u.react_state = UnitState.ReactState.MOVING
+					u.cover_pos = Vector3.INF
+					u.cover_note = "calm: back to the held position"
+				else:
+					u.cover_note = "calm"
+					_end_reaction(u, 2.0)
+			elif now - u.cover_checked_at >= recheck_s and u.threat_pos.is_finite():
+				u.cover_checked_at = now
+				var ev := _evaluate_spot(u, u.position, u.threat_pos)
+				if not ev.protected and now - u.tactic_since >= min_dwell_s:
+					u.cover_note = "cover no longer protects: looking again"
+					_end_reaction(u, 0.0)
+		UnitState.Tactic.RETURNING:
+			if not u.is_reacting() or u.react_state != UnitState.ReactState.MOVING:
+				u.clear_reaction()
+			elif threatened and now >= u.tactic_cooldown_until:
+				u.clear_reaction()
+
+
+func _end_reaction(u: UnitState, cooldown: float) -> void:
+	_searches.erase(u.id)
+	u.clear_reaction()
+	u.tactic_cooldown_until = sim.state.time + cooldown
+
+
+func _mark_bad(u: UnitState, p: Vector3) -> void:
+	if not p.is_finite():
+		return
+	if not _bad_cover.has(u.id):
+		_bad_cover[u.id] = []
+	_bad_cover[u.id].append([p, sim.state.time + bad_cover_s])
+
+
+func _is_bad(u: UnitState, p: Vector3) -> bool:
+	var now := sim.state.time
+	var keep := []
+	var bad := false
+	for e: Array in _bad_cover.get(u.id, []):
+		if e[1] > now:
+			keep.append(e)
+			if _flat(e[0], p) < 1.5:
+				bad = true
+	if _bad_cover.has(u.id):
+		_bad_cover[u.id] = keep
+	return bad
+
+
+func _start_search(u: UnitState, mode: String) -> void:
+	var center := u.position
+	var radius := cover_radius_hold
+	var limit := INF
+	match mode:
+		"hold":
+			if not u.anchor_pos.is_finite():
+				u.anchor_pos = u.position
+			center = u.anchor_pos
+		"move":
+			radius = cover_radius_move
+			limit = react_s_move
+		"follow":
+			radius = cover_radius_follow
+			limit = react_s_follow
+		"regroup":
+			radius = cover_radius_regroup
+			limit = react_s_regroup
+	var cands := _cover_candidates(u, center, radius, u.threat_pos)
+	if cands.is_empty():
+		u.cover_note = "waiting for vegetation data"
+		return
+	cover_searches += 1
+	_searches[u.id] = {"cands": cands, "i": 0, "accepted": [],
+		"mode": mode, "limit": limit, "threat": u.threat_pos, "rejects": {}}
+	u.tactic = UnitState.Tactic.SEEK_COVER
+	u.tactic_since = sim.state.time
+	u.cover_note = "looking for cover (%s, %.0f m)" % [mode, radius]
+
+
+## Evaluates pending cover candidates, cover_budget per frame for everyone together,
+## and finishes searches whose candidates are all evaluated.
+func _search_step() -> void:
+	var budget := cover_budget
+	for id: int in _searches.keys():
+		if budget <= 0:
+			return
+		var u := sim.state.get_unit(id)
+		if u == null or not u.alive:
+			_searches.erase(id)
+			continue
+		var s: Dictionary = _searches[id]
+		var cands: Array = s.cands
+		while s.i < cands.size() and budget > 0:
+			var c: Dictionary = cands[s.i]
+			s.i += 1
+			budget -= 1
+			cover_evals += 1
+			var why := _reject(u, c.p)
+			if why != "":
+				s.rejects[why] = s.rejects.get(why, 0) + 1
+				continue
+			var ev := _evaluate_spot(u, c.p, s.threat)
+			if not ev.protected:
+				s.rejects["no protection from the threat"] = s.rejects.get("no protection from the threat", 0) + 1
+				continue
+			c["can_fire"] = ev.can_fire
+			c["score"] = _cover_score(u, c, ev)
+			s.accepted.append(c)
+		if s.i >= cands.size():
+			_finish_search(u, s)
+
+
+func _finish_search(u: UnitState, s: Dictionary) -> void:
+	_searches.erase(u.id)
+	var accepted: Array = s.accepted
+	accepted.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.score > b.score)
+	var now := sim.state.time
+	for c: Dictionary in accepted:
+		# Another soldier may have taken the spot since it was evaluated.
+		if c.kind != "here" and _reject(u, c.p) != "":
+			continue
+		if c.kind != "here" and not _reachable(u, c.p):
+			_mark_bad(u, c.p)
+			cover_unreachable += 1
+			continue
+		cover_found += 1
+		u.cover_pos = c.p
+		_covers.append([c.p, u])
+		u.react_target = u.position if c.kind == "here" else c.p
+		u.react_state = UnitState.ReactState.ARRIVED if c.kind == "here" else UnitState.ReactState.MOVING
+		u.react_until = now + s.limit if s.limit < INF else INF
+		u.tactic = UnitState.Tactic.IN_COVER if c.kind == "here" else UnitState.Tactic.SEEK_COVER
+		u.tactic_since = now
+		u.cover_checked_at = now
+		u.cover_note = "%s: %s %.0f m (%s)" % ["staying" if c.kind == "here" else "cover", c.kind, c.d,
+			"can fire" if c.can_fire else "full cover"]
+		_event(u, u.cover_note)
+		return
+	cover_none += 1
+	var rej: Dictionary = s.rejects
+	var top := ""
+	var most := 0
+	for k: String in rej:
+		if rej[k] > most:
+			most = rej[k]
+			top = k
+	u.cover_note = "no usable cover within %s (%s)" % [s.mode, top if top != "" else "no candidates"]
+	u.tactic = UnitState.Tactic.NONE
+	u.tactic_cooldown_until = now + 4.0
+
+
+## Candidate spots, cheapest first: where the soldier stands; behind structure modules,
+## rocks and trunks (relative to the threat); terrain spots with a rise towards the
+## threat. Only within radius of center, on usable ground; at most max_cover_candidates.
+func _cover_candidates(u: UnitState, center: Vector3, radius: float, threat: Vector3) -> Array:
+	var tdir := Vector3(threat.x - u.position.x, 0.0, threat.z - u.position.z)
+	tdir = tdir.normalized() if tdir.length() > 0.1 else Vector3.FORWARD
+	var out := []
+	out.append({"p": u.position, "kind": "here", "d": 0.0})
+	var st := sim.structures
+	if st and st.state:
+		var cs := StructureManager.CELL
+		var c0 := Vector2i(floori((center.x - radius - 10.0) / cs), floori((center.z - radius - 10.0) / cs))
+		var c1 := Vector2i(floori((center.x + radius + 10.0) / cs), floori((center.z + radius + 10.0) / cs))
+		for x in range(c0.x, c1.x + 1):
+			for z in range(c0.y, c1.y + 1):
+				for e: Vector2i in st._index.get(Vector2i(x, z), []):
+					var s := st.state.get_structure(e.x)
+					if s == null or (s.is_line() and s.is_removed(e.y)) or e.y >= s.instances.size():
+						continue
+					var o: Vector3 = s.instances[e.y].origin
+					if _flat(o, center) > radius + 6.0:
+						continue
+					var p := o - tdir * (_half_extent(s.type_id) + 0.6)
+					_add_candidate(out, u, center, radius, p, "structure")
+	var line := sim.combat.line
+	if line.vegetation:
+		var b0 := Vector2i(floori((center.x - radius - 2.0) / LineOfFire.BUCKET), floori((center.z - radius - 2.0) / LineOfFire.BUCKET))
+		var b1 := Vector2i(floori((center.x + radius + 2.0) / LineOfFire.BUCKET), floori((center.z + radius + 2.0) / LineOfFire.BUCKET))
+		var vc0 := Vector2i(floori(b0.x * LineOfFire.BUCKET / line.vegetation.cell_size_m), floori(b0.y * LineOfFire.BUCKET / line.vegetation.cell_size_m))
+		var vc1 := Vector2i(floori(b1.x * LineOfFire.BUCKET / line.vegetation.cell_size_m), floori(b1.y * LineOfFire.BUCKET / line.vegetation.cell_size_m))
+		var missing := false
+		for x in range(vc0.x, vc1.x + 1):
+			for z in range(vc0.y, vc1.y + 1):
+				var cc := Vector2i(x, z)
+				if not line.cell_ready(cc):
+					missing = true
+					if not _warm_set.has(cc):
+						_warm_set[cc] = true
+						_warm_queue.append(cc)
+		if missing:
+			return []  # vegetation not filled yet: search again next update
+		for bx in range(b0.x, b1.x + 1):
+			for bz in range(b0.y, b1.y + 1):
+				var data: PackedFloat32Array = line._buckets.get(Vector2i(bx, bz), PackedFloat32Array())
+				for i in range(0, data.size(), 6):
+					var r: float = data[i + 3]
+					var rock := data[i + 5] > 0.5
+					if (rock and r < 0.5) or (not rock and r < 0.25):
+						continue
+					var c := Vector3(data[i], data[i + 2], data[i + 1])
+					_add_candidate(out, u, center, radius, c - tdir * (r + 0.55), "rock" if rock else "tree")
+	# Terrain: spots with ground rising at least 0.9 m within 8 m towards the threat.
+	if sim.terrain:
+		for ring: float in [3.0, 6.0, 9.0, 12.0]:
+			if ring > radius:
+				break
+			for k in 8:
+				var a := k * TAU / 8.0
+				var p := center + Vector3(cos(a), 0.0, sin(a)) * ring
+				var h: float = sim.terrain.data.get_height(p)
+				if is_nan(h):
+					continue
+				var rise := -INF
+				for step: float in [1.5, 3.0, 5.0, 8.0]:
+					var hh: float = sim.terrain.data.get_height(p + tdir * step)
+					if not is_nan(hh):
+						rise = maxf(rise, hh - h)
+				if rise >= 0.9:
+					_add_candidate(out, u, center, radius, p, "terrain")
+	var rank := {"here": 0, "structure": 1, "rock": 2, "terrain": 3, "tree": 4}
+	var rest := out.slice(1)
+	rest.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return a.d + rank[a.kind] * 3.0 < b.d + rank[b.kind] * 3.0)
+	return [out[0]] + rest.slice(0, max_cover_candidates)
+
+
+func _add_candidate(out: Array, u: UnitState, center: Vector3, radius: float, p: Vector3, kind: String) -> void:
+	if _flat(p, center) > radius:
+		return
+	var h: float = sim.terrain.data.get_height(p) if sim.terrain else NAN
+	var g := Vector3(p.x, (p.y if is_nan(h) else h), p.z)
+	for c: Dictionary in out:
+		if _flat(c.p, g) < 1.0:
+			return
+	if not sim.squads._usable(g + Vector3.UP * 0.25):
+		return
+	out.append({"p": g, "kind": kind, "d": _flat(u.position, g)})
+
+
+func _half_extent(type_id: StringName) -> float:
+	if _extent.has(type_id):
+		return _extent[type_id]
+	var def := StructureCatalog.get_def(type_id)
+	var r := 0.6
+	if def:
+		for box: AABB in def.get_collision_boxes():
+			r = maxf(r, maxf(absf(box.position.x), absf(box.end.x)))
+			r = maxf(r, maxf(absf(box.position.z), absf(box.end.z)))
+	_extent[type_id] = minf(r, 8.0)
+	return _extent[type_id]
+
+
+## Why a spot cannot be used, or "".
+func _reject(u: UnitState, p: Vector3) -> String:
+	if _is_bad(u, p):
+		return "could not be reached before"
+	for e: Array in _covers:
+		var o: UnitState = e[1]
+		if o != u and o.alive and o.cover_pos.is_finite() and _flat(o.cover_pos, p) < cover_spacing_m:
+			return "taken by %s" % o.unit_name
+	for o: UnitState in _near(p, 1.6):
+		if o == u:
+			continue
+		if not o.is_reacting() and o.move_state != UnitState.MoveState.MOVING and _flat(o.position, p) < 1.0:
+			return "occupied by %s" % o.unit_name
+	return ""
+
+
+## Protection of a spot against a threat: short lines from the soldier's torso and eye
+## at the spot towards the threat. Cover counts when something solid stops the torso
+## line close to the spot; the eye line tells whether the soldier can fire from there.
+func _evaluate_spot(u: UnitState, p: Vector3, threat: Vector3) -> Dictionary:
+	var line := sim.combat.line
+	var t_eye := threat + Vector3.UP * CombatSim.EYE_HEIGHT
+	var torso := p + Vector3.UP * 1.1
+	var eye := p + Vector3.UP * 1.55
+	var reach := minf(maxf(cover_contact_m, cover_terrain_m), _flat(p, threat) - 1.0)
+	if reach <= 0.5:
+		return {"protected": false, "can_fire": true}
+	var r1 := line.trace(torso, torso + (t_eye - torso).normalized() * reach, -1, false)
+	var limit := cover_terrain_m if r1.blocker == "terrain" else cover_contact_m
+	var protected: bool = r1.blocker in ["structure", "terrain", "tree"] and r1.distance <= limit
+	if not protected:
+		return {"protected": false, "can_fire": true}
+	var r2 := line.trace(eye, eye + (t_eye - eye).normalized() * reach, -1, false)
+	return {"protected": true, "can_fire": r2.blocker == "range", "blocker": r1.blocker}
+
+
+func _cover_score(u: UnitState, c: Dictionary, ev: Dictionary) -> float:
+	var sq := sim.state.squad_of(u.id)
+	var hold_fire := sq != null and sq.roe == SquadState.Roe.HOLD_FIRE
+	var score := 10.0 if ev.can_fire else 7.0
+	if hold_fire:
+		score = 9.0 if ev.can_fire else 10.0
+	score -= 0.35 * c.d
+	match c.kind:
+		"here":
+			score += 2.0
+		"structure":
+			score += 1.0
+		"rock":
+			score += 0.5
+	return score
+
+
+## Can the soldier get there? With a body: a navigation path that ends at the spot and
+## is not much longer than the straight line. Without: no structure footprint on the
+## straight line (the abstract tier walks straight).
+func _reachable(u: UnitState, p: Vector3) -> bool:
+	var body := sim.body_of(u.id) as SoldierBody
+	if body and body.nav:
+		var map := body.nav.get_navigation_map()
+		if map.is_valid() and NavigationServer3D.map_get_iteration_id(map) > 0:
+			var path := NavigationServer3D.map_get_path(map, body.global_position, p, true)
+			if path.is_empty() or _flat(path[path.size() - 1], p) > 1.0:
+				return false
+			var length := 0.0
+			for i in range(1, path.size()):
+				length += path[i - 1].distance_to(path[i])
+			return length <= _flat(u.position, p) * 2.5 + 4.0
+	if sim.structures:
+		var a := Vector2(u.position.x, u.position.z)
+		var b := Vector2(p.x, p.z)
+		var n := maxi(1, int(a.distance_to(b)))
+		for k in range(1, n):
+			if sim.structures.blocks_point(a.lerp(b, float(k) / n), 0.3):
+				return false
+	return true
 
 
 # --- Engagement ----------------------------------------------------------------------
@@ -456,7 +1189,20 @@ func _engage(u: UnitState) -> void:
 	var origin := CombatSim.eye_of(u)
 	var aim := t.position + Vector3.UP * u.target_aim_y - Vector3(t.velocity.x, 0.0, t.velocity.z) * track_lag_s
 	var dir := _aim_error(u, (aim - origin).normalized(), dist)
-	if _friendly_near_line(u, origin, aim):
+	# COMBAT-02: from cover, the actual shot (with its aim error) must clear the soldier's
+	# own cover; otherwise wait for the next one instead of firing into the wall.
+	if u.tactic != UnitState.Tactic.NONE:
+		var own := sim.combat.line.trace(origin, origin + dir * 3.0, u.id, false)
+		if own.blocker != "range":
+			own_cover_holds += 1
+			u.ai_reason = "own cover in the way"
+			u.burst_left = 0
+			u.next_burst_at = now + 0.3
+			return
+	var tf := Time.get_ticks_usec()
+	var friend_near := _friendly_near_line(u, origin, aim)
+	prof.friendly += Time.get_ticks_usec() - tf
+	if friend_near:
 		# The shot preview (same world data and hit shapes as the real shot, without the
 		# weapon's spread) and a 0.5 m margin around friends for that spread.
 		var p := sim.combat.preview_shot(u.id, origin, dir, u.shot_counter + 1, 0.0)
@@ -467,7 +1213,14 @@ func _engage(u: UnitState) -> void:
 			u.burst_left = 0
 			u.next_burst_at = now + 0.4
 			return
+	if _shots_left <= 0:
+		budget_waits += 1
+		u.ai_reason = "waiting (shot budget)"
+		return
+	_shots_left -= 1
+	var tfire := Time.get_ticks_usec()
 	var shot := sim.combat.request_fire(u.id, origin, dir, CombatSim.Source.AI)
+	prof.fire += Time.get_ticks_usec() - tfire
 	if shot.get("fired", false):
 		ai_shots += 1
 		u.ai_reason = ""
@@ -514,14 +1267,8 @@ func _aim_error(u: UnitState, dir: Vector3, dist: float) -> Vector3:
 
 ## Cheap pre-check before the shot preview: a living friend close to the line in front.
 func _friendly_near_line(u: UnitState, origin: Vector3, aim: Vector3) -> bool:
-	_ensure_grid()
-	var a := Vector2(origin.x, origin.z)
-	var b := Vector2(aim.x, aim.z)
-	var mid := (origin + aim) * 0.5
-	for f: UnitState in _near(mid, a.distance_to(b) * 0.5 + 2.0):
-		if f == u or f.faction != u.faction:
-			continue
-		if LineOfFire._point_segment_dist2d(Vector2(f.position.x, f.position.z), a, b) < 1.5:
+	for f: UnitState in units_near_segment(Vector2(origin.x, origin.z), Vector2(aim.x, aim.z), 1.5):
+		if f != u and f.faction == u.faction:
 			return true
 	return false
 
@@ -529,12 +1276,13 @@ func _friendly_near_line(u: UnitState, origin: Vector3, aim: Vector3) -> bool:
 ## A living friend whose body axis passes within friendly_margin_m of the ray before
 ## max_d (the spread can still carry a shot that the preview passed by a hair).
 func _friend_on_ray(u: UnitState, origin: Vector3, dir: Vector3, max_d: float) -> bool:
-	for f: UnitState in _near(origin + dir * max_d * 0.5, max_d * 0.5 + 2.0):
+	var end := origin + dir * max_d
+	for f: UnitState in units_near_segment(Vector2(origin.x, origin.z), Vector2(end.x, end.z), friendly_margin_m + LineOfFire.TORSO_R + 0.1):
 		if f == u or f.faction != u.faction:
 			continue
 		var a := f.position + Vector3.UP * 0.2
 		var b := f.position + Vector3.UP * 1.7
-		var pts := Geometry3D.get_closest_points_between_segments(origin, origin + dir * max_d, a, b)
+		var pts := Geometry3D.get_closest_points_between_segments(origin, end, a, b)
 		if pts[0].distance_to(pts[1]) < friendly_margin_m + LineOfFire.TORSO_R:
 			return true
 	return false
@@ -558,15 +1306,30 @@ func _event(u: UnitState, text: String) -> void:
 ## Summary for the HUD and tests.
 func summary() -> Dictionary:
 	var states := {}
+	var tactics := {}
 	for u: UnitState in sim.state.units.values():
 		if u.kind == UnitState.Kind.SOLDIER:
 			var k := u.ai_state_name()
 			states[k] = states.get(k, 0) + 1
-	return {"states": states, "sight_checks": sight_checks, "ai_shots": ai_shots, "acquisitions": acquisitions,
-		"switches": target_switches, "dropped": dropped_targets, "friendly_holds": friendly_holds,
+			if u.alive and u.tactic != UnitState.Tactic.NONE:
+				tactics[u.tactic_name()] = tactics.get(u.tactic_name(), 0) + 1
+	return {"states": states, "tactics": tactics, "sight_checks": sight_checks, "ai_shots": ai_shots, "acquisitions": acquisitions,
+		"switches": target_switches, "dropped": dropped_targets, "friendly_holds": friendly_holds, "own_cover_holds": own_cover_holds,
+		"cover": {"searches": cover_searches, "evaluations": cover_evals, "found": cover_found, "none": cover_none, "unreachable": cover_unreachable},
+		"warm": {"cells": warm_cells, "waits": warm_waits, "queued": _warm_queue.size()}, "shot_budget_waits": budget_waits,
 		"update_us_avg": snappedf(float(update_usec) / maxi(frames, 1), 0.1), "update_us_max": update_usec_max,
 		"sight_us_avg": snappedf(float(sight_usec) / maxi(sight_checks, 1), 0.1),
-		"sight_checks_per_frame": snappedf(float(sight_checks) / maxi(frames, 1), 0.01)}
+		"sight_checks_per_frame": snappedf(float(sight_checks) / maxi(frames, 1), 0.01),
+		"prof_us_per_frame": _prof_per_frame(), "prof_us_max": prof_max.duplicate(),
+		"line_cells": {"loads": sim.combat.line.cell_loads, "load_us_max": sim.combat.line.cell_load_usec_max,
+			"load_us_avg": snappedf(float(sim.combat.line.cell_load_usec) / maxi(sim.combat.line.cell_loads, 1), 0.1)}}
+
+
+func _prof_per_frame() -> Dictionary:
+	var out := {}
+	for k in prof:
+		out[k] = snappedf(float(prof[k]) / maxi(frames, 1), 0.1)
+	return out
 
 
 static func _flat(a: Vector3, b: Vector3) -> float:

@@ -32,6 +32,8 @@ const REACH := 4.0
 const STEP_NEAR := 1.0
 const STEP_FAR := 2.0
 const NEAR_M := 40.0
+## Extra length on each side of a line module's box (closes the seams between cells).
+const SEAM_M := 0.12
 ## Steepest terrain gradient assumed by the adaptive march (rise per metre).
 const MAX_SLOPE := 1.5
 
@@ -52,6 +54,14 @@ var last_cost := {}
 ## foliage_m of the line counts as one layer of leaves / undergrowth; trees closer than
 ## foliage_skip_m to either end do not count (a soldier at a forest edge looks past the
 ## tree next to him); foliage_block layers hide what is behind them.
+## COMBAT-02: soldiers near a shot come from this index (CombatBrain's grid) instead of
+## a scan over every unit; null = scan (tests, tools).
+var unit_index: CombatBrain
+## Vegetation cells distributed into trunk buckets so far, and what it cost (a cell is
+## filled the first time a line crosses it; CombatBrain warms cells ahead of fights).
+var cell_loads := 0
+var cell_load_usec := 0
+var cell_load_usec_max := 0
 var foliage_m := 2.5
 var foliage_skip_m := 3.0
 var foliage_block := 3
@@ -185,7 +195,14 @@ func _structures_hit(from: Vector3, to: Vector3, length: float) -> Dictionary:
 			var inv := xf.affine_inverse()
 			var lf := inv * from
 			var lt := inv * to
-			for box: AABB in def.get_collision_boxes() + def.ramps:
+			for b0: AABB in def.get_collision_boxes() + def.ramps:
+				var box := b0
+				# COMBAT-02: a line places round(length / module_length) cells, so they
+				# stand a few centimetres apart (3 cm on a 12 m HESCO line) and shots
+				# passed through the seams. Cells of a line are closed along it.
+				if def.linear:
+					box.position.x -= SEAM_M
+					box.size.x += SEAM_M * 2.0
 				var d := INF
 				if box.has_point(lf):
 					d = 0.0
@@ -267,10 +284,43 @@ func _buckets_along(a: Vector2, b: Vector2) -> Array:
 	return out.keys()
 
 
+## Vegetation cells (128 m) a line from `from` to `to` reads, including the trunk margin.
+func cells_along(from: Vector3, to: Vector3) -> Array:
+	if vegetation == null or _solid.is_empty():
+		return []
+	var out := {}
+	var cs: float = vegetation.cell_size_m
+	for bucket: Vector2i in _buckets_along(Vector2(from.x, from.z), Vector2(to.x, to.z)):
+		out[Vector2i(floori(bucket.x * BUCKET / cs), floori(bucket.y * BUCKET / cs))] = true
+	return out.keys()
+
+
+func cell_ready(cell: Vector2i) -> bool:
+	return vegetation == null or _loaded_cells.has(cell)
+
+
+## Fills one vegetation cell now (CombatBrain spreads these over frames).
+func warm(cell: Vector2i) -> void:
+	_ensure_cell(cell)
+
+
 func _ensure_cell(cell: Vector2i) -> void:
 	if _loaded_cells.has(cell):
 		return
+	var t0 := Time.get_ticks_usec()
+	_fill_cell(cell)
+	var dt := Time.get_ticks_usec() - t0
+	cell_loads += 1
+	cell_load_usec += dt
+	cell_load_usec_max = maxi(cell_load_usec_max, dt)
+
+
+func _fill_cell(cell: Vector2i) -> void:
 	_loaded_cells[cell] = true
+	# COMBAT-02: collect per bucket first, then store once. Appending to the packed array
+	# held in _buckets copied the whole bucket for every trunk (copy on write), which
+	# made the first line through a forest cell cost several milliseconds.
+	var fresh := {}
 	for inst in vegetation.get_cell_instances(cell, _solid.keys()):
 		var xf: Transform3D = inst[1]
 		var spec: Vector3 = _solid[inst[0]]
@@ -278,10 +328,12 @@ func _ensure_cell(cell: Vector2i) -> void:
 		var r := spec.y * sc.x
 		var h := maxf(spec.z * sc.y, 2.0 * r) if spec.x < 0.5 else r * 2.0
 		var key := Vector2i(floori(xf.origin.x / BUCKET), floori(xf.origin.z / BUCKET))
-		if not _buckets.has(key):
-			_buckets[key] = PackedFloat32Array()
-		var arr: PackedFloat32Array = _buckets[key]
-		arr.append_array(PackedFloat32Array([xf.origin.x, xf.origin.z, xf.origin.y, r, h, spec.x]))
+		if not fresh.has(key):
+			fresh[key] = []
+		fresh[key].append_array([xf.origin.x, xf.origin.z, xf.origin.y, r, h, spec.x])
+	for key: Vector2i in fresh:
+		var arr: PackedFloat32Array = _buckets.get(key, PackedFloat32Array())
+		arr.append_array(PackedFloat32Array(fresh[key]))
 		_buckets[key] = arr
 
 
@@ -346,7 +398,8 @@ func _units_hit(from: Vector3, to: Vector3, limit: float, exclude_id: int) -> Di
 	var end := from + (to - from) * (minf(limit, length) / length)
 	var a := Vector2(from.x, from.z)
 	var b := Vector2(end.x, end.z)
-	for u: UnitState in state.units.values():
+	var candidates: Array = unit_index.units_near_segment(a, b, 0.6) if unit_index else state.units.values()
+	for u: UnitState in candidates:
 		if u.id == exclude_id or not u.alive or u.kind != UnitState.Kind.SOLDIER:
 			continue
 		var p := u.position

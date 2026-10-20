@@ -82,6 +82,9 @@ func possess(id: int) -> bool:
 		if old:
 			old.player_controlled = false
 	possessed_id = id
+	# COMBAT-02: the player takes over at once - no AI reaction continues for this soldier.
+	unit.clear_reaction()
+	sim.brain._searches.erase(id)
 	if rts:
 		rts.set_active(false)
 	rts_camera.set_active(false)

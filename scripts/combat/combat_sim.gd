@@ -224,6 +224,7 @@ func kill(t: UnitState, source_id := -1) -> void:
 	t.target_id = -1
 	t.target_visible = false
 	t.burst_left = 0
+	t.clear_reaction()
 	sim.state.mark_fallen(t.id)
 	sim.state.unit_died.emit(t)
 

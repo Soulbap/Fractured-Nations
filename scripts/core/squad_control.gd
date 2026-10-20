@@ -253,7 +253,9 @@ func _update_follow(sq: SquadState, force: bool) -> void:
 				continue
 			if u.order != UnitState.Order.MOVE and _flat(u.position, s) < follow_settle_m:
 				continue
-		sim.state.issue_move(u.id, s)
+		# A new Follow order replaces a reaction; keeping the slots up to date does not
+		# (a follower may finish a short dash to cover first).
+		sim.state.issue_move(u.id, s, force)
 		_follow_slot[u.id] = s
 
 

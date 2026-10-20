@@ -12,6 +12,8 @@ extends FPSController
 
 ## Flat distance at which an order counts as reached.
 @export var arrive_distance := 1.3
+## COMBAT-02: a cover position must be reached more closely than an order slot.
+@export var react_arrive_distance := 0.7
 ## Reached the end of the navigation path but still farther than this from the target:
 ## the target was not reachable (outside the navmesh), reported as BLOCKED.
 @export var blocked_distance := 3.0
@@ -106,33 +108,42 @@ func _physics_process(delta: float) -> void:
 
 func _ai_step(delta: float) -> void:
 	var desired := Vector3.ZERO
-	if unit.order == UnitState.Order.MOVE:
-		if _applied_target != unit.order_target:
-			_applied_target = unit.order_target
-			nav.target_position = unit.order_target
-			unit.move_state = UnitState.MoveState.MOVING
+	# COMBAT-02: a tactical reaction (react_target) pauses the order: walk to the
+	# reaction's goal, then wait there until the AI ends the reaction.
+	var reacting := unit.is_reacting()
+	var goal := unit.react_target if reacting else unit.order_target
+	if reacting and unit.react_state != UnitState.ReactState.MOVING:
+		_applied_target = Vector3.INF
+		if not is_nan(unit.watch_yaw):
+			rotation.y = lerp_angle(rotation.y, unit.watch_yaw, clampf(turn_speed * delta, 0.0, 1.0))
+	elif reacting or unit.order == UnitState.Order.MOVE:
+		if _applied_target != goal:
+			_applied_target = goal
+			nav.target_position = goal
+			if not reacting:
+				unit.move_state = UnitState.MoveState.MOVING
 			_empty_path_s = 0.0
 			_reset_stuck()
-		var flat := unit.order_target - global_position
+		var flat := goal - global_position
 		flat.y = 0.0
 		var remaining := flat.length()
 		# get_next_path_position() is what makes the agent (re)query its path.
 		var next := nav.get_next_path_position()
 		var path_len := nav.get_current_navigation_path().size()
-		if remaining <= arrive_distance:
-			_finish_order(remaining)
-		elif path_len == 0 and sim.detail and not sim.detail.nav_covers(unit.order_target):
+		if remaining <= (react_arrive_distance if reacting else arrive_distance):
+			_finish(remaining, reacting)
+		elif path_len == 0 and sim.detail and not sim.detail.nav_covers(goal):
 			desired = flat.normalized() * walk_speed
 			_face(flat.normalized(), delta)
 		elif path_len == 0:
 			# No path yet (navigation map not synced, or target off the navmesh): retry.
 			_empty_path_s += delta
 			if _empty_path_s > max_empty_path_s:
-				_finish_order(remaining)
+				_finish(remaining, reacting)
 			elif Engine.get_physics_frames() % 10 == 0:
-				nav.target_position = unit.order_target
+				nav.target_position = goal
 		elif nav.is_navigation_finished():
-			if remaining > blocked_distance and sim.detail and not sim.detail.nav_covers(unit.order_target):
+			if remaining > blocked_distance and sim.detail and not sim.detail.nav_covers(goal):
 				# The target lies beyond the navmesh area around the active camera: keep
 				# heading for it. Leaving the camera's detail radius hands the unit to
 				# the abstract tier, which finishes the walk (the order is never dropped).
@@ -140,7 +151,7 @@ func _ai_step(delta: float) -> void:
 				desired = far_dir * walk_speed
 				_face(far_dir, delta)
 			else:
-				_finish_order(remaining)
+				_finish(remaining, reacting)
 		else:
 			var dir := next - global_position
 			dir.y = 0.0
@@ -148,8 +159,8 @@ func _ai_step(delta: float) -> void:
 				dir = dir.normalized()
 				desired = dir * walk_speed
 				_face(dir, delta)
-		if desired != Vector3.ZERO and unit.order == UnitState.Order.MOVE:
-			_check_stuck(delta, remaining)
+		if desired != Vector3.ZERO:
+			_check_stuck(delta, remaining, reacting)
 	else:
 		_applied_target = Vector3.INF
 		# COMBAT-01b: standing, the soldier turns to what its AI watches (its target).
@@ -181,7 +192,7 @@ func _reset_stuck() -> void:
 	_unstick_left = 0.0
 
 
-func _check_stuck(delta: float, remaining: float) -> void:
+func _check_stuck(delta: float, remaining: float, reacting := false) -> void:
 	if not _progress_ref.is_finite() or global_position.distance_to(_progress_ref) > stuck_progress_m:
 		_progress_ref = global_position
 		_progress_t = 0.0
@@ -192,15 +203,25 @@ func _check_stuck(delta: float, remaining: float) -> void:
 	_progress_t = 0.0
 	if _stuck_stage == 0:
 		_stuck_stage = 1
-		nav.target_position = unit.order_target
+		nav.target_position = unit.react_target if reacting else unit.order_target
 		_unstick_left = unstick_s
 	else:
-		_finish_order(remaining)
+		_finish(remaining, reacting)
+
+
+func _finish(remaining: float, reacting: bool) -> void:
+	if reacting:
+		# The order is untouched; the AI decides what the arrival (or failure) means.
+		unit.react_state = UnitState.ReactState.ARRIVED if remaining <= react_arrive_distance + 0.8 else UnitState.ReactState.FAILED
+		_applied_target = Vector3.INF
+		return
+	_finish_order(remaining)
 
 
 func _finish_order(remaining: float) -> void:
 	unit.order = UnitState.Order.NONE
 	unit.move_state = UnitState.MoveState.ARRIVED if remaining <= blocked_distance else UnitState.MoveState.BLOCKED
+	unit.anchor_pos = global_position
 	_applied_target = Vector3.INF
 	sim.state.order_changed.emit(unit)
 

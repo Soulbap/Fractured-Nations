@@ -40,6 +40,10 @@ func run(args: PackedStringArray) -> void:
 	lof = combat.line
 	brain = demo.sim.brain
 	brain.enabled = true
+	# COMBAT-02: this suite checks the COMBAT-01b layer (perception, targets, firing,
+	# orders): tactical reactions off, so e.g. a Hold squad does not move to cover. The
+	# reactions are tested by combat_tactics_selftest.gd.
+	brain.tactics_enabled = not (get_script() == load("res://scripts/debug/combat_ai_selftest.gd"))
 	SoldierBody.require_mouse_capture = false
 	def = combat.weapon(&"rifle")
 	tree.create_timer(1700.0).timeout.connect(func() -> void:
@@ -78,6 +82,14 @@ func run(args: PackedStringArray) -> void:
 		"engage_range": brain.engage_range, "aim_error_deg": [brain.aim_error_base_deg, brain.aim_error_per_100m_deg, brain.aim_error_moving_deg],
 		"foliage": [lof.foliage_m, lof.foliage_skip_m, lof.foliage_block]}, "default_soldiers": default_soldiers.size()})
 
+	var oi := args.find("--only")
+	var only_list: PackedStringArray = args[oi + 1].split(",") if oi >= 0 and oi + 1 < args.size() else PackedStringArray()
+	if only_list.has("stability"):
+		if only_list.has("symmetry"):
+			_log("symmetry", await _symmetry())
+		_log("target_stability", await _stability())
+		_finish()
+		return
 	_log("open_firefight", await _open_fight())
 	_log("symmetry", await _symmetry())
 	_log("target_stability", await _stability())
@@ -427,6 +439,12 @@ func _stability() -> Dictionary:
 	var t0 := demo.sim.state.time
 	while demo.sim.state.time - t0 < 15.0:
 		await tree.physics_frame
+		if "--debug" in OS.get_cmdline_user_args() and Engine.get_physics_frames() % 60 == 0:
+			var wu := _u(wid)
+			print("DBG ", JSON.stringify({"t": snappedf(demo.sim.state.time - t0, 0.1), "state": wu.ai_state_name(), "target": wu.target_id, "in_queue": brain._queue.has(wid),
+				"cands": brain._candidates(wu, brain.sight_range, 4).size(), "warm_q": brain._warm_queue.size(), "pc": wu.player_controlled, "yaw": snappedf(wu.yaw, 0.01),
+				"look": snappedf(brain.look_yaw(wu), 0.01), "fgrid": brain._fgrid.keys(), "warm": brain._line_warm(CombatSim.eye_of(wu), _u(e.members[0]).position),
+				"sight": lof.sight(CombatSim.eye_of(wu), _u(e.members[0]).position + Vector3.UP * 1.55), "perc": brain.perception_updates, "watch_until": snappedf(wu.watch_until - demo.sim.state.time, 0.01), "watch_yaw": wu.watch_yaw, "uf": snappedf(wu.under_fire_until - demo.sim.state.time, 0.1), "threat": wu.threat_pos, "tactic": wu.tactic_name(), "recent": brain._recent_shots.size(), "recent0": brain._recent_shots.slice(0, 2), "events": brain.events.slice(-3)}))
 		var tid := _u(wid).target_id
 		if seen.is_empty() or seen[-1] != tid:
 			seen.append(tid)
@@ -874,11 +892,12 @@ func _orders_possession() -> Dictionary:
 	var dest := demo.on_ground(c.x + 40.0, c.z + 65.0, 0.0)
 	demo.sim.squads.order_move([n.id], dest)
 	var t0 := demo.sim.state.time
-	var s_orders := 0
+	# A Dictionary: GDScript lambdas capture ints by value (COMBAT-01b counted into a copy).
+	var s_order_frames := {"n": 0}
 	await _run_for(45.0, func() -> bool:
 		for id in s.members:
 			if _u(id).has_order():
-				s_orders += 1
+				s_order_frames.n += 1
 		return n.status == SquadState.Status.DONE and demo.sim.state.time - t0 > 3.0)
 	var move_s := demo.sim.state.time - t0
 	var moving_shots := 0
@@ -894,9 +913,9 @@ func _orders_possession() -> Dictionary:
 		follow_dist = maxf(follow_dist, _flat(_u(id).position, leader.position))
 	var movement := {"move_s": snappedf(move_s, 0.1), "status": SquadState.Status.keys()[n.status], "dist_to_destination_m": snappedf(_flat(_centroid(n), dest), 0.1),
 		"north_shots": _shots_by(_ids(n)), "shots_while_moving": moving_shots, "holding_south_max_drift_m": snappedf(drift, 0.01),
-		"holding_south_order_frames": s_orders, "south_shots": _shots_by(_ids(s)), "follower_order": f.order_name(),
+		"holding_south_order_frames": s_order_frames.n, "south_shots": _shots_by(_ids(s)), "follower_order": f.order_name(),
 		"follower_max_dist_to_leader_m": snappedf(follow_dist, 0.1), "follower_shots": _shots_by(_ids(f))}
-	_expect(n.status == SquadState.Status.DONE and moving_shots > 0 and drift < 1.0 and s_orders == 0 and movement.south_shots > 0,
+	_expect(n.status == SquadState.Status.DONE and moving_shots > 0 and drift < 1.0 and s_order_frames.n == 0 and movement.south_shots > 0,
 		"squad orders during combat failed (%s)" % JSON.stringify(movement))
 	_expect(f.order == SquadState.Order.FOLLOW and follow_dist < 30.0, "Follow broke during combat (%s)" % JSON.stringify(movement))
 	# Possession during the engagement.
@@ -1129,7 +1148,8 @@ func _measure_fight(seconds: float) -> Dictionary:
 		"brain_update_us_avg": b.update_us_avg, "brain_update_us_max": b.update_us_max, "sight_checks": b.sight_checks,
 		"sight_checks_per_frame": b.sight_checks_per_frame, "sight_us_avg": b.sight_us_avg, "shots": combat.shots_total,
 		"shot_resolve_us_avg": snappedf(float(combat.shot_usec_total) / maxi(combat.shots_total, 1), 0.1), "shot_resolve_us_max": combat.shot_usec_max,
-		"states": b.states}
+		"states": b.states, "tactics": b.tactics, "cover": b.cover, "warm": b.warm, "brain_profile_us_per_frame": b.prof_us_per_frame,
+		"brain_profile_us_max": b.prof_us_max, "line_cells": b.line_cells}
 
 
 func _perf_case(label: String, center: Vector3, per_side: int, axis: Vector3, half: float, fps: bool) -> Dictionary:

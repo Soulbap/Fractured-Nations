@@ -37,6 +37,10 @@ var construction := ConstructionState.new()
 var squads := {}
 var _next_id := 1
 var _next_squad_id := 1
+## COMBAT-02: unit id -> SquadState, rebuilt when membership changes (squad_of was a
+## linear search over all squads, called per soldier per frame by the AI).
+var _squad_index := {}
+var _squad_index_dirty := true
 
 
 func add_unit(kind: UnitState.Kind, faction: int, position: Vector3, yaw := 0.0, unit_name := "") -> UnitState:
@@ -94,16 +98,29 @@ func count_of(kind: UnitState.Kind) -> int:
 
 ## Orders a unit to walk to a world position. Vehicles cannot drive yet and refuse.
 ## The order survives possession: a possessed soldier suspends it and resumes it when
-## the player leaves.
-func issue_move(id: int, target: Vector3) -> bool:
+## the player leaves. COMBAT-02: a new order ends a tactical reaction (the player's
+## command comes first) unless cancel_reaction is false (Follow keeping its slots up to
+## date while a follower briefly takes cover).
+func issue_move(id: int, target: Vector3, cancel_reaction := true) -> bool:
 	var u := get_unit(id)
 	if u == null or u.kind != UnitState.Kind.SOLDIER or not u.alive:
 		return false
 	u.order = UnitState.Order.MOVE
 	u.order_target = target
 	u.move_state = UnitState.MoveState.MOVING
+	u.anchor_pos = Vector3.INF
+	if cancel_reaction:
+		_cancel_reaction(u)
 	order_changed.emit(u)
 	return true
+
+
+## A player / squad order overrides the soldier's own reaction; it may react again
+## after a short pause.
+func _cancel_reaction(u: UnitState) -> void:
+	if u.tactic != UnitState.Tactic.NONE or u.is_reacting():
+		u.clear_reaction()
+	u.tactic_cooldown_until = maxf(u.tactic_cooldown_until, time + 3.0)
 
 
 ## Group move with a simple grid formation around the target (spacing in meters), so
@@ -161,6 +178,7 @@ func add_squad(squad_name: String, faction: int, member_ids: Array, leader := -1
 		return null
 	sq.leader_id = leader if sq.members.has(leader) else sq.members[0]
 	squads[sq.id] = sq
+	_squad_index_dirty = true
 	squad_changed.emit(sq)
 	return sq
 
@@ -171,10 +189,13 @@ func get_squad(id: int) -> SquadState:
 
 ## The squad a unit belongs to, or null.
 func squad_of(unit_id: int) -> SquadState:
-	for sq: SquadState in squads.values():
-		if sq.has_member(unit_id):
-			return sq
-	return null
+	if _squad_index_dirty:
+		_squad_index.clear()
+		for sq: SquadState in squads.values():
+			for id in sq.members:
+				_squad_index[id] = sq
+		_squad_index_dirty = false
+	return _squad_index.get(unit_id)
 
 
 func all_squads() -> Array:
@@ -204,6 +225,7 @@ func mark_fallen(unit_id: int) -> void:
 
 
 func _drop_member(sq: SquadState, unit_id: int) -> void:
+	_squad_index_dirty = true
 	var i := sq.members.find(unit_id)
 	if i >= 0:
 		sq.members.remove_at(i)
@@ -224,6 +246,9 @@ func halt(id: int) -> void:
 	u.order = UnitState.Order.NONE
 	u.order_target = Vector3.ZERO
 	u.move_state = UnitState.MoveState.IDLE
+	# COMBAT-02: stopping is a command too; the soldier holds where it stands.
+	_cancel_reaction(u)
+	u.anchor_pos = u.position
 	order_changed.emit(u)
 
 
@@ -306,6 +331,7 @@ func apply_snapshot(snap: Dictionary) -> Dictionary:
 
 func _restore_squads(snap: Dictionary) -> void:
 	squads.clear()
+	_squad_index_dirty = true
 	for d in snap.get("squads", []):
 		var sq := SquadState.from_dict(d)
 		squads[sq.id] = sq

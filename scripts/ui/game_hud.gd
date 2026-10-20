@@ -81,20 +81,44 @@ class Overlay extends Control:
 				draw_circle(p, 3.5, col)
 				continue
 			placed.append(p)
+			# COMBAT-02: threat direction (orange, short), chosen cover (green ring) and the
+			# temporary reaction goal (dashed line) - only for living soldiers near the camera.
+			if u.alive:
+				var base := u.position + Vector3.UP * 1.0
+				if u.threat_pos.is_finite() and u.under_fire_until >= st.time:
+					var tdir := (u.threat_pos - u.position)
+					tdir.y = 0.0
+					var tip := base + tdir.normalized() * 6.0
+					if not cam.is_position_behind(base) and not cam.is_position_behind(tip):
+						draw_line(cam.unproject_position(base), cam.unproject_position(tip), Color(1.0, 0.55, 0.1, 0.9), 2.0)
+				if u.cover_pos.is_finite() and not cam.is_position_behind(u.cover_pos):
+					var cp := cam.unproject_position(u.cover_pos + Vector3.UP * 0.1)
+					draw_arc(cp, 6.0, 0.0, TAU, 12, Color(0.3, 1.0, 0.4, 0.9), 2.0)
+				if u.is_reacting() and u.react_state == UnitState.ReactState.MOVING and not cam.is_position_behind(u.react_target):
+					draw_dashed_line(cam.unproject_position(base), cam.unproject_position(u.react_target + Vector3.UP * 0.1), Color(0.3, 1.0, 0.4, 0.7), 1.5, 4.0)
 			var text := "%s %s" % [u.unit_name, u.ai_state_name()]
+			if u.alive and u.tactic != UnitState.Tactic.NONE:
+				text += " / " + u.tactic_name()
+			if u.alive and u.is_reacting():
+				text += " (AI reaction)"
+			elif u.alive and u.order == UnitState.Order.MOVE:
+				text += " (order)"
 			if t and u.alive:
 				text += " > %s %s" % [t.unit_name, "seen" if u.target_visible else "mem %.0fs" % (st.time - u.target_seen_at)]
 			if u.alive and u.ai_reason != "" and u.ai_reason != "no target":
 				text += " [%s]" % u.ai_reason
 			if u.alive and u.weapon_id != &"":
 				text += " %d/%d" % [u.mag, u.reserve]
+			if u.alive and u.cover_note != "" and u.tactic != UnitState.Tactic.NONE:
+				text += " {%s}" % u.cover_note
 			var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
 			draw_rect(Rect2(p + Vector2(-w * 0.5 - 3, -12), Vector2(w + 6, 15)), Color(0, 0, 0, 0.45), true)
 			draw_string(font, p + Vector2(-w * 0.5, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, col)
 		var s := hud.sim.brain.summary()
 		var lines := ["COMBAT AI (F4)  states %s" % JSON.stringify(s.states),
 			"sight checks %d (%.2f / frame, %.0f us each)  update %.0f us avg, %d us max" % [s.sight_checks, s.sight_checks_per_frame, s.sight_us_avg, s.update_us_avg, s.update_us_max],
-			"AI shots %d  acquisitions %d  switches %d  dropped %d  friendly holds %d" % [s.ai_shots, s.acquisitions, s.switches, s.dropped, s.friendly_holds]]
+			"AI shots %d  acquisitions %d  switches %d  dropped %d  friendly holds %d" % [s.ai_shots, s.acquisitions, s.switches, s.dropped, s.friendly_holds],
+			"tactics %s  cover searches %d, found %d, none %d, unreachable %d" % [JSON.stringify(s.tactics), s.cover.searches, s.cover.found, s.cover.none, s.cover.unreachable]]
 		var y := 18.0
 		for line: String in lines:
 			var lw := font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
@@ -217,6 +241,7 @@ func _process(_delta: float) -> void:
 		squad_panel.rts = rts
 		squad_panel.sim = sim
 	squad_panel.visible = rts != null and game != null and game.mode == GameController.Mode.RTS and not (construction and construction.active) and not sim.state.squads.is_empty()
+	squad_panel.max_bottom = _label.position.y - 8.0
 	_update_ammo()
 	if Engine.get_process_frames() % 6 == 0:
 		_label.text = _text()

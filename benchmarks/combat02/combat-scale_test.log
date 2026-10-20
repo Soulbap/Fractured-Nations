@@ -1,0 +1,127 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.351 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3070
+
+WARNING: instance_reset_physics_interpolation() is deprecated.
+   at: _instance_reset_physics_interpolation_bind_compat_104269 (servers/rendering/rendering_server.compat.inc:62)
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
+StructureManager: water index 2568 triangles in 2115 cells
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] bake_area (res://scripts/world/area_navigation.gd:115)
+       [1] _rebake (res://scripts/core/detail_manager.gd:198)
+       [2] _update (res://scripts/core/detail_manager.gd:162)
+       [3] activate_at (res://scripts/core/detail_manager.gd:129)
+       [4] _start_large_world (res://scripts/game/core_demo.gd:223)
+       [5] _ready (res://scripts/game/core_demo.gd:111)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] bake_area (res://scripts/world/area_navigation.gd:115)
+       [1] _rebake (res://scripts/core/detail_manager.gd:198)
+       [2] _update (res://scripts/core/detail_manager.gd:162)
+       [3] activate_at (res://scripts/core/detail_manager.gd:129)
+       [4] _start_large_world (res://scripts/game/core_demo.gd:223)
+       [5] _ready (res://scripts/game/core_demo.gd:111)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] bake_area (res://scripts/world/area_navigation.gd:115)
+       [1] _rebake (res://scripts/core/detail_manager.gd:198)
+       [2] _update (res://scripts/core/detail_manager.gd:162)
+       [3] activate_at (res://scripts/core/detail_manager.gd:129)
+       [4] _start_large_world (res://scripts/game/core_demo.gd:223)
+       [5] _ready (res://scripts/game/core_demo.gd:111)
+CORE nav: {"area_m":440.0,"async":false,"bake_ms":237.85,"center":[-7107.5,-7592.0],"collision_ms":310.415,"faces":101250,"polygons":1115,"recenter":"sync","source_ms":113.316,"structure_obstructions":0,"tree_obstructions":24,"vehicle_obstructions":1}
+CORE spawn: {"sites":[[-7100.0,-7600.0],[-3100.0,3700.0],[7900.0,200.0]],"soldiers":28,"squads":3,"vehicles":3}
+SCALE startup {"area":[-1106.8,165.2,-7885.3],"area2":[1593.2,310.5,-7365.7],"dist_km":2.75}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+SCALE baseline {"bodies":0,"brain_profile_us_max":{"cover":61,"engage":902,"perceive":325,"warm":1676},"brain_profile_us_per_frame":{"cover":3.0,"engage":71.8,"fire":22.6,"friendly":1.3,"grid":29.5,"perceive":29.3,"shot_events":1.5,"warm":36.1},"brain_update_us_avg":173.0,"brain_update_us_max":2090,"cover":{"evaluations":6,"found":0,"none":6,"searches":6,"unreachable":0},"frame_ms_avg":1.73,"frame_ms_max":6.65,"frame_ms_p99":2.18,"frames":2880,"frames_over_33ms":0,"line_cells":{"load_us_avg":1387.3,"load_us_max":2013,"loads":59},"shot_resolve_us_avg":146.4,"shot_resolve_us_max":412,"shots":30,"sight_checks":12,"sight_checks_per_frame":0.04,"sight_us_avg":50.8,"states":{"dead":3,"idle":22,"observing":3},"tactics":{},"warm":{"cells":7,"queued":0,"waits":0}}
+SCALE shot: res://docs/combat02/c02_05_scale_16v16_rts.jpg
+SCALE battle_16v16_at_fight {"bodies":32,"brain_profile_us_max":{"cover":132,"engage":1625,"perceive":1003,"warm":2},"brain_profile_us_per_frame":{"cover":6.9,"engage":426.5,"fire":239.8,"friendly":18.1,"grid":60.8,"perceive":288.2,"shot_events":21.6,"warm":0.9},"brain_update_us_avg":787.3,"brain_update_us_max":2135,"camera":"at","cold_start_3s":{"brain_us_max":3361,"frame_ms_max":13.43},"cover":{"evaluations":54,"found":0,"none":54,"searches":54,"unreachable":0},"engaging":32,"frame_ms_avg":1.84,"frame_ms_max":4.7,"frame_ms_p99":3.86,"frames":4335,"frames_over_33ms":0,"line_cells":{"load_us_avg":975.0,"load_us_max":2013,"loads":88},"memory_added_mb":1.9,"shot_resolve_us_avg":205.9,"shot_resolve_us_max":432,"shots":384,"sight_checks":790,"sight_checks_per_frame":1.65,"sight_us_avg":118.2,"soldiers":32,"states":{"dead":3,"engaging":32,"idle":25},"static_memory_mb":1807.3,"tactics":{"in cover":1},"warm":{"cells":0,"queued":0,"waits":0}}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+SCALE battle_16v16_far {"bodies":4,"brain_profile_us_max":{"cover":132,"engage":1611,"perceive":868,"warm":2},"brain_profile_us_per_frame":{"cover":5.9,"engage":413.7,"fire":226.8,"friendly":19.0,"grid":60.1,"perceive":166.2,"shot_events":23.1,"warm":0.8},"brain_update_us_avg":650.8,"brain_update_us_max":2041,"camera":"far","cold_start_3s":{"brain_us_max":2764,"frame_ms_max":395.59},"cover":{"evaluations":43,"found":0,"none":43,"searches":43,"unreachable":0},"engaging":32,"frame_ms_avg":1.66,"frame_ms_max":4.1,"frame_ms_p99":3.14,"frames":4826,"frames_over_33ms":0,"line_cells":{"load_us_avg":965.2,"load_us_max":2013,"loads":94},"memory_added_mb":11.3,"shot_resolve_us_avg":213.6,"shot_resolve_us_max":425,"shots":400,"sight_checks":389,"sight_checks_per_frame":0.81,"sight_us_avg":115.1,"soldiers":32,"states":{"dead":3,"engaging":32,"idle":25},"static_memory_mb":1818.6,"tactics":{"in cover":1},"warm":{"cells":0,"queued":0,"waits":0}}
+SCALE shot: res://docs/combat02/c02_05_scale_50v50_rts.jpg
+SCALE battle_50v50_at_fight {"bodies":100,"brain_profile_us_max":{"cover":311,"engage":3114,"perceive":2696,"warm":12},"brain_profile_us_per_frame":{"cover":19.1,"engage":1328.8,"fire":791.1,"friendly":94.9,"grid":123.7,"perceive":890.7,"shot_events":104.7,"warm":0.9},"brain_update_us_avg":2369.3,"brain_update_us_max":4768,"camera":"at","cold_start_3s":{"brain_us_max":7581,"frame_ms_max":18.12},"cover":{"evaluations":198,"found":0,"none":186,"searches":186,"unreachable":0},"engaging":96,"frame_ms_avg":2.29,"frame_ms_max":8.21,"frame_ms_p99":7.07,"frames":3492,"frames_over_33ms":0,"line_cells":{"load_us_avg":834.1,"load_us_max":2013,"loads":115},"memory_added_mb":6.2,"shot_resolve_us_avg":217.9,"shot_resolve_us_max":492,"shots":1219,"sight_checks":2795,"sight_checks_per_frame":5.82,"sight_us_avg":111.9,"soldiers":100,"states":{"dead":3,"engaging":96,"idle":25,"observing":3,"reloading":1},"static_memory_mb":1814.4,"tactics":{"in cover":6,"returning":1},"warm":{"cells":0,"queued":0,"waits":0}}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+SCALE battle_50v50_far {"bodies":3,"brain_profile_us_max":{"cover":304,"engage":3533,"perceive":3472,"warm":11},"brain_profile_us_per_frame":{"cover":15.3,"engage":1232.6,"fire":727.0,"friendly":90.6,"grid":120.1,"perceive":516.8,"shot_events":104.6,"warm":0.9},"brain_update_us_avg":1891.5,"brain_update_us_max":6549,"camera":"far","cold_start_3s":{"brain_us_max":6961,"frame_ms_max":394.98},"cover":{"evaluations":160,"found":0,"none":148,"searches":148,"unreachable":0},"engaging":95,"frame_ms_avg":1.78,"frame_ms_max":8.53,"frame_ms_p99":5.26,"frames":4493,"frames_over_33ms":0,"line_cells":{"load_us_avg":833.6,"load_us_max":2013,"loads":120},"memory_added_mb":15.6,"shot_resolve_us_avg":225.6,"shot_resolve_us_max":457,"shots":1195,"sight_checks":1577,"sight_checks_per_frame":3.28,"sight_us_avg":106.4,"soldiers":100,"states":{"dead":3,"engaging":95,"idle":25,"observing":5},"static_memory_mb":1826.8,"tactics":{"in cover":7},"warm":{"cells":0,"queued":0,"waits":0}}
+SCALE shot: res://docs/combat02/c02_05_scale_100v100_rts.jpg
+SCALE battle_100v100_at_fight {"bodies":200,"brain_profile_us_max":{"cover":570,"engage":8846,"perceive":4183,"warm":6},"brain_profile_us_per_frame":{"cover":40.2,"engage":3144.8,"fire":994.4,"friendly":382.2,"grid":207.8,"perceive":1864.7,"shot_events":182.9,"warm":0.9},"brain_update_us_avg":5267.2,"brain_update_us_max":11109,"camera":"at","cold_start_3s":{"brain_us_max":12810,"frame_ms_max":43.14},"cover":{"evaluations":426,"found":0,"none":378,"searches":378,"unreachable":0},"engaging":192,"frame_ms_avg":3.78,"frame_ms_max":15.86,"frame_ms_p99":13.84,"frames":2117,"frames_over_33ms":0,"line_cells":{"load_us_avg":813.9,"load_us_max":2013,"loads":123},"memory_added_mb":11.6,"shot_resolve_us_avg":244.3,"shot_resolve_us_max":518,"shots":1306,"sight_checks":5799,"sight_checks_per_frame":12.06,"sight_us_avg":116.0,"soldiers":200,"states":{"dead":3,"engaging":192,"idle":25,"observing":8},"static_memory_mb":1828.3,"tactics":{"in cover":9,"returning":2},"warm":{"cells":0,"queued":0,"waits":0}}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+SCALE battle_100v100_far {"bodies":3,"brain_profile_us_max":{"cover":698,"engage":8779,"perceive":4637,"warm":2},"brain_profile_us_per_frame":{"cover":35.6,"engage":2918.1,"fire":855.5,"friendly":367.2,"grid":202.0,"perceive":1079.3,"shot_events":172.7,"warm":0.9},"brain_update_us_avg":4244.2,"brain_update_us_max":11591,"camera":"far","cold_start_3s":{"brain_us_max":11731,"frame_ms_max":400.83},"cover":{"evaluations":385,"found":0,"none":340,"searches":340,"unreachable":0},"engaging":187,"frame_ms_avg":2.15,"frame_ms_max":13.67,"frame_ms_p99":9.74,"frames":3716,"frames_over_33ms":0,"line_cells":{"load_us_avg":815.4,"load_us_max":2013,"loads":124},"memory_added_mb":16.7,"shot_resolve_us_avg":244.9,"shot_resolve_us_max":467,"shots":1214,"sight_checks":3348,"sight_checks_per_frame":6.98,"sight_us_avg":109.4,"soldiers":200,"states":{"dead":3,"engaging":187,"idle":25,"observing":13},"static_memory_mb":1838.4,"tactics":{"in cover":10},"warm":{"cells":0,"queued":0,"waits":0}}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+SCALE two_battles_50v50 {"bodies":100.0,"brain_profile_us_max":{"cover":3,"engage":4217,"perceive":3426,"warm":8},"brain_profile_us_per_frame":{"cover":2.0,"engage":1954.0,"fire":1100.0,"friendly":142.5,"grid":207.6,"perceive":1305.7,"shot_events":158.2,"warm":0.9},"brain_update_us_avg":3468.65,"brain_update_us_max":7487.0,"camera":"jump","cold_start_3s":{"brain_us_max":9470,"frame_ms_max":401.5},"cover":{"evaluations":0,"found":0,"none":0,"searches":0,"unreachable":0},"engaging":140,"frame_ms_avg":3.56,"frame_ms_max":418.25,"frame_ms_p99":14.85,"frames":826,"frames_over_33ms":5.0,"line_cells":{"load_us_avg":937.8,"load_us_max":2013,"loads":170},"memory_added_mb":18.9,"parts":[[3.64,12.15,410.84,100,627],[3.45,14.85,410.16,100,563],[3.72,12.18,418.25,100,567],[3.44,13.43,411.31,100,549]],"shot_resolve_us_avg":199.4,"shot_resolve_us_max":433,"shots":2306,"sight_checks":1866,"sight_checks_per_frame":12.81,"sight_us_avg":86.0,"soldiers":200,"states":{"dead":3,"engaging":140,"idle":27,"lost target":4,"observing":54},"static_memory_mb":1842.6,"tactics":{"in cover":5},"warm":{"cells":0,"queued":0,"waits":0}}
+SCALE PASS []

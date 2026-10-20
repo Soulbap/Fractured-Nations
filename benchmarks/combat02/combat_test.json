@@ -1,0 +1,331 @@
+{
+  "ammo_rate_reload": {
+    "a_after_reload": [
+      30,
+      109
+    ],
+    "a_mag_after_burst": 19,
+    "b_mag_after_3": 27,
+    "b_unchanged": [
+      27,
+      120
+    ],
+    "expected_per_s": 11.67,
+    "fire_during_reload": "reloading",
+    "fired_in_1s": 11,
+    "mag_halfway": 19,
+    "reload_done_after_s": 2.42,
+    "reload_started": true
+  },
+  "analytic_vs_physics": {
+    "soldiers": {
+      "agree": 1746,
+      "analytic_only": 0,
+      "both_hit": 838,
+      "impl_error_samples": [],
+      "mismatch_axis_dist_m": [
+        0.02,
+        0.29,
+        0.35
+      ],
+      "mismatch_classes": {
+        "analytic_impl_error": 0,
+        "grazing_1cm": 0,
+        "physics_impl_error": 0,
+        "shape_difference": 254
+      },
+      "model": "analytic head sphere r0.14 @1.62 + torso capsule r0.30 0..1.50; physics capsule r0.35 0..1.80",
+      "physics_only": 254,
+      "rays": 2000
+    },
+    "terrain_grazing": {
+      "agree": 400,
+      "max_distance_diff_m": 0.1,
+      "rays": 400
+    }
+  },
+  "death": {
+    "alive": false,
+    "corpse_marker": true,
+    "dead_can_fire": false,
+    "has_body": false,
+    "hp_after_more_shots": 0.0,
+    "in_fallen": true,
+    "in_squad": false,
+    "killer": 1,
+    "move_order_accepted": false,
+    "moved_after_death_m": 0.0,
+    "name_kept": "S-21",
+    "selectable": false,
+    "shots": 4
+  },
+  "death_while_possessed": {
+    "mode": "RTS",
+    "mouse_visible": true,
+    "possess_dead_refused": true,
+    "possess_living_after": true,
+    "rts_active": true,
+    "rts_camera_current": true,
+    "shots": 3,
+    "tab_after_death_mode": "RTS",
+    "victim_alive": false,
+    "was_fps": true
+  },
+  "deaths": [
+    {
+      "id": 19,
+      "killer": 1,
+      "name": "S-19",
+      "t": 8.7
+    },
+    {
+      "id": 18,
+      "killer": 1,
+      "name": "S-18",
+      "t": 38.02
+    },
+    {
+      "id": 21,
+      "killer": 1,
+      "name": "S-21",
+      "t": 38.22
+    },
+    {
+      "id": 6,
+      "killer": 7,
+      "name": "N-6",
+      "t": 41.72
+    }
+  ],
+  "determinism": {
+    "distance_m": 100.0,
+    "hits_of_40": 4,
+    "identical": true,
+    "shots": 40,
+    "spread_deg": 1.2,
+    "target_body_far": false,
+    "target_body_near": true
+  },
+  "failures": [],
+  "friendly_fire": {
+    "hp": 66.0,
+    "same_faction": true
+  },
+  "occlusion": {
+    "building": {
+      "blocker": "structure",
+      "distance_m": 8.75,
+      "fired": true,
+      "physics_world_hit_m": 8.75,
+      "target_hp": 100.0
+    },
+    "building_placed": true,
+    "camera_12km_away": {
+      "building": "structure",
+      "hesco": "structure",
+      "shooter_has_body": false,
+      "target_has_body": false,
+      "terrain": "terrain",
+      "tree": "tree"
+    },
+    "hesco": {
+      "blocker": "structure",
+      "distance_m": 8.94,
+      "fired": true,
+      "physics_world_hit_m": 8.94,
+      "target_hp": 100.0
+    },
+    "terrain": {
+      "blocker": "terrain",
+      "distance_m": 174.68,
+      "fired": true,
+      "physics_world_hit_m": 174.78,
+      "target_distance_m": 525.0,
+      "target_has_body": false,
+      "target_hp": 100.0
+    },
+    "tree": {
+      "blocker": "tree",
+      "distance_m": 156.15,
+      "fired": true,
+      "physics_world_hit_m": "none",
+      "target_distance_m": 181.3,
+      "target_has_body": false,
+      "target_hp": 100.0
+    }
+  },
+  "pass": true,
+  "performance": {
+    "fps_idle": {
+      "draw_calls": 1283.0,
+      "frame_ms_avg": 2.57,
+      "frame_ms_max": 3.16,
+      "frame_ms_p99": 3.08,
+      "frames": 240,
+      "nav_ms": 0.07,
+      "physics_ms": 0.56
+    },
+    "fps_sustained_auto_fire": {
+      "frame_ms_avg": 2.5,
+      "frame_ms_max": 3.89,
+      "frame_ms_p99": 3.28,
+      "frames": 2391,
+      "seconds": 6.0
+    },
+    "fx_shown": 37,
+    "last_trace_cost_us": {
+      "structures": 3,
+      "terrain": 29,
+      "total": 228,
+      "trees": 133,
+      "units": 63
+    },
+    "resolve_us_avg": 267.9,
+    "resolve_us_max": 774,
+    "shooter_state": {
+      "alive": true,
+      "auto": true,
+      "mag": 23,
+      "mode_fps": true,
+      "player_controlled": true,
+      "possessed": true
+    },
+    "shots": 37
+  },
+  "persistence": {
+    "after_load": "alive=true hp=80.0 mag=27 reserve=120 auto=true reload=false shots=25",
+    "fire_auto_saved": false,
+    "signature": "alive=true hp=80.0 mag=27 reserve=120 auto=true reload=false shots=25",
+    "steps": {
+      "back_with_body": true,
+      "long_jump_abstract": true,
+      "possess_other": true,
+      "save_load": true,
+      "tab": true
+    }
+  },
+  "ranges_fps": {
+    "150": {
+      "damage_each": [
+        32.56,
+        32.56
+      ],
+      "distance_m": 150.0,
+      "expected_body_damage": 32.54,
+      "fired": 2,
+      "hits": 2,
+      "hp": [
+        100.0,
+        34.8858066231864
+      ],
+      "hud_hits": 4,
+      "results": [
+        "unit",
+        "unit"
+      ],
+      "target_has_body": false,
+      "trigger_pulls": 2,
+      "zones": [
+        1,
+        1
+      ]
+    },
+    "20": {
+      "damage_each": [
+        34.0,
+        34.0
+      ],
+      "distance_m": 20.0,
+      "expected_body_damage": 34.0,
+      "fired": 2,
+      "hits": 2,
+      "hp": [
+        100.0,
+        32.0
+      ],
+      "hud_hits": 2,
+      "results": [
+        "unit",
+        "unit"
+      ],
+      "target_has_body": true,
+      "trigger_pulls": 2,
+      "zones": [
+        1,
+        1
+      ]
+    },
+    "250": {
+      "damage_each": [
+        27.7,
+        27.7
+      ],
+      "distance_m": 250.0,
+      "expected_body_damage": 27.69,
+      "fired": 6,
+      "hits": 2,
+      "hp": [
+        100.0,
+        44.6050127737863
+      ],
+      "hud_hits": 10,
+      "results": [
+        "unit",
+        "unit",
+        "unit",
+        "unit",
+        "unit",
+        "unit"
+      ],
+      "target_has_body": false,
+      "trigger_pulls": 6,
+      "zones": [
+        1,
+        1
+      ]
+    }
+  },
+  "self_hit": {
+    "down_blocker": "terrain",
+    "down_distance_m": 1.6,
+    "from_inside_chest_blocker": "terrain",
+    "hp_after": 100.0,
+    "hp_before": 100.0,
+    "shots_hitting_self": 0
+  },
+  "startup": {
+    "armed_full": 28,
+    "soldiers": 28,
+    "weapon": {
+      "damage": 34.0,
+      "falloff": [
+        120.0,
+        400.0,
+        0.6
+      ],
+      "head_x": 2.5,
+      "mag": 30,
+      "reload_s": 2.4,
+      "rpm": 700.0,
+      "spread_base_deg": 0.06
+    }
+  },
+  "zones": {
+    "body": [
+      [
+        1,
+        34.0
+      ]
+    ],
+    "expected": {
+      "body": 34.0,
+      "head": 85.0
+    },
+    "head": [
+      [
+        2,
+        85.0
+      ]
+    ]
+  }
+}

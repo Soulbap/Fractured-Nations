@@ -79,6 +79,8 @@ func _ready() -> void:
 	state.unit_removed.connect(_on_unit_removed)
 	state.unit_died.connect(_on_unit_died)
 	brain.connect_signals()
+	# COMBAT-02: shots find nearby soldiers through the brain's grid.
+	combat.line.unit_index = brain
 
 
 ## A soldier died: its body (if any) goes, a corpse marker (UnitProxy) stays in the world.
@@ -136,21 +138,28 @@ func _on_restored() -> void:
 
 
 func _abstract_step(u: UnitState, delta: float) -> void:
-	if u.order != UnitState.Order.MOVE:
+	# COMBAT-02: a tactical reaction pauses the order (see SoldierBody._ai_step).
+	var reacting := u.is_reacting()
+	if (reacting and u.react_state != UnitState.ReactState.MOVING) or (not reacting and u.order != UnitState.Order.MOVE):
 		u.velocity = Vector3.ZERO
 		# COMBAT-01b: a standing soldier turns to what it watches (its target).
 		if not is_nan(u.watch_yaw) and not u.player_controlled:
 			u.yaw = lerp_angle(u.yaw, u.watch_yaw, clampf(8.0 * delta, 0.0, 1.0))
 		return
-	var to := u.order_target - u.position
+	var goal := u.react_target if reacting else u.order_target
+	var to := goal - u.position
 	to.y = 0.0
 	var dist := to.length()
-	if dist <= abstract_arrive_m:
-		u.position.x = u.order_target.x
-		u.position.z = u.order_target.z
+	if dist <= (0.5 if reacting else abstract_arrive_m):
+		u.position.x = goal.x
+		u.position.z = goal.z
 		u.velocity = Vector3.ZERO
-		u.order = UnitState.Order.NONE
-		u.move_state = UnitState.MoveState.ARRIVED
+		if reacting:
+			u.react_state = UnitState.ReactState.ARRIVED
+		else:
+			u.order = UnitState.Order.NONE
+			u.move_state = UnitState.MoveState.ARRIVED
+			u.anchor_pos = u.position
 		return
 	var step := minf(u.speed * delta, dist)
 	var dir := to / dist
@@ -158,8 +167,11 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 		dir = _free_direction(u, dir, step)
 		if dir == Vector3.ZERO:
 			u.velocity = Vector3.ZERO
-			u.order = UnitState.Order.NONE
-			u.move_state = UnitState.MoveState.BLOCKED
+			if reacting:
+				u.react_state = UnitState.ReactState.FAILED
+			else:
+				u.order = UnitState.Order.NONE
+				u.move_state = UnitState.MoveState.BLOCKED
 			return
 	u.position += dir * step
 	u.velocity = dir * u.speed

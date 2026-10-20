@@ -60,6 +60,8 @@ var _integration_selftest: IntegrationSelfTest
 var _squad_selftest: SquadSelfTest
 var _combat_selftest: CombatSelfTest
 var _combat_ai_selftest: CombatAISelfTest
+var _combat_scale_selftest: CombatScaleSelfTest
+var _combat_tactics_selftest: CombatTacticsSelfTest
 ## COMBAT-01a shot effects (muzzle flash, tracer, impact, sound).
 var combat_fx: CombatFX
 
@@ -235,6 +237,12 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	if "--large-test" in args:
 		_large_selftest = LargeWorldSelfTest.new(self)
 		_large_selftest.run.call_deferred(args)
+	elif "--combat-tactics-test" in args:
+		_combat_tactics_selftest = CombatTacticsSelfTest.new(self)
+		_combat_tactics_selftest.run.call_deferred(args)
+	elif "--combat-scale-test" in args:
+		_combat_scale_selftest = CombatScaleSelfTest.new(self)
+		_combat_scale_selftest.run.call_deferred(args)
 	elif "--combat-ai-test" in args:
 		_combat_ai_selftest = CombatAISelfTest.new(self)
 		_combat_ai_selftest.run.call_deferred(args)

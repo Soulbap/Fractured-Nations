@@ -3,7 +3,14 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **COMBAT-01b** — soldiers fight on their own: they see enemies (field of
+Current state: **COMBAT-02** — larger and smarter infantry fights: 100 v 100 and several
+battles kilometres apart run at about 3.3 ms average frame time; soldiers who come under fire
+work out roughly where it comes from and take nearby cover (HESCO, buildings, rocks, trees,
+terrain) and fight from it, within what their squad order allows (Hold keeps its area, Move and
+Follow only pause briefly, Hold Fire takes cover without firing; a player order always wins);
+see [docs/COMBAT-02_REPORT.md](docs/COMBAT-02_REPORT.md).
+
+Before that, **COMBAT-01b** — soldiers fight on their own: they see enemies (field of
 view, terrain, trees, foliage, structures), pick and keep a target, aim with human error,
 fire, reload and take casualties through the same rifle and combat authority as the player,
 while squad orders, Hold Fire / Weapons Free, possession and save/load keep working; see
@@ -77,7 +84,7 @@ uniforms) share the world and some soldiers already have move orders. The contro
 | **Tab** | Switch to the tactical camera (the soldier returns to the simulation) |
 | F | Debug fly / noclip |
 | F3 | Performance overlay |
-| F4 | AI combat debug overlay (both views): state, target, why a soldier is not firing |
+| F4 | AI combat debug overlay (both views): state, target, why a soldier is not firing; COMBAT-02: tactical state, threat direction (orange), chosen cover (green ring), reaction path (dashed), "AI reaction" vs "order", cover reasons |
 
 | Key | Tactical (RTS) |
 |---|---|
@@ -86,7 +93,7 @@ uniforms) share the world and some soldiers already have move orders. The contro
 | Mouse wheel | Zoom (5–200 m, starts at 80 m; `RTSCamera.zoom_min` / `zoom_max` / `zoom_default`) |
 | **B** | Construction mode (see below) |
 | Left click / drag box, Shift+click | Select soldiers and vehicles / add to selection, Ctrl+A all soldiers |
-| Ctrl+click, squad panel (left) | Select a soldier's whole squad; Shift adds more squads |
+| Ctrl+click, squad panel (left) | Select a soldier's whole squad; Shift adds more squads. Rows show order, progress, living + fallen, engaging / under fire / in cover; the list scrolls when it would reach the HUD text |
 | Right click | Move: selected squads walk in formation to the point (side by side if several); other selected soldiers get individual orders and leave their squad's order until its next one |
 | H | Hold: selected squads stop and stay; other selected soldiers stop |
 | F, then click a soldier | Selected squads follow that soldier, or its squad (its leader) |
@@ -119,8 +126,9 @@ Assets are generated in Blender by `tools/blender/structures/*.py` (sources in
 root, after the world build): `bash benchmarks/wi01/run_test.sh integration --shots`
 (construction in five terrain types, clearing, navigation, persistence, performance),
 `... base` (the WORLD-BASE-01 checks) and `... large` (the WORLD-CORE-02 checks). The newest
-runner, `bash benchmarks/combat01b/run_test.sh <kind>`, also takes `combat-ai` (COMBAT-01b
-AI firefights), `combat` (COMBAT-01a) and `squad` (UNIT-01A).
+runner, `bash benchmarks/combat02/run_test.sh <kind>`, also takes `combat-tactics` (COMBAT-02
+reactions and cover), `combat-scale` (COMBAT-02 16 / 50 / 100 v N, two battles), `combat-ai`
+(COMBAT-01b AI firefights), `combat` (COMBAT-01a) and `squad` (UNIT-01A).
 
 The world exploration scene `scenes/world/test_2km.tscn` still runs on its own with the
 WORLD-TECH-01 free-roaming controller.

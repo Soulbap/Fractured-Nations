@@ -14,6 +14,13 @@ enum MoveState { IDLE, MOVING, ARRIVED, BLOCKED }
 ## neither perceives nor fires for it.
 enum AiState { IDLE, OBSERVING, ENGAGING, RELOADING, LOST_TARGET, DEAD, PLAYER }
 const AI_STATE_NAMES: Array[String] = ["idle", "observing", "engaging", "reloading", "lost target", "dead", "player"]
+## COMBAT-02 tactical reaction of the soldier (CombatBrain). A reaction moves the soldier
+## through react_target, a temporary goal next to its order: the order itself (order,
+## order_target, the squad's order) is never changed by the AI.
+enum Tactic { NONE, SEEK_COVER, IN_COVER, RETURNING }
+const TACTIC_NAMES: Array[String] = ["-", "seeking cover", "in cover", "returning"]
+## Progress of the temporary movement (written by the body / abstract step).
+enum ReactState { NONE, MOVING, ARRIVED, FAILED }
 
 var id := 0
 var unit_name := ""
@@ -78,6 +85,30 @@ var watch_until := -1.0
 ## Why the AI is not firing right now (debugging; not saved).
 var ai_reason := ""
 
+# --- Tactical reactions (COMBAT-02). Written by CombatBrain; persisted. ---
+var tactic := Tactic.NONE
+var tactic_since := 0.0
+## No new reaction before this time (after a player order, a failed cover, a brief one).
+var tactic_cooldown_until := 0.0
+## Temporary movement goal (INF = none). While set, the soldier walks there or waits
+## there instead of following its order; clearing it resumes the order.
+var react_target := Vector3.INF
+var react_state := ReactState.NONE
+## A Move / Follow / Regroup reaction ends at this time at the latest (INF = no limit).
+var react_until := INF
+## Cover the soldier chose (reserved: others do not pick the same spot).
+var cover_pos := Vector3.INF
+var cover_checked_at := -1.0e9
+## Where the soldier believes fire comes from (approximate; INF = unknown), when it last
+## came under fire, and until when it counts as under fire.
+var threat_pos := Vector3.INF
+var threat_at := -1.0e9
+var under_fire_until := -1.0e9
+## Centre of the area the soldier holds (Hold order / where its last order ended).
+var anchor_pos := Vector3.INF
+## Why the last cover was chosen or rejected (debugging; not saved).
+var cover_note := ""
+
 
 func is_vehicle() -> bool:
 	return kind == Kind.VEHICLE
@@ -104,6 +135,10 @@ func to_dict() -> Dictionary:
 		"ai_state": ai_state, "target_id": target_id, "target_seen_at": target_seen_at, "target_last_pos": target_last_pos,
 		"target_visible": target_visible, "target_aim_y": target_aim_y, "aim_ready_at": aim_ready_at,
 		"burst_left": burst_left, "next_burst_at": next_burst_at, "watch_yaw": watch_yaw, "watch_until": watch_until,
+		"tactic": tactic, "tactic_since": tactic_since, "tactic_cooldown_until": tactic_cooldown_until,
+		"react_target": react_target, "react_state": react_state, "react_until": react_until, "cover_pos": cover_pos,
+		"cover_checked_at": cover_checked_at, "threat_pos": threat_pos, "threat_at": threat_at,
+		"under_fire_until": under_fire_until, "anchor_pos": anchor_pos,
 	}
 
 
@@ -154,6 +189,19 @@ func copy_combat_from(d: Dictionary) -> void:
 	watch_yaw = d.get("watch_yaw", NAN)
 	watch_until = d.get("watch_until", -1.0)
 	ai_reason = ""
+	tactic = d.get("tactic", Tactic.NONE)
+	tactic_since = d.get("tactic_since", 0.0)
+	tactic_cooldown_until = d.get("tactic_cooldown_until", 0.0)
+	react_target = d.get("react_target", Vector3.INF)
+	react_state = d.get("react_state", ReactState.NONE)
+	react_until = d.get("react_until", INF)
+	cover_pos = d.get("cover_pos", Vector3.INF)
+	cover_checked_at = d.get("cover_checked_at", -1.0e9)
+	threat_pos = d.get("threat_pos", Vector3.INF)
+	threat_at = d.get("threat_at", -1.0e9)
+	under_fire_until = d.get("under_fire_until", -1.0e9)
+	anchor_pos = d.get("anchor_pos", Vector3.INF)
+	cover_note = ""
 
 
 func is_reloading() -> bool:
@@ -162,3 +210,20 @@ func is_reloading() -> bool:
 
 func ai_state_name() -> String:
 	return AI_STATE_NAMES[ai_state]
+
+
+func tactic_name() -> String:
+	return TACTIC_NAMES[tactic]
+
+
+func is_reacting() -> bool:
+	return react_target.is_finite()
+
+
+## Ends a tactical reaction (the order, if any, resumes at once).
+func clear_reaction() -> void:
+	tactic = Tactic.NONE
+	react_target = Vector3.INF
+	react_state = ReactState.NONE
+	react_until = INF
+	cover_pos = Vector3.INF
