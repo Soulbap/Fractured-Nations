@@ -315,10 +315,13 @@ func _base() -> Dictionary:
 	# Perimeter: HESCO on three sides (open polyline), chain-link along the south side
 	# snapped to the gate posts, a T-wall behind the HQ, a sandbag position inside.
 	var hx := 75.0
+	var gate_gap := 14.0
 	var hz := 65.0
 	placed.hesco = await _line(&"hesco", [c + Vector3(-hx, 0, hz), c + Vector3(-hx, 0, -hz), c + Vector3(hx, 0, -hz), c + Vector3(hx, 0, hz)])
+	# LOGISTICS-01: the east fence stops 14 m from the gate, which leaves a 12 m vehicle
+	# entrance beside it (the 4 m gate alone is too tight for a 3.3 m truck).
 	placed.fence_w = await _line(&"fence", [c + Vector3(-hx, 0, hz), c + Vector3(-2.1, 0, 65)])
-	placed.fence_e = await _line(&"fence", [c + Vector3(2.1, 0, 65), c + Vector3(hx, 0, hz)])
+	placed.fence_e = await _line(&"fence", [c + Vector3(gate_gap, 0, 65), c + Vector3(hx, 0, hz)])
 	placed.t_wall = await _line(&"t_wall", [c + Vector3(-12, 0, -46), c + Vector3(12, 0, -46)])
 	placed.sandbags = await _line(&"sandbag_wall_2m", [c + Vector3(22, 0, 2), c + Vector3(30, 0, 2)])
 	await _physics(3)

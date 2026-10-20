@@ -25,6 +25,8 @@ signal view_added(id: int, view: Node3D)
 var state := WorldState.new()
 ## UNIT-01A: turns squad orders (state.squads) into per-unit move orders.
 var squads := SquadControl.new(self)
+## LOGISTICS-01: driving of every vehicle record (both tiers), routes and the player's wheel.
+var vehicles := VehicleSim.new(self)
 ## COMBAT-01a: firing, reloading, damage and death (the one combat authority).
 var combat := CombatSim.new(self)
 ## COMBAT-01b: soldiers' own perception, target choice and firing (through `combat`).
@@ -47,7 +49,7 @@ var _slide := {}
 ## Length of the last simulation step (s).
 var last_delta := 0.0
 ## Accumulated cost of the simulation parts (microseconds) and ticks counted.
-var tick_usec := {"abstract": 0, "squads": 0, "war": 0, "brain": 0, "combat": 0, "ticks": 0}
+var tick_usec := {"abstract": 0, "squads": 0, "war": 0, "brain": 0, "combat": 0, "vehicles": 0, "ticks": 0}
 
 
 func register_body(id: int, body: Node3D) -> void:
@@ -125,11 +127,13 @@ func _physics_process(delta: float) -> void:
 	state.time += delta
 	var t0 := Time.get_ticks_usec()
 	for u in state.units.values():
-		if not u.has_body and u.alive:
+		if not u.has_body and u.alive and u.kind == UnitState.Kind.SOLDIER:
 			_abstract_step(u, delta)
 	var t1 := Time.get_ticks_usec()
 	squads.update(delta)
 	var t2 := Time.get_ticks_usec()
+	vehicles.update(delta)
+	var t2v := Time.get_ticks_usec()
 	war.update(delta)
 	var t3 := Time.get_ticks_usec()
 	brain.update(delta)
@@ -139,7 +143,8 @@ func _physics_process(delta: float) -> void:
 	# WORLD-PLAYTEST-01: where a simulation tick goes (time compression measurements).
 	tick_usec.abstract += t1 - t0
 	tick_usec.squads += t2 - t1
-	tick_usec.war += t3 - t2
+	tick_usec.vehicles += t2v - t2
+	tick_usec.war += t3 - t2v
 	tick_usec.brain += t4 - t3
 	tick_usec.combat += t5 - t4
 	tick_usec.ticks += 1

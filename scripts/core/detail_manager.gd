@@ -94,6 +94,10 @@ func observer_position() -> Vector3:
 		var b := game.possessed_body()
 		if b:
 			return b.global_position
+	if game and game.mode == GameController.Mode.DRIVE:
+		var vb := game.driven_body()
+		if vb:
+			return vb.global_position
 	return rts_camera.focus if rts_camera else observer
 
 
@@ -204,7 +208,8 @@ func _rebake(full := true, async := false) -> void:
 	var obstacles := []
 	var half := nav_area_size * 0.5
 	for u in sim.state.units.values():
-		if u.kind == UnitState.Kind.VEHICLE and absf(u.position.x - observer.x) < half and absf(u.position.z - observer.z) < half:
+		# LOGISTICS-01: only parked vehicles carve the navmesh (a moving one would leave a stale hole).
+		if u.kind == UnitState.Kind.VEHICLE and absf(u.position.x - observer.x) < half and absf(u.position.z - observer.z) < half 				and (u.veh == null or (absf(u.veh.speed) < 0.1 and u.order == UnitState.Order.NONE)):
 			obstacles.append({"position": u.position, "yaw": u.yaw, "size": VehicleBody.FOOTPRINT})
 	var vehicles := obstacles.size()
 	if structures:

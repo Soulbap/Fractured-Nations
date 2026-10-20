@@ -72,9 +72,23 @@ func add_unit(kind: UnitState.Kind, faction: int, position: Vector3, yaw := 0.0,
 	u.position = position
 	u.yaw = yaw
 	u.speed = 4.5 if kind == UnitState.Kind.SOLDIER else 0.0
+	if kind == UnitState.Kind.VEHICLE:
+		u.veh = VehicleState.new()
+		u.veh.fuel = u.veh.def().fuel_capacity
 	u.unit_name = unit_name if unit_name != "" else "%s-%d" % [faction_name(faction).left(1), u.id]
 	units[u.id] = u
 	unit_added.emit(u)
+	return u
+
+
+## LOGISTICS-01: a drivable vehicle of a given type (VehicleDefs id), full tank, parked.
+func add_vehicle(type_id: StringName, faction: int, position: Vector3, yaw := 0.0, unit_name := "") -> UnitState:
+	var def := VehicleDefs.get_def(type_id)
+	var u := add_unit(UnitState.Kind.VEHICLE, faction, position, yaw, unit_name if unit_name != "" else "%s-%d" % [def.short_name, _next_id])
+	u.veh.type_id = def.id
+	u.veh.fuel = def.fuel_capacity
+	u.max_health = def.max_health
+	u.health = def.max_health
 	return u
 
 
@@ -343,6 +357,11 @@ func apply_snapshot(snap: Dictionary) -> Dictionary:
 		u.order_target = fresh.order_target
 		u.move_state = fresh.move_state
 		u.loadout = fresh.loadout
+		if fresh.veh:
+			if u.veh == null:
+				u.veh = fresh.veh
+			else:
+				u.veh.copy_from(fresh.veh.to_dict())
 		u.copy_combat_from(fresh.to_dict())
 		updated += 1
 	var removed := 0

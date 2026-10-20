@@ -17,6 +17,8 @@ extends Node
 
 signal selection_changed(ids: Array)
 signal possess_requested(unit_id: int)
+## LOGISTICS-01: the player wants the wheel of a selected vehicle (P / Enter with no soldier selected).
+signal drive_requested(unit_id: int)
 signal order_issued(count: int, target: Vector3)
 
 @export var rig: RTSCamera
@@ -116,6 +118,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		var id := first_selected_soldier()
 		if id > 0:
 			possess_requested.emit(id)
+		else:
+			var vid := first_selected_vehicle()
+			if vid > 0:
+				drive_requested.emit(vid)
 	elif event.is_action_pressed("halt"):
 		order_hold()
 	elif event.is_action_pressed("squad_follow"):
@@ -183,6 +189,25 @@ func on_unit_died(u: UnitState) -> void:
 		select(ids)
 
 
+func first_selected_vehicle() -> int:
+	for id in selected:
+		var u := sim.state.get_unit(id)
+		if u and u.kind == UnitState.Kind.VEHICLE and u.alive and _can_command(id):
+			return id
+	return -1
+
+
+## Selected vehicles the player may command, in id order.
+func selected_vehicles() -> Array:
+	var out := []
+	for id in selected:
+		var u := sim.state.get_unit(id)
+		if u and u.kind == UnitState.Kind.VEHICLE and u.alive and _can_command(id):
+			out.append(id)
+	out.sort()
+	return out
+
+
 func first_selected_soldier() -> int:
 	for id in selected:
 		var u := sim.state.get_unit(id)
@@ -209,6 +234,7 @@ func order_move(hit: Vector3) -> int:
 	if not loose.is_empty():
 		var at := hit if sqs.is_empty() else hit + _beside_squads(sqs)
 		n += sim.state.issue_individual_moves(loose, at, formation_spacing)
+	n += order_vehicles(hit)
 	if n > 0:
 		last_order_target = hit
 		_marker.global_position = hit + Vector3.UP * 0.1
@@ -218,8 +244,38 @@ func order_move(hit: Vector3) -> int:
 	return n
 
 
+## LOGISTICS-01: the selected vehicles drive to the point (a line abreast when several go to
+## one place, so they do not fight for the same square metre). Feedback in the HUD message.
+func order_vehicles(hit: Vector3) -> int:
+	var vids := selected_vehicles()
+	if vids.is_empty():
+		return 0
+	var n := 0
+	var texts: Array[String] = []
+	var half := vids.size() - 1
+	var i := 0
+	for id in vids:
+		var u := sim.state.get_unit(id)
+		var side := (i - half * 0.5) * 12.0
+		var at := hit
+		if vids.size() > 1:
+			var fwd := Vector3(hit.x - u.position.x, 0.0, hit.z - u.position.z).normalized()
+			at = hit + Vector3(fwd.z, 0.0, -fwd.x) * side
+		i += 1
+		var res := sim.vehicles.order_drive(id, at)
+		if res.ok:
+			n += 1
+			texts.append("%s: %.1f km (%.1f km by road)" % [u.unit_name, res.length_m / 1000.0, res.road_m / 1000.0])
+		else:
+			texts.append("%s: %s" % [u.unit_name, res.reason])
+	_say(" · ".join(texts))
+	return n
+
+
 ## H: selected squads hold; other selected soldiers stop.
 func order_hold() -> void:
+	for id in selected_vehicles():
+		sim.vehicles.halt(id)
 	_player_takes(selected_squads())
 	sim.squads.order_hold(selected_squads())
 	for id in loose_selected():

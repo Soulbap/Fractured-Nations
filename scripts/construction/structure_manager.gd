@@ -1529,6 +1529,12 @@ func water_height(x: float, z: float) -> float:
 	return -INF
 
 
+## LOGISTICS-01: the ground at (x, z) is under water (vehicle routing and driving).
+func is_wet(x: float, z: float) -> bool:
+	var h := _height(x, z)
+	return not is_nan(h) and _wet(x, z, h)
+
+
 ## Terrain height h at (x, z) is below the water level or under a water surface.
 func _wet(x: float, z: float, h: float) -> bool:
 	return h < water_level or h < water_height(x, z) + 0.15

@@ -17,6 +17,7 @@ var selected := false:
 
 var ring: MeshInstance3D
 var _marker: MeshInstance3D
+var _vehicle_visual: VehicleVisual
 ## COMBAT-01a: the marker shows a casualty (lying, dark, no ring) once the unit is dead.
 var _shows_dead := false
 
@@ -30,10 +31,12 @@ func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
 	mat.albedo_color = UnitVisuals.uniform_color(unit.faction)
 	mat.roughness = 0.9
 	if unit.is_vehicle():
-		var box := BoxMesh.new()
-		box.size = Vector3(2.9, 2.5, 6.1)
-		_marker.mesh = box
-		_marker.position.y = 1.25
+		# LOGISTICS-01: the hull at its coarsest LOD (about 100 triangles), no wheels.
+		_vehicle_visual = VehicleVisual.new()
+		_vehicle_visual.name = "Hull"
+		add_child(_vehicle_visual)
+		_vehicle_visual.build(unit.veh.type_id if unit.veh else VehicleDefs.TRUCK, unit.faction, true)
+		_marker.mesh = null
 	elif InfantryCharacter.enabled():
 		# CHARACTER-01: static posed far-view mesh of the unit's loadout (one draw call).
 		if unit.loadout == "":
@@ -42,7 +45,7 @@ func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
 		if pm:
 			_marker.mesh = pm
 			mat = null
-	if _marker.mesh == null:
+	if _marker.mesh == null and not unit.is_vehicle():
 		var cap := CapsuleMesh.new()
 		cap.radius = 0.35
 		cap.height = 1.8
@@ -52,8 +55,8 @@ func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
 	add_child(_marker)
 	ring = MeshInstance3D.new()
 	var torus := TorusMesh.new()
-	torus.inner_radius = 3.1 if unit.is_vehicle() else 0.55
-	torus.outer_radius = 3.4 if unit.is_vehicle() else 0.75
+	torus.inner_radius = (unit.veh.def().length * 0.5 + 0.4 if unit.veh else 3.1) if unit.is_vehicle() else 0.55
+	torus.outer_radius = torus.inner_radius + (0.3 if unit.is_vehicle() else 0.2)
 	torus.rings = 24
 	torus.ring_segments = 6
 	ring.mesh = torus
@@ -86,6 +89,8 @@ func _show_dead() -> void:
 	if not unit.is_vehicle():
 		_marker.rotation = Vector3(PI * 0.5, 0.0, 0.0)
 		_marker.position = Vector3(0.0, 0.3, 0.0)
+	if unit.is_vehicle():
+		return
 	var mat := _marker.material_override as StandardMaterial3D
 	if mat:
 		mat.albedo_color = UnitVisuals.uniform_color(unit.faction).darkened(0.45)

@@ -44,6 +44,8 @@ var has_body := false
 ## Soldier equipment configuration (InfantryLoadout id, CHARACTER-01). Empty until the unit
 ## is first shown; then a deterministic default is stored so it persists.
 var loadout := ""
+## LOGISTICS-01: vehicle-only state (type, speed, fuel, route, ...); null for soldiers.
+var veh: VehicleState
 
 # --- Combat (COMBAT-01a). Authoritative weapon and life state; WeaponDef is static. ---
 var alive := true
@@ -132,6 +134,7 @@ func to_dict() -> Dictionary:
 		"health": health, "max_health": max_health, "speed": speed,
 		"order": order, "order_target": order_target, "move_state": move_state,
 		"player_controlled": player_controlled, "has_body": has_body, "loadout": loadout,
+		"veh": veh.to_dict() if veh else null,
 		"alive": alive, "weapon_id": weapon_id, "mag": mag, "reserve": reserve, "fire_auto": fire_auto,
 		"next_shot_at": next_shot_at, "reload_until": reload_until, "shot_counter": shot_counter,
 		"bloom": bloom, "last_shot_at": last_shot_at, "died_at": died_at, "killer_id": killer_id,
@@ -164,6 +167,8 @@ static func from_dict(d: Dictionary) -> UnitState:
 	u.has_body = d.get("has_body", false)
 	u.copy_combat_from(d)
 	u.loadout = d.get("loadout", "")
+	if d.get("veh") is Dictionary:
+		u.veh = VehicleState.from_dict(d.veh)
 	return u
 
 

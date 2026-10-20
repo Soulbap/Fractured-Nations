@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="VegetationLibrary" format=3]
+[gd_resource type="Resource" script_class="VegetationLibrary" format=3 uid="uid://sn5crnqpj1fr"]
 
-[ext_resource type="Script" path="res://scripts/vegetation/vegetation_mesh_def.gd" id="1_xbpqk"]
+[ext_resource type="Script" uid="uid://xwqlqdpdd80y" path="res://scripts/vegetation/vegetation_mesh_def.gd" id="1_xbpqk"]
 [ext_resource type="PackedScene" path="res://assets/environment/scenes/pine_a.tscn" id="2_1lruq"]
 [ext_resource type="PackedScene" path="res://assets/environment/scenes/pine_b.tscn" id="3_ty61t"]
 [ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_a.tscn" id="4_sknsb"]
@@ -22,7 +22,7 @@
 [ext_resource type="PackedScene" path="res://assets/environment/scenes/fence.tscn" id="20_ovfeh"]
 [ext_resource type="PackedScene" path="res://assets/environment/scenes/mailbox.tscn" id="21_iq5rp"]
 [ext_resource type="PackedScene" path="res://assets/environment/scenes/road_post.tscn" id="22_21nfq"]
-[ext_resource type="Script" path="res://scripts/vegetation/vegetation_library.gd" id="23_6b78p"]
+[ext_resource type="Script" uid="uid://dtom7sxtnagxa" path="res://scripts/vegetation/vegetation_library.gd" id="23_6b78p"]
 
 [sub_resource type="Resource" id="Resource_t6y5q"]
 script = ExtResource("1_xbpqk")

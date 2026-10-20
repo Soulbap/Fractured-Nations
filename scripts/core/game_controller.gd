@@ -11,8 +11,10 @@ extends Node
 signal mode_changed(mode: int)
 signal possessed_changed(unit_id: int)
 signal possessed_died(unit_id: int)
+## LOGISTICS-01: the player took the wheel of a vehicle (id) or left it (-1).
+signal driving_changed(unit_id: int)
 
-enum Mode { FPS, RTS }
+enum Mode { FPS, RTS, DRIVE }
 
 @export var sim: WorldSim
 @export var rts_camera: RTSCamera
@@ -34,10 +36,16 @@ var sites: Array[Dictionary] = []
 var mode := Mode.RTS
 ## Unit the player controls in FPS and returns to from RTS (-1 = none yet).
 var possessed_id := -1
+## LOGISTICS-01: vehicle the player drives in Mode.DRIVE (-1 = none).
+var driving_id := -1
+var drive_camera: DriveCamera
 
 
 func _ready() -> void:
 	ensure_input_actions()
+	drive_camera = DriveCamera.new()
+	drive_camera.name = "DriveCamera"
+	add_child(drive_camera)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -55,7 +63,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func toggle() -> void:
-	if mode == Mode.FPS:
+	if mode == Mode.FPS or mode == Mode.DRIVE:
 		enter_rts()
 	else:
 		var id := rts.first_selected_soldier() if rts else -1
@@ -68,6 +76,8 @@ func toggle() -> void:
 ## Takes direct control of a soldier and switches to its first-person camera.
 func possess(id: int) -> bool:
 	var unit := sim.state.get_unit(id)
+	if unit and unit.kind == UnitState.Kind.VEHICLE:
+		return drive(id)
 	if unit == null or unit.kind != UnitState.Kind.SOLDIER or not unit.alive:
 		return false
 	# WORLD-SANDBOX-01: in the war the player commands (and possesses) only the player's
@@ -81,6 +91,7 @@ func possess(id: int) -> bool:
 		body = sim.body_of(id) as SoldierBody
 	if body == null:
 		return false
+	_leave_driving()
 	if possessed_id != id and possessed_id > 0:
 		var old := sim.body_of(possessed_id) as SoldierBody
 		if old:
@@ -109,6 +120,18 @@ func possess(id: int) -> bool:
 ## Releases the possessed soldier to the simulation and switches to the tactical camera
 ## framed on it. The soldier keeps its id, position and (suspended) order.
 func enter_rts() -> void:
+	if mode == Mode.DRIVE:
+		var vu := sim.state.get_unit(driving_id)
+		_leave_driving()
+		if vu:
+			rts_camera.frame(vu.position, vu.yaw)
+		rts_camera.set_active(true)
+		mode = Mode.RTS
+		_set_active_camera(rts_camera.camera)
+		if rts:
+			rts.set_active(true)
+		mode_changed.emit(mode)
+		return
 	var body := possessed_body()
 	if body:
 		body.player_controlled = false
@@ -122,6 +145,69 @@ func enter_rts() -> void:
 	if rts:
 		rts.set_active(true)
 	mode_changed.emit(mode)
+
+
+## LOGISTICS-01: takes the wheel of a vehicle. Its order and route are suspended, not lost;
+## leaving (Tab) hands the vehicle back to the simulation, which resumes its order.
+func drive(id: int) -> bool:
+	var unit := sim.state.get_unit(id)
+	if unit == null or unit.kind != UnitState.Kind.VEHICLE or not unit.alive or not _commandable(unit):
+		return false
+	if mode == Mode.DRIVE and driving_id == id:
+		return true
+	var body := sim.body_of(id) as VehicleBody
+	if body == null and detail:
+		detail.activate_at(unit.position, id)
+		body = sim.body_of(id) as VehicleBody
+	if body == null or not sim.vehicles.take_control(id):
+		return false
+	if mode == Mode.FPS:
+		var old := possessed_body()
+		if old:
+			old.player_controlled = false
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_leave_driving()
+	if rts:
+		rts.set_active(false)
+	rts_camera.set_active(false)
+	driving_id = id
+	mode = Mode.DRIVE
+	drive_camera.attach(body)
+	_set_active_camera(drive_camera.camera)
+	if collider_streamer and not detail:
+		collider_streamer.target = body
+	mode_changed.emit(mode)
+	driving_changed.emit(id)
+	return true
+
+
+func _leave_driving() -> void:
+	if driving_id < 0:
+		return
+	sim.vehicles.release_control(driving_id)
+	drive_camera.detach()
+	driving_id = -1
+	driving_changed.emit(-1)
+
+
+func driven_body() -> VehicleBody:
+	return sim.body_of(driving_id) as VehicleBody if driving_id > 0 else null
+
+
+func _physics_process(_delta: float) -> void:
+	if mode != Mode.DRIVE or driving_id < 0:
+		return
+	var u := sim.state.get_unit(driving_id)
+	if u == null or u.veh == null:
+		return
+	var v := u.veh
+	v.in_throttle = _axis(KEY_W, KEY_UP) - _axis(KEY_S, KEY_DOWN)
+	v.in_steer = _axis(KEY_D, KEY_RIGHT) - _axis(KEY_A, KEY_LEFT)
+	v.in_brake = 1.0 if Input.is_key_pressed(KEY_SPACE) else 0.0
+
+
+static func _axis(k1: Key, k2: Key) -> float:
+	return 1.0 if Input.is_key_pressed(k1) or Input.is_key_pressed(k2) else 0.0
 
 
 ## Possesses the soldier after the current one in id order, wherever it is in the world.
@@ -159,6 +245,9 @@ func jump_to_site(index: int) -> bool:
 ## COMBAT-01a: the possessed soldier died - back to the tactical view, where the player
 ## can pick another living soldier. Its record stays (a casualty marker in the world).
 func on_unit_died(u: UnitState) -> void:
+	if u.id == driving_id and mode == Mode.DRIVE:
+		enter_rts()
+		return
 	if u.id != possessed_id:
 		return
 	if mode == Mode.FPS:

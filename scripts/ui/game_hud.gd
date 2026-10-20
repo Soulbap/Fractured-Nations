@@ -391,15 +391,21 @@ func _war_text() -> String:
 		if show_controls:
 			lines.append("LMB fire, R reload, V semi/auto, RMB aim | WASD move, Shift sprint, Space jump, Esc release mouse, F fly")
 		lines.append("Tab tactical view · M strategic map · F1 %s controls" % ("hide" if show_controls else "all"))
+	elif game.mode == GameController.Mode.DRIVE:
+		var du := sim.state.get_unit(game.driving_id)
+		lines.append("DRIVING  %s" % (sim.vehicles.describe(du) if du else "-"))
+		lines.append("W/S throttle / brake-reverse · A/D steer · Space handbrake · V bumper view · RMB drag look · wheel zoom · Tab back to tactical (the vehicle resumes its order)")
 	elif construction and construction.active:
 		lines.append_array(construction.status_lines())
 	else:
 		var back := sim.state.get_unit(game.possessed_id)
+		for vid in rts.selected_vehicles():
+			lines.append(sim.vehicles.describe(sim.state.get_unit(vid)))
 		if Time.get_ticks_msec() / 1000.0 < death_note_until and back and not back.alive:
 			lines.append("%s was killed. Select a living soldier and press P to take over." % back.unit_name)
 		if show_controls:
 			lines.append("Camera: WASD pan, Q/E rotate, wheel zoom, middle-drag rotate")
-			lines.append("LMB select / drag box, Shift add, Ctrl+click squad, Ctrl+A all, RMB move, H hold, P or double-click possess, B construction")
+			lines.append("LMB select / drag box, Shift add, Ctrl+click squad, Ctrl+A all, RMB move, H hold, P or double-click possess (soldier) / drive (vehicle), B construction")
 			lines.append("Squads: F + click follow, G regroup (Shift+G at cursor), V line / column, [ ] spacing, Y weapons free / hold fire | F4 AI debug, F3 stats")
 		var sq_names: Array[String] = []
 		for sid in rts.selected_squads():

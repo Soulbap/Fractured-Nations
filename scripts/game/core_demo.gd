@@ -65,6 +65,7 @@ var _combat_tactics_selftest: CombatTacticsSelfTest
 var _sandbox_selftest: SandboxSelfTest
 var _playtest_selftest: PlaytestSelfTest
 var _integration03_selftest: Integration03SelfTest
+var _logistics_selftest: LogisticsSelfTest
 ## WORLD-SANDBOX-01: true when the game runs the three-faction war (the default).
 var sandbox := false
 var routes: StrategicRoutes
@@ -101,6 +102,7 @@ func _ready() -> void:
 	rts_camera.terrain = terrain
 	rts_camera.map_half_size = config.half_size()
 	rts.rig = rts_camera
+	rts.drive_requested.connect(game.drive)
 	rts.sim = sim
 	rts.terrain = terrain
 	rts.marker_parent = self
@@ -293,6 +295,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--base-test" in args:
 		_base_selftest = BaseSelfTest.new(self)
 		_base_selftest.run.call_deferred(args)
+	elif "--logistics-test" in args:
+		_logistics_selftest = LogisticsSelfTest.new(self)
+		_logistics_selftest.run.call_deferred(args)
 	elif "--integration03-test" in args:
 		_integration03_selftest = Integration03SelfTest.new(self)
 		_integration03_selftest.run.call_deferred(args)
@@ -314,6 +319,7 @@ func _start_sandbox() -> void:
 	sim.state.roads.load_world(src)
 	routes.setup(terrain, config.half_size(), src, "user://strategic/%s_grid.bin" % config.world_name, sim.state.roads)
 	sim.war.setup(routes)
+	sim.vehicles.setup(routes)
 	# WORLD-SANDBOX-01B: normal play starts without the frame-time overlay (F3).
 	if game.diagnostics:
 		game.diagnostics.set_overlay_visible(false)
@@ -364,7 +370,7 @@ func toggle_map() -> void:
 	if strategic_map.visible:
 		strategic_map.close()
 		return
-	if game.mode == GameController.Mode.FPS:
+	if game.mode != GameController.Mode.RTS:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		game.enter_rts()
 	if construction and construction.active:
@@ -422,7 +428,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(_delta: float) -> void:
 	TimeCompression.sample(sim.state.time)
 	# First person always runs in real time.
-	if sandbox and game.mode == GameController.Mode.FPS and Engine.time_scale != 1.0:
+	if sandbox and game.mode != GameController.Mode.RTS and Engine.time_scale != 1.0:
 		apply_time_scale(1.0)
 
 
