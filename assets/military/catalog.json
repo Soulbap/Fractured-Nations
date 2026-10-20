@@ -141,7 +141,7 @@
   "size_above_ground": [
    3.27,
    7.985,
-   4.8
+   4.25
   ],
   "footprint_xy": [
    -1.635,
@@ -150,20 +150,20 @@
    3.975
   ],
   "tris": [
-   4944,
-   936,
-   300
+   976,
+   360,
+   76
   ],
   "surfaces": [
    2,
    2,
-   2
+   1
   ],
   "materials": [
    "Kit_Palette",
    "Paint_Green"
   ],
-  "glb_bytes": 439776,
+  "glb_bytes": 122304,
   "glb": "res://assets/military/vehicles/apc_8x8.glb"
  },
  "barracks_block": {
@@ -2942,7 +2942,7 @@
   "size_above_ground": [
    3.31,
    8.67,
-   3.6
+   3.175
   ],
   "footprint_xy": [
    -1.655,
@@ -2951,9 +2951,9 @@
    4.395
   ],
   "tris": [
-   4104,
-   902,
-   274
+   1128,
+   470,
+   106
   ],
   "surfaces": [
    4,
@@ -2966,7 +2966,7 @@
    "Paint_Green",
    "Signs"
   ],
-  "glb_bytes": 383696,
+  "glb_bytes": 146248,
   "glb": "res://assets/military/vehicles/truck_6x6.glb"
  },
  "vehicle_depot": {

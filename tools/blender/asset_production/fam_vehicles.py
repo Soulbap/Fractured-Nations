@@ -16,6 +16,10 @@ import math
 
 from ap_kit import Frame
 
+# LOGISTICS-01: the drivable vehicles draw their wheels from the separate wheel_truck / wheel_apc
+# assets at the WHEEL_* markers (they spin and steer), so the body meshes are built without them.
+BODY_WHEELS = False
+
 ALL = (0, 1, 2)
 L01 = (0, 1)
 L0 = (0,)
@@ -89,7 +93,8 @@ def truck_6x6(A):
     # Wheels and mudguards.
     for y in axles:
         for sx in (-1, 1):
-            _wheel(a, sx * track, y, r, tw, side=sx)
+            if BODY_WHEELS:
+                _wheel(a, sx * track, y, r, tw, side=sx)
             a.box((tw + 0.12, 1.45, 0.05), (sx * track, y, 2 * r + 0.10), "Paint_Black", L01)
     a.col_box((W, 2.2, 2.3), (0, 3.15, 2.25))
     a.col_box((W, 6.1, 2.0), (0, -1.0, 1.9))
@@ -163,7 +168,8 @@ def apc_8x8(A):
     # Wheels.
     for y in axles:
         for sx in (-1, 1):
-            _wheel(a, sx * track, y, r, tw, side=sx)
+            if BODY_WHEELS:
+                _wheel(a, sx * track, y, r, tw, side=sx)
     a.col_box((W, 7.9, 1.9), (0, -0.0, zb + 0.95))
     a.col_box((1.0, 1.0, 0.8), (-0.2, -0.3, zr + 0.4))
     for i, y in enumerate(axles):

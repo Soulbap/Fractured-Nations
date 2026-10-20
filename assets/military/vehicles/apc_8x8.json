@@ -7,7 +7,7 @@
  "bounds_min": [
   -1.635,
   -4.01,
-  -0.044
+  0.55
  ],
  "bounds_max": [
   1.635,
@@ -17,7 +17,7 @@
  "size_above_ground": [
   3.27,
   7.985,
-  4.8
+  4.25
  ],
  "footprint_xy": [
   -1.635,
@@ -27,14 +27,14 @@
  ],
  "foundation_depth": 0.0,
  "tris": [
-  4944,
-  936,
-  300
+  976,
+  360,
+  76
  ],
  "surfaces": [
   2,
   2,
-  2
+  1
  ],
  "materials": [
   "Kit_Palette",
