@@ -1,0 +1,158 @@
+{
+  "failures": [],
+  "hud": {
+    "badge": "YOU ARE NORTH",
+    "controls_lines": 5,
+    "debug_lines": 4,
+    "default_lines": 2,
+    "fps_lines": 4
+  },
+  "map_ui": {
+    "double_click_zoom": 0.15,
+    "group_click_selects": 5,
+    "operation": {
+      "march": {
+        "eta": 864.712051275788,
+        "rate": 4.1888992353541,
+        "rem": 3622.19165039063,
+        "total": 4157.93997573853
+      },
+      "text": "[b]ATTACK #1 → Haugen[/b]\nPhase: [b]moving[/b] for 2 min · marching to the staging point\nSquads: N6 8, N7 8\nStrength: 16 of 16 soldiers (0 lost)\nMarch: 3.6 of 4.2 km left (12 %) · arrival in about 15 min\nTarget: neutral"
+    },
+    "override_released": true,
+    "overview": {
+      "group_center_error_m": 0.0,
+      "group_of_the_four": 5,
+      "groups": 3
+    },
+    "sentrum_contested": true,
+    "target_kept_squads": true,
+    "zoom_anchor": {
+      "world_shift_m": 2.7,
+      "zoom": 0.148
+    },
+    "zoom_levels": {
+      "05_nearby_squads_strategic": {
+        "level": 0,
+        "markers_for_the_four": 2,
+        "zoom": 0.06
+      },
+      "06_nearby_squads_close": {
+        "level": 2,
+        "markers_for_the_four": 4,
+        "zoom": 0.9
+      },
+      "06_nearby_squads_operational": {
+        "level": 1,
+        "markers_for_the_four": 3,
+        "zoom": 0.25
+      }
+    }
+  },
+  "pass": true,
+  "setup": {
+    "factions": 3,
+    "objectives": 12,
+    "route_grid": {
+      "cached": true,
+      "ms": 22.8,
+      "size": [
+        400,
+        400
+      ]
+    },
+    "soldiers": 120,
+    "squads": 15,
+    "summary": {
+      "ai_us_max": 0,
+      "factions": {
+        "East": {
+          "casualties": 0,
+          "kills": 0,
+          "last_decision": "",
+          "objectives": 3,
+          "ops": [
+            0,
+            0,
+            0
+          ],
+          "reserves": 40,
+          "soldiers": 40,
+          "squads": 5
+        },
+        "North": {
+          "casualties": 0,
+          "kills": 0,
+          "last_decision": "",
+          "objectives": 3,
+          "ops": [
+            0,
+            0,
+            0
+          ],
+          "reserves": 32,
+          "soldiers": 40,
+          "squads": 5
+        },
+        "South": {
+          "casualties": 0,
+          "kills": 0,
+          "last_decision": "",
+          "objectives": 2,
+          "ops": [
+            0,
+            0,
+            0
+          ],
+          "reserves": 40,
+          "soldiers": 40,
+          "squads": 5
+        }
+      },
+      "objectives": {
+        "Centre Bridge": "-",
+        "East HQ": "East",
+        "Elvetun": "North",
+        "Haugen": "-",
+        "North Bridge": "North",
+        "North HQ": "North",
+        "Sentrum": "-",
+        "South Bridge": "-",
+        "South HQ": "South",
+        "Verket": "South",
+        "Ødegård": "East",
+        "Østby": "East"
+      },
+      "ops": [],
+      "ops_active": 0,
+      "ops_total": 0,
+      "reroutes": 0,
+      "routes": {
+        "ms_avg": 0.0,
+        "ms_max": 0.0,
+        "planned": 0
+      },
+      "time": 0.5,
+      "update_us_avg": 2.8,
+      "update_us_max": 4
+    }
+  },
+  "warps": [
+    {
+      "frames": 4679,
+      "real_s": 15.0,
+      "requested": 8.0,
+      "sim_s": 120.0,
+      "speed": 8.0,
+      "step_max_s": 0.0167
+    },
+    {
+      "frames": 1014,
+      "real_s": 2.0,
+      "requested": 2.0,
+      "sim_s": 4.0,
+      "speed": 2.0,
+      "step_max_s": 0.0167
+    }
+  ]
+}

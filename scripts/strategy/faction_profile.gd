@@ -37,3 +37,10 @@ extends Resource
 @export var threat_ratio := 1.0
 ## Squads with fewer living soldiers than this go home to recover.
 @export var min_squad_size := 3
+## WORLD-SANDBOX-01B: an attack takes at least this share of the free soldiers (not just
+## the minimum it needs), so reserves that pile up are used instead of idling.
+@export var attack_commit := 0.5
+## WORLD-SANDBOX-01B: free squads idling at the HQ move up to the held objective nearest
+## the enemy (at most this many there), so attacks start from the front instead of a
+## march of 6-8 km from the HQ. 0 = never.
+@export var forward_squads := 2

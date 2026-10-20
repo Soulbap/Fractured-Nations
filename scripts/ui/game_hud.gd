@@ -32,6 +32,12 @@ var war_sim: WarSim:
 			v.event_logged.connect(_on_war_event)
 var _notes: Array = []
 var _notes_box: VBoxContainer
+## WORLD-SANDBOX-01B: in the war the bottom text is short by default; F1 shows every
+## control, F3 the technical counters (units, bodies, structures, detail tier).
+var show_controls := false
+var show_debug := false
+## The player's faction, top left (war only).
+var _badge: Label
 
 
 class Overlay extends Control:
@@ -240,6 +246,12 @@ func _ready() -> void:
 	_notes_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_notes_box.add_theme_constant_override("separation", 3)
 	add_child(_notes_box)
+	_badge = Label.new()
+	_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_badge.position = Vector2(12, 12)  # moved to the top centre in _process
+	_badge.add_theme_font_size_override("font_size", 15)
+	_badge.visible = false
+	add_child(_badge)
 
 
 ## A war event the player's faction learns about: a short notification at the top of the
@@ -278,9 +290,17 @@ func _on_war_event(e: Dictionary) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F4:
-		combat_debug = not combat_debug
-		get_viewport().set_input_as_handled()
+	if event is InputEventKey and event.pressed and not event.echo:
+		match event.physical_keycode:
+			KEY_F4:
+				combat_debug = not combat_debug
+				get_viewport().set_input_as_handled()
+			KEY_F1:
+				show_controls = not show_controls
+				get_viewport().set_input_as_handled()
+			KEY_F3:
+				# Not consumed: the same key toggles WorldDiagnostics' frame-time overlay.
+				show_debug = not show_debug
 
 
 func _process(_delta: float) -> void:
@@ -295,6 +315,23 @@ func _process(_delta: float) -> void:
 	squad_panel.visible = rts != null and game != null and game.mode == GameController.Mode.RTS and not (construction and construction.active) and not sim.state.squads.is_empty()
 	squad_panel.max_bottom = _label.position.y - 8.0
 	_update_ammo()
+	_badge.visible = war_sim != null and war_sim.enabled
+	if _badge.visible and _badge.text == "":
+		var pf := war_sim.war.player_faction
+		var col := WorldState.faction_color(pf)
+		_badge.text = "YOU ARE %s" % WorldState.faction_name(pf).to_upper()
+		_badge.add_theme_color_override("font_color", col.lightened(0.35))
+		var bsb := StyleBoxFlat.new()
+		bsb.bg_color = Color(0, 0, 0, 0.6)
+		bsb.border_width_left = 4
+		bsb.border_color = col
+		bsb.content_margin_left = 10
+		bsb.content_margin_right = 10
+		bsb.content_margin_top = 4
+		bsb.content_margin_bottom = 4
+		_badge.add_theme_stylebox_override("normal", bsb)
+	if _badge.visible:
+		_badge.position = Vector2(get_viewport().get_visible_rect().size.x * 0.5 - _badge.size.x * 0.5, 12)
 	if Engine.get_process_frames() % 6 == 0:
 		_label.text = _text()
 		_label.position = Vector2(12, get_viewport().get_visible_rect().size.y - _label.size.y - 12)
@@ -339,9 +376,61 @@ func _update_ammo() -> void:
 	_ammo.position = Vector2(vs.x - _ammo.size.x - 16, vs.y - _ammo.size.y - 16)
 
 
+## WORLD-SANDBOX-01B: the war's bottom text - what the player needs, short; F1 adds every
+## control, F3 the technical counters.
+func _war_text() -> String:
+	var war := war_sim.war
+	var pf := war.player_faction
+	var lines: Array[String] = []
+	if game.mode == GameController.Mode.FPS:
+		var u := sim.state.get_unit(game.possessed_id)
+		lines.append("FIRST PERSON  %s" % (u.unit_name if u else "-"))
+		var sq := sim.state.squad_of(u.id) if u else null
+		if sq:
+			lines.append("Squad %s (%d%s): %s - the others keep their orders" % [sq.squad_name, sq.members.size(), ", you lead" if sq.leader_id == u.id else "", sq.order_name()])
+		if show_controls:
+			lines.append("LMB fire, R reload, V semi/auto, RMB aim | WASD move, Shift sprint, Space jump, Esc release mouse, F fly")
+		lines.append("Tab tactical view · M strategic map · F1 %s controls" % ("hide" if show_controls else "all"))
+	elif construction and construction.active:
+		lines.append_array(construction.status_lines())
+	else:
+		var back := sim.state.get_unit(game.possessed_id)
+		if Time.get_ticks_msec() / 1000.0 < death_note_until and back and not back.alive:
+			lines.append("%s was killed. Select a living soldier and press P to take over." % back.unit_name)
+		if show_controls:
+			lines.append("Camera: WASD pan, Q/E rotate, wheel zoom, middle-drag rotate")
+			lines.append("LMB select / drag box, Shift add, Ctrl+click squad, Ctrl+A all, RMB move, H hold, P or double-click possess, B construction")
+			lines.append("Squads: F + click follow, G regroup (Shift+G at cursor), V line / column, [ ] spacing, Y weapons free / hold fire | F4 AI debug, F3 stats")
+		var sq_names: Array[String] = []
+		for sid in rts.selected_squads():
+			sq_names.append(sim.state.get_squad(sid).squad_name)
+		if not rts.selected.is_empty():
+			lines.append("Selected: %s%d soldiers" % [("squads " + ", ".join(sq_names) + " · ") if not sq_names.is_empty() else "", rts.selected.size()])
+		if rts.current_message() != "":
+			lines.append(rts.current_message())
+		lines.append("TACTICAL  M strategic map · LMB select · RMB move · P take over a soldier · Tab first person · F1 %s controls" % ("hide" if show_controls else "all"))
+	var parts: Array[String] = []
+	for fs: FactionState in war.factions.values():
+		parts.append("%s %d" % [fs.faction_name, war.owned_by(fs.id).size()])
+	lines.append("WAR  objectives %s · your operations %d · speed %s (, .) · F5 save · F9 load" % [
+		" / ".join(parts), war.active_operations(pf).size(), TimeCompression.label()])
+	if construction and construction.message != "" and Time.get_ticks_msec() / 1000.0 < construction._message_until:
+		lines.append(construction.message)
+	if show_debug:
+		var st := sim.stats()
+		lines.append("Units %d (%d soldiers)  moving %d  bodies %d / abstract %d  sim time %.0f s  |  F3 hide" % [
+			st.units, sim.state.count_of(UnitState.Kind.SOLDIER), st.moving, st.bodies, sim.proxies.size(), st.time])
+		if construction and construction.structures:
+			var cs := construction.structures.stats()
+			lines.append("Structures %d (%d modules)  drawn cells %d  collision cells %d" % [cs.structures, cs.instances, cs.visible_cells, cs.collision_cells])
+	return "\n".join(lines)
+
+
 func _text() -> String:
 	if game == null or sim == null:
 		return ""
+	if war_sim and war_sim.enabled:
+		return _war_text()
 	var st := sim.stats()
 	var lines: Array[String] = []
 	if game.mode == GameController.Mode.FPS:

@@ -22,3 +22,5 @@ w_retake = 3.0
 threat_radius = 900.0
 threat_ratio = 1.3
 min_squad_size = 4
+attack_commit = 0.5
+forward_squads = 2

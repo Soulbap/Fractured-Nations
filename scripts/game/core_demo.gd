@@ -303,6 +303,9 @@ func _start_sandbox() -> void:
 	var src := "res://worlds/%s/source/" % config.world_name
 	routes.setup(terrain, config.half_size(), src, "user://strategic/%s_grid.bin" % config.world_name)
 	sim.war.setup(routes)
+	# WORLD-SANDBOX-01B: normal play starts without the frame-time overlay (F3).
+	if game.diagnostics:
+		game.diagnostics.set_overlay_visible(false)
 	spawn_info = SandboxSetup.create(self, routes)
 	spawn_info["route_grid"] = {"ms": snappedf(routes.build_ms, 0.1), "cached": routes.loaded_from_cache, "size": [routes.size.x, routes.size.y]}
 	sim.war.enabled = true
@@ -383,9 +386,7 @@ func set_time_speed(step: int) -> void:
 
 
 static func apply_time_scale(k: float) -> void:
-	Engine.physics_ticks_per_second = int(60.0 * k)
-	Engine.time_scale = k
-	Engine.max_physics_steps_per_frame = clampi(int(8.0 * k), 8, 64)
+	TimeCompression.apply(k)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -408,6 +409,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(_delta: float) -> void:
+	TimeCompression.sample(sim.state.time)
 	# First person always runs in real time.
 	if sandbox and game.mode == GameController.Mode.FPS and Engine.time_scale != 1.0:
 		apply_time_scale(1.0)

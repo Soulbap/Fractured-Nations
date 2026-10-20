@@ -47,6 +47,11 @@ func _ready() -> void:
 		_run_automation.call_deferred(args)
 
 
+## WORLD-SANDBOX-01B: the war starts with the overlay hidden (F3 shows it).
+func set_overlay_visible(v: bool) -> void:
+	_label.visible = v
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.physical_keycode == KEY_F3:
 		_label.visible = not _label.visible

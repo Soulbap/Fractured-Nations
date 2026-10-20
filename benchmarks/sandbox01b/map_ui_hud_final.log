@@ -1,0 +1,37 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.351 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3070
+
+WARNING: instance_reset_physics_interpolation() is deprecated.
+   at: _instance_reset_physics_interpolation_bind_compat_104269 (servers/rendering/rendering_server.compat.inc:62)
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
+StructureManager: water index 2568 triangles in 2115 cells
+CORE nav: {"area_m":440.0,"async":true,"bake_ms":0.009,"center":[-7100.0,-7600.0],"recenter":"async","source_ms":0.0,"structure_obstructions":192,"threaded_source":true,"vehicle_obstructions":0}
+CORE spawn: {"factions":3,"objectives":12,"route_grid":{"cached":true,"ms":22.8,"size":[400,400]},"soldiers":120,"squads":15}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] <anonymous lambda> (res://scripts/world/area_navigation.gd:97)
+SANDBOX setup {"factions":3,"objectives":12,"route_grid":{"cached":true,"ms":22.8,"size":[400,400]},"soldiers":120,"squads":15,"summary":{"ai_us_max":0,"factions":{"East":{"casualties":0,"kills":0,"last_decision":"","objectives":3,"ops":[0,0,0],"reserves":40,"soldiers":40,"squads":5},"North":{"casualties":0,"kills":0,"last_decision":"","objectives":3,"ops":[0,0,0],"reserves":32,"soldiers":40,"squads":5},"South":{"casualties":0,"kills":0,"last_decision":"","objectives":2,"ops":[0,0,0],"reserves":40,"soldiers":40,"squads":5}},"objectives":{"Centre Bridge":"-","East HQ":"East","Elvetun":"North","Haugen":"-","North Bridge":"North","North HQ":"North","Sentrum":"-","South Bridge":"-","South HQ":"South","Verket":"South","Ødegård":"East","Østby":"East"},"ops":[],"ops_active":0,"ops_total":0,"reroutes":0,"routes":{"ms_avg":0.0,"ms_max":0.0,"planned":0},"time":0.5,"update_us_avg":2.8,"update_us_max":4}}
+SANDBOX shot: res://docs/sandbox01b/s01b_01_full_map.jpg
+SANDBOX shot: res://docs/sandbox01b/s01b_05_nearby_squads_strategic.jpg
+SANDBOX shot: res://docs/sandbox01b/s01b_06_nearby_squads_operational.jpg
+SANDBOX shot: res://docs/sandbox01b/s01b_06_nearby_squads_close.jpg
+SANDBOX shot: res://docs/sandbox01b/s01b_02_selected_squad.jpg
+SANDBOX shot: res://docs/sandbox01b/s01b_03_selected_operation.jpg
+SANDBOX shot: res://docs/sandbox01b/s01b_04_contested_objective.jpg
+SANDBOX shot: res://docs/sandbox01b/s01b_04b_contested_objective_operational.jpg
+SANDBOX shot: res://docs/sandbox01b/s01b_07_map_help.jpg
+SANDBOX map_ui {"double_click_zoom":0.15,"group_click_selects":5,"operation":{"march":{"eta":864.712051275788,"rate":4.1888992353541,"rem":3622.19165039063,"total":4157.93997573853},"text":"[b]ATTACK #1 → Haugen[/b]\nPhase: [b]moving[/b] for 2 min · marching to the staging point\nSquads: N6 8, N7 8\nStrength: 16 of 16 soldiers (0 lost)\nMarch: 3.6 of 4.2 km left (12 %) · arrival in about 15 min\nTarget: neutral"},"override_released":true,"overview":{"group_center_error_m":0.0,"group_of_the_four":5,"groups":3},"sentrum_contested":true,"target_kept_squads":true,"zoom_anchor":{"world_shift_m":2.7,"zoom":0.148},"zoom_levels":{"05_nearby_squads_strategic":{"level":0,"markers_for_the_four":2,"zoom":0.06},"06_nearby_squads_close":{"level":2,"markers_for_the_four":4,"zoom":0.9},"06_nearby_squads_operational":{"level":1,"markers_for_the_four":3,"zoom":0.25}}}
+SANDBOX shot: res://docs/sandbox01b/s01b_08_tactical_start_hud.jpg
+SANDBOX shot: res://docs/sandbox01b/s01b_09_tactical_f1_controls.jpg
+SANDBOX shot: res://docs/sandbox01b/s01b_10_first_person_hud.jpg
+SANDBOX hud {"badge":"YOU ARE NORTH","controls_lines":5,"debug_lines":4,"default_lines":2,"fps_lines":4}
+SANDBOX PASS []

@@ -64,6 +64,8 @@ var ops_usec := 0
 var updates := 0
 var stuck_reroutes := 0
 var threatened := {}
+## op id -> march progress (see _track_march; not saved).
+var march := {}
 
 
 func _init(p_sim: WorldSim) -> void:
@@ -79,6 +81,7 @@ func setup(p_routes: StrategicRoutes) -> void:
 	sim.state.restored.connect(func() -> void:
 		war = sim.state.war
 		enabled = war.active
+		march.clear()
 		known.clear())
 
 
@@ -420,6 +423,7 @@ func _update_operation(op: OperationState) -> void:
 	if op.squads.is_empty():
 		_end(op, OperationState.Phase.FAILED, "all squads lost")
 		return
+	_track_march(op)
 	var obj := war.objective(op.target_objective)
 	var marching := false
 	for sid in op.squads:
@@ -510,6 +514,49 @@ func _update_operation(op: OperationState) -> void:
 				_end(op, OperationState.Phase.COMPLETED, "arrived")
 
 
+## WORLD-SANDBOX-01B, for the map: how far the operation's slowest squad still has to
+## march along its route, and how fast that distance has actually been shrinking
+## (smoothed over about a minute). Presentation only, not saved: after a load it is
+## measured again.
+func _track_march(op: OperationState) -> void:
+	var rem := 0.0
+	for sid in op.squads:
+		var sq := sim.state.get_squad(sid)
+		if sq.route.is_empty() or sq.route_i >= sq.route.size():
+			continue
+		var c := squad_center(sq)
+		var l := _flat(c, sq.route[sq.route_i])
+		for i in range(sq.route_i + 1, sq.route.size()):
+			l += _flat(sq.route[i - 1], sq.route[i])
+		rem = maxf(rem, l)
+	var now := sim.state.time
+	var m: Dictionary = march.get(op.id, {})
+	if m.is_empty():
+		march[op.id] = {"rem": rem, "total": rem, "rate": 0.0, "t": now, "since": now}
+		return
+	var dt: float = now - m.t
+	if dt <= 0.0:
+		return
+	var inst: float = maxf((m.rem - rem) / dt, 0.0)
+	m.rate = lerpf(m.rate, inst, clampf(dt / 45.0, 0.0, 1.0))
+	m.rem = rem
+	m.total = maxf(m.total, rem)
+	m.t = now
+
+
+## Remaining march (m), total, measured rate (m/s) and an arrival estimate in seconds -
+## -1 when there is no trustworthy estimate (just started, halted, fighting, or not
+## marching any more).
+func march_info(op: OperationState) -> Dictionary:
+	var m: Dictionary = march.get(op.id, {})
+	if m.is_empty():
+		return {"rem": -1.0, "total": -1.0, "rate": 0.0, "eta": -1.0}
+	var eta := -1.0
+	if op.phase == OperationState.Phase.MOVING and m.rem > 0.0 and m.rate >= 0.4 and sim.state.time - m.since >= 20.0:
+		eta = m.rem / m.rate
+	return {"rem": m.rem, "total": m.total, "rate": m.rate, "eta": eta}
+
+
 func _far_from_goal(op: OperationState, sq: SquadState) -> bool:
 	var goal := op.staging_pos if op.type == OperationState.Type.ATTACK and op.staging_pos.is_finite() else op.target_pos
 	return _flat(squad_center(sq), goal) > 120.0
@@ -537,6 +584,7 @@ func _end(op: OperationState, phase: OperationState.Phase, why: String) -> void:
 	op.phase = phase
 	op.ended_at = sim.state.time
 	op.outcome = why
+	march.erase(op.id)
 	for sid in op.squads:
 		var sq := sim.state.get_squad(sid)
 		if sq and sq.op_id == op.id:
@@ -692,6 +740,10 @@ func _decide(f: FactionState) -> void:
 			var defenders := known_near(f.id, o.position, o.radius + 200.0)
 			if defenders == 0 and o.owner >= 0:
 				defenders = o.value * 4  # unseen garrison: assume one
+				if o.is_hq():
+					# 01B: an HQ is fortified and receives its faction's reserves; 16-man
+					# attacks on one were thrown away in the long autonomous runs.
+					defenders = maxi(defenders, 24)
 			var need := maxi(ceili(defenders * p.attack_ratio), p.min_attack_soldiers)
 			if need > free_soldiers:
 				continue
@@ -704,13 +756,56 @@ func _decide(f: FactionState) -> void:
 				best = o
 				best_need = need
 		if best:
-			var picked := _pick_near(free, best.position, best_need)
+			var commit := maxi(best_need, int(free_soldiers * p.attack_commit))
+			var picked := _pick_near(free, best.position, commit)
 			var op := start_operation(f.id, OperationState.Type.ATTACK, picked, best.id)
 			if op:
 				notes.append("attack %s (%d)" % [best.obj_name, op.start_strength])
+				for s in picked:
+					free.erase(s)
 		else:
 			notes.append("no target worth attacking")
+	# 4. Forward deployment (01B): free squads idling at the HQ move up to the front.
+	var moved := _forward(f, p, free)
+	if moved != "":
+		notes.append(moved)
 	f.last_decision = "; ".join(notes) if not notes.is_empty() else "hold"
+
+
+## Moves up to two free squads that stand at the HQ to the held objective nearest any
+## objective the faction does not hold (its front), while fewer than forward_squads are
+## stationed or on their way there. Returns a note for last_decision.
+func _forward(f: FactionState, p: FactionProfile, free: Array) -> String:
+	var hq := war.objective(f.hq_objective)
+	if p.forward_squads <= 0 or hq == null or hq.owner != f.id:
+		return ""
+	var front: ObjectiveState = null
+	var best := INF
+	for o: ObjectiveState in war.owned_by(f.id):
+		if o.is_hq():
+			continue
+		for t: ObjectiveState in war.all_objectives():
+			if t.owner != f.id:
+				var d := _flat(o.position, t.position)
+				if d < best:
+					best = d
+					front = o
+	if front == null or _flat(front.position, hq.position) < 1500.0:
+		return ""
+	var there := _garrison_count(f.id, front.id) + _incoming_squads(f.id, front.id)
+	var send := []
+	for sid in free:
+		if there + send.size() >= p.forward_squads or send.size() >= 2:
+			break
+		var sq := sim.state.get_squad(sid)
+		if sq and _flat(squad_center(sq), hq.position) <= hq.radius * 2.0:
+			send.append(sid)
+	if send.is_empty():
+		return ""
+	start_operation(f.id, OperationState.Type.REINFORCE, send, front.id)
+	for s in send:
+		free.erase(s)
+	return "%d squads forward to %s" % [send.size(), front.obj_name]
 
 
 ## Squads serving no operation, minus what the HQ and the garrisons must keep.

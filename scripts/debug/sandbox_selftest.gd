@@ -13,11 +13,13 @@ var only: PackedStringArray = []
 var war: WarState
 var ws: WarSim
 var log_from := 0
+## Every accelerated stretch of the run: requested and reached speed, largest step.
+var warps := []
 
 
 func run(args: PackedStringArray) -> void:
 	shots = "--shots" in args
-	_shot_dir = "res://docs/sandbox01"
+	_shot_dir = "res://docs/sandbox01b"
 	var oi := args.find("--only")
 	if oi >= 0 and oi + 1 < args.size():
 		only = args[oi + 1].split(",")
@@ -70,6 +72,12 @@ func run(args: PackedStringArray) -> void:
 		_log("autonomous_war", await _autonomous(minutes))
 	if _want("timescale"):
 		_log("time_compression", await _time_compression())
+	if _want("warp_fidelity"):
+		_log("warp_fidelity", await _warp_fidelity())
+	if _want("map_ui"):
+		_log("map_ui", await _map_ui())
+	if _want("hud"):
+		_log("hud", await _hud())
 	if _want("start_map"):
 		await _map_shot("01_strategic_map_start")
 		await _map_shot("02_objectives_and_borders", Vector2(-1500, -3000), 2.2)
@@ -91,7 +99,7 @@ func run(args: PackedStringArray) -> void:
 		await _map_shot("11_map_after_autonomous_war")
 		await _map_shot("03_force_markers", _known_center(), 3.0)
 	# A navmesh bake on a worker must finish before the engine shuts down.
-	Engine.time_scale = 1.0
+	TimeCompression.reset()
 	while demo.navigation.has_pending_bake():
 		await _seconds(0.2)
 	await _seconds(0.5)
@@ -574,6 +582,274 @@ func _time_compression() -> Dictionary:
 	return out
 
 
+## WORLD-SANDBOX-01B: the strategic map in the situations the player meets, with
+## screenshots (--shots) and checks of what the map promises: markers at real positions
+## (groups only merge on screen), zoom towards the cursor, group selection, double-click
+## zoom, objective as target for the order buttons, operation details.
+func _map_ui() -> Dictionary:
+	_pause_ai(true)
+	var out := {}
+	var m := demo.strategic_map
+	var elv := _obj("Elvetun")
+	var hau := _obj("Haugen")
+	var nhq := _obj("North HQ")
+	# Four squads close together in the open, 0.5 km from Elvetun.
+	var base := _near_point(elv.position, nhq.position, 500.0)
+	var group := []
+	for off: Vector3 in [Vector3(0, 0, 0), Vector3(70, 0, 30), Vector3(140, 0, -20), Vector3(40, 0, 120)]:
+		group.append(_spawn(0, base + off))
+	await _physics(10)
+	if not m.visible:
+		demo.toggle_map()
+	await _frames(3)
+	# 1. Whole map.
+	m.fit_all()
+	await _frames(6)
+	_shot("01_full_map")
+	var groups_overview: Array = m.squad_groups()
+	var grouped := {}
+	for g: Dictionary in groups_overview:
+		var has := 0
+		for sq: SquadState in group:
+			if g.ids.has(sq.id):
+				has += 1
+		if has > 0:
+			grouped[str(g.ids.size())] = has
+	# Group centre on screen = mean of the squads' real positions.
+	var real := Vector3.ZERO
+	for sq: SquadState in group:
+		real += ws.squad_center(sq)
+	real /= group.size()
+	var g4: Dictionary = {}
+	for g: Dictionary in groups_overview:
+		if g.ids.has(group[0].id):
+			g4 = g
+	if not g4.is_empty():
+		# The group's real centre: all its squads (a garrison nearby may join on screen).
+		real = Vector3.ZERO
+		for sid in g4.ids:
+			real += ws.squad_center(demo.sim.state.get_squad(sid))
+		real /= g4.ids.size()
+	out.overview = {"groups": groups_overview.size(), "group_of_the_four": g4.ids.size() if not g4.is_empty() else 0,
+		"group_center_error_m": snappedf(Vector2(m.to_world(g4.pos).x - real.x, m.to_world(g4.pos).z - real.z).length(), 0.1) if not g4.is_empty() else -1.0}
+	_expect(not g4.is_empty() and g4.ids.size() >= 4 and out.overview.group_center_error_m < 30.0, "the four nearby squads are not one group at their real centre (%s)" % JSON.stringify(out.overview))
+	# Click on the group: all its squads selected.
+	m.selected_squads.clear()
+	m._click(g4.draw_at, false)
+	out.group_click_selects = m.selected_squads.size()
+	_expect(m.selected_squads.size() == g4.ids.size(), "clicking a group did not select its squads")
+	# 5./6. The same squads at three zoom levels.
+	var c4 := Vector3.ZERO
+	for sq: SquadState in group:
+		c4 += ws.squad_center(sq)
+	c4 /= group.size()
+	var c2 := Vector2(c4.x, c4.z)
+	var levels := {}
+	for z: Array in [["05_nearby_squads_strategic", 0.06], ["06_nearby_squads_operational", 0.25], ["06_nearby_squads_close", 0.9]]:
+		m.view_center = c2
+		m.zoom = z[1]
+		await _frames(6)
+		_shot(z[0])
+		var n := 0
+		for g: Dictionary in m.squad_groups():
+			for sq: SquadState in group:
+				if g.ids.has(sq.id):
+					n += 1
+					break
+		levels[z[0]] = {"zoom": z[1], "level": m.detail_level(), "markers_for_the_four": n}
+	out.zoom_levels = levels
+	_expect(levels["06_nearby_squads_close"].markers_for_the_four == 4, "zoomed in, the four squads are still not separate (%s)" % JSON.stringify(levels))
+	# Zoom towards the cursor keeps the world point under it.
+	m.view_center = c2
+	m.zoom = 0.06
+	await _frames(2)
+	var cursor := m.map_rect().get_center() + Vector2(180, -90)
+	var before := m.to_world(cursor)
+	m.zoom_by(1.35 * 1.35 * 1.35, cursor)
+	await _seconds(0.8)
+	var after := m.to_world(cursor)
+	out.zoom_anchor = {"zoom": snappedf(m.zoom, 0.001), "world_shift_m": snappedf(Vector2(after.x - before.x, after.z - before.z).length(), 0.1)}
+	_expect(absf(m.zoom - 0.06 * 1.35 * 1.35 * 1.35) < 0.002 and out.zoom_anchor.world_shift_m < 5.0, "zoom did not keep the point under the cursor (%s)" % JSON.stringify(out.zoom_anchor))
+	# Double-click on the group zooms in until it separates.
+	m.view_center = c2
+	m.zoom = 0.05
+	await _frames(2)
+	var gd: Dictionary = {}
+	for g: Dictionary in m.squad_groups():
+		if g.ids.has(group[0].id):
+			gd = g
+	m._double_click(gd.draw_at)
+	await _seconds(0.8)
+	out.double_click_zoom = snappedf(m.zoom, 0.001)
+	_expect(m.zoom > 0.05 * 2.0, "double-click on a group did not zoom in")
+	# 2. One selected squad.
+	m.selected_squads = [group[2].id]
+	m.selected_objective = -1
+	m.selected_op = -1
+	m.view_center = c2
+	m.zoom = 0.3
+	await _frames(6)
+	_shot("02_selected_squad")
+	# The order buttons: squads selected, objective clicked = target, Attack.
+	m.selected_squads = [group[0].id, group[1].id]
+	m.view_center = Vector2(hau.position.x, hau.position.z)
+	m.zoom = 0.1
+	await _frames(3)
+	m._click(m.to_screen(hau.position), false)
+	out.target_kept_squads = m.selected_squads.size() == 2 and m.selected_objective == hau.id
+	_expect(out.target_kept_squads, "clicking an objective with squads selected did not make it their target")
+	m._button("attack")
+	var op: OperationState = null
+	for o: OperationState in war.active_operations(0):
+		if o.target_objective == hau.id:
+			op = o
+	_expect(op != null and op.player_ordered and op.squads.size() == 2, "the Attack button did not order the attack")
+	# 3. The operation selected, after some marching (ETA from measured progress).
+	if op:
+		await _warp(120.0, 8.0)
+		m.select_operation(op.id)
+		var mid := (ws.squad_center(group[0]) + hau.position) * 0.5
+		m.view_center = Vector2(mid.x, mid.z)
+		m.zoom = 0.14
+		await _frames(8)
+		_shot("03_selected_operation")
+		out.operation = {"text": m._operation_text(op), "march": ws.march_info(op)}
+		_expect(ws.march_info(op).rem > 0.0, "operation march progress not measured")
+		# Player override: a direct RTS order takes a squad out of the operation.
+		demo.rts._player_takes([group[1].id])
+		out.override_released = group[1].op_id < 0 and not op.squads.has(group[1].id)
+		_expect(out.override_released, "a player order did not release the squad from the operation")
+	# 4. A contested objective (both sides inside Sentrum) at the close level.
+	var sen := _obj("Sentrum")
+	var n1 := _spawn(0, sen.position + Vector3(-20, 0, 10))
+	var s1 := _spawn(1, sen.position + Vector3(20, 0, -10))
+	n1.station_objective = sen.id
+	s1.station_objective = sen.id
+	await _warp(4.0, 2.0)
+	m.selected_squads.clear()
+	m.selected_op = -1
+	m.selected_objective = sen.id
+	m.view_center = Vector2(sen.position.x, sen.position.z)
+	m.zoom = 0.7
+	await _frames(8)
+	_shot("04_contested_objective")
+	out.sentrum_contested = sen.contested
+	_expect(sen.contested, "Sentrum with both sides inside is not contested")
+	m.zoom = 0.1
+	await _frames(6)
+	_shot("04b_contested_objective_operational")
+	# Help overlay.
+	m.show_help = true
+	m.fit_all()
+	await _frames(6)
+	_shot("07_map_help")
+	m.show_help = false
+	demo.toggle_map()
+	await _frames(3)
+	_pause_ai(false)
+	return out
+
+
+## WORLD-SANDBOX-01B: what the player sees at the start (tactical view over the HQ, the
+## faction badge, the short HUD text), with all controls (F1), technical counters (F3)
+## and in first person. Checks that the default text is short and names the faction.
+func _hud() -> Dictionary:
+	var hud := demo.hud
+	demo.rts_camera.frame(_obj("North HQ").position, 0.0, 120.0)
+	await _seconds(1.5)
+	var out := {}
+	var short_text := hud._text()
+	out.default_lines = short_text.count("\n") + 1
+	out.badge = hud._badge.text
+	_shot("08_tactical_start_hud")
+	hud.show_controls = true
+	await _frames(8)
+	out.controls_lines = hud._text().count("\n") + 1
+	_shot("09_tactical_f1_controls")
+	hud.show_controls = false
+	hud.show_debug = true
+	await _frames(8)
+	out.debug_lines = hud._text().count("\n") + 1
+	hud.show_debug = false
+	var sq: SquadState = null
+	for s: SquadState in ws.squads_of(0):
+		if not s.members.is_empty():
+			sq = s
+			break
+	if sq:
+		demo.game.possess(sq.members[0])
+		await _seconds(1.5)
+		out.fps_lines = hud._text().count("\n") + 1
+		_shot("10_first_person_hud")
+		demo.game.enter_rts()
+		await _seconds(0.5)
+	_expect(String(out.badge).contains("NORTH") and out.default_lines <= 4 and out.controls_lines > out.default_lines and out.debug_lines > out.default_lines,
+		"HUD not short by default / faction missing (%s)" % JSON.stringify(out))
+	return out
+
+
+## WORLD-SANDBOX-01B: the same small fight (2 North v 2 South squads, 150 m apart at
+## Haugen, camera far away as in the accelerated scenarios) for 90 simulated seconds at
+## 1 x (reference), compressed with fixed steps at 8 x and 24 x, and with the old
+## stretched steps at 24 x. Fixed-step runs must keep 1/60 s steps; their outcome
+## (shots, hits, deaths) should stay in the range of the reference. Fights are not
+## deterministic (timing, random spread), so this compares magnitudes, not exact values.
+func _warp_fidelity() -> Dictionary:
+	_pause_ai(true)
+	var hau := _obj("Haugen")
+	demo.rts_camera.frame(Vector3(9000, 0, 9000), 0.0, 150.0)
+	await _seconds(1.0)
+	var out := {}
+	# Open ground 600 m from the village; the two sides advance towards each other
+	# (a meeting engagement) so contact does not depend on who happens to look where.
+	var c := _near_point(hau.position, _obj("North HQ").position, 600.0)
+	var axis := Vector3(0, 0, 1)
+	for mode: Array in [["x1", 1.0, false], ["x8_fixed", 8.0, false], ["x24_fixed", 24.0, false], ["x24_coarse_old", 24.0, true]]:
+		seed(4242)
+		var a := [_spawn(0, c + axis * 110.0 + Vector3(-25, 0, 0)), _spawn(0, c + axis * 110.0 + Vector3(25, 0, 0))]
+		var b := [_spawn(1, c - axis * 110.0 + Vector3(-25, 0, 0)), _spawn(1, c - axis * 110.0 + Vector3(25, 0, 0))]
+		await _physics(5)
+		for sq: SquadState in a:
+			demo.sim.squads.follow_route(sq, PackedVector3Array([demo.on_ground(c.x, c.z - 60.0, 0.0)]), SquadState.Formation.LINE)
+		for sq: SquadState in b:
+			demo.sim.squads.follow_route(sq, PackedVector3Array([demo.on_ground(c.x, c.z + 60.0, 0.0)]), SquadState.Formation.LINE)
+		_begin()
+		var w: Dictionary
+		if mode[1] == 1.0:
+			var r0 := Time.get_ticks_msec()
+			var t0 := demo.sim.state.time
+			var step_max := 0.0
+			while demo.sim.state.time - t0 < 90.0:
+				await tree.physics_frame
+				step_max = maxf(step_max, demo.sim.last_delta)
+			var real := (Time.get_ticks_msec() - r0) / 1000.0
+			w = {"sim_s": snappedf(demo.sim.state.time - t0, 0.1), "real_s": snappedf(real, 0.1), "speed": snappedf((demo.sim.state.time - t0) / real, 0.1), "step_max_s": snappedf(step_max, 0.0001)}
+		else:
+			w = await _warp(90.0, mode[1], 60.0, Callable(), mode[2])
+		var ids_a := _ids_of(a)
+		var ids_b := _ids_of(b)
+		var hits := 0
+		var first := -1.0
+		for s in shot_log:
+			if s.hit > 0:
+				hits += 1
+			if first < 0.0:
+				first = s.t
+		out[mode[0]] = {"warp": w, "shots_north": _shots_by(ids_a), "shots_south": _shots_by(ids_b), "hits": hits,
+			"first_shot_after_s": snappedf(first - (demo.sim.state.time - w.sim_s), 0.1) if first >= 0.0 else -1.0,
+			"north_left": _alive_count(a), "south_left": _alive_count(b)}
+		for id in ids_a + ids_b:
+			demo.sim.state.remove_unit(id)
+		await _physics(10)
+	var ref: Dictionary = out.x1
+	for k in ["x8_fixed", "x24_fixed"]:
+		var r: Dictionary = out[k]
+		_expect(absf(r.warp.step_max_s - 1.0 / 60.0) < 0.0005, "%s did not keep the 1/60 s step (%s)" % [k, JSON.stringify(r.warp)])
+		_expect(r.shots_north + r.shots_south > 0 and ref.shots_north + ref.shots_south > 0, "no fight in the warp comparison (%s)" % JSON.stringify(out))
+	_pause_ai(false)
+	return out
+
+
 # --- Performance -----------------------------------------------------------------------------
 
 func _measure_case(seconds: float) -> Dictionary:
@@ -608,11 +884,11 @@ func _perf() -> Dictionary:
 	demo.rts_camera.frame(Vector3(9000, 0, -9000), 0.0, 150.0)
 	await _seconds(2.0)
 	out.war_far_away = await _measure_case(6.0)
-	Engine.time_scale = 8.0
-	Engine.max_physics_steps_per_frame = 32
+	TimeCompression.apply(8.0)
+	var t8 := demo.sim.state.time
 	out.war_far_8x = await _measure_case(6.0)
-	Engine.time_scale = 1.0
-	Engine.max_physics_steps_per_frame = 8
+	out.war_far_8x["achieved_speed"] = snappedf((demo.sim.state.time - t8) / 6.0, 0.1)
+	TimeCompression.reset()
 	# 50 v 50 at Haugen: five squads each, 150 m apart, real health (they fight to death).
 	_pause_ai(true)
 	var hau := _obj("Haugen")
@@ -843,20 +1119,35 @@ func _river_x(z: float) -> float:
 ## Fast-forward: simulated time runs `scale` times faster (many physics ticks per frame;
 ## each tick is an ordinary one, so movement, combat and capture are unchanged), for at
 ## most max_real_s seconds of real time. Returns {sim_s, real_s, speed}.
-func _warp(sim_seconds: float, scale := 24.0, max_real_s := 240.0, until := Callable()) -> Dictionary:
-	var steps0 := Engine.max_physics_steps_per_frame
-	Engine.max_physics_steps_per_frame = 64
-	Engine.time_scale = scale
+## Runs sim_seconds of simulated time compressed (the player's TimeCompression: every
+## physics step stays 1/60 s, so movement and fights are the same as at 1 x). The machine
+## decides the speed reached; it is measured and returned, never assumed from `scale`.
+## max_real_s is a safety limit only: it grows so that at least 6 x is allowed.
+## coarse: the old behaviour (time_scale alone, stretched steps) for the comparison check.
+func _warp(sim_seconds: float, scale := 24.0, max_real_s := 240.0, until := Callable(), coarse := false) -> Dictionary:
+	max_real_s = maxf(max_real_s, sim_seconds / 6.0 + 20.0)
+	if coarse:
+		Engine.max_physics_steps_per_frame = 64
+		Engine.time_scale = scale
+	else:
+		TimeCompression.apply(scale, 64)
 	var t0 := demo.sim.state.time
 	var r0 := Time.get_ticks_msec()
+	var step_max := 0.0
+	var frames := 0
 	while demo.sim.state.time - t0 < sim_seconds and Time.get_ticks_msec() - r0 < max_real_s * 1000.0:
 		await tree.process_frame
+		frames += 1
+		step_max = maxf(step_max, demo.sim.last_delta)
 		if until.is_valid() and until.call():
 			break
-	Engine.time_scale = 1.0
-	Engine.max_physics_steps_per_frame = steps0
+	TimeCompression.reset()
 	var real := (Time.get_ticks_msec() - r0) / 1000.0
-	return {"sim_s": snappedf(demo.sim.state.time - t0, 0.1), "real_s": snappedf(real, 0.1), "speed": snappedf((demo.sim.state.time - t0) / maxf(real, 0.01), 0.1)}
+	var sim_s := demo.sim.state.time - t0
+	var out := {"sim_s": snappedf(sim_s, 0.1), "real_s": snappedf(real, 0.1), "requested": scale, "speed": snappedf(sim_s / maxf(real, 0.01), 0.1),
+		"step_max_s": snappedf(step_max, 0.0001), "frames": frames}
+	warps.append(out)
+	return out
 
 
 func _autonomous(minutes: float) -> Dictionary:
@@ -864,9 +1155,7 @@ func _autonomous(minutes: float) -> Dictionary:
 	# player is not watching.
 	demo.rts_camera.frame(Vector3(9000, 0, -9000), 0.0, 150.0)
 	await _seconds(1.0)
-	var steps0 := Engine.max_physics_steps_per_frame
-	Engine.max_physics_steps_per_frame = 64
-	Engine.time_scale = 24.0
+	TimeCompression.apply(24.0, 64)
 	var r0 := Time.get_ticks_msec()
 	var t0 := demo.sim.state.time
 	var samples := []
@@ -897,8 +1186,7 @@ func _autonomous(minutes: float) -> Dictionary:
 						_v(demo.sim.state.get_unit(sq.leader_id).position), _v(sq.route[sq.route_i]) if not sq.route.is_empty() else "-", JSON.stringify(st)])
 			print("SANDBOX dbg ", JSON.stringify(dbg))
 			print("SANDBOX tick ", JSON.stringify({"t_min": snappedf((demo.sim.state.time - t0) / 60.0, 0.1), "fps_ms": snappedf(ms[-1], 0.1), "factions": fs, "ops": s.ops}))
-	Engine.time_scale = 1.0
-	Engine.max_physics_steps_per_frame = steps0
+	TimeCompression.reset()
 	var real := (Time.get_ticks_msec() - r0) / 1000.0
 	var out := {"minutes": minutes, "sim_minutes_done": snappedf((demo.sim.state.time - t0) / 60.0, 0.1), "real_s": snappedf(real, 0.1),
 		"speed": snappedf((demo.sim.state.time - t0) / maxf(real, 0.01), 0.1), "summary": ws.summary(), "events": war.events.slice(-40).map(func(e: Dictionary) -> String: return "%.0f %s" % [e.t, e.text])}
@@ -919,7 +1207,7 @@ func _expect(cond: bool, msg: String) -> void:
 func _shot(shot_name: String) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_shot_dir))
 	var img := demo.get_viewport().get_texture().get_image()
-	var path := "%s/s01_%s.jpg" % [_shot_dir, shot_name]
+	var path := "%s/s01b_%s.jpg" % [_shot_dir, shot_name]
 	img.save_jpg(ProjectSettings.globalize_path(path), 0.9)
 	print("SANDBOX shot: ", path)
 
@@ -928,7 +1216,8 @@ func _finish() -> void:
 	if _done:
 		return
 	_done = true
-	Engine.time_scale = 1.0
+	TimeCompression.reset()
+	results["warps"] = warps
 	results["failures"] = failures
 	results["pass"] = failures.is_empty()
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://benchmarks/raw"))

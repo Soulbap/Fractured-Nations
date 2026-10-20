@@ -3,7 +3,15 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **WORLD-SANDBOX-01** — the first playable persistent war. Three factions
+Current state: **WORLD-SANDBOX-01B** — the war made ready for the first manual playtest: a
+readable strategic map (smooth zoom towards the cursor; squads always drawn at their real
+positions and grouped on screen only when they would overlap; operation details with march
+progress), a short HUD that names your faction (F1 all controls, F3 technical counters), AI
+factions that move reserves up to the front and no longer throw small attacks at fortified
+HQs, and accelerated tests that run the same 1/60 s simulation steps as normal play. See
+[docs/WORLD-SANDBOX-01B_REPORT.md](docs/WORLD-SANDBOX-01B_REPORT.md).
+
+Before that, **WORLD-SANDBOX-01** — the first playable persistent war. Three factions
 (North = you, South = aggressive AI, East = defensive AI) fight for twelve strategic objectives
 (bases, towns, river bridges, villages) across the whole 20 x 20 km world. Forces march along
 planned routes (roads and bridges, never through lakes, the river or cliffs), capture ground by
@@ -89,18 +97,30 @@ own with that layout.
 | Key | Strategic map (M) |
 |---|---|
 | M / Esc | Open / close the map (from first person the game switches to the tactical view first) |
-| Wheel, middle-drag or WASD, Home | Zoom, pan, whole map |
-| LMB, LMB-drag, Shift | Select your squads (or an objective), box select, add |
-| RMB | Order the selected squads: on an enemy or neutral objective = **attack**, on your own = **reinforce**, on open ground = **move** (all as operations with planned routes) |
-| Buttons | Attack / Defend / Reinforce the selected objective, Cancel op, View |
+| H | Show / hide the map controls on the map |
+| Wheel, middle-drag or WASD, Home | Zoom towards the cursor (whole map down to a base), pan, whole map |
+| LMB, LMB-drag, Shift | Select a squad or a group of squads, an objective or an operation (also its label on the map or its row in the list); box select; add |
+| Double-click a group | Zoom in until its squads separate |
+| LMB on an objective with squads selected | Makes it their target; then Attack / Defend / Reinforce |
+| RMB | Order the selected squads: on an enemy or neutral objective = **attack**, on your own = **reinforce**, on open ground = **move** (all as operations with planned routes); cancels a pending button order |
+| Buttons | Attack / Defend / Reinforce the target (or click one after the button), Move (then click the ground), Cancel op, View |
 | G, "Go" in the operation list | Jump the tactical camera there (closes the map) |
 | , and . | Time compression 1 / 2 / 4 / 8 x (first person always runs at 1 x) |
+| F5 / F9 | Save / load the whole war |
 
 The map shows territory (each objective's area in its owner's colour), objectives with capture
-progress and a blinking ring while contested, your squads (NATO symbols with strength), enemy
-forces your soldiers have seen (diamonds; they fade when not seen for a while), your operations
-with their routes, and the war log. A direct RTS order (move, hold, follow, regroup) takes a
-squad out of its operation: your command always wins.
+progress, CONTESTED (blinking ring) and THREATENED (red warning: enemies seen near one of yours),
+your squads (NATO symbols with strength, at their real positions; squads that would overlap on
+screen are drawn as one group "3 sq · 24" at their real centre, and squads standing in an
+objective show as a badge on it on the whole-map view), every soldier as a dot when zoomed in
+close, enemy forces your soldiers have seen (diamonds; they fade when not seen for a while), your
+operations with their routes and the war log. Selecting an operation shows its squads and
+strength, phase, march progress and an arrival estimate once the measured progress supports
+one, and the outcome of ended operations (listed for five minutes). A direct RTS order (move,
+hold, follow, regroup) takes a squad out of its operation: your command always wins.
+
+In the war the HUD shows your faction at the top and a short line of keys at the bottom; F1
+shows every control, F3 the technical counters and the frame-time overlay, F4 the AI debug view.
 
 | Key | First person (possessing a soldier) |
 |---|---|
@@ -110,7 +130,8 @@ squad out of its operation: your command always wins.
 | R / V | Reload / semi or automatic fire |
 | **Tab** | Switch to the tactical camera (the soldier returns to the simulation) |
 | F | Debug fly / noclip |
-| F3 | Performance overlay |
+| F3 | Performance overlay (in the war also unit / detail counters in the HUD) |
+| F1 | All controls in the HUD text (war) |
 | M | Strategic map (WORLD-SANDBOX-01 war) |
 | F4 | AI combat debug overlay (both views): state, target, why a soldier is not firing; COMBAT-02: tactical state, threat direction (orange), chosen cover (green ring), reaction path (dashed), "AI reaction" vs "order", cover reasons |
 
@@ -154,8 +175,8 @@ Assets are generated in Blender by `tools/blender/structures/*.py` (sources in
 root, after the world build): `bash benchmarks/wi01/run_test.sh integration --shots`
 (construction in five terrain types, clearing, navigation, persistence, performance),
 `... base` (the WORLD-BASE-01 checks) and `... large` (the WORLD-CORE-02 checks). The newest
-runner, `bash benchmarks/sandbox01/run_test.sh <kind>`, also takes `sandbox` (WORLD-SANDBOX-01
-war scenarios, `--only a,b`), `combat-tactics` (COMBAT-02
+runner, `bash benchmarks/sandbox01b/run_test.sh <kind>`, also takes `sandbox` (WORLD-SANDBOX-01 /
+01B war scenarios, `--only a,b`, e.g. `map_ui,hud,warp_fidelity`), `combat-tactics` (COMBAT-02
 reactions and cover), `combat-scale` (COMBAT-02 16 / 50 / 100 v N, two battles), `combat-ai`
 (COMBAT-01b AI firefights), `combat` (COMBAT-01a) and `squad` (UNIT-01A).
 
