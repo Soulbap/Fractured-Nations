@@ -55,6 +55,19 @@ func add_line(type_id: StringName, points: PackedVector3Array, removed := Packed
 	return _insert(s)
 
 
+## WORLD-PLAYTEST-01: a road (control points + graded centre line) or a paved area
+## (polygon + plane). See StructureDef.Surface.
+func add_surface(type_id: StringName, points: PackedVector3Array, profile: PackedVector3Array, faction := 0) -> StructureState:
+	if points.size() < 2 or profile.is_empty():
+		return null
+	var s := StructureState.new()
+	s.type_id = type_id
+	s.points = points
+	s.profile = profile
+	s.faction = faction
+	return _insert(s)
+
+
 func get_structure(id: int) -> StructureState:
 	return structures.get(id)
 

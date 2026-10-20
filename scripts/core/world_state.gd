@@ -46,6 +46,14 @@ var _next_squad_id := 1
 ## linear search over all squads, called per soldier per frame by the AI).
 var _squad_index := {}
 var _squad_index_dirty := true
+## WORLD-PLAYTEST-01: the road network - the world's roads (RoadNetwork.load_world, done by
+## the game for a generated world) and the roads built in `construction`. Built roads are
+## construction records, so they are saved and loaded with the base.
+var roads := RoadNetwork.new()
+
+
+func _init() -> void:
+	roads.bind_construction(construction)
 
 
 func add_unit(kind: UnitState.Kind, faction: int, position: Vector3, yaw := 0.0, unit_name := "") -> UnitState:

@@ -34,6 +34,7 @@ import math
 import os
 import sys
 import time
+import zlib
 
 import numpy as np
 import OpenImageIO as oiio
@@ -85,6 +86,13 @@ def blur(a, r):
     """Approximate gaussian (three box passes)."""
     r3 = max(1, int(round(r / 1.7)))
     return box_blur(box_blur(box_blur(a, r3), r3), r3)
+
+
+def smin(a, b, k):
+    """Polynomial smooth minimum (blend width k, same units as a and b): no crease where
+    a cap takes over from the terrain."""
+    hk = np.maximum(k - np.abs(a - b), 0.0) / k
+    return np.minimum(a, b) - hk * hk * k * 0.25
 
 
 def ellipse_q(px, py, center, radii, rot_deg):
@@ -266,13 +274,35 @@ class Generator:
         h = h + rocky_h * (0.3 + 0.7 * flood)
         self.H, self.farm, self.rock, self.massif = H, farm, rock, massif
 
-        # Floodplain: keep the valley floor just above the water.
-        floor = lvl + riv["floodplain_above_m"] + 6.0 * smoothstep(0.05, 1.2, d_r)
-        near = 1.0 - smoothstep(0.15, 1.1, d_r)
-        h = np.where(near > 0, h + (np.minimum(h, floor + 25.0) - h) * near, h)
+        # Valley profile (WORLD-PLAYTEST-01): a floodplain just above the water, then valley
+        # sides that rise at a bounded grade. The cap grows without limit away from the river,
+        # so it only acts where the relief would otherwise drop straight into the channel.
+        # (Previously the valley floor was clamped to "level + 25 m" for ~1 km, which left the
+        # river in a 27 m vertical-walled canal wherever the regional rise lifted the land.)
+        fp_km, fp_w, grade = self.valley_params(X, Y, H, rock, massif)
+        cap = (lvl + riv["floodplain_above_m"] + fp_km["rise_m"] * smoothstep(0.0, 1.0, d_r / fp_w)
+               + grade * np.maximum(d_r - fp_w, 0.0) * 1000.0)
+        h = smin(h, cap, 4.0)
         h = np.maximum(h, lvl + riv["floodplain_above_m"])
+        self.valley_cap = cap.astype(np.float32)
+        self.valley_floor = (lvl + riv["floodplain_above_m"]).astype(np.float32)
         self.h = h.astype(np.float32)
         log("macro relief: %.0f..%.0f m" % (self.h.min(), self.h.max()))
+
+    def valley_params(self, X, Y, H, rock, massif):
+        """River valley shape fields (any resolution, X/Y in km): floodplain width (km),
+        valley-side grade (rise/run) and the floodplain's gentle rise. Varied with noise and
+        terrain character so the banks do not repeat: wide flat meadows in farmland, narrow
+        floodplains and steeper (but never vertical) sides in rocky ground."""
+        v = self.L["river"].get("valley", {})
+        s = self.seed
+        n1 = smoothstep(-0.45, 0.45, fbm(X / 1.4, Y / 1.4, s + 151, 3))
+        n2 = smoothstep(-0.5, 0.5, fbm(X / 0.9 + 4.0, Y / 0.9, s + 152, 3))
+        fpw = v.get("floodplain_km", [0.04, 0.32])
+        fp_w = fpw[0] + (fpw[1] - fpw[0]) * n1 * (1.0 - 0.6 * np.clip(H, 0, 1))
+        gr = v.get("grade", [0.07, 0.24])
+        grade = gr[0] + (gr[1] - gr[0]) * n2 + v.get("rock_grade", 0.22) * np.maximum(rock, massif)
+        return {"rise_m": v.get("floodplain_rise_m", 1.6)}, np.maximum(fp_w, 0.02), grade
 
     def parcels(self, X, Y):
         """Field parcels (analytic, any resolution): blocks of ~1.4 km bounded by warped
@@ -385,6 +415,8 @@ class Generator:
             m = 1.0 - smoothstep(0.85, 1.7, q)
             self._plane_flatten(m * 0.95, q < 0.9, 0.025)
             self.open_sites = np.maximum(self.open_sites, 1.0 - smoothstep(0.8, 1.15, q))
+        # Sites next to the river must not rebuild a wall above the bank.
+        self.h = np.maximum(smin(self.h, self.valley_cap, 4.0), self.valley_floor)
         log("sites flattened")
 
     def build_lakes(self):
@@ -404,6 +436,13 @@ class Generator:
             rim = level + 0.7 + 0.06 * dist_m
             lift = np.maximum(rim - self.h, 0.0) * (1.0 - smoothstep(1.05, 1.6, q))
             self.h = np.where(band, self.h + lift, self.h)
+            # Shore slope cap (WORLD-PLAYTEST-01): the ground outside the shore rises at a
+            # bounded grade instead of dropping vertically onto the lake bottom (steeper on
+            # rocky ground). The cap grows with distance, so far terrain is untouched.
+            sg = 0.16 + 0.12 * smoothstep(-0.5, 0.5, fbm(X / 0.5 + i * 7.0, Y / 0.5, self.seed + 161 + i, 3)) \
+                + 0.35 * np.maximum(self.rock, self.massif)
+            outside = q >= 1.0
+            self.h = np.where(outside, smin(self.h, level + 1.2 + sg * dist_m, 2.0), self.h)
             depth = lk["depth_m"]
             bottom = level - 0.9 - (depth - 0.9) * smoothstep(0.0, 0.55, 1.0 - q)
             self.h = np.where(inside, np.minimum(self.h, bottom), self.h)
@@ -554,10 +593,20 @@ class Generator:
                 path.append(came[path[-1]])
             return path[::-1]
 
+        junction_keys = {}
+        for rd in L["roads"]:
+            for w in rd["waypoints_km"]:
+                key = (round(w[0], 4), round(w[1], 4))
+                junction_keys[key] = junction_keys.get(key, 0) + 1
+        # Junction positions as built by the first road through them: that road may relax
+        # its curve through the junction (a pinned waypoint left a corner); later roads meet
+        # it there.
+        moved = {}
         for k in order:
             rd = L["roads"][k]
             cls = classes[rd["class"]]
-            wps = rd["waypoints_km"]
+            keys = [(round(w[0], 4), round(w[1], 4)) for w in rd["waypoints_km"]]
+            wps = [list(moved.get(key, w)) for key, w in zip(keys, rd["waypoints_km"])]
             pts = [tuple(wps[0])]
             for a, b in zip(wps[:-1], wps[1:]):
                 cells = astar(rc_of(a), rc_of(b), cls["slope_cost"])
@@ -565,14 +614,48 @@ class Generator:
                     pts.append((c * pitch, self.size_km - r * pitch))
                     used[r, c] = 1.0
                 pts.append(tuple(b))
-            path = self._smooth_path(pts, [tuple(w) for w in wps])
+            pts = self._cut_spurs(pts, [tuple(w) for w, key in zip(wps, keys) if key in moved] + [tuple(wps[0]), tuple(wps[-1])])
+            # Only waypoints shared with other roads (junctions) and the ends are pinned;
+            # interior waypoints just steer the route (pinning them left 10 m kinks).
+            pins = [tuple(wps[0]), tuple(wps[-1])] + [tuple(w) for w, key in zip(wps[1:-1], keys[1:-1]) if key in moved]
+            path = self._smooth_path(pts, pins, cls.get("min_radius_m", 20.0))
+            for key in keys:
+                if junction_keys.get(key, 0) >= 2 and key not in moved:
+                    w = moved.get(key, key)
+                    j = int(np.argmin(np.hypot(path[:, 0] - w[0], path[:, 1] - w[1])))
+                    moved[key] = (float(path[j, 0]), float(path[j, 1]))
+            wps = [list(moved.get(key, w)) for key, w in zip(keys, wps)]
             # Repulsion field for later roads: 1 on this road, fading over ~3 cells.
             near = np.maximum(near, np.clip(blur(used, 3) * 6.0, 0.0, 1.0))
-            roads_out.append(self._grade_road(rd, cls, path, wps, fixed))
+            roads_out.append(self._grade_road(rd, cls, path, wps, fixed, keys))
             log("road %-22s %-9s %6.2f km" % (rd["name"], rd["class"], roads_out[-1]["length_m"] / 1000.0))
         self.roads = roads_out
         self.road_fixed = fixed
+        self.road_moved = moved
         self._settlement_streets()
+
+    def _cut_spurs(self, pts, keep):
+        """Removes dead-end spurs from an A* polyline (WORLD-PLAYTEST-01): where the route
+        comes back within ~1.5 grid cells of a point it passed before (a detour out to an
+        off-route waypoint and back), the loop between is cut. Sections holding a point in
+        `keep` (junctions fixed by earlier roads, the ends) stay. Rv2 ran 100 m out and back
+        on itself to a junction waypoint, leaving a 2 m step where the two halves met."""
+        P = np.array(pts, dtype=np.float64)
+        keep_set = {(round(k[0], 4), round(k[1], 4)) for k in keep}
+        is_keep = np.array([(round(p[0], 4), round(p[1], 4)) in keep_set for p in pts])
+        tol = 1.5 * self.size_km / self.D
+        out = []
+        i = 0
+        n = len(P)
+        while i < n:
+            out.append(i)
+            j_cut = -1
+            for j in range(n - 1, i + 3, -1):
+                if np.hypot(*(P[j] - P[i])) < tol and not is_keep[i + 1:j].any():
+                    j_cut = j
+                    break
+            i = j_cut if j_cut > 0 else i + 1
+        return [pts[k] for k in out]
 
     def _settlement_streets(self):
         """Street grids for towns (85 m blocks aligned with the main road through the
@@ -614,14 +697,23 @@ class Generator:
                         b = c + other * off + axis * half
                         lines.append((a, b))
             else:
-                rnd = np.random.default_rng(abs(hash(st["name"])) % (2 ** 31))
+                # Stable seed (Python's str hash is randomised per process, so the village
+                # streets used to change on every generator run).
+                rnd = np.random.default_rng(zlib.crc32(st["name"].encode("utf-8")))
                 for sgn in (1, -1):
                     a = c + v * sgn * 0.02
                     lines.append((a, a + v * sgn * R * rnd.uniform(0.8, 1.1)))
                 if R > 0.16:
                     a = c + u * R * 0.3
                     lines.append((a, a + v * R * 0.8 * (1 if rnd.random() < 0.5 else -1)))
-            for i, (a, b) in enumerate(lines):
+            kept = []
+            for a, b in lines:
+                m = (a + b) * 0.5
+                a2 = self._trim_steep(m, a)[1]
+                b2 = self._trim_steep(m, b)[1]
+                if np.hypot(*(b2 - a2)) >= 0.03:
+                    kept.append((a2, b2))
+            for i, (a, b) in enumerate(kept):
                 L_km = float(np.hypot(*(b - a)))
                 npts = max(2, int(L_km / 0.01) + 1)
                 path = np.stack([np.linspace(a[0], b[0], npts), np.linspace(a[1], b[1], npts)], axis=1)
@@ -629,8 +721,14 @@ class Generator:
                 self.roads.append(self._grade_road(rd, cls, path, [tuple(a), tuple(b)], {}))
         log("streets: %d in %d settlements" % (len(self.roads) - n0, len(self.L["settlements"])))
 
-    def _smooth_path(self, pts, anchors):
-        """Chaikin smoothing with fixed anchor points, then resampling every ~10 m."""
+    def _smooth_path(self, pts, anchors, min_radius_m=20.0):
+        """Chaikin smoothing with fixed anchor points, uniform ~10 m resampling, a light
+        moving average, then curve relaxation: points on curves tighter than min_radius_m
+        are pulled toward their neighbours until the radius (measured over +-20 m) is met
+        or the pass budget runs out. Anchors (junctions, ends) stay exactly in place.
+        WORLD-PLAYTEST-01: the old version pinned every waypoint and left the moving
+        average's clustered points (3 m apart around tight bends), which produced 10 m
+        radius kinks and, with a mean-spacing grade clamp, 25-45 % grades."""
         P = np.array(pts, dtype=np.float64)
         anchor_set = {(round(a[0], 4), round(a[1], 4)) for a in anchors}
         is_anchor = np.array([(round(p[0], 4), round(p[1], 4)) in anchor_set for p in pts])
@@ -653,18 +751,8 @@ class Generator:
             QA.append(True)
             P = np.array(Q)
             is_anchor = np.array(QA)
-        # Resample at ~10 m.
-        seg = np.hypot(np.diff(P[:, 0]), np.diff(P[:, 1]))
-        s = np.concatenate([[0.0], np.cumsum(seg)])
-        n = max(2, int(s[-1] / 0.01) + 1)
-        si = np.linspace(0.0, s[-1], n)
-        out = np.stack([np.interp(si, s, P[:, 0]), np.interp(si, s, P[:, 1])], axis=1)
-        # Light moving average that removes grid zig-zags; waypoints (junctions shared
-        # with other roads) are re-pinned after every pass so they stay exactly in place.
-        pins = []
-        for a in anchors:
-            k = int(np.argmin(np.hypot(out[:, 0] - a[0], out[:, 1] - a[1])))
-            pins.append((k, np.array(a, dtype=np.float64)))
+        out = self._resample(P, 0.01)
+        pins = self._pin_indices(out, anchors)
         for _ in range(3):
             sm = out.copy()
             sm[2:-2] = (out[:-4] + out[1:-3] + out[2:-2] + out[3:-1] + out[4:]) / 5.0
@@ -672,7 +760,59 @@ class Generator:
             for k, a in pins:
                 out[k] = a
         out[0], out[-1] = P[0], P[-1]
-        return out
+        out = self._resample_pinned(out, pins, 0.01)
+        pins = self._pin_indices(out, anchors)
+        fixed = np.zeros(len(out), dtype=bool)
+        fixed[[k for k, _ in pins]] = True
+        fixed[0] = fixed[-1] = True
+        r_km = min_radius_m / 1000.0
+        for _ in range(80):
+            if len(out) < 5:
+                break
+            a, b, c = out[:-4], out[2:-2], out[4:]
+            ab = np.linalg.norm(b - a, axis=1)
+            bc = np.linalg.norm(c - b, axis=1)
+            ca = np.linalg.norm(c - a, axis=1)
+            cross = np.abs((b[:, 0] - a[:, 0]) * (c[:, 1] - a[:, 1]) - (b[:, 1] - a[:, 1]) * (c[:, 0] - a[:, 0]))
+            rad = np.where(cross > 1e-12, ab * bc * ca / (2.0 * cross + 1e-15), np.inf)
+            tight = np.zeros(len(out), dtype=bool)
+            tight[2:-2] = rad < r_km
+            # Spread the correction over the whole bend (neighbours too).
+            tight[1:-1] |= tight[:-2] | tight[2:]
+            tight &= ~fixed
+            if not tight.any():
+                break
+            lap = np.zeros_like(out)
+            lap[1:-1] = 0.5 * (out[:-2] + out[2:]) - out[1:-1]
+            out[tight] += 0.5 * lap[tight]
+        return self._resample_pinned(out, self._pin_indices(out, anchors), 0.01)
+
+    @staticmethod
+    def _resample(P, step_km):
+        seg = np.hypot(np.diff(P[:, 0]), np.diff(P[:, 1]))
+        s = np.concatenate([[0.0], np.cumsum(seg)])
+        n = max(2, int(round(s[-1] / step_km)) + 1)
+        si = np.linspace(0.0, s[-1], n)
+        return np.stack([np.interp(si, s, P[:, 0]), np.interp(si, s, P[:, 1])], axis=1)
+
+    def _resample_pinned(self, P, pins, step_km):
+        """Uniform resampling between consecutive pinned indices (pins stay exact)."""
+        idx = sorted({0, len(P) - 1} | {k for k, _ in pins})
+        parts = []
+        for a, b in zip(idx[:-1], idx[1:]):
+            if b <= a:
+                continue
+            r = self._resample(P[a:b + 1], step_km)
+            parts.append(r if not parts else r[1:])
+        return np.concatenate(parts) if parts else P
+
+    @staticmethod
+    def _pin_indices(P, anchors):
+        pins = []
+        for a in anchors:
+            k = int(np.argmin(np.hypot(P[:, 0] - a[0], P[:, 1] - a[1])))
+            pins.append((k, np.array(a, dtype=np.float64)))
+        return pins
 
     def _straighten_bridges(self, path):
         """Replaces the path across every river crossing (plus ~40 m run-up on each side)
@@ -700,7 +840,73 @@ class Generator:
                 i += 1
         return path
 
-    def _grade_road(self, rd, cls, path, wps, fixed):
+    def _street_profile(self, path, fx, fy):
+        """Street heights (WORLD-PLAYTEST-01): every street samples one shared, smoothed
+        street surface, so crossing streets meet at the same height (graded one by one they
+        met with steps of up to 12 m); near an already graded road the street blends to that
+        road's profile so it joins it level."""
+        if getattr(self, "_street_surface", None) is None:
+            self._street_surface = blur(self.h, 4)
+            pts, hs = [], []
+            for r in self.roads:
+                if r["class"] != "street":
+                    pts.append(r["path_km"])
+                    hs.append(r["height"])
+            self._graded_pts = np.concatenate(pts) if pts else np.zeros((0, 2))
+            self._graded_h = np.concatenate(hs) if hs else np.zeros(0)
+        p = bilinear(self._street_surface, fx, fy).astype(np.float64)
+        pins = {}
+        if len(self._graded_pts):
+            for i in range(len(path)):
+                d = np.hypot(self._graded_pts[:, 0] - path[i, 0], self._graded_pts[:, 1] - path[i, 1]) * 1000.0
+                k = int(np.argmin(d))
+                w = 1.0 - smoothstep(8.0, 45.0, d[k])
+                if w > 0.0:
+                    p[i] = p[i] + (self._graded_h[k] - p[i]) * w
+                if d[k] < 4.0:
+                    pins[i] = float(self._graded_h[k])
+        # Crossings with streets graded before this one keep their height.
+        for r in self.roads:
+            if r["class"] != "street":
+                continue
+            Q = r["path_km"]
+            for i in range(len(path)):
+                d = np.hypot(Q[:, 0] - path[i, 0], Q[:, 1] - path[i, 1]) * 1000.0
+                k = int(np.argmin(d))
+                if d[k] < 4.0:
+                    pins[i] = float(r["height"][k])
+        # Grade limit between the pins (a street climbing a hillside is cut and filled).
+        seg = np.hypot(np.diff(path[:, 0]), np.diff(path[:, 1])) * 1000.0
+        g = self.L["road_classes"]["street"]["max_grade"] * np.maximum(seg, 0.5)
+        for _ in range(4):
+            for i, v in pins.items():
+                p[i] = v
+            for i in range(1, len(p)):
+                p[i] = np.clip(p[i], p[i - 1] - g[i - 1], p[i - 1] + g[i - 1])
+            for i in range(len(p) - 2, -1, -1):
+                p[i] = np.clip(p[i], p[i + 1] - g[i], p[i + 1] + g[i])
+        for i, v in pins.items():
+            p[i] = v
+        return p
+
+    def _trim_steep(self, a, b, max_grade=0.15):
+        """Shortens a street (a, b in km, a nearer the settlement centre for side streets)
+        to where the ground gets steeper than max_grade: village streets stop at the
+        hillside instead of climbing it."""
+        L_km = float(np.hypot(*(b - a)))
+        n = max(2, int(L_km / 0.01) + 1)
+        t = np.linspace(0.0, 1.0, n)
+        P = a[None, :] + (b - a)[None, :] * t[:, None]
+        if getattr(self, "_h_b1", None) is None:
+            self._h_b1 = blur(self.h, 1)
+        h = bilinear(self._h_b1, P[:, 0] / self.pitch_km, (self.size_km - P[:, 1]) / self.pitch_km)
+        gr = np.abs(np.diff(h)) / (L_km * 1000.0 / (n - 1))
+        steep = np.nonzero(gr > max_grade)[0]
+        if steep.size == 0:
+            return a, b
+        return a, P[max(1, int(steep[0]))]
+
+    def _grade_road(self, rd, cls, path, wps, fixed, keys=None):
         riv = self.L["river"]
         path = self._straighten_bridges(path)
         fx = path[:, 0] / self.pitch_km
@@ -719,31 +925,33 @@ class Generator:
         win = max(1, int(60.0 / ds))
         # Fixed heights at shared waypoints (junctions with earlier roads).
         fixed_idx = {}
-        for w in (wps[0], wps[-1]) if True else ():
-            pass
-        for w in wps:
-            key = (round(w[0], 4), round(w[1], 4))
+        if keys is None:
+            keys = [(round(w[0], 4), round(w[1], 4)) for w in wps]
+        for w, key in zip(wps, keys):
             j = int(np.argmin(np.hypot(path[:, 0] - w[0], path[:, 1] - w[1])))
             if key in fixed:
                 fixed_idx[j] = fixed[key]
-        for _ in range(30):
+        street = rd["class"] == "street"
+        if street:
+            p = self._street_profile(path, fx, fy)
+        for _ in range(0 if street else 30):
             k = np.ones(2 * win + 1) / (2 * win + 1)
             pp = np.pad(p, win, mode="edge")
             p = np.convolve(pp, k, mode="valid")
             p = np.where(bridge, np.maximum(p, deck), p)
             for j, v in fixed_idx.items():
                 p[j] = v
-        g = cls["max_grade"] * ds
-        for _ in range(3):
+        # Per-segment grade limit (the path spacing is not exactly uniform).
+        g = cls["max_grade"] * np.maximum(seg, 0.5) if seg.size else np.zeros(0)
+        for _ in range(0 if street else 3):
             for i in range(1, len(p)):
-                p[i] = np.clip(p[i], p[i - 1] - g, p[i - 1] + g)
+                p[i] = np.clip(p[i], p[i - 1] - g[i - 1], p[i - 1] + g[i - 1])
             for i in range(len(p) - 2, -1, -1):
-                p[i] = np.clip(p[i], p[i + 1] - g, p[i + 1] + g)
+                p[i] = np.clip(p[i], p[i + 1] - g[i], p[i + 1] + g[i])
             p = np.where(bridge, np.maximum(p, deck), p)
             for j, v in fixed_idx.items():
                 p[j] = v
-        for w in wps:
-            key = (round(w[0], 4), round(w[1], 4))
+        for w, key in zip(wps, keys):
             if key not in fixed:
                 j = int(np.argmin(np.hypot(path[:, 0] - w[0], path[:, 1] - w[1])))
                 fixed[key] = float(p[j])
@@ -928,7 +1136,7 @@ class Generator:
             rsegs.append((a, b, s0, l))
             s0 += l
         rlen = s0
-        wmax = riv["width_m"][1] * 0.5 + riv["bank_m"] + 80.0
+        wmax = riv["width_m"][1] * 0.5 + riv["bank_m"] * 1.6 + 160.0
         # Road segments in world metres with graded heights.
         segs = []
         for ri, rd in enumerate(self.roads):
@@ -1036,19 +1244,34 @@ class Generator:
                 # Meander wobble of the bank line so the channel is not a perfect tube.
                 half = half * (1.0 + 0.12 * perlin(XX / 90.0, ZZ / 90.0, self.seed + 84))
                 depth = riv["channel_depth_m"]
-                bank = riv["bank_m"]
+                # Bank width varies along the river (gravel shelves, steeper cut banks).
+                bank = riv["bank_m"] * (0.65 + 0.9 * smoothstep(-0.5, 0.5, fbm(XX / 140.0, ZZ / 140.0, self.seed + 85, 2)))
                 above = riv["floodplain_above_m"]
                 q = dR / half
                 chan = lvl - 0.6 - (depth - 0.6) * np.sqrt(np.clip(1.0 - q * q, 0, 1))
-                bankh = lvl - 0.6 + (above + 0.6) * smoothstep(half, half + bank, dR)
+                bankh = lvl - 0.6 + (above + 0.9) * smoothstep(half, half + bank, dR)
                 target = np.where(dR < half, chan, bankh)
                 inner = dR < half + bank
                 H = np.where(near & inner, target, H)
-                outer = near & (~inner) & (dR < half + bank + 70.0)
-                H = np.where(outer, np.maximum(H, lvl + above * (1.0 - smoothstep(half + bank + 30.0, half + bank + 70.0, dR)) + 0.3), H)
+                # Outside the bank: hold the water in (minimum height close to the bank) and
+                # cap the rise at a bounded grade, so the land meets the bank without a wall.
+                # The macro relief is already grade-limited; this only resolves the last tens
+                # of metres the 9.8 m macro grid cannot. The cap fades out with distance.
+                d_o = dR - half - bank
+                g_full = 0.45 + 0.15 * smoothstep(-0.5, 0.5, fbm(XX / 260.0, ZZ / 260.0, self.seed + 86, 2))
+                outer = near & (~inner) & (d_o < 150.0)
+                lo = lvl + 0.3 + above * (1.0 - smoothstep(30.0, 70.0, d_o))
+                hi = lvl + above + 0.3 + g_full * np.maximum(d_o, 0.0)
+                capped = np.maximum(smin(H, hi, 1.5), lo)
+                fade = 1.0 - smoothstep(80.0, 150.0, d_o)
+                H = np.where(outer, H + (capped - H) * fade, H)
                 river_px = near & (dR < half)
+                riv_half = half
+                bank_px = near & (dR >= half) & (dR < half + bank * (0.55 + 0.3 * perlin(XX / 11.0, ZZ / 11.0, self.seed + 87)))
             else:
                 river_px = np.zeros((n, full), dtype=bool)
+                riv_half = np.zeros((n, full), dtype=np.float32)
+                bank_px = river_px
 
             # Roads: nearest segment height and class; cut/fill blend.
             dS = np.full((n, full), np.inf, dtype=np.float32)
@@ -1086,7 +1309,12 @@ class Generator:
                 diff = np.abs(H - hS)
                 fall = np.clip(5.0 + 1.6 * diff, 5.0, 24.0)
                 wgt = 1.0 - smoothstep(wS + 1.0, wS + 1.0 + fall, dS)
-                wgt = np.where(onroad & ~bS, wgt, 0.0)
+                # Bridges: only the channel and its banks stay open under the deck; the
+                # rest of the span is the embankment (abutment) up to the deck height.
+                # WORLD-PLAYTEST-01: excluding whole bridge segments left the deck ends
+                # 2-6 m above the ground.
+                open_ch = bS & np.isfinite(dR) & (dR < riv_half + riv["bank_m"] * 1.6 + 2.0)
+                wgt = np.where(onroad & ~open_ch, wgt, 0.0)
                 # Bridge approaches: keep the river channel under the deck.
                 H = H + (hS - H) * wgt
 
@@ -1111,7 +1339,8 @@ class Generator:
             dens = np.where(hedge, np.maximum(dens, 0.6), dens)
             Mc["forest"] = np.clip(dens, 0, 1)
             Mc["field"] = field.astype(np.float32)
-            ctrl = self._control(XX[core], ZZ[core], sc, Mc, dS[core], wS[core], cS[core], river_px[core], dR[core], Hc)
+            ctrl = self._control(XX[core], ZZ[core], sc, Mc, dS[core], wS[core], cS[core], river_px[core], dR[core], Hc,
+                                 bank_px[core])
             tint = self.tint_of(Xk, Yk, Mc["forest"], field, rnd, Mc["alpine"], Mc["bog"] > 0.5)
             rgba = np.concatenate([to_u8(tint), np.full(tint.shape[:2] + (1,), 128, dtype=np.uint8)], axis=2)
             fh.write(Hc.astype("<f4").tobytes())
@@ -1127,7 +1356,7 @@ class Generator:
         self.stats["slope_hist_deg"] = stats_slope.tolist()
         log("full res done: %.1f..%.1f m" % (hmin, hmax))
 
-    def _control(self, XX, ZZ, slope, M, dS, wS, cS, river_px, dR, H):
+    def _control(self, XX, ZZ, slope, M, dS, wS, cS, river_px, dR, H, bank_px=None):
         s = self.seed
         n1 = fbm(XX / 23.0, ZZ / 23.0, s + 91, 3)
         n2 = perlin(XX / 7.0, ZZ / 7.0, s + 92)
@@ -1173,6 +1402,11 @@ class Generator:
         base = np.where(river_px, TEX_GRAVEL, base)
         over = np.where(river_px, TEX_DIRT, over)
         blend = np.where(river_px, 0.5, blend)
+        # Wet bank shelf: dirt with gravel patches between the water and the meadow.
+        if bank_px is not None:
+            base = np.where(bank_px, TEX_DIRT, base)
+            over = np.where(bank_px, TEX_GRAVEL, over)
+            blend = np.where(bank_px, np.clip(0.35 + 0.3 * n2, 0, 1), blend)
         # Lake beds.
         lk = M["lake"] > 0.5
         base = np.where(lk, TEX_DIRT, base)
@@ -1269,10 +1503,11 @@ class Generator:
                 key = (round(w[0], 4), round(w[1], 4))
                 cnt[key] = cnt.get(key, 0) + 1
         junctions = []
-        for (x, y), n in cnt.items():
+        for (kx, ky), n in cnt.items():
             if n >= 2:
+                x, y = self.road_moved.get((kx, ky), (kx, ky))
                 fx, fy = x / self.pitch_km, (self.size_km - y) / self.pitch_km
-                hj = self.road_fixed.get((x, y))
+                hj = self.road_fixed.get((kx, ky))
                 if hj is None:
                     hj = float(bilinear(self.h, np.array([fx]), np.array([fy]))[0])
                 junctions.append([x * 1000 - 10000, float(hj), 10000 - y * 1000])

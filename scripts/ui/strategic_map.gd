@@ -19,8 +19,11 @@
 ##   operational (a few km)   individual squad symbols with names, routes, labels;
 ##   close       (a base)     squads at their positions plus every soldier as a dot.
 ##
+## The tactical (RTS) camera is drawn where it is, with a faint wedge showing where it
+## looks (its horizontal field of view); this is the player's camera, not anybody's sight.
+##
 ## Controls (H shows them on the map): wheel zoom towards the cursor; middle-drag or WASD
-## pan; Home whole map; LMB select (drag = box, Shift adds, double-click a group zooms
+## pan, a middle click (no drag) moves the tactical camera there; Home whole map; LMB select (drag = box, Shift adds, double-click a group zooms
 ## in); RMB order the selected squads (enemy / neutral objective = attack, own = reinforce,
 ## ground = move); buttons for the other orders; G (or "View") jumps the tactical camera
 ## there; , and . change the time compression; M / Esc close.
@@ -72,6 +75,11 @@ var _zoom_anchor := Vector2.INF
 var _zoom_min := 0.03
 var _drag_from := Vector2.INF
 var _pan_from := Vector2.INF
+## Middle button: where it went down, and whether it moved far enough to be a drag.
+var _mid_press := Vector2.INF
+var _mid_dragged := false
+## A middle press that moves less than this (px) is a click, not a pan.
+const MIDDLE_CLICK_PX := 5.0
 var _box := false
 var _last_real_us := 0
 var _redraw_t := 0.0
@@ -110,6 +118,11 @@ func setup(p_demo: CoreDemo) -> void:
 
 
 func _ready() -> void:
+	# WORLD-PLAYTEST-01: the map covers the whole window, so the 3D world is not drawn
+	# while it is open (frame time goes to the simulation when time is compressed).
+	visibility_changed.connect(func() -> void:
+		if is_inside_tree():
+			get_viewport().disable_3d = is_visible_in_tree())
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	focus_mode = Control.FOCUS_ALL
@@ -588,6 +601,19 @@ func go_to(p: Vector3) -> void:
 	close()
 
 
+## Middle click: the tactical camera jumps to p, keeping its heading, tilt and zoom (so its
+## height above the ground). RTSCamera keeps the camera above the terrain and in front of
+## structures. The map stays open.
+func move_camera_to(p: Vector3) -> void:
+	if not p.is_finite():
+		return
+	var lim := half - 10.0
+	p.x = clampf(p.x, -lim, lim)
+	p.z = clampf(p.z, -lim, lim)
+	demo.rts_camera.frame(p, demo.rts_camera.yaw)
+	queue_redraw()
+
+
 func go_to_selection() -> void:
 	if not selected_squads.is_empty():
 		var sq := sim.state.get_squad(selected_squads[0])
@@ -628,7 +654,15 @@ func _gui_input(event: InputEvent) -> void:
 				zoom_by(1.35 if mb.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0 / 1.35, mb.position)
 			accept_event()
 		elif mb.button_index == MOUSE_BUTTON_MIDDLE:
-			_pan_from = mb.position if mb.pressed else Vector2.INF
+			if mb.pressed:
+				_pan_from = mb.position
+				_mid_press = mb.position
+				_mid_dragged = false
+			else:
+				if _mid_press.is_finite() and not _mid_dragged:
+					move_camera_to(to_world(mb.position))
+				_pan_from = Vector2.INF
+				_mid_press = Vector2.INF
 			accept_event()
 		elif mb.button_index == MOUSE_BUTTON_LEFT:
 			if mb.pressed and mb.double_click:
@@ -666,8 +700,13 @@ func _gui_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion:
 		var mm := event as InputEventMouseMotion
 		if _pan_from.is_finite():
-			view_center -= mm.relative / zoom
-			queue_redraw()
+			if not _mid_dragged and _mid_press.is_finite() and mm.position.distance_to(_mid_press) > MIDDLE_CLICK_PX:
+				# A drag after all: catch up with the movement held back below the threshold.
+				_mid_dragged = true
+				view_center -= (mm.position - _mid_press - mm.relative) / zoom
+			if _mid_dragged or not _mid_press.is_finite():
+				view_center -= mm.relative / zoom
+				queue_redraw()
 		elif _drag_from.is_finite() and mm.position.distance_to(_drag_from) > 6.0:
 			_box = true
 		accept_event()
@@ -880,11 +919,7 @@ func _draw() -> void:
 		return a.selected * 100 + a.ids.size() > b.selected * 100 + b.ids.size())
 	for g: Dictionary in order:
 		_draw_group_label(g, font)
-	# The tactical camera.
-	var cam := to_screen(demo.rts_camera.focus)
-	draw_arc(cam, 9.0, 0.0, TAU, 16, Color(1, 1, 1, 0.8), 1.5)
-	draw_line(cam + Vector2(-13, 0), cam + Vector2(-6, 0), Color.WHITE, 1.5)
-	draw_line(cam + Vector2(6, 0), cam + Vector2(13, 0), Color.WHITE, 1.5)
+	_draw_camera()
 	if _box and _drag_from.is_finite():
 		var m := get_local_mouse_position()
 		var br2 := Rect2(_drag_from, m - _drag_from).abs()
@@ -897,6 +932,36 @@ func _draw() -> void:
 		_text(font, m + Vector2(16, -8), OperationState.TYPE_NAMES[pending_order].to_upper(), 12, col)
 	_draw_scale(font)
 	_draw_help(font, r)
+
+
+## The tactical camera: its position, a faint wedge of its horizontal field of view
+## pointing where it looks, and a small cross on the point it orbits (its focus).
+func _draw_camera() -> void:
+	var rig: RTSCamera = demo.rts_camera
+	var cam3d := rig.camera
+	var cp := to_screen(cam3d.global_position)
+	var fwd3 := -cam3d.global_transform.basis.z
+	var dir := Vector2(fwd3.x, fwd3.z)
+	if dir.length() < 0.01:
+		dir = Vector2(-sin(rig.yaw), -cos(rig.yaw))
+	dir = dir.normalized()
+	var vs := get_viewport_rect().size
+	var aspect := vs.x / maxf(vs.y, 1.0)
+	var half_h := atan(tan(deg_to_rad(cam3d.fov) * 0.5) * aspect)
+	# Reach: a little past the focus, never shorter than a readable marker.
+	var reach := maxf(Vector2(cam3d.global_position.x - rig.focus.x, cam3d.global_position.z - rig.focus.z).length() * 1.6 * zoom, 46.0)
+	var pts := PackedVector2Array([cp])
+	for k in 9:
+		pts.append(cp + dir.rotated(lerpf(-half_h, half_h, k / 8.0)) * reach)
+	draw_colored_polygon(pts, Color(1, 1, 1, 0.09))
+	draw_line(cp, pts[1], Color(1, 1, 1, 0.45), 1.2, true)
+	draw_line(cp, pts[pts.size() - 1], Color(1, 1, 1, 0.45), 1.2, true)
+	draw_polyline(pts.slice(1), Color(1, 1, 1, 0.18), 1.0, true)
+	var fp := to_screen(rig.focus)
+	draw_line(fp + Vector2(-5, 0), fp + Vector2(5, 0), Color(1, 1, 1, 0.7), 1.2)
+	draw_line(fp + Vector2(0, -5), fp + Vector2(0, 5), Color(1, 1, 1, 0.7), 1.2)
+	draw_circle(cp, 4.5, Color(0.05, 0.06, 0.07, 0.9))
+	draw_circle(cp, 3.0, Color.WHITE)
 
 
 func _draw_grid(area: Rect2) -> void:
@@ -930,6 +995,7 @@ func _draw_help(font: Font, r: Rect2) -> void:
 	var rows := [
 		["Wheel", "zoom towards the cursor"],
 		["Middle-drag, WASD", "pan     Home: whole map"],
+		["Middle click", "move the tactical camera there (wedge = where it looks)"],
 		["LMB", "select a squad, group, objective or operation"],
 		["LMB drag, Shift", "box select, add to selection"],
 		["Double-click group", "zoom in until its squads separate"],
@@ -937,7 +1003,7 @@ func _draw_help(font: Font, r: Rect2) -> void:
 		["", "own objective = reinforce, ground = move"],
 		["Buttons", "Attack / Defend / Reinforce / Move, then click a target"],
 		["G", "view the selection in the tactical view"],
-		[", and .", "time speed 1-8x (first person is always 1x)"],
+		[", and .", "time speed 1-16x (first person is always 1x)"],
 		["F5 / F9", "save / load the whole war"],
 		["M / Esc", "close the map     H: hide this"],
 	]

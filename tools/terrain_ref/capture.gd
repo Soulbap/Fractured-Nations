@@ -9,7 +9,7 @@
 ##   and assembles topdown_full.png (N*PX square, north up).
 ## --shots renders perspective views {name, pos:[x,y,z] or ref_km:[x,y] + height, look...}
 ##   with the full scene (streamed vegetation, grass, water); "height" is metres above the
-##   terrain at the camera position.
+##   terrain at the camera position ("y" / "look_y" give absolute heights instead).
 extends SceneTree
 
 var _world: Node3D
@@ -184,11 +184,11 @@ func _shots(out_dir: String, path: String, only: PackedStringArray) -> void:
 			p = Vector3(s.ref_km[0] * 1000.0 - 10000.0, 0, 10000.0 - s.ref_km[1] * 1000.0)
 		else:
 			p = Vector3(s.pos[0], 0, s.pos[2])
-		p.y = _ground(p.x, p.z) + float(s.get("height", 1.7))
+		p.y = float(s.y) if s.has("y") else _ground(p.x, p.z) + float(s.get("height", 1.7))
 		var look := p + Vector3(0, 0, -100)
 		if s.has("look_km"):
 			look = Vector3(s.look_km[0] * 1000.0 - 10000.0, 0, 10000.0 - s.look_km[1] * 1000.0)
-			look.y = _ground(look.x, look.z) + float(s.get("look_up", 0.0))
+			look.y = float(s.look_y) if s.has("look_y") else _ground(look.x, look.z) + float(s.get("look_up", 0.0))
 		elif s.has("yaw_deg"):
 			var yaw := deg_to_rad(float(s.yaw_deg))
 			var pitch := deg_to_rad(float(s.get("pitch_deg", -5.0)))

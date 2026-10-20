@@ -56,6 +56,21 @@ func run(args: PackedStringArray) -> void:
 	var origin: Vector3 = demo.sites[0].position
 	var t_search := Time.get_ticks_msec()
 	spots.meadow = _find_spot("meadow", origin)
+	if "--search-only" in args:
+		var tally := {"road": 0, "settle": 0, "slope": 0, "range": 0, "solids": 0, "wet": 0, "ok": 0}
+		for r: float in [150.0, 300.0, 500.0, 750.0, 1000.0, 1400.0, 1900.0, 2500.0, 3200.0, 4000.0, 5000.0, 6000.0]:
+			for k in 64:
+				var a := k * TAU / 64
+				var p := demo.on_ground(origin.x + cos(a) * r, origin.z + sin(a) * r, 0.0)
+				if absf(p.x) > 9500.0 or absf(p.z) > 9500.0: continue
+				if _road_dist(p) < 60.0: tally.road += 1
+				elif _settlement_dist(p)[0] < 150.0: tally.settle += 1
+				elif _slope_at(p, 20.0) > 4.0: tally.slope += 1
+				elif _height_range(p, 50.0) > 4.5: tally.range += 1
+				elif _solids(p, 70.0).trees > 4 or _solids(p, 70.0).houses + _solids(p, 70.0).rocks > 0: tally.solids += 1
+				elif not _dry(p, 60.0): tally.wet += 1
+				else: tally.ok += 1
+		print("WI01 meadow_tally ", tally)
 	spots.forest = _find_spot("forest", origin)
 	spots.slope = _find_spot("slope", origin)
 	spots.road = _find_spot("road", origin)
@@ -276,10 +291,13 @@ func _matches(kind: String, p: Vector3) -> bool:
 	var sd: Array = _settlement_dist(p)
 	match kind:
 		"meadow":
-			if road < 60.0 or sd[0] < 150.0 or _slope_at(p, 20.0) > 2.5 or _height_range(p, 50.0) > 3.0:
+			if road < 60.0 or sd[0] < 150.0 or _slope_at(p, 20.0) > 4.0 or _height_range(p, 50.0) > 4.5:
 				return false
+			# WORLD-PLAYTEST-01: open ground, not a perfect flat: a gentle slope and a few
+			# trees are allowed (groundwork levels, construction clears). The perfectly flat,
+			# tree-free ground used before was the 27 m river terrace the playtest removed.
 			var s := _solids(p, 70.0)
-			return s.trees + s.houses + s.rocks == 0 and _dry(p, 60.0)
+			return s.trees <= 4 and s.houses + s.rocks == 0 and _dry(p, 60.0)
 		"forest":
 			# A small natural opening (few trunks within 10 m) inside dense forest.
 			if road < 40.0 or sd[0] < 100.0 or _slope_at(p, 12.0) > 6.0 or _height_range(p, 18.0) > 2.5:

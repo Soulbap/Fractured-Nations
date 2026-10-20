@@ -3,7 +3,17 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **INTEGRATION-02** — the unified sandbox on branch `feature/unified-sandbox`,
+Current state: **WORLD-PLAYTEST-01** (branch `feature/world-playtest-01`, from the unified
+sandbox) — fixes from the first manual playtest: the river runs in a natural valley instead
+of a 27 m deep canal, bridges span an open river (they stood on earth dams), the 300 km road
+network was audited and repaired, the player can build dirt / gravel / asphalt roads as curves
+and paved yards as polygons (one shared road network with the world's roads and the AI's
+routes), long move orders follow strategic routes over bridges instead of wading, the strategic
+map shows the tactical camera with a view wedge (middle click moves it there), middle-drag
+tilts the RTS camera, and time compression reaches the requested 2-8 x (16 x added). See
+[docs/WORLD-PLAYTEST-01_REPORT.md](docs/WORLD-PLAYTEST-01_REPORT.md).
+
+Before that, **INTEGRATION-02** — the unified sandbox on branch `feature/unified-sandbox`,
 the single development baseline: the complete WORLD-SANDBOX-01B war (strategic map, RTS, FPS,
 faction AI, operations, combat, construction, saves) with the CHARACTER-01 soldiers (rig,
 equipment, animations, first-person carbine). See
@@ -114,13 +124,14 @@ own with that layout.
 | M / Esc | Open / close the map (from first person the game switches to the tactical view first) |
 | H | Show / hide the map controls on the map |
 | Wheel, middle-drag or WASD, Home | Zoom towards the cursor (whole map down to a base), pan, whole map |
+| Middle click (no drag) | Move the tactical camera there (keeps its heading, tilt and height); the white dot and faint wedge show where the tactical camera is and which way it looks |
 | LMB, LMB-drag, Shift | Select a squad or a group of squads, an objective or an operation (also its label on the map or its row in the list); box select; add |
 | Double-click a group | Zoom in until its squads separate |
 | LMB on an objective with squads selected | Makes it their target; then Attack / Defend / Reinforce |
 | RMB | Order the selected squads: on an enemy or neutral objective = **attack**, on your own = **reinforce**, on open ground = **move** (all as operations with planned routes); cancels a pending button order |
 | Buttons | Attack / Defend / Reinforce the target (or click one after the button), Move (then click the ground), Cancel op, View |
 | G, "Go" in the operation list | Jump the tactical camera there (closes the map) |
-| , and . | Time compression 1 / 2 / 4 / 8 x (first person always runs at 1 x) |
+| , and . | Time compression 1 / 2 / 4 / 8 / 16 x (first person always runs at 1 x); the HUD shows the speed reached when the machine falls short |
 | F5 / F9 | Save / load the whole war |
 
 The map shows territory (each objective's area in its owner's colour), objectives with capture
@@ -153,12 +164,12 @@ shows every control, F3 the technical counters and the frame-time overlay, F4 th
 | Key | Tactical (RTS) |
 |---|---|
 | W A S D (Shift faster) | Pan |
-| Q / E, middle-mouse drag | Rotate |
+| Q / E, middle-mouse drag | Rotate; middle-drag up / down tilts the view (8–84° below the horizon) |
 | Mouse wheel | Zoom (5–200 m, starts at 80 m; `RTSCamera.zoom_min` / `zoom_max` / `zoom_default`) |
 | **B** | Construction mode (see below) |
 | Left click / drag box, Shift+click | Select soldiers and vehicles / add to selection, Ctrl+A all soldiers |
 | Ctrl+click, squad panel (left) | Select a soldier's whole squad; Shift adds more squads. Rows show order, progress, living + fallen, engaging / under fire / in cover; the list scrolls when it would reach the HUD text |
-| Right click | Move: selected squads walk in formation to the point (side by side if several); other selected soldiers get individual orders and leave their squad's order until its next one |
+| Right click | Move: selected squads walk in formation to the point (side by side if several); a move over 150 m, or one that would cross water or a cliff, follows a strategic route (roads, bridges) in column and takes the formation again at the end; other selected soldiers get individual orders and leave their squad's order until its next one |
 | H | Hold: selected squads stop and stay; other selected soldiers stop |
 | F, then click a soldier | Selected squads follow that soldier, or its squad (its leader) |
 | G / Shift+G | Regroup selected squads on their leader / at the cursor |
@@ -182,6 +193,8 @@ construction file).
 | Shift / Ctrl (held) | 15° direction steps / no snapping |
 | X | Delete tool: click removes a building or one line module, Shift+click a whole line |
 | C | Vegetation clearing on (default) / off: trees, shrubs and debris inside new footprints are cut (saved with the base); off, trees block placement. Rocks and settlement buildings always block |
+| Roads (category "Roads") | Dirt track / gravel road / asphalt road: LMB adds control points, the road curves through them; drag a point to reshape; ends snap to roads, road ends and junctions (Ctrl: no snap); clicking onto a road, Enter, RMB or double-click builds. Graded into the terrain (green / red sections in the preview), part of the AI's route network |
+| Yards | Gravel / asphalt yard: click the corners, click the first one or press Enter to close; graded to one plane, paved, no route shortcut |
 | Esc | Cancel line → tool → leave |
 | F5 / F9 | Save / load construction (`user://saves/<world>/construction.json`) |
 
@@ -194,6 +207,11 @@ runner, `bash benchmarks/sandbox01b/run_test.sh <kind>`, also takes `sandbox` (W
 01B war scenarios, `--only a,b`, e.g. `map_ui,hud,warp_fidelity`), `combat-tactics` (COMBAT-02
 reactions and cover), `combat-scale` (COMBAT-02 16 / 50 / 100 v N, two battles), `combat-ai`
 (COMBAT-01b AI firefights), `combat` (COMBAT-01a) and `squad` (UNIT-01A).
+
+WORLD-PLAYTEST-01 checks: `Godot_v4.7.2-stable_win64.exe --path . --resolution 1600x900
+res://scenes/game/world_ref_20km.tscn -- --playtest-test [--shots] [--only nav_river,nav_long,nav_base,roads,camera,timescale]`;
+world geometry audits after a world build: `python tools/terrain_ref/audit_roads.py worlds/ref_20km/source`
+(Blender's Python) and `Godot_console.exe --headless --path . --script res://tools/terrain_ref/audit_world.gd`.
 
 The world exploration scene `scenes/world/test_2km.tscn` still runs on its own with the
 WORLD-TECH-01 free-roaming controller.

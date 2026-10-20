@@ -100,7 +100,7 @@
 
   "roads": [
     {"name": "Rv1 vest-sørøst", "class": "primary", "waypoints_km": [[0.0, 15.6], [1.5, 14.95], [2.7, 14.3], [4.5, 13.3], [6.3, 12.8], [7.3, 11.9], [7.56, 11.25], [7.9, 10.0], [8.3, 9.1], [9.6, 8.3], [10.4, 6.9], [11.15, 5.45], [12.65, 4.92], [13.8, 4.8], [15.4, 4.5], [16.7, 4.25], [18.0, 3.4], [19.0, 2.4], [20.0, 1.0]]},
-    {"name": "Rv2 nord-øst", "class": "primary", "waypoints_km": [[4.2, 20.0], [5.2, 19.0], [6.3, 18.0], [7.0, 17.5], [8.9, 17.2], [10.1, 16.75], [12.1, 15.8], [12.8, 14.5], [14.2, 13.9], [15.6, 13.4], [16.7, 12.3], [17.9, 11.4], [20.0, 10.9]]},
+    {"name": "Rv2 nord-øst", "class": "primary", "waypoints_km": [[4.2, 20.0], [5.2, 19.0], [6.3, 18.0], [7.0, 17.5], [8.9, 17.2], [10.1, 16.75], [10.7, 16.465], [12.1, 15.8], [12.8, 14.5], [14.2, 13.9], [15.6, 13.4], [16.7, 12.3], [17.9, 11.4], [20.0, 10.9]]},
     {"name": "Fv nord-sentrum", "class": "secondary", "waypoints_km": [[7.0, 17.5], [6.9, 16.6], [7.3, 15.4], [8.4, 14.4], [8.75, 13.0], [9.1, 11.8]]},
     {"name": "Fv sentrum-sør", "class": "secondary", "waypoints_km": [[9.1, 11.8], [9.35, 10.4], [9.6, 8.3], [9.45, 6.5], [9.4, 5.3], [9.65, 3.85], [8.5, 2.9], [8.35, 1.5], [8.2, 0.0]]},
     {"name": "Fv sentrum-øst", "class": "secondary", "waypoints_km": [[9.1, 11.8], [10.1, 11.15], [11.5, 10.1], [13.25, 8.1], [15.6, 7.7], [17.5, 7.95], [19.0, 7.9], [20.0, 8.3]]},
@@ -112,7 +112,7 @@
     {"name": "Lv nordvest", "class": "local", "waypoints_km": [[1.5, 14.95], [1.4, 17.0], [1.6, 18.8], [2.4, 20.0]]},
     {"name": "Lv innsjø", "class": "local", "waypoints_km": [[3.2, 4.7], [4.0, 6.0], [4.9, 7.0], [4.7, 8.4], [3.9, 8.3]]},
     {"name": "Lv fjellvatn", "class": "local", "waypoints_km": [[15.6, 13.4], [16.9, 14.2], [17.6, 14.4], [18.6, 15.5], [18.95, 16.5], [19.4, 17.6], [20.0, 18.7]]},
-    {"name": "Lv nordre", "class": "local", "waypoints_km": [[10.1, 16.75], [10.7, 18.4], [11.5, 19.4], [11.8, 20.0]]},
+    {"name": "Lv nordre", "class": "local", "waypoints_km": [[10.7, 16.465], [10.7, 18.4], [11.5, 19.4], [11.8, 20.0]]},
     {"name": "Lv fjellfoten", "class": "local", "waypoints_km": [[12.1, 15.8], [13.2, 15.4]]},
     {"name": "Lv fjellfoten nord", "class": "local", "waypoints_km": [[10.7, 18.4], [12.9, 17.8], [13.9, 18.6], [15.0, 19.2], [16.0, 19.0]]},
     {"name": "Lv fjellpass", "class": "track", "waypoints_km": [[13.2, 15.4], [14.5, 16.4], [15.9, 17.4], [16.9, 18.4], [17.5, 19.3], [17.9, 20.0]]},
@@ -135,10 +135,10 @@
   ],
 
   "road_classes": {
-    "primary":   {"lane_m": 3.5,  "lanes": 2, "shoulder_m": 1.5, "max_grade": 0.07, "mesh": true,  "slope_cost": 260.0},
-    "secondary": {"lane_m": 3.0,  "lanes": 2, "shoulder_m": 1.0, "max_grade": 0.09, "mesh": true,  "slope_cost": 200.0},
-    "local":     {"lane_m": 4.5,  "lanes": 1, "shoulder_m": 0.8, "max_grade": 0.11, "mesh": false, "slope_cost": 150.0},
-    "track":     {"lane_m": 3.6,  "lanes": 1, "shoulder_m": 0.6, "max_grade": 0.14, "mesh": false, "slope_cost": 110.0},
+    "primary":   {"lane_m": 3.5,  "lanes": 2, "shoulder_m": 1.5, "max_grade": 0.07, "mesh": true,  "slope_cost": 260.0, "min_radius_m": 60.0},
+    "secondary": {"lane_m": 3.0,  "lanes": 2, "shoulder_m": 1.0, "max_grade": 0.09, "mesh": true,  "slope_cost": 200.0, "min_radius_m": 45.0},
+    "local":     {"lane_m": 4.5,  "lanes": 1, "shoulder_m": 0.8, "max_grade": 0.11, "mesh": false, "slope_cost": 150.0, "min_radius_m": 28.0},
+    "track":     {"lane_m": 3.6,  "lanes": 1, "shoulder_m": 0.6, "max_grade": 0.14, "mesh": false, "slope_cost": 110.0, "min_radius_m": 18.0},
     "street":    {"lane_m": 2.75, "lanes": 2, "shoulder_m": 0.5, "max_grade": 0.12, "mesh": false, "slope_cost": 100.0}
   },
 

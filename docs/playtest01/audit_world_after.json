@@ -1,0 +1,440 @@
+{
+ "findings": [
+  {
+   "kind": "bridge",
+   "level": "warn",
+   "msg": "deck end 3.7 m above the terrain",
+   "pos": [
+    1135.9,
+    4506.4
+   ],
+   "what": "Rv1 vest-sørøst"
+  },
+  {
+   "kind": "bridge",
+   "level": "info",
+   "msg": "span 98 m, deck 9.0 m above water",
+   "pos": [
+    1172.7,
+    4539.0
+   ],
+   "what": "Rv1 vest-sørøst"
+  },
+  {
+   "kind": "bridge",
+   "level": "info",
+   "msg": "span 98 m, deck 6.4 m above water",
+   "pos": [
+    77.4,
+    -6725.6
+   ],
+   "what": "Rv2 nord-øst"
+  },
+  {
+   "kind": "bridge",
+   "level": "warn",
+   "msg": "deck end 3.7 m above the terrain",
+   "pos": [
+    7.5,
+    -1188.6
+   ],
+   "what": "Fv sentrum-øst"
+  },
+  {
+   "kind": "bridge",
+   "level": "info",
+   "msg": "span 110 m, deck 12.1 m above water",
+   "pos": [
+    57.3,
+    -1165.2
+   ],
+   "what": "Fv sentrum-øst"
+  },
+  {
+   "kind": "bridge",
+   "level": "info",
+   "msg": "span 110 m, deck 9.1 m above water",
+   "pos": [
+    824.1,
+    7347.8
+   ],
+   "what": "Fv sør-tverr"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: terrain above the road surface",
+   "pos": [
+    -388.9,
+    1722.1
+   ],
+   "what": "Rv1 vest-sørøst"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "4 samples: road above the terrain",
+   "pos": [
+    2650.5,
+    5078.6
+   ],
+   "what": "Rv1 vest-sørøst"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "2 samples: road above the terrain",
+   "pos": [
+    4207.8,
+    -3934.2
+   ],
+   "what": "Rv2 nord-øst"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: road above the terrain",
+   "pos": [
+    -899.6,
+    -1810.0
+   ],
+   "what": "Fv nord-sentrum"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "2 samples: road above the terrain",
+   "pos": [
+    -900.0,
+    -1800.0
+   ],
+   "what": "Fv sentrum-sør"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "4 samples: road above the terrain",
+   "pos": [
+    -900.0,
+    -1800.0
+   ],
+   "what": "Fv sentrum-øst"
+  },
+  {
+   "kind": "road",
+   "level": "error",
+   "msg": "5 samples: road above the terrain",
+   "pos": [
+    -900.0,
+    -1800.0
+   ],
+   "what": "Fv sentrum-vest"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: road above the terrain",
+   "pos": [
+    3224.9,
+    6980.6
+   ],
+   "what": "Fv sør-tverr"
+  },
+  {
+   "kind": "road",
+   "level": "error",
+   "msg": "5 samples: road above the terrain",
+   "pos": [
+    4216.5,
+    -3929.4
+   ],
+   "what": "Fv øst nord-sør"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: road above the terrain",
+   "pos": [
+    -4003.2,
+    -114.8
+   ],
+   "what": "Fv vest-lia"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: road above the terrain",
+   "pos": [
+    -8516.0,
+    -4955.0
+   ],
+   "what": "Lv nordvest"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "2 samples: terrain above the road surface",
+   "pos": [
+    -5114.8,
+    1616.3
+   ],
+   "what": "Lv innsjø"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: road above the terrain",
+   "pos": [
+    -6092.8,
+    1698.1
+   ],
+   "what": "Lv innsjø"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: road above the terrain",
+   "pos": [
+    5614.5,
+    -3392.5
+   ],
+   "what": "Lv fjellvatn"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "2 samples: road above the terrain",
+   "pos": [
+    2182.5,
+    -5414.5
+   ],
+   "what": "Lv fjellfoten"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: terrain above the road surface",
+   "pos": [
+    -6398.3,
+    -606.3
+   ],
+   "what": "Lv åsbygda"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: terrain above the road surface",
+   "pos": [
+    -5504.1,
+    -3311.1
+   ],
+   "what": "Lv haugen"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "2 samples: terrain above the road surface",
+   "pos": [
+    7938.3,
+    -1383.0
+   ],
+   "what": "Lv bakken"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: road above the terrain",
+   "pos": [
+    -1704.8,
+    910.4
+   ],
+   "what": "Lv sørmoen"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: road above the terrain",
+   "pos": [
+    3205.3,
+    6983.9
+   ],
+   "what": "Lv søråsen"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "2 samples: terrain above the road surface",
+   "pos": [
+    -5948.6,
+    -3800.6
+   ],
+   "what": "Lv nordvest-skog"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: terrain above the road surface",
+   "pos": [
+    -4337.2,
+    -3035.9
+   ],
+   "what": "Lv midtskog"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "3 samples: road above the terrain",
+   "pos": [
+    -2664.6,
+    -5337.9
+   ],
+   "what": "Lv midtskog"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: road above the terrain",
+   "pos": [
+    -900.0,
+    -1800.0
+   ],
+   "what": "Sentrum gate 6"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: road above the terrain",
+   "pos": [
+    -1204.8,
+    -2077.1
+   ],
+   "what": "Sentrum gate 9"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: road above the terrain",
+   "pos": [
+    -900.0,
+    -1800.0
+   ],
+   "what": "Sentrum gate 16"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: road above the terrain",
+   "pos": [
+    -804.8,
+    -1792.4
+   ],
+   "what": "Sentrum gate 17"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "2 samples: road above the terrain",
+   "pos": [
+    3250.0,
+    1900.0
+   ],
+   "what": "Østby gate 4"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: road above the terrain",
+   "pos": [
+    3247.9,
+    1804.9
+   ],
+   "what": "Østby gate 5"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "2 samples: road above the terrain",
+   "pos": [
+    3249.7,
+    1910.1
+   ],
+   "what": "Østby gate 11"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: road above the terrain",
+   "pos": [
+    -3908.4,
+    5375.6
+   ],
+   "what": "Sørli gate 1"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: road above the terrain",
+   "pos": [
+    -3994.5,
+    -119.2
+   ],
+   "what": "Skogli gate 1"
+  },
+  {
+   "kind": "road",
+   "level": "warn",
+   "msg": "1 samples: road above the terrain",
+   "pos": [
+    -4005.5,
+    -80.8
+   ],
+   "what": "Skogli gate 2"
+  }
+ ],
+ "stats": {
+  "bridges": {
+   "bridges": 4,
+   "dammed": 0
+  },
+  "errors": 2,
+  "lakes": {
+   "Fjellvatnet": {
+    "dry": 0,
+    "samples": 1397
+   },
+   "Langvatnet": {
+    "dry": 0,
+    "samples": 1755
+   },
+   "Storvatnet": {
+    "dry": 76,
+    "samples": 4862
+   },
+   "Tjernet": {
+    "dry": 0,
+    "samples": 960
+   }
+  },
+  "ms": 1691,
+  "navigation": {
+   "bridge_routes_ok": 4,
+   "bridges": 4,
+   "grid_ms": 1289.4,
+   "road_samples": 10134,
+   "road_samples_unmarked": 0
+  },
+  "river": {
+   "blocked": 0,
+   "samples": 929,
+   "worst_terrain_above_water_m": -3.2
+  },
+  "roads": {
+   "buried": 10,
+   "floating": 47,
+   "samples": 15144,
+   "worst_buried_m": 3.36,
+   "worst_floating_m": -3.86
+  },
+  "warnings": 33
+ }
+}

@@ -63,6 +63,7 @@ var _combat_ai_selftest: CombatAISelfTest
 var _combat_scale_selftest: CombatScaleSelfTest
 var _combat_tactics_selftest: CombatTacticsSelfTest
 var _sandbox_selftest: SandboxSelfTest
+var _playtest_selftest: PlaytestSelfTest
 ## WORLD-SANDBOX-01: true when the game runs the three-faction war (the default).
 var sandbox := false
 var routes: StrategicRoutes
@@ -291,6 +292,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--base-test" in args:
 		_base_selftest = BaseSelfTest.new(self)
 		_base_selftest.run.call_deferred(args)
+	elif "--playtest-test" in args:
+		_playtest_selftest = PlaytestSelfTest.new(self)
+		_playtest_selftest.run.call_deferred(args)
 	elif "--sandbox-test" in args:
 		_sandbox_selftest = SandboxSelfTest.new(self)
 		_sandbox_selftest.run.call_deferred(args)
@@ -301,7 +305,10 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 func _start_sandbox() -> void:
 	routes = StrategicRoutes.new()
 	var src := "res://worlds/%s/source/" % config.world_name
-	routes.setup(terrain, config.half_size(), src, "user://strategic/%s_grid.bin" % config.world_name)
+	# WORLD-PLAYTEST-01: one road network for the world roads and the built ones; the route
+	# grid follows it.
+	sim.state.roads.load_world(src)
+	routes.setup(terrain, config.half_size(), src, "user://strategic/%s_grid.bin" % config.world_name, sim.state.roads)
 	sim.war.setup(routes)
 	# WORLD-SANDBOX-01B: normal play starts without the frame-time overlay (F3).
 	if game.diagnostics:
@@ -377,7 +384,7 @@ func _on_map_closed() -> void:
 ## the simulation is the same as at 1 x, only more of it per second (if the CPU cannot keep
 ## up, the war simply runs a little slower than the nominal factor).
 func set_time_speed(step: int) -> void:
-	var levels := [1.0, 2.0, 4.0, 8.0]
+	var levels := [1.0, 2.0, 4.0, 8.0, 16.0]
 	var i := levels.find(Engine.time_scale)
 	i = clampi((i if i >= 0 else 0) + step, 0, levels.size() - 1)
 	if game.mode == GameController.Mode.FPS:

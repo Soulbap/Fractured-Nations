@@ -35,6 +35,9 @@ Norwegian; code, comments and docs are English.
   one shared rig; structures come from `StructureCatalog`. New content is data, not code.
 - **Future-proofing.** Nothing soldier-specific may be hardcoded where vehicles, logistics or
   bases will need it (e.g. muzzle positions come from the held weapon's mount, not offsets).
+- **One road network** (`RoadNetwork`, `WorldState.roads`): the world's roads.json plus the
+  roads built in construction. Route planning, construction snapping and terrain work all read
+  it; never add a second road representation. Paved areas are not roads (no route shortcut).
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are

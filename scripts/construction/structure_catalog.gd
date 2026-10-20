@@ -8,7 +8,7 @@
 class_name StructureCatalog
 extends RefCounted
 
-const CATEGORIES: Array[String] = ["Buildings", "Defences"]
+const CATEGORIES: Array[String] = ["Buildings", "Defences", "Roads"]
 const ASSET_DIR := "res://assets/structures/"
 
 static var _defs: Array[StructureDef] = []
@@ -39,6 +39,8 @@ static func in_category(category: String) -> Array[StructureDef]:
 ## The type's mesh (first MeshInstance3D of the GLB, with import LODs), or a placeholder
 ## box standing on the origin when the asset is missing.
 static func mesh_of(def: StructureDef) -> Mesh:
+	if def.is_surface():
+		return null
 	if _meshes.has(def.id):
 		return _meshes[def.id]
 	var mesh: Mesh = null
@@ -111,6 +113,25 @@ static func _placeholder(def: StructureDef) -> Mesh:
 	mat.roughness = 0.9
 	mesh.surface_set_material(0, mat)
 	return mesh
+
+
+static func _surface_def(id: StringName, name: String, kind: StructureDef.Surface, width: float, tex: int, over: int,
+		blend: float, grade: float, cost: float) -> StructureDef:
+	var d := StructureDef.new()
+	d.id = id
+	d.display_name = name
+	d.category = "Roads"
+	d.surface = kind
+	d.surface_width = width
+	d.surface_texture = tex
+	d.surface_overlay = over
+	d.surface_blend = blend
+	d.max_grade = grade
+	d.travel_cost = cost
+	d.max_cut = 3.0
+	d.blocks_navigation = false
+	d.size = Vector3(width, 0.1, width)
+	return d
 
 
 static func _add(d: StructureDef) -> void:
@@ -276,4 +297,29 @@ static func _build() -> void:
 	d.sink = 0.03
 	d.connect_group = &"concrete"
 	d.color = Color(0.66, 0.65, 0.62)
+	_add(d)
+
+	# --- Roads and paved areas (WORLD-PLAYTEST-01) ----------------------------------
+	# Built into the terrain (graded, painted with the world's own road textures), part of
+	# the road network the AI routes on. Widths fit one military truck / AFV (2.5-3.6 m)
+	# per lane; grades are what a loaded truck manages on the surface.
+	d = _surface_def(&"road_dirt", "Dirt track", StructureDef.Surface.ROAD, 4.0, WorldTerrainGenerator.TEX_DIRT,
+		ReferenceWorldBuilder.TEX_GRAVEL, 0.25, 0.16, 0.6)
+	d.description = "Bulldozed dirt track, 4 m. Quick to lay, up to 16 % grade. Draw a curve: click control points, Enter / right click finishes; drag a point to adjust it."
+	_add(d)
+	d = _surface_def(&"road_gravel", "Gravel road", StructureDef.Surface.ROAD, 5.5, ReferenceWorldBuilder.TEX_GRAVEL,
+		WorldTerrainGenerator.TEX_DIRT, 0.3, 0.12, 0.5)
+	d.description = "Compacted gravel road, 5.5 m (two trucks pass slowly), up to 12 % grade."
+	_add(d)
+	d = _surface_def(&"road_asphalt", "Asphalt road", StructureDef.Surface.ROAD, 7.0, ReferenceWorldBuilder.TEX_ASPHALT,
+		ReferenceWorldBuilder.TEX_GRAVEL, 0.08, 0.09, 0.45)
+	d.description = "Two-lane asphalt road, 7 m, up to 9 % grade."
+	_add(d)
+	d = _surface_def(&"area_gravel", "Gravel yard", StructureDef.Surface.AREA, 0.0, ReferenceWorldBuilder.TEX_GRAVEL,
+		WorldTerrainGenerator.TEX_DIRT, 0.3, 0.06, 1.0)
+	d.description = "Gravel hardstanding for vehicle yards and motor pools. Click the corners, Enter / right click closes the polygon. Graded to one plane (max 6 %)."
+	_add(d)
+	d = _surface_def(&"area_asphalt", "Asphalt yard", StructureDef.Surface.AREA, 0.0, ReferenceWorldBuilder.TEX_ASPHALT,
+		ReferenceWorldBuilder.TEX_GRAVEL, 0.06, 0.05, 1.0)
+	d.description = "Asphalt apron / parking area. Graded to one plane (max 5 %)."
 	_add(d)

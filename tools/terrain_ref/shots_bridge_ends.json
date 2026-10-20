@@ -1,0 +1,58 @@
+[
+ {
+  "name": "endjoin_rv1_vest-s\u00f8r\u00f8st",
+  "ref_km": [
+   11.2339,
+   5.3881
+  ],
+  "height": 4.0,
+  "look_km": [
+   11.1359,
+   5.4936
+  ],
+  "look_up": 3.0,
+  "fov": 60
+ },
+ {
+  "name": "endjoin_rv2_nord-\u00f8st",
+  "ref_km": [
+   10.1713,
+   16.7418
+  ],
+  "height": 4.0,
+  "look_km": [
+   10.0306,
+   16.7103
+  ],
+  "look_up": 3.0,
+  "fov": 60
+ },
+ {
+  "name": "endjoin_fv_sentrum-\u00f8st",
+  "ref_km": [
+   10.1419,
+   11.1102
+  ],
+  "height": 4.0,
+  "look_km": [
+   10.0075,
+   11.1885
+  ],
+  "look_up": 3.0,
+  "fov": 60
+ },
+ {
+  "name": "endjoin_fv_s\u00f8r-tverr",
+  "ref_km": [
+   10.9085,
+   2.5969
+  ],
+  "height": 4.0,
+  "look_km": [
+   10.7743,
+   2.6757
+  ],
+  "look_up": 3.0,
+  "fov": 60
+ }
+]

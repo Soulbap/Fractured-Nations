@@ -18,6 +18,10 @@ var yaw := 0.0
 var points := PackedVector3Array()
 ## Lines: module indices that are not built.
 var removed := PackedInt32Array()
+## WORLD-PLAYTEST-01 surfaces. Roads: the graded centre line (dense, ~2 m, y = road
+## surface), computed once at placement from the control points in `points` and saved, so
+## the road never changes on load. Areas: [centroid with its height, plane gradient (x, z)].
+var profile := PackedVector3Array()
 
 ## Runtime cache, rebuilt from the data above (not saved): one transform per instance
 ## (index = module index for lines; -1 entries never appear, removed modules are skipped
@@ -46,6 +50,11 @@ func to_dict() -> Dictionary:
 		d["points"] = pts
 		if not removed.is_empty():
 			d["removed"] = Array(removed)
+		if not profile.is_empty():
+			var flat := []
+			for p in profile:
+				flat.append_array([snappedf(p.x, 0.01), snappedf(p.y, 0.01), snappedf(p.z, 0.01)])
+			d["profile"] = flat
 	else:
 		d["position"] = [snappedf(position.x, 0.001), snappedf(position.y, 0.001), snappedf(position.z, 0.001)]
 		d["yaw"] = snappedf(yaw, 0.0001)
@@ -62,6 +71,9 @@ static func from_dict(d: Dictionary) -> StructureState:
 			s.points.append(Vector3(p[0], p[1], p[2]))
 		for i in d.get("removed", []):
 			s.removed.append(int(i))
+		var flat: Array = d.get("profile", [])
+		for i in range(0, flat.size() - 2, 3):
+			s.profile.append(Vector3(flat[i], flat[i + 1], flat[i + 2]))
 	else:
 		var p: Array = d.get("position", [0, 0, 0])
 		s.position = Vector3(p[0], p[1], p[2])

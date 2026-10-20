@@ -454,8 +454,17 @@ func _collect_road_polylines() -> void:
 
 ## After the connector flattened the terrain under the roads, put the river channel back
 ## under bridge decks (the connector fills it up to the deck height otherwise).
+## WORLD-PLAYTEST-01: the connector only queues the flattening and runs it in its next
+## physics frame, so restoring right away was undone afterwards: every bridge stood on an
+## earth dam across the river. Wait for the connector first.
 func flatten_roads() -> void:
 	super.flatten_roads()
+	var connector := road_parent.get_node_or_null("Terrain3DRoadConnector")
+	for i in 60:
+		await get_tree().physics_frame
+		if connector == null or connector._next_refresh_parents.is_empty():
+			break
+	await get_tree().physics_frame
 	restore_bridge_channels()
 
 
@@ -677,8 +686,14 @@ func place_structures(scene_owner: Node) -> void:
 			var dir := flat.normalized()
 			var n := maxi(1, ceili(length / module_len))
 			var step := length / n
-			var deck_y := maxf(pa.y, pb.y) + (0.12 if paved else 0.05)
+			# WORLD-PLAYTEST-01: the deck follows the road across the span (the road surface
+			# runs straight from one end RoadPoint to the other). A level deck at the higher
+			# end left the lower end of a sloping bridge metres above the road, with the road
+			# visible beside and under it.
+			var grade := (pb.y - pa.y) / maxf(flat.length(), 0.1)
+			var lift := 0.12 if paved else 0.05
 			var basis := Basis.looking_at(dir, Vector3.UP)
+			basis = basis * Basis(Vector3.RIGHT, atan(grade))
 			var start := (pa + pb) * 0.5 - dir * length * 0.5
 			var br := Node3D.new()
 			br.name = "Bridge_%02d" % n_br
@@ -688,15 +703,18 @@ func place_structures(scene_owner: Node) -> void:
 				var m: Node3D = scenes[module_key].instantiate()
 				m.name = "Module_%d" % k
 				var c := start + dir * (step * (k + 0.5))
+				var cy := (pa.y + pb.y) * 0.5 + grade * (step * (k + 0.5) - length * 0.5) + lift
 				# Local-axis scale (Basis.scaled() would scale in world axes and shear the deck).
-				m.transform = Transform3D(basis * Basis.from_scale(Vector3(deck_w / module_w, 1.0, step / module_len)), Vector3(c.x, deck_y, c.z))
+				m.transform = Transform3D(basis * Basis.from_scale(Vector3(deck_w / module_w, 1.0, step / module_len / cos(atan(grade)))), Vector3(c.x, cy, c.z))
 				br.add_child(m)
 				m.owner = scene_owner
 				# Wall piers at every second joint (paved), under the girders.
 				if paved and scenes.has("bridge_pier") and k > 0 and k % 2 == 0:
 					var pier: Node3D = scenes["bridge_pier"].instantiate()
 					var j := start + dir * (step * k)
-					pier.transform = Transform3D(basis * Basis.from_scale(Vector3(deck_w / module_w, 1.0, 1.0)), Vector3(j.x, deck_y, j.z))
+					var jy := (pa.y + pb.y) * 0.5 + grade * (step * k - length * 0.5) + lift
+					# Piers stand upright under the sloping deck.
+					pier.transform = Transform3D(Basis.looking_at(dir, Vector3.UP) * Basis.from_scale(Vector3(deck_w / module_w, 1.0, 1.0)), Vector3(j.x, jy, j.z))
 					br.add_child(pier)
 					pier.owner = scene_owner
 			n_br += 1
