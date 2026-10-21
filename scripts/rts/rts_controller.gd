@@ -28,6 +28,8 @@ signal order_issued(count: int, target: Vector3)
 		if v and not v.view_added.is_connected(_on_view_added):
 			v.view_added.connect(_on_view_added)
 @export var terrain: Terrain3D
+## LOGISTICS-01: clicking a building selects it (its facility panel shows in the HUD).
+@export var structures: StructureManager
 ## Where the move-order marker lives.
 @export var marker_parent: Node3D
 @export var pick_radius_px := 22.0
@@ -38,6 +40,8 @@ signal order_issued(count: int, target: Vector3)
 @export var player_faction := 0
 
 var selected: Array[int] = []
+## Selected facility (structure id, -1 none): a building clicked in the tactical view.
+var selected_structure := -1
 var active := false
 var drag_start := Vector2.INF
 var drag_current := Vector2.ZERO
@@ -163,6 +167,7 @@ func select(p_ids: Array) -> void:
 	# Callers build the new list from Array(selected), which is the same array, not a
 	# copy: take a copy before clearing (UNIT-01A; Shift+click add selected nothing).
 	var ids := p_ids.duplicate()
+	selected_structure = -1
 	for id in selected:
 		var v := sim.view_of(id)
 		if v and "selected" in v:
@@ -268,31 +273,11 @@ func order_move(hit: Vector3) -> int:
 ## Squads of the selection board vehicles of the selection (in order, while seats last);
 ## dest finite: they are driven there and set down. Returns the soldiers boarding.
 func order_transport_group(dest: Vector3) -> int:
-	var vids := selected_vehicles()
 	var sqs := selected_squads()
-	var texts: Array[String] = []
-	var n := 0
-	var si := 0
-	for vid in vids:
-		var u := sim.state.get_unit(vid)
-		var free: int = u.veh.def().passengers - u.veh.occupants.size()
-		while si < sqs.size() and free > 0:
-			var sq := sim.state.get_squad(sqs[si])
-			si += 1
-			if sq == null:
-				continue
-			var res := sim.vehicles.transport.order_transport(vid, sq.id, dest if dest.is_finite() else Vector3.INF)
-			if res.ok:
-				n += res.boarding
-				free -= res.boarding
-				texts.append("%s boards %s (%d)" % [sq.squad_name, u.unit_name, res.boarding] + (", %d left behind" % res.left_behind if res.left_behind > 0 else ""))
-			else:
-				texts.append("%s: %s" % [u.unit_name, res.reason])
-	if si < sqs.size():
-		texts.append("no seats for %d squad(s)" % (sqs.size() - si))
+	var r := sim.vehicles.transport.order_group(selected_vehicles(), sqs, dest)
 	_player_takes(sqs)
-	_say(" · ".join(texts))
-	return n
+	_say(" · ".join(r.texts))
+	return r.n
 
 
 ## T: the selected squads board the selected vehicle(s) and wait for orders.
@@ -339,26 +324,9 @@ func order_vehicles(hit: Vector3) -> int:
 	var vids := selected_vehicles()
 	if vids.is_empty():
 		return 0
-	var n := 0
-	var texts: Array[String] = []
-	var half := vids.size() - 1
-	var i := 0
-	for id in vids:
-		var u := sim.state.get_unit(id)
-		var side := (i - half * 0.5) * 12.0
-		var at := hit
-		if vids.size() > 1:
-			var fwd := Vector3(hit.x - u.position.x, 0.0, hit.z - u.position.z).normalized()
-			at = hit + Vector3(fwd.z, 0.0, -fwd.x) * side
-		i += 1
-		var res := sim.vehicles.order_drive(id, at)
-		if res.ok:
-			n += 1
-			texts.append("%s: %.1f km (%.1f km by road)" % [u.unit_name, res.length_m / 1000.0, res.road_m / 1000.0])
-		else:
-			texts.append("%s: %s" % [u.unit_name, res.reason])
-	_say(" · ".join(texts))
-	return n
+	var r := sim.vehicles.order_group(vids, hit)
+	_say(" · ".join(r.texts))
+	return r.n
 
 
 ## H: selected squads hold; other selected soldiers stop.
@@ -583,6 +551,7 @@ func _click_select(screen_pos: Vector2, add: bool) -> void:
 	if id < 0:
 		if not add:
 			select([])
+		_pick_structure(screen_pos)
 		return
 	if add:
 		var ids := Array(selected)
@@ -593,6 +562,22 @@ func _click_select(screen_pos: Vector2, add: bool) -> void:
 		select(ids)
 	else:
 		select([id])
+
+
+## A click on a facility selects it (vehicles and squads stay selected, so a selected truck
+## can be sent to the depot from its panel).
+func _pick_structure(screen_pos: Vector2) -> void:
+	if structures == null or rig == null:
+		return
+	var cam := rig.camera
+	var hit := structures.pick(cam.project_ray_origin(screen_pos), cam.project_ray_normal(screen_pos), 6000.0)
+	if hit.is_empty():
+		return
+	var s := structures.state.get_structure(hit.id)
+	if s != null and FacilityDefs.has(s.type_id) and s.faction == player_faction:
+		selected_structure = s.id
+		_say("%s selected" % FacilityDefs.display_name(s.type_id))
+		selection_changed.emit(selected)
 
 
 func _box_select(rect: Rect2, add: bool) -> void:

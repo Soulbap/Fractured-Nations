@@ -650,7 +650,7 @@ func spawn_squad(f: FactionState, p: Vector3, n: int) -> SquadState:
 
 
 func _on_unit_died(u: UnitState) -> void:
-	if not enabled:
+	if not enabled or u.kind == UnitState.Kind.VEHICLE:
 		return
 	var f := war.faction(u.faction)
 	if f:

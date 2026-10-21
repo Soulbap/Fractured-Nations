@@ -74,6 +74,53 @@ func _on_removed(id: int) -> void:
 
 # --- Orders ---------------------------------------------------------------------------------
 
+## The player's group order: the vehicles drive to the point, a line abreast when several go
+## to one place. Returns {n, texts}.
+func order_group(vids: Array, dest: Vector3) -> Dictionary:
+	var n := 0
+	var texts: Array[String] = []
+	var half := vids.size() - 1
+	var i := 0
+	for id in vids:
+		var u := sim.state.get_unit(id)
+		var at := dest
+		if vids.size() > 1:
+			var fwd := Vector3(dest.x - u.position.x, 0.0, dest.z - u.position.z).normalized()
+			at = dest + Vector3(fwd.z, 0.0, -fwd.x) * ((i - half * 0.5) * 12.0)
+		i += 1
+		var res := order_drive(id, at)
+		if res.ok:
+			n += 1
+			texts.append("%s: %.1f km (%.1f km by road)" % [u.unit_name, res.length_m / 1000.0, res.road_m / 1000.0])
+		else:
+			texts.append("%s: %s" % [u.unit_name, res.reason])
+	return {"n": n, "texts": texts}
+
+
+## A vehicle takes damage (the hook the combat code uses); at zero it is disabled: it stops,
+## drops its orders and jobs, and its passengers get out. Cargo stays in the wreck.
+func apply_damage(id: int, amount: float, source_id := -1) -> void:
+	var u := sim.state.get_unit(id)
+	if u == null or u.veh == null or not u.alive:
+		return
+	u.health = maxf(u.health - amount, 0.0)
+	sim.state.unit_damaged.emit(u, amount, 0, source_id)
+	if u.health <= 0.0:
+		u.alive = false
+		u.veh.status = VehicleState.Status.DISABLED
+		u.veh.job = {}
+		leave_convoy_of(u)
+		_clear_order(u, VehicleState.Status.DISABLED)
+		u.move_state = UnitState.MoveState.IDLE
+		_event(u, "was destroyed")
+		sim.state.unit_died.emit(u)
+
+
+func leave_convoy_of(u: UnitState) -> void:
+	if u.veh.convoy_id >= 0:
+		convoy.leave(u.id)
+
+
 ## Parked vehicles other than `u` as obstacle circles for the router's cross-country legs.
 func _collect_parked(u: UnitState) -> void:
 	var out: Array = []
@@ -102,6 +149,8 @@ func order_drive(id: int, target: Vector3, from_transport := false) -> Dictionar
 	var v := u.veh
 	if v.status == VehicleState.Status.DISABLED:
 		return {"ok": false, "reason": "The vehicle is disabled"}
+	if not from_transport:
+		sim.logistics.bases.on_manual_order(id)
 	if not from_transport and v.convoy_id >= 0:
 		convoy.leave(id)
 	if not from_transport and not v.job.is_empty():

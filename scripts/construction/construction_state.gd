@@ -16,10 +16,14 @@ signal cleared
 signal clearings_changed
 
 ## 2: adds "clearings" (version 1 files load with none).
-const FORMAT_VERSION := 2
+const FORMAT_VERSION := 3
 
 ## id -> StructureState
 var structures := {}
+## LOGISTICS-01 bases: id -> {id, name, faction, anchor (Vector3)}. A base is only a named
+## group of facilities (StructureState.base_id); it owns nothing and no structure needs one.
+var bases := {}
+var _next_base_id := 1
 ## Areas where construction removed trees and undergrowth, independent of the structures
 ## (removing a building does not regrow the forest): [{"c": [x, z], "yaw": r, "h": [hx, hz]}].
 var clearings: Array = []
@@ -68,6 +72,14 @@ func add_surface(type_id: StringName, points: PackedVector3Array, profile: Packe
 	return _insert(s)
 
 
+## A new base (LogisticsSim decides when); returns its record.
+func add_base(base_name: String, faction: int, anchor: Vector3) -> Dictionary:
+	var b := {"id": _next_base_id, "name": base_name, "faction": faction, "anchor": anchor}
+	bases[_next_base_id] = b
+	_next_base_id += 1
+	return b
+
+
 func get_structure(id: int) -> StructureState:
 	return structures.get(id)
 
@@ -105,6 +117,8 @@ func all() -> Array:
 
 func clear() -> void:
 	structures.clear()
+	bases = {}
+	_next_base_id = 1
 	clearings = []
 	_next_id = 1
 	cleared.emit()
@@ -115,7 +129,11 @@ func to_dict() -> Dictionary:
 	var list := []
 	for s in all():
 		list.append(s.to_dict())
-	return {"format": FORMAT_VERSION, "next_id": _next_id, "structures": list, "clearings": clearings.duplicate(true)}
+	var bl := []
+	for id in bases:
+		var b: Dictionary = bases[id]
+		bl.append({"id": id, "name": b.name, "faction": b.faction, "anchor": [snappedf(b.anchor.x, 0.1), snappedf(b.anchor.y, 0.1), snappedf(b.anchor.z, 0.1)]})
+	return {"format": FORMAT_VERSION, "next_id": _next_id, "structures": list, "clearings": clearings.duplicate(true), "bases": bl, "next_base": _next_base_id}
 
 
 func from_dict(d: Dictionary) -> void:
@@ -124,6 +142,10 @@ func from_dict(d: Dictionary) -> void:
 	if not cl.is_empty():
 		clearings = cl.duplicate(true)
 		clearings_changed.emit()
+	for bd: Dictionary in d.get("bases", []):
+		var a: Array = bd.anchor
+		bases[int(bd.id)] = {"id": int(bd.id), "name": String(bd.name), "faction": int(bd.faction), "anchor": Vector3(a[0], a[1], a[2])}
+	_next_base_id = int(d.get("next_base", 1))
 	for sd in d.get("structures", []):
 		var s := StructureState.from_dict(sd)
 		if s.id <= 0 or s.type_id == &"":

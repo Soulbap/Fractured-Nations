@@ -12,6 +12,8 @@ var _label: Label
 var _overlay: Overlay
 ## UNIT-01A squad list (tactical view only).
 var squad_panel: SquadPanel
+## LOGISTICS-01: selected vehicle / facility actions (tactical view).
+var logistics_panel: LogisticsPanel
 ## COMBAT-01a first-person weapon panel and feedback timers (seconds of real time).
 var _ammo: Label
 var hit_until := 0.0
@@ -242,6 +244,8 @@ func _ready() -> void:
 	squad_panel.position = Vector2(12, 250)
 	squad_panel.visible = false
 	add_child(squad_panel)
+	logistics_panel = LogisticsPanel.new()
+	add_child(logistics_panel)
 	_notes_box = VBoxContainer.new()
 	_notes_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_notes_box.add_theme_constant_override("separation", 3)
@@ -309,6 +313,11 @@ func _process(_delta: float) -> void:
 		_notes[0][0].queue_free()
 		_notes.pop_front()
 	_notes_box.position = Vector2(get_viewport().get_visible_rect().size.x * 0.5 - _notes_box.size.x * 0.5, 54)
+	if logistics_panel.rts == null and rts:
+		logistics_panel.rts = rts
+		logistics_panel.sim = sim
+		logistics_panel.game = game
+	logistics_panel.enabled = not (construction and construction.active)
 	if squad_panel.rts == null and rts:
 		squad_panel.rts = rts
 		squad_panel.sim = sim

@@ -22,6 +22,8 @@ const RESUPPLY_TICK_S := 0.5
 
 var sim: WorldSim
 var vsim: VehicleSim
+## Bases, recruiting, vehicle acquisition and the optional automation.
+var bases: BaseSim
 var stats := {"jobs_started": 0, "jobs_done": 0, "jobs_failed": 0, "moved": {"ammo": 0.0, "fuel": 0.0, "supplies": 0.0}, "resupplied_soldiers": 0}
 var _timer := 0.0
 ## structure id -> true when its dock slots are counted (cache cleared every tick of jobs).
@@ -31,6 +33,7 @@ var _slot_cache := {}
 func _init(p_sim: WorldSim, p_vsim: VehicleSim) -> void:
 	sim = p_sim
 	vsim = p_vsim
+	bases = BaseSim.new(self)
 
 
 ## Called by WorldSim once the construction state exists: starter stock and inventories for
@@ -40,6 +43,7 @@ func bind() -> void:
 	cs.structure_added.connect(_on_structure_added)
 	for s in cs.all():
 		_on_structure_added(s)
+	bases.bind()
 
 
 func _on_structure_added(s: StructureState) -> void:
@@ -153,7 +157,7 @@ func parking_world(s: StructureState, slot: int) -> Vector3:
 
 ## Load `qty` of `item` from depot `src` into the vehicle, then drive to depot `dst` and unload
 ## (dst < 0: stay loaded). repeat: do it again and again (an automated supply route).
-func order_delivery(vid: int, src: int, dst: int, item: StringName, qty: float, repeat := false) -> Dictionary:
+func order_delivery(vid: int, src: int, dst: int, item: StringName, qty: float, repeat := false, auto := false) -> Dictionary:
 	var u := sim.state.get_unit(vid)
 	if u == null or u.veh == null or not u.alive:
 		return {"ok": false, "reason": "No such vehicle"}
@@ -170,7 +174,7 @@ func order_delivery(vid: int, src: int, dst: int, item: StringName, qty: float, 
 		return {"ok": false, "reason": "%s has no %s" % [store_name(s), Inventory.NAMES[item]]}
 	if u.veh.cargo.room_for(item) <= 0.0:
 		return {"ok": false, "reason": "Cargo full (%d/%d)" % [roundi(u.veh.cargo.total()), roundi(u.veh.cargo.capacity)]}
-	return _start_job(u, {"kind": "delivery", "src": src, "dst": dst, "item": String(item), "qty": qty, "stage": "to_src", "until": 0.0, "repeat": repeat, "cycles": 0, "moved": 0.0})
+	return _start_job(u, {"kind": "delivery", "src": src, "dst": dst, "item": String(item), "qty": qty, "stage": "to_src", "until": 0.0, "repeat": repeat, "cycles": 0, "moved": 0.0}, auto)
 
 
 func order_load(vid: int, src: int, item: StringName, qty: float) -> Dictionary:
@@ -194,7 +198,7 @@ func order_unload(vid: int, dst: int, item := &"") -> Dictionary:
 	return _start_job(u, {"kind": "unload", "src": -1, "dst": dst, "item": String(item), "qty": 0.0, "stage": "to_dst", "until": 0.0, "repeat": false, "cycles": 0, "moved": 0.0})
 
 
-func order_refuel(vid: int, depot: int) -> Dictionary:
+func order_refuel(vid: int, depot: int, auto := false) -> Dictionary:
 	var u := sim.state.get_unit(vid)
 	if u == null or u.veh == null or not u.alive:
 		return {"ok": false, "reason": "No such vehicle"}
@@ -205,11 +209,26 @@ func order_refuel(vid: int, depot: int) -> Dictionary:
 		return {"ok": false, "reason": "%s has no fuel" % store_name(d)}
 	if u.veh.fuel >= u.veh.def().fuel_capacity - 0.5:
 		return {"ok": false, "reason": "The tank is full"}
-	return _start_job(u, {"kind": "refuel", "src": depot, "dst": -1, "item": "fuel", "qty": 0.0, "stage": "to_src", "until": 0.0, "repeat": false, "cycles": 0, "moved": 0.0})
+	return _start_job(u, {"kind": "refuel", "src": depot, "dst": -1, "item": "fuel", "qty": 0.0, "stage": "to_src", "until": 0.0, "repeat": false, "cycles": 0, "moved": 0.0}, auto)
 
 
-func _start_job(u: UnitState, job: Dictionary) -> Dictionary:
+## Repairs a damaged vehicle at a vehicle depot or repair bay (supplies from the base).
+func order_repair(vid: int, depot: int) -> Dictionary:
+	var u := sim.state.get_unit(vid)
+	if u == null or u.veh == null or not u.alive:
+		return {"ok": false, "reason": "No such vehicle"}
+	var d := structure(depot)
+	if d == null or not [&"vehicle", &"repair"].has(FacilityDefs.kind_of(d.type_id)):
+		return {"ok": false, "reason": "That building cannot repair vehicles"}
+	if u.health >= u.max_health - 0.5:
+		return {"ok": false, "reason": "The vehicle is undamaged"}
+	return _start_job(u, {"kind": "repair", "src": depot, "dst": -1, "item": "", "qty": 0.0, "stage": "to_src", "until": 0.0, "repeat": false, "cycles": 0, "moved": 0.0})
+
+
+func _start_job(u: UnitState, job: Dictionary, auto := false) -> Dictionary:
 	var v := u.veh
+	if not auto:
+		bases.on_manual_order(u.id)
 	if v.phase != VehicleState.Phase.NONE:
 		return {"ok": false, "reason": "The vehicle is busy with its passengers"}
 	var target := structure(int(job.src) if int(job.get("src", -1)) >= 0 else int(job.dst))
@@ -244,7 +263,10 @@ func _drive_to_stage(u: UnitState, v: VehicleState) -> Dictionary:
 func _begin_work(u: UnitState, v: VehicleState) -> void:
 	var j := v.job
 	var qty := _planned_qty(u, v)
-	j["stage"] = "loading" if (j.stage == "to_src" and j.kind != "refuel") else ("unloading" if j.stage == "to_dst" else "refueling")
+	if j.kind == "repair":
+		j["stage"] = "repairing"
+	else:
+		j["stage"] = "loading" if (j.stage == "to_src" and j.kind != "refuel") else ("unloading" if j.stage == "to_dst" else "refueling")
 	j["until"] = sim.state.time + WORK_BASE_S + qty / LOAD_RATE
 	j["began"] = sim.state.time
 
@@ -253,6 +275,8 @@ func _planned_qty(u: UnitState, v: VehicleState) -> float:
 	var j := v.job
 	var item := StringName(j.item)
 	match j.kind:
+		"repair":
+			return (u.max_health - u.health) * 4.0
 		"refuel":
 			return v.def().fuel_capacity - v.fuel
 		"unload":
@@ -337,7 +361,7 @@ func update_vehicle(u: UnitState, v: VehicleState) -> void:
 							var rs := vsim.order_drive(u.id, dock, true)
 							if not rs.ok:
 								_fail(u, "Cannot reach the depot: " + rs.reason)
-		"loading", "unloading", "refueling":
+		"loading", "unloading", "refueling", "repairing":
 			if absf(v.speed) > 0.8:
 				# Driven away by the player: the job ends, cargo stays aboard.
 				cancel_job(u.id, "interrupted")
@@ -357,6 +381,8 @@ func _stage_text(j: Dictionary) -> String:
 			return "Loading %s" % item
 		"unloading":
 			return "Unloading %s" % item
+		"repairing":
+			return "Repairing"
 	return "Refuelling"
 
 
@@ -364,6 +390,20 @@ func _finish_work(u: UnitState, v: VehicleState) -> void:
 	var j := v.job
 	var item := StringName(j.item)
 	match j.stage:
+		"repairing":
+			var d := structure(j.src)
+			if d == null:
+				_fail(u, "The depot no longer exists")
+				return
+			var missing := u.max_health - u.health
+			var stock: float = bases.base_stock(d.base_id).supplies
+			var hp := minf(missing, stock / BaseSim.REPAIR_SUPPLIES_PER_HP)
+			if hp <= 0.0:
+				_fail(u, "No supplies at the base for repairs")
+				return
+			bases.pay(d.base_id, {&"supplies": hp * BaseSim.REPAIR_SUPPLIES_PER_HP}, d)
+			u.health += hp
+			_done(u, v, "repaired %d points at %s" % [roundi(hp), store_name(d)])
 		"refueling":
 			var d := structure(j.src)
 			if d == null or d.inventory == null:
@@ -433,6 +473,8 @@ func describe_job(u: UnitState) -> String:
 			return "unloading at %s" % (store_name(dst) if dst else "?")
 		"refuel":
 			return "refuelling at %s" % (store_name(src) if src else "?")
+		"repair":
+			return "being repaired at %s" % (store_name(src) if src else "?")
 	return ""
 
 
@@ -475,6 +517,7 @@ func rounds_needed(u: UnitState) -> int:
 
 
 func update(dt: float) -> void:
+	bases.update(dt)
 	_timer -= dt
 	if _timer > 0.0:
 		return

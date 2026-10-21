@@ -45,6 +45,8 @@ func run(args: PackedStringArray) -> void:
 		_log("veh_player", await _veh_player())
 	if _want("logistics"):
 		_log("logistics", await _logistics())
+	if _want("bases"):
+		_log("bases", await _bases())
 	if _want("convoy"):
 		_log("convoy", await _convoy())
 	if _want("transport_cancel"):
@@ -1241,4 +1243,149 @@ func _convoy() -> Dictionary:
 	_expect(t1.veh.cargo.is_empty() and t2.veh.cargo.is_empty(), "convoy: cargo left aboard %s" % JSON.stringify(out.unloaded))
 	_expect(absf(tot.ammo - base_tot.ammo) < 0.5 and absf(tot.supplies - base_tot.supplies) < 0.5, "convoy: supplies not conserved %s vs %s" % [tot, base_tot])
 	_shot("16_convoy_at_forward_depot")
+	return out
+
+
+# --- Phase D: bases, recruiting, vehicles, automation ------------------------------------------------
+
+func _bases() -> Dictionary:
+	var out := {}
+	var fd := await _forward_depot()
+	var src: StructureState = fd.src
+	var dst: StructureState = fd.dst
+	var lg := demo.sim.logistics
+	var bs := lg.bases
+	var pf := war.player_faction
+	# --- ownership and grouping ---------------------------------------------------------------
+	var mine := bs.bases_of(pf)
+	var main_id: int = src.base_id
+	var main := bs.summary(main_id)
+	out["bases"] = {"count": mine.size(), "main": {"name": main.name, "kind": main.kind, "facilities": main.facilities}, "forward": {"id": dst.base_id, "kind": bs.base_kind(dst.base_id), "name": bs.summary(dst.base_id).name}}
+	_expect(mine.size() >= 2 and dst.base_id != main_id and bs.base_kind(main_id) == "Main base", "bases: grouping %s" % JSON.stringify(out.bases))
+	var owners_ok := true
+	for s in cs.all():
+		if FacilityDefs.has(s.type_id) and (s.faction != pf or s.base_id < 0):
+			owners_ok = false
+	_expect(owners_ok, "bases: a facility has no owner or base")
+	# --- recruiting ------------------------------------------------------------------------------
+	var barracks: StructureState = fob.placed.barracks_1
+	var f := war.faction(pf)
+	var reserves0 := f.reserves
+	var stock0 := bs.base_stock(main_id)
+	var squads0 := demo.sim.state.squads.size()
+	var rr := bs.recruit(barracks.id)
+	out["recruit"] = {"ok": rr.ok, "reason": rr.reason, "reserves_before": reserves0, "reserves_after": f.reserves, "queue": barracks.facility.get("queue", []).size()}
+	_expect(rr.ok and f.reserves == reserves0 - 8, "bases: recruit %s" % JSON.stringify(out.recruit))
+	var stock1 := bs.base_stock(main_id)
+	out["recruit"]["paid"] = {"supplies": snappedf(stock0.supplies - stock1.supplies, 0.1), "ammo": snappedf(stock0.ammo - stock1.ammo, 0.1)}
+	_expect(absf(stock0.supplies - stock1.supplies - 320.0) < 0.5 and absf(stock0.ammo - stock1.ammo - 192.0) < 0.5, "bases: recruit cost %s" % JSON.stringify(out.recruit.paid))
+	# Cancel one (refund) and queue again, then let it finish.
+	var cancelled := bs.cancel_queue(barracks.id, 0)
+	var stock2 := bs.base_stock(main_id)
+	_expect(cancelled and absf(stock2.supplies - stock0.supplies) < 0.5 and f.reserves == reserves0, "bases: refund on cancel")
+	bs.recruit(barracks.id)
+	await _warp(75.0, 4.0, 60.0, func() -> bool: return demo.sim.state.squads.size() > squads0)
+	var new_sq: SquadState = null
+	for sq in demo.sim.state.all_squads():
+		if sq.id > 5 and sq.faction == pf and sq.members.size() == 8 and sq.squad_name != "":
+			new_sq = sq
+	var equipped := 0
+	var faction_ok := 0
+	var near_barracks := 0
+	if demo.sim.state.squads.size() > squads0:
+		new_sq = demo.sim.state.all_squads()[-1]
+		for id in new_sq.members:
+			var s := _u(id)
+			equipped += 1 if s.weapon_id == &"rifle" and s.reserve == 120 else 0
+			faction_ok += 1 if s.faction == pf else 0
+			near_barracks += 1 if _flat(s.position, barracks.position) < 40.0 else 0
+	out["recruited"] = {"squads_now": demo.sim.state.squads.size(), "squads_before": squads0, "equipped": equipped, "faction_ok": faction_ok, "near_barracks": near_barracks}
+	_expect(demo.sim.state.squads.size() == squads0 + 1 and equipped == 8 and faction_ok == 8 and near_barracks == 8, "bases: recruited squad %s" % JSON.stringify(out.recruited))
+	# Not enough supplies: drain the base and ask again.
+	var drained := {}
+	for s in bs.base_stores(main_id):
+		drained[s.id] = s.inventory.get_qty(Inventory.SUPPLIES)
+		s.inventory.take(Inventory.SUPPLIES, 1.0e9)
+	var r_poor := bs.recruit(barracks.id)
+	out["recruit_without_supplies"] = r_poor.reason
+	_expect(not r_poor.ok and r_poor.reason.contains("Not enough"), "bases: recruiting without supplies was allowed")
+	for id in drained:
+		cs.get_structure(id).inventory.add(Inventory.SUPPLIES, drained[id])
+	# --- vehicles ------------------------------------------------------------------------------
+	var vdepot: StructureState = fob.placed.vehicle_depot
+	var veh0 := demo.sim.vehicles.ids.size()
+	var a1 := bs.acquire_vehicle(vdepot.id, VehicleDefs.TRUCK)
+	var a2 := bs.acquire_vehicle(vdepot.id, VehicleDefs.APC)
+	var a3 := bs.acquire_vehicle(vdepot.id, VehicleDefs.TRUCK)
+	out["acquire"] = {"truck": a1.ok, "apc": a2.ok, "third_while_busy": a3.reason, "stock": vdepot.facility.get("stock", {})}
+	_expect(a1.ok and a2.ok and not a3.ok, "bases: acquire %s" % JSON.stringify(out.acquire))
+	await _warp(60.0, 4.0, 60.0, func() -> bool: return demo.sim.vehicles.ids.size() >= veh0 + 2)
+	var new_vehicles := []
+	for id in demo.sim.vehicles.ids:
+		var vu := _u(id)
+		if id > 0 and vu.faction == pf and _flat(vu.position, vdepot.position) < 80.0 and vu.veh.odometer < 1.0:
+			new_vehicles.append(String(vu.veh.type_id))
+	out["acquired_vehicles"] = {"count": demo.sim.vehicles.ids.size() - veh0, "types": new_vehicles}
+	_expect(demo.sim.vehicles.ids.size() == veh0 + 2, "bases: vehicles not delivered %s" % JSON.stringify(out.acquired_vehicles))
+	# Stock limit: the depot hands out three trucks only.
+	var ok_count := 0
+	for k in 4:
+		var rt := bs.acquire_vehicle(vdepot.id, VehicleDefs.TRUCK)
+		if rt.ok:
+			ok_count += 1
+			await _warp(35.0, 4.0, 40.0)
+	var r_limit := bs.acquire_vehicle(vdepot.id, VehicleDefs.TRUCK)
+	out["stock_limit"] = {"trucks_granted_after_first": ok_count, "then": r_limit.reason}
+	_expect(not r_limit.ok and r_limit.reason.contains("left"), "bases: stock limit %s" % JSON.stringify(out.stock_limit))
+	# --- base inventory / summary -------------------------------------------------------------
+	var sm := bs.summary(main_id)
+	out["summary"] = {"stock": sm.stock, "vehicles": sm.vehicles.size(), "soldiers": sm.soldiers, "activities": sm.activities}
+	_expect(sm.vehicles.size() >= 3 and sm.soldiers >= 8, "bases: summary %s" % JSON.stringify(out.summary))
+	# --- repair --------------------------------------------------------------------------------
+	var truck: UnitState = null
+	for id in demo.sim.vehicles.ids:
+		if _u(id).veh.type_id == VehicleDefs.TRUCK and _flat(_u(id).position, vdepot.position) < 120.0:
+			truck = _u(id)
+	if truck:
+		demo.sim.vehicles.apply_damage(truck.id, 150.0)
+		var hp0 := truck.health
+		var sup0: float = bs.base_stock(main_id).supplies
+		var rp := lg.order_repair(truck.id, vdepot.id)
+		await _warp(180.0, 4.0, 90.0, func() -> bool: return truck.veh.job.is_empty())
+		out["repair"] = {"ok": rp.ok, "reason": rp.reason, "hp_before": snappedf(hp0, 0.1), "hp_after": snappedf(truck.health, 0.1), "supplies_used": snappedf(sup0 - bs.base_stock(main_id).supplies, 0.1)}
+		_expect(rp.ok and truck.health > hp0 + 100.0 and absf(out.repair.supplies_used - (truck.health - hp0) * 0.5) < 0.6, "bases: repair %s" % JSON.stringify(out.repair))
+	# --- destroyed vehicle: passengers out, orders dropped, no further movement -----------------
+	var apc: UnitState = null
+	for id in demo.sim.vehicles.ids:
+		if _u(id).veh.type_id == VehicleDefs.APC and _flat(_u(id).position, vdepot.position) < 120.0:
+			apc = _u(id)
+	if apc:
+		var sq2 := _spawn(0, apc.position + Vector3(10, 0, 10), 6)
+		await _physics(3)
+		demo.sim.vehicles.transport.order_transport(apc.id, sq2.id)
+		await _warp(30.0, 4.0, 40.0, func() -> bool: return apc.veh.occupants.size() >= 6)
+		apc.veh.cargo.add(Inventory.SUPPLIES, 200.0)
+		demo.sim.vehicles.order_drive(apc.id, apc.position + Vector3(0, 0, 120))
+		await _warp(3.0, 1.0, 10.0)
+		demo.sim.vehicles.apply_damage(apc.id, 5000.0)
+		await _warp(8.0, 1.0, 20.0)
+		var aboard := 0
+		for id in sq2.members:
+			aboard += 1 if _u(id).vehicle_id >= 0 else 0
+		out["destroyed"] = {"alive": apc.alive, "status": apc.veh.status_name(), "order": apc.order, "speed": snappedf(apc.veh.speed, 0.1), "aboard_after": aboard, "cargo_kept": apc.veh.cargo.get_qty(Inventory.SUPPLIES)}
+		_expect(not apc.alive and apc.order == UnitState.Order.NONE and absf(apc.veh.speed) < 0.2 and aboard == 0, "bases: destroyed vehicle %s" % JSON.stringify(out.destroyed))
+	# --- automation: keep the forward depot stocked ---------------------------------------------
+	var tr2 := _veh(VehicleDefs.TRUCK, FacilityDefs.dock_point(src, 1), PI)
+	await _physics(3)
+	var rule := bs.add_rule_restock(dst.id, src.id, Inventory.SUPPLIES, 500.0, 1200.0, tr2.id)
+	await _warp(20.0, 4.0, 30.0)
+	out["rule"] = {"text": bs.describe_rule(rule), "job": lg.describe_job(tr2), "runs": rule.runs}
+	_expect(rule.runs >= 1 and not tr2.veh.job.is_empty(), "bases: the rule did not send the truck %s" % JSON.stringify(out.rule))
+	# The player overrides: a plain move order cancels the job and pauses the rule.
+	demo.sim.vehicles.order_drive(tr2.id, tr2.position + Vector3(0, 0, 60))
+	await _warp(5.0, 1.0, 20.0)
+	out["override"] = {"job_cleared": tr2.veh.job.is_empty(), "rule_paused": float(rule.pause_until) > demo.sim.state.time, "last": rule.last}
+	_expect(tr2.veh.job.is_empty() and float(rule.pause_until) > demo.sim.state.time, "bases: override %s" % JSON.stringify(out.override))
+	bs.set_rule_enabled(rule.id, false)
+	out["rule_disabled"] = bs.describe_rule(rule)
 	return out

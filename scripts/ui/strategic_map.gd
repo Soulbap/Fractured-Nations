@@ -50,6 +50,9 @@ var view_center := Vector2.ZERO:
 var selected_squads: Array[int] = []
 var selected_objective := -1
 var selected_op := -1
+## LOGISTICS-01: selected vehicles and facility (structure id).
+var selected_vehicles: Array[int] = []
+var selected_structure := -1
 ## Order waiting for a click on the map (from the Attack / Defend / Reinforce / Move
 ## buttons), -1 = none.
 var pending_order := -1
@@ -343,7 +346,7 @@ func _refresh_panel() -> void:
 	_buttons["cancel"].disabled = not ((op and op.is_active()) or selected_squads.any(func(s: int) -> bool:
 		var sq := sim.state.get_squad(s)
 		return sq != null and sq.op_id >= 0))
-	_buttons["view"].disabled = not has_sel and selected_objective < 0 and op == null
+	_buttons["view"].disabled = not has_sel and selected_objective < 0 and op == null and selected_vehicles.is_empty() and selected_structure < 0
 
 
 func _selection_text() -> String:
@@ -352,6 +355,20 @@ func _selection_text() -> String:
 	var op := war.operation(selected_op)
 	if op:
 		return _operation_text(op)
+	if not selected_vehicles.is_empty() or selected_structure >= 0:
+		var vl: Array[String] = []
+		for vid in selected_vehicles:
+			var vu := sim.state.get_unit(vid)
+			if vu and vu.veh:
+				vl.append("[b]%s[/b]  %s" % [vu.unit_name, sim.vehicles.describe(vu)])
+		var st := sim.logistics.structure(selected_structure)
+		if st:
+			vl.append("[b]%s[/b]  %s" % [sim.logistics.store_name(st), st.inventory.summary() if st.inventory else ""])
+			if st.base_id >= 0:
+				vl.append(sim.logistics.bases.describe(st.base_id))
+		if not selected_squads.is_empty():
+			vl.append("%d squad(s) selected too: RMB = transport them there" % selected_squads.size())
+		return "\n".join(vl)
 	if not selected_squads.is_empty():
 		var n := 0
 		var rows: Array[String] = []
@@ -396,7 +413,9 @@ func _hint_text() -> String:
 		return "[color=#aab]RMB: enemy/neutral objective = attack, own = reinforce, ground = move. Click an objective to pick it as target.[/color]"
 	if selected_op >= 0:
 		return "[color=#aab]View (G) jumps to its squads. Cancel op releases them.[/color]"
-	return "[color=#aab]Click a squad or drag a box around several. Click an objective or an operation for details. H: map controls.[/color]"
+	if not selected_vehicles.is_empty():
+		return "[color=#aab]RMB: drive there (by road where possible). With squads selected too: they board and are driven. G: show it in the tactical view.[/color]"
+	return "[color=#aab]Click a squad, vehicle or facility, or drag a box around several. Click an objective or an operation for details. H: map controls.[/color]"
 
 
 func _squad_status(sq: SquadState) -> String:
@@ -585,6 +604,18 @@ func order(type: OperationState.Type, objective_id := -1, point := Vector3.INF) 
 
 
 func _order_at(sp: Vector2) -> void:
+	# LOGISTICS-01: vehicles (with squads: a transport order) go where the map is clicked.
+	if not selected_vehicles.is_empty():
+		var dest := to_world(sp)
+		var texts: Array[String] = []
+		if selected_squads.is_empty():
+			texts = sim.vehicles.order_group(selected_vehicles, dest).texts
+		else:
+			texts = sim.vehicles.transport.order_group(selected_vehicles, selected_squads, dest).texts
+			sim.war.release_squads(selected_squads, "transport order")
+		for t in texts:
+			sim.war.log_event(faction, "logistics", t)
+		return
 	if selected_squads.is_empty():
 		return
 	var oid := _objective_at(sp)
@@ -615,6 +646,18 @@ func move_camera_to(p: Vector3) -> void:
 
 
 func go_to_selection() -> void:
+	if not selected_vehicles.is_empty():
+		var vu := sim.state.get_unit(selected_vehicles[0])
+		if vu:
+			demo.rts.select(selected_vehicles.duplicate())
+			go_to(vu.position)
+			return
+	var st := sim.logistics.structure(selected_structure)
+	if st:
+		demo.rts.select([])
+		demo.rts.selected_structure = st.id
+		go_to(st.position)
+		return
 	if not selected_squads.is_empty():
 		var sq := sim.state.get_squad(selected_squads[0])
 		if sq:
@@ -742,10 +785,30 @@ func _click(sp: Vector2, add: bool) -> void:
 		if (_op_rects[id] as Rect2).has_point(sp):
 			select_operation(id)
 			return
+	var lg := _logistics_at(sp)
+	if not lg.is_empty():
+		selected_op = -1
+		selected_objective = -1
+		if lg.kind == "veh":
+			if not add:
+				selected_vehicles.clear()
+				selected_structure = -1
+			if selected_vehicles.has(lg.id):
+				selected_vehicles.erase(lg.id)
+			else:
+				selected_vehicles.append(lg.id)
+		else:
+			selected_structure = lg.id
+			if not add:
+				selected_vehicles.clear()
+				selected_squads.clear()
+		return
 	var g := _group_at(sp)
 	if not g.is_empty():
 		if not add:
 			selected_squads.clear()
+			selected_vehicles.clear()
+			selected_structure = -1
 		for sid in g.ids:
 			if not selected_squads.has(sid):
 				selected_squads.append(sid)
@@ -760,6 +823,8 @@ func _click(sp: Vector2, add: bool) -> void:
 		return
 	if not add:
 		selected_squads.clear()
+		selected_vehicles.clear()
+		selected_structure = -1
 	selected_objective = oid
 
 
@@ -776,6 +841,11 @@ func _double_click(sp: Vector2) -> void:
 func _box_select(r: Rect2, add: bool) -> void:
 	if not add:
 		selected_squads.clear()
+		selected_vehicles.clear()
+		selected_structure = -1
+	for vu: UnitState in _my_vehicles():
+		if r.has_point(to_screen(vu.position)) and not selected_vehicles.has(vu.id):
+			selected_vehicles.append(vu.id)
 	# Real squad positions, not where their (group) markers are drawn.
 	for sq: SquadState in sim.war.squads_of(faction):
 		if not sq.members.is_empty() and r.has_point(to_screen(sim.war.squad_center(sq))) and not selected_squads.has(sq.id):
@@ -919,6 +989,7 @@ func _draw() -> void:
 		return a.selected * 100 + a.ids.size() > b.selected * 100 + b.ids.size())
 	for g: Dictionary in order:
 		_draw_group_label(g, font)
+	_draw_logistics_layer(font, level)
 	_draw_camera()
 	if _box and _drag_from.is_finite():
 		var m := get_local_mouse_position()
@@ -1386,3 +1457,119 @@ func _draw_operation_label(op: OperationState, font: Font, slots: Dictionary) ->
 	draw_string(font, box.position + Vector2(6, 12), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, col.lightened(0.2))
 	_op_rects[op.id] = box
 	_taken.append(box)
+
+
+# --- Vehicles, facilities, roads and bases (LOGISTICS-01) ------------------------------------------
+
+const FACILITY_LETTERS := {&"hq": "H", &"barracks": "B", &"supply": "S", &"vehicle": "V", &"ammo": "A", &"fuel": "F", &"repair": "R", &"storage": "C", &"training": "T"}
+
+
+## Vehicles of the player's faction, in id order.
+func _my_vehicles() -> Array:
+	var out := []
+	for id in sim.vehicles.ids:
+		var u: UnitState = sim.state.units.get(id)
+		if u and u.alive and u.faction == faction:
+			out.append(u)
+	return out
+
+
+## What the logistics layer has under a screen position: {kind: "veh" | "str", id}.
+func _logistics_at(sp: Vector2) -> Dictionary:
+	var best := {}
+	var bd := 14.0
+	for u: UnitState in _my_vehicles():
+		var d := to_screen(u.position).distance_to(sp)
+		if d < bd:
+			bd = d
+			best = {"kind": "veh", "id": u.id}
+	if best.is_empty() and detail_level() >= 1:
+		for s in sim.logistics.stores(faction):
+			var d2 := to_screen(s.position).distance_to(sp)
+			if d2 < 14.0 and d2 < bd:
+				bd = d2
+				best = {"kind": "str", "id": s.id}
+		for s2 in sim.state.construction.all():
+			if s2.faction == faction and FacilityDefs.has(s2.type_id) and s2.inventory == null:
+				var d3 := to_screen(s2.position).distance_to(sp)
+				if d3 < 14.0 and d3 < bd:
+					bd = d3
+					best = {"kind": "str", "id": s2.id}
+	return best
+
+
+func _draw_logistics_layer(font: Font, level: int) -> void:
+	var net: RoadNetwork = sim.state.roads
+	# Roads the player built: the world's roads are part of the map picture already.
+	if zoom >= 0.05:
+		for r: RoadNetwork.Road in net.built.values():
+			var pts := PackedVector2Array()
+			for i in range(0, r.points.size(), 3):
+				pts.append(to_screen(r.points[i]))
+			if pts.size() >= 2:
+				draw_polyline(pts, Color(0, 0, 0, 0.65), 5.0)
+				draw_polyline(pts, Color(0.95, 0.85, 0.5, 0.95), 3.0)
+	# Bases: a ring and the name; the facilities as lettered squares when close enough.
+	for b: Dictionary in sim.logistics.bases.bases_of(faction):
+		var p := to_screen(b.anchor)
+		var kind := sim.logistics.bases.base_kind(b.id)
+		var col := WorldState.faction_color(faction).lightened(0.3)
+		if level == 0:
+			draw_rect(Rect2(p - Vector2(7, 7), Vector2(14, 14)), Color(0, 0, 0, 0.7), true)
+			draw_rect(Rect2(p - Vector2(6, 6), Vector2(12, 12)), col, false, 2.0)
+			_text(font, p + Vector2(10, 5), b.name if kind == "Main base" else "", 12, col)
+		else:
+			var radius_px := BaseSim.JOIN_M * 0.5 * zoom
+			draw_arc(p, maxf(radius_px, 14.0), 0.0, TAU, 40, Color(col, 0.5), 1.5)
+			_text(font, p + Vector2(-30, -maxf(radius_px, 14.0) - 4.0), "%s (%s)" % [b.name, kind], 12, col)
+	if level >= 1:
+		for s in sim.state.construction.all():
+			if s.faction != faction or not FacilityDefs.has(s.type_id):
+				continue
+			var p2 := to_screen(s.position)
+			var letter: String = FACILITY_LETTERS.get(FacilityDefs.kind_of(s.type_id), "?")
+			var sel: bool = s.id == selected_structure
+			var half_px := 8.0 if level == 1 else 11.0
+			draw_rect(Rect2(p2 - Vector2(half_px, half_px), Vector2(half_px, half_px) * 2.0), Color(0.08, 0.1, 0.12, 0.85), true)
+			draw_rect(Rect2(p2 - Vector2(half_px, half_px), Vector2(half_px, half_px) * 2.0), COL_SELECT if sel else Color(0.75, 0.85, 1.0, 0.9), false, 2.0 if sel else 1.0)
+			_text(font, p2 + Vector2(-4, 5), letter, 12, Color.WHITE, 2)
+			if s.inventory != null and level == 2:
+				_text(font, p2 + Vector2(-20, half_px + 14), "%d/%d/%d" % [roundi(s.inventory.get_qty(Inventory.AMMO)), roundi(s.inventory.get_qty(Inventory.FUEL)), roundi(s.inventory.get_qty(Inventory.SUPPLIES))], 10, Color(0.85, 0.9, 1.0))
+	# Selected vehicles' routes, then every vehicle.
+	for id in selected_vehicles:
+		var u := sim.state.get_unit(id)
+		if u == null or u.veh == null or u.veh.route.is_empty():
+			continue
+		var pts2 := PackedVector2Array([to_screen(u.position)])
+		var step := maxi(1, u.veh.route.size() / 400)
+		for i in range(u.veh.route_i, u.veh.route.size(), step):
+			pts2.append(to_screen(u.veh.route[i]))
+		pts2.append(to_screen(u.veh.route[u.veh.route.size() - 1]))
+		_dashed(pts2, Color(0, 0, 0, 0.55), 5.0)
+		_dashed(pts2, Color(0.55, 0.9, 1.0, 0.95), 3.0)
+		draw_arc(pts2[pts2.size() - 1], 9.0, 0.0, TAU, 20, Color(0.55, 0.9, 1.0), 2.0)
+	for u: UnitState in _my_vehicles():
+		var p3 := to_screen(u.position)
+		var sel2 := selected_vehicles.has(u.id)
+		var fwd := Vector2(-sin(u.yaw), -cos(u.yaw))
+		var nrm := Vector2(-fwd.y, fwd.x)
+		var big := 9.0 if level == 0 else 12.0
+		var is_apc := u.veh.type_id == VehicleDefs.APC
+		var col2 := WorldState.faction_color(faction).lightened(0.25)
+		var poly := PackedVector2Array([p3 + fwd * big, p3 + nrm * big * 0.6 - fwd * big * 0.6, p3 - nrm * big * 0.6 - fwd * big * 0.6])
+		if is_apc:
+			poly = PackedVector2Array([p3 + fwd * big + nrm * big * 0.5, p3 + fwd * big - nrm * big * 0.5, p3 - fwd * big - nrm * big * 0.5, p3 - fwd * big + nrm * big * 0.5])
+		draw_colored_polygon(poly, Color(0, 0, 0, 0.75))
+		var inner := PackedVector2Array()
+		for q in poly:
+			inner.append(p3 + (q - p3) * 0.78)
+		draw_colored_polygon(inner, col2)
+		if sel2:
+			draw_arc(p3, big + 5.0, 0.0, TAU, 24, COL_SELECT, 2.0)
+		var tag := ("APC" if is_apc else "TRK")
+		if u.veh.cargo.total() > 1.0:
+			tag += "+"
+		if not u.veh.occupants.is_empty():
+			tag += " %d" % u.veh.occupants.size()
+		if level >= 1 or sel2:
+			_text(font, p3 + Vector2(big + 4.0, 4.0), "%s %s" % [tag, u.veh.status_name() if u.veh.status != VehicleState.Status.DRIVING else "%d km/h" % roundi(absf(u.veh.speed) * 3.6)], 11, col2)

@@ -127,6 +127,32 @@ func _approach_point(u: UnitState, squad_centre: Vector3) -> Vector3:
 	return p
 
 
+## Squads of the list board vehicles of the list (in order, while seats last); dest finite: they
+## are driven there and set down. Returns {n, texts}.
+func order_group(vids: Array, sqids: Array, dest: Vector3) -> Dictionary:
+	var texts: Array[String] = []
+	var n := 0
+	var si := 0
+	for vid in vids:
+		var u := sim.state.get_unit(vid)
+		var free: int = u.veh.def().passengers - u.veh.occupants.size() - u.veh.pending.size()
+		while si < sqids.size() and free > 0:
+			var sq := sim.state.get_squad(sqids[si])
+			si += 1
+			if sq == null:
+				continue
+			var res := order_transport(vid, sq.id, dest)
+			if res.ok:
+				n += res.boarding
+				free -= res.boarding
+				texts.append("%s boards %s (%d)" % [sq.squad_name, u.unit_name, res.boarding] + (", %d left behind" % res.left_behind if res.left_behind > 0 else ""))
+			else:
+				texts.append("%s: %s" % [u.unit_name, res.reason])
+	if si < sqids.size():
+		texts.append("no seats for %d squad(s)" % (sqids.size() - si))
+	return {"n": n, "texts": texts}
+
+
 ## Cancels the transport: soldiers still walking stop, those aboard get off where they are.
 func cancel(vid: int) -> void:
 	var u := sim.state.get_unit(vid)

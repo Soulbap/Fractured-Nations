@@ -102,6 +102,7 @@ func _ready() -> void:
 	rts_camera.terrain = terrain
 	rts_camera.map_half_size = config.half_size()
 	rts.rig = rts_camera
+	rts.structures = structures
 	rts.drive_requested.connect(game.drive)
 	rts.sim = sim
 	rts.terrain = terrain
