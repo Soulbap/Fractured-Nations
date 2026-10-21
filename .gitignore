@@ -67,3 +67,6 @@ __pycache__/
 
 # Test / import logs written next to the project (--log-file x.log)
 /*.log
+
+# test run output captured next to the logs
+/*.out
