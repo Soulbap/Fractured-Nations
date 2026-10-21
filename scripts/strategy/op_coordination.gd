@@ -123,9 +123,12 @@ func should_withdraw(op: OperationState) -> String:
 		return ""
 	if obj != null and obj.contested and obj.capture_faction == op.faction:
 		return ""
+	# Clearly superior in numbers to what it sees: keep going - leaving now would hand the defender the fight.
+	if float(a.soldiers) >= 3.0 * float(a.seen):  # also covers "nothing seen at the moment"
+		return ""
 	var thr := ws.profile(ws.war.faction(op.faction)).withdraw_eff if ws.war.faction(op.faction) else withdraw_eff
 	if a.eff < thr and sim.state.time - op.stage_since > 10.0 and op.stage >= OperationState.Stage.SUPPORT:
-		return "combat effectiveness %.2f (strength %.2f, suppression %.2f, ammunition %.0f%%)" % [a.eff, a.strength, a.supp, a.ammo * 100.0]
+		return "combat effectiveness %.2f (strength %.2f, suppression %.2f, ammunition %.0f%%, %d of ours against %d seen)" % [a.eff, a.strength, a.supp, a.ammo * 100.0, a.soldiers, a.seen]
 	if a.ammo < 0.18 and op.stage >= OperationState.Stage.ASSAULT:
 		return "ammunition down to %.0f%%" % (a.ammo * 100.0)
 	return ""
@@ -450,7 +453,7 @@ func _op_status(op: OperationState, sqs: Array, obj: ObjectiveState) -> Dictiona
 			a = sim.tactics._assess_squad(sq)
 		var n := sq.members.size()
 		soldiers += n
-		seen += int(a.get("seen_n", 0))
+		seen = maxi(seen, int(a.get("seen_n", 0)))  # the same enemy is seen by several squads
 		eff += float(a.get("eff", 0.0)) * n
 		supp += float(a.get("supp", 0.0)) * n
 		ammo += float(a.get("ammo", 1.0)) * n
