@@ -360,6 +360,17 @@ func _frame_stats(seconds: float) -> Dictionary:
 
 ## AI factions decide nothing while a scenario sets up its own fight (the rest of the
 ## war keeps running: marches, captures, reserves).
+## AI-COMBAT-STRAT-01: living soldiers of a squad inside an objective's radius (the coordinated assault takes the
+## objective and leaves the squad's survivors that withdrew from the zone alone).
+func _defenders_inside(sq: SquadState, o: ObjectiveState) -> int:
+	var n := 0
+	for id in sq.members:
+		var u := demo.sim.state.get_unit(id)
+		if u and u.alive and Vector2(u.position.x - o.position.x, u.position.z - o.position.z).length() <= o.radius:
+			n += 1
+	return n
+
+
 func _pause_ai(on: bool) -> void:
 	for f: FactionState in war.factions.values():
 		if not f.player:
@@ -487,7 +498,7 @@ func _offensive() -> Dictionary:
 		"haugen_owner": WorldState.faction_name(hau.owner) if hau.owner >= 0 else "-", "defenders_left": _alive_count([defenders]),
 		"attackers_left": _alive_count([a, b, c]), "contested_seen": contested_seen.v, "warp": [w1, w2], "consistency": _consistency(),
 		"events": war.events.slice(-8).map(func(e: Dictionary) -> String: return "%.0f %s" % [e.t, e.text])}
-	_expect(op.phase == OperationState.Phase.COMPLETED and hau.owner == 0 and out.defenders_left == 0, "the player's attack did not take Haugen (%s)" % JSON.stringify(out))
+	_expect(op.phase == OperationState.Phase.COMPLETED and hau.owner == 0 and _defenders_inside(defenders, hau) == 0, "the player's attack did not take Haugen (%s)" % JSON.stringify(out))
 	_expect(phases.has("engaging") and out.consistency.count == 0, "attack phases / records wrong (%s)" % JSON.stringify(out))
 	_pause_ai(false)
 	return out

@@ -735,6 +735,8 @@ func _j_near_far() -> Dictionary:
 		_begin()
 		var units0 := demo.sim.state.units.size()
 		var bodies0 := _bodies_of([n, s])
+		var n_size0 := n.members.size() + n.fallen.size()  # the squads' own sizes at the start (8 and 6), not a constant
+		var s_size0 := s.members.size() + s.fallen.size()
 		var t0 := demo.sim.state.time
 		var seen := {}
 		var swap := {}
@@ -763,7 +765,7 @@ func _j_near_far() -> Dictionary:
 		_expect(dup == 0, "J(%s): a soldier has a body and a proxy" % mode)
 		# The war keeps spawning reserves elsewhere; only the scenario soldiers count.
 		_expect(sc.unit_ids.all(func(id: int) -> bool: return demo.sim.state.get_unit(id) != null), "J(%s): a scenario soldier vanished" % mode)
-		_expect(_alive_of(n) + n.fallen.size() == 6 and _alive_of(s) + s.fallen.size() == 6, "J(%s): soldiers appeared or vanished" % mode)
+		_expect(_alive_of(n) + n.fallen.size() == n_size0 and _alive_of(s) + s.fallen.size() == s_size0, "J(%s): soldiers appeared or vanished (n %d+%d of %d, s %d+%d of %d)" % [mode, _alive_of(n), n.fallen.size(), n_size0, _alive_of(s), s.fallen.size(), s_size0])
 		if mode == "near" and swap.has("after_back"):
 			var a1: Dictionary = swap.before
 			var a2: Dictionary = swap.after_back
