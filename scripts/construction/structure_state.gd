@@ -23,6 +23,15 @@ var removed := PackedInt32Array()
 ## the road never changes on load. Areas: [centroid with its height, plane gradient (x, z)].
 var profile := PackedVector3Array()
 
+## LOGISTICS-01 facilities (see FacilityDefs): supplies stored here (null: no storage), the
+## base this structure belongs to (-1 = none; ConstructionState.bases), a name shown to the
+## player and kind-specific state (recruitment queue, vehicle stock, ...). Saved with the
+## structure, so inventories persist with the base.
+var inventory: Inventory
+var base_id := -1
+var label := ""
+var facility := {}
+
 ## Runtime cache, rebuilt from the data above (not saved): one transform per instance
 ## (index = module index for lines; -1 entries never appear, removed modules are skipped
 ## by is_removed()).
@@ -58,6 +67,14 @@ func to_dict() -> Dictionary:
 	else:
 		d["position"] = [snappedf(position.x, 0.001), snappedf(position.y, 0.001), snappedf(position.z, 0.001)]
 		d["yaw"] = snappedf(yaw, 0.0001)
+	if inventory:
+		d["inv"] = inventory.to_dict()
+	if base_id >= 0:
+		d["base"] = base_id
+	if label != "":
+		d["label"] = label
+	if not facility.is_empty():
+		d["facility"] = facility
 	return d
 
 
@@ -78,4 +95,9 @@ static func from_dict(d: Dictionary) -> StructureState:
 		var p: Array = d.get("position", [0, 0, 0])
 		s.position = Vector3(p[0], p[1], p[2])
 		s.yaw = float(d.get("yaw", 0.0))
+	if d.get("inv") is Dictionary:
+		s.inventory = Inventory.from_dict(d.inv)
+	s.base_id = int(d.get("base", -1))
+	s.label = String(d.get("label", ""))
+	s.facility = d.get("facility", {})
 	return s

@@ -27,6 +27,8 @@ var state := WorldState.new()
 var squads := SquadControl.new(self)
 ## LOGISTICS-01: driving of every vehicle record (both tiers), routes and the player's wheel.
 var vehicles := VehicleSim.new(self)
+## LOGISTICS-01: depots, vehicle jobs, resupply, automation.
+var logistics := LogisticsSim.new(self, vehicles)
 ## COMBAT-01a: firing, reloading, damage and death (the one combat authority).
 var combat := CombatSim.new(self)
 ## COMBAT-01b: soldiers' own perception, target choice and firing (through `combat`).
@@ -101,6 +103,7 @@ func view_of(id: int) -> Node3D:
 
 
 func _ready() -> void:
+	logistics.bind()
 	state.restored.connect(_on_restored)
 	state.unit_removed.connect(_on_unit_removed)
 	state.unit_died.connect(_on_unit_died)
@@ -148,6 +151,7 @@ func _physics_process(delta: float) -> void:
 	squads.update(delta)
 	var t2 := Time.get_ticks_usec()
 	vehicles.update(delta)
+	logistics.update(delta)
 	var t2v := Time.get_ticks_usec()
 	war.update(delta)
 	var t3 := Time.get_ticks_usec()

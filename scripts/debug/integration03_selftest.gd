@@ -301,8 +301,10 @@ func _base() -> Dictionary:
 	placed.hq = await _build(&"hq_building", c + Vector3(0, 0, -30), 0.0)
 	placed.barracks_1 = await _build(&"barracks_block", c + Vector3(-42, 0, -8), 0.0)
 	placed.barracks_2 = await _build(&"barracks_block", c + Vector3(-42, 0, 8), 0.0)
-	placed.supply = await _build(&"supply_depot", c + Vector3(42, 0, -18), 0.0)
-	placed.vehicle_depot = await _build(&"vehicle_depot", c + Vector3(42, 0, 22), 0.0)
+	# LOGISTICS-01: both depots face south, so their docks and bays open onto the vehicle yard
+	# (a facility's front is its local -Z; vehicles dock in front of it).
+	placed.supply = await _build(&"supply_depot", c + Vector3(42, 0, 22), PI)
+	placed.vehicle_depot = await _build(&"vehicle_depot", c + Vector3(42, 0, -18), PI)
 	placed.tower_nw = await _build(&"guard_tower_steel", c + Vector3(-68, 0, -58), 0.0)
 	placed.tower_ne = await _build(&"guard_tower_steel", c + Vector3(68, 0, -58), 0.0)
 	placed.generator = await _build(&"generator_60kw", c + Vector3(14, 0, -14), 0.0)

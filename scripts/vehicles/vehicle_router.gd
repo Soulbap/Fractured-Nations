@@ -54,6 +54,9 @@ var _dirty := false
 var _disabled: Array[int] = []
 ## Roads narrower than this (vehicle width + 1 m of margin) cost far more.
 var min_width := 4.5
+## Parked vehicles (not the one being planned) as circles [x, z, radius]: cross-country legs
+## and the yard grid steer round them. Set by VehicleSim before every plan.
+var parked_circles: Array = []
 var debug_legs := false
 var last_leg_debug := ""
 
@@ -431,7 +434,19 @@ func line_ok(a: Vector3, b: Vector3, def: VehicleDefs.Def) -> bool:
 		prev_h = h
 		if structures and (structures.blocks_point(Vector2(p.x, p.z), def.circle_r) or structures.is_wet(p.x, p.z)):
 			return false
+		if _near_parked(p.x, p.z, def.circle_r):
+			return false
 	return true
+
+
+func _near_parked(x: float, z: float, r: float) -> bool:
+	for c: Array in parked_circles:
+		var dx: float = c[0] - x
+		var dz: float = c[1] - z
+		var rr: float = c[2] + r
+		if dx * dx + dz * dz < rr * rr:
+			return true
+	return false
 
 
 ## A cross-country leg a -> b: {ok, pts}.
@@ -495,6 +510,8 @@ func _local_plan(a: Vector3, b: Vector3, def: VehicleDefs.Def) -> Dictionary:
 			var cz := lo.y + (z + 0.5) * LEG_CELL
 			if not bad and structures:
 				bad = structures.blocks_point(Vector2(cx, cz), def.circle_r) or structures.is_wet(cx, cz)
+			if not bad and not parked_circles.is_empty():
+				bad = _near_parked(cx, cz, def.circle_r)
 			if bad:
 				blocked[z * nx + x] = 1
 				grid.set_point_solid(Vector2i(x, z), true)

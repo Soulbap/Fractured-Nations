@@ -57,6 +57,8 @@ var _squad_index_dirty := true
 ## the game for a generated world) and the roads built in `construction`. Built roads are
 ## construction records, so they are saved and loaded with the base.
 var roads := RoadNetwork.new()
+## LOGISTICS-01: convoys, starting stockpile bookkeeping, automation rules (saved with the units).
+var logistics := LogisticsState.new()
 
 
 func _init() -> void:
@@ -86,6 +88,7 @@ func add_vehicle(type_id: StringName, faction: int, position: Vector3, yaw := 0.
 	var def := VehicleDefs.get_def(type_id)
 	var u := add_unit(UnitState.Kind.VEHICLE, faction, position, yaw, unit_name if unit_name != "" else "%s-%d" % [def.short_name, _next_id])
 	u.veh.type_id = def.id
+	u.veh.cargo.capacity = def.cargo_capacity
 	u.veh.fuel = def.fuel_capacity
 	u.max_health = def.max_health
 	u.health = def.max_health
@@ -308,7 +311,7 @@ func snapshot() -> Dictionary:
 	for sq in all_squads():
 		sq_list.append(sq.to_dict())
 	return {"time": time, "next_id": _next_id, "units": list, "construction": construction.to_dict(),
-		"squads": sq_list, "next_squad_id": _next_squad_id, "war": war.to_dict()}
+		"squads": sq_list, "next_squad_id": _next_squad_id, "war": war.to_dict(), "logistics": logistics.to_dict()}
 
 
 func restore(snap: Dictionary) -> void:
@@ -324,6 +327,8 @@ func restore(snap: Dictionary) -> void:
 	_restore_squads(snap)
 	if snap.has("war"):
 		war.from_dict(snap.war)
+	if snap.has("logistics"):
+		logistics.from_dict(snap.logistics)
 
 
 ## Loads a snapshot without replacing the record objects of units that exist in both:
@@ -358,6 +363,7 @@ func apply_snapshot(snap: Dictionary) -> Dictionary:
 		u.move_state = fresh.move_state
 		u.loadout = fresh.loadout
 		u.vehicle_id = fresh.vehicle_id
+		u.resupply_src = fresh.resupply_src
 		if fresh.veh:
 			if u.veh == null:
 				u.veh = fresh.veh
@@ -375,6 +381,8 @@ func apply_snapshot(snap: Dictionary) -> Dictionary:
 	_restore_squads(snap)
 	if snap.has("war"):
 		war.from_dict(snap.war)
+	if snap.has("logistics"):
+		logistics.from_dict(snap.logistics)
 	restored.emit()
 	return {"updated": updated, "added": added, "removed": removed}
 

@@ -39,6 +39,12 @@ var occupants := PackedInt32Array()
 ## Soldiers told to board that have not got on yet (their seats are taken).
 var pending := PackedInt32Array()
 var squad_id := -1
+## Supplies carried (an Inventory like a depot's), the convoy the vehicle drives in (-1 = none)
+## and its current logistics job (see LogisticsSim): {} when idle.
+var cargo: Inventory
+var convoy_id := -1
+var job := {}
+
 var phase := Phase.NONE
 var phase_since := 0.0
 var transport_dest := Vector3.INF
@@ -64,6 +70,10 @@ var _progress_t := 0.0
 var probe_ahead := INF
 
 
+func _init() -> void:
+	cargo = Inventory.make(VehicleDefs.get_def(type_id).cargo_capacity)
+
+
 func def() -> VehicleDefs.Def:
 	return VehicleDefs.get_def(type_id)
 
@@ -84,6 +94,7 @@ func to_dict() -> Dictionary:
 		rt.append([snappedf(p.x, 0.01), snappedf(p.y, 0.01), snappedf(p.z, 0.01)])
 	return {"type": String(type_id), "speed": speed, "steer": steer, "fuel": fuel, "odo": odometer,
 		"status": status, "reason": reason, "route": rt, "cap": Array(route_cap), "route_i": route_i,
+		"cargo": cargo.to_dict() if cargo else null, "convoy": convoy_id, "job": job,
 		"occ": Array(occupants), "pending": Array(pending), "squad": squad_id, "phase": phase, "phase_since": phase_since, "dest": transport_dest,
 		"info": route_info, "stuck": stuck_s, "reverse": reverse_left, "recoveries": recoveries, "replans": replans}
 
@@ -110,6 +121,9 @@ func copy_from(d: Dictionary) -> void:
 	route_i = d.get("route_i", 0)
 	route_info = d.get("info", {})
 	occupants = PackedInt32Array(d.get("occ", []))
+	cargo = Inventory.from_dict(d.cargo) if d.get("cargo") is Dictionary else Inventory.make(def().cargo_capacity)
+	convoy_id = d.get("convoy", -1)
+	job = d.get("job", {})
 	pending = PackedInt32Array(d.get("pending", []))
 	squad_id = d.get("squad", -1)
 	phase = d.get("phase", Phase.NONE)

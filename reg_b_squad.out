@@ -1,0 +1,394 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.351 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3070
+
+WARNING: instance_reset_physics_interpolation() is deprecated.
+   at: _instance_reset_physics_interpolation_bind_compat_104269 (servers/rendering/rendering_server.compat.inc:62)
+[godot_ai game_helper] registered mcp capture (debugger active=false, logger=true)
+StructureManager: water index 2568 triangles in 2115 cells
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:261)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:261)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:261)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:261)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:261)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:261)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:261)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:261)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:261)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:261)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:261)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:261)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:261)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:267)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:267)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:267)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: AnimationNodeBlendSpace2D::add_blend_point: No name provided, using safe index as reference. In the future, empty names will be deprecated, so explicitly passing a name is recommended.
+   at: add_blend_point (scene/animation/animation_blend_space_2d.cpp:74)
+   GDScript backtrace (most recent call first):
+       [0] _prepare_shared (res://scripts/characters/infantry_character.gd:267)
+       [1] _setup_animation (res://scripts/characters/infantry_character.gd:221)
+       [2] setup (res://scripts/characters/infantry_character.gd:105)
+       [3] _build (res://scripts/characters/infantry_proxy_mesh.gd:30)
+       [4] get_mesh (res://scripts/characters/infantry_proxy_mesh.gd:21)
+       [5] bind (res://scripts/units/unit_proxy.gd:44)
+       [6] _make_proxy (res://scripts/core/detail_manager.gd:298)
+       [7] create_missing_proxies (res://scripts/core/detail_manager.gd:85)
+       [8] _start_large_world (res://scripts/game/core_demo.gd:253)
+       [9] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+   GDScript backtrace (most recent call first):
+       [0] bake_area (res://scripts/world/area_navigation.gd:138)
+       [1] _rebake (res://scripts/core/detail_manager.gd:229)
+       [2] _update (res://scripts/core/detail_manager.gd:188)
+       [3] activate_at (res://scripts/core/detail_manager.gd:155)
+       [4] _start_large_world (res://scripts/game/core_demo.gd:259)
+       [5] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+   GDScript backtrace (most recent call first):
+       [0] bake_area (res://scripts/world/area_navigation.gd:138)
+       [1] _rebake (res://scripts/core/detail_manager.gd:229)
+       [2] _update (res://scripts/core/detail_manager.gd:188)
+       [3] activate_at (res://scripts/core/detail_manager.gd:155)
+       [4] _start_large_world (res://scripts/game/core_demo.gd:259)
+       [5] _ready (res://scripts/game/core_demo.gd:123)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+   GDScript backtrace (most recent call first):
+       [0] bake_area (res://scripts/world/area_navigation.gd:138)
+       [1] _rebake (res://scripts/core/detail_manager.gd:229)
+       [2] _update (res://scripts/core/detail_manager.gd:188)
+       [3] activate_at (res://scripts/core/detail_manager.gd:155)
+       [4] _start_large_world (res://scripts/game/core_demo.gd:259)
+       [5] _ready (res://scripts/game/core_demo.gd:123)
+CORE nav: {"area_m":440.0,"async":false,"bake_ms":245.478,"center":[-7107.5,-7592.0],"collision_ms":309.816,"faces":101250,"polygons":1118,"recenter":"sync","source_ms":114.852,"structure_obstructions":0,"tree_obstructions":24,"vehicle_obstructions":1}
+CORE spawn: {"sites":[[-7100.0,-7600.0],[-3100.0,3700.0],[7900.0,200.0]],"soldiers":28,"squads":3,"vehicles":3}
+UNIT startup {"rts_zoom_start":80.0,"soldiers":28,"squads":[{"faction":0,"formation":"Line","leader":1,"members":8,"name":"Alpha","order":"None"},{"faction":0,"formation":"Line","leader":9,"members":4,"name":"Bravo","order":"Move"},{"faction":1,"formation":"Line","leader":18,"members":4,"name":"Sierra","order":"None"}],"zoom_default":80.0,"zoom_max":200.0,"zoom_min":5.0}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT setup {"area":{"height_range_40m":1.28,"pos":[-6962.5,433.9,-7540.0],"road_m":77.2,"settlement":"Nordvik","settlement_edge_m":2051.0,"slope_deg":1.4,"solids_30m":{"houses":0,"rocks":0,"trees":0},"solids_60m":{"houses":0,"rocks":0,"trees":0}},"base_center":[-6842.4,434.2,-7490.2],"bodies_in_squads":16,"structures":2}
+UNIT selection {"after_panel_shift_click":[1,2],"ctrl_click_squads":[1],"selected_soldiers":12,"single_click_individual":{"ok":true,"selected":12}}
+UNIT move_line_8 {"done":true,"final":{"arrived":8,"blocked":[],"distinct_targets":true,"max_slot_error_m":1.29,"members":8,"min_pair_m":2.9},"frames":993,"min_pair_during_m":0.88,"seconds":16.577,"status":["DONE"],"worst_physics_wait_ms":24.7}
+UNIT move_column {"done":true,"final":{"arrived":8,"blocked":[],"distinct_targets":true,"max_slot_error_m":1.3,"members":8,"min_pair_m":2.94},"formation":"Column","frames":928,"min_pair_during_m":0.72,"seconds":15.491,"status":["DONE"],"worst_physics_wait_ms":20.1}
+UNIT two_squads_pass {"done":true,"frames":1023,"min_cross_pair_m":0.9,"min_pair_during_m":0.88,"seconds":17.081,"status":["DONE","DONE"],"worst_physics_wait_ms":20.8}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT around_structure {"done":true,"final":{"arrived":8,"blocked":[],"distinct_targets":true,"max_slot_error_m":1.29,"members":8,"min_pair_m":2.76},"frames":1641,"frames_in_structure":0,"inside_base":8,"min_pair_during_m":0.89,"seconds":27.671,"status":["DONE"],"worst_physics_wait_ms":395.3}
+UNIT hold {"max_drift_3s_m":0.0,"members_with_orders":0,"order":"Hold"}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT follow {"alpha_status":"DONE","arrivals_after_stop":4,"bravo_behind_leader":3,"final_min_pair_m":2.66,"follow_order":true,"max_dist_to_alpha_leader_m":10.8,"min_pair_during_m":0.89,"orders_after_stop":[],"orders_per_soldier_per_10s_walking":8.31,"orders_while_alpha_stands_6s":0,"orders_while_alpha_walks":65,"orders_while_settling_6s":0,"seconds":31.5,"walk_s":19.5}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Navigation region synchronization had 8 edge error(s).
+More than 2 edges tried to occupy the same map rasterization space.
+This causes a logical error in the navigation mesh geometry and is commonly caused by overlap or too densely placed edges.
+Consider baking with a higher 'cell_size', greater geometry margin, and less detailed bake objects to cause fewer edges.
+Consider lowering the 'navigation/3d/merge_rasterizer_cell_scale' in the project settings.
+This warning can be toggled under 'navigation/3d/warnings/navmesh_edge_merge_errors' in the project settings.
+   at: _build_step_find_edge_connection_pairs (modules/navigation_3d/3d/nav_region_builder_3d.cpp:219)
+UNIT regroup {"detached_after":0,"detached_before":7,"done":true,"min_pair_m":2.9,"seconds":5.519,"spread_after_m":13.1,"spread_before_m":23.9}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT blocked_report {"blocked":[9,10,11,12],"frames_in_structure":0,"members":4,"panel_text":"Bravo  [N]  4  Line  Move · 4 blocked","seconds":6.267,"status":"PARTIAL"}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT possession {"others_moving_or_arrived":7,"others_same_target":7,"possessed":true,"possessed_arrived":true,"possessed_moved_without_input_m":0.06,"possessed_order_kept":true,"squad_done_after_release":true,"squad_order":"Move"}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT long_jump {"abstract_while_away":8,"bodies_after_return":8,"camera_dist_m":16757.0,"done_after_return":true,"final":{"arrived":8,"blocked":[],"distinct_targets":true,"max_slot_error_m":0.0,"members":8,"min_pair_m":3.0},"jump_back_worst_ms":430.0,"jump_out_worst_ms":432.2,"min_pair_while_abstract_m":1.76,"squad_record_unchanged":true}
+BASE Saved 2 structures, 31 units, 3 squads to user://saves/ref_20km
+BASE Loaded 2 structures, 31 units, 3 squads
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT save_load {"bytes":40739,"formation_after_load":"Column","max_position_error_m":0.15,"order_after_load":"Move","path":"C:/Users/Hafnor/AppData/Roaming/Godot/app_userdata/Fractured Nations/saves/ref_20km/world.json","resumed_and_done":true,"squads_identical":true}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT zoom {"camera_clearance_at_min_m":2.48,"camera_inside_structure":false,"pan_at_min_m":2.74,"pick_at_200m":true,"reached_max":200.0,"reached_min":5.0}
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+WARNING: Property agent_height is ceiled to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:367)
+WARNING: Property agent_max_climb is floored to cell_height voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:370)
+WARNING: Property agent_radius is ceiled to cell_size voxel units and loses precision.
+   at: generator_bake_from_source_geometry_data (modules/navigation_3d/3d/nav_mesh_generator_3d.cpp:373)
+UNIT performance {"fps_in_squad":{"draw_calls":2197.0,"frame_ms_avg":4.21,"frame_ms_max":5.55,"frame_ms_p99":5.14,"frames":240,"nav_ms":0.05,"physics_ms":1.02},"order_move_8_cost_ms":0.095,"rts_15m_base":{"draw_calls":247.0,"frame_ms_avg":1.91,"frame_ms_max":3.52,"frame_ms_p99":2.64,"frames":200,"nav_ms":0.05,"physics_ms":0.65},"rts_200m":{"draw_calls":247.0,"frame_ms_avg":1.97,"frame_ms_max":4.05,"frame_ms_p99":3.98,"frames":200,"nav_ms":0.07,"physics_ms":1.19},"rts_80m_three_squads_moving":{"draw_calls":281.0,"frame_ms_avg":2.01,"frame_ms_max":3.37,"frame_ms_p99":3.21,"frames":300,"nav_ms":0.05,"physics_ms":1.17},"squad_update_cost_ms":0.015}
+UNIT PASS []
+ERROR: 2 RID allocations of type 'P11JoltShape3D' were leaked at exit.
+ERROR: 1 RID allocations of type 'N10RendererRD11MeshStorage4MeshE' were leaked at exit.
+ERROR: 1 RID allocations of type 'N10RendererRD15MaterialStorage8MaterialE' were leaked at exit.
+ERROR: 1 RID allocations of type 'N10RendererRD15MaterialStorage6ShaderE' were leaked at exit.
+ERROR: 1 RID allocations of type 'N10RendererRD14TextureStorage7TextureE' were leaked at exit.
+ERROR: 1 shaders of type SceneForwardClusteredShaderRD were never freed
+   at: ~ShaderRD (servers/rendering/renderer_rd/shader_rd.cpp:1236)
+WARNING: 1 RID of type "UniformBuffer" was leaked.
+   at: _free_rids (servers/rendering/rendering_device.cpp:8684)
+WARNING: 1 RID of type "VertexBuffer" was leaked.
+   at: _free_rids (servers/rendering/rendering_device.cpp:8684)
+WARNING: 2 RIDs of type "Texture" were leaked.
+   at: finalize (servers/rendering/rendering_device.cpp:8900)
+WARNING: 98 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 37 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)
+ERROR: Pages in use exist at exit in PagedAllocator: N12VariantPools12BucketMediumE
+   at: ~PagedAllocator (./core/templates/paged_allocator.h:170)
+ERROR: Pages in use exist at exit in PagedAllocator: N12VariantPools11BucketSmallE
+   at: ~PagedAllocator (./core/templates/paged_allocator.h:170)

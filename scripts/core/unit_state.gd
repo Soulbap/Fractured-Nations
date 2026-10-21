@@ -50,6 +50,9 @@ var veh: VehicleState
 ## has no body and no proxy, takes no part in combat and follows the vehicle; VehicleSim
 ## changes this together with the vehicle's `occupants`.
 var vehicle_id := -1
+## LOGISTICS-01: supply source the soldier was sent to for ammunition ("s<structure id>" or
+## "v<vehicle id>"), "" = none. Cleared when the soldier has been resupplied.
+var resupply_src := ""
 
 # --- Combat (COMBAT-01a). Authoritative weapon and life state; WeaponDef is static. ---
 var alive := true
@@ -142,7 +145,7 @@ func to_dict() -> Dictionary:
 		"health": health, "max_health": max_health, "speed": speed,
 		"order": order, "order_target": order_target, "move_state": move_state,
 		"player_controlled": player_controlled, "has_body": has_body, "loadout": loadout,
-		"veh": veh.to_dict() if veh else null, "vehicle_id": vehicle_id,
+		"veh": veh.to_dict() if veh else null, "vehicle_id": vehicle_id, "resupply": resupply_src,
 		"alive": alive, "weapon_id": weapon_id, "mag": mag, "reserve": reserve, "fire_auto": fire_auto,
 		"next_shot_at": next_shot_at, "reload_until": reload_until, "shot_counter": shot_counter,
 		"bloom": bloom, "last_shot_at": last_shot_at, "died_at": died_at, "killer_id": killer_id,
@@ -178,6 +181,7 @@ static func from_dict(d: Dictionary) -> UnitState:
 	if d.get("veh") is Dictionary:
 		u.veh = VehicleState.from_dict(d.veh)
 	u.vehicle_id = d.get("vehicle_id", -1)
+	u.resupply_src = d.get("resupply", "")
 	return u
 
 

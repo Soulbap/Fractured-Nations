@@ -43,6 +43,10 @@ func run(args: PackedStringArray) -> void:
 		_log("veh_drive", await _veh_drive())
 	if _want("veh_player"):
 		_log("veh_player", await _veh_player())
+	if _want("logistics"):
+		_log("logistics", await _logistics())
+	if _want("convoy"):
+		_log("convoy", await _convoy())
 	if _want("transport_cancel"):
 		_log("transport_cancel", await _transport_cancel())
 	if _want("transport"):
@@ -831,4 +835,410 @@ func _transport_cancel() -> Dictionary:
 	var inv := _aboard_state([sq], [apc])
 	out["unload_in_transit"] = {"aboard": inv.aboard, "apc_speed": snappedf(apc.veh.speed, 0.1), "occupants": apc.veh.occupants.size()}
 	_expect(inv.aboard == 0 and apc.veh.occupants.is_empty(), "unload in transit: %s" % JSON.stringify(out.unload_in_transit))
+	return out
+
+
+# --- Phase C: supplies, depots, convoys ---------------------------------------------------------
+
+## Supplies in the whole world (depots + vehicle cargo + tanks + the given soldiers' spare rounds
+## as ammunition kg).
+func _supply_totals(soldiers: Array = []) -> Dictionary:
+	var t := {"ammo": 0.0, "fuel": 0.0, "supplies": 0.0}
+	for s in cs.all():
+		if s.inventory:
+			for k in t:
+				t[k] += s.inventory.get_qty(StringName(k))
+	for id in demo.sim.vehicles.ids:
+		var u := _u(id)
+		for k in t:
+			t[k] += u.veh.cargo.get_qty(StringName(k))
+		t["fuel"] += u.veh.fuel
+	for id in soldiers:
+		t["ammo"] += float(_u(id).reserve) / Inventory.AMMO_ROUNDS_PER_KG
+	return t
+
+
+func _fuel_burned(start_odo: Dictionary) -> float:
+	var burned := 0.0
+	for id in start_odo:
+		var u := _u(id)
+		burned += (u.veh.odometer - start_odo[id]) * u.veh.def().fuel_per_km / 1000.0
+	return burned
+
+
+func _odo_snapshot() -> Dictionary:
+	var o := {}
+	for id in demo.sim.vehicles.ids:
+		o[id] = _u(id).veh.odometer
+	return o
+
+
+## A free building spot near `around` for a depot whose dock a truck can drive to from `from`.
+func _depot_site(around: Vector3, from: Vector3) -> Dictionary:
+	var def := StructureCatalog.get_def(&"supply_depot")
+	var truck := VehicleDefs.get_def(VehicleDefs.TRUCK)
+	for r in [70.0, 110.0, 150.0, 200.0, 260.0]:
+		for k in 16:
+			var a := k * TAU / 16.0
+			var p := demo.on_ground(around.x + cos(a) * r, around.z + sin(a) * r, 0.0)
+			for yaw in [0.0, PI * 0.5, PI, -PI * 0.5]:
+				var chk := sm.check_building(def, p, yaw)
+				if not chk.ok:
+					continue
+				var fake := StructureState.new()
+				fake.type_id = &"supply_depot"
+				fake.position = p
+				fake.yaw = yaw
+				var dock := FacilityDefs.dock_point(fake, 0)
+				dock.y = demo.ground_height(dock)
+				if sm.blocks_point(Vector2(dock.x, dock.z), 2.0) or sm.is_wet(dock.x, dock.z):
+					continue
+				var res := demo.sim.vehicles.router.plan(from, dock, truck)
+				if res.ok:
+					return {"pos": p, "yaw": yaw, "dock": dock, "route_m": res.length_m}
+	return {}
+
+
+func store_info(s: StructureState) -> Dictionary:
+	return {"id": s.id, "type": String(s.type_id), "inventory": s.inventory.summary() if s.inventory else "-", "capacity": s.inventory.capacity if s.inventory else 0.0}
+
+
+func _all_resupplied(sq: SquadState) -> bool:
+	for id in sq.members:
+		if _u(id).resupply_src != "":
+			return false
+	return true
+
+
+func _logistics() -> Dictionary:
+	var out := {}
+	await _base()
+	var c: Vector3 = fob.center
+	_expect(fob.has("placed") and fob.placed.supply != null, "logistics: no supply depot in the base")
+	var src: StructureState = fob.placed.supply
+	var far := _beyond_bridge(c, 6.0)
+	var site := _depot_site(far.target, c + Vector3(42, 0, 52))
+	_expect(not site.is_empty(), "logistics: no site for the forward depot")
+	if site.is_empty():
+		return out
+	var dst := cs.add_building(&"supply_depot", site.pos, site.yaw, 0)
+	await _physics(5)
+	out["depots"] = {"source": store_info(src), "forward": store_info(dst), "route_m": snappedf(site.route_m, 1.0)}
+	_expect(src.inventory != null and src.inventory.get_qty(Inventory.AMMO) >= 4000.0, "logistics: the first depot has no starting stock")
+	_expect(dst.inventory != null and dst.inventory.is_empty(), "logistics: the second depot is not empty")
+	var lg := demo.sim.logistics
+	var truck := _veh(VehicleDefs.TRUCK, FacilityDefs.dock_point(src, 0), PI)
+	var truck2 := _veh(VehicleDefs.TRUCK, FacilityDefs.dock_point(src, 1), PI)
+	await _physics(5)
+	var soldiers := []
+	var t0 := _supply_totals()
+	var odo0 := _odo_snapshot()
+	var inv_track := {"max_ammo_err": 0.0, "max_supplies_err": 0.0, "max_fuel_err": 0.0, "negative": 0, "over_capacity": 0, "n": 0}
+	var sampler := func() -> void:
+		inv_track.n += 1
+		var t := _supply_totals(soldiers)
+		inv_track.max_ammo_err = maxf(inv_track.max_ammo_err, absf(t.ammo - t0.ammo))
+		inv_track.max_supplies_err = maxf(inv_track.max_supplies_err, absf(t.supplies - t0.supplies))
+		inv_track.max_fuel_err = maxf(inv_track.max_fuel_err, absf(t.fuel + _fuel_burned(odo0) - t0.fuel))
+		for s in cs.all():
+			if s.inventory:
+				for k in Inventory.ITEMS:
+					if s.inventory.get_qty(k) < -0.001:
+						inv_track.negative += 1
+				if s.inventory.total() > s.inventory.capacity + 0.01:
+					inv_track.over_capacity += 1
+		for id in demo.sim.vehicles.ids:
+			var vu := _u(id)
+			if vu.veh.cargo.total() > vu.veh.cargo.capacity + 0.01 or vu.veh.fuel < -0.001 or vu.veh.cargo.get_qty(Inventory.AMMO) < -0.001:
+				inv_track.over_capacity += 1
+	tree.physics_frame.connect(sampler)
+	demo.rts_camera.frame(FacilityDefs.dock_point(src, 0), 0.5, 40.0)
+	await _seconds(1.5)
+	# --- refusals ---------------------------------------------------------------------------
+	var r_dry := lg.order_delivery(truck.id, dst.id, src.id, Inventory.AMMO, 100.0)
+	out["dry_source"] = r_dry.reason
+	_expect(not r_dry.ok and r_dry.reason.contains("no ammunition"), "logistics: dry depot order not refused: %s" % r_dry.reason)
+	# --- short stock and full cargo: truck 2 at the source dock ------------------------------
+	var sup_before := src.inventory.get_qty(Inventory.SUPPLIES)
+	var j1 := lg.order_load(truck2.id, src.id, Inventory.SUPPLIES, 50000.0)
+	await _warp(120.0, 4.0, 60.0, func() -> bool: return truck2.veh.job.is_empty())
+	var got_sup := truck2.veh.cargo.get_qty(Inventory.SUPPLIES)
+	var r_full := lg.order_load(truck2.id, src.id, Inventory.AMMO, 4000.0)
+	await _warp(60.0, 4.0, 60.0, func() -> bool: return truck2.veh.job.is_empty())
+	var cargo_total := truck2.veh.cargo.total()
+	var r_full2 := lg.order_load(truck2.id, src.id, Inventory.FUEL, 500.0)
+	out["short_and_full"] = {"asked_supplies": 50000.0, "stock_before": snappedf(sup_before, 0.1), "loaded": snappedf(got_sup, 0.1), "capacity": truck2.veh.cargo.capacity,
+		"then_ammo_loaded": snappedf(truck2.veh.cargo.get_qty(Inventory.AMMO), 0.1), "cargo_total": snappedf(cargo_total, 0.1), "when_full": r_full2.reason}
+	_expect(j1.ok and absf(got_sup - minf(sup_before, truck2.veh.cargo.capacity)) < 0.5, "logistics: short stock %s" % JSON.stringify(out.short_and_full))
+	_expect(cargo_total <= truck2.veh.cargo.capacity + 0.01 and not r_full2.ok and r_full2.reason.contains("Cargo full"), "logistics: cargo limit %s" % JSON.stringify(out.short_and_full))
+	# Put it back through the real unload job at the same depot (cargo returns, totals intact).
+	lg.order_unload(truck2.id, src.id)
+	await _warp(120.0, 4.0, 60.0, func() -> bool: return truck2.veh.job.is_empty())
+	out["unload_back"] = {"truck2_cargo": snappedf(truck2.veh.cargo.total(), 0.1), "depot_supplies": snappedf(src.inventory.get_qty(Inventory.SUPPLIES), 0.1)}
+	_expect(truck2.veh.cargo.is_empty() and absf(src.inventory.get_qty(Inventory.SUPPLIES) - sup_before) < 0.5, "logistics: unload back %s" % JSON.stringify(out.unload_back))
+	# --- the delivery: fuel and ammunition with truck 1 -------------------------------------
+	var ammo_before := src.inventory.get_qty(Inventory.AMMO)
+	var fuel_before := src.inventory.get_qty(Inventory.FUEL)
+	lg.order_load(truck.id, src.id, Inventory.FUEL, 2500.0)
+	await _warp(120.0, 4.0, 60.0, func() -> bool: return truck.veh.job.is_empty())
+	var r1 := lg.order_delivery(truck.id, src.id, dst.id, Inventory.AMMO, 3000.0)
+	_expect(r1.ok, "logistics: delivery refused: %s" % r1.reason)
+	await _warp(90.0, 4.0, 60.0, func() -> bool: return truck.veh.job.get("stage", "") == "to_dst")
+	var loaded := {"truck_ammo": snappedf(truck.veh.cargo.get_qty(Inventory.AMMO), 0.1), "truck_fuel": snappedf(truck.veh.cargo.get_qty(Inventory.FUEL), 0.1),
+		"depot_ammo_drop": snappedf(ammo_before - src.inventory.get_qty(Inventory.AMMO), 0.1), "depot_fuel_drop": snappedf(fuel_before - src.inventory.get_qty(Inventory.FUEL), 0.1),
+		"stage": truck.veh.job.get("stage", "")}
+	out["loaded"] = loaded
+	_expect(absf(loaded.truck_ammo - 3000.0) < 0.5 and absf(loaded.truck_fuel - 2500.0) < 0.5 and absf(loaded.depot_ammo_drop - 3000.0) < 0.5 and absf(loaded.depot_fuel_drop - 2500.0) < 0.5,
+		"logistics: loading %s" % JSON.stringify(loaded))
+	_shot("12_truck_loaded_at_depot")
+	# Cancel on the road: cargo stays aboard, nothing duplicated or lost; then redirect to unload.
+	await _warp(40.0, 4.0, 60.0)
+	var mid := _supply_totals(soldiers)
+	lg.cancel_job(truck.id, "cancelled")
+	out["cancel"] = {"truck_ammo": snappedf(truck.veh.cargo.get_qty(Inventory.AMMO), 0.1), "truck_fuel": snappedf(truck.veh.cargo.get_qty(Inventory.FUEL), 0.1), "job_cleared": truck.veh.job.is_empty(),
+		"ammo_error": snappedf(mid.ammo - t0.ammo, 0.01), "stopped": truck.order == UnitState.Order.NONE}
+	_expect(absf(truck.veh.cargo.get_qty(Inventory.AMMO) - 3000.0) < 0.5 and truck.veh.job.is_empty() and truck.order == UnitState.Order.NONE, "logistics: cancel %s" % JSON.stringify(out.cancel))
+	var r_un := lg.order_unload(truck.id, dst.id)
+	_expect(r_un.ok, "logistics: unload order refused: %s" % r_un.reason)
+	var tank_before := truck.veh.fuel
+	var tr := _sample_begin(truck, truck.veh.def())
+	await _warp(1500.0, 16.0, 400.0, func() -> bool: return truck.veh.job.is_empty() and truck.order == UnitState.Order.NONE)
+	out["journey"] = _sample_end(tr)
+	out["arrival"] = {"status": truck.veh.status_name(), "dst": dst.inventory.summary(), "truck_cargo": truck.veh.cargo.summary(), "tank_used_l": snappedf(tank_before - truck.veh.fuel, 0.1),
+		"at_dock_m": snappedf(_flat(truck.position, site.dock), 0.1)}
+	_expect(absf(dst.inventory.get_qty(Inventory.AMMO) - 3000.0) < 0.5 and absf(dst.inventory.get_qty(Inventory.FUEL) - 2500.0) < 0.5 and truck.veh.cargo.is_empty(),
+		"logistics: delivery result %s" % JSON.stringify(out.arrival))
+	_shot("13_truck_unloaded_forward_depot")
+	# --- refuel at the forward depot -------------------------------------------------------
+	var depot_fuel := dst.inventory.get_qty(Inventory.FUEL)
+	var tank := truck.veh.fuel
+	var rf := lg.order_refuel(truck.id, dst.id)
+	await _warp(120.0, 4.0, 60.0, func() -> bool: return truck.veh.job.is_empty())
+	out["refuel"] = {"ok": rf.ok, "tank_before": snappedf(tank, 0.1), "tank_after": snappedf(truck.veh.fuel, 0.1), "depot_used": snappedf(depot_fuel - dst.inventory.get_qty(Inventory.FUEL), 0.1)}
+	_expect(rf.ok and absf(truck.veh.fuel - truck.veh.def().fuel_capacity) < 0.5 and absf(out.refuel.depot_used - (truck.veh.def().fuel_capacity - tank)) < 0.5, "logistics: refuel %s" % JSON.stringify(out.refuel))
+	# Out of fuel: the order is refused with the numbers.
+	var keep := truck.veh.fuel
+	truck.veh.fuel = 3.0
+	var r_fuel := demo.sim.vehicles.order_drive(truck.id, c + Vector3(40, 0, 50))
+	truck.veh.fuel = keep
+	out["insufficient_fuel"] = r_fuel.reason
+	_expect(not r_fuel.ok and r_fuel.reason.contains("Insufficient fuel"), "logistics: low fuel order accepted: %s" % r_fuel.reason)
+	# --- resupply: soldiers with depleted reserves take ammunition from the forward depot ----
+	var sq := _spawn(0, site.dock + Vector3(30, 0, 30), 8)
+	await _physics(5)
+	for id in sq.members:
+		_u(id).reserve = 20
+		soldiers.append(id)
+	var rebased := _supply_totals(soldiers)
+	for k in rebased:
+		t0[k] = rebased[k]
+	for id in odo0:
+		odo0[id] = _u(id).veh.odometer
+	var dst_before := dst.inventory.get_qty(Inventory.AMMO)
+	var rr := lg.order_resupply([sq.id], "s%d" % dst.id)
+	await _warp(60.0, 4.0, 60.0, func() -> bool: return _all_resupplied(sq))
+	var got := 0
+	for id in sq.members:
+		got += _u(id).reserve - 20
+	out["resupply"] = {"ok": rr.ok, "soldiers": rr.get("soldiers", 0), "rounds_received": got, "depot_used_kg": snappedf(dst_before - dst.inventory.get_qty(Inventory.AMMO), 0.1)}
+	_expect(rr.ok and got == 8 * 100 and absf(out.resupply.depot_used_kg - got / Inventory.AMMO_ROUNDS_PER_KG) < 0.5, "logistics: resupply %s" % JSON.stringify(out.resupply))
+	# --- unreachable destination: a depot in the river --------------------------------------
+	var wet := _water_spot()
+	if wet.is_finite():
+		var wet_depot := cs.add_building(&"supply_depot", wet, 0.0, 0)
+		truck.veh.cargo.add(Inventory.SUPPLIES, 500.0)
+		t0["supplies"] += 500.0
+		var cargo_before := truck.veh.cargo.total()
+		var r_wet := lg.order_unload(truck.id, wet_depot.id)
+		out["unreachable"] = {"ok": r_wet.ok, "reason": r_wet.reason, "cargo_unchanged": absf(truck.veh.cargo.total() - cargo_before) < 0.01}
+		_expect(not r_wet.ok and absf(truck.veh.cargo.total() - cargo_before) < 0.01, "logistics: unreachable depot accepted %s" % JSON.stringify(out.unreachable))
+		truck.veh.cargo.take(Inventory.SUPPLIES, 500.0)
+		t0["supplies"] -= 500.0
+		cs.remove(wet_depot.id)
+	tree.physics_frame.disconnect(sampler)
+	inv_track["max_ammo_err"] = snappedf(inv_track.max_ammo_err, 0.01)
+	inv_track["max_supplies_err"] = snappedf(inv_track.max_supplies_err, 0.01)
+	inv_track["max_fuel_err"] = snappedf(inv_track.max_fuel_err, 0.01)
+	out["invariants"] = inv_track
+	_expect(inv_track.max_ammo_err < 0.5 and inv_track.max_supplies_err < 0.5 and inv_track.max_fuel_err < 0.5 and inv_track.negative == 0 and inv_track.over_capacity == 0,
+		"logistics: conservation %s" % JSON.stringify(inv_track))
+	fob["fwd_depot"] = dst.id
+	fob["fwd_site"] = site
+	fob["src_depot"] = src.id
+	return out
+
+
+## The forward depot (built once per run, 6 km+ away over a bridge) and the source depot.
+func _forward_depot() -> Dictionary:
+	if fob.has("fwd_depot") and cs.get_structure(fob.fwd_depot) != null:
+		return {"src": cs.get_structure(fob.src_depot), "dst": cs.get_structure(fob.fwd_depot), "site": fob.fwd_site}
+	await _base()
+	var c: Vector3 = fob.center
+	var far := _beyond_bridge(c, 6.0)
+	var site := _depot_site(far.target, c + Vector3(42, 0, 52))
+	_expect(not site.is_empty(), "no site for the forward depot")
+	var dst := cs.add_building(&"supply_depot", site.pos, site.yaw, 0)
+	await _physics(5)
+	fob["fwd_depot"] = dst.id
+	fob["fwd_site"] = site
+	fob["src_depot"] = fob.placed.supply.id
+	return {"src": fob.placed.supply, "dst": dst, "site": site}
+
+
+## Overlap area (m2) of the footprints of two vehicles.
+func _overlap_area(a: UnitState, b: UnitState) -> float:
+	var pa := _footprint(a)
+	var pb := _footprint(b)
+	var total := 0.0
+	for poly in Geometry2D.intersect_polygons(pa, pb):
+		var area := 0.0
+		for i in poly.size():
+			var p: Vector2 = poly[i]
+			var q: Vector2 = poly[(i + 1) % poly.size()]
+			area += p.x * q.y - q.x * p.y
+		total += absf(area) * 0.5
+	return total
+
+
+func _footprint(u: UnitState) -> PackedVector2Array:
+	var d := u.veh.def()
+	var out := PackedVector2Array()
+	for c in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
+		var local := Vector3(c.x * d.width * 0.5, 0.0, c.y * d.length * 0.5)
+		var w := u.position + Basis(Vector3.UP, u.yaw) * local
+		out.append(Vector2(w.x, w.z))
+	return out
+
+
+## Two loaded trucks and an APC escort drive to the forward depot as a convoy: spacing, speed
+## matching, a vehicle that falls behind (the column waits), the player taking over one truck,
+## and unloading at the end.
+func _convoy() -> Dictionary:
+	var out := {}
+	var fd := await _forward_depot()
+	var src: StructureState = fd.src
+	var dst: StructureState = fd.dst
+	var site: Dictionary = fd.site
+	var c: Vector3 = fob.center
+	var lg := demo.sim.logistics
+	var vs := demo.sim.vehicles
+	var t1 := _veh(VehicleDefs.TRUCK, FacilityDefs.dock_point(src, 0), PI)
+	var t2 := _veh(VehicleDefs.TRUCK, FacilityDefs.dock_point(src, 1), PI)
+	var esc := _veh(VehicleDefs.APC, FacilityDefs.dock_point(src, 2), PI)
+	await _physics(5)
+	demo.rts_camera.frame(FacilityDefs.dock_point(src, 1), 0.4, 50.0)
+	await _seconds(1.5)
+	var base_tot := _supply_totals()
+	var ammo0 := src.inventory.get_qty(Inventory.AMMO)
+	var fuel0 := src.inventory.get_qty(Inventory.FUEL)
+	var ammo_each := minf(1500.0, src.inventory.get_qty(Inventory.AMMO))
+	lg.order_load(t1.id, src.id, Inventory.AMMO, ammo_each)
+	lg.order_load(t2.id, src.id, Inventory.FUEL, 1500.0)
+	await _warp(120.0, 4.0, 60.0, func() -> bool: return t1.veh.job.is_empty() and t2.veh.job.is_empty())
+	out["loaded"] = {"t1": t1.veh.cargo.summary(), "t2": t2.veh.cargo.summary()}
+	_expect(absf(t1.veh.cargo.get_qty(Inventory.AMMO) - ammo_each) < 0.5 and absf(t2.veh.cargo.get_qty(Inventory.FUEL) - 1500.0) < 0.5, "convoy: loading %s" % JSON.stringify(out.loaded))
+	_shot("14_convoy_forming")
+	var members := [t1.id, t2.id, esc.id]
+	var res := vs.convoy.order_convoy(members, site.dock, "Supply convoy")
+	out["order"] = {"ok": res.ok, "reason": res.reason, "driving": res.get("driving", []).size(), "convoy": res.get("convoy", -1)}
+	_expect(res.ok and res.driving.size() == 3, "convoy: not formed %s" % JSON.stringify(out.order))
+	if not res.ok:
+		return out
+	var cid: int = res.convoy
+	# Per-tick observation of the column.
+	var obs := {"n": 0, "overlaps": 0, "max_spread_m": 0.0, "min_gap_m": INF, "leader_waits_s": 0.0, "max_speed": 0.0, "teleports": 0}
+	var last := {}
+	var sampler := func() -> void:
+		var dt: float = demo.sim.last_delta
+		if dt <= 0.0:
+			return
+		obs.n += 1
+		var us: Array[UnitState] = [t1, t2, esc]
+		for i in us.size():
+			var u := us[i]
+			if last.has(u.id) and _flat(last[u.id], u.position) > 25.0 * 1.3 * dt + 0.3:
+				obs.teleports += 1
+			last[u.id] = u.position
+			obs.max_speed = maxf(obs.max_speed, absf(u.veh.speed))
+			for j in range(i + 1, us.size()):
+				var o := us[j]
+				var area := _overlap_area(u, o)
+				obs["max_overlap_m2"] = maxf(obs.get("max_overlap_m2", 0.0), area)
+				# Corner clips up to 3 m2 (the collision circles are tighter than the hulls) are tolerated.
+				if area > 3.0:
+					obs.overlaps += 1
+					if not obs.has("first_overlap") or area > obs.get("worst_area", 0.0):
+						obs["first_overlap"] = {"t": snappedf(demo.sim.state.time, 0.1), "pair": [u.id, o.id], "area": snappedf(area, 0.1), "a": [snappedf(u.position.x, 0.1), snappedf(u.position.z, 0.1), snappedf(u.yaw, 0.01), snappedf(u.veh.speed, 0.1), u.veh.status_name()],
+							"b": [snappedf(o.position.x, 0.1), snappedf(o.position.z, 0.1), snappedf(o.yaw, 0.01), snappedf(o.veh.speed, 0.1), o.veh.status_name()]}
+						obs["worst_area"] = area
+		var spread := maxf(_flat(esc.position, t1.position), maxf(_flat(esc.position, t2.position), _flat(t1.position, t2.position)))
+		obs.max_spread_m = maxf(obs.max_spread_m, spread)
+		if t1.order == UnitState.Order.MOVE and absf(t1.veh.speed) < 0.3:
+			obs.leader_waits_s += dt
+	tree.physics_frame.connect(sampler)
+	if "--dbg" in OS.get_cmdline_user_args():
+		for k in 30:
+			await _warp(2.0, 1.0, 20.0)
+			var line := "t=%.0f " % demo.sim.state.time
+			for u: UnitState in [t1, t2, esc]:
+				line += "| %d (%.1f,%.1f) y%.2f v%.1f %s ri%d " % [u.id, u.position.x - c.x, u.position.z - c.z, u.yaw, u.veh.speed, u.veh.status_name(), u.veh.route_i]
+			print("DBG ", line)
+		_shot("14b_yard_jam")
+	await _warp(45.0, 4.0, 60.0)
+	var apc_speed := esc.veh.speed
+	demo.rts_camera.frame(t1.position, 0.5, 70.0)
+	await _seconds(0.5)
+	_shot("15_convoy_on_road")
+	out["early"] = {"leader_kmh": snappedf(t1.veh.speed * 3.6, 0.1), "t1_kmh": snappedf(t1.veh.speed * 3.6, 0.1), "t2_kmh": snappedf(t2.veh.speed * 3.6, 0.1), "spread_m": snappedf(obs.max_spread_m, 0.1),
+		"in_convoy": [esc.veh.convoy_id == cid, t1.veh.convoy_id == cid, t2.veh.convoy_id == cid], "describe": vs.convoy.describe(cid)}
+	# The rear escort runs dry: the column falls apart, the leader waits for it, then it goes on.
+	var tank := esc.veh.fuel
+	esc.veh.fuel = 0.0
+	await _warp(60.0, 4.0, 90.0)
+	var lead_gap := _flat(t1.position, esc.position)
+	out["fell_behind"] = {"rear_status": esc.veh.status_name(), "rear_reason": esc.veh.reason, "leader_kmh": snappedf(t1.veh.speed * 3.6, 0.1), "gap_leader_to_t2_m": snappedf(lead_gap, 1.0), "leader_waited_s": snappedf(obs.leader_waits_s, 1.0)}
+	esc.veh.fuel = tank
+	# Player takes over truck 2 for a while; the others carry on coherently.
+	demo.rts.select([t2.id])
+	demo.game.drive(t2.id)
+	await _seconds(0.5)
+	_key(KEY_W, true)
+	await _warp(12.0, 1.0, 30.0)
+	_key(KEY_W, false)
+	_key(KEY_SPACE, true)
+	await _warp(4.0, 1.0, 20.0)
+	_key(KEY_SPACE, false)
+	var drove := t2.player_controlled
+	demo.game.enter_rts()
+	await _physics(5)
+	out["player_took_over"] = {"was_driving": drove, "resumed_order": t2.order == UnitState.Order.MOVE, "still_in_convoy": t2.veh.convoy_id == cid, "others_moving": esc.order == UnitState.Order.MOVE and t1.order == UnitState.Order.MOVE}
+	_expect(drove and t1.order == UnitState.Order.MOVE and esc.order == UnitState.Order.MOVE and t2.order == UnitState.Order.MOVE and t2.veh.convoy_id == cid, "convoy: takeover %s" % JSON.stringify(out.player_took_over))
+	await _warp(1500.0, 16.0, 400.0, func() -> bool: return esc.order == UnitState.Order.NONE and t1.order == UnitState.Order.NONE and t2.order == UnitState.Order.NONE)
+	tree.physics_frame.disconnect(sampler)
+	await _seconds(2.5)
+	var ends := [t1, t2, esc]
+	var col := []
+	for u: UnitState in ends:
+		col.append({"id": u.id, "type": String(u.veh.type_id), "arrived": u.move_state == UnitState.MoveState.ARRIVED, "dist_to_dock_m": snappedf(_flat(u.position, site.dock), 1.0), "status": u.veh.status_name()})
+	var spacing := [snappedf(_flat(t1.position, t2.position), 1.0), snappedf(_flat(t2.position, esc.position), 1.0)]
+	obs["max_overlap_m2"] = snappedf(obs.get("max_overlap_m2", 0.0), 0.01)
+	obs.erase("min_gap_m")
+	obs["max_spread_m"] = snappedf(obs.max_spread_m, 1.0)
+	obs["leader_waits_s"] = snappedf(obs.leader_waits_s, 1.0)
+	out["arrival"] = {"column": col, "spacing_m": spacing, "observation": obs}
+	for u: UnitState in ends:
+		_expect(u.move_state == UnitState.MoveState.ARRIVED, "convoy: %s did not arrive (%s %s)" % [u.unit_name, u.veh.status_name(), u.veh.reason])
+	_expect(obs.overlaps == 0 and obs.teleports == 0, "convoy: overlaps %d teleports %d" % [obs.overlaps, obs.teleports])
+	_expect(vs.convoy.describe(cid) == "", "convoy: not dissolved after arrival")
+	# Unload both trucks at the forward depot.
+	var before := dst.inventory.summary()
+	lg.order_unload(t1.id, dst.id)
+	lg.order_unload(t2.id, dst.id)
+	await _warp(200.0, 4.0, 90.0, func() -> bool: return t1.veh.job.is_empty() and t2.veh.job.is_empty())
+	out["t2_job"] = {"job": t2.veh.job, "status": t2.veh.status_name(), "reason": t2.veh.reason, "order": t2.order, "diag": vs.diagnose(t2)}
+	out["unloaded"] = {"before": before, "after": dst.inventory.summary(), "t1": t1.veh.cargo.summary(), "t2": t2.veh.cargo.summary()}
+	var tot := _supply_totals()
+	_expect(t1.veh.cargo.is_empty() and t2.veh.cargo.is_empty(), "convoy: cargo left aboard %s" % JSON.stringify(out.unloaded))
+	_expect(absf(tot.ammo - base_tot.ammo) < 0.5 and absf(tot.supplies - base_tot.supplies) < 0.5, "convoy: supplies not conserved %s vs %s" % [tot, base_tot])
+	_shot("16_convoy_at_forward_depot")
 	return out

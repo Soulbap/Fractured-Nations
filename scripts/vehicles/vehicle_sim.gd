@@ -24,6 +24,8 @@ var sim: WorldSim
 var router := VehicleRouter.new()
 ## Infantry boarding, riding and disembarking (phase B).
 var transport: VehicleTransport
+## Vehicles travelling together (LOGISTICS-01 phase C).
+var convoy: VehicleConvoy
 ## Vehicle unit ids (kept in step with WorldState by its signals).
 var ids: Array[int] = []
 var ticks := 0
@@ -38,6 +40,7 @@ var _on_road := {}
 func _init(p_sim: WorldSim) -> void:
 	sim = p_sim
 	transport = VehicleTransport.new(self)
+	convoy = VehicleConvoy.new(self)
 	sim.state.unit_added.connect(_on_added)
 	sim.state.unit_removed.connect(_on_removed)
 	sim.state.restored.connect(refresh)
@@ -71,6 +74,25 @@ func _on_removed(id: int) -> void:
 
 # --- Orders ---------------------------------------------------------------------------------
 
+## Parked vehicles other than `u` as obstacle circles for the router's cross-country legs.
+func _collect_parked(u: UnitState) -> void:
+	var out: Array = []
+	for oid in ids:
+		if oid == u.id:
+			continue
+		var o: UnitState = sim.state.units.get(oid)
+		if o == null or not o.alive or absf(o.veh.speed) > 0.3 or o.order != UnitState.Order.NONE or o.veh.convoy_id >= 0:
+			continue
+		if Vector2(o.position.x - u.position.x, o.position.z - u.position.z).length() > 700.0:
+			continue
+		var od := o.veh.def()
+		var ofwd := Vector3(-sin(o.yaw), 0.0, -cos(o.yaw))
+		for z in od.circle_z:
+			var c := o.position + ofwd * z
+			out.append([c.x, c.z, od.collide_r])
+	router.parked_circles = out
+
+
 ## Plans a route to `target` for a vehicle and starts driving it. Returns the planner result
 ## ({ok, reason, length_m, road_m, ...}); on failure the vehicle keeps its previous order.
 func order_drive(id: int, target: Vector3, from_transport := false) -> Dictionary:
@@ -80,6 +102,10 @@ func order_drive(id: int, target: Vector3, from_transport := false) -> Dictionar
 	var v := u.veh
 	if v.status == VehicleState.Status.DISABLED:
 		return {"ok": false, "reason": "The vehicle is disabled"}
+	if not from_transport and v.convoy_id >= 0:
+		convoy.leave(id)
+	if not from_transport and not v.job.is_empty():
+		sim.logistics.cancel_job(id, "replaced by a move order")
 	if not from_transport:
 		match v.phase:
 			VehicleState.Phase.APPROACH:
@@ -90,8 +116,16 @@ func order_drive(id: int, target: Vector3, from_transport := false) -> Dictionar
 			VehicleState.Phase.TRANSIT:
 				v.transport_dest = target
 	var t := Vector3(target.x, ground_at(target), target.z)
+	_collect_parked(u)
 	var res := router.plan(u.position, t, v.def())
 	if not res.ok:
+		v.reason = res.reason
+		_event(u, "cannot go there: %s" % res.reason)
+		stats.failed += 1
+		return res
+	var need: float = res.length_m / 1000.0 * v.def().fuel_per_km * 1.05
+	if v.fuel < need:
+		res = {"ok": false, "reason": "Insufficient fuel: the route needs %d l, the tank has %d l" % [ceili(need), roundi(v.fuel)]}
 		v.reason = res.reason
 		_event(u, "cannot go there: %s" % res.reason)
 		stats.failed += 1
@@ -208,7 +242,8 @@ func release_control(id: int, resume := true) -> void:
 	v.in_brake = 1.0
 	v.status = VehicleState.Status.PARKED
 	if resume and u.order == UnitState.Order.MOVE and u.order_target.is_finite():
-		order_drive(id, u.order_target)
+		# Internal: the vehicle keeps its convoy, job and transport state; only the route is planned again.
+		order_drive(id, u.order_target, true)
 	elif not resume:
 		_clear_order(u, VehicleState.Status.PARKED)
 
@@ -262,6 +297,7 @@ func update(dt: float) -> void:
 		return
 	var t0 := Time.get_ticks_usec()
 	ticks += 1
+	convoy.update(dt)
 	for id in ids:
 		var u: UnitState = sim.state.units.get(id)
 		if u and u.veh:
@@ -343,6 +379,8 @@ func _step(u: UnitState, dt: float) -> void:
 		_check_stuck(u, v, d, target_speed, dt)
 	if v.phase != VehicleState.Phase.NONE or not v.occupants.is_empty():
 		transport.update(u, v, dt)
+	if not v.job.is_empty():
+		sim.logistics.update_vehicle(u, v)
 
 
 ## Pure pursuit along the route: {speed, steer}. Also handles arrival.
@@ -377,6 +415,8 @@ func _follow(u: UnitState, v: VehicleState, d: VehicleDefs.Def, dt: float) -> Di
 		steer = -signf(lx if absf(lx) > 0.01 else 1.0) * d.max_steer
 	# Obstacles ahead along the route and the lead vehicle.
 	var gap := _gap_ahead(u, v, d, i)
+	if v.convoy_id >= 0:
+		speed = minf(speed, convoy.speed_limit(u, v))
 	if gap < INF:
 		var allowed := sqrt(2.0 * d.brake * 0.7 * maxf(gap - 2.5, 0.0))
 		if allowed < speed:
@@ -457,6 +497,12 @@ func _integrate(u: UnitState, v: VehicleState, d: VehicleDefs.Def, dt: float) ->
 			blocked = true
 	if not blocked and (absf(np.x) > MAP_LIMIT or absf(np.z) > MAP_LIMIT):
 		blocked = true
+	# The player's vehicle never drives through another vehicle: a footprint that is clear now
+	# must stay clear. AI vehicles keep their distance with the gap logic instead (a hard stop
+	# between two AI vehicles in a crowded yard would only deadlock them).
+	if not blocked and (u.player_controlled or v.speed < 0.0) and absf(v.speed) > 0.01 and ids.size() > 1:
+		if not _hits_vehicle(u, d, u.position, u.yaw) and _hits_vehicle(u, d, np, new_yaw):
+			blocked = true
 	if not blocked and sim.structures:
 		var front := np + fwd * (d.length * 0.5 * (1.0 if moving_fwd else -1.0))
 		if is_nan(sim.state.roads.deck_height(front)) and sim.structures.is_wet(front.x, front.z):
@@ -475,6 +521,29 @@ func _integrate(u: UnitState, v: VehicleState, d: VehicleDefs.Def, dt: float) ->
 	u.velocity = fwd * v.speed
 	v.odometer += absf(v.speed) * dt
 	v.fuel = maxf(v.fuel - moved * d.fuel_per_km / 1000.0, 0.0)
+
+
+## True when the vehicle's collision circles at (p, yaw) touch those of another vehicle.
+func _hits_vehicle(u: UnitState, d: VehicleDefs.Def, p: Vector3, yaw: float) -> bool:
+	var fwd := Vector3(-sin(yaw), 0.0, -cos(yaw))
+	for oid in ids:
+		if oid == u.id:
+			continue
+		var o: UnitState = sim.state.units.get(oid)
+		if o == null or not o.alive:
+			continue
+		var reach := (d.length + o.veh.def().length) * 0.5 + 1.0
+		if Vector2(o.position.x - p.x, o.position.z - p.z).length() > reach:
+			continue
+		var od := o.veh.def()
+		var ofwd := Vector3(-sin(o.yaw), 0.0, -cos(o.yaw))
+		for z1 in d.circle_z:
+			var a := p + fwd * z1
+			for z2 in od.circle_z:
+				var b := o.position + ofwd * z2
+				if Vector2(a.x - b.x, a.z - b.z).length() < d.collide_r + od.collide_r:
+					return true
+	return false
 
 
 func _blocked_at(d: VehicleDefs.Def, p: Vector3, yaw: float) -> bool:
@@ -532,6 +601,22 @@ func _gap_ahead(u: UnitState, v: VehicleState, d: VehicleDefs.Def, i: int) -> fl
 		if o == null or not o.alive:
 			continue
 		var off := o.position - u.position
+		# Close range, any angle (turning in a yard): points ahead of the bumper against the
+		# other vehicle's collision circles.
+		if off.length() < 24.0:
+			var od := o.veh.def()
+			var ofwd := Vector3(-sin(o.yaw), 0.0, -cos(o.yaw))
+			for s in [2.0, 4.5, 8.0, 12.0]:
+				var q: Vector3 = u.position + fwd * (d.length * 0.5 + float(s))
+				var hit := false
+				for oz in od.circle_z:
+					var oc := o.position + ofwd * oz
+					if Vector2(q.x - oc.x, q.z - oc.z).length() < d.collide_r + od.collide_r + 0.4:
+						hit = true
+						break
+				if hit:
+					gap = minf(gap, float(s))
+					break
 		var ahead := off.dot(fwd)
 		if ahead <= 0.0 or ahead > look + d.length:
 			continue
@@ -562,6 +647,12 @@ func _check_stuck(u: UnitState, v: VehicleState, d: VehicleDefs.Def, target_spee
 		return
 	v._progress_t = 0.0
 	v._progress_ref = u.position
+	# Held up so close to the goal by a vehicle that has already stopped there (a column that
+	# lost its order): count it as arrived instead of reporting a failure.
+	if v.route_remaining_m() < 45.0 and v.recoveries >= 1:
+		_arrive(u, v)
+		_event(u, "stopped behind another vehicle near the destination")
+		return
 	v.recoveries += 1
 	v.stuck_s = v.odometer
 	if v.recoveries <= 2:
@@ -634,6 +725,10 @@ func describe(u: UnitState) -> String:
 	var s := "%s  %s" % [d.display_name, v.status_name()]
 	if not v.occupants.is_empty() or v.phase != VehicleState.Phase.NONE:
 		s += "  [" + transport.describe(u) + "]"
+	if not v.cargo.is_empty():
+		s += "  cargo: %s (%d/%d)" % [v.cargo.summary(), roundi(v.cargo.total()), roundi(v.cargo.capacity)]
+	if not v.job.is_empty():
+		s += "  · " + sim.logistics.describe_job(u)
 	if v.status == VehicleState.Status.DRIVING or v.status == VehicleState.Status.PLAYER:
 		s += "  %d km/h" % roundi(absf(v.speed) * 3.6)
 	if u.order == UnitState.Order.MOVE and not v.route.is_empty():
