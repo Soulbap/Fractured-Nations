@@ -3,7 +3,12 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **LOGISTICS-01 / BASE-02** (branch `feature/logistics-01-base-02`, built on
+Current baseline: **INTEGRATION-04** (branch `feature/integration-04`) — LOGISTICS-01 / BASE-02 and the
+AI architecture research integrated on top of `feature/world-integration-03`, no gameplay change. The
+consolidated AI plan (interfaces the AI uses, gaps, milestone order) is [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md);
+the integration findings are in [docs/INTEGRATION-04_REPORT.md](docs/INTEGRATION-04_REPORT.md).
+
+Before that, **LOGISTICS-01 / BASE-02** (branch `feature/logistics-01-base-02`, built on
 `feature/world-integration-03`) — the military operations layer: the 6x6 truck and 8x8 APC are
 persistent, drivable units (AI along the real road network, bridges and player-built roads, in
 the near and the abstract tier alike; direct control with a chase camera), infantry board,

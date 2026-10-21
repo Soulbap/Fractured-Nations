@@ -6,13 +6,14 @@ Norwegian; code, comments and docs are English.
 
 ## Branch workflow
 
-- **`feature/logistics-01-base-02`** (worktree `../fractured-nations-logistics01`) adds vehicles, transport,
-  logistics and functional bases on top of the integration baseline; continue from it.
-- **`feature/world-integration-03` is the integration baseline** (worktree
-  `../fractured-nations-integration03`): `feature/unified-sandbox` (INTEGRATION-02) +
-  `feature/world-playtest-01` + `feature/asset-production-01`, integrated in
-  WORLD-INTEGRATION-03. New milestones branch from it, e.g. `feature/<milestone>`, and are
-  merged back into it (or into its successor integration branch).
+- **`feature/integration-04` is the current baseline** (worktree `../fractured-nations-integration04`):
+  `feature/world-integration-03` + `feature/logistics-01-base-02` (vehicles, transport, logistics, bases)
+  + `research/ai-architecture-01` (docs only), integrated in INTEGRATION-04. New milestones branch from
+  it (`feature/<milestone>`) and merge back into it or its successor. The AI plan is
+  [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md); the next milestone is AI-INTEL-01.
+- `feature/world-integration-03` (worktree `../fractured-nations-integration03`) is the previous baseline
+  and `feature/logistics-01-base-02` (worktree `../fractured-nations-logistics01`) its logistics branch;
+  both stay as history.
 - Do not continue parallel development on the old feature branches
   (`feature/world-sandbox-01b`, `feature/character-01`, `feature/combat-*`, ...). They stay
   as they are, with their worktrees, as history.
@@ -47,6 +48,18 @@ Norwegian; code, comments and docs are English.
 - **One road network** (`RoadNetwork`, `WorldState.roads`): the world's roads.json plus the
   roads built in construction. Route planning, construction snapping and terrain work all read
   it; never add a second road representation. Paved areas are not roads (no route shortcut).
+- **Vehicles, supplies and bases (LOGISTICS-01).** `VehicleSim` (owned by `WorldSim`) is the only
+  vehicle mover, one kinematic step on the `UnitState`/`VehicleState` record in both tiers; `VehicleBody`
+  and `UnitProxy` only display it. `VehicleRouter` is a derived index over `RoadNetwork`, never a second
+  road definition. `Inventory.transfer` moves supplies between stores; `Inventory.add/take` are only for
+  sources and sinks (start stock, costs, fuel burn, resupply). Bases live in `ConstructionState.bases` +
+  `StructureState.base_id`; `FacilityDefs` is the table of what buildings do. Soldiers aboard
+  (`UnitState.vehicle_id >= 0`) are changed only by `VehicleTransport`.
+- **AI layers** (strategic `WarSim._decide` -> operations `OperationState` -> squad tactics
+  `SquadControl` -> individual `CombatBrain`) all read and write the same records and call the same
+  APIs as the player (see the interface map in [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md)). Order of
+  authority: player > operation > squad tactic > reaction. No planner engine, behaviour-tree runtime,
+  second blackboard, AI-only transport/vehicle/inventory/base system.
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are
