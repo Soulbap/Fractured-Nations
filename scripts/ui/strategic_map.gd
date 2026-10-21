@@ -57,6 +57,12 @@ var selected_structure := -1
 ## buttons), -1 = none.
 var pending_order := -1
 var show_help := false
+## AI-OBS-01 developer inspector: the faction whose picture is shown (-1 off), whether the
+## true positions of all squads are drawn as well (clearly marked, never normal information),
+## and the squad inspected on the map (any faction while the truth layer is on).
+var dbg_faction := -1
+var dbg_truth := false
+var dbg_squad := -1
 var half := 10000.0
 const PANEL_W := 360.0
 const ZOOM_MAX := 2.0
@@ -394,11 +400,11 @@ func _selection_text() -> String:
 		if obj.contested:
 			lines.append("[color=#ffd040]CONTESTED - fighting inside, capture paused[/color]")
 		elif _threatened(obj):
-			lines.append("[color=#ff6a5a]THREATENED - enemy forces seen nearby[/color]")
+			lines.append("[color=#ff6a5a]THREATENED - enemy forces reported nearby[/color]")
 		if obj.capture_faction >= 0:
 			lines.append("Being taken by %s: %d %%" % [_fac(obj.capture_faction), int(obj.capture_progress * 100)])
 		var own: int = obj.presence.get(faction, 0)
-		lines.append("Your soldiers there: %d · enemies seen near: %d" % [own, sim.war.known_near(faction, obj.position, obj.radius + 400.0)])
+		lines.append("Your soldiers there: %d · enemies reported near: %d" % [own, sim.war.threat_near(faction, obj.position, obj.radius + 400.0)])
 		return "\n".join(lines)
 	return "[color=#aab]Nothing selected.[/color]"
 
@@ -766,6 +772,24 @@ func _gui_input(event: InputEvent) -> void:
 				show_help = not show_help
 				queue_redraw()
 				accept_event()
+			KEY_I:
+				# Off -> each faction in turn -> off.
+				var ids: Array = sim.state.war.factions.keys()
+				ids.sort()
+				var i := ids.find(dbg_faction)
+				dbg_faction = -1 if i + 1 >= ids.size() and dbg_faction >= 0 else ids[i + 1 if dbg_faction >= 0 else 0]
+				if dbg_faction < 0:
+					dbg_truth = false
+					dbg_squad = -1
+				queue_redraw()
+				accept_event()
+			KEY_T:
+				if dbg_faction >= 0:
+					dbg_truth = not dbg_truth
+					if not dbg_truth:
+						dbg_squad = -1
+					queue_redraw()
+					accept_event()
 			KEY_ESCAPE:
 				if pending_order >= 0:
 					pending_order = -1
@@ -784,6 +808,19 @@ func _click(sp: Vector2, add: bool) -> void:
 	for id in _op_rects:
 		if (_op_rects[id] as Rect2).has_point(sp):
 			select_operation(id)
+			return
+	if dbg_truth:
+		var best := -1
+		var bd := 16.0
+		for sq: SquadState in sim.state.all_squads():
+			if sq.faction == faction or sq.members.is_empty():
+				continue
+			var d := to_screen(sim.war.squad_center(sq)).distance_to(sp)
+			if d < bd:
+				bd = d
+				best = sq.id
+		if best >= 0:
+			dbg_squad = best
 			return
 	var lg := _logistics_at(sp)
 	if not lg.is_empty():
@@ -939,7 +976,7 @@ func _fighting(sq: SquadState) -> bool:
 
 
 func _threatened(o: ObjectiveState) -> bool:
-	return o.owner == faction and not o.contested and sim.war.known_near(faction, o.position, o.radius + 600.0) > 0
+	return o.owner == faction and not o.contested and sim.war.threat_near(faction, o.position, o.radius + 600.0) > 0
 
 
 # --- Drawing ----------------------------------------------------------------------------
@@ -975,6 +1012,8 @@ func _draw() -> void:
 	for op: OperationState in ops:
 		_draw_operation_label(op, font, label_slots)
 	_draw_known_enemies(font)
+	if dbg_truth:
+		_draw_truth(font)
 	_groups = squad_groups()
 	# Markers first, then their labels where there is room.
 	# Close in, each soldier as a dot under its squad's marker (from 1 px/m the
@@ -1002,6 +1041,8 @@ func _draw() -> void:
 		draw_arc(m, 12.0, 0.0, TAU, 20, col, 2.0)
 		_text(font, m + Vector2(16, -8), OperationState.TYPE_NAMES[pending_order].to_upper(), 12, col)
 	_draw_scale(font)
+	if dbg_faction >= 0:
+		_draw_inspector(font, r)
 	_draw_help(font, r)
 
 
@@ -1074,6 +1115,7 @@ func _draw_help(font: Font, r: Rect2) -> void:
 		["", "own objective = reinforce, ground = move"],
 		["Buttons", "Attack / Defend / Reinforce / Move, then click a target"],
 		["G", "view the selection in the tactical view"],
+		["I / T", "developer: AI inspector (faction picture + decisions) / true positions"],
 		[", and .", "time speed 1-16x (first person is always 1x)"],
 		["F5 / F9", "save / load the whole war"],
 		["M / Esc", "close the map     H: hide this"],
@@ -1320,50 +1362,105 @@ func _draw_soldier_dots() -> void:
 				draw_circle(p, 2.0, COL_SELECT if sel else col)
 
 
-## Enemy soldiers the player's faction knows about (WarSim.known): grouped first by
-## 150 m on the ground, then merged on screen like the own squads; older sightings fade.
+## The contacts the map draws now: the inspected faction's while the developer inspector is on,
+## else the player's faction's; each with its screen position, only those on the screen.
+func contact_markers() -> Array:
+	var f := dbg_faction if dbg_faction >= 0 else faction
+	var out := []
+	var area := map_rect().grow(60.0)
+	for c: ContactState in sim.war.intel.contacts_of(f):
+		var p := to_screen(c.pos)
+		if area.has_point(p):
+			out.append({"c": c, "p": p})
+	return out
+
+
+## The contact picture of a faction (AI-INTEL-01): for the player, what its own soldiers have
+## reported (never the real enemy positions); for the developer inspector, the picture of the
+## chosen faction. Marker: filled diamond = observed now, outlined = reported, faded and small =
+## stale; a circle shows how far the enemy may have moved since (uncertainty); "?" = group not
+## identified (heard / fired upon). Text: believed strength, with "?" when not observed now.
 func _draw_known_enemies(font: Font) -> void:
-	var k: Dictionary = sim.war.known.get(faction, {})
-	var clusters := []
-	for id in k:
-		var e: Array = k[id]
-		var u := sim.state.get_unit(id)
-		if u == null:
-			continue
-		var placed := false
-		for c: Dictionary in clusters:
-			if c.f == u.faction and Vector2(c.p.x - e[0].x, c.p.z - e[0].z).length() < 150.0:
-				c.n += 1
-				c.t = maxf(c.t, e[1])
-				placed = true
-				break
-		if not placed:
-			clusters.append({"p": e[0], "f": u.faction, "n": 1, "t": e[1]})
-	var shown := []
-	for c: Dictionary in clusters:
-		var sp := to_screen(c.p)
-		var merged := false
-		for s: Dictionary in shown:
-			if s.f == c.f and (s.sp as Vector2).distance_to(sp) < 22.0:
-				s.sp = (s.sp * s.n + sp * c.n) / (s.n + c.n)
-				s.n += c.n
-				s.t = maxf(s.t, c.t)
-				merged = true
-				break
-		if not merged:
-			shown.append({"sp": sp, "f": c.f, "n": c.n, "t": c.t})
-	for c: Dictionary in shown:
-		var p: Vector2 = c.sp
-		var age: float = sim.state.time - c.t
-		var a := clampf(1.0 - age / sim.war.intel_forget_s, 0.3, 1.0)
-		var col := WorldState.faction_color(c.f)
-		var pts := PackedVector2Array([p + Vector2(0, -10), p + Vector2(10, 0), p + Vector2(0, 10), p + Vector2(-10, 0), p + Vector2(0, -10)])
-		draw_colored_polygon(pts, Color(col.darkened(0.5), 0.85 * a))
-		draw_polyline(pts, Color(col.lightened(0.2), a), 2.0)
+	var f := dbg_faction if dbg_faction >= 0 else faction
+	var now := sim.state.time
+	for m: Dictionary in contact_markers():
+		var c: ContactState = m.c
+		var p: Vector2 = m.p
+		var col := WorldState.faction_color(c.enemy_faction) if c.enemy_faction >= 0 else Color(0.82, 0.82, 0.78)
+		var a := clampf(0.3 + c.conf * 0.7, 0.3, 1.0)
+		var ur := c.unc * zoom
+		if ur > 8.0:
+			draw_circle(p, ur, Color(col, 0.07 * a))
+			draw_arc(p, ur, 0.0, TAU, 48, Color(col.lightened(0.25), 0.5 * a), 1.5)
+		var observed := c.status == ContactState.Status.OBSERVED
+		var r := 6.0 if c.status == ContactState.Status.STALE else 10.0
+		var pts := PackedVector2Array([p + Vector2(0, -r), p + Vector2(r, 0), p + Vector2(0, r), p + Vector2(-r, 0), p + Vector2(0, -r)])
+		if c.enemy_faction < 0:
+			draw_arc(p, r, 0.0, TAU, 20, Color(col, a), 2.0)
+		else:
+			if observed:
+				draw_colored_polygon(pts, Color(col.darkened(0.45), 0.9 * a))
+			else:
+				draw_colored_polygon(pts, Color(col.darkened(0.7), 0.35 * a))
+			draw_polyline(pts, Color(col.lightened(0.2), a), 2.0 if observed else 1.5)
 		_taken.append(Rect2(p - Vector2(11, 11), Vector2(22, 22)))
-		var t := "%d%s" % [c.n, "" if age < 5.0 else "?"]
-		var tw := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
-		_text(font, p + Vector2(-tw * 0.5, 4), t, 11, Color(1, 1, 1, a), 3)
+		var t := "%d%s" % [c.strength, "" if observed else "?"]
+		if dbg_faction >= 0:
+			t = "#%d %s ~%d %d%% %ds %s" % [c.id, c.kind_name().left(3), c.strength, roundi(c.conf * 100.0), roundi(now - c.t_seen), c.source_name()]
+			_text(font, p + Vector2(r + 3, 4), t, 11, Color(1, 1, 1, a), 3)
+		else:
+			var tw := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+			_text(font, p + Vector2(-tw * 0.5, 4), t, 11, Color(1, 1, 1, a), 3)
+
+
+## Developer only: where every other faction's squads really are, hollow and labelled TRUTH,
+## to compare with the inspected faction's belief. Never used by any decision.
+func _draw_truth(font: Font) -> void:
+	var area := map_rect().grow(40.0)
+	for sq: SquadState in sim.state.all_squads():
+		if sq.faction == faction or sq.members.is_empty():
+			continue
+		var p := to_screen(sim.war.squad_center(sq))
+		if not area.has_point(p):
+			continue
+		var col := WorldState.faction_color(sq.faction)
+		var sel := sq.id == dbg_squad
+		var rect := Rect2(p - Vector2(6, 6), Vector2(12, 12))
+		draw_rect(rect, Color(col, 0.25), true)
+		draw_rect(rect, COL_SELECT if sel else Color(col.lightened(0.3), 0.95), false, 2.0 if sel else 1.5)
+		if zoom >= OPERATIONAL_ZOOM or sel:
+			_text(font, p + Vector2(9, -9), "TRUTH %s %d" % [sq.squad_name, sq.members.size()], 10, Color(col.lightened(0.4), 0.95), 3)
+
+
+## Developer inspector (I): the chosen faction's picture and last decisions, and why the
+## inspected squad does what it does.
+func _draw_inspector(font: Font, r: Rect2) -> void:
+	var f := sim.state.war.faction(dbg_faction)
+	if f == null:
+		return
+	var lines: Array[String] = ["AI INSPECTOR  %s   (I next faction / off,  T true positions %s,  click a TRUTH square to inspect its squad)" % [WorldState.faction_name(dbg_faction).to_upper(), "ON" if dbg_truth else "off"]]
+	var sq: SquadState = sim.state.get_squad(dbg_squad)
+	if sq == null and selected_squads.size() == 1:
+		sq = sim.state.get_squad(selected_squads[0])
+	if sq:
+		lines.append("")
+		lines.append_array(sim.war.explain_squad(sq))
+	lines.append("")
+	lines.append_array(sim.war.explain_faction(f))
+	var fs := 12
+	var lh := 15.0
+	var w := minf(r.size.x - 32.0, 760.0)
+	var h := lines.size() * lh + 14.0
+	var box := Rect2(Vector2(16, r.size.y - h - 64.0), Vector2(w, h))
+	draw_rect(box, Color(0.04, 0.05, 0.06, 0.9), true)
+	draw_rect(box, Color(0.35, 0.5, 0.6), false, 1.0)
+	var y := box.position.y + 16.0
+	for i in lines.size():
+		var t: String = lines[i]
+		if t.length() > 128:
+			t = t.substr(0, 127) + "…"
+		draw_string(font, Vector2(box.position.x + 8, y), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1.0, 0.9, 0.55) if i == 0 else Color(0.9, 0.93, 0.9))
+		y += lh
 
 
 func _op_color(op: OperationState) -> Color:
