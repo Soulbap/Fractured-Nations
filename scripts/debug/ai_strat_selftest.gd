@@ -57,6 +57,14 @@ func run(args: PackedStringArray) -> void:
 		_log("b_reduced", await _b_reduced())
 	if _want("e_withdraw"):
 		_log("e_withdraw", await _e_withdraw())
+	if _want("c_reinforce"):
+		_log("c_reinforce", await _c_reinforce())
+	if _want("d_defence"):
+		_log("d_defence", await _d_defence())
+	if _want("f_fronts"):
+		_log("f_fronts", await _f_fronts())
+	if _want("g_intel"):
+		_log("g_intel", await _g_intel())
 	if _want("s0_repro"):
 		_log("s0_repro", await _s0_repro())
 	await _end_strat()
@@ -216,6 +224,238 @@ func _e_withdraw() -> Dictionary:
 		_expect(far_enough == survivors, "E: survivors still stand in the combat area (%d of %d clear)" % [far_enough, survivors])
 		_expect(recovering == survivors, "E: survivors are not marked as recovering")
 	return r
+
+
+# --- Strategic scenario helpers -------------------------------------------------------------------------------------------
+
+## Reads the newest strategic decision of a faction (snapshot) after calling the scorer once.
+func _decide_now(fid: int) -> Dictionary:
+	var fs := war.faction(fid)
+	fs.decisions.clear()
+	ws.strat.decide(fs)
+	return fs.decisions.back() if not fs.decisions.is_empty() else {}
+
+
+func _action(snap: Dictionary, kind: String, objective := "") -> Dictionary:
+	for a: Dictionary in snap.get("actions", []):
+		if a.kind == kind and (objective == "" or a.name == objective):
+			return a
+	return {}
+
+
+## Injects a report like a soldier who saw enemies would file it: it enters IntelSim's queue (and its delay)
+## and becomes a contact of the faction. No enemy needs to stand there.
+func _report(fid: int, at: Vector3, group := 6, src := ContactState.Source.SEEN) -> void:
+	ws.intel._queue(fid, 1 if fid == 0 else 0, ContactState.Kind.INFANTRY, src, at, -1, 20.0, group, "test report", demo.sim.state.time, 0.0)
+	ws.intel.update(1.0)
+
+
+func _strat_reset_faction(fid: int) -> void:
+	var fs := war.faction(fid)
+	fs.recovery_until = 0.0
+	fs.focus_kind = ""
+	fs.focus_until = 0.0
+	fs.decisions.clear()
+	ws.threatened.clear()
+
+
+# --- C: reinforcement of a running attack ---------------------------------------------------------------------------
+
+## South (AI) attacks Haugen, held by North with 16 soldiers; its attack force is one squad. Once the
+## defence is reported the scorer finds more resistance than the attack was built for and sends free
+## squads to the running operation (JOIN), not a second operation.
+func _c_reinforce() -> Dictionary:
+	await _fresh()
+	_pause_ai(true)
+	var hau := _obj("Haugen")
+	hau.owner = 0
+	hau.capture_faction = -1
+	hau.capture_progress = 0.0
+	hau.history.append([demo.sim.state.time, 0])
+	var d1 := _spawn(0, hau.position + Vector3(10, 0, -10))
+	var d2 := _spawn(0, hau.position + Vector3(30, 0, 10))
+	d1.station_objective = hau.id
+	d2.station_objective = hau.id
+	var sh := _obj("South HQ")
+	var start := _near_point(hau.position, sh.position, 420.0)
+	var a := _spawn(1, start)
+	var free1 := _spawn(1, start + Vector3(0, 0, -260.0))
+	var free2 := _spawn(1, start + Vector3(40, 0, -260.0))
+	await _physics(10)
+	_strat_reset_faction(1)
+	var op := ws.start_operation(1, OperationState.Type.ATTACK, [a.id], hau.id, Vector3.INF, false)
+	_expect(op != null, "C: the attack could not start")
+	if op == null:
+		return {}
+	var ops_before := war.active_operations(1).size()
+	# Run until the attack has met the defence (reports exist) or 150 s pass.
+	var w := await _warp(200.0, 12.0, 90.0, func() -> bool:
+		return op.stage >= OperationState.Stage.SUPPORT and ws.intel.threat_near(1, hau.position, hau.radius + 150.0) >= 5)
+	var snap := _decide_now(1)
+	var joined := _action(snap, "join")
+	var squads_after := op.squads.size()
+	var out := {"warp": w, "stage": op.stage_name(), "reported": ws.intel.threat_near(1, hau.position, hau.radius + 150.0), "join_action": joined,
+		"squads_in_op": squads_after, "ops_before": ops_before, "ops_after": war.active_operations(1).size(), "roles": _roles_text_of(op), "actions": snap.get("actions", [])}
+	_expect(not joined.is_empty(), "C: no join action was considered (%s)" % str(snap.get("actions", [])))
+	if not joined.is_empty():
+		_expect(joined.status == "chosen", "C: the join was not carried out (%s)" % joined.status)
+		_expect(squads_after > 1, "C: no squad joined the attack")
+		var attacks := war.active_operations(1).filter(func(o: OperationState) -> bool: return o.type == OperationState.Type.ATTACK and o.target_objective == hau.id).size()
+		_expect(attacks == 1, "C: a competing second attack on the same objective exists (%d)" % attacks)
+	_expect(_consistency().count == 0, "C: operation records inconsistent")
+	return out
+
+
+func _roles_text_of(op: OperationState) -> String:
+	var parts: Array[String] = []
+	for sid in op.roles:
+		var sq := demo.sim.state.get_squad(sid)
+		parts.append("%s %s" % [sq.squad_name if sq else "#%d" % sid, SquadState.OP_ROLE_NAMES[int(op.roles[sid])]])
+	return ", ".join(parts)
+
+
+# --- D: strategic defence ------------------------------------------------------------------------------------------------
+
+## East (defensive AI) holds Elvetun with one squad; a report of about 14 enemies arrives from 500 m away (no
+## enemy stands there). The scorer evaluates it from the faction's picture, sends free squads, and the
+## objective is not abandoned: the defenders take positions around it.
+func _d_defence() -> Dictionary:
+	await _fresh()
+	_pause_ai(true)
+	var objs := war.all_objectives().filter(func(o: ObjectiveState) -> bool: return o.owner == 2 and not o.is_hq())
+	if objs.is_empty():
+		_expect(false, "D: East holds no objective besides its HQ")
+		return {}
+	var target: ObjectiveState = objs[0]
+	var garrison := _spawn(2, target.position + Vector3(8, 0, 8))
+	garrison.station_objective = target.id
+	var hq := _obj("East HQ")
+	var free_a := _spawn(2, _near_point(target.position, hq.position, 600.0))
+	var free_b := _spawn(2, _near_point(target.position, hq.position, 640.0) + Vector3(30, 0, 0))
+	await _physics(10)
+	_strat_reset_faction(2)
+	var enemy_at := _near_point(target.position, _obj("North HQ").position, 520.0)
+	_report(2, enemy_at, 14, ContactState.Source.SEEN)
+	var snap := _decide_now(2)
+	var act := _action(snap, "reinforce", target.obj_name)
+	var out := {"objective": target.obj_name, "action": act, "threats": snap.get("threats", []), "forces": snap.get("forces", {}), "focus": snap.get("focus", ""),
+		"ops": war.active_operations(2).map(func(o: OperationState) -> String: return "%s -> %s" % [o.type_name(), o.reason])}
+	_expect(not act.is_empty(), "D: a report of 14 enemies near an owned objective produced no reinforce action (%s)" % str(snap.get("actions", [])))
+	if not act.is_empty():
+		_expect(act.status == "chosen", "D: the reinforcement was not sent (%s)" % act.status)
+		_expect(act.basis in ["confirmed", "reported"], "D: the estimate carries no basis (%s)" % act.basis)
+	# Let the reinforcements arrive and take positions; the objective stays held.
+	await _warp(260.0, 12.0, 120.0)
+	var defending := 0
+	var posted := 0
+	for sq: SquadState in demo.sim.state.all_squads():
+		if sq.faction == 2 and _flat(demo.sim.squads._centroid(sq), target.position) < target.radius + 120.0:
+			defending += 1
+			if sq.tactic == SquadState.Tactic.DEFEND:
+				posted += 1
+	out["defending_squads"] = defending
+	out["posted_squads"] = posted
+	out["owner_after"] = target.owner
+	_expect(defending >= 2, "D: the objective was not reinforced (%d squads there)" % defending)
+	_expect(target.owner == 2, "D: the objective was abandoned")
+	return out
+
+
+# --- F: two fronts ------------------------------------------------------------------------------------------------------------
+
+## East holds two objectives besides its HQ, both reported threatened, with four free squads: the forces are
+## split by importance and threat, a reserve is kept, no objective takes everything, and the decision list says why.
+func _f_fronts() -> Dictionary:
+	await _fresh()
+	_pause_ai(true)
+	var objs := war.all_objectives().filter(func(o: ObjectiveState) -> bool: return o.owner == 2 and not o.is_hq())
+	if objs.size() < 2:
+		# Hand East a second objective for the test (the war is paused; ownership is restored by the scenario end).
+		for o: ObjectiveState in war.all_objectives():
+			if o.owner != 2 and not o.is_hq() and objs.size() < 2 and o.owner != 0:
+				o.owner = 2
+				objs.append(o)
+	var a: ObjectiveState = objs[0]
+	var b: ObjectiveState = objs[1]
+	var hq := _obj("East HQ")
+	var sqs: Array = []
+	for i in 5:
+		sqs.append(_spawn(2, hq.position + Vector3(i * 12.0, 0, 30.0)))
+	await _physics(10)
+	_strat_reset_faction(2)
+	_report(2, _near_point(a.position, _obj("North HQ").position, 450.0), 14)
+	_report(2, _near_point(b.position, _obj("South HQ").position, 450.0), 12)
+	var snap := _decide_now(2)
+	var targets := {}
+	for op: OperationState in war.active_operations(2):
+		if op.type == OperationState.Type.REINFORCE:
+			targets[op.target_objective] = targets.get(op.target_objective, 0) + op.squads.size()
+	var committed := 0
+	for k in targets:
+		committed += targets[k]
+	var out := {"objectives": [a.obj_name, b.obj_name], "targets": targets, "committed_squads": committed, "forces": snap.get("forces", {}), "actions": snap.get("actions", []), "focus": snap.get("focus", "")}
+	var listed := 0
+	for ob: ObjectiveState in [a, b]:
+		if not _action(snap, "reinforce", ob.obj_name).is_empty():
+			listed += 1
+	_expect(listed == 2, "F: not both threatened objectives were weighed (%d of 2 in the action list)" % listed)
+	_expect(targets.size() >= 2, "F: only %d objective(s) were reinforced (%s)" % [targets.size(), str(targets)])
+	_expect(committed < sqs.size() + 3, "F: absurd commitment")
+	var reserve_left := 0
+	for sq: SquadState in sqs:
+		if sq.op_id < 0:
+			reserve_left += 1
+	out["squads_kept_back"] = reserve_left
+	_expect(snap.get("actions", []).size() >= 2, "F: the decision list is missing from the snapshot")
+	return out
+
+
+# --- G: imperfect intelligence --------------------------------------------------------------------------------------------------
+
+## Confidence matters: a fresh sighting and a faint old report of the same size near an objective are not scored
+## alike, the report is where it was reported (not where an enemy stands), and a new sighting changes the plan.
+func _g_intel() -> Dictionary:
+	await _fresh()
+	_pause_ai(true)
+	var objs := war.all_objectives().filter(func(o: ObjectiveState) -> bool: return o.owner == 2 and not o.is_hq())
+	var o: ObjectiveState = objs[0]
+	var hq := _obj("East HQ")
+	_spawn(2, hq.position + Vector3(0, 0, 30.0))
+	_spawn(2, hq.position + Vector3(30, 0, 30.0))
+	var truth := _spawn(0, _near_point(o.position, _obj("North HQ").position, 2500.0))
+	await _physics(10)
+	_strat_reset_faction(2)
+	var at := _near_point(o.position, _obj("North HQ").position, 500.0)
+	_report(2, at, 10, ContactState.Source.HEARD)
+	var stale_snap := _decide_now(2)
+	var stale := _action(stale_snap, "reinforce", o.obj_name)
+	# Cancel what the first decision did, then a fresh sighting of the same group.
+	for op: OperationState in war.active_operations(2):
+		ws.cancel(op.id, "test")
+	await _physics(5)
+	_strat_reset_faction(2)
+	_report(2, at, 10, ContactState.Source.SEEN)
+	var fresh_snap := _decide_now(2)
+	var fresh := _action(fresh_snap, "reinforce", o.obj_name)
+	var contact: ContactState = null
+	for c: ContactState in ws.intel.contacts_of(2):
+		contact = c
+	var out := {"heard": stale, "seen": fresh, "contact_pos": _v(contact.pos) if contact else [], "true_enemy": _v(demo.sim.state.get_unit(truth.members[0]).position),
+		"contacts": ws.intel.contacts_of(2).size()}
+	_expect(not fresh.is_empty(), "G: a seen group near the objective produced no action")
+	if not stale.is_empty():
+		_expect(stale.status != "chosen" or stale.basis != "confirmed", "G: a sound report was treated as a confirmed sighting")
+	if not fresh.is_empty() and not stale.is_empty():
+		_expect(fresh.utility > stale.utility, "G: a sighting (%.2f) is not scored above a faint sound report (%.2f)" % [fresh.utility, stale.utility])
+		_expect(fresh.basis == "confirmed" or fresh.basis == "reported", "G: the sighting is labelled %s" % fresh.basis)
+	if contact:
+		var enemy_pos := demo.sim.state.get_unit(truth.members[0]).position
+		_expect(_flat(contact.pos, enemy_pos) > 1500.0, "G: the contact tracked a hidden enemy elsewhere")
+	return out
+
+
+func _flat(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x - b.x, a.z - b.z).length()
 
 
 # --- Output (own prefix and file) ----------------------------------------------------------------

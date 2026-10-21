@@ -197,7 +197,7 @@ func _collect_joins(f: FactionState, p: FactionProfile, free: Array, actions: Ar
 			continue
 		var need := maxi(ceili(reported * p.attack_ratio) - soldiers, 6)
 		actions.append({"kind": "join", "name": "attack on %s (#%d)" % [obj.obj_name, op.id], "op": op.id, "objective": obj.id,
-			"utility": 3.2 + 2.0 * clampf(float(reported) / maxf(soldiers, 1.0), 0.0, 1.5) + (1.0 if status.eff < 0.65 else 0.0), "need": need,
+			"utility": 5.0 + 2.5 * clampf(float(reported) / maxf(soldiers, 1.0), 0.0, 1.5) + (1.0 if status.eff < 0.65 else 0.0), "need": need,
 			"basis": basis_near(f.id, obj.position, obj.radius + 150.0), "status": "candidate",
 			"note": "%d believed defenders against %d attackers, effectiveness %.2f" % [reported, soldiers, status.eff]})
 
