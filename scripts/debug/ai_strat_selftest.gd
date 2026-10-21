@@ -356,6 +356,20 @@ func _d_defence() -> Dictionary:
 	out["defending_squads"] = defending
 	out["posted_squads"] = posted
 	out["owner_after"] = target.owner
+	var spots: Array = []
+	var roles: Array = []
+	for sq: SquadState in demo.sim.state.all_squads():
+		if sq.faction == 2 and sq.station_objective == target.id:
+			spots.append(demo.sim.squads._centroid(sq))
+			roles.append(sq.defence_role)
+	var apart := 0.0
+	for i in spots.size():
+		for j in range(i + 1, spots.size()):
+			apart = maxf(apart, _flat(spots[i], spots[j]))
+	out["garrison_roles"] = roles
+	out["garrison_spread_m"] = snappedf(apart, 1.0)
+	if spots.size() >= 2:
+		_expect(apart >= 25.0, "D: the squads at the objective stand on one spot (%.0f m apart)" % apart)
 	_expect(defending >= 2, "D: the objective was not reinforced (%d squads there)" % defending)
 	_expect(target.owner == 2, "D: the objective was abandoned")
 	return out

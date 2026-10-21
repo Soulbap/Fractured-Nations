@@ -103,6 +103,8 @@ var tactic_leg := 0
 ## its ASSAULT / FLANK has external fire support (another squad of the operation suppresses), which
 ## lets it skip its own support set-up and close faster.
 var op_role := OpRole.NONE
+## AI-COMBAT-STRAT-01: sector or local reserve at a defended objective (saved, shown by the inspector).
+var defence_role := ""
 var tactic_ext := false
 ## The squad is recovering (regrouping, calming down) and is not offered to new offensives before this time.
 var recover_until := 0.0
@@ -178,7 +180,7 @@ func to_dict() -> Dictionary:
 		"tactic": tactic, "tactic_owner": tactic_owner, "tactic_phase": tactic_phase, "tactic_since": tactic_since,
 		"tactic_phase_since": tactic_phase_since, "tactic_target": tactic_target, "tactic_contact": tactic_contact,
 		"tactic_dir": tactic_dir, "tactic_dest": tactic_dest, "tactic_route": Array(tactic_route), "tactic_route_i": tactic_route_i,
-		"tactic_replans": tactic_replans, "tactic_leg": tactic_leg, "op_role": op_role, "tactic_ext": tactic_ext, "recover_until": recover_until, "tactic_op": tactic_op, "tactic_leg_since": tactic_leg_since, "formation_auto": formation_auto, "tactic_cooldown_until": tactic_cooldown_until, "tactic_commit_until": tactic_commit_until,
+		"tactic_replans": tactic_replans, "tactic_leg": tactic_leg, "op_role": op_role, "defence_role": defence_role, "tactic_ext": tactic_ext, "recover_until": recover_until, "tactic_op": tactic_op, "tactic_leg_since": tactic_leg_since, "formation_auto": formation_auto, "tactic_cooldown_until": tactic_cooldown_until, "tactic_commit_until": tactic_commit_until,
 		"prev_order": prev_order, "prev_target": prev_target, "prev_yaw": prev_yaw, "tactic_why": tactic_why, "tactic_rejected": tactic_rejected,
 	}
 
@@ -224,6 +226,7 @@ static func from_dict(d: Dictionary) -> SquadState:
 	s.tactic_replans = d.get("tactic_replans", 0)
 	s.tactic_leg = d.get("tactic_leg", 0)
 	s.op_role = d.get("op_role", OpRole.NONE)
+	s.defence_role = d.get("defence_role", "")
 	s.tactic_ext = d.get("tactic_ext", false)
 	s.recover_until = d.get("recover_until", 0.0)
 	s.tactic_op = d.get("tactic_op", -1)

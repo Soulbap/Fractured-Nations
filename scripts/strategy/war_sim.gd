@@ -260,7 +260,7 @@ func explain_squad(sq: SquadState) -> Array[String]:
 				cur = sq.route[i]
 			out.append("Route: waypoint %d of %d, %.0f m to go" % [sq.route_i + 1, sq.route.size(), rem])
 	elif sq.station_objective >= 0 and war.objective(sq.station_objective):
-		out.append("Commanded by: nobody - garrison of %s" % war.objective(sq.station_objective).obj_name)
+		out.append("Commanded by: nobody - garrison of %s%s" % [war.objective(sq.station_objective).obj_name, (" (" + sq.defence_role + ")") if sq.defence_role != "" else ""])
 	elif sq.faction == war.player_faction:
 		out.append("Commanded by: the player's direct order (or idle)")
 	else:
@@ -368,6 +368,7 @@ func release_squads(squad_ids: Array, why: String) -> void:
 		var op := war.operation(sq.op_id)
 		sq.op_id = -1
 		sq.op_role = SquadState.OpRole.NONE
+		sq.defence_role = ""
 		sim.squads.clear_route(sq)
 		if op:
 			var i := op.squads.find(sq.id)
@@ -662,6 +663,7 @@ func _set_phase(op: OperationState, p: OperationState.Phase) -> void:
 
 ## The operation's squads stay at the objective as its garrison.
 func _garrison(op: OperationState, obj: ObjectiveState) -> void:
+	var sqs: Array = []
 	for sid in op.squads:
 		var sq := sim.state.get_squad(sid)
 		if sq:
@@ -669,6 +671,48 @@ func _garrison(op: OperationState, obj: ObjectiveState) -> void:
 			sq.op_role = SquadState.OpRole.NONE
 			sq.station_objective = obj.id
 			sim.squads.clear_route(sq)
+			sqs.append(sq)
+	for other: SquadState in squads_of(op.faction):
+		if other.station_objective == obj.id and other.op_id < 0 and not sqs.has(other) and other.tactic_owner != SquadState.Owner.PLAYER and other.order != SquadState.Order.MOVE:
+			sqs.append(other)
+	_defence_posture(obj, sqs, op.faction)
+
+
+## AI-COMBAT-STRAT-01: several squads at one objective do not stack in the centre. With a believed threat
+## they take sectors in an arc facing it (the faction's own picture, not the real enemy), and from three
+## squads the last one is the local reserve behind the objective. Without a known threat the squads spread
+## evenly around the objective. Squads that already stand within a sector do not move.
+func _defence_posture(obj: ObjectiveState, sqs: Array, faction: int) -> void:
+	var n := sqs.size()
+	if n < 2:
+		return
+	var facing := Vector3.INF
+	var best := 0.0
+	for c: ContactState in intel.contacts_near(faction, obj.position, obj.radius + 500.0):
+		var w: float = c.conf * float(maxi(c.strength, 1))
+		if w > best:
+			best = w
+			facing = c.pos
+	var base := 0.0
+	if facing.is_finite():
+		base = atan2(facing.z - obj.position.z, facing.x - obj.position.x)
+	var front: int = n - 1 if (n >= 3 and facing.is_finite()) else n
+	for i in n:
+		var sq: SquadState = sqs[i]
+		var ang := base
+		var d := obj.radius * 0.55
+		if i >= front:
+			ang = base + PI  # local reserve behind the objective
+			d = obj.radius * 0.3
+		elif facing.is_finite():
+			ang = base + (float(i) - float(front - 1) * 0.5) * 0.9
+		else:
+			ang = TAU * float(i) / float(n)
+		var p := obj.position + Vector3(cos(ang), 0, sin(ang)) * d
+		if not routes.passable(p):
+			p = _slot_in(obj, i)
+		sim.squads.follow_route(sq, PackedVector3Array([_ground(p)]), SquadState.Formation.LINE)
+		sq.defence_role = "reserve" if i >= front else "sector %d" % (i + 1)
 
 
 ## More squads for a running operation (reinforcement): they march to its staging point and the
@@ -708,6 +752,7 @@ func _end(op: OperationState, phase: OperationState.Phase, why: String) -> void:
 		var sq0 := sim.state.get_squad(sid)
 		if sq0 and sq0.op_id == op.id:
 			sq0.op_role = SquadState.OpRole.NONE
+			sq0.defence_role = ""
 	op.phase = phase
 	op.ended_at = sim.state.time
 	op.outcome = why
