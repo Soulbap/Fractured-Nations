@@ -120,6 +120,8 @@ func row_text(sq: SquadState) -> String:
 		SquadState.Status.PARTIAL:
 			progress = "%d blocked" % sq.blocked.size()
 	var order := sq.order_name()
+	if sq.tactic != SquadState.Tactic.NONE:
+		order = sim.tactics.short_text(sq).to_upper()
 	if sq.order == SquadState.Order.FOLLOW:
 		var t := sim.squads.follow_target(sq)
 		var other := sim.state.get_squad(sq.follow_squad_id)

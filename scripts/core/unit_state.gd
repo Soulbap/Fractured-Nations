@@ -121,6 +121,22 @@ var anchor_pos := Vector3.INF
 ## Why the last cover was chosen or rejected (debugging; not saved).
 var cover_note := ""
 
+# --- Suppression and fire missions (AI-SQUAD-01). Persisted. ---
+## Suppression 0..1 as of `suppression_t`, fed by shots passing close and by hits, decaying
+## with time (suppression_at). It makes the soldier less accurate and slower to acquire,
+## keeps it in cover and delays its dashes.
+var suppression := 0.0
+var suppression_t := -1.0e9
+## Time of the last hit taken (self-defence under hold fire).
+var hit_at := -1.0e9
+## Fire mission: shoot at this position (a reported contact, a position the player chose -
+## never a hidden enemy's true position) until `fire_until`, when no target is visible.
+var fire_at := Vector3.INF
+var fire_until := -1.0
+## The firing position a squad tactic assigned (INF = none); cover reactions stay within a
+## few metres of it.
+var post_pos := Vector3.INF
+
 
 func is_aboard() -> bool:
 	return vehicle_id >= 0
@@ -156,6 +172,8 @@ func to_dict() -> Dictionary:
 		"react_target": react_target, "react_state": react_state, "react_until": react_until, "cover_pos": cover_pos,
 		"cover_checked_at": cover_checked_at, "threat_pos": threat_pos, "threat_at": threat_at,
 		"under_fire_until": under_fire_until, "anchor_pos": anchor_pos,
+		"suppression": suppression, "suppression_t": suppression_t, "hit_at": hit_at, "fire_at": fire_at,
+		"fire_until": fire_until, "post_pos": post_pos,
 	}
 
 
@@ -224,6 +242,12 @@ func copy_combat_from(d: Dictionary) -> void:
 	under_fire_until = d.get("under_fire_until", -1.0e9)
 	anchor_pos = d.get("anchor_pos", Vector3.INF)
 	cover_note = ""
+	suppression = d.get("suppression", 0.0)
+	suppression_t = d.get("suppression_t", -1.0e9)
+	hit_at = d.get("hit_at", -1.0e9)
+	fire_at = d.get("fire_at", Vector3.INF)
+	fire_until = d.get("fire_until", -1.0)
+	post_pos = d.get("post_pos", Vector3.INF)
 
 
 func is_reloading() -> bool:
@@ -236,6 +260,27 @@ func ai_state_name() -> String:
 
 func tactic_name() -> String:
 	return TACTIC_NAMES[tactic]
+
+
+## Suppression holds for SUPPRESSION_HOLD_S after the last incoming round, then decays
+## exponentially (time constant SUPPRESSION_TAU_S).
+const SUPPRESSION_HOLD_S := 1.2
+const SUPPRESSION_TAU_S := 5.0
+
+
+func suppression_at(now: float) -> float:
+	if suppression <= 0.001:
+		return 0.0
+	var idle := now - suppression_t - SUPPRESSION_HOLD_S
+	if idle <= 0.0:
+		return suppression
+	return suppression * exp(-idle / SUPPRESSION_TAU_S)
+
+
+## Adds incoming-fire pressure (the value first decays to now, then grows, capped at 1).
+func add_suppression(amount: float, now: float) -> void:
+	suppression = minf(suppression_at(now) + amount, 1.0)
+	suppression_t = now
 
 
 func is_reacting() -> bool:

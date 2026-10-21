@@ -128,7 +128,35 @@ var max_cover_candidates := 14
 ## Two soldiers do not take cover spots closer than this (m).
 var cover_spacing_m := 1.1
 
+# --- Suppression (AI-SQUAD-01) --------------------------------------------------------
+## Added to a soldier's suppression by a shot passing within near_miss_m (scaled by how
+## close) and by a hit.
+var suppression_per_shot := 0.11
+var suppression_per_hit := 0.30
+## Suppression from which a soldier stays down: a cover search even without a dash order,
+## fewer and later bursts, no dashes across open ground. Aim error grows by up to
+## suppression_aim_mult x the value, acquisition slows by suppression_acquire_s x it.
+var suppressed_at := 0.35
+var pinned_at := 0.6
+var suppression_aim_mult := 2.2
+var suppression_acquire_s := 0.9
+## Fire missions at a reported position: burst size, pause between bursts (s) and the
+## fraction of a full load below which they slow down / stop (a magazine is always kept).
+var mission_burst := 3
+var mission_pause_s := 1.3
+var mission_slow_ammo := 0.5
+var mission_stop_ammo := 0.2
+## Cover reactions of a soldier standing at a squad-assigned post stay within this (m).
+var cover_radius_post := 3.5
+## A hold-fire soldier hit within this long ago returns fire at enemies closer than
+## self_defence_m (self-defence).
+var self_defence_s := 6.0
+var self_defence_m := 100.0
+
 # --- Measurements ---------------------------------------------------------------------
+var suppression_events := 0
+var mission_shots := 0
+var mission_holds := 0
 var sight_checks := 0
 var sight_usec := 0
 var perception_updates := 0
@@ -289,7 +317,8 @@ func update(delta: float) -> void:
 		if u == null or u.vehicle_id >= 0:
 			continue
 		if u.target_id < 0 and not u.is_reloading() and u.watch_until < now and not u.player_controlled \
-				and (u.mag * 2 >= _mag_size(u) or u.reserve <= 0):
+				and not (u.fire_at.is_finite() and now < u.fire_until) \
+					and (u.mag * 2 >= _mag_size(u) or u.reserve <= 0):
 			if u.ai_state != UnitState.AiState.IDLE:
 				u.ai_state = UnitState.AiState.IDLE
 				u.ai_reason = "no target"
@@ -469,7 +498,7 @@ func _acquire(u: UnitState, t: UnitState, aim_y: float) -> void:
 		acquisitions += 1
 		u.target_id = t.id
 		var d := _flat(u.position, t.position)
-		u.aim_ready_at = now + reaction_s + reaction_per_100m_s * d / 100.0
+		u.aim_ready_at = now + reaction_s + reaction_per_100m_s * d / 100.0 + suppression_acquire_s * u.suppression_at(now)
 		u.burst_left = 0
 		_event(u, "sees %s at %.0f m" % [t.unit_name, d])
 		_share_contact(u, t)
@@ -567,8 +596,13 @@ func _on_shot(shot: Dictionary) -> void:
 			if u.faction != s.faction and u.alive and not u.player_controlled:
 				# Vertical check too: a shot far overhead does not count.
 				var pts := Geometry3D.get_closest_points_between_segments(origin, end, u.position, u.position + Vector3.UP * 1.8)
-				if pts[0].distance_to(pts[1]) <= near_miss_m:
+				var miss: float = pts[0].distance_to(pts[1])
+				if miss <= near_miss_m:
 					_under_fire(u, origin)
+					# AI-SQUAD-01: the closer it passes, the more it suppresses; a hit is
+					# counted by _on_damaged.
+					u.add_suppression(suppression_per_shot * (1.0 - 0.7 * miss / near_miss_m), sim.state.time)
+					suppression_events += 1
 	prof.shot_events += Time.get_ticks_usec() - t0
 
 
@@ -589,6 +623,8 @@ func _on_damaged(t: UnitState, _amount: float, _zone: int, source_id: int) -> vo
 	if t.target_id < 0 or not t.target_visible:
 		_watch(t, s.position, 5.0)
 	if tactics_enabled and s.faction != t.faction:
+		t.hit_at = sim.state.time
+		t.add_suppression(suppression_per_hit, sim.state.time)
 		_under_fire(t, CombatSim.eye_of(s))
 
 
@@ -687,6 +723,8 @@ func _ensure_grid() -> void:
 		if u.alive and u.kind == UnitState.Kind.SOLDIER and u.vehicle_id < 0:
 			if u.cover_pos.is_finite():
 				_covers.append([u.cover_pos, u])
+			if u.post_pos.is_finite():
+				_covers.append([u.post_pos, u])
 			var k := Vector2i(floori(u.position.x / GRID), floori(u.position.z / GRID))
 			if not _grid.has(k):
 				_grid[k] = []
@@ -768,6 +806,14 @@ func order_mode(u: UnitState) -> String:
 		return "player"
 	var sq := sim.state.squad_of(u.id)
 	if sq and not sq.is_detached(u.id):
+		# AI-SQUAD-01: inside a squad tactic a soldier either dashes to its assigned post
+		# (reacts only when pinned) or holds it (reacts within a few metres of it).
+		if sq.tactic != SquadState.Tactic.NONE:
+			if u.order == UnitState.Order.MOVE:
+				return "dash"
+			if u.post_pos.is_finite():
+				return "post"
+			return "hold"
 		match sq.order:
 			SquadState.Order.FOLLOW:
 				return "follow"
@@ -788,14 +834,18 @@ func _tactics(u: UnitState) -> void:
 			u.clear_reaction()
 		_searches.erase(u.id)
 		return
-	var threatened := u.under_fire_until >= now and u.threat_pos.is_finite()
+	var supp := u.suppression_at(now)
+	var threatened := (u.under_fire_until >= now or supp >= suppressed_at) and u.threat_pos.is_finite()
+	# A soldier dashing between posts of a squad tactic keeps going unless pinned down.
+	if mode == "dash" and supp < pinned_at and u.tactic == UnitState.Tactic.NONE:
+		return
 	match u.tactic:
 		UnitState.Tactic.NONE:
 			if u.is_reacting():
 				u.clear_reaction()
 			if threatened and now >= u.tactic_cooldown_until and not _searches.has(u.id):
 				_start_search(u, mode)
-			elif mode == "hold" and not threatened and now - u.threat_at > calm_s and u.anchor_pos.is_finite() 					and _flat(u.position, u.anchor_pos) > 2.5 and now >= u.tactic_cooldown_until:
+			elif (mode == "hold" or mode == "post") and not threatened and now - u.threat_at > calm_s and u.anchor_pos.is_finite() 					and _flat(u.position, u.anchor_pos) > 2.5 and now >= u.tactic_cooldown_until:
 				# A reaction that ended away from the held spot (cover not reached, cover no
 				# longer useful): walk back once it is calm.
 				u.tactic = UnitState.Tactic.RETURNING
@@ -825,7 +875,7 @@ func _tactics(u: UnitState) -> void:
 				_end_reaction(u, move_react_cooldown_s)
 			elif now - u.threat_at > calm_s:
 				var anchor := u.anchor_pos
-				if mode == "hold" and anchor.is_finite() and _flat(u.position, anchor) > 2.0:
+				if (mode == "hold" or mode == "post") and anchor.is_finite() and _flat(u.position, anchor) > 2.0:
 					u.tactic = UnitState.Tactic.RETURNING
 					u.tactic_since = now
 					u.react_target = anchor
@@ -881,6 +931,15 @@ func _start_search(u: UnitState, mode: String) -> void:
 	var radius := cover_radius_hold
 	var limit := INF
 	match mode:
+		"post":
+			# A squad-assigned firing post: look for cover only next to it.
+			center = u.post_pos
+			radius = cover_radius_post
+			if not u.anchor_pos.is_finite():
+				u.anchor_pos = u.post_pos
+		"dash":
+			radius = cover_radius_regroup
+			limit = react_s_regroup
 		"hold":
 			if not u.anchor_pos.is_finite():
 				u.anchor_pos = u.position
@@ -982,10 +1041,21 @@ func _finish_search(u: UnitState, s: Dictionary) -> void:
 ## rocks and trunks (relative to the threat); terrain spots with a rise towards the
 ## threat. Only within radius of center, on usable ground; at most max_cover_candidates.
 func _cover_candidates(u: UnitState, center: Vector3, radius: float, threat: Vector3) -> Array:
-	var tdir := Vector3(threat.x - u.position.x, 0.0, threat.z - u.position.z)
+	var out := [{"p": u.position, "kind": "here", "d": 0.0}]
+	var spots := cover_spots(center, radius, threat, u.position)
+	if spots.is_empty() and sim.combat.line.vegetation and _veg_missing(center, radius):
+		return []  # vegetation not filled yet: search again next update
+	return out + spots
+
+
+## Cover spots around `center` (structures, rocks, trunks, terrain rises relative to the
+## threat), cheapest first, at most max_cover_candidates; `origin` is where distances are
+## measured from. Shared by the soldiers own reaction and the squad tactics post search
+## (AI-SQUAD-01). Empty while vegetation cells are still being filled.
+func cover_spots(center: Vector3, radius: float, threat: Vector3, origin: Vector3, limit := -1) -> Array:
+	var tdir := Vector3(threat.x - origin.x, 0.0, threat.z - origin.z)
 	tdir = tdir.normalized() if tdir.length() > 0.1 else Vector3.FORWARD
 	var out := []
-	out.append({"p": u.position, "kind": "here", "d": 0.0})
 	var st := sim.structures
 	if st and st.state:
 		var cs := StructureManager.CELL
@@ -1001,7 +1071,7 @@ func _cover_candidates(u: UnitState, center: Vector3, radius: float, threat: Vec
 					if _flat(o, center) > radius + 6.0:
 						continue
 					var p := o - tdir * (_half_extent(s.type_id) + 0.6)
-					_add_candidate(out, u, center, radius, p, "structure")
+					_add_candidate(out, origin, center, radius, p, "structure")
 	var line := sim.combat.line
 	if line.vegetation:
 		var b0 := Vector2i(floori((center.x - radius - 2.0) / LineOfFire.BUCKET), floori((center.z - radius - 2.0) / LineOfFire.BUCKET))
@@ -1018,7 +1088,7 @@ func _cover_candidates(u: UnitState, center: Vector3, radius: float, threat: Vec
 						_warm_set[cc] = true
 						_warm_queue.append(cc)
 		if missing:
-			return []  # vegetation not filled yet: search again next update
+			return []
 		for bx in range(b0.x, b1.x + 1):
 			for bz in range(b0.y, b1.y + 1):
 				var data: PackedFloat32Array = line._buckets.get(Vector2i(bx, bz), PackedFloat32Array())
@@ -1028,7 +1098,7 @@ func _cover_candidates(u: UnitState, center: Vector3, radius: float, threat: Vec
 					if (rock and r < 0.5) or (not rock and r < 0.25):
 						continue
 					var c := Vector3(data[i], data[i + 2], data[i + 1])
-					_add_candidate(out, u, center, radius, c - tdir * (r + 0.55), "rock" if rock else "tree")
+					_add_candidate(out, origin, center, radius, c - tdir * (r + 0.55), "rock" if rock else "tree")
 	# Terrain: spots with ground rising at least 0.9 m within 8 m towards the threat.
 	if sim.terrain:
 		for ring: float in [3.0, 6.0, 9.0, 12.0]:
@@ -1046,15 +1116,28 @@ func _cover_candidates(u: UnitState, center: Vector3, radius: float, threat: Vec
 					if not is_nan(hh):
 						rise = maxf(rise, hh - h)
 				if rise >= 0.9:
-					_add_candidate(out, u, center, radius, p, "terrain")
-	var rank := {"here": 0, "structure": 1, "rock": 2, "terrain": 3, "tree": 4}
-	var rest := out.slice(1)
-	rest.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+					_add_candidate(out, origin, center, radius, p, "terrain")
+	var rank := {"structure": 1, "rock": 2, "terrain": 3, "tree": 4}
+	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return a.d + rank[a.kind] * 3.0 < b.d + rank[b.kind] * 3.0)
-	return [out[0]] + rest.slice(0, max_cover_candidates)
+	return out.slice(0, max_cover_candidates if limit < 0 else limit)
 
 
-func _add_candidate(out: Array, u: UnitState, center: Vector3, radius: float, p: Vector3, kind: String) -> void:
+## True while vegetation cells within radius of center are missing (queued for filling).
+func _veg_missing(center: Vector3, radius: float) -> bool:
+	var line := sim.combat.line
+	var b0 := Vector2i(floori((center.x - radius - 2.0) / LineOfFire.BUCKET), floori((center.z - radius - 2.0) / LineOfFire.BUCKET))
+	var b1 := Vector2i(floori((center.x + radius + 2.0) / LineOfFire.BUCKET), floori((center.z + radius + 2.0) / LineOfFire.BUCKET))
+	var vc0 := Vector2i(floori(b0.x * LineOfFire.BUCKET / line.vegetation.cell_size_m), floori(b0.y * LineOfFire.BUCKET / line.vegetation.cell_size_m))
+	var vc1 := Vector2i(floori(b1.x * LineOfFire.BUCKET / line.vegetation.cell_size_m), floori(b1.y * LineOfFire.BUCKET / line.vegetation.cell_size_m))
+	for x in range(vc0.x, vc1.x + 1):
+		for z in range(vc0.y, vc1.y + 1):
+			if not line.cell_ready(Vector2i(x, z)):
+				return true
+	return false
+
+
+func _add_candidate(out: Array, origin: Vector3, center: Vector3, radius: float, p: Vector3, kind: String) -> void:
 	if _flat(p, center) > radius:
 		return
 	var h: float = sim.terrain.data.get_height(p) if sim.terrain else NAN
@@ -1064,7 +1147,7 @@ func _add_candidate(out: Array, u: UnitState, center: Vector3, radius: float, p:
 			return
 	if not sim.squads._usable(g + Vector3.UP * 0.25):
 		return
-	out.append({"p": g, "kind": kind, "d": _flat(u.position, g)})
+	out.append({"p": g, "kind": kind, "d": _flat(origin, g)})
 
 
 func _half_extent(type_id: StringName) -> float:
@@ -1188,24 +1271,32 @@ func _engage(u: UnitState) -> void:
 		u.ai_state = UnitState.AiState.RELOADING
 		u.ai_reason = "reloading"
 		return
-	if t == null:
-		u.ai_state = UnitState.AiState.OBSERVING if u.watch_until >= now else UnitState.AiState.IDLE
-		u.ai_reason = "no target"
-		if u.mag < def.magazine_size * tactical_reload_fraction and u.reserve > 0:
-			sim.combat.request_reload(u.id)
+	if t == null or not u.target_visible:
+		# AI-SQUAD-01: no visible target - a fire mission (suppressive fire at a reported
+		# position a squad tactic gave this soldier) may still apply.
+		if u.fire_at.is_finite() and now < u.fire_until and _fire_mission(u, def, now):
+			return
+		if t == null:
+			u.ai_state = UnitState.AiState.OBSERVING if u.watch_until >= now else UnitState.AiState.IDLE
+			u.ai_reason = "no target"
+			if u.mag < def.magazine_size * tactical_reload_fraction and u.reserve > 0:
+				sim.combat.request_reload(u.id)
+		else:
+			u.ai_state = UnitState.AiState.LOST_TARGET
+			u.ai_reason = "target hidden"
 		return
-	if not u.target_visible:
-		u.ai_state = UnitState.AiState.LOST_TARGET
-		u.ai_reason = "target hidden"
-		return
-	var sq := sim.state.squad_of(u.id)
-	if sq and sq.roe == SquadState.Roe.HOLD_FIRE:
-		u.ai_state = UnitState.AiState.OBSERVING
-		u.ai_reason = "hold fire"
-		u.burst_left = 0
-		return
-	u.ai_state = UnitState.AiState.ENGAGING
 	var dist := _flat(u.position, t.position)
+	var sq := sim.state.squad_of(u.id)
+	var supp := u.suppression_at(now)
+	if sq and sq.roe == SquadState.Roe.HOLD_FIRE:
+		# Hold fire still defends: a soldier that was just hit returns fire at a close enemy.
+		if not (now - u.hit_at <= self_defence_s and dist <= self_defence_m):
+			u.ai_state = UnitState.AiState.OBSERVING
+			u.ai_reason = "hold fire"
+			u.burst_left = 0
+			return
+		u.ai_reason = "self-defence"
+	u.ai_state = UnitState.AiState.ENGAGING
 	if dist > engage_range:
 		u.ai_reason = "out of range"
 		return
@@ -1221,9 +1312,59 @@ func _engage(u: UnitState) -> void:
 		if now < u.next_burst_at:
 			u.ai_reason = "between bursts"
 			return
+		# AI-SQUAD-01: a suppressed soldier in cover keeps its head down for some bursts
+		# (more likely the more suppressed, never against a target within 30 m).
+		if supp > suppressed_at and u.tactic == UnitState.Tactic.IN_COVER and dist > 30.0 and _rand(u, 17) < (supp - suppressed_at) * 1.2:
+			u.ai_reason = "suppressed: head down"
+			u.next_burst_at = now + 0.8 + 1.2 * supp
+			return
 		u.burst_left = _burst_size(u, dist)
-	var origin := CombatSim.eye_of(u)
 	var aim := t.position + Vector3.UP * u.target_aim_y - Vector3(t.velocity.x, 0.0, t.velocity.z) * track_lag_s
+	_try_fire(u, aim, dist, now, false)
+
+
+## AI-SQUAD-01: suppressive fire at a position a squad tactic assigned (u.fire_at - a
+## reported contact or a position the player chose, never the true position of a hidden
+## enemy). The same weapon, ammunition, spread and friendly-fire rules as a normal shot.
+## Returns true when it handled the soldier this frame (fired, waited or held).
+func _fire_mission(u: UnitState, def: WeaponDef, now: float) -> bool:
+	var sq := sim.state.squad_of(u.id)
+	if sq and sq.roe == SquadState.Roe.HOLD_FIRE:
+		return false
+	var full := float(def.magazine_size + def.reserve_start)
+	var have := float(u.mag + u.reserve)
+	# One magazine is always kept for self-defence; below mission_slow_ammo the fire thins out.
+	if have <= def.magazine_size or have / full < mission_stop_ammo:
+		u.ai_state = UnitState.AiState.OBSERVING
+		u.ai_reason = "mission: ammunition kept in reserve"
+		mission_holds += 1
+		return true
+	var dist := _flat(u.position, u.fire_at)
+	if dist > engage_range or dist < 12.0:
+		return false
+	u.ai_state = UnitState.AiState.ENGAGING
+	_watch(u, u.fire_at, 1.0)
+	if now < u.next_shot_at:
+		return true
+	if u.burst_left <= 0:
+		if now < u.next_burst_at:
+			u.ai_reason = "mission: between bursts"
+			return true
+		u.burst_left = maxi(1, mission_burst - (1 if have / full < mission_slow_ammo else 0))
+	# Scatter over the area the report covers (deterministic: world seed, soldier, shot).
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([sim.state.world_seed, u.id, u.shot_counter + 1, 4177])
+	var scatter := Vector3(rng.randfn(0.0, 2.5), 0.0, rng.randfn(0.0, 2.5))
+	var aim := u.fire_at + scatter + Vector3.UP * 0.9
+	if _try_fire(u, aim, dist, now, true):
+		mission_shots += 1
+	return true
+
+
+## The part of a shot every engagement shares: aim error, the soldier's own cover, friends
+## in the line of fire, the frame's shot budget, the weapon. Returns true when a round left.
+func _try_fire(u: UnitState, aim: Vector3, dist: float, now: float, mission: bool) -> bool:
+	var origin := CombatSim.eye_of(u)
 	var dir := _aim_error(u, (aim - origin).normalized(), dist)
 	# COMBAT-02: from cover, the actual shot (with its aim error) must clear the soldier's
 	# own cover; otherwise wait for the next one instead of firing into the wall.
@@ -1234,13 +1375,13 @@ func _engage(u: UnitState) -> void:
 			u.ai_reason = "own cover in the way"
 			u.burst_left = 0
 			u.next_burst_at = now + 0.3
-			return
+			return false
 	var tf := Time.get_ticks_usec()
 	var friend_near := _friendly_near_line(u, origin, aim)
 	prof.friendly += Time.get_ticks_usec() - tf
 	if friend_near:
 		# The shot preview (same world data and hit shapes as the real shot, without the
-		# weapon's spread) and a 0.5 m margin around friends for that spread.
+		# weapon spread) and a 0.5 m margin around friends for that spread.
 		var p := sim.combat.preview_shot(u.id, origin, dir, u.shot_counter + 1, 0.0)
 		var hit := sim.state.get_unit(p.get("hit_unit", -1))
 		if (hit and hit.faction == u.faction) or _friend_on_ray(u, origin, dir, minf(dist, p.get("distance", dist))):
@@ -1248,24 +1389,25 @@ func _engage(u: UnitState) -> void:
 			u.ai_reason = "friendly in line of fire"
 			u.burst_left = 0
 			u.next_burst_at = now + 0.4
-			return
+			return false
 	if _shots_left <= 0:
 		budget_waits += 1
 		u.ai_reason = "waiting (shot budget)"
-		return
+		return false
 	_shots_left -= 1
 	var tfire := Time.get_ticks_usec()
 	var shot := sim.combat.request_fire(u.id, origin, dir, CombatSim.Source.AI)
 	prof.fire += Time.get_ticks_usec() - tfire
 	if shot.get("fired", false):
 		ai_shots += 1
-		u.ai_reason = ""
+		u.ai_reason = "mission" if mission else ""
 		u.burst_left -= 1
 		if u.burst_left <= 0:
-			u.next_burst_at = now + _burst_pause(u, dist)
-	else:
-		u.ai_reason = shot.get("reason", "")
-		u.burst_left = 0
+			u.next_burst_at = now + (mission_pause_s * (0.8 + 0.4 * _rand(u, 19)) if mission else _burst_pause(u, dist))
+		return true
+	u.ai_reason = shot.get("reason", "")
+	u.burst_left = 0
+	return false
 
 
 ## Bursts: long at close range, short at medium range, single aimed shots far away.
@@ -1281,7 +1423,7 @@ func _burst_size(u: UnitState, dist: float) -> int:
 
 
 func _burst_pause(u: UnitState, dist: float) -> float:
-	return 0.25 + dist / 250.0 + _rand(u, 13) * 0.35
+	return (0.25 + dist / 250.0 + _rand(u, 13) * 0.35) * (1.0 + 1.5 * u.suppression_at(sim.state.time))
 
 
 ## The direction the soldier actually holds: the ideal one plus a seeded aim error that
@@ -1289,6 +1431,7 @@ func _burst_pause(u: UnitState, dist: float) -> float:
 func _aim_error(u: UnitState, dir: Vector3, dist: float) -> Vector3:
 	var speed := Vector2(u.velocity.x, u.velocity.z).length()
 	var sigma := aim_error_base_deg + aim_error_per_100m_deg * dist / 100.0 + aim_error_moving_deg * clampf(speed / 4.5, 0.0, 1.0)
+	sigma *= 1.0 + suppression_aim_mult * u.suppression_at(sim.state.time)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash([sim.state.world_seed, u.id, u.shot_counter + 1, 977])
 	var ex := deg_to_rad(rng.randfn(0.0, sigma))

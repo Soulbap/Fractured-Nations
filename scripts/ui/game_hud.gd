@@ -12,6 +12,8 @@ var _label: Label
 var _overlay: Overlay
 ## UNIT-01A squad list (tactical view only).
 var squad_panel: SquadPanel
+## AI-SQUAD-01: tactical orders for the selected squads (bottom centre, only with a selection).
+var tactical_panel: TacticalPanel
 ## LOGISTICS-01: selected vehicle / facility actions (tactical view).
 var logistics_panel: LogisticsPanel
 ## COMBAT-01a first-person weapon panel and feedback timers (seconds of real time).
@@ -244,6 +246,9 @@ func _ready() -> void:
 	squad_panel.position = Vector2(12, 250)
 	squad_panel.visible = false
 	add_child(squad_panel)
+	tactical_panel = TacticalPanel.new()
+	tactical_panel.visible = false
+	add_child(tactical_panel)
 	logistics_panel = LogisticsPanel.new()
 	add_child(logistics_panel)
 	_notes_box = VBoxContainer.new()
@@ -323,6 +328,17 @@ func _process(_delta: float) -> void:
 		squad_panel.sim = sim
 	squad_panel.visible = rts != null and game != null and game.mode == GameController.Mode.RTS and not (construction and construction.active) and not sim.state.squads.is_empty()
 	squad_panel.max_bottom = _label.position.y - 8.0
+	if tactical_panel.rts == null and rts:
+		tactical_panel.rts = rts
+		tactical_panel.sim = sim
+	var squads_selected: bool = rts != null and not rts.selected_squads().is_empty()
+	tactical_panel.visible = squads_selected and game != null and game.mode == GameController.Mode.RTS and not (construction and construction.active)
+	if tactical_panel.visible:
+		# Bottom right, above the text; the squad list gives way when they would overlap.
+		var vp := get_viewport().get_visible_rect().size
+		tactical_panel.position = Vector2(maxf(vp.x - tactical_panel.size.x - 12.0, 8.0), _label.position.y - tactical_panel.size.y - 8.0)
+		if tactical_panel.position.x < squad_panel.position.x + squad_panel.size.x + 8.0:
+			squad_panel.max_bottom = minf(squad_panel.max_bottom, tactical_panel.position.y - 8.0)
 	_update_ammo()
 	_badge.visible = war_sim != null and war_sim.enabled
 	if _badge.visible and _badge.text == "":

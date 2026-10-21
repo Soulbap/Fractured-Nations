@@ -274,6 +274,7 @@ func explain_squad(sq: SquadState) -> Array[String]:
 		if u.is_reacting():
 			react += 1
 	out.append("Direct observation: %d engaging a visible enemy, %d under fire, %d taking cover%s" % [engaged, fire, react, "" if sample == "" else " - " + sample])
+	out.append_array(sim.tactics.explain(sq))
 	var near := intel.contacts_near(sq.faction, squad_center(sq), 600.0)
 	if near.is_empty():
 		out.append("Faction picture within 600 m: nothing reported")
@@ -498,7 +499,7 @@ func _update_operation(op: OperationState) -> void:
 				var k := 0
 				for sid in op.squads:
 					var sq := sim.state.get_squad(sid)
-					sim.squads.follow_route(sq, PackedVector3Array([_slot_in(obj, k)]), SquadState.Formation.LINE)
+					_assault_objective(op, sq, obj, k)
 					k += 1
 				log_event(-1 if obj.owner >= 0 else op.faction, "attack", "%s attacks %s" % [WorldState.faction_name(op.faction), obj.obj_name], obj.position)
 			elif op.phase >= OperationState.Phase.ENGAGING:
@@ -512,8 +513,8 @@ func _update_operation(op: OperationState) -> void:
 				# Squads that finished their assault move but stand outside: go in again.
 				for sid in op.squads:
 					var sq := sim.state.get_squad(sid)
-					if sq.route.is_empty() and sq.order != SquadState.Order.MOVE and _flat(squad_center(sq), obj.position) > obj.radius * 0.8:
-						sim.squads.follow_route(sq, PackedVector3Array([_slot_in(obj, sid % 5)]), SquadState.Formation.LINE)
+					if sq.route.is_empty() and sq.order != SquadState.Order.MOVE and sq.tactic == SquadState.Tactic.NONE and _flat(squad_center(sq), obj.position) > obj.radius * 0.8:
+						_assault_objective(op, sq, obj, sid % 5)
 		OperationState.Type.DEFEND:
 			if obj and obj.owner != op.faction and not obj.contested and obj.capture_faction < 0 and obj.owner >= 0:
 				_end(op, OperationState.Phase.FAILED, "%s lost" % obj.obj_name)
@@ -569,6 +570,17 @@ func _update_operation(op: OperationState) -> void:
 					else:
 						why = "arrived; nothing found" if intel.clear_contact(op.faction, op.contact_id, op.started_at) else "arrived; the contact was seen again"
 				_end(op, OperationState.Phase.COMPLETED, why)
+
+
+## AI-SQUAD-01: a squad of an attack operation reached the objective. It assaults it with the
+## squad tactics (fire teams, support, bounding, flank when the ground justifies it); where the
+## tactic cannot be used (too close, aboard, tactics off) it walks in as before.
+func _assault_objective(op: OperationState, sq: SquadState, obj: ObjectiveState, k: int) -> void:
+	if sim.tactics.enabled and sim.tactics.ops_assault:
+		var res := sim.tactics.assign_for_operation(sq, SquadState.Tactic.ASSAULT, obj.position, "operation #%d takes %s" % [op.id, obj.obj_name])
+		if res.ok:
+			return
+	sim.squads.follow_route(sq, PackedVector3Array([_slot_in(obj, k)]), SquadState.Formation.LINE)
 
 
 ## WORLD-SANDBOX-01B, for the map: how far the operation's slowest squad still has to
@@ -700,6 +712,8 @@ func spawn_squad(f: FactionState, p: Vector3, n: int) -> SquadState:
 		var u := sim.state.add_unit(UnitState.Kind.SOLDIER, f.id, q + Vector3.UP * 0.3, 0.0, "%s-%d" % [tag, i + 1])
 		ids.append(u.id)
 	var sq := sim.state.add_squad(tag, f.id, ids)
+	# AI-SQUAD-01: war squads pick their formation from the terrain and the situation.
+	sq.formation_auto = true
 	sim.combat.equip_all(&"rifle")
 	if sim.detail:
 		sim.detail.create_missing_proxies()

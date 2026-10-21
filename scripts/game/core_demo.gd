@@ -64,6 +64,7 @@ var _combat_scale_selftest: CombatScaleSelfTest
 var _combat_tactics_selftest: CombatTacticsSelfTest
 var _sandbox_selftest: SandboxSelfTest
 var _ai_intel_selftest: AIIntelSelfTest
+var _ai_squad_selftest: AISquadSelfTest
 var _playtest_selftest: PlaytestSelfTest
 var _integration03_selftest: Integration03SelfTest
 var _logistics_selftest: LogisticsSelfTest
@@ -76,6 +77,8 @@ const LEGACY_TESTS: Array[String] = ["--core-test", "--large-test", "--combat-te
 	"--combat-tactics-test", "--squad-test", "--integration-test", "--base-test"]
 ## COMBAT-01a shot effects (muzzle flash, tracer, impact, sound).
 var combat_fx: CombatFX
+## AI-SQUAD-01: tactical order markers; F7 shows the developer view (fire teams, posts, missions).
+var tactics_overlay: TacticsOverlay
 
 
 func _ready() -> void:
@@ -188,6 +191,12 @@ func _setup_combat() -> void:
 	combat_fx.name = "CombatFX"
 	add_child(combat_fx)
 	combat_fx.setup(sim, game)
+	tactics_overlay = TacticsOverlay.new()
+	tactics_overlay.name = "TacticsOverlay"
+	tactics_overlay.sim = sim
+	tactics_overlay.rts = rts
+	tactics_overlay.terrain = terrain
+	add_child(tactics_overlay)
 	sim.state.shot_fired.connect(hud.on_shot)
 	sim.state.unit_damaged.connect(hud.on_damaged)
 	sim.state.unit_died.connect(game.on_unit_died)
@@ -309,6 +318,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--ai-intel-test" in args:
 		_ai_intel_selftest = AIIntelSelfTest.new(self)
 		_ai_intel_selftest.run.call_deferred(args)
+	elif "--ai-squad-test" in args or "--squad-demo" in args:
+		_ai_squad_selftest = AISquadSelfTest.new(self)
+		_ai_squad_selftest.run.call_deferred(args)
 	elif "--sandbox-test" in args:
 		_sandbox_selftest = SandboxSelfTest.new(self)
 		_sandbox_selftest.run.call_deferred(args)
@@ -412,6 +424,10 @@ static func apply_time_scale(k: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F7 and tactics_overlay:
+		tactics_overlay.debug = not tactics_overlay.debug
+		get_viewport().set_input_as_handled()
+		return
 	if not sandbox or not (event is InputEventKey) or not event.pressed or event.echo:
 		return
 	match event.physical_keycode:

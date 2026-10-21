@@ -146,6 +146,8 @@ func issue_move(id: int, target: Vector3, cancel_reaction := true) -> bool:
 	u.order_target = target
 	u.move_state = UnitState.MoveState.MOVING
 	u.anchor_pos = Vector3.INF
+	# AI-SQUAD-01: the squad tactics set post_pos after this call; any other order ends the post.
+	u.post_pos = Vector3.INF
 	if cancel_reaction:
 		_cancel_reaction(u)
 	order_changed.emit(u)
@@ -285,6 +287,7 @@ func halt(id: int) -> void:
 	u.move_state = UnitState.MoveState.IDLE
 	# COMBAT-02: stopping is a command too; the soldier holds where it stands.
 	_cancel_reaction(u)
+	u.post_pos = Vector3.INF
 	u.anchor_pos = u.position
 	order_changed.emit(u)
 

@@ -20,6 +20,8 @@ signal possess_requested(unit_id: int)
 ## LOGISTICS-01: the player wants the wheel of a selected vehicle (P / Enter with no soldier selected).
 signal drive_requested(unit_id: int)
 signal order_issued(count: int, target: Vector3)
+## AI-SQUAD-01: a tactical order was given or refused ({ok, n, text, ...}); the panel shows the text.
+signal tactical_order(result: Dictionary)
 
 @export var rig: RTSCamera
 @export var sim: WorldSim:
@@ -49,6 +51,12 @@ var dragging := false
 var last_order_target := Vector3.INF
 ## Waiting for a click on the unit to follow (F).
 var follow_pick := false
+## AI-SQUAD-01: a tactical order (SquadState.Tactic) armed from the panel, waiting for the click that
+## gives its target (-1 = none). The hotkeys give the order at the cursor at once.
+var armed_tactic := -1
+## The last tactical order's result text (accepted / why it cannot be executed), for the panel.
+var tactic_feedback := ""
+var tactic_feedback_ok := true
 ## Short feedback line for the HUD.
 var message := ""
 var _message_until := 0.0
@@ -80,6 +88,7 @@ func set_active(on: bool) -> void:
 	if not on:
 		_end_drag()
 		follow_pick = false
+		armed_tactic = -1
 
 
 func _process(_delta: float) -> void:
@@ -92,6 +101,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.button_index == MOUSE_BUTTON_LEFT and follow_pick:
 			if event.pressed:
 				order_follow_at(event.position)
+			return
+		if event.button_index == MOUSE_BUTTON_LEFT and armed_tactic >= 0:
+			if event.pressed:
+				var t := armed_tactic
+				armed_tactic = -1
+				order_tactic(t, tactic_target_at(event.position))
 			return
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
@@ -113,7 +128,14 @@ func _unhandled_input(event: InputEvent) -> void:
 						_click_select(event.position, event.shift_pressed)
 				_end_drag()
 		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-			order_move_at(event.position)
+			if armed_tactic >= 0:
+				armed_tactic = -1
+				_say("Tactical order cancelled")
+			elif event.shift_pressed and not selected_squads().is_empty():
+				# Shift + right click: move by bounds (one fire team covers while the other moves).
+				order_tactic(SquadState.Tactic.BOUND, tactic_target_at(event.position))
+			else:
+				order_move_at(event.position)
 	elif event is InputEventMouseMotion and drag_start != Vector2.INF and event.button_mask & MOUSE_BUTTON_MASK_LEFT:
 		drag_current = event.position
 		if drag_current.distance_to(drag_start) > drag_threshold_px:
@@ -126,6 +148,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			var vid := first_selected_vehicle()
 			if vid > 0:
 				drive_requested.emit(vid)
+	elif event.is_action_pressed("squad_assault"):
+		tactic_hotkey(SquadState.Tactic.ASSAULT)
+	elif event.is_action_pressed("squad_suppress"):
+		tactic_hotkey(SquadState.Tactic.SUPPRESS)
+	elif event.is_action_pressed("squad_flank"):
+		tactic_hotkey(SquadState.Tactic.FLANK)
+	elif event.is_action_pressed("squad_defend"):
+		tactic_hotkey(SquadState.Tactic.DEFEND)
+	elif event.is_action_pressed("squad_withdraw"):
+		tactic_hotkey(SquadState.Tactic.WITHDRAW)
 	elif event.is_action_pressed("halt"):
 		order_hold()
 	elif event.is_action_pressed("squad_follow"):
@@ -159,6 +191,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		if follow_pick:
 			follow_pick = false
 			_say("Follow cancelled")
+		elif armed_tactic >= 0:
+			armed_tactic = -1
+			_say("Tactical order cancelled")
 		else:
 			select([])
 
@@ -329,6 +364,71 @@ func order_vehicles(hit: Vector3) -> int:
 	return r.n
 
 
+# --- Tactical orders (AI-SQUAD-01) ---------------------------------------------------------------
+
+## The position a tactical order aims at for a screen point: the ground under the cursor (an
+## enemy soldier under the cursor is a position the player can see on screen, so it counts).
+func tactic_target_at(screen_pos: Vector2) -> Vector3:
+	var over := _unit_at(screen_pos)
+	if over > 0:
+		var ou := sim.state.get_unit(over)
+		if ou and ou.alive and ou.faction != player_faction and ou.kind == UnitState.Kind.SOLDIER:
+			return ou.position
+	return ground_point(screen_pos)
+
+
+## Hotkey: the tactical order at the cursor, at once.
+func tactic_hotkey(tactic: int) -> void:
+	if selected_squads().is_empty():
+		_say("%s: select a squad first" % SquadState.TACTIC_NAMES[tactic])
+		return
+	order_tactic(tactic, tactic_target_at(get_viewport().get_mouse_position()))
+
+
+## Panel button: wait for the click that gives the target (Esc / right click cancels).
+func arm_tactic(tactic: int) -> void:
+	if selected_squads().is_empty():
+		_say("%s: select a squad first" % SquadState.TACTIC_NAMES[tactic])
+		return
+	armed_tactic = tactic
+	_say("%s: click the target (Esc cancels)" % SquadState.TACTIC_NAMES[tactic].to_upper())
+
+
+## A tactical order for the selected squads: {ok, n, results, text}. The result text says what was
+## accepted and, for a refused squad, why it cannot be done.
+func order_tactic(tactic: int, at := Vector3.INF) -> Dictionary:
+	var sqs := selected_squads()
+	if sqs.is_empty():
+		_say("%s: select a squad first" % SquadState.TACTIC_NAMES[tactic])
+		return {"ok": false, "n": 0, "text": "no squad selected", "results": []}
+	if tactic != SquadState.Tactic.DEFEND and tactic != SquadState.Tactic.WITHDRAW and not at.is_finite():
+		var msg := "%s needs a target: no ground under the cursor" % SquadState.TACTIC_NAMES[tactic]
+		tactic_feedback = msg
+		tactic_feedback_ok = false
+		_say(msg)
+		return {"ok": false, "n": 0, "text": msg, "results": []}
+	# A defence faces the way the squad is looking at the spot.
+	if tactic == SquadState.Tactic.DEFEND and at.is_finite():
+		for sid in sqs:
+			var sq := sim.state.get_squad(sid)
+			var c := sim.squads._centroid(sq)
+			if Vector2(at.x - c.x, at.z - c.z).length() > 8.0:
+				sq.order_yaw = SquadControl._yaw_towards(c, at, sq.order_yaw)
+	_player_takes(sqs)
+	var res := sim.tactics.order_tactic(sqs, tactic, at, SquadState.Owner.PLAYER)
+	tactic_feedback = res.text
+	tactic_feedback_ok = res.ok
+	_say(res.text)
+	if res.n > 0 and at.is_finite():
+		last_order_target = at
+		_marker.global_position = at + Vector3.UP * 0.1
+		_marker.visible = true
+		_marker_until = Time.get_ticks_msec() / 1000.0 + 2.5
+		order_issued.emit(res.n, at)
+	tactical_order.emit(res)
+	return res
+
+
 ## H: selected squads hold; other selected soldiers stop.
 func order_hold() -> void:
 	for id in selected_vehicles():
@@ -375,10 +475,23 @@ func toggle_formation() -> void:
 	var sqs := selected_squads()
 	if sqs.is_empty():
 		return
+	# V cycles Line -> Column -> Wedge -> Staggered -> Dispersed -> Auto (terrain and situation) -> Line.
 	var first := sim.state.get_squad(sqs[0])
-	var f := SquadState.Formation.COLUMN if first.formation == SquadState.Formation.LINE else SquadState.Formation.LINE
-	sim.squads.set_formation(sqs, f)
-	_say("Formation: %s" % SquadState.FORMATION_NAMES[f])
+	if first.formation_auto:
+		for sid in sqs:
+			sim.state.get_squad(sid).formation_auto = false
+		sim.squads.set_formation(sqs, SquadState.Formation.LINE)
+		_say("Formation: Line")
+		return
+	var next: int = first.formation + 1
+	if next >= SquadState.FORMATION_NAMES.size():
+		for sid in sqs:
+			sim.state.get_squad(sid).formation_auto = true
+		sim.squads.set_formation(sqs, SquadState.Formation.WEDGE)
+		_say("Formation: Auto (column on roads and in woods, wedge in the open, dispersed under fire)")
+		return
+	sim.squads.set_formation(sqs, next)
+	_say("Formation: %s" % SquadState.FORMATION_NAMES[next])
 
 
 ## Y: weapons free <-> hold fire for the selected squads (the first one decides).
@@ -487,7 +600,8 @@ func current_message() -> String:
 
 static func _ensure_squad_actions() -> void:
 	var binds := {"vehicle_board": KEY_T, "vehicle_unload": KEY_U, "squad_follow": KEY_F, "squad_regroup": KEY_G, "squad_formation": KEY_V,
-		"squad_spacing_down": KEY_BRACKETLEFT, "squad_spacing_up": KEY_BRACKETRIGHT, "squad_roe": KEY_Y}
+		"squad_spacing_down": KEY_BRACKETLEFT, "squad_spacing_up": KEY_BRACKETRIGHT, "squad_roe": KEY_Y,
+		"squad_assault": KEY_Z, "squad_suppress": KEY_K, "squad_flank": KEY_L, "squad_defend": KEY_J, "squad_withdraw": KEY_BACKSPACE}
 	for action in binds:
 		if InputMap.has_action(action):
 			continue

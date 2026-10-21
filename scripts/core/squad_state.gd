@@ -8,8 +8,12 @@
 class_name SquadState
 extends RefCounted
 
-enum Order { NONE, MOVE, HOLD, FOLLOW, REGROUP }
-enum Formation { LINE, COLUMN }
+enum Order { NONE, MOVE, HOLD, FOLLOW, REGROUP, TACTIC }
+## COLUMN: roads and narrow routes; LINE: across the facing; WEDGE: open ground (leader
+## forward, files back on both sides); STAGGERED: two offset files; DISPERSED: wide combat
+## spacing (AI-SQUAD-01). SquadControl._slots fills the shapes in and moves slots that fall
+## on unusable ground.
+enum Formation { LINE, COLUMN, WEDGE, STAGGERED, DISPERSED }
 ## Progress of the current order (set by WorldSim, for the HUD and tests).
 enum Status { IDLE, MOVING, DONE, PARTIAL }
 ## COMBAT-01b rules of engagement: WEAPONS_FREE engage detected enemies on their own;
@@ -17,8 +21,20 @@ enum Status { IDLE, MOVING, DONE, PARTIAL }
 enum Roe { WEAPONS_FREE, HOLD_FIRE }
 const ROE_NAMES: Array[String] = ["Weapons free", "Hold fire"]
 
-const ORDER_NAMES: Array[String] = ["None", "Move", "Hold", "Follow", "Regroup"]
-const FORMATION_NAMES: Array[String] = ["Line", "Column"]
+const ORDER_NAMES: Array[String] = ["None", "Move", "Hold", "Follow", "Regroup", "Tactic"]
+const FORMATION_NAMES: Array[String] = ["Line", "Column", "Wedge", "Staggered", "Dispersed"]
+
+## AI-SQUAD-01 squad tactics. One tactic at a time; the squad record owns the intent, the
+## soldiers execute it with ordinary move orders and the CombatBrain reactions.
+enum Tactic { NONE, DEFEND, SUPPRESS, ASSAULT, FLANK, BOUND, REPOSITION, WITHDRAW, REGROUP }
+const TACTIC_NAMES: Array[String] = ["-", "Defend", "Suppress", "Assault", "Flank", "Bound", "Reposition", "Withdraw", "Regroup"]
+## Who commands the current tactic: the player (an RTS order), an operation (the tactic
+## serves its task) or the squad itself (chosen by SquadTactics from what it knows).
+enum Owner { NONE, PLAYER, OPERATION, SQUAD }
+const OWNER_NAMES: Array[String] = ["-", "player", "operation", "squad"]
+## What a fire team is doing within the tactic (temporary assignments, not unit classes).
+enum TeamRole { SECURITY, SUPPORT, MANEUVER, ASSAULT, RESERVE }
+const ROLE_NAMES: Array[String] = ["security", "support", "maneuver", "assault", "reserve"]
 
 var id := 0
 var squad_name := ""
@@ -54,6 +70,71 @@ var route := PackedVector3Array()
 var route_i := 0
 var station_objective := -1
 
+# --- Fire teams and tactics (AI-SQUAD-01). Persisted with the squad. ---
+## Fire teams: member ids per team (one team for small squads, two otherwise), the team
+## leader and the current role of each. Validated against `members` after casualties.
+var teams: Array[PackedInt32Array] = []
+var team_leaders := PackedInt32Array()
+var team_roles := PackedInt32Array()
+var tactic := Tactic.NONE
+var tactic_owner := Owner.NONE
+## Tactic phase (meaning depends on the tactic, see SquadTactics) and when it began.
+var tactic_phase := 0
+var tactic_since := 0.0
+var tactic_phase_since := 0.0
+## The tactic's goal: the position to attack / suppress / defend / withdraw to, the contact
+## it came from (-1: a position chosen by the player or by observation) and the direction
+## of the expected threat. Never the true position of a hidden enemy.
+var tactic_target := Vector3.INF
+var tactic_contact := -1
+var tactic_dir := Vector3.ZERO
+## The destination of the current maneuver leg (bound / flank / withdraw).
+var tactic_dest := Vector3.INF
+## Flank route waypoints (terrain-checked when planned) and the next one.
+var tactic_route := PackedVector3Array()
+var tactic_route_i := 0
+var tactic_replans := 0
+## Leg counter of a bounding / flanking / assaulting maneuver (which team moves is derived from it).
+var tactic_leg := 0
+## The operation an OPERATION-owned tactic serves (-1: none, e.g. a test or script tasking).
+var tactic_op := -1
+var tactic_leg_since := 0.0
+## Formation chosen from the terrain and the situation (column on roads and in woods, wedge in the
+## open, dispersed under threat) instead of the player's V toggle. AI squads start with it on.
+var formation_auto := false
+## No new autonomous tactic before tactic_cooldown_until; the current one is kept at least
+## until tactic_commit_until.
+var tactic_cooldown_until := 0.0
+var tactic_commit_until := 0.0
+## The order the squad had before an autonomous tactic took over (restored afterwards).
+var prev_order := Order.NONE
+var prev_target := Vector3.INF
+var prev_yaw := 0.0
+## The last decision in words: why this tactic, why it ended, why another was rejected.
+## Written by the decision code itself and saved, so a loaded squad still explains itself.
+var tactic_why := ""
+var tactic_rejected := ""
+
+
+func tactic_name() -> String:
+	return TACTIC_NAMES[tactic]
+
+
+func owner_name() -> String:
+	return OWNER_NAMES[tactic_owner]
+
+
+## Index of the fire team a unit is in (-1: none).
+func team_of(unit_id: int) -> int:
+	for i in teams.size():
+		if teams[i].has(unit_id):
+			return i
+	return -1
+
+
+func team_role(i: int) -> int:
+	return team_roles[i] if i >= 0 and i < team_roles.size() else TeamRole.SECURITY
+
 
 func has_member(unit_id: int) -> bool:
 	return members.has(unit_id)
@@ -83,6 +164,12 @@ func to_dict() -> Dictionary:
 		"formation": formation, "spacing": spacing, "detached": Array(detached),
 		"status": status, "blocked": Array(blocked), "fallen": Array(fallen), "roe": roe,
 		"op": op_id, "route": Array(route), "route_i": route_i, "station": station_objective,
+		"teams": teams.map(func(t: PackedInt32Array) -> Array: return Array(t)), "team_leaders": Array(team_leaders), "team_roles": Array(team_roles),
+		"tactic": tactic, "tactic_owner": tactic_owner, "tactic_phase": tactic_phase, "tactic_since": tactic_since,
+		"tactic_phase_since": tactic_phase_since, "tactic_target": tactic_target, "tactic_contact": tactic_contact,
+		"tactic_dir": tactic_dir, "tactic_dest": tactic_dest, "tactic_route": Array(tactic_route), "tactic_route_i": tactic_route_i,
+		"tactic_replans": tactic_replans, "tactic_leg": tactic_leg, "tactic_op": tactic_op, "tactic_leg_since": tactic_leg_since, "formation_auto": formation_auto, "tactic_cooldown_until": tactic_cooldown_until, "tactic_commit_until": tactic_commit_until,
+		"prev_order": prev_order, "prev_target": prev_target, "prev_yaw": prev_yaw, "tactic_why": tactic_why, "tactic_rejected": tactic_rejected,
 	}
 
 
@@ -109,4 +196,31 @@ static func from_dict(d: Dictionary) -> SquadState:
 	s.route = PackedVector3Array(d.get("route", []))
 	s.route_i = d.get("route_i", 0)
 	s.station_objective = d.get("station", -1)
+	for t in d.get("teams", []):
+		s.teams.append(PackedInt32Array(t))
+	s.team_leaders = PackedInt32Array(d.get("team_leaders", []))
+	s.team_roles = PackedInt32Array(d.get("team_roles", []))
+	s.tactic = d.get("tactic", Tactic.NONE)
+	s.tactic_owner = d.get("tactic_owner", Owner.NONE)
+	s.tactic_phase = d.get("tactic_phase", 0)
+	s.tactic_since = d.get("tactic_since", 0.0)
+	s.tactic_phase_since = d.get("tactic_phase_since", 0.0)
+	s.tactic_target = d.get("tactic_target", Vector3.INF)
+	s.tactic_contact = d.get("tactic_contact", -1)
+	s.tactic_dir = d.get("tactic_dir", Vector3.ZERO)
+	s.tactic_dest = d.get("tactic_dest", Vector3.INF)
+	s.tactic_route = PackedVector3Array(d.get("tactic_route", []))
+	s.tactic_route_i = d.get("tactic_route_i", 0)
+	s.tactic_replans = d.get("tactic_replans", 0)
+	s.tactic_leg = d.get("tactic_leg", 0)
+	s.tactic_op = d.get("tactic_op", -1)
+	s.tactic_leg_since = d.get("tactic_leg_since", 0.0)
+	s.formation_auto = d.get("formation_auto", false)
+	s.tactic_cooldown_until = d.get("tactic_cooldown_until", 0.0)
+	s.tactic_commit_until = d.get("tactic_commit_until", 0.0)
+	s.prev_order = d.get("prev_order", Order.NONE)
+	s.prev_target = d.get("prev_target", Vector3.INF)
+	s.prev_yaw = d.get("prev_yaw", 0.0)
+	s.tactic_why = d.get("tactic_why", "")
+	s.tactic_rejected = d.get("tactic_rejected", "")
 	return s

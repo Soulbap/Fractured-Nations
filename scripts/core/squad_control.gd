@@ -83,6 +83,8 @@ func order_move(squad_ids: Array, target: Vector3) -> int:
 	var widths := []
 	var total := 0.0
 	for sq: SquadState in sqs:
+		sim.tactics.on_order(sq)
+		_auto_formation(sq, target)
 		var w := _width(sq)
 		widths.append(w)
 		total += w
@@ -137,6 +139,7 @@ func _routed_move(sq: SquadState, target: Vector3) -> bool:
 ## march). The squad's order is MOVE throughout, so bodies, the abstract tier, cover
 ## reactions and the HUD treat it like any other move.
 func follow_route(sq: SquadState, route: PackedVector3Array, formation := SquadState.Formation.COLUMN) -> void:
+	sim.tactics.on_order(sq)
 	sq.route = route
 	sq.route_i = 0
 	if route.is_empty():
@@ -230,6 +233,7 @@ func _order_move_one(sq: SquadState, target: Vector3, yaw: float) -> void:
 ## Stop where they are and stay.
 func order_hold(squad_ids: Array) -> void:
 	for sq: SquadState in _squads(squad_ids):
+		sim.tactics.on_order(sq)
 		sq.order = SquadState.Order.HOLD
 		sq.order_target = Vector3.INF
 		sq.follow_unit_id = -1
@@ -253,6 +257,7 @@ func order_follow(squad_ids: Array, unit_id: int) -> int:
 	for sq: SquadState in _squads(squad_ids):
 		if sq.has_member(unit_id):
 			continue
+		sim.tactics.on_order(sq)
 		sq.order = SquadState.Order.FOLLOW
 		sq.order_target = Vector3.INF
 		sq.follow_squad_id = target_squad.id if target_squad else -1
@@ -274,6 +279,8 @@ func order_regroup(squad_ids: Array, point := Vector3.INF) -> int:
 		var leader := sim.state.get_unit(sq.leader_id)
 		if leader == null:
 			continue
+		sim.tactics.on_order(sq)
+		_auto_formation(sq, point if point.is_finite() else leader.position)
 		var centre: Vector3 = point if point.is_finite() else leader.position
 		var yaw := leader.yaw if not point.is_finite() else _yaw_towards(_centroid(sq), point, leader.yaw)
 		sq.order = SquadState.Order.REGROUP
@@ -306,6 +313,34 @@ func set_spacing(squad_ids: Array, spacing: float) -> void:
 	for sq: SquadState in _squads(squad_ids):
 		sq.spacing = clampf(spacing, 1.5, 10.0)
 		_reapply(sq)
+
+
+## AI-SQUAD-01: the formation a squad with formation_auto takes for a movement towards `at`:
+## column on roads and in woods (narrow, navigable), dispersed while it is in contact, wedge in the
+## open. Slots are preferences: _free_ground moves any that fall on unusable ground.
+func choose_formation(sq: SquadState, at: Vector3) -> int:
+	var assessed := sim.tactics.assessment(sq)
+	if not assessed.is_empty() and assessed.get("in_contact", false):
+		return SquadState.Formation.DISPERSED
+	if sim.state.roads.on_road(at, 3.0):
+		return SquadState.Formation.COLUMN
+	if sim.structures != null:
+		var trees := 0
+		var c0 := VegetationChunk.cell_of(at - Vector3(22.0, 0, 22.0), 128.0)
+		var c1 := VegetationChunk.cell_of(at + Vector3(22.0, 0, 22.0), 128.0)
+		for cx in range(c0.x, c1.x + 1):
+			for cz in range(c0.y, c1.y + 1):
+				for t: Array in sim.structures._trees_in(Vector2i(cx, cz)):
+					if Vector2(t[0] - at.x, t[1] - at.z).length() <= 22.0 and int(t[3]) <= 6:
+						trees += 1
+		if trees >= 14:
+			return SquadState.Formation.COLUMN
+	return SquadState.Formation.WEDGE
+
+
+func _auto_formation(sq: SquadState, at: Vector3) -> void:
+	if sq.formation_auto and at.is_finite():
+		sq.formation = choose_formation(sq, at)
 
 
 ## Formation or spacing changed: an active Move / Regroup takes the new shape.
@@ -466,12 +501,24 @@ func _slots(sq: SquadState, centre: Vector3, yaw: float) -> Array:
 	var out := []
 	for i in n:
 		var off := Vector3.ZERO
-		if sq.formation == SquadState.Formation.LINE:
-			# Slot 0 (leader) in the middle, then alternating right / left.
-			var k := (i + 1) / 2 * (1 if i % 2 == 1 else -1)
-			off = right * k * sq.spacing
-		else:
-			off = -fwd * i * sq.spacing
+		match sq.formation:
+			SquadState.Formation.LINE:
+				# Slot 0 (leader) in the middle, then alternating right / left.
+				var k := (i + 1) / 2 * (1 if i % 2 == 1 else -1)
+				off = right * k * sq.spacing
+			SquadState.Formation.WEDGE, SquadState.Formation.DISPERSED:
+				# Leader at the point, the others alternately right and left, a rank back each.
+				var gap := sq.spacing if sq.formation == SquadState.Formation.WEDGE else maxf(sq.spacing * 1.8, 5.5)
+				var rank := (i + 1) / 2
+				var side := 1 if i % 2 == 1 else -1
+				off = right * side * rank * gap * 0.9 - fwd * rank * gap * 0.8
+			SquadState.Formation.STAGGERED:
+				# Two files offset against each other.
+				var row := i / 2
+				var side2 := -1 if i % 2 == 0 else 1
+				off = right * side2 * sq.spacing * 0.6 - fwd * (row * sq.spacing * 1.4 + (0.0 if i % 2 == 0 else sq.spacing * 0.7))
+			_:
+				off = -fwd * i * sq.spacing
 		out.append(_free_ground(centre + off))
 	return out
 
@@ -479,7 +526,8 @@ func _slots(sq: SquadState, centre: Vector3, yaw: float) -> Array:
 ## Pairs members with slots so paths cross little: the leader takes slot 0; the others
 ## are matched by their order across (line) or along (column) the facing.
 func _assign(sq: SquadState, ids: Array, slots: Array, yaw: float) -> Array:
-	var axis := _right(yaw) if sq.formation == SquadState.Formation.LINE else _forward(yaw)
+	var across := sq.formation == SquadState.Formation.LINE or sq.formation == SquadState.Formation.WEDGE or sq.formation == SquadState.Formation.DISPERSED
+	var axis := _right(yaw) if across else _forward(yaw)
 	var result := []
 	result.resize(ids.size())
 	var rest_ids := []
@@ -539,7 +587,14 @@ func _ground(p: Vector3) -> Vector3:
 
 
 func _width(sq: SquadState) -> float:
-	return (_slot_count(sq) - 1) * sq.spacing if sq.formation == SquadState.Formation.LINE else sq.spacing
+	match sq.formation:
+		SquadState.Formation.LINE:
+			return (_slot_count(sq) - 1) * sq.spacing
+		SquadState.Formation.WEDGE:
+			return _slot_count(sq) * 0.5 * sq.spacing * 1.8
+		SquadState.Formation.DISPERSED:
+			return _slot_count(sq) * 0.5 * maxf(sq.spacing * 1.8, 5.5) * 1.8
+	return sq.spacing
 
 
 func _centroid(sq: SquadState) -> Vector3:
