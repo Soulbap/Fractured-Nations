@@ -1,4 +1,4 @@
-# AI roadmap — consolidated after INTEGRATION-04
+# AI roadmap — consolidated after INTEGRATION-04, updated after AI-INTEL-01 / AI-OBS-01
 
 Single planning document for the AI milestones after LOGISTICS-01. It merges
 [AI-ARCHITECTURE-RESEARCH-01](AI-ARCHITECTURE-RESEARCH-01.md) (the *why* and the technique
@@ -6,6 +6,11 @@ comparison — not repeated here) with the code that actually exists on
 `feature/integration-04` (LOGISTICS-01 / BASE-02 verified, see
 [INTEGRATION-04_REPORT.md](INTEGRATION-04_REPORT.md) §4). Where the research assumed the
 LOGISTICS-01 *plan*, this document uses the *implemented* names.
+
+**Status.** AI-INTEL-01 and AI-OBS-01 are **done** (branch `feature/ai-intel-01`, report
+[AI-INTEL-01_OBS-01_REPORT.md](AI-INTEL-01_OBS-01_REPORT.md)): factions hold a persistent, aging contact
+picture built from reports; strategic decisions read it; the map shows it and a developer inspector explains
+decisions and squads. Everything else below is still planned. Next recommended: **AI-SQUAD-01**.
 
 Evidence tags: **[CODE]** read in the source of this branch, **[REPORT]** from a project
 report, **[PROPOSED]** a decision for the milestone, **[UNKNOWN]** needs measurement.
@@ -58,13 +63,23 @@ Readiness today = `status == PARKED/DRIVING`, fuel fraction, health, cargo, `job
 | # | Gap | Evidence | Resolved in |
 |---|---|---|---|
 | G1 | **AI factions have no logistics economy.** `SandboxSetup` builds HQ perimeters only; the starting stockpile goes to the *player's* first supply depot; AI reserves are `f.reserves` integers spawned by `spawn_squad` with no inventory cost; AI factions own no vehicles. | `sandbox_setup.gd`, `logistics_sim.gd:_on_structure_added`, `war_sim.gd:_update_reserves` | BASE-AI-01 (prerequisite of OPS-01) |
-| G2 | **No faction-level contact model.** `WarSim.known` is omniscient within 400 m, forgotten after 90 s and **not saved**; `CombatBrain` indexes soldiers only (vehicles are invisible to it). | `war_sim.gd:_update_intel`, `combat_brain.gd:_ensure_grid` | AI-INTEL-01 |
+| G2 | ~~No faction-level contact model.~~ **Resolved (AI-INTEL-01):** `WarState.contacts` / `IntelSim`; the omniscient `known` table is gone. Still open from it: `CombatBrain` indexes soldiers only, so vehicles cannot yet be *targets or observers* (the contact schema already has `Kind.VEHICLE`). | `intel_sim.gd`, `combat_brain.gd:_ensure_grid` | done; vehicle observation/targeting in AI-VEH-01 |
 | G3 | **Vehicles cannot be hurt by weapons.** `LineOfFire._units_hit` has soldier hit volumes only; `VehicleSim.apply_damage(id, amount, source)` is the existing hook (destruction, passenger ejection, cargo stays are tested through it). `WarSim._on_unit_died` ignores vehicles. | `line_of_fire.gd`, `vehicle_sim.gd:113` | AI-VEH-01 |
 | G4 | **No capability tags.** Squads/vehicles are matched by `kind`/`type_id`; `VehicleDefs.Def` has `passengers`, cargo capacity, fuel, speeds but no role/weapon data; `FacilityDefs` has the facility table but `StructureDef` carries no capabilities or service points. | `vehicle_defs.gd`, `facility_defs.gd` | OPS-01 (units: derive from defs) / BASE-AI-01 (facilities: extend `FacilityDefs`, not a second table) |
 | G5 | **Operations are single-echelon, squad-only.** One route + one ENGAGING order for every squad; no assembly gate, no mount/dismount, no withdrawal except FAILED-by-losses (squads stay where they are). | `war_sim.gd:_update_operation` | OPS-01 |
 | G6 | **Squad tactics are minimal** (Move/Hold/Follow/Regroup + per-soldier cover reaction). No fire teams, suppression, flank, bound, withdraw. | `squad_control.gd`, `combat_brain.gd:_tactics` | SQUAD-01 |
 | G7 | **Operation ↔ transport hand-over is not defined.** `order_transport` does not release a squad from its `OperationState`; only RTS player orders do (`rts_controller.gd:476`). An AI operation that mounts a squad must keep ownership consistent itself. | `vehicle_transport.gd` (no `release_squads`/`op_id`) | OPS-01 (define: squad stays in its op while aboard; op owns the vehicle element) |
 | G8 | **Bases are named groups, not services.** No reservation of docks/parking, no readiness cache, no reachability check for service points; dock slots are retried on conflict (`dock_world`, `parking_world`). | `logistics_sim.gd`, `base_sim.gd:summary` | BASE-AI-01 (cache) / DEF-01 (reservations only if contention is observed) |
+
+### Gaps found by AI-INTEL-01 / AI-OBS-01
+
+| # | Gap | Evidence | Resolved in |
+|---|---|---|---|
+| G9 | **Strength estimates are approximate.** A sighting reports the number of enemy soldiers within 25 m of the sighted one (with ±20 % noise per observer) and the table keeps the best estimate of the last few seconds; the number of soldiers a squad actually *saw* is not tracked. Good enough for reinforcement sizing (24 visible → "about 20-21"), not for composition. | `combat_brain.gd:_group_near`, `intel_sim.gd:_report_seen` | INTEL-02 / OPS-01 (composition by kind when vehicles exist) |
+| G10 | **Investigation is a one-squad MOVE operation** (`OperationState.contact_id`): the squad walks to the reported position and the contact is weakened if nothing newer was seen. No stand-off, no recon task, no vehicle. | `war_sim.gd:_investigate` | OPS-01 (`recon` plan task) |
+| G11 | **Squads do not use contacts yet.** `SquadControl` and `CombatBrain._tactics` still react only to what a soldier sees; `_share_contact` (squad mates turn to look) remains. `IntelSim.contacts_near` and the FIRE contacts are the inputs SQUAD-01 needs. | `combat_brain.gd:_share_contact` | SQUAD-01 |
+| G12 | **Only combatants report.** No scouts, observation posts or sensors; a faction with no soldier near an enemy knows nothing, so AI attacks against unseen garrisons still assume `value · 4` defenders. | `war_sim.gd:_decide` (`basis: assumed`) | INTEL-02 (recon operations) |
+| G13 | **No faction-level hearing of far events.** Hearing is per idle soldier within 150 m and creates a wide HEARD contact; explosions and vehicle noise do not exist yet. | `intel_sim.gd:report_heard` | VEH-01 (vehicle engine/weapon sounds feed the same call) |
 
 ## 4. Limitations from LOGISTICS-01, classified
 
@@ -79,7 +94,7 @@ Readiness today = `status == PARKED/DRIVING`, fuel fraction, health, cargo, `job
 | 7 | No resource production / income | **Dependency of STRAT-01/BASE-AI-01 scoring** | A faction that only spends will run dry and the AI must show believable behaviour at zero stock. Decision: BASE-AI-01 gives each AI faction a finite seeded stockpile plus a slow, explicit **supply inflow at the HQ** (a data rate in `FactionProfile`), no production chain. |
 | 8 | No route preview / vehicle feedback for the player | **Presentation improvement** | OBS-01 draws vehicle routes and AI plans from the same record (`VehicleState.route`); do it there. |
 | 9 | Performance with WarSim + combat + vehicles + logistics together | **Dependency (measure per milestone)** | Existing numbers are per subsystem (§6). One combined scenario defined in §7, run at OPS-01 and CA-01. |
-| 10 | `--combat-ai-test` precondition failure (site search tied to old terrain) | **Safe to leave, but fix before SQUAD-01** | It is the one test that exercises scripted engagements; SQUAD-01 changes combat behaviour, so its site search must be repaired (small, test-only) at the start of that milestone. Not caused by logistics. |
+| 10 | `--combat-ai-test` precondition failure (site search tied to old terrain) | **Diagnosed in AI-INTEL-01, not repaired** | The strict "meadow" (slope ≤ 4°, ≤ 4.5 m relief within 50 m, ≤ 4 trees in 70 m) no longer exists on the corrected terrain. Relaxing it lets the suite start but then fails identically on the untouched INTEGRATION-04 baseline (no shots in the symmetric fights on the substitute site), so the relaxed search was reverted rather than leave misleading downstream failures. The suite runs in the legacy layout (no war); port its scenarios to the sandbox layout in the `--ai-intel-test` style at the start of SQUAD-01. |
 
 ## 5. Milestones
 
@@ -95,23 +110,17 @@ INTEL-01+OBS-01 → SQUAD-01 → STRAT-01 → BASE-AI-01 → OPS-01 → VEH-01 �
                                          BASE-AI-02, INTEL-02 last
 ```
 
-### AI-INTEL-01 — persistent faction intelligence (+ AI-OBS-01)
-* **Objective.** Factions know what their troops have seen, not everything within 400 m; knowledge
-  fades, persists across save/load, and the player sees the same picture on the map.
-* **Reuse.** `CombatBrain._acquire/_perceive/_on_shot` (writers), `WarSim._update_intel` (replaced),
-  `WarState.to_dict`, map layer code from LOGISTICS-01 for markers, `FactionState.last_decision`.
-* **Add.** `WarState.contacts[faction][enemy_id] = {pos, vel, t_seen, confidence, source}`; 1 Hz decay;
-  uncertainty radius = speed × age; `_share_contact` reads contacts instead of the 120 m watch;
-  vehicles are *recordable* contacts even though `CombatBrain` cannot target them yet (record
-  `kind`); OBS: contact overlay (map + RTS), strategic score list on `FactionState.last_scores`, F4 card
-  for vehicles (status reason, route).
-* **Depends on.** Nothing. **Risk.** Less omniscient AI shifts war balance → compare with the
-  WORLD-SANDBOX-01B autonomous-war numbers before/after; tune `FactionProfile`.
-* **Validation.** Contact written on sight, decays, survives F5/F9, never created without LOS/hearing;
-  `known_near` replaced in `_decide`; sandbox `war,persist` outcomes within the previous band.
-* **Done when.** No code reads `WarSim.known`; contacts persist; the player's faction map shows only
-  its own contacts; war runs 20 sim-minutes without regression in capture rate.
-* **Visible.** Enemy markers appear when seen and fade; AI no longer reinforces against unseen forces.
+### AI-INTEL-01 — persistent faction intelligence (+ AI-OBS-01) — **DONE**
+* **Delivered.** `ContactState` / `WarState.contacts` / `IntelSim` (owned by `WarSim`); reports from
+  `CombatBrain` (sight, gunfire heard, fire taken) and from soldiers holding an objective an enemy stands
+  in; 3 s (sight) / 6 s (sound) delay; merge by unit identity and proximity; confidence decay, growing
+  uncertainty, OBSERVED → REPORTED → STALE → LOST; saved with the war; `WarSim.known` removed; strategic
+  decisions use `threat_near`; stale reports near own ground are investigated by one squad; the map shows
+  the player's picture; the **I / T** developer inspector shows any faction's picture, last decisions
+  (`FactionState.decisions`, bounded runtime snapshots) and any squad's reason.
+* **Kept for later milestones.** The inspector is a map overlay; the F4 soldier card is unchanged. Plan
+  and element panels belong to OPS-01; influence layers to STRAT-01 / INTEL-02.
+* **Open items** are gaps G9-G13 above.
 
 ### AI-SQUAD-01 — fire teams, suppression, flank, bound, withdraw, defend
 * **Objective.** Firefights show recognisable infantry tactics instead of individual cover-hopping.
@@ -122,7 +131,7 @@ INTEL-01+OBS-01 → SQUAD-01 → STRAT-01 → BASE-AI-01 → OPS-01 → VEH-01 �
   value (aim/perception penalty, cover bias); `suppress_at` target in `_engage`; flank target point =
   90° offset at 60–100 m on a cover/terrain-valid cell; wedge formation. Tactics end on any player
   order and on loss of the contact. Squads that are **aboard a vehicle never run a tactic**.
-* **Depends on.** INTEL-01 (contact), test-site repair for `--combat-ai-test` (limitation 10).
+* **Depends on.** INTEL-01 (done), porting the combat-ai scenarios to the sandbox layout (limitation 10).
   **Risk.** Balance and tactic oscillation; tactic must not fight the operation task → tactic is
   entered/left only by the operation (or by contact when idle).
 * **Validation.** Scenario A (two squads vs a defended position): suppression team fires without
@@ -133,8 +142,9 @@ INTEL-01+OBS-01 → SQUAD-01 → STRAT-01 → BASE-AI-01 → OPS-01 → VEH-01 �
 
 ### AI-STRAT-01 — strategic decisions and threat awareness
 * **Objective.** Factions allocate forces across fronts for reasons the player can read.
-* **Reuse.** `WarSim._decide`, `FactionProfile`, `StrategicRoutes`, contacts, the existing
-  `last_decision` string.
+* **Reuse.** `WarSim._decide`, `FactionProfile`, `StrategicRoutes`, contacts (`IntelSim.threat_near`,
+  `contacts_near`), the decision snapshots (`FactionState.decisions`: threats, scored candidates with
+  `basis` reported / assumed / none, chosen reason), the `OperationState.reason` strings.
 * **Add.** Action-list scorer (attack / reinforce / defend / recover), strength estimates from contacts
   (replacing `value·4` for unseen garrisons), `FactionState.focus` with hysteresis, orderly FAILED exit
   (retreat to nearest owned objective instead of standing still), first threat/control influence layer on
@@ -261,8 +271,12 @@ in the research: one route per element, `AStarGrid2D.jumping_enabled` test, HPA*
 
 ## 8. How to start the next milestone without ambiguity
 
-* Branch from `feature/integration-04` (worktree `../fractured-nations-<milestone>`).
-* AI-INTEL-01 touches `WarState`, `WarSim._update_intel/_decide`, `CombatBrain._acquire/_on_shot`,
-  map layer. It must **not** touch `scripts/vehicles/` or `scripts/logistics/`.
-* Test set: `--sandbox-test --only war,persist,navigation`, `--squad-test`, the repaired
-  `--combat-ai-test`, plus a new `--ai-test --only intel_*`.
+* Branch from `feature/ai-intel-01` (worktree `../fractured-nations-<milestone>`).
+* **AI-SQUAD-01** (recommended next) touches `SquadControl` / `SquadState` and `CombatBrain._tactics`
+  (suppression, `suppress_at`), and reads `IntelSim.contacts_near` for flank / suppress targets. It must
+  keep the order of authority (player > operation > squad tactic > reaction): a tactic ends on any player
+  order, and squads aboard a vehicle never run one. It must **not** touch `scripts/vehicles/` or
+  `scripts/logistics/`.
+* Test set: `--ai-intel-test --only h_player,e_tiers,j_perf` (authority, tiers, cost), `--squad-test`,
+  `--combat-tactics-test`, `--sandbox-test --only war,persist`,
+  plus a new tactics scenario file in the `--ai-intel-test` style (each scenario resets its own state).

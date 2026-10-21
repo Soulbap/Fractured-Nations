@@ -6,7 +6,10 @@ Norwegian; code, comments and docs are English.
 
 ## Branch workflow
 
-- **`feature/integration-04` is the current baseline** (worktree `../fractured-nations-integration04`):
+- **`feature/ai-intel-01` is the current development branch** (worktree `../fractured-nations-aiintel01`):
+  `feature/integration-04` + AI-INTEL-01 / AI-OBS-01 (faction contact intelligence and the AI inspector).
+  New AI milestones branch from it; the plan is [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md).
+- `feature/integration-04` (worktree `../fractured-nations-integration04`) is the integration baseline below it:
   `feature/world-integration-03` + `feature/logistics-01-base-02` (vehicles, transport, logistics, bases)
   + `research/ai-architecture-01` (docs only), integrated in INTEGRATION-04. New milestones branch from
   it (`feature/<milestone>`) and merge back into it or its successor. The AI plan is
@@ -55,6 +58,13 @@ Norwegian; code, comments and docs are English.
   sources and sinks (start stock, costs, fuel burn, resupply). Bases live in `ConstructionState.bases` +
   `StructureState.base_id`; `FacilityDefs` is the table of what buildings do. Soldiers aboard
   (`UnitState.vehicle_id >= 0`) are changed only by `VehicleTransport`.
+- **Faction knowledge is reported, never read off the world.** What an AI faction believes about
+  the enemy is `WarState.contacts` (`ContactState`), written only by `IntelSim.report_*` and aged by
+  `IntelSim.update`; the only detection pipeline is `CombatBrain` perception (sightings, gunfire
+  heard, fire taken), plus soldiers holding an objective an enemy stands in. Strategic and
+  operational code reads `WarSim.threat_near` / `IntelSim.contacts_*` and must never look up an
+  enemy `UnitState` position it has not been told about. A contact's `pos` is where it was last
+  reported; it is never refreshed from the world.
 - **AI layers** (strategic `WarSim._decide` -> operations `OperationState` -> squad tactics
   `SquadControl` -> individual `CombatBrain`) all read and write the same records and call the same
   APIs as the player (see the interface map in [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md)). Order of
@@ -89,6 +99,10 @@ Norwegian; code, comments and docs are English.
   `--logistics-test --only veh_drive,transport,logistics,convoy,bases,persist_logistics,scenario` (the `scenario`
   run is the brief's end-to-end acceptance through the real controls). Integration scenarios of the
   combined baseline: `--integration03-test --only catalog,factions,base,base_nav,long_route,views,persist,vehicles,perf`.
+- AI-INTEL-01 scenarios: `--ai-intel-test [--shots] [--only z_old_rule,a_initial,b_lost,c_reacquire,d_hearing,e_tiers,f_persist,g_strategy,k_investigate,h_player,i_factions,j_perf]`
+  (each resets its own state; results in `benchmarks/raw/ai_intel_test.json`). Strategic map developer keys:
+  **I** AI inspector (cycles factions: their contact picture, last decisions, operations), **T** (with the
+  inspector on) true squad positions, labelled TRUTH, click one to inspect that squad.
 - After adding `class_name` scripts or assets run `Godot ... --headless --path . --import` once.
 - A script that fails to compile makes a test hang until timeout; check the log head first.
 - Blender asset pipeline: `tools/blender/` (+Y forward, one joined mesh, origin on the ground,

@@ -3,7 +3,17 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current baseline: **INTEGRATION-04** (branch `feature/integration-04`) — LOGISTICS-01 / BASE-02 and the
+Current state: **AI-INTEL-01 / AI-OBS-01** (branch `feature/ai-intel-01`, built on `feature/integration-04`) —
+factions no longer know where enemies are merely because they are near: what a faction believes comes from
+reports (soldiers who saw an enemy, heard gunfire or were shot at, or hold an objective an enemy stands in),
+arrives after a short delay, ages into stale beliefs with a growing uncertainty circle, is saved with the war,
+and is what the strategic AI uses to reinforce, reassess and send a squad to look at an old report. The
+strategic map shows your faction's contact picture (filled diamond = seen now, outlined = reported, faded =
+stale, circle = how far it may have moved). Developer inspector on the map: **I** cycles through the factions'
+pictures and decisions, **T** adds the true squad positions (labelled TRUTH) and lets you inspect any squad.
+See [docs/AI-INTEL-01_OBS-01_REPORT.md](docs/AI-INTEL-01_OBS-01_REPORT.md).
+
+Before that, **INTEGRATION-04** (branch `feature/integration-04`) — LOGISTICS-01 / BASE-02 and the
 AI architecture research integrated on top of `feature/world-integration-03`, no gameplay change. The
 consolidated AI plan (interfaces the AI uses, gaps, milestone order) is [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md);
 the integration findings are in [docs/INTEGRATION-04_REPORT.md](docs/INTEGRATION-04_REPORT.md).
