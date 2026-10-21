@@ -981,6 +981,12 @@ func _run_suppress(sq: SquadState, a: Dictionary, now: float) -> void:
 	if why != "":
 		_finish(sq, why, SquadState.Tactic.REGROUP)
 		return
+	# Fire discipline: an operation's fire support that has seen no enemy (it fires at the believed centre of the
+	# objective) fires in bursts - eight seconds in twenty-four - because ammunition is not free; as soon as an
+	# enemy is seen the fire is continuous.
+	if sq.tactic_owner == SquadState.Owner.OPERATION and int(a.seen_n) == 0 and fmod(now - sq.tactic_since, 24.0) >= 8.0:
+		_cease_fire(units)
+		return
 	_fire_on(units, target, _spread_for(sq), mission_s)
 
 

@@ -30,7 +30,8 @@ var deploy_timeout_s := 55.0
 var support_timeout_s := 40.0
 var assault_stall_s := 260.0
 ## No squad attacking for this long: promote the support or break off.
-var idle_assault_s := 60.0
+var idle_assault_s := 45.0
+var idle_assault_max_s := 120.0
 var support_standoff_m := 190.0
 ## An operation whose weighted effectiveness falls below this withdraws (the profile may override).
 var withdraw_eff := 0.32
@@ -364,7 +365,7 @@ func _update_assault(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dic
 	var attacking := false
 	for sq: SquadState in sqs:
 		var r: int = int(op.roles.get(sq.id, SquadState.OpRole.NONE))
-		if (r == SquadState.OpRole.ASSAULT or r == SquadState.OpRole.MANEUVER) and sq.tactic != SquadState.Tactic.NONE:
+		if (r == SquadState.OpRole.ASSAULT or r == SquadState.OpRole.MANEUVER) and (sq.tactic != SquadState.Tactic.NONE or not sq.route.is_empty()):
 			attacking = true
 	if attacking or obj.owner == op.faction:
 		_idle_since.erase(op.id)
@@ -382,15 +383,42 @@ func _update_assault(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dic
 					op.stage_why = "%s goes in: no squad is attacking" % sq.squad_name
 					promoted = true
 					break
-			_idle_since.erase(op.id)
 			if not promoted:
-				# Suppressed or shaken squads recover in a minute: against a weak enemy the operation waits for them
-				# (the stall timeout still ends it); against a strong one it breaks off now.
-				if float(a.soldiers) < 2.5 * float(maxi(int(a.seen), 1)) or a.ammo < 0.2:
-					timeouts += 1
-					withdraw(op, "no squad is fit to continue the assault (%d of ours against %d seen)" % [a.soldiers, a.seen])
+				# Suppressed or shaken squads recover in a minute and are tasked again by the loop above. The operation
+				# waits only for squads that can recover (people and ammunition left), and only against a weak enemy;
+				# otherwise it breaks off now instead of waiting for the stall timeout.
+				var recoverable := false
+				for sq: SquadState in sqs:
+					var sa := sim.tactics.assessment(sq)
+					if sq.members.size() >= 3 and (sa.is_empty() or float(sa.get("ammo", 1.0)) >= 0.25):
+						recoverable = true
+				var idle_s := now - float(_idle_since[op.id])
+				# Clearly stronger than what it believes is left: the squads walk in (taking ground needs people, not
+				# ammunition) instead of waiting for the stall timeout.
+				var believed := maxi(int(a.seen), ws.intel.threat_near(op.faction, obj.position, obj.radius + 150.0))
+				if recoverable and float(a.soldiers) >= 2.5 * float(maxi(believed, 1)) and a.ammo >= 0.05:
+					var kk := 0
+					for sq: SquadState in sqs:
+						if sq.tactic != SquadState.Tactic.NONE and sq.tactic_owner == SquadState.Owner.OPERATION:
+							sim.tactics.cancel(sq, "final push")
+						sim.squads.follow_route(sq, PackedVector3Array([_slot(obj, kk)]), SquadState.Formation.LINE)
+						kk += 1
+					op.stage_why = "final push: %d of ours against %d believed, the squads walk in" % [a.soldiers, believed]
+					op.wait_reason = ""
+					_idle_since.erase(op.id)
 					return
-				op.wait_reason = "squads regroup before the next push"
+				if not recoverable or float(a.soldiers) < 2.5 * float(maxi(int(a.seen), 1)) or a.ammo < 0.2 or idle_s > idle_assault_max_s:
+					timeouts += 1
+					_idle_since.erase(op.id)
+					var detail: Array[String] = []
+					for sq: SquadState in sqs:
+						var sa2 := sim.tactics.assessment(sq)
+						detail.append("%s %d men, ammo %d%%, eff %.2f" % [sq.squad_name, sq.members.size(), roundi(float(sa2.get("ammo", 1.0)) * 100.0), float(sa2.get("eff", 0.0))])
+					withdraw(op, "no squad is fit to continue the assault (%d of ours against %d seen; %s)" % [a.soldiers, a.seen, "; ".join(detail)])
+					return
+				op.wait_reason = "squads regroup before the next push (%d s)" % int(idle_s)
+			else:
+				_idle_since.erase(op.id)
 	# A depleted support squad is replaced by a reserve (rarely, explained).
 	_replace_support(op, sqs, obj)
 	if now - op.stage_since > assault_stall_s and obj.owner != op.faction:

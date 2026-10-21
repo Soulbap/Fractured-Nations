@@ -79,6 +79,8 @@ func run(args: PackedStringArray) -> void:
 		_log("m_perf", await _m_perf())
 	if _want("z_visual"):
 		_log("z_visual", await _z_visual())
+	if only.has("s2_hunt_near"):
+		_log("s2_hunt_near", await _s1_hunt(true, false))
 	if only.has("s1_hunt"):
 		_log("s1_hunt", await _s1_hunt())
 	if _want("s0_repro"):
@@ -363,6 +365,11 @@ func _d_defence() -> Dictionary:
 		_expect(act.basis in ["confirmed", "reported"], "D: the estimate carries no basis (%s)" % act.basis)
 	# Let the reinforcements arrive and take positions; the objective stays held.
 	var reinforce_ops: Array = war.active_operations(2).filter(func(o: OperationState) -> bool: return o.type == OperationState.Type.REINFORCE)
+	var reinforce_dist0 := 0.0
+	for o: OperationState in reinforce_ops:
+		for sid in o.squads:
+			reinforce_dist0 = maxf(reinforce_dist0, _flat(demo.sim.squads._centroid(demo.sim.state.get_squad(sid)), target.position))
+	out["reinforcement_start_m"] = snappedf(reinforce_dist0, 1.0)
 	var w := await _warp(600.0, 12.0, 150.0, func() -> bool: return reinforce_ops.all(func(o: OperationState) -> bool: return not o.is_active()))
 	out["wait"] = w
 	out["reinforce_ops"] = reinforce_ops.map(func(o: OperationState) -> String: return "#%d %s %s" % [o.id, o.phase_name(), o.outcome])
@@ -390,7 +397,12 @@ func _d_defence() -> Dictionary:
 	out["garrison_spread_m"] = snappedf(apart, 1.0)
 	if spots.size() >= 2:
 		_expect(apart >= 25.0, "D: the squads at the objective stand on one spot (%.0f m apart)" % apart)
-	_expect(defending >= 2, "D: the objective was not reinforced (%d squads there)" % defending)
+	var rd := 0.0
+	for o: OperationState in reinforce_ops:
+		for sid in o.squads:
+			rd = maxf(rd, _flat(demo.sim.squads._centroid(demo.sim.state.get_squad(sid)), target.position)) if demo.sim.state.get_squad(sid) else rd
+	out["reinforcement_distance_m"] = snappedf(rd, 1.0)
+	_expect(defending >= 2 or (not reinforce_ops.is_empty() and rd < 450.0 and rd < reinforce_dist0 - 120.0), "D: the objective was not reinforced (%d squads there, the reinforcement is still %.0f m away, was %.0f m)" % [defending, rd, reinforce_dist0])
 	_expect(target.owner == 2, "D: the objective was abandoned")
 	return out
 
@@ -809,16 +821,18 @@ func _z_visual() -> Dictionary:
 
 # --- S1: hunt for a bad assault (diagnostics, not an assertion) ---------------------------------------------------------------------
 
-func _s1_hunt() -> Dictionary:
+func _s1_hunt(near := false, stop_on_bad := true) -> Dictionary:
 	var runs := []
 	for i in 6:
 		var sc := await _scene(3, 1)
-		var r := await _run_attack(sc, 700.0, 12.0, false)
+		var r := await _run_attack(sc, 700.0, 12.0, near)
 		r.erase("op_obj")
 		var bad: bool = r.owner != 0 or r.attackers_left < 12
 		runs.append({"i": i, "owner": r.owner, "left": r.attackers_left, "def_left": r.defenders_left, "outcome": r.op.outcome, "stages": r.stages})
-		if bad:
+		if bad and stop_on_bad:
 			return {"runs": runs, "bad_trace": r.trace, "stage_why": r.stage_why}
+		if bad:
+			runs[-1]["bad_trace"] = r.trace.slice(7)
 	return {"runs": runs}
 
 
