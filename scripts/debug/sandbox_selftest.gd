@@ -721,14 +721,14 @@ func _multi_ops_shot() -> void:
 		ws.cancel(op.id, "test: back to the AI war")
 
 
-## Centre of the enemy soldiers the player's faction currently knows about.
+## Centre of the enemy contacts the player's faction currently holds (AI-INTEL-01).
 func _known_center() -> Vector2:
-	var k: Dictionary = ws.known.get(war.player_faction, {})
+	var k := ws.intel.contacts_of(war.player_faction)
 	if k.is_empty():
 		return Vector2(-1000, -2500)
 	var c := Vector2.ZERO
-	for id in k:
-		c += Vector2(k[id][0].x, k[id][0].z)
+	for ct: ContactState in k:
+		c += Vector2(ct.pos.x, ct.pos.z)
 	return c / k.size()
 
 

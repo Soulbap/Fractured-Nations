@@ -63,6 +63,7 @@ var _combat_ai_selftest: CombatAISelfTest
 var _combat_scale_selftest: CombatScaleSelfTest
 var _combat_tactics_selftest: CombatTacticsSelfTest
 var _sandbox_selftest: SandboxSelfTest
+var _ai_intel_selftest: AIIntelSelfTest
 var _playtest_selftest: PlaytestSelfTest
 var _integration03_selftest: Integration03SelfTest
 var _logistics_selftest: LogisticsSelfTest
@@ -305,6 +306,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--playtest-test" in args:
 		_playtest_selftest = PlaytestSelfTest.new(self)
 		_playtest_selftest.run.call_deferred(args)
+	elif "--ai-intel-test" in args:
+		_ai_intel_selftest = AIIntelSelfTest.new(self)
+		_ai_intel_selftest.run.call_deferred(args)
 	elif "--sandbox-test" in args:
 		_sandbox_selftest = SandboxSelfTest.new(self)
 		_sandbox_selftest.run.call_deferred(args)
