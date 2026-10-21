@@ -30,7 +30,7 @@ var deploy_timeout_s := 55.0
 var support_timeout_s := 40.0
 var assault_stall_s := 260.0
 ## No squad attacking for this long: promote the support or break off.
-var idle_assault_s := 40.0
+var idle_assault_s := 60.0
 var support_standoff_m := 190.0
 ## An operation whose weighted effectiveness falls below this withdraws (the profile may override).
 var withdraw_eff := 0.32
@@ -226,9 +226,17 @@ func _issue_roles(op: OperationState, obj: ObjectiveState) -> void:
 			SquadState.OpRole.SUPPORT:
 				# Several stand-off distances are tried before the role is given up (terrain and woods decide
 				# where a rifle can see the objective from).
+				# The objective's centre may be inside a building or behind trees: the points around it (where its
+				# defenders would stand) are tried as fire targets too.
 				var res := {"ok": false, "reason": ""}
-				for standoff: float in [support_standoff_m, support_standoff_m * 0.75, support_standoff_m * 1.25, support_standoff_m * 0.55]:
-					res = sim.tactics.assign_for_operation(sq, SquadState.Tactic.SUPPRESS, _fire_target(op, obj), "operation #%d: fire support for the attack on %s (from %.0f m)" % [op.id, obj.obj_name, standoff], {"standoff": standoff})
+				var targets: Array[Vector3] = [_fire_target(op, obj)]
+				for i in 4:
+					targets.append(_slot(obj, i))
+				for tgt: Vector3 in targets:
+					for standoff: float in [support_standoff_m, support_standoff_m * 0.75, support_standoff_m * 1.25, support_standoff_m * 0.55]:
+						res = sim.tactics.assign_for_operation(sq, SquadState.Tactic.SUPPRESS, tgt, "operation #%d: fire support for the attack on %s (from %.0f m)" % [op.id, obj.obj_name, standoff], {"standoff": standoff})
+						if res.ok:
+							break
 					if res.ok:
 						break
 				if not res.ok:
@@ -376,9 +384,13 @@ func _update_assault(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dic
 					break
 			_idle_since.erase(op.id)
 			if not promoted:
-				timeouts += 1
-				withdraw(op, "no squad is fit to continue the assault")
-				return
+				# Suppressed or shaken squads recover in a minute: against a weak enemy the operation waits for them
+				# (the stall timeout still ends it); against a strong one it breaks off now.
+				if float(a.soldiers) < 2.5 * float(maxi(int(a.seen), 1)) or a.ammo < 0.2:
+					timeouts += 1
+					withdraw(op, "no squad is fit to continue the assault (%d of ours against %d seen)" % [a.soldiers, a.seen])
+					return
+				op.wait_reason = "squads regroup before the next push"
 	# A depleted support squad is replaced by a reserve (rarely, explained).
 	_replace_support(op, sqs, obj)
 	if now - op.stage_since > assault_stall_s and obj.owner != op.faction:

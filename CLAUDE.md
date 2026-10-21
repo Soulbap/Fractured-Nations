@@ -6,7 +6,11 @@ Norwegian; code, comments and docs are English.
 
 ## Branch workflow
 
-- **`feature/ai-squad-01` is the current development branch** (worktree `../fractured-nations-aisquad01`):
+- **`feature/ai-combat-strat-01` is the current development branch** (worktree `../fractured-nations-aistrat01`):
+  `feature/ai-squad-01` + AI-COMBAT-STRAT-01 (coordinated multi-squad operations, withdrawal, the strategic
+  utility scorer, defence sectors; report [docs/AI-COMBAT-STRAT-01_REPORT.md](docs/AI-COMBAT-STRAT-01_REPORT.md)).
+  New AI milestones branch from it.
+- `feature/ai-squad-01` (worktree `../fractured-nations-aisquad01`) is the baseline below it:
   `feature/ai-intel-01` + AI-SQUAD-01 (fire teams, suppression, squad tactics, tactical RTS orders, cover props).
   New AI milestones branch from it; the plan is [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md).
 - `feature/ai-intel-01` (worktree `../fractured-nations-aiintel01`) is the baseline below it:
@@ -78,6 +82,17 @@ Norwegian; code, comments and docs are English.
   tactic > reaction); a squad with a soldier aboard a vehicle never runs a tactic. `SquadPositions` does the post,
   flank and exposure measurements on world data against believed positions only. Suppression is a decaying value on
   the unit record (`suppression_at`). No planner, no second blackboard: choices are a few scores with their reasons.
+- **Operations and strategy (AI-COMBAT-STRAT-01).** `OperationState` carries a stage (APPROACH, DEPLOY, SUPPORT,
+  ASSAULT, SECURE, WITHDRAW, DONE; `stage_why`, `wait_reason`, `withdraw_why`, `fallback_pos`) and per-squad roles
+  (`SquadState.op_role`: assault, support, maneuver, reserve, security, reinforce). `OpCoordination`
+  (`WarSim.coord`) assigns roles and advances the stages from the squads' own state (assessment, tactic, position);
+  every stage has a success condition, a timeout and a fallback, and it never reclaims a squad whose tactic is owned
+  by the player. Attack operations use `SquadTactics` by default (`--legacy-ops` is the old walk-in, for comparison
+  only). `StrategicDecision` (`WarSim.strat`) is the utility scorer (attack / reinforce / join / garrison /
+  recover / withdraw) reading only IntelSim contacts and `StrategicInfluence` (threat grid, route risk) with a basis
+  label (confirmed / reported / stale / assumed / none), a reserve, `FactionState.focus` hysteresis and
+  `FactionProfile` weights. `WarSim._defence_posture` spreads garrisoning squads over sectors facing the believed
+  threat, with a local reserve from three squads. Decisions, stages and roles are shown by the AI inspector.
 - **AI layers** (strategic `WarSim._decide` -> operations `OperationState` -> squad tactics
   `SquadControl` -> individual `CombatBrain`) all read and write the same records and call the same
   APIs as the player (see the interface map in [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md)). Order of
@@ -112,6 +127,10 @@ Norwegian; code, comments and docs are English.
   `--logistics-test --only veh_drive,transport,logistics,convoy,bases,persist_logistics,scenario` (the `scenario`
   run is the brief's end-to-end acceptance through the real controls). Integration scenarios of the
   combined baseline: `--integration03-test --only catalog,factions,base,base_nav,long_route,views,persist,vehicles,perf`.
+- AI-COMBAT-STRAT-01 scenarios: `--ai-strat-test [--shots] [--only s0_repro,a_assault,b_reduced,c_reinforce,d_defence,e_withdraw,f_fronts,g_intel,h_deadlock,i_player,j_persist,k_near,l_war,m_perf,z_visual]`
+  (results in `benchmarks/raw/ai_strat_test.json`, screenshots in `docs/ai_strat01/`; `l_war` is a 40 simulated
+  minute autonomous war and takes about 3 real minutes, `z_visual` is the screenshot run). `--legacy-ops` /
+  `--no-squad-ai` switch the new behaviour off for comparison.
 - AI-SQUAD-01 scenarios: `--ai-squad-test [--shots] [--only a_engagement,b_suppress,c_flank,d_assault,f_withdraw,g_player,h_intel,i_casualties,j_near_far,k_persist,l_perf,z_showcase]`
   (baseline of the unchanged combat: `base_fight,base_far,base_orders`; each scenario resets itself through
   `CombatScenario`; results in `benchmarks/raw/ai_squad_test.json`). `--squad-demo` runs the showcase encounter in the

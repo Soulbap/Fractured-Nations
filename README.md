@@ -3,7 +3,16 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **AI-SQUAD-01** (branch `feature/ai-squad-01`, built on `feature/ai-intel-01`) — infantry squads fight
+Current state: **AI-COMBAT-STRAT-01** (branch `feature/ai-combat-strat-01`, built on `feature/ai-squad-01`) — AI attacks
+are coordinated operations: the squads get roles (assault, fire support, maneuver, reserve, security) and the
+operation moves through approach, deploy, support, assault and secure; it breaks off with cover fire when it is losing
+and its survivors recover before they are used again. AI factions score attack / reinforce / join / garrison from what
+they have been told (confirmed, reported, stale or assumed), keep a reserve, stick to a decision for a while and send
+help to a running attack instead of starting a second one; garrisons spread over sectors facing the believed threat.
+The strategic-map AI inspector (**I**) shows stages, roles, forces and every candidate action with its utility. See
+[docs/AI-COMBAT-STRAT-01_REPORT.md](docs/AI-COMBAT-STRAT-01_REPORT.md).
+
+Before that, **AI-SQUAD-01** (branch `feature/ai-squad-01`, built on `feature/ai-intel-01`) — infantry squads fight
 as organised units. A squad splits into two fire teams (leaders take over when one falls), spreads out when it comes
 under fire, picks firing posts with cover and a view, and carries out squad tactics: **defend**, **suppress** (fire
 at a reported position, with real ammunition, until the report is old), **assault**, **flank** (a covered route chosen

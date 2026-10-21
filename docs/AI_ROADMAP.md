@@ -148,7 +148,18 @@ INTEL-01+OBS-01 → SQUAD-01 → STRAT-01 → BASE-AI-01 → OPS-01 → VEH-01 �
 * **Done when.** Scenario A passes deterministically (seed) and a player-ordered squad is unaffected.
 * **Visible.** Squads split, one pins the enemy while the other moves around.
 
-### AI-STRAT-01 — strategic decisions and threat awareness
+### AI-COMBAT-STRAT-01 — coordinated operations and strategic decisions — **DONE** (replaces AI-STRAT-01 below)
+* **Delivered.** Attack operations use the squad tactics by default and run as one operation with roles and stages
+  (`OpCoordination`); an operation can withdraw to a fallback point under cover and release its squads;
+  `StrategicDecision` scores attack / reinforce / join / garrison / recover with labelled intelligence, a reserve
+  and focus hysteresis; `StrategicInfluence` is the threat layer (route risk); garrisons take sectors with a local
+  reserve; the inspector shows stages, roles, forces and every candidate action with its utility. Report:
+  [AI-COMBAT-STRAT-01_REPORT.md](AI-COMBAT-STRAT-01_REPORT.md).
+* **Open items.** Crouch / prone, counterattack from the defence reserve, smoke, vehicles in operations
+  (AI-OPS-01 / AI-VEH-01), an operation that retakes a lost objective after recovering, balance of the approach march
+  on the 20 km map (an attack takes about 20 simulated minutes to arrive).
+
+### AI-STRAT-01 — strategic decisions and threat awareness (done by AI-COMBAT-STRAT-01, kept for reference)
 * **Objective.** Factions allocate forces across fronts for reasons the player can read.
 * **Reuse.** `WarSim._decide`, `FactionProfile`, `StrategicRoutes`, contacts (`IntelSim.threat_near`,
   `contacts_near`), the decision snapshots (`FactionState.decisions`: threats, scored candidates with

@@ -79,6 +79,8 @@ func run(args: PackedStringArray) -> void:
 		_log("m_perf", await _m_perf())
 	if _want("z_visual"):
 		_log("z_visual", await _z_visual())
+	if only.has("s1_hunt"):
+		_log("s1_hunt", await _s1_hunt())
 	if _want("s0_repro"):
 		_log("s0_repro", await _s0_repro())
 	await _end_strat()
@@ -138,11 +140,12 @@ func _run_attack(sc: Dictionary, max_sim := 700.0, scale := 12.0, near := false)
 		return {"started": false}
 	demo.rts_camera.frame(obj.position if near else Vector3(9000, 0, 9000), 0.0, 120.0 if near else 150.0)
 	trace.clear()
-	var st := {"next": demo.sim.state.time, "stages": [], "roles": {}, "best": INF, "best_t": demo.sim.state.time, "max_stall": 0.0, "withdrew": false}
+	var st := {"next": demo.sim.state.time, "stages": [], "whys": [], "roles": {}, "best": INF, "best_t": demo.sim.state.time, "max_stall": 0.0, "withdrew": false}
 	var w := await _warp(max_sim, scale, 200.0, func() -> bool:
 		var now := demo.sim.state.time
 		if st.stages.is_empty() or st.stages[-1] != op.stage_name():
 			st.stages.append(op.stage_name())
+			st.whys.append("%s: %s" % [op.stage_name(), op.stage_why])
 		for sid in op.roles:
 			st.roles[SquadState.OP_ROLE_NAMES[int(op.roles[sid])]] = true
 		if op.stage == OperationState.Stage.WITHDRAW:
@@ -163,7 +166,7 @@ func _run_attack(sc: Dictionary, max_sim := 700.0, scale := 12.0, near := false)
 	var left := _alive_count(atk)
 	var started := op.start_strength
 	return {"started": true, "op": {"phase": op.phase_name(), "stage": op.stage_name(), "outcome": op.outcome, "losses": op.losses, "start": started},
-		"owner": obj.owner, "attackers_left": left, "defenders_left": _alive_count(defs), "stages": st.stages, "roles_seen": st.roles.keys(),
+		"owner": obj.owner, "attackers_left": left, "defenders_left": _alive_count(defs), "stages": st.stages, "stage_whys": st.whys, "roles_seen": st.roles.keys(),
 		"max_assault_stall_s": snappedf(st.max_stall, 1.0), "withdrew": st.withdrew, "warp": w, "stage_why": op.stage_why, "withdraw_why": op.withdraw_why,
 		"trace": trace.slice(0, 80), "consistency": _consistency(), "op_obj": op}
 
@@ -359,7 +362,10 @@ func _d_defence() -> Dictionary:
 		_expect(act.status == "chosen", "D: the reinforcement was not sent (%s)" % act.status)
 		_expect(act.basis in ["confirmed", "reported"], "D: the estimate carries no basis (%s)" % act.basis)
 	# Let the reinforcements arrive and take positions; the objective stays held.
-	await _warp(260.0, 12.0, 120.0)
+	var reinforce_ops: Array = war.active_operations(2).filter(func(o: OperationState) -> bool: return o.type == OperationState.Type.REINFORCE)
+	var w := await _warp(600.0, 12.0, 150.0, func() -> bool: return reinforce_ops.all(func(o: OperationState) -> bool: return not o.is_active()))
+	out["wait"] = w
+	out["reinforce_ops"] = reinforce_ops.map(func(o: OperationState) -> String: return "#%d %s %s" % [o.id, o.phase_name(), o.outcome])
 	var defending := 0
 	var posted := 0
 	for sq: SquadState in demo.sim.state.all_squads():
@@ -799,6 +805,21 @@ func _z_visual() -> Dictionary:
 		demo.hud.visible = true
 	var inspector := ws.explain_faction(war.faction(0)) if ws.has_method("explain_faction") else []
 	return {"op": {"phase": op.phase_name(), "stage": op.stage_name(), "outcome": op.outcome}, "owner": obj.owner, "explain_op": ws.coord.explain(op), "trace": trace.slice(0, 70), "attackers_left": _alive_count(atk), "defenders_left": _alive_count(sc.def), "inspector_faction": inspector}
+
+
+# --- S1: hunt for a bad assault (diagnostics, not an assertion) ---------------------------------------------------------------------
+
+func _s1_hunt() -> Dictionary:
+	var runs := []
+	for i in 6:
+		var sc := await _scene(3, 1)
+		var r := await _run_attack(sc, 700.0, 12.0, false)
+		r.erase("op_obj")
+		var bad: bool = r.owner != 0 or r.attackers_left < 12
+		runs.append({"i": i, "owner": r.owner, "left": r.attackers_left, "def_left": r.defenders_left, "outcome": r.op.outcome, "stages": r.stages})
+		if bad:
+			return {"runs": runs, "bad_trace": r.trace, "stage_why": r.stage_why}
+	return {"runs": runs}
 
 
 # --- Output (own prefix and file) ----------------------------------------------------------------
