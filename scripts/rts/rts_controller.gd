@@ -549,9 +549,12 @@ func _unit_at(screen_pos: Vector2) -> int:
 func _click_select(screen_pos: Vector2, add: bool) -> void:
 	var id := _unit_at(screen_pos)
 	if id < 0:
+		# A facility under the cursor is selected without dropping the selected units (a
+		# selected truck / squad is then ordered from the facility's panel).
+		if _pick_structure(screen_pos):
+			return
 		if not add:
 			select([])
-		_pick_structure(screen_pos)
 		return
 	if add:
 		var ids := Array(selected)
@@ -566,18 +569,20 @@ func _click_select(screen_pos: Vector2, add: bool) -> void:
 
 ## A click on a facility selects it (vehicles and squads stay selected, so a selected truck
 ## can be sent to the depot from its panel).
-func _pick_structure(screen_pos: Vector2) -> void:
+func _pick_structure(screen_pos: Vector2) -> bool:
 	if structures == null or rig == null:
-		return
+		return false
 	var cam := rig.camera
 	var hit := structures.pick(cam.project_ray_origin(screen_pos), cam.project_ray_normal(screen_pos), 6000.0)
 	if hit.is_empty():
-		return
+		return false
 	var s := structures.state.get_structure(hit.id)
 	if s != null and FacilityDefs.has(s.type_id) and s.faction == player_faction:
 		selected_structure = s.id
 		_say("%s selected" % FacilityDefs.display_name(s.type_id))
 		selection_changed.emit(selected)
+		return true
+	return false
 
 
 func _box_select(rect: Rect2, add: bool) -> void:

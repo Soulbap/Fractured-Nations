@@ -18,6 +18,8 @@ const MAP_LIMIT := 9990.0
 const SCAN_TICKS := 6
 ## No progress for this long (s) while it should be moving: recovery starts.
 const STUCK_S := 5.0
+## Vehicles ordered together farther than this drive as a convoy.
+const CONVOY_MIN_M := 600.0
 const MAX_RECOVERIES := 4
 
 var sim: WorldSim
@@ -79,6 +81,15 @@ func _on_removed(id: int) -> void:
 func order_group(vids: Array, dest: Vector3) -> Dictionary:
 	var n := 0
 	var texts: Array[String] = []
+	# Several vehicles sent far away travel together as a convoy (column, speed matched).
+	var first := sim.state.get_unit(vids[0])
+	if vids.size() >= 2 and first and Vector2(dest.x - first.position.x, dest.z - first.position.z).length() > CONVOY_MIN_M:
+		var cr := convoy.order_convoy(vids, dest)
+		if cr.ok:
+			texts.append("%s: %d vehicles, %.1f km" % [sim.state.logistics.convoys[cr.convoy].name, cr.driving.size(), first.veh.route_remaining_m() / 1000.0])
+			for f in cr.failed:
+				texts.append("%s: %s" % [sim.state.get_unit(f.id).unit_name, f.reason])
+			return {"n": cr.driving.size(), "texts": texts}
 	var half := vids.size() - 1
 	var i := 0
 	for id in vids:
@@ -755,6 +766,11 @@ func diagnose(u: UnitState) -> Dictionary:
 				out["blocked_route_point"] = [k, snappedf(p.x, 0.1), snappedf(p.z, 0.1), snappedf(Vector2(p.x - u.position.x, p.z - u.position.z).length(), 0.1)]
 				break
 		out["in_structure_now"] = _blocked_at(d, u.position, u.yaw)
+	out["convoy_limit"] = snappedf(convoy.speed_limit(u, v), 0.1) if v.convoy_id >= 0 else -1.0
+	out["gap_cached"] = _gap.get(u.id, [0, INF])[1]
+	out["profile_here"] = snappedf(v.profile[mini(v.route_i, v.profile.size() - 1)], 0.1) if not v.profile.is_empty() else -1.0
+	out["yaw"] = snappedf(u.yaw, 0.01)
+	out["first_route"] = [snappedf(v.route[0].x - u.position.x, 0.1), snappedf(v.route[0].z - u.position.z, 0.1)] if not v.route.is_empty() else []
 	var near := []
 	for oid in ids:
 		if oid != u.id:

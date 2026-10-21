@@ -45,6 +45,12 @@ func run(args: PackedStringArray) -> void:
 		_log("veh_player", await _veh_player())
 	if _want("logistics"):
 		_log("logistics", await _logistics())
+	if _want("depot_exit"):
+		_log("depot_exit", await _depot_exit())
+	if _want("scenario"):
+		_log("scenario", await _scenario())
+	if _want("persist_logistics"):
+		_log("persist_logistics", await _persist_logistics())
 	if _want("bases"):
 		_log("bases", await _bases())
 	if _want("convoy"):
@@ -1389,3 +1395,413 @@ func _bases() -> Dictionary:
 	bs.set_rule_enabled(rule.id, false)
 	out["rule_disabled"] = bs.describe_rule(rule)
 	return out
+
+
+# --- Persistence of everything logistic ------------------------------------------------------------
+
+func _logistics_sig() -> Dictionary:
+	var sig := {"stores": {}, "vehicles": {}, "bases": {}, "rules": demo.sim.state.logistics.rules.duplicate(true), "convoys": {}, "soldiers_aboard": {}}
+	for s in cs.all():
+		if s.inventory:
+			sig.stores[s.id] = [snappedf(s.inventory.get_qty(Inventory.AMMO), 0.01), snappedf(s.inventory.get_qty(Inventory.FUEL), 0.01), snappedf(s.inventory.get_qty(Inventory.SUPPLIES), 0.01), s.base_id, s.facility.get("queue", []).size(), _stock_sig(s)]
+	for id in demo.sim.vehicles.ids:
+		var u := _u(id)
+		var v := u.veh
+		sig.vehicles[id] = {"pos": [snappedf(u.position.x, 0.05), snappedf(u.position.z, 0.05)], "cargo": v.cargo.summary(), "fuel": snappedf(v.fuel, 0.01), "job": v.job.get("stage", ""), "job_kind": v.job.get("kind", ""),
+			"route": v.route.size(), "occ": Array(v.occupants), "pend": Array(v.pending), "phase": v.phase, "convoy": v.convoy_id, "hp": snappedf(u.health, 0.1), "alive": u.alive}
+	for b in cs.bases.values():
+		sig.bases[b.id] = [b.name, b.faction]
+	for cid in demo.sim.state.logistics.convoys:
+		var c: Dictionary = demo.sim.state.logistics.convoys[cid]
+		sig.convoys[cid] = [Array(c.members), c.leader]
+	for u: UnitState in demo.sim.state.units.values():
+		if u.vehicle_id >= 0:
+			sig.soldiers_aboard[u.id] = u.vehicle_id
+	return sig
+
+
+func _stock_sig(s: StructureState) -> String:
+	var parts := []
+	var st: Dictionary = s.facility.get("stock", {})
+	for k in st:
+		parts.append("%s=%d" % [k, int(st[k])])
+	parts.sort()
+	return ",".join(parts)
+
+
+func _persist_logistics() -> Dictionary:
+	var out := {}
+	var fd := await _forward_depot()
+	var src: StructureState = fd.src
+	var dst: StructureState = fd.dst
+	var lg := demo.sim.logistics
+	var vs := demo.sim.vehicles
+	var site: Dictionary = fd.site
+	var tr := _veh(VehicleDefs.TRUCK, FacilityDefs.dock_point(src, 0), PI)
+	var t2 := _veh(VehicleDefs.TRUCK, FacilityDefs.dock_point(src, 1), PI)
+	var apc := _veh(VehicleDefs.APC, FacilityDefs.dock_point(src, 2), PI)
+	var sq := _spawn(0, FacilityDefs.dock_point(src, 2) + Vector3(0, 0, 14), 8)
+	await _physics(5)
+	# A delivery on the road, a convoy of two with passengers, a recruiting queue and a rule.
+	lg.order_delivery(tr.id, src.id, dst.id, Inventory.AMMO, 800.0)
+	await _warp(120.0, 4.0, 60.0, func() -> bool: return tr.veh.job.get("stage", "") == "to_dst")
+	vs.transport.order_transport(apc.id, sq.id)
+	await _warp(30.0, 4.0, 40.0, func() -> bool: return apc.veh.occupants.size() >= 8)
+	lg.order_load(t2.id, src.id, Inventory.FUEL, 500.0)
+	await _warp(60.0, 4.0, 40.0, func() -> bool: return t2.veh.job.is_empty())
+	vs.convoy.order_convoy([t2.id, apc.id], site.dock, "Test convoy")
+	lg.bases.recruit(fob.placed.barracks_2.id)
+	lg.bases.add_rule_restock(dst.id, src.id, Inventory.SUPPLIES, 100.0, 500.0, tr.id)
+	await _warp(40.0, 4.0, 60.0)
+	var before := _logistics_sig()
+	out["before"] = {"vehicles": before.vehicles.size(), "stores": before.stores.size(), "convoys": before.convoys.size(), "aboard": before.soldiers_aboard.size(), "rules": before.rules.size(),
+		"truck_job": before.vehicles[tr.id].job, "apc_occ": before.vehicles[apc.id].occ.size()}
+	_expect(before.convoys.size() == 1 and before.soldiers_aboard.size() == 8 and not before.vehicles[tr.id].job.is_empty(), "persist: precondition %s" % JSON.stringify(out.before))
+	con.save()
+	# Wreck: cargo gone, inventories zero, links cut, convoys dissolved.
+	for s in cs.all():
+		if s.inventory:
+			for k in Inventory.ITEMS:
+				s.inventory.items[k] = 0.0
+	for id in vs.ids:
+		var u := _u(id)
+		u.veh.cargo = Inventory.make(u.veh.def().cargo_capacity)
+		u.veh.job = {}
+		u.veh.occupants = PackedInt32Array()
+		u.veh.convoy_id = -1
+	demo.sim.state.logistics.convoys.clear()
+	demo.sim.state.logistics.rules.clear()
+	for id in sq.members:
+		_u(id).vehicle_id = -1
+	var wrecked := _logistics_sig()
+	out["wrecked_differs"] = wrecked != before
+	con.load_saved()
+	await _physics(4)
+	var after := _logistics_sig()
+	var diffs := []
+	for k in ["stores", "bases", "convoys", "soldiers_aboard", "rules"]:
+		if after[k] != before[k]:
+			diffs.append(k)
+	for id in before.vehicles:
+		var a: Dictionary = after.vehicles.get(id, {})
+		for key in before.vehicles[id]:
+			if key == "pos":
+				if _flat(Vector3(before.vehicles[id].pos[0], 0, before.vehicles[id].pos[1]), Vector3(a.pos[0], 0, a.pos[1])) > 3.0:
+					diffs.append("veh %d pos" % id)
+			elif a.get(key) != before.vehicles[id][key]:
+				diffs.append("veh %d %s: %s -> %s" % [id, key, before.vehicles[id][key], a.get(key)])
+	out["diffs"] = diffs
+	if after.stores != before.stores:
+		out["store_diff"] = {"before": before.stores, "after": after.stores}
+	_expect(wrecked != before and diffs.is_empty(), "persist: differences after load %s" % JSON.stringify(diffs))
+	# Soldiers aboard still hidden, and the world carries on: the convoy arrives, the delivery completes.
+	var hidden := 0
+	for id in sq.members:
+		hidden += 1 if demo.sim.view_of(id) == null and _u(id).vehicle_id >= 0 else 0
+	out["aboard_hidden"] = hidden
+	_expect(hidden == 8, "persist: soldiers aboard visible after load")
+	await _warp(1500.0, 16.0, 400.0, func() -> bool: return tr.veh.job.is_empty() and t2.order == UnitState.Order.NONE and apc.order == UnitState.Order.NONE)
+	out["events"] = war.events.slice(maxi(0, war.events.size() - 12)).map(func(e: Dictionary) -> String: return e.text)
+	out["after_load_progress"] = {"truck_job_done": tr.veh.job.is_empty(), "dst": dst.inventory.summary(), "convoy_arrived": t2.move_state == UnitState.MoveState.ARRIVED and apc.move_state == UnitState.MoveState.ARRIVED}
+	_expect(out.after_load_progress.convoy_arrived and tr.veh.job.is_empty(), "persist: operation did not continue after load %s" % JSON.stringify(out.after_load_progress))
+	return out
+
+
+# --- The acceptance scenario (brief section 24), through the real controls -----------------------
+
+func _find_button(root: Node, part: String) -> Button:
+	if root is Button and (root as Button).text.contains(part) and not (root as Button).disabled:
+		return root as Button
+	for c in root.get_children():
+		var b := _find_button(c, part)
+		if b:
+			return b
+	return null
+
+
+func _panel_press(part: String) -> bool:
+	var panel := demo.hud.logistics_panel
+	var b := _find_button(panel, part)
+	if b == null:
+		return false
+	b.pressed.emit()
+	return true
+
+
+func _click_world(p: Vector3) -> void:
+	var cam := demo.rts_camera.camera
+	demo.rts._click_select(cam.unproject_position(p + Vector3.UP * 2.0), false)
+
+
+func _key_tap(k: Key) -> void:
+	_key(k, true)
+	_key(k, false)
+
+
+func _scenario() -> Dictionary:
+	var out := {}
+	var steps := {}
+	out["steps"] = steps
+	var lg := demo.sim.logistics
+	var vs := demo.sim.vehicles
+	var pf := war.player_faction
+	# 1-2. The base: HQ, barracks, supply depot, vehicle depot built with the construction tool.
+	await _base()
+	var c: Vector3 = fob.center
+	var bs := lg.bases
+	var src: StructureState = fob.placed.supply
+	var barracks: StructureState = fob.placed.barracks_1
+	var vdepot: StructureState = fob.placed.vehicle_depot
+	steps["1_base"] = {"base": bs.describe(src.base_id)}
+	_expect(src.inventory != null and src.inventory.get_qty(Inventory.AMMO) > 3000.0, "scenario: the depot has no starting stock")
+	demo.hud.show_controls = true
+	# 3. Recruit a squad: click the barracks, press the panel button.
+	demo.rts_camera.frame(barracks.position, 0.3, 70.0)
+	await _seconds(2.0)
+	var squads0 := demo.sim.state.squads.size()
+	_click_world(barracks.position)
+	await _seconds(0.6)
+	_shot("20_barracks_selected_panel")
+	var pressed := _panel_press("Recruit a squad")
+	await _warp(75.0, 4.0, 60.0, func() -> bool: return demo.sim.state.squads.size() > squads0)
+	var squad: SquadState = demo.sim.state.all_squads()[-1]
+	steps["3_recruit"] = {"pressed": pressed, "squad": squad.squad_name, "soldiers": squad.members.size()}
+	_expect(pressed and demo.sim.state.squads.size() == squads0 + 1, "scenario: no squad recruited")
+	# 4. Acquire a truck and an APC at the vehicle depot (panel buttons).
+	demo.rts_camera.frame(vdepot.position, 0.3, 80.0)
+	await _seconds(2.0)
+	var veh0 := vs.ids.duplicate()
+	_click_world(vdepot.position)
+	await _seconds(0.6)
+	_shot("21_vehicle_depot_panel")
+	var p1 := _panel_press("Acquire Cargo truck")
+	await _warp(35.0, 4.0, 40.0, func() -> bool: return vs.ids.size() > veh0.size())
+	_click_world(vdepot.position)
+	await _seconds(0.6)
+	var p2 := _panel_press("Acquire Wheeled APC")
+	await _warp(60.0, 4.0, 60.0, func() -> bool: return vs.ids.size() > veh0.size() + 1)
+	var truck: UnitState = null
+	var apc: UnitState = null
+	for id in vs.ids:
+		if not veh0.has(id):
+			if _u(id).veh.type_id == VehicleDefs.TRUCK:
+				truck = _u(id)
+			else:
+				apc = _u(id)
+	steps["4_vehicles"] = {"truck": truck != null, "apc": apc != null, "pressed": [p1, p2]}
+	_expect(truck != null and apc != null, "scenario: vehicles were not acquired")
+	if truck == null or apc == null:
+		return out
+	# 5. The squad boards the APC: select both, press T.
+	demo.rts_camera.frame(apc.position, 0.3, 60.0)
+	await _seconds(2.0)
+	demo.rts.select_squads([squad.id])
+	demo.rts.select(Array(demo.rts.selected) + [apc.id])
+	_key_tap(KEY_T)
+	await _warp(60.0, 4.0, 60.0, func() -> bool: return apc.veh.occupants.size() >= squad.members.size() and apc.veh.phase == VehicleState.Phase.NONE)
+	steps["5_boarded"] = {"aboard": apc.veh.occupants.size(), "text": demo.sim.vehicles.describe(apc)}
+	_expect(apc.veh.occupants.size() == 8, "scenario: the squad did not board")
+	_shot("22_squad_aboard_apc")
+	# 6. Load ammunition and fuel into the truck: select it and the depot, press the panel buttons.
+	demo.rts_camera.frame(FacilityDefs.dock_point(src, 0), 0.3, 60.0)
+	await _seconds(2.0)
+	demo.rts.select([truck.id])
+	_click_world(src.position)
+	await _seconds(0.6)
+	var supply_before := bs.base_stock(src.base_id)
+	var l1 := _panel_press("Load the vehicle here")
+	await _warp(120.0, 4.0, 60.0, func() -> bool: return truck.veh.job.is_empty() and truck.veh.cargo.total() > 100.0)
+	steps["6_loaded"] = {"msg": demo.hud.logistics_panel._status.text, "job": truck.veh.job, "pressed": l1, "cargo": truck.veh.cargo.summary(), "depot": src.inventory.summary()}
+	_expect(l1 and truck.veh.cargo.get_qty(Inventory.AMMO) > 1000.0, "scenario: the truck was not loaded (%s)" % truck.veh.cargo.summary())
+	_shot("23_truck_loaded")
+	# 7. The forward location several km away across the bridge, from the world road network.
+	var far := _beyond_bridge(c, 6.0)
+	var site := _depot_site(far.target, c + Vector3(42, 0, 52))
+	_expect(not site.is_empty(), "scenario: no forward site")
+	if site.is_empty():
+		return out
+	var staging: Vector3 = site.dock + Vector3(0, 0, 0)
+	# 8-9. Both vehicles to the forward location: RMB in the tactical view with both selected = a convoy.
+	demo.rts.select([apc.id, truck.id])
+	var n := demo.rts.order_move(site.dock + Vector3(20, 0, 0) if false else site.dock)
+	steps["8_convoy_order"] = {"n": n, "message": demo.rts.current_message(), "convoys": demo.sim.state.logistics.convoys.size()}
+	_expect(demo.sim.state.logistics.convoys.size() == 1 and n == 2, "scenario: no convoy formed %s" % JSON.stringify(steps["8_convoy_order"]))
+	await _warp(40.0, 4.0, 60.0)
+	demo.rts_camera.frame(apc.position, 0.3, 60.0)
+	await _seconds(1.5)
+	_shot("24a_apc_after_convoy_order")
+	# 10. Follow it on the strategic map: select the vehicles by clicking their icons, check the route.
+	demo.toggle_map()
+	await _frames(5)
+	var map := demo.strategic_map
+	map.view_center = Vector2(apc.position.x, apc.position.z)
+	map.zoom = 0.2
+	await _frames(3)
+	var sp := map.to_screen(apc.position)
+	_mouse(map, MOUSE_BUTTON_LEFT, true, sp)
+	_mouse(map, MOUSE_BUTTON_LEFT, false, sp)
+	await _frames(3)
+	var selected_on_map := map.selected_vehicles.size()
+	map.fit_all()
+	await _frames(3)
+	_shot("24_strategic_map_convoy_overview")
+	map.view_center = Vector2(apc.position.x, apc.position.z)
+	map.zoom = 0.2
+	await _frames(3)
+	_shot("25_strategic_map_convoy_close")
+	steps["10_map"] = {"diag_apc": vs.diagnose(apc), "diag_truck": vs.diagnose(truck), "selected_by_click": selected_on_map, "info": map._selection_text().left(160)}
+	_expect(selected_on_map >= 1, "scenario: the map did not select the vehicle")
+	# Back to the tactical view at the vehicle (G).
+	_key_tap(KEY_G)
+	await _frames(5)
+	demo.toggle_map() if map.visible else null
+	await _frames(3)
+	steps["10_map"]["back_in_rts"] = demo.game.mode == GameController.Mode.RTS and not map.visible
+	# 11. The player drives the truck for a while, then hands it back.
+	demo.rts.select([truck.id])
+	demo.rts_camera.frame(truck.position, 0.5, 50.0)
+	await _seconds(1.0)
+	_key_tap(KEY_P)
+	await _seconds(0.6)
+	var driving := demo.game.mode == GameController.Mode.DRIVE
+	_key(KEY_W, true)
+	await _warp(10.0, 1.0, 30.0)
+	_shot("26_player_driving_truck")
+	_key(KEY_W, false)
+	_key_tap(KEY_TAB)
+	await _physics(5)
+	steps["11_direct_control"] = {"drove": driving, "back": demo.game.mode == GameController.Mode.RTS, "order_resumed": truck.order == UnitState.Order.MOVE, "in_convoy": truck.veh.convoy_id >= 0}
+	_expect(driving and truck.order == UnitState.Order.MOVE, "scenario: direct control %s" % JSON.stringify(steps["11_direct_control"]))
+	# 12. The convoy goes on over the bridge, the camera elsewhere (abstract tier).
+	demo.rts_camera.frame(Vector3(9000, 0, 9000), 0.0, 120.0)
+	await _seconds(2.0)
+	await _warp(1500.0, 16.0, 400.0, func() -> bool: return apc.order == UnitState.Order.NONE and truck.order == UnitState.Order.NONE)
+	steps["12_arrival"] = {"diag_apc": vs.diagnose(apc), "diag_truck": vs.diagnose(truck), "apc": apc.move_state == UnitState.MoveState.ARRIVED, "truck": truck.move_state == UnitState.MoveState.ARRIVED, "apc_aboard": apc.veh.occupants.size(), "dist_m": snappedf(_flat(truck.position, site.dock), 1.0)}
+	_expect(apc.move_state == UnitState.MoveState.ARRIVED and truck.move_state == UnitState.MoveState.ARRIVED, "scenario: the convoy did not arrive")
+	# 13. The squad gets out (U) and secures the area.
+	demo.rts_camera.frame(apc.position, 0.4, 70.0)
+	await _seconds(2.5)
+	demo.rts.select([apc.id])
+	_key_tap(KEY_U)
+	await _warp(10.0, 1.0, 30.0)
+	var out_ok := apc.veh.occupants.is_empty()
+	demo.rts.select_squads([squad.id])
+	var guard := demo.on_ground(site.pos.x + 25.0, site.pos.z + 25.0, 0.0)
+	demo.rts.order_move(guard)
+	await _warp(25.0, 2.0, 40.0)
+	_shot("27_squad_disembarked_forward_site")
+	steps["13_disembark"] = {"out": out_ok}
+	_expect(out_ok, "scenario: squad did not disembark")
+	# The vehicles pull aside, off the building site.
+	var aside: Vector3 = site.dock + Basis(Vector3.UP, site.yaw) * Vector3(0, 0, -34)
+	demo.rts.select([apc.id, truck.id])
+	demo.rts.order_move(aside)
+	await _warp(40.0, 2.0, 60.0, func() -> bool: return apc.order == UnitState.Order.NONE and truck.order == UnitState.Order.NONE)
+	# 14. Construct the forward depot with the construction tool (groundwork on the real slope), then
+	# two defensive structures; the truck unloads there through the panel.
+	demo.rts_camera.frame(site.pos, 0.6, 90.0)
+	await _seconds(3.0)
+	con.set_active(true)
+	con.clear_trees = true
+	var fwd := await _build(&"supply_depot", site.pos, site.yaw)
+	var tower := await _build(&"guard_tower_steel", site.pos + Basis(Vector3.UP, site.yaw) * Vector3(26, 0, 0), 0.0)
+	var wall := await _line(&"sandbag_wall_2m", [site.pos + Basis(Vector3.UP, site.yaw) * Vector3(-26, 0, -14), site.pos + Basis(Vector3.UP, site.yaw) * Vector3(-26, 0, 10)])
+	con.clear_tool()
+	con.set_active(false)
+	await _seconds(2.0)
+	steps["14_forward_base"] = {"depot": fwd != null, "tower": tower != null, "sandbags": wall != null, "base": bs.describe(fwd.base_id) if fwd else ""}
+	_expect(fwd != null, "scenario: the forward depot could not be built")
+	if fwd == null:
+		return out
+	_shot("28_forward_base_constructed")
+	# 15. Unload: select truck and depot, press "Unload it here".
+	demo.rts_camera.frame(fwd.position, 0.4, 70.0)
+	await _seconds(2.0)
+	demo.rts.select([truck.id])
+	_click_world(fwd.position)
+	await _seconds(0.6)
+	var cargo0 := truck.veh.cargo.total()
+	var u1 := _panel_press("Unload it here")
+	await _warp(120.0, 4.0, 60.0, func() -> bool: return truck.veh.job.is_empty() and truck.veh.cargo.total() < 1.0)
+	steps["15_unload"] = {"pressed": u1, "cargo_before": snappedf(cargo0, 1.0), "cargo_after": snappedf(truck.veh.cargo.total(), 1.0), "forward_depot": fwd.inventory.summary()}
+	_expect(u1 and truck.veh.cargo.total() < 1.0 and absf(fwd.inventory.total() - cargo0) < 1.0, "scenario: unloading %s" % JSON.stringify(steps["15_unload"]))
+	_shot("29_truck_unloaded_forward_depot")
+	# 16. The forward base supplies soldiers: the squad refills its ammunition from the new depot.
+	for id in squad.members:
+		_u(id).reserve = 30
+	demo.rts.select_squads([squad.id])
+	_click_world(fwd.position)
+	await _seconds(0.6)
+	var ammo_before := fwd.inventory.get_qty(Inventory.AMMO)
+	var r_pressed := _panel_press("Resupply the selected squads")
+	await _warp(60.0, 2.0, 60.0, func() -> bool: return _all_resupplied(squad))
+	var rounds := 0
+	for id in squad.members:
+		rounds += _u(id).reserve - 30
+	steps["16_resupply"] = {"pressed": r_pressed, "rounds": rounds, "depot_used_kg": snappedf(ammo_before - fwd.inventory.get_qty(Inventory.AMMO), 0.1)}
+	_expect(r_pressed and rounds == 8 * 90 and absf(steps["16_resupply"].depot_used_kg - rounds / Inventory.AMMO_ROUNDS_PER_KG) < 0.5, "scenario: resupply %s" % JSON.stringify(steps["16_resupply"]))
+	# 17. The infantry leave on another mission (the camera stays away), 18-19 supplies and vehicles stay.
+	var mission := demo.on_ground(site.pos.x - 500.0, site.pos.z + 200.0, 0.0)
+	demo.rts.select_squads([squad.id])
+	demo.rts.order_move(mission)
+	demo.rts_camera.frame(Vector3(9000, 0, 9000), 0.0, 120.0)
+	await _seconds(2.0)
+	var stock_fwd := fwd.inventory.summary()
+	await _warp(240.0, 8.0, 120.0)
+	var near_mission := 0
+	for id in squad.members:
+		near_mission += 1 if _flat(_u(id).position, mission) < 40.0 else 0
+	steps["17_mission"] = {"soldiers_at_mission": near_mission, "forward_stock_unchanged": fwd.inventory.summary() == stock_fwd, "vehicles_parked": [apc.veh.status_name(), truck.veh.status_name()], "apc_pos_stable": _flat(apc.position, site.dock) < 80.0}
+	_expect(near_mission >= 6 and fwd.inventory.summary() == stock_fwd, "scenario: mission %s" % JSON.stringify(steps["17_mission"]))
+	# 20. Save and load the whole situation (F5 / F9).
+	var sig_a := _logistics_sig()
+	con.save()
+	for s in cs.all():
+		if s.inventory:
+			for k in Inventory.ITEMS:
+				s.inventory.items[k] = 0.0
+	con.load_saved()
+	await _physics(4)
+	var sig_b := _logistics_sig()
+	var same := true
+	for k in ["stores", "bases", "convoys", "soldiers_aboard"]:
+		if sig_a[k] != sig_b[k]:
+			same = false
+	steps["20_save_load"] = {"same_state": same, "structures": cs.count(), "bases": cs.bases.size()}
+	_expect(same, "scenario: the situation changed through save / load")
+	out["steps"] = steps
+	return out
+
+
+## A vehicle acquired at the vehicle depot drives out of the base.
+func _depot_exit() -> Dictionary:
+	var out := {}
+	await _base()
+	var c: Vector3 = fob.center
+	var vdepot: StructureState = fob.placed.vehicle_depot
+	var bs := demo.sim.logistics.bases
+	bs.acquire_vehicle(vdepot.id, VehicleDefs.APC)
+	await _warp(60.0, 4.0, 60.0, func() -> bool: return demo.sim.vehicles.ids.size() > 0)
+	var apc: UnitState = _u(demo.sim.vehicles.ids[0])
+	out["spawn"] = [snappedf(apc.position.x - c.x, 0.1), snappedf(apc.position.z - c.z, 0.1), snappedf(apc.yaw, 0.01)]
+	demo.rts_camera.frame(apc.position, 0.3, 50.0)
+	await _seconds(2.0)
+	_shot("30_apc_at_depot")
+	var res := demo.sim.vehicles.order_drive(apc.id, c + Vector3(42, 0, 49))
+	out["plan"] = {"ok": res.ok, "reason": res.reason, "length": snappedf(res.get("length_m", 0.0), 1.0), "pts": res.get("points", PackedVector3Array()).size()}
+	if res.ok:
+		var pts: PackedVector3Array = res.points
+		var first := []
+		for i in mini(12, pts.size()):
+			first.append([snappedf(pts[i].x - c.x, 0.1), snappedf(pts[i].z - c.z, 0.1)])
+		out["route_start"] = first
+	for k in 10:
+		await _warp(3.0, 1.0, 20.0)
+		print("DBG ", vs_line(apc, c))
+	_shot("31_apc_after")
+	out["diag"] = demo.sim.vehicles.diagnose(apc)
+	return out
+
+
+func vs_line(u: UnitState, c: Vector3) -> String:
+	return "(%.1f,%.1f) yaw %.2f v %.1f %s ri %d %s" % [u.position.x - c.x, u.position.z - c.z, u.yaw, u.veh.speed, u.veh.status_name(), u.veh.route_i, u.veh.reason]

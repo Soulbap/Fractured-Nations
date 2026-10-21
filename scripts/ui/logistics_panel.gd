@@ -98,7 +98,8 @@ func _say(text: String) -> void:
 
 func _refresh(vid: int, sid: int) -> void:
 	var lg := sim.logistics
-	if vid > 0:
+	# A facility clicked last wins: its panel offers the orders for the selected vehicle / squads.
+	if vid > 0 and sid < 0:
 		var u := sim.state.get_unit(vid)
 		if u == null or u.veh == null:
 			return
@@ -129,6 +130,8 @@ func _refresh(vid: int, sid: int) -> void:
 			_build_vehicle_actions(u, near)
 		return
 	var s := lg.structure(sid)
+	if s == null:
+		return
 	_title.text = "%s  #%d" % [FacilityDefs.display_name(s.type_id).to_upper(), s.id]
 	var b := lg.bases.summary(s.base_id) if s.base_id >= 0 else {}
 	var lines2: Array[String] = []

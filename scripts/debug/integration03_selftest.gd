@@ -325,7 +325,7 @@ func _base() -> Dictionary:
 	placed.fence_w = await _line(&"fence", [c + Vector3(-hx, 0, hz), c + Vector3(-2.1, 0, 65)])
 	placed.fence_e = await _line(&"fence", [c + Vector3(gate_gap, 0, 65), c + Vector3(hx, 0, hz)])
 	placed.t_wall = await _line(&"t_wall", [c + Vector3(-12, 0, -46), c + Vector3(12, 0, -46)])
-	placed.sandbags = await _line(&"sandbag_wall_2m", [c + Vector3(22, 0, 2), c + Vector3(30, 0, 2)])
+	placed.sandbags = await _line(&"sandbag_wall_2m", [c + Vector3(-60, 0, 14), c + Vector3(-52, 0, 14)])
 	await _physics(3)
 	# Gravel yard in front of the vehicle depot.
 	con.select_type(&"area_gravel")

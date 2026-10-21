@@ -388,7 +388,7 @@ func _finish_vehicle(s: StructureState, type_id: StringName) -> bool:
 				break
 		if not clear:
 			continue
-		var yaw := s.yaw + PI
+		var yaw := s.yaw  # facing out of the depot front
 		var u := sim.state.add_vehicle(type_id, s.faction, p, yaw)
 		u.veh.fuel = def.fuel_capacity
 		if sim.detail:
