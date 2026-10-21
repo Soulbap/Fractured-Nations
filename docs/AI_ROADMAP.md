@@ -1,4 +1,4 @@
-# AI roadmap — consolidated after INTEGRATION-04, updated after AI-INTEL-01 / AI-OBS-01
+# AI roadmap — consolidated after INTEGRATION-04, updated after AI-INTEL-01 / AI-OBS-01 and AI-SQUAD-01
 
 Single planning document for the AI milestones after LOGISTICS-01. It merges
 [AI-ARCHITECTURE-RESEARCH-01](AI-ARCHITECTURE-RESEARCH-01.md) (the *why* and the technique
@@ -10,7 +10,7 @@ LOGISTICS-01 *plan*, this document uses the *implemented* names.
 **Status.** AI-INTEL-01 and AI-OBS-01 are **done** (branch `feature/ai-intel-01`, report
 [AI-INTEL-01_OBS-01_REPORT.md](AI-INTEL-01_OBS-01_REPORT.md)): factions hold a persistent, aging contact
 picture built from reports; strategic decisions read it; the map shows it and a developer inspector explains
-decisions and squads. Everything else below is still planned. Next recommended: **AI-SQUAD-01**.
+decisions and squads. **AI-SQUAD-01 is done** (branch `feature/ai-squad-01`, report [AI-SQUAD-01_REPORT.md](AI-SQUAD-01_REPORT.md)): fire teams, suppression, DEFEND / SUPPRESS / ASSAULT / FLANK / BOUND / REPOSITION / WITHDRAW / REGROUP, tactical RTS orders, four cover props. Everything else below is still planned. Next recommended: **AI-STRAT-01**.
 
 Evidence tags: **[CODE]** read in the source of this branch, **[REPORT]** from a project
 report, **[PROPOSED]** a decision for the milestone, **[UNKNOWN]** needs measurement.
@@ -67,7 +67,7 @@ Readiness today = `status == PARKED/DRIVING`, fuel fraction, health, cargo, `job
 | G3 | **Vehicles cannot be hurt by weapons.** `LineOfFire._units_hit` has soldier hit volumes only; `VehicleSim.apply_damage(id, amount, source)` is the existing hook (destruction, passenger ejection, cargo stays are tested through it). `WarSim._on_unit_died` ignores vehicles. | `line_of_fire.gd`, `vehicle_sim.gd:113` | AI-VEH-01 |
 | G4 | **No capability tags.** Squads/vehicles are matched by `kind`/`type_id`; `VehicleDefs.Def` has `passengers`, cargo capacity, fuel, speeds but no role/weapon data; `FacilityDefs` has the facility table but `StructureDef` carries no capabilities or service points. | `vehicle_defs.gd`, `facility_defs.gd` | OPS-01 (units: derive from defs) / BASE-AI-01 (facilities: extend `FacilityDefs`, not a second table) |
 | G5 | **Operations are single-echelon, squad-only.** One route + one ENGAGING order for every squad; no assembly gate, no mount/dismount, no withdrawal except FAILED-by-losses (squads stay where they are). | `war_sim.gd:_update_operation` | OPS-01 |
-| G6 | **Squad tactics are minimal** (Move/Hold/Follow/Regroup + per-soldier cover reaction). No fire teams, suppression, flank, bound, withdraw. | `squad_control.gd`, `combat_brain.gd:_tactics` | SQUAD-01 |
+| G6 | ~~Squad tactics are minimal~~ **Resolved (AI-SQUAD-01).** Was: **Squad tactics are minimal** (Move/Hold/Follow/Regroup + per-soldier cover reaction). No fire teams, suppression, flank, bound, withdraw. | `squad_control.gd`, `combat_brain.gd:_tactics` | SQUAD-01 |
 | G7 | **Operation ↔ transport hand-over is not defined.** `order_transport` does not release a squad from its `OperationState`; only RTS player orders do (`rts_controller.gd:476`). An AI operation that mounts a squad must keep ownership consistent itself. | `vehicle_transport.gd` (no `release_squads`/`op_id`) | OPS-01 (define: squad stays in its op while aboard; op owns the vehicle element) |
 | G8 | **Bases are named groups, not services.** No reservation of docks/parking, no readiness cache, no reachability check for service points; dock slots are retried on conflict (`dock_world`, `parking_world`). | `logistics_sim.gd`, `base_sim.gd:summary` | BASE-AI-01 (cache) / DEF-01 (reservations only if contention is observed) |
 
@@ -77,7 +77,7 @@ Readiness today = `status == PARKED/DRIVING`, fuel fraction, health, cargo, `job
 |---|---|---|---|
 | G9 | **Strength estimates are approximate.** A sighting reports the number of enemy soldiers within 25 m of the sighted one (with ±20 % noise per observer) and the table keeps the best estimate of the last few seconds; the number of soldiers a squad actually *saw* is not tracked. Good enough for reinforcement sizing (24 visible → "about 20-21"), not for composition. | `combat_brain.gd:_group_near`, `intel_sim.gd:_report_seen` | INTEL-02 / OPS-01 (composition by kind when vehicles exist) |
 | G10 | **Investigation is a one-squad MOVE operation** (`OperationState.contact_id`): the squad walks to the reported position and the contact is weakened if nothing newer was seen. No stand-off, no recon task, no vehicle. | `war_sim.gd:_investigate` | OPS-01 (`recon` plan task) |
-| G11 | **Squads do not use contacts yet.** `SquadControl` and `CombatBrain._tactics` still react only to what a soldier sees; `_share_contact` (squad mates turn to look) remains. `IntelSim.contacts_near` and the FIRE contacts are the inputs SQUAD-01 needs. | `combat_brain.gd:_share_contact` | SQUAD-01 |
+| G11 | ~~Squads do not use contacts yet.~~ **Resolved (AI-SQUAD-01):** `SquadTactics` reads `IntelSim.contacts_near` and what its soldiers see. Was: **Squads do not use contacts yet.** `SquadControl` and `CombatBrain._tactics` still react only to what a soldier sees; `_share_contact` (squad mates turn to look) remains. `IntelSim.contacts_near` and the FIRE contacts are the inputs SQUAD-01 needs. | `combat_brain.gd:_share_contact` | SQUAD-01 |
 | G12 | **Only combatants report.** No scouts, observation posts or sensors; a faction with no soldier near an enemy knows nothing, so AI attacks against unseen garrisons still assume `value · 4` defenders. | `war_sim.gd:_decide` (`basis: assumed`) | INTEL-02 (recon operations) |
 | G13 | **No faction-level hearing of far events.** Hearing is per idle soldier within 150 m and creates a wide HEARD contact; explosions and vehicle noise do not exist yet. | `intel_sim.gd:report_heard` | VEH-01 (vehicle engine/weapon sounds feed the same call) |
 
@@ -122,7 +122,15 @@ INTEL-01+OBS-01 → SQUAD-01 → STRAT-01 → BASE-AI-01 → OPS-01 → VEH-01 �
   and element panels belong to OPS-01; influence layers to STRAT-01 / INTEL-02.
 * **Open items** are gaps G9-G13 above.
 
-### AI-SQUAD-01 — fire teams, suppression, flank, bound, withdraw, defend
+### AI-SQUAD-01 — fire teams, suppression, flank, bound, withdraw, defend — **DONE**
+* **Delivered.** `SquadState.teams` / `tactic*` (saved), `SquadTactics` + `SquadPositions`, suppression and fire missions in
+  `CombatBrain`, terrain-chosen formations, tactical RTS orders (Z K L J Backspace, Shift+RMB, bar, F7 overlay), attack
+  operations assault with the tactics, four cover props, `--ai-squad-test` / `--squad-demo`. Differences from the plan below:
+  tactics are a squad record + engine, not only a `tactic` enum; the flank point is a terrain- and exposure-checked route,
+  not a 90 degree offset; the choice is scores with recorded reasons.
+* **Open items.** Vehicles as targets (AI-VEH-01); prone / crouch for pinned soldiers; smoke; balance of dug-in defenders;
+  the AI never attacks without an operation (STRAT-01 / OPS-01 decide when).
+* **Original plan (kept for reference).**
 * **Objective.** Firefights show recognisable infantry tactics instead of individual cover-hopping.
 * **Reuse.** Slots/routes in `SquadControl`, `CombatBrain` cover search and `react_target`,
   `_on_shot` near-miss detection, contacts from INTEL-01.

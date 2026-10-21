@@ -70,3 +70,6 @@ __pycache__/
 
 # test run output captured next to the logs
 /*.out
+
+# AI-SQUAD-01 local run logs
+/logs/

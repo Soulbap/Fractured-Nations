@@ -191,6 +191,13 @@ func _setup_combat() -> void:
 	combat_fx.name = "CombatFX"
 	add_child(combat_fx)
 	combat_fx.setup(sim, game)
+	# Developer switches (AI-SQUAD-01): --ops-assault lets attack operations assault with squad tactics,
+	# --no-squad-ai stops squads choosing tactics on their own.
+	var launch_args := OS.get_cmdline_user_args()
+	if "--ops-assault" in launch_args:
+		sim.tactics.ops_assault = true
+	if "--no-squad-ai" in launch_args:
+		sim.tactics.autonomous = false
 	tactics_overlay = TacticsOverlay.new()
 	tactics_overlay.name = "TacticsOverlay"
 	tactics_overlay.sim = sim

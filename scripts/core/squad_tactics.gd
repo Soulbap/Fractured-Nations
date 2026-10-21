@@ -33,8 +33,10 @@ var enabled := true
 ## Squads choose tactics themselves (DEFEND, SUPPRESS, WITHDRAW; offensive ones only when an
 ## operation or the player gave the task).
 var autonomous := true
-## Attack operations assault their objective with squad tactics (else they walk in).
-var ops_assault := true
+## Attack operations assault their objective with squad tactics (else they walk in). Off by default:
+## three squads that stop at 130 m and trade fire lost the sandbox Haugen attack that the old
+## walk-in (a mass arriving together) wins; needs cross-squad coordination first (see the report).
+var ops_assault := false
 var tick_s := 0.5
 var eval_s := 2.0
 ## Contacts further than this from the squad are ignored by its tactics (m).
@@ -140,11 +142,28 @@ func _step(sq: SquadState) -> void:
 			and sq.status == SquadState.Status.DONE and sq.tactic_owner == SquadState.Owner.NONE:
 		_resume_previous(sq)
 	var a := _assess_squad(sq)
+	if sq.formation_auto and sq.tactic == SquadState.Tactic.NONE and sq.order == SquadState.Order.MOVE:
+		_formation_for_contact(sq, a, now)
 	if sq.tactic != SquadState.Tactic.NONE:
 		_run(sq, a)
 	elif autonomous and a.in_contact and now >= float(_next_eval.get(sq.id, 0.0)) and now >= sq.tactic_cooldown_until and _autonomy_ok(sq):
 		_next_eval[sq.id] = now + eval_s
 		_consider(sq, a)
+
+
+## A squad on the move that picks its own formation spreads out when it comes into contact and
+## takes the shape its ground suits again once it has been quiet for a while (with hysteresis).
+func _formation_for_contact(sq: SquadState, a: Dictionary, now: float) -> void:
+	if a.in_contact:
+		_set_meta(sq, "contact_at", now)
+		if sq.formation != SquadState.Formation.DISPERSED and now >= float(_meta(sq, "formation_until", 0.0)):
+			sq.formation = SquadState.Formation.DISPERSED
+			_set_meta(sq, "formation_until", now + 10.0)
+			sim.squads._reapply(sq)
+	elif sq.formation == SquadState.Formation.DISPERSED and now - float(_meta(sq, "contact_at", -1000.0)) > 15.0 and now >= float(_meta(sq, "formation_until", 0.0)):
+		sq.formation = sim.squads.choose_formation(sq, sq.order_target if sq.order_target.is_finite() else a.center)
+		_set_meta(sq, "formation_until", now + 10.0)
+		sim.squads._reapply(sq)
 
 
 func _aboard(sq: SquadState) -> bool:
@@ -1532,8 +1551,8 @@ func _face_all(sq: SquadState, a: Dictionary) -> void:
 
 # --- Spots -------------------------------------------------------------------------------------------------------------------------
 
-## Positions other soldiers hold (cover or post) near `centre`, excluding some units.
-func _reserved(_sq: SquadState, centre: Vector3, exclude := []) -> Array:
+## Positions other soldiers of the same faction hold (cover or post) near `centre`, excluding some units.
+func _reserved(sq: SquadState, centre: Vector3, exclude := []) -> Array:
 	sim.brain._ensure_grid()
 	var ex := {}
 	for u: UnitState in exclude:
@@ -1541,7 +1560,9 @@ func _reserved(_sq: SquadState, centre: Vector3, exclude := []) -> Array:
 	var out: Array = []
 	for e: Array in sim.brain._covers:
 		var o: UnitState = e[1]
-		if not ex.has(o.id) and _flat(e[0], centre) < 50.0:
+		# Only spots held by soldiers of the squad's own faction: where an enemy has chosen to
+		# stand is not something this squad may know.
+		if o.faction == sq.faction and not ex.has(o.id) and _flat(e[0], centre) < 50.0:
 			out.append(e[0])
 	return out
 

@@ -6,9 +6,11 @@ Norwegian; code, comments and docs are English.
 
 ## Branch workflow
 
-- **`feature/ai-intel-01` is the current development branch** (worktree `../fractured-nations-aiintel01`):
-  `feature/integration-04` + AI-INTEL-01 / AI-OBS-01 (faction contact intelligence and the AI inspector).
+- **`feature/ai-squad-01` is the current development branch** (worktree `../fractured-nations-aisquad01`):
+  `feature/ai-intel-01` + AI-SQUAD-01 (fire teams, suppression, squad tactics, tactical RTS orders, cover props).
   New AI milestones branch from it; the plan is [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md).
+- `feature/ai-intel-01` (worktree `../fractured-nations-aiintel01`) is the baseline below it:
+  `feature/integration-04` + AI-INTEL-01 / AI-OBS-01 (faction contact intelligence and the AI inspector).
 - `feature/integration-04` (worktree `../fractured-nations-integration04`) is the integration baseline below it:
   `feature/world-integration-03` + `feature/logistics-01-base-02` (vehicles, transport, logistics, bases)
   + `research/ai-architecture-01` (docs only), integrated in INTEGRATION-04. New milestones branch from
@@ -65,6 +67,17 @@ Norwegian; code, comments and docs are English.
   operational code reads `WarSim.threat_near` / `IntelSim.contacts_*` and must never look up an
   enemy `UnitState` position it has not been told about. A contact's `pos` is where it was last
   reported; it is never refreshed from the world.
+- **Squad tactics (AI-SQUAD-01).** `SquadState.teams` (two fire teams for four or more soldiers, a leader each,
+  validated by `SquadTactics.validate` after every casualty) and `SquadState.tactic*` (DEFEND, SUPPRESS, ASSAULT,
+  FLANK, BOUND, REPOSITION, WITHDRAW, REGROUP; owner player / operation / squad; phase, target, route, why / rejected
+  strings) are the only tactical state; everything is saved and every step derives from it, so near, far, load and
+  possession behave the same. `SquadTactics` (owned by `WorldSim.tactics`) steps squads twice a second; soldiers carry
+  a tactic out only through ordinary move orders to a `UnitState.post_pos`, fire missions (`fire_at`, fired by
+  `CombatBrain` through `CombatSim.request_fire` at a *reported* position, never a hidden soldier) and their own cover
+  reactions near the post. Every ordinary squad order calls `SquadTactics.on_order` (player > operation > squad
+  tactic > reaction); a squad with a soldier aboard a vehicle never runs a tactic. `SquadPositions` does the post,
+  flank and exposure measurements on world data against believed positions only. Suppression is a decaying value on
+  the unit record (`suppression_at`). No planner, no second blackboard: choices are a few scores with their reasons.
 - **AI layers** (strategic `WarSim._decide` -> operations `OperationState` -> squad tactics
   `SquadControl` -> individual `CombatBrain`) all read and write the same records and call the same
   APIs as the player (see the interface map in [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md)). Order of
@@ -99,6 +112,12 @@ Norwegian; code, comments and docs are English.
   `--logistics-test --only veh_drive,transport,logistics,convoy,bases,persist_logistics,scenario` (the `scenario`
   run is the brief's end-to-end acceptance through the real controls). Integration scenarios of the
   combined baseline: `--integration03-test --only catalog,factions,base,base_nav,long_route,views,persist,vehicles,perf`.
+- AI-SQUAD-01 scenarios: `--ai-squad-test [--shots] [--only a_engagement,b_suppress,c_flank,d_assault,f_withdraw,g_player,h_intel,i_casualties,j_near_far,k_persist,l_perf,z_showcase]`
+  (baseline of the unchanged combat: `base_fight,base_far,base_orders`; each scenario resets itself through
+  `CombatScenario`; results in `benchmarks/raw/ai_squad_test.json`). `--squad-demo` runs the showcase encounter in the
+  real game and leaves it running. RTS keys: **Z** assault, **K** suppress, **L** flank, **J** defend, **Backspace**
+  withdraw (each at the cursor, or arm from the bottom-right bar and click), **Shift+RMB** move by bounds, **V** cycles
+  auto / line / column / wedge / staggered / dispersed, **F7** fire teams, posts and missions overlay.
 - AI-INTEL-01 scenarios: `--ai-intel-test [--shots] [--only z_old_rule,a_initial,b_lost,c_reacquire,d_hearing,e_tiers,f_persist,g_strategy,k_investigate,h_player,i_factions,j_perf]`
   (each resets its own state; results in `benchmarks/raw/ai_intel_test.json`). Strategic map developer keys:
   **I** AI inspector (cycles factions: their contact picture, last decisions, operations), **T** (with the

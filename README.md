@@ -3,7 +3,23 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **AI-INTEL-01 / AI-OBS-01** (branch `feature/ai-intel-01`, built on `feature/integration-04`) —
+Current state: **AI-SQUAD-01** (branch `feature/ai-squad-01`, built on `feature/ai-intel-01`) — infantry squads fight
+as organised units. A squad splits into two fire teams (leaders take over when one falls), spreads out when it comes
+under fire, picks firing posts with cover and a view, and carries out squad tactics: **defend**, **suppress** (fire
+at a reported position, with real ammunition, until the report is old), **assault**, **flank** (a covered route chosen
+only when it exposes the squad clearly less than going straight in), **bound** (one team moves while the other
+covers), **reposition**, **withdraw** (leapfrogging back with covering fire) and **regroup**. Shots passing close
+suppress soldiers (less accurate, slower to react, head down, pinned teams do not dash). Squads choose tactics only
+when nobody commands them and only from what they saw or what their faction has been told; operations assault
+objectives with the same tactics. You command them from the tactical view: select a squad and press **Z** assault,
+**K** suppress, **L** flank, **J** defend, **Backspace** withdraw (at the cursor, or arm from the bottom-right bar and
+click), **Shift + right click** moves by bounds, **Shift+V** cycles formations (V still toggles line / column; auto: column on roads and in woods, wedge in
+the open, dispersed under fire); **F7** shows fire teams, posts, fire missions and flank routes. Four new Blender cover
+props (sandbag fighting position, log barricade, boulder group, earth berm) are in the construction menu under Defences.
+`--squad-demo` starts a ready-made encounter (a defended position, two attacking squads) in the real game. See
+[docs/AI-SQUAD-01_REPORT.md](docs/AI-SQUAD-01_REPORT.md).
+
+Before that, **AI-INTEL-01 / AI-OBS-01** (branch `feature/ai-intel-01`, built on `feature/integration-04`) —
 factions no longer know where enemies are merely because they are near: what a faction believes comes from
 reports (soldiers who saw an enemy, heard gunfire or were shot at, or hold an objective an enemy stands in),
 arrives after a short delay, ages into stale beliefs with a growing uncertainty circle, is saved with the war,

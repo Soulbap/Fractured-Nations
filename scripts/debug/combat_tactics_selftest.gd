@@ -33,6 +33,12 @@ func run(args: PackedStringArray) -> void:
 	lof = combat.line
 	brain = demo.sim.brain
 	brain.enabled = true
+	# AI-SQUAD-01: this suite checks the COMBAT-02 individual reactions; squads must not take tactics themselves.
+	demo.sim.tactics.autonomous = false
+	# Suppression is a new, intended effect on everybody who is shot at, also on the stray default soldiers
+	# near the test area; this suite checks the COMBAT-02 reactions without it.
+	brain.suppression_per_shot = 0.0
+	brain.suppression_per_hit = 0.0
 	SoldierBody.require_mouse_capture = false
 	def = combat.weapon(&"rifle")
 	tree.create_timer(1700.0).timeout.connect(func() -> void:

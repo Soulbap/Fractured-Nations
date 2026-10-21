@@ -475,8 +475,16 @@ func toggle_formation() -> void:
 	var sqs := selected_squads()
 	if sqs.is_empty():
 		return
-	# V cycles Line -> Column -> Wedge -> Staggered -> Dispersed -> Auto (terrain and situation) -> Line.
+	# V toggles Line <-> Column as before (a squad on auto formation goes to Line); Shift+V cycles
+	# Line -> Column -> Wedge -> Staggered -> Dispersed -> Auto (terrain and situation) -> Line.
 	var first := sim.state.get_squad(sqs[0])
+	if not Input.is_key_pressed(KEY_SHIFT):
+		for sid in sqs:
+			sim.state.get_squad(sid).formation_auto = false
+		var f := SquadState.Formation.COLUMN if first.formation == SquadState.Formation.LINE else SquadState.Formation.LINE
+		sim.squads.set_formation(sqs, f)
+		_say("Formation: %s" % SquadState.FORMATION_NAMES[f])
+		return
 	if first.formation_auto:
 		for sid in sqs:
 			sim.state.get_squad(sid).formation_auto = false

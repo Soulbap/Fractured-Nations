@@ -432,6 +432,7 @@ func _war_text() -> String:
 			lines.append("Camera: WASD pan, Q/E rotate, wheel zoom, middle-drag rotate")
 			lines.append("LMB select / drag box, Shift add, Ctrl+click squad, Ctrl+A all, RMB move, H hold, P or double-click possess (soldier) / drive (vehicle), B construction")
 			lines.append("Squads: F + click follow, G regroup (Shift+G at cursor), V line / column, [ ] spacing, Y weapons free / hold fire · T board a selected vehicle, U unload (squad + vehicle selected: RMB = transport there) | F4 AI debug, F3 stats")
+			lines.append("Tactics (at the cursor, or arm from the bar and click): Z assault, K suppress, L flank, J defend, Backspace withdraw, Shift+RMB move by bounds · Shift+V formations (auto / line / column / wedge ...) | F7 fire teams, posts and missions")
 		var sq_names: Array[String] = []
 		for sid in rts.selected_squads():
 			sq_names.append(sim.state.get_squad(sid).squad_name)
@@ -483,6 +484,7 @@ func _text() -> String:
 			lines.append("%s was killed. Select a living soldier and press P to take over." % back.unit_name)
 		lines.append("LMB select / drag box, Shift add, Ctrl+click squad, Ctrl+A all, RMB move, H hold, P or double-click possess, B construction, Tab back to %s" % (back.unit_name if back and back.alive else "soldier"))
 		lines.append("Squads: F + click follow, G regroup (Shift+G at cursor), V line / column, [ ] spacing, Y weapons free / hold fire | F4 AI debug")
+		lines.append("Tactics: Z assault, K suppress, L flank, J defend, Backspace withdraw, Shift+RMB bounds | F7 tactics overlay")
 		var sel: Array[String] = []
 		var moving := 0
 		for id in rts.selected:

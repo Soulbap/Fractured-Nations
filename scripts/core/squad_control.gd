@@ -162,6 +162,14 @@ func _route_leg(sq: SquadState) -> void:
 	if sq.route_i == sq.route.size() - 1 and _end_formation.has(sq.id):
 		sq.formation = _end_formation[sq.id]
 		_end_formation.erase(sq.id)
+	# AI-SQUAD-01: a squad that picks its own formation spreads out as soon as it is in contact
+	# and takes the shape the ground at the end of the march suits (wedge, column, dispersed).
+	if sq.formation_auto:
+		var assessed := sim.tactics.assessment(sq)
+		if not assessed.is_empty() and assessed.get("in_contact", false):
+			sq.formation = SquadState.Formation.DISPERSED
+		elif sq.route_i == sq.route.size() - 1:
+			sq.formation = choose_formation(sq, target)
 	var from := _centroid(sq) if sq.route_i == 0 else sq.route[sq.route_i - 1]
 	_order_move_one(sq, target, _yaw_towards(from, target, sq.order_yaw))
 
