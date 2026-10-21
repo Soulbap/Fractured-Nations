@@ -30,6 +30,9 @@ var ops_succeeded := 0
 var ops_failed := 0
 ## Last strategic decision (debug / map).
 var last_decision := ""
+## AI-INTEL-01: the last strategic decisions with what they were based on (runtime, newest
+## last, at most WarSim.DECISIONS_MAX).
+var decisions: Array = []
 
 
 func to_dict() -> Dictionary:

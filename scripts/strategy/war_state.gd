@@ -15,6 +15,12 @@ var next_op_id := 1
 ## War log: {t, faction (-1 = everyone), kind, text}. Most recent last, at most MAX_LOG.
 var events: Array = []
 const MAX_LOG := 200
+## AI-INTEL-01: each faction's picture of the enemy. faction id -> {contact id: ContactState}.
+## Beliefs, not world state: they only change through IntelSim (reports and ageing).
+var contacts := {}
+var next_contact_id := 1
+## Reports on their way to the faction (observed, not yet received): IntelSim.
+var intel_pending: Array = []
 
 
 func faction(id: int) -> FactionState:
@@ -58,8 +64,13 @@ func to_dict() -> Dictionary:
 	var p := []
 	for x: OperationState in operations.values():
 		p.append(x.to_dict())
+	var cl := []
+	for tbl: Dictionary in contacts.values():
+		for c: ContactState in tbl.values():
+			cl.append(c.to_dict())
 	return {"active": active, "player_faction": player_faction, "factions": f, "objectives": o, "operations": p,
-		"next_op_id": next_op_id, "log": events.duplicate(true)}
+		"next_op_id": next_op_id, "log": events.duplicate(true), "contacts": cl, "next_contact": next_contact_id,
+		"intel_pending": intel_pending.duplicate(true)}
 
 
 func from_dict(d: Dictionary) -> void:
@@ -79,3 +90,11 @@ func from_dict(d: Dictionary) -> void:
 		operations[op.id] = op
 	next_op_id = d.get("next_op_id", 1)
 	events = d.get("log", []).duplicate(true)
+	contacts.clear()
+	for x in d.get("contacts", []):
+		var c := ContactState.from_dict(x)
+		if not contacts.has(c.faction):
+			contacts[c.faction] = {}
+		contacts[c.faction][c.id] = c
+	next_contact_id = d.get("next_contact", 1)
+	intel_pending = d.get("intel_pending", []).duplicate(true)

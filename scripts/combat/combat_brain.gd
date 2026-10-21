@@ -334,6 +334,9 @@ func _perceive(u: UnitState, budget: int) -> int:
 					heard = r[0]
 		if heard.is_finite():
 			_watch(u, heard, 5.0)
+			# AI-INTEL-01: the faction hears it too, without learning who or exactly where.
+			if sim.war != null and sim.war.enabled:
+				sim.war.intel.report_heard(u, heard, hd)
 	var used := 0
 	var cur := sim.state.get_unit(u.target_id)
 	if cur and (not cur.alive or cur.faction == u.faction):
@@ -378,6 +381,7 @@ func _perceive(u: UnitState, budget: int) -> int:
 		u.target_seen_at = now
 		u.target_last_pos = cur.position
 		u.target_visible = true
+		_report_seen(u, cur)
 	elif cur:
 		u.target_visible = false
 		if now - u.target_seen_at > target_memory_s:
@@ -477,6 +481,36 @@ func _acquire(u: UnitState, t: UnitState, aim_y: float) -> void:
 	u.target_seen_at = now
 	u.target_last_pos = t.position
 	u.target_visible = true
+	_report_seen(u, t)
+
+
+## AI-INTEL-01: a soldier that really sees an enemy (the line of sight was just checked)
+## reports it to its faction; IntelSim throttles and merges. This is the only way sightings
+## reach the faction - the contact picture is built from what CombatBrain perceives.
+func _report_seen(u: UnitState, t: UnitState) -> void:
+	if sim.war != null and sim.war.enabled and sim.war.intel.seen_due(u):
+		var t0 := Time.get_ticks_usec()
+		var group := _group_near(t, 25.0)
+		sim.war.intel.group_usec += Time.get_ticks_usec() - t0
+		sim.war.intel.report_seen(u, t, group)
+
+
+## Enemy soldiers (of t's faction) within r of t, t included: the size of the group a sighted
+## soldier belongs to. Uses the faction grid of this frame; no sight checks.
+func _group_near(t: UnitState, r: float) -> int:
+	var cells: Dictionary = _fgrid.get(t.faction, {})
+	var c0 := Vector2i(floori((t.position.x - r) / FGRID), floori((t.position.z - r) / FGRID))
+	var c1 := Vector2i(floori((t.position.x + r) / FGRID), floori((t.position.z + r) / FGRID))
+	var n := 0
+	var r2 := r * r
+	for x in range(c0.x, c1.x + 1):
+		for z in range(c0.y, c1.y + 1):
+			for o: UnitState in cells.get(Vector2i(x, z), []):
+				var dx := o.position.x - t.position.x
+				var dz := o.position.z - t.position.z
+				if dx * dx + dz * dz <= r2:
+					n += 1
+	return maxi(n, 1)
 
 
 func _drop_target(u: UnitState, why: String) -> void:
@@ -575,6 +609,8 @@ func _under_fire(u: UnitState, from: Vector3, alert_squad := true) -> void:
 		_watch(u, u.threat_pos, 5.0)
 	if first:
 		_event(u, "under fire from %.0f m" % _flat(u.position, from))
+		if sim.war != null and sim.war.enabled:
+			sim.war.intel.report_fire(u, u.threat_pos)
 		if alert_squad:
 			var sq := sim.state.squad_of(u.id)
 			if sq:

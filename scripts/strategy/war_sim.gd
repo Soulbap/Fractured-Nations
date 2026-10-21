@@ -9,7 +9,9 @@
 ##   - faction AI (each AI faction every FactionProfile.decision_s): threats, garrisons,
 ##     reinforcement, attacks, recovery - all as operations of real squads;
 ##   - reserves: finite replacements arrive as new squads at a faction's HQ;
-##   - intelligence (every 2 s): what each faction knows about enemy soldiers.
+##   - intelligence (IntelSim, AI-INTEL-01): what each faction has been told about the enemy -
+##     reports from soldiers who saw, heard or were shot at, ageing into stale beliefs; the
+##     strategic decisions below read only that picture, never the enemy's true positions.
 ##
 ## Order ownership, highest first: the player's direct orders (RTS / map) > operations >
 ## CombatBrain's temporary reactions. A player order releases a squad from its operation
@@ -35,10 +37,10 @@ var assault_timeout_s := 1200.0
 var defend_quiet_s := 150.0
 ## Staging point of an attack: this far short of the objective along the route (m).
 var staging_m := 350.0
-## Intelligence: enemy soldiers within this distance of one of a faction's soldiers or
-## owned objectives are known to it; they are forgotten this long after (s).
-var intel_m := 400.0
-var intel_forget_s := 90.0
+## AI-INTEL-01 decisions: a stale contact near an owned objective is investigated by one
+## squad at most this often (s), and a decision snapshot list is kept per faction.
+var investigate_cooldown_s := 150.0
+const DECISIONS_MAX := 10
 ## Reserves arrive in squads of this size, at most this often (s), up to max_squads.
 var reinforce_squad := 8
 var reinforce_interval_s := 240.0
@@ -48,12 +50,11 @@ var sim: WorldSim
 var war: WarState
 var routes: StrategicRoutes
 var enabled := false
-## faction id -> {unit id: [last known position, time seen]}
-var known := {}
+## AI-INTEL-01: the faction contact picture (contacts live in WarState, saved).
+var intel: IntelSim
 var _profiles := {}
 var _t_capture := 0.0
 var _t_ops := 0.0
-var _t_intel := 0.0
 var _t_reserves := 0.0
 ## Measurements.
 var update_usec := 0
@@ -71,6 +72,7 @@ var march := {}
 func _init(p_sim: WorldSim) -> void:
 	sim = p_sim
 	war = sim.state.war
+	intel = IntelSim.new(self)
 
 
 func setup(p_routes: StrategicRoutes) -> void:
@@ -82,7 +84,7 @@ func setup(p_routes: StrategicRoutes) -> void:
 		war = sim.state.war
 		enabled = war.active
 		march.clear()
-		known.clear())
+		intel.rebuild())
 
 
 func profile(f: FactionState) -> FactionProfile:
@@ -98,14 +100,11 @@ func update(delta: float) -> void:
 	var t0 := Time.get_ticks_usec()
 	_t_capture += delta
 	_t_ops += delta
-	_t_intel += delta
 	_t_reserves += delta
 	if _t_capture >= 1.0:
 		_update_capture(_t_capture)
 		_t_capture = 0.0
-	if _t_intel >= 2.0:
-		_t_intel = 0.0
-		_update_intel()
+	intel.update(delta)
 	if _t_ops >= 1.0:
 		var to := Time.get_ticks_usec()
 		_t_ops = 0.0
@@ -163,6 +162,12 @@ func _update_capture(dt: float) -> void:
 		for u: UnitState in sim.brain._near(o.position, o.radius):
 			count[u.faction] = count.get(u.faction, 0) + 1
 		o.presence = count
+		# AI-INTEL-01: soldiers standing in an objective see the enemy standing in it too.
+		if count.size() >= 2:
+			for f in count:
+				for ef in count:
+					if ef != f:
+						intel.report_objective(f, ef, o, count[ef])
 		var present := []
 		for f in count:
 			if count[f] >= capture_min:
@@ -212,59 +217,103 @@ func _transfer(o: ObjectiveState, f: int) -> void:
 		(" from " + WorldState.faction_name(old)) if old >= 0 else ""], o.position)
 
 
-# --- Intelligence --------------------------------------------------------------------------
+# --- Intelligence ----------------------------------------------------------------------------
+# The contact picture is IntelSim's (scripts/strategy/intel_sim.gd).
 
-## A faction knows the enemy soldiers that are within intel_m of one of its living
-## soldiers or within intel_m of the edge of an objective it owns; it remembers their
-## last position for intel_forget_s. (No omniscience: an army far from anyone stays
-## unseen.) Uses the brain's per-faction grid: each enemy soldier checks the own-faction
-## cells around it, stopping at the first observer.
-func _update_intel() -> void:
+## Enemy soldiers faction f believes to be near p (see IntelSim.threat_near).
+func threat_near(f: int, p: Vector3, r: float) -> int:
+	return intel.threat_near(f, p, r)
+
+
+# --- Inspection (AI-OBS-01) -------------------------------------------------------------------
+# Plain text assembled from the records and the decision snapshots the AI actually produced;
+# nothing is reconstructed after the fact.
+
+## Why a squad does what it does: who commands it, what it was told, what its soldiers see.
+func explain_squad(sq: SquadState) -> Array[String]:
+	var out: Array[String] = []
 	var now := sim.state.time
-	sim.brain._ensure_grid()
-	var reach := ceili(intel_m / CombatBrain.FGRID)
-	var r2 := intel_m * intel_m
-	for f: FactionState in war.factions.values():
-		var k: Dictionary = known.get(f.id, {})
-		var own: Dictionary = sim.brain._fgrid.get(f.id, {})
-		var owned := war.owned_by(f.id)
-		for ef: int in sim.brain._fgrid:
-			if ef == f.id:
-				continue
-			var cells: Dictionary = sim.brain._fgrid[ef]
-			for cell: Vector2i in cells:
-				for u: UnitState in cells[cell]:
-					if _observed(u, own, cell, reach, r2, owned):
-						k[u.id] = [u.position, now]
-		for id in k.keys():
-			var u := sim.state.get_unit(id)
-			if u == null or not u.alive or now - k[id][1] > intel_forget_s:
-				k.erase(id)
-		known[f.id] = k
+	out.append("%s (%s) - %d soldiers, order %s%s, status %s" % [sq.squad_name, WorldState.faction_name(sq.faction), sq.members.size(), sq.order_name(),
+		"" if not sq.order_target.is_finite() else " to (%.0f, %.0f)" % [sq.order_target.x, sq.order_target.z], SquadState.Status.keys()[sq.status].to_lower()])
+	var op := war.operation(sq.op_id)
+	if op:
+		out.append("Commanded by: %s operation #%d %s, %s" % ["the player's" if op.player_ordered else "the faction AI's", op.id, op.type_name(), op.phase_name()])
+		if op.reason != "":
+			out.append("Reason: " + op.reason)
+		if op.contact_id >= 0:
+			var c := intel.get_contact(op.faction, op.contact_id)
+			out.append("Goes to contact: " + (c.describe(now) if c else "#%d (no longer held)" % op.contact_id))
+		if not sq.route.is_empty():
+			var rem := 0.0
+			var cur := squad_center(sq)
+			for i in range(sq.route_i, sq.route.size()):
+				rem += _flat(cur, sq.route[i])
+				cur = sq.route[i]
+			out.append("Route: waypoint %d of %d, %.0f m to go" % [sq.route_i + 1, sq.route.size(), rem])
+	elif sq.station_objective >= 0 and war.objective(sq.station_objective):
+		out.append("Commanded by: nobody - garrison of %s" % war.objective(sq.station_objective).obj_name)
+	elif sq.faction == war.player_faction:
+		out.append("Commanded by: the player's direct order (or idle)")
+	else:
+		out.append("Commanded by: nobody - idle")
+	var engaged := 0
+	var fire := 0
+	var react := 0
+	var sample := ""
+	for id in sq.members:
+		var u := sim.state.get_unit(id)
+		if u == null:
+			continue
+		if u.ai_state == UnitState.AiState.ENGAGING and u.target_visible:
+			engaged += 1
+			if sample == "":
+				var t := sim.state.get_unit(u.target_id)
+				sample = "%s: %s (%s)" % [u.unit_name, t.unit_name if t else "target", u.ai_reason]
+		if u.under_fire_until > now:
+			fire += 1
+		if u.is_reacting():
+			react += 1
+	out.append("Direct observation: %d engaging a visible enemy, %d under fire, %d taking cover%s" % [engaged, fire, react, "" if sample == "" else " - " + sample])
+	var near := intel.contacts_near(sq.faction, squad_center(sq), 600.0)
+	if near.is_empty():
+		out.append("Faction picture within 600 m: nothing reported")
+	else:
+		for c: ContactState in near.slice(0, 2):
+			out.append("Faction picture: " + c.describe(now))
+	return out
 
 
-func _observed(u: UnitState, own: Dictionary, cell: Vector2i, reach: int, r2: float, owned: Array) -> bool:
-	for dx in range(-reach, reach + 1):
-		for dz in range(-reach, reach + 1):
-			for o: UnitState in own.get(cell + Vector2i(dx, dz), []):
-				var ddx := o.position.x - u.position.x
-				var ddz := o.position.z - u.position.z
-				if ddx * ddx + ddz * ddz <= r2:
-					return true
-	for ob: ObjectiveState in owned:
-		if _flat(ob.position, u.position) <= ob.radius + intel_m:
-			return true
-	return false
-
-
-## Known enemy soldiers of faction f near p (count).
-func known_near(f: int, p: Vector3, r: float) -> int:
-	var n := 0
-	for id in known.get(f, {}):
-		var e: Array = known[f][id]
-		if Vector2(e[0].x - p.x, e[0].z - p.z).length() <= r:
-			n += 1
-	return n
+## The faction's current picture and its last strategic decision, as lines for the inspector.
+func explain_faction(f: FactionState) -> Array[String]:
+	var out: Array[String] = []
+	var now := sim.state.time
+	var ct := intel.counts(f.id)
+	out.append("%s (%s): %d contacts - %d observed, %d reported, %d stale" % [WorldState.faction_name(f.id), "player" if f.player else profile(f).display_name.to_lower(), ct.total, ct.observed, ct.reported, ct.stale])
+	if f.player:
+		out.append("The player commands this faction; no strategic AI decisions.")
+	elif f.decisions.is_empty():
+		out.append("No decision yet.")
+	else:
+		var d: Dictionary = f.decisions.back()
+		out.append("Decision at %d:%02d - %s" % [int(d.t / 3600.0), int(d.t / 60.0) % 60, d.notes])
+		for t: Dictionary in d.threats:
+			out.append("  threat at %s: ~%d enemy reported (%s), %d defenders -> %s" % [t.objective, t.enemies, ", ".join(t.contacts), t.defenders, t.action])
+		if d.investigate != "":
+			out.append("  investigate: " + d.investigate)
+		for i in mini(d.candidates.size(), 4):
+			var c: Dictionary = d.candidates[i]
+			out.append("  target %s: score %.2f (value %d, %.1f km)%s, %d defenders %s, needs %d%s" % [c.name, c.score, c.value, c.km, " retake" if c.retake else "", c.defenders, c.basis, c.need, " - too few free" if c.skipped else ""])
+		if d.attack != "":
+			out.append("  attack chosen: " + d.attack)
+	for op: OperationState in war.active_operations(f.id):
+		var obj := war.objective(op.target_objective)
+		out.append("Op #%d %s %s %s - %d squads, %s%s" % [op.id, op.type_name(), obj.obj_name if obj else "point", op.phase_name(), op.squads.size(),
+			"player" if op.player_ordered else "AI", (": " + op.reason) if op.reason != "" else ""])
+	var best := intel.contacts_of(f.id)
+	best.sort_custom(func(a: ContactState, b: ContactState) -> bool: return a.conf * a.strength > b.conf * b.strength)
+	for c: ContactState in best.slice(0, 6):
+		out.append("  " + c.describe(now))
+	return out
 
 
 # --- Squads ---------------------------------------------------------------------------
@@ -472,7 +521,7 @@ func _update_operation(op: OperationState) -> void:
 			if op.phase == OperationState.Phase.MOVING and not marching:
 				_set_phase(op, OperationState.Phase.SECURING)
 			elif op.phase == OperationState.Phase.SECURING:
-				var threat := obj != null and (obj.contested or known_near(op.faction, obj.position, obj.radius + 400.0) > 0)
+				var threat := obj != null and (obj.contested or intel.threat_near(op.faction, obj.position, obj.radius + 400.0) > 0)
 				if threat:
 					op.phase_since = now
 				elif now - op.phase_since > defend_quiet_s and obj:
@@ -511,7 +560,15 @@ func _update_operation(op: OperationState) -> void:
 				for sid in op.squads:
 					sim.state.get_squad(sid).op_id = -1
 				op.squads.clear()
-				_end(op, OperationState.Phase.COMPLETED, "arrived")
+				var why := "arrived"
+				if op.contact_id >= 0:
+					# Investigation done: anything seen there since the order updated the contact;
+					# otherwise the faction stops believing the old report.
+					if intel.get_contact(op.faction, op.contact_id) == null:
+						why = "arrived; the contact was already dropped"
+					else:
+						why = "arrived; nothing found" if intel.clear_contact(op.faction, op.contact_id, op.started_at) else "arrived; the contact was seen again"
+				_end(op, OperationState.Phase.COMPLETED, why)
 
 
 ## WORLD-SANDBOX-01B, for the map: how far the operation's slowest squad still has to
@@ -672,6 +729,8 @@ func _decide(f: FactionState) -> void:
 	var p := profile(f)
 	var now := sim.state.time
 	var notes: Array[String] = []
+	# AI-INTEL-01: what the decision was based on (kept for the inspector, not saved).
+	var snap := {"t": snappedf(now, 0.1), "threats": [], "candidates": [], "investigate": "", "attack": "", "intel": intel.counts(f.id)}
 	# 0. Depleted squads go home to recover (they stay there as HQ reserve).
 	var hq := war.objective(f.hq_objective)
 	for sq: SquadState in squads_of(f.id):
@@ -682,20 +741,30 @@ func _decide(f: FactionState) -> void:
 	var free := _free_squads(f, p)
 	# 1. Threatened objectives get reinforcements.
 	for o: ObjectiveState in war.owned_by(f.id):
-		var enemies := known_near(f.id, o.position, o.radius + p.threat_radius)
+		var enemies := intel.threat_near(f.id, o.position, o.radius + p.threat_radius)
 		var was: bool = threatened.get(o.id, false)
 		threatened[o.id] = enemies > 0
 		if enemies > 0 and not was:
-			log_event(f.id, "threat", "Enemy forces near %s (%d seen)" % [o.obj_name, enemies], o.position)
+			log_event(f.id, "threat", "Enemy forces reported near %s (about %d)" % [o.obj_name, enemies], o.position)
 		if enemies <= 0:
 			continue
 		var defenders := _strength_near(f.id, o.position, o.radius + 150.0) + _incoming(f.id, o.id)
+		var cids := []
+		for c: ContactState in intel.contacts_near(f.id, o.position, o.radius + p.threat_radius).slice(0, 3):
+			cids.append("#%d %s %d%%" % [c.id, c.status_name(), roundi(c.conf * 100.0)])
+		var entry := {"objective": o.obj_name, "enemies": enemies, "defenders": defenders, "contacts": cids, "action": "defenders suffice"}
+		snap.threats.append(entry)
 		if defenders >= enemies * p.threat_ratio:
 			continue
 		var need := ceili(enemies * p.threat_ratio) - defenders
 		var picked := _pick_near(free, o.position, need)
-		if not picked.is_empty():
-			start_operation(f.id, OperationState.Type.REINFORCE, picked, o.id)
+		if picked.is_empty():
+			entry.action = "no free squads"
+		else:
+			var rop := start_operation(f.id, OperationState.Type.REINFORCE, picked, o.id)
+			if rop:
+				rop.reason = "about %d enemy reported near %s, %d defenders" % [enemies, o.obj_name, defenders]
+			entry.action = "reinforce with %d squads" % picked.size()
 			notes.append("reinforce %s" % o.obj_name)
 			for s in picked:
 				free.erase(s)
@@ -711,6 +780,8 @@ func _decide(f: FactionState) -> void:
 			notes.append("garrison %s" % o.obj_name)
 			for s in picked:
 				free.erase(s)
+	# 2b. An uncertain report near ground the faction holds: one squad goes and looks.
+	_investigate(f, p, free, notes, snap)
 	# 3. Offensive.
 	var attacks := war.active_operations(f.id).filter(func(o: OperationState) -> bool: return o.type == OperationState.Type.ATTACK).size()
 	var free_soldiers := 0
@@ -737,20 +808,27 @@ func _decide(f: FactionState) -> void:
 				d = minf(d, _flat(h.position, o.position))
 			if d > p.max_attack_distance:
 				continue
-			var defenders := known_near(f.id, o.position, o.radius + 200.0)
+			var defenders := intel.threat_near(f.id, o.position, o.radius + 200.0)
+			var basis := "reported"
 			if defenders == 0 and o.owner >= 0:
-				defenders = o.value * 4  # unseen garrison: assume one
+				defenders = o.value * 4  # nothing reported there: assume a garrison
+				basis = "assumed"
 				if o.is_hq():
 					# 01B: an HQ is fortified and receives its faction's reserves; 16-man
 					# attacks on one were thrown away in the long autonomous runs.
 					defenders = maxi(defenders, 24)
+			elif defenders == 0:
+				basis = "none reported"
 			var need := maxi(ceili(defenders * p.attack_ratio), p.min_attack_soldiers)
-			if need > free_soldiers:
-				continue
 			var score := o.value * p.w_value - d / 1000.0 * p.w_distance
 			score += p.w_neutral if o.owner < 0 else p.w_enemy
-			if _lost_by(f.id, o):
+			var retake := _lost_by(f.id, o)
+			if retake:
 				score += p.w_retake
+			snap.candidates.append({"name": o.obj_name, "score": snappedf(score, 0.01), "value": o.value, "km": snappedf(d / 1000.0, 0.1),
+				"defenders": defenders, "basis": basis, "need": need, "retake": retake, "skipped": need > free_soldiers})
+			if need > free_soldiers:
+				continue
 			if score > best_score:
 				best_score = score
 				best = o
@@ -760,6 +838,10 @@ func _decide(f: FactionState) -> void:
 			var picked := _pick_near(free, best.position, commit)
 			var op := start_operation(f.id, OperationState.Type.ATTACK, picked, best.id)
 			if op:
+				for c: Dictionary in snap.candidates:
+					if c.name == best.obj_name:
+						op.reason = "best target: score %.1f, %d defenders %s, needs %d" % [c.score, c.defenders, c.basis, c.need]
+						snap.attack = op.reason
 				notes.append("attack %s (%d)" % [best.obj_name, op.start_strength])
 				for s in picked:
 					free.erase(s)
@@ -770,6 +852,50 @@ func _decide(f: FactionState) -> void:
 	if moved != "":
 		notes.append(moved)
 	f.last_decision = "; ".join(notes) if not notes.is_empty() else "hold"
+	snap.candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.score > b.score)
+	snap["candidates"] = snap.candidates.slice(0, 6)
+	snap["notes"] = f.last_decision
+	f.decisions.append(snap)
+	if f.decisions.size() > DECISIONS_MAX:
+		f.decisions.pop_front()
+
+
+## An AI faction checks the most credible unconfirmed report near its own ground with one
+## squad (a MOVE operation to the reported position). At most one investigation per faction at
+## a time, and none for a contact already looked at recently or one being fought.
+func _investigate(f: FactionState, p: FactionProfile, free: Array, notes: Array[String], snap: Dictionary) -> void:
+	for op: OperationState in war.active_operations(f.id):
+		if op.contact_id >= 0:
+			return
+	var now := sim.state.time
+	var best: ContactState = null
+	for c: ContactState in intel.contacts_of(f.id):
+		if c.status == ContactState.Status.OBSERVED or c.investigated_until > now or c.conf < 0.2:
+			continue
+		var near := false
+		for o: ObjectiveState in war.owned_by(f.id):
+			if _flat(o.position, c.pos) <= o.radius + p.threat_radius * 1.5 and _incoming_squads(f.id, o.id) == 0:
+				near = true
+				break
+		if near and (best == null or c.conf * c.strength > best.conf * best.strength):
+			best = c
+	if best == null:
+		return
+	var pool := free.filter(func(sid: int) -> bool: return _flat(squad_center(sim.state.get_squad(sid)), best.pos) <= 2500.0)
+	if pool.is_empty():
+		snap.investigate = "contact #%d: no free squad within 2.5 km" % best.id
+		return
+	var picked := _pick_near(pool, best.pos, 1, true)
+	var op := start_operation(f.id, OperationState.Type.MOVE, picked, -1, best.pos)
+	if op == null:
+		return
+	best.investigated_until = now + investigate_cooldown_s
+	op.contact_id = best.id
+	op.reason = "investigate contact #%d (%s, %d%% confidence, %d s old)" % [best.id, best.source_name(), roundi(best.conf * 100.0), roundi(now - best.t_seen)]
+	snap.investigate = op.reason
+	notes.append("investigate #%d" % best.id)
+	for s in picked:
+		free.erase(s)
 
 
 ## Moves up to two free squads that stand at the HQ to the held objective nearest any
@@ -909,7 +1035,7 @@ static func _flat(a: Vector3, b: Vector3) -> float:
 func summary() -> Dictionary:
 	var out := {"time": snappedf(sim.state.time, 0.1), "factions": {}, "objectives": {}, "ops_active": war.active_operations().size(),
 		"ops_total": war.operations.size(), "update_us_avg": snappedf(float(update_usec) / maxi(updates, 1), 0.1), "update_us_max": update_usec_max,
-		"ai_us_max": ai_usec_max, "routes": {"planned": routes.routes_planned if routes else 0, "ms_max": snappedf(routes.route_ms_max, 0.01) if routes else 0.0,
+		"ai_us_max": ai_usec_max, "intel": intel.stats(), "routes": {"planned": routes.routes_planned if routes else 0, "ms_max": snappedf(routes.route_ms_max, 0.01) if routes else 0.0,
 		"ms_avg": snappedf(routes.route_ms_total / maxi(routes.routes_planned, 1), 0.01) if routes else 0.0}, "reroutes": stuck_reroutes}
 	for f: FactionState in war.factions.values():
 		var soldiers := 0

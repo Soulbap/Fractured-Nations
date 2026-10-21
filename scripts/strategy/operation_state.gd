@@ -9,7 +9,8 @@
 ##             COMPLETED after a quiet period (the squads stay as its garrison).
 ##   REINFORCE march to a friendly objective (or an operation's target) and join the
 ##             defence / the attack there.            -> COMPLETED on arrival.
-##   MOVE      player only: march to a point.          -> COMPLETED on arrival.
+##   MOVE      march to a point (the player's order, or an AI faction investigating a
+##             contact: `contact_id`).                 -> COMPLETED on arrival.
 class_name OperationState
 extends RefCounted
 
@@ -39,6 +40,10 @@ var losses := 0
 var player_ordered := false
 ## Route of the first squad (map display); each squad follows its own SquadState.route.
 var route_preview := PackedVector3Array()
+## AI-INTEL-01: contact an AI MOVE investigates (-1 none) and why the operation exists, for
+## the inspector ("reinforce: 4 enemy reported near X").
+var contact_id := -1
+var reason := ""
 
 
 func is_active() -> bool:
@@ -57,7 +62,7 @@ func to_dict() -> Dictionary:
 	return {"id": id, "faction": faction, "type": type, "target": target_objective, "target_pos": target_pos,
 		"staging": staging_pos, "squads": Array(squads), "phase": phase, "started_at": started_at,
 		"phase_since": phase_since, "ended_at": ended_at, "outcome": outcome, "start_strength": start_strength,
-		"losses": losses, "player": player_ordered, "route": Array(route_preview)}
+		"losses": losses, "player": player_ordered, "route": Array(route_preview), "contact": contact_id, "reason": reason}
 
 
 static func from_dict(d: Dictionary) -> OperationState:
@@ -78,4 +83,6 @@ static func from_dict(d: Dictionary) -> OperationState:
 	o.losses = d.get("losses", 0)
 	o.player_ordered = d.get("player", false)
 	o.route_preview = PackedVector3Array(d.get("route", []))
+	o.contact_id = d.get("contact", -1)
+	o.reason = d.get("reason", "")
 	return o
