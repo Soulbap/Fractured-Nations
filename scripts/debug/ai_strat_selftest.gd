@@ -65,6 +65,12 @@ func run(args: PackedStringArray) -> void:
 		_log("f_fronts", await _f_fronts())
 	if _want("g_intel"):
 		_log("g_intel", await _g_intel())
+	if _want("i_player"):
+		_log("i_player", await _i_player())
+	if _want("j_persist"):
+		_log("j_persist", await _j_persist())
+	if _want("h_deadlock"):
+		_log("h_deadlock", await _h_deadlock())
 	if _want("s0_repro"):
 		_log("s0_repro", await _s0_repro())
 	await _end_strat()
@@ -470,6 +476,125 @@ func _g_intel() -> Dictionary:
 
 func _flat(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x - b.x, a.z - b.z).length()
+
+
+# --- I: the player takes a squad out of a running operation ------------------------------------------------------------
+
+func _i_player() -> Dictionary:
+	var sc := await _scene(3, 1)
+	var obj: ObjectiveState = sc.obj
+	var atk: Array = sc.atk
+	var ids := atk.map(func(q: SquadState) -> int: return q.id)
+	var op := ws.start_operation(0, OperationState.Type.ATTACK, ids, obj.id, Vector3.INF, true)
+	_expect(op != null, "I: the attack could not start")
+	if op == null:
+		return {}
+	demo.rts_camera.frame(Vector3(9000, 0, 9000), 0.0, 150.0)
+	await _warp(300.0, 12.0, 120.0, func() -> bool: return op.stage >= OperationState.Stage.SUPPORT)
+	var taken: SquadState = demo.sim.state.get_squad(op.roles.keys()[0])
+	for sid in op.roles:
+		if int(op.roles[sid]) == SquadState.OpRole.MANEUVER or int(op.roles[sid]) == SquadState.OpRole.SUPPORT:
+			taken = demo.sim.state.get_squad(sid)
+	var role_before := SquadState.OP_ROLE_NAMES[int(op.roles.get(taken.id, 0))]
+	var res := demo.sim.tactics.order_tactic([taken.id], SquadState.Tactic.DEFEND, demo.sim.squads._centroid(taken))
+	var out := {"role_before": role_before, "order": res.get("text", ""), "ok": res.get("ok", false)}
+	_expect(res.get("ok", false), "I: the player's order was refused: %s" % res.get("text", ""))
+	await _physics(5)
+	_expect(taken.op_id == -1 and not op.squads.has(taken.id), "I: the squad is still in the operation after the player's order")
+	_expect(taken.tactic_owner == SquadState.Owner.PLAYER, "I: the player's tactic does not belong to the player (%s)" % taken.owner_name())
+	var w := await _warp(40.0, 12.0, 60.0)
+	_expect(taken.op_id == -1 and taken.tactic_owner != SquadState.Owner.OPERATION, "I: the operation reclaimed the player's squad")
+	_expect(not op.roles.has(taken.id), "I: the operation still lists a role for the player's squad")
+	_expect(_consistency().count == 0, "I: operation records inconsistent")
+	# The rest carries on: the operation finishes or at least keeps making progress (no deadlock).
+	var w2 := await _warp(500.0, 12.0, 160.0, func() -> bool: return not op.is_active())
+	out["op"] = {"phase": op.phase_name(), "stage": op.stage_name(), "outcome": op.outcome, "squads": op.squads.size()}
+	out["owner"] = obj.owner
+	_expect(not op.is_active() or op.stage != OperationState.Stage.APPROACH, "I: the operation stalled after the intervention")
+	_expect(not op.is_active() or w2.sim_s < 499.0, "I: the operation neither finished nor changed stage")
+	return out
+
+
+# --- J: save and load during an operation ------------------------------------------------------------------------------------
+
+func _j_persist() -> Dictionary:
+	var sc := await _scene(3, 1)
+	var obj: ObjectiveState = sc.obj
+	var ids := (sc.atk as Array).map(func(q: SquadState) -> int: return q.id)
+	var op := ws.start_operation(0, OperationState.Type.ATTACK, ids, obj.id, Vector3.INF, true)
+	if op == null:
+		_expect(false, "J: the attack could not start")
+		return {}
+	demo.rts_camera.frame(Vector3(9000, 0, 9000), 0.0, 150.0)
+	await _warp(300.0, 12.0, 120.0, func() -> bool: return op.stage >= OperationState.Stage.ASSAULT)
+	# Faction focus must survive too.
+	var fs := war.faction(1)
+	fs.focus_kind = "defence"
+	fs.focus_objective = obj.id
+	fs.focus_until = demo.sim.state.time + 100.0
+	fs.focus_why = "test"
+	var before := _op_sig(op)
+	var state := demo.sim.state
+	var snap := state.snapshot()
+	state.apply_snapshot(snap)
+	await tree.physics_frame
+	war = demo.sim.state.war
+	ws = demo.sim.war
+	var op2 := war.operation(op.id)
+	_expect(op2 != null, "J: the operation is gone after loading")
+	if op2 == null:
+		return {"before": before}
+	var after := _op_sig(op2)
+	_expect(before == after, "J: the operation differs after loading: %s vs %s" % [before, after])
+	var fs2 := war.faction(1)
+	_expect(fs2.focus_kind == "defence" and fs2.focus_objective == obj.id, "J: the strategic focus was lost")
+	var roles_ok := true
+	for sid in op2.roles:
+		var sq := state.get_squad(sid)
+		roles_ok = roles_ok and sq != null and sq.op_role == int(op2.roles[sid]) and sq.op_id == op2.id
+	_expect(roles_ok, "J: squad roles and operation roles differ after loading")
+	var w := await _warp(500.0, 12.0, 160.0, func() -> bool: return not op2.is_active())
+	_expect(not op2.is_active() or op2.stage >= OperationState.Stage.ASSAULT, "J: the operation did not carry on after loading")
+	_expect(_consistency().count == 0, "J: records inconsistent after loading")
+	return {"before": before, "after": after, "ended": {"phase": op2.phase_name(), "outcome": op2.outcome}, "warp": w}
+
+
+func _op_sig(op: OperationState) -> String:
+	var roles := []
+	for sid in op.roles:
+		roles.append("%d:%d" % [sid, int(op.roles[sid])])
+	roles.sort()
+	return "%s %s squads=%s roles=%s fb=%s" % [op.phase_name(), op.stage_name(), str(op.squads), ",".join(roles), str(op.fallback_pos)]
+
+
+# --- H: tactical deadlock ------------------------------------------------------------------------------------------------------------
+
+## The defenders are practically unkillable, the attack cannot win. It must still end (withdrawal or a
+## timeout), not hang, and the survivors must be released.
+func _h_deadlock() -> Dictionary:
+	var sc := await _scene(2, 2, 0.0, 900.0, 450.0)
+	var r := await _run_attack(sc, 900.0)
+	r.erase("op_obj")
+	r.erase("trace")
+	_expect(r.started, "H: the attack could not start")
+	if r.started:
+		_expect(r.op.phase == "failed" or r.op.phase == "completed", "H: the operation never ended (%s)" % str(r.op))
+		var free := 0
+		for sq: SquadState in sc.atk:
+			if demo.sim.state.get_squad(sq.id) and sq.op_id == -1:
+				free += 1
+		r["released"] = free
+		_expect(free == _alive_squads(sc.atk), "H: survivors are still bound to the ended operation")
+		_expect(r.consistency.count == 0, "H: records inconsistent")
+	return r
+
+
+func _alive_squads(sqs: Array) -> int:
+	var n := 0
+	for sq: SquadState in sqs:
+		if demo.sim.state.get_squad(sq.id):
+			n += 1
+	return n
 
 
 # --- Output (own prefix and file) ----------------------------------------------------------------
