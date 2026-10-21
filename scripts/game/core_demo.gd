@@ -65,6 +65,7 @@ var _combat_tactics_selftest: CombatTacticsSelfTest
 var _sandbox_selftest: SandboxSelfTest
 var _ai_intel_selftest: AIIntelSelfTest
 var _ai_squad_selftest: AISquadSelfTest
+var _ai_strat_selftest: AIStratSelfTest
 var _playtest_selftest: PlaytestSelfTest
 var _integration03_selftest: Integration03SelfTest
 var _logistics_selftest: LogisticsSelfTest
@@ -191,11 +192,11 @@ func _setup_combat() -> void:
 	combat_fx.name = "CombatFX"
 	add_child(combat_fx)
 	combat_fx.setup(sim, game)
-	# Developer switches (AI-SQUAD-01): --ops-assault lets attack operations assault with squad tactics,
+	# Developer switches (AI-SQUAD-01): --legacy-ops makes attack operations walk in as before (diagnostic comparison),
 	# --no-squad-ai stops squads choosing tactics on their own.
 	var launch_args := OS.get_cmdline_user_args()
-	if "--ops-assault" in launch_args:
-		sim.tactics.ops_assault = true
+	if "--legacy-ops" in launch_args:
+		sim.tactics.ops_assault = false
 	if "--no-squad-ai" in launch_args:
 		sim.tactics.autonomous = false
 	tactics_overlay = TacticsOverlay.new()
@@ -325,6 +326,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--ai-intel-test" in args:
 		_ai_intel_selftest = AIIntelSelfTest.new(self)
 		_ai_intel_selftest.run.call_deferred(args)
+	elif "--ai-strat-test" in args:
+		_ai_strat_selftest = AIStratSelfTest.new(self)
+		_ai_strat_selftest.run.call_deferred(args)
 	elif "--ai-squad-test" in args or "--squad-demo" in args:
 		_ai_squad_selftest = AISquadSelfTest.new(self)
 		_ai_squad_selftest.run.call_deferred(args)

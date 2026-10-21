@@ -30,6 +30,14 @@ var ops_succeeded := 0
 var ops_failed := 0
 ## Last strategic decision (debug / map).
 var last_decision := ""
+## AI-COMBAT-STRAT-01: strategic focus - what the faction committed to (defence / attack), on which
+## objective, until when; keeps it from changing its mind at every decision (saved).
+var focus_kind := ""
+var focus_objective := -1
+var focus_since := 0.0
+var focus_until := 0.0
+var focus_utility := 0.0
+var focus_why := ""
 ## AI-INTEL-01: the last strategic decisions with what they were based on (runtime, newest
 ## last, at most WarSim.DECISIONS_MAX).
 var decisions: Array = []
@@ -40,7 +48,8 @@ func to_dict() -> Dictionary:
 		"reserves": reserves, "reserves_start": reserves_start, "next_reinf": next_reinforcement_at,
 		"recovery_until": recovery_until, "next_decision": next_decision_at, "squad_counter": squad_counter,
 		"casualties": casualties, "kills": kills, "captured": objectives_captured, "lost": objectives_lost,
-		"ops_started": ops_started, "ops_succeeded": ops_succeeded, "ops_failed": ops_failed, "last_decision": last_decision}
+		"ops_started": ops_started, "ops_succeeded": ops_succeeded, "ops_failed": ops_failed, "last_decision": last_decision,
+		"focus": [focus_kind, focus_objective, focus_since, focus_until, focus_utility, focus_why]}
 
 
 static func from_dict(d: Dictionary) -> FactionState:
@@ -64,4 +73,11 @@ static func from_dict(d: Dictionary) -> FactionState:
 	f.ops_succeeded = d.get("ops_succeeded", 0)
 	f.ops_failed = d.get("ops_failed", 0)
 	f.last_decision = d.get("last_decision", "")
+	var fc: Array = d.get("focus", ["", -1, 0.0, 0.0, 0.0, ""])
+	f.focus_kind = fc[0]
+	f.focus_objective = fc[1]
+	f.focus_since = fc[2]
+	f.focus_until = fc[3]
+	f.focus_utility = fc[4]
+	f.focus_why = fc[5]
 	return f

@@ -33,10 +33,9 @@ var enabled := true
 ## Squads choose tactics themselves (DEFEND, SUPPRESS, WITHDRAW; offensive ones only when an
 ## operation or the player gave the task).
 var autonomous := true
-## Attack operations assault their objective with squad tactics (else they walk in). Off by default:
-## three squads that stop at 130 m and trade fire lost the sandbox Haugen attack that the old
-## walk-in (a mass arriving together) wins; needs cross-squad coordination first (see the report).
-var ops_assault := false
+## Attack operations coordinate their squads with roles and squad tactics (OpCoordination); false = the
+## old walk-in, kept as a diagnostic comparison (--legacy-ops).
+var ops_assault := true
 var tick_s := 0.5
 var eval_s := 2.0
 ## Contacts further than this from the squad are ignored by its tactics (m).
@@ -179,6 +178,8 @@ func _aboard(sq: SquadState) -> bool:
 func _autonomy_ok(sq: SquadState) -> bool:
 	if not sq.route.is_empty():
 		return false
+	if sq.op_role != SquadState.OpRole.NONE and sq.op_id >= 0:
+		return false  # the operation coordinates it
 	if sq.op_id >= 0:
 		var op := sim.state.war.operation(sq.op_id)
 		if op != null and op.is_active() and op.phase < OperationState.Phase.ENGAGING:
@@ -509,7 +510,7 @@ func _consider(sq: SquadState, a: Dictionary) -> void:
 
 ## Starts a tactic. Returns {ok, reason}. Planning happens first (nothing changes when it fails).
 ## target: the position to defend / suppress / assault / flank round / withdraw to / move to.
-func start(sq: SquadState, tactic: int, owner: int, target := Vector3.INF, contact_id := -1, why := "") -> Dictionary:
+func start(sq: SquadState, tactic: int, owner: int, target := Vector3.INF, contact_id := -1, why := "", extra := {}) -> Dictionary:
 	if not enabled:
 		return _refuse(sq, "tactics are off")
 	if _aboard(sq):
@@ -519,7 +520,7 @@ func start(sq: SquadState, tactic: int, owner: int, target := Vector3.INF, conta
 	if int(a.n) == 0:
 		return _refuse(sq, "no soldier is available to carry it out")
 	var now := sim.state.time
-	var plan := _plan(sq, a, tactic, target, owner)
+	var plan := _plan(sq, a, tactic, target, owner, extra)
 	if not plan.ok:
 		return _refuse(sq, plan.reason)
 	# Commit.
@@ -536,6 +537,7 @@ func start(sq: SquadState, tactic: int, owner: int, target := Vector3.INF, conta
 	sq.order = SquadState.Order.TACTIC
 	sq.tactic = plan.tactic
 	sq.tactic_owner = owner
+	sq.tactic_ext = bool(extra.get("ext", false))
 	sq.tactic_op = sq.op_id if owner == SquadState.Owner.OPERATION else -1
 	sq.tactic_phase = PH_SETUP
 	sq.tactic_leg = 0
@@ -573,7 +575,7 @@ func _refuse(sq: SquadState, reason: String) -> Dictionary:
 
 ## Pure planning: can the tactic be carried out, and how. May change the tactic (an assault that
 ## is better made as a flank).
-func _plan(sq: SquadState, a: Dictionary, tactic: int, target: Vector3, _owner: int) -> Dictionary:
+func _plan(sq: SquadState, a: Dictionary, tactic: int, target: Vector3, _owner: int, extra := {}) -> Dictionary:
 	var c: Vector3 = a.center
 	var units := _units(sq)
 	var count := units.size()
@@ -598,12 +600,13 @@ func _plan(sq: SquadState, a: Dictionary, tactic: int, target: Vector3, _owner: 
 			if not target.is_finite():
 				return {"ok": false, "reason": "suppress needs a target position"}
 			var d := _flat(c, target)
-			if d > 300.0:
+			if d > 300.0 and not extra.has("standoff"):
 				return {"ok": false, "reason": "the target is %.0f m away, beyond rifle range for suppressive fire" % d}
 			if float(a.ammo) < 0.25:
 				return {"ok": false, "reason": "not enough ammunition left for suppressive fire (%.0f%%)" % (float(a.ammo) * 100.0)}
 			var dir := _dir_to(c, target)
-			var from := c if d <= 190.0 else target - dir * 150.0
+			var standoff: float = extra.get("standoff", 150.0)
+			var from := c if d <= standoff + 40.0 else target - dir * standoff
 			var posts := pos.find_posts(count, from, 28.0, target, {"mode": "fire", "los": target, "reserved": _reserved(sq, from), "avoid": _avoid_list(sq), "unit_id": uid, "min_enemy_m": 40.0})
 			if posts.is_empty():
 				return {"ok": false, "reason": "no firing position with a line to %s within rifle range" % _xz(target)}
@@ -633,7 +636,7 @@ func _plan(sq: SquadState, a: Dictionary, tactic: int, target: Vector3, _owner: 
 			var want_flank := tactic == SquadState.Tactic.FLANK
 			var report := ""
 			var best := {}
-			if sq.teams.size() >= 2 and d >= 70.0 and d <= 320.0:
+			if sq.teams.size() >= 2 and d >= 70.0 and d <= 320.0 and not bool(extra.get("ext", false)) or want_flank and sq.teams.size() >= 2 and d >= 70.0 and d <= (460.0 if bool(extra.get("ext", false)) else 320.0):
 				var frontal := pos.route_exposure([c, target], target)
 				var plans: Array = []
 				var rejected: Array[String] = []
@@ -820,10 +823,10 @@ func order_tactic(squad_ids: Array, tactic: int, target := Vector3.INF, owner :=
 
 
 ## An operation tasks a squad with a tactic against a position (a held objective). {ok, reason}.
-func assign_for_operation(sq: SquadState, tactic: int, target: Vector3, why: String) -> Dictionary:
-	if sq.tactic != SquadState.Tactic.NONE and sq.tactic_owner == SquadState.Owner.OPERATION:
+func assign_for_operation(sq: SquadState, tactic: int, target: Vector3, why: String, extra := {}) -> Dictionary:
+	if sq.tactic == tactic and sq.tactic_owner == SquadState.Owner.OPERATION:
 		return {"ok": true, "reason": "already tasked"}
-	return start(sq, tactic, SquadState.Owner.OPERATION, target, _contact_at(sq, target), why)
+	return start(sq, tactic, SquadState.Owner.OPERATION, target, _contact_at(sq, target), why, extra)
 
 
 ## The faction contact that explains a target position (within its uncertainty), or -1.
@@ -1018,6 +1021,12 @@ func _refresh_target(sq: SquadState) -> Vector3:
 # --- Legs: the building block of BOUND / WITHDRAW / ASSAULT / FLANK ------------------------------------------
 
 ## The team that moves in leapfrog bounds: alternating; one team moves by itself.
+## How long a pinned team waits before it moves anyway: an operation's squad has its support firing and a
+## timetable, so it waits less than a squad on its own.
+func _pinned_wait(sq: SquadState) -> float:
+	return 9.0 if sq.tactic_owner == SquadState.Owner.OPERATION else 25.0
+
+
 func _mover(sq: SquadState) -> int:
 	return (sq.tactic_leg + 1) % 2 if sq.teams.size() == 2 else 0
 
@@ -1046,6 +1055,7 @@ func _begin_leg(sq: SquadState, team: int, dest: Vector3, threat: Vector3) -> vo
 	var posts := pos.find_posts(mu.size(), dest, 9.0, threat, {"mode": "cover", "reserved": _reserved(sq, dest, mu), "avoid": _avoid_list(sq), "unit_id": mu[0].id, "min_enemy_m": 20.0})
 	posts = pos.fill_open(posts, mu.size(), dest, dir, 3.4)
 	_send_posts(sq, mu, posts, dir)
+	_set_meta(sq, "leg_team", team)
 	sq.tactic_dest = dest
 	sq.tactic_leg_since = now
 	for p: Dictionary in posts:
@@ -1096,7 +1106,7 @@ func _run_bound(sq: SquadState, a: Dictionary, now: float, withdrawing: bool) ->
 	if mu.is_empty():
 		sq.tactic_leg += 1
 		return
-	if _pinned_frac(mu) >= pinned_go and now - sq.tactic_leg_since < 25.0:
+	if _pinned_frac(mu) >= pinned_go and now - sq.tactic_leg_since < _pinned_wait(sq):
 		sq.tactic_rejected = "leg %d waits: %d%% of the moving team is pinned" % [sq.tactic_leg + 1, roundi(_pinned_frac(mu) * 100.0)]
 		return
 	var leg := _next_dest(centre, dest, leg_m * (1.5 if withdrawing else 1.0))
@@ -1125,6 +1135,12 @@ func _run_assault(sq: SquadState, a: Dictionary, now: float) -> void:
 	var assault: Array = _units(sq, 1) if sq.teams.size() >= 2 else all
 	match sq.tactic_phase:
 		PH_SETUP:
+			if sq.tactic_ext:
+				# The operation's fire support suppresses the objective: close at once.
+				sq.tactic_phase = PH_MOVE
+				sq.tactic_phase_since = now
+				sq.tactic_dest = Vector3.INF
+				return
 			# Approach: bound towards a staging point until the target is within reach.
 			if d <= 130.0 or (int(a.seen_n) > 0 and d <= 170.0):
 				sq.tactic_phase = PH_SUPPORT
@@ -1150,14 +1166,45 @@ func _run_assault(sq: SquadState, a: Dictionary, now: float) -> void:
 			sq.tactic_dest = Vector3.INF
 			sq.tactic_why = "%s; support is firing, the assault element advances" % sq.tactic_why.split("; support")[0]
 		PH_MOVE:
-			if not support.is_empty():
-				if _flat(_centroid(assault), target) > 40.0:
-					_fire_on(support, target, _spread_for(sq), mission_s)
+			var quiet_march: bool = int(a.seen_n) == 0 and int(a.under_fire) == 0
+			var step := (42.0 if sq.tactic_ext else 28.0) * (2.2 if quiet_march else 1.0)
+			if sq.teams.size() < 2:
+				_advance(sq, a, 0, target, now, step)
+			else:
+				# Leapfrog: the team that is behind moves up (or the two take turns when level), the
+				# other one fires; the squad closes as one body instead of one team running ahead.
+				var front := minf(_team_dist(sq, 0, target), _team_dist(sq, 1, target))
+				if front <= 26.0:
+					sq.tactic_phase = PH_OCCUPY
+					sq.tactic_phase_since = now
+					sq.tactic_dest = Vector3.INF
+					_cease_fire(_units(sq))
+					return
+				var team := _assault_mover(sq, target)
+				if front > 40.0:
+					_fire_on(_units(sq, 1 - team), target, _spread_for(sq), mission_s)
 				else:
-					_cease_fire(support)
-			_advance(sq, a, 1 if sq.teams.size() >= 2 else 0, target, now, 28.0)
+					_cease_fire(_units(sq))
+				_advance(sq, a, team, target, now, step)
 		PH_OCCUPY:
 			_occupy(sq, a, target, now)
+
+
+func _team_dist(sq: SquadState, team: int, target: Vector3) -> float:
+	var us := _units(sq, team)
+	return _flat(_centroid(us), target) if not us.is_empty() else INF
+
+
+## Which team moves next in an assault's leapfrog: the one that is further from the target when the gap is
+## more than 35 m, else the other one than last time. A leg in progress keeps its team.
+func _assault_mover(sq: SquadState, target: Vector3) -> int:
+	if sq.tactic_dest.is_finite():
+		return int(_meta(sq, "leg_team", 1))
+	var d0 := _team_dist(sq, 0, target)
+	var d1 := _team_dist(sq, 1, target)
+	if absf(d0 - d1) > 35.0 or is_inf(d0) or is_inf(d1):
+		return 0 if (d0 > d1 or is_inf(d1)) else 1
+	return 1 - int(_meta(sq, "leg_team", 0))
 
 
 ## Phase 0 of an assault from far away: the squad bounds towards a staging point short of the target.
@@ -1173,11 +1220,13 @@ func _approach_leg(sq: SquadState, a: Dictionary, target: Vector3, now: float) -
 	if mu.is_empty():
 		sq.tactic_leg += 1
 		return
-	if _pinned_frac(mu) >= pinned_go and now - sq.tactic_leg_since < 25.0:
+	if _pinned_frac(mu) >= pinned_go and now - sq.tactic_leg_since < _pinned_wait(sq):
 		sq.tactic_rejected = "approach leg waits: %d%% of the moving team is pinned" % roundi(_pinned_frac(mu) * 100.0)
 		return
 	var stage := target - _dir_to(centre, target) * 100.0
-	var leg := _next_dest(centre, stage, leg_m)
+	# Nobody has seen or fired at the squad yet: it marches (long legs); bounds only under fire.
+	var quiet: bool = int(a.seen_n) == 0 and int(a.under_fire) == 0
+	var leg := _next_dest(centre, stage, leg_m * (3.0 if quiet else 1.0))
 	if not leg.is_finite():
 		_fail(sq, a, "no walkable ground towards the staging point")
 		return
@@ -1228,7 +1277,7 @@ func _advance(sq: SquadState, a: Dictionary, team: int, target: Vector3, now: fl
 		sq.tactic_dest = Vector3.INF
 		_cease_fire(_units(sq))
 		return
-	if _pinned_frac(units) >= pinned_go and now - sq.tactic_leg_since < 25.0:
+	if _pinned_frac(units) >= pinned_go and now - sq.tactic_leg_since < _pinned_wait(sq):
 		sq.tactic_rejected = "advance waits: %d%% of the element is pinned" % roundi(_pinned_frac(units) * 100.0)
 		return
 	var dest := _next_dest(centre, target - _dir_to(centre, target) * 14.0, step_m)
@@ -1283,6 +1332,11 @@ func _attack_failed(sq: SquadState, a: Dictionary, now: float, limit: float) -> 
 func _fail(sq: SquadState, a: Dictionary, why: String) -> void:
 	var name := SquadState.TACTIC_NAMES[sq.tactic]
 	_set_meta(sq, "failed_%d" % sq.tactic, sim.state.time + 45.0)
+	if sq.tactic_owner == SquadState.Owner.OPERATION:
+		# An operation's squad reports back instead of deciding to leave on its own: the operation
+		# re-tasks it, replaces it or withdraws as a whole (OpCoordination).
+		_finish(sq, "%s failed: %s" % [name.to_lower(), why], SquadState.Tactic.NONE)
+		return
 	if sq.tactic_owner != SquadState.Owner.PLAYER:
 		var f := _fallback_point(sq, a)
 		if f.is_finite():
@@ -1327,7 +1381,7 @@ func _run_flank(sq: SquadState, a: Dictionary, now: float) -> void:
 			target = sq.tactic_target
 	match sq.tactic_phase:
 		PH_SETUP:
-			if support.is_empty() or _arrived_frac(support) >= 0.6 or now - sq.tactic_phase_since > 14.0:
+			if sq.tactic_ext or support.is_empty() or _arrived_frac(support) >= 0.6 or now - sq.tactic_phase_since > 14.0:
 				sq.tactic_phase = PH_MOVE
 				sq.tactic_phase_since = now
 				sq.tactic_dest = Vector3.INF
@@ -1362,7 +1416,7 @@ func _flank_leg(sq: SquadState, a: Dictionary, man: Array, now: float) -> void:
 			sq.tactic_why = "%s; maneuver team in position, closing on the target" % sq.tactic_why.split("; maneuver")[0]
 			return
 		wp = sq.tactic_route[sq.tactic_route_i]
-	if _pinned_frac(man) >= pinned_go and now - sq.tactic_leg_since < 25.0:
+	if _pinned_frac(man) >= pinned_go and now - sq.tactic_leg_since < _pinned_wait(sq):
 		sq.tactic_rejected = "flank leg waits: %d%% of the maneuver team is pinned" % roundi(_pinned_frac(man) * 100.0)
 		return
 	var dest := _next_dest(centre, wp, leg_m * 1.2)

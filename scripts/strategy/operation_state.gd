@@ -43,7 +43,28 @@ var route_preview := PackedVector3Array()
 ## AI-INTEL-01: contact an AI MOVE investigates (-1 none) and why the operation exists, for
 ## the inspector ("reinforce: 4 enemy reported near X").
 var contact_id := -1
+## AI-COMBAT-STRAT-01: where a multi-squad attack stands (OpCoordination). APPROACH: marching to the
+## staging point; DEPLOY: roles handed out, the fire support moves up; SUPPORT: support is set and
+## suppressing; ASSAULT: the assault / maneuver squads close; SECURE: on the objective; WITHDRAW: breaking
+## contact; DONE. Not a plan: the stage is read from what the squads actually do.
+enum Stage { APPROACH, DEPLOY, SUPPORT, ASSAULT, SECURE, WITHDRAW, DONE }
+const STAGE_NAMES: Array[String] = ["approach", "deploy", "support", "assault", "secure", "withdraw", "done"]
+var stage := Stage.APPROACH
+var stage_since := 0.0
+## squad id -> SquadState.OpRole (temporary assignments, saved).
+var roles := {}
+## What the operation is waiting for / why it was last reassessed / why it withdrew (real decision text).
+var wait_reason := ""
+var stage_why := ""
+var withdraw_why := ""
+var fallback_pos := Vector3.INF
+var reassess_at := 0.0
+var assault_pos := Vector3.INF
 var reason := ""
+
+
+func stage_name() -> String:
+	return STAGE_NAMES[stage]
 
 
 func is_active() -> bool:
@@ -62,7 +83,9 @@ func to_dict() -> Dictionary:
 	return {"id": id, "faction": faction, "type": type, "target": target_objective, "target_pos": target_pos,
 		"staging": staging_pos, "squads": Array(squads), "phase": phase, "started_at": started_at,
 		"phase_since": phase_since, "ended_at": ended_at, "outcome": outcome, "start_strength": start_strength,
-		"losses": losses, "player": player_ordered, "route": Array(route_preview), "contact": contact_id, "reason": reason}
+		"losses": losses, "player": player_ordered, "route": Array(route_preview), "contact": contact_id, "reason": reason,
+		"stage": stage, "stage_since": stage_since, "roles": roles.duplicate(), "wait": wait_reason, "stage_why": stage_why,
+		"withdraw_why": withdraw_why, "fallback": fallback_pos, "reassess_at": reassess_at, "assault_pos": assault_pos}
 
 
 static func from_dict(d: Dictionary) -> OperationState:
@@ -85,4 +108,14 @@ static func from_dict(d: Dictionary) -> OperationState:
 	o.route_preview = PackedVector3Array(d.get("route", []))
 	o.contact_id = d.get("contact", -1)
 	o.reason = d.get("reason", "")
+	o.stage = d.get("stage", Stage.APPROACH)
+	o.stage_since = d.get("stage_since", 0.0)
+	for k in d.get("roles", {}):
+		o.roles[int(k)] = int(d.roles[k])
+	o.wait_reason = d.get("wait", "")
+	o.stage_why = d.get("stage_why", "")
+	o.withdraw_why = d.get("withdraw_why", "")
+	o.fallback_pos = d.get("fallback", Vector3.INF)
+	o.reassess_at = d.get("reassess_at", 0.0)
+	o.assault_pos = d.get("assault_pos", Vector3.INF)
 	return o

@@ -31,6 +31,9 @@ const TACTIC_NAMES: Array[String] = ["-", "Defend", "Suppress", "Assault", "Flan
 ## Who commands the current tactic: the player (an RTS order), an operation (the tactic
 ## serves its task) or the squad itself (chosen by SquadTactics from what it knows).
 enum Owner { NONE, PLAYER, OPERATION, SQUAD }
+## Temporary role of a squad in a multi-squad operation (not a squad class).
+enum OpRole { NONE, ASSAULT, SUPPORT, MANEUVER, RESERVE, SECURITY, REINFORCE }
+const OP_ROLE_NAMES: Array[String] = ["-", "assault", "fire support", "maneuver", "reserve", "security", "reinforcement"]
 const OWNER_NAMES: Array[String] = ["-", "player", "operation", "squad"]
 ## What a fire team is doing within the tactic (temporary assignments, not unit classes).
 enum TeamRole { SECURITY, SUPPORT, MANEUVER, ASSAULT, RESERVE }
@@ -96,6 +99,13 @@ var tactic_route_i := 0
 var tactic_replans := 0
 ## Leg counter of a bounding / flanking / assaulting maneuver (which team moves is derived from it).
 var tactic_leg := 0
+## AI-COMBAT-STRAT-01: the squad's temporary role in its operation (set by OpCoordination), and whether
+## its ASSAULT / FLANK has external fire support (another squad of the operation suppresses), which
+## lets it skip its own support set-up and close faster.
+var op_role := OpRole.NONE
+var tactic_ext := false
+## The squad is recovering (regrouping, calming down) and is not offered to new offensives before this time.
+var recover_until := 0.0
 ## The operation an OPERATION-owned tactic serves (-1: none, e.g. a test or script tasking).
 var tactic_op := -1
 var tactic_leg_since := 0.0
@@ -168,7 +178,7 @@ func to_dict() -> Dictionary:
 		"tactic": tactic, "tactic_owner": tactic_owner, "tactic_phase": tactic_phase, "tactic_since": tactic_since,
 		"tactic_phase_since": tactic_phase_since, "tactic_target": tactic_target, "tactic_contact": tactic_contact,
 		"tactic_dir": tactic_dir, "tactic_dest": tactic_dest, "tactic_route": Array(tactic_route), "tactic_route_i": tactic_route_i,
-		"tactic_replans": tactic_replans, "tactic_leg": tactic_leg, "tactic_op": tactic_op, "tactic_leg_since": tactic_leg_since, "formation_auto": formation_auto, "tactic_cooldown_until": tactic_cooldown_until, "tactic_commit_until": tactic_commit_until,
+		"tactic_replans": tactic_replans, "tactic_leg": tactic_leg, "op_role": op_role, "tactic_ext": tactic_ext, "recover_until": recover_until, "tactic_op": tactic_op, "tactic_leg_since": tactic_leg_since, "formation_auto": formation_auto, "tactic_cooldown_until": tactic_cooldown_until, "tactic_commit_until": tactic_commit_until,
 		"prev_order": prev_order, "prev_target": prev_target, "prev_yaw": prev_yaw, "tactic_why": tactic_why, "tactic_rejected": tactic_rejected,
 	}
 
@@ -213,6 +223,9 @@ static func from_dict(d: Dictionary) -> SquadState:
 	s.tactic_route_i = d.get("tactic_route_i", 0)
 	s.tactic_replans = d.get("tactic_replans", 0)
 	s.tactic_leg = d.get("tactic_leg", 0)
+	s.op_role = d.get("op_role", OpRole.NONE)
+	s.tactic_ext = d.get("tactic_ext", false)
+	s.recover_until = d.get("recover_until", 0.0)
 	s.tactic_op = d.get("tactic_op", -1)
 	s.tactic_leg_since = d.get("tactic_leg_since", 0.0)
 	s.formation_auto = d.get("formation_auto", false)

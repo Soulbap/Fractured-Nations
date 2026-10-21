@@ -44,3 +44,13 @@ extends Resource
 ## the enemy (at most this many there), so attacks start from the front instead of a
 ## march of 6-8 km from the HQ. 0 = never.
 @export var forward_squads := 2
+## AI-COMBAT-STRAT-01: share of the faction's soldiers kept out of new offensives (reserve), weight of
+## defence against attack in the utility scoring, how long a strategic focus lasts (s) and its bonus,
+## how much a believed threat on the way counts against an attack, and the operation effectiveness below
+## which an attack breaks off.
+@export var reserve_ratio := 0.15
+@export var defend_weight := 1.0
+@export var focus_commit_s := 150.0
+@export var focus_bonus := 1.5
+@export var route_risk_weight := 1.2
+@export var withdraw_eff := 0.32
