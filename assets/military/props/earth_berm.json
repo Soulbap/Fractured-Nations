@@ -1,0 +1,94 @@
+{
+ "id": "earth_berm",
+ "family": "prop",
+ "display_name": "Earth berm",
+ "category": "Defences",
+ "description": "Hasty earth berm 4.0 m long, 0.8 m high with a sandbag crest: low cover that takes minutes to build.",
+ "bounds_min": [
+  -2.0,
+  -0.95,
+  0.0
+ ],
+ "bounds_max": [
+  2.0,
+  0.95,
+  0.938
+ ],
+ "size_above_ground": [
+  4.0,
+  1.9,
+  0.938
+ ],
+ "footprint_xy": [
+  -2.0,
+  -0.95,
+  2.0,
+  0.95
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  508,
+  72,
+  28
+ ],
+ "surfaces": [
+  2,
+  2,
+  1
+ ],
+ "materials": [
+  "Dirt",
+  "Sandbag"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   150
+  ],
+  [
+   150,
+   700
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -2.0,
+   0.0,
+   -0.55,
+   4.0,
+   0.82,
+   1.1
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SNAP_W",
+   "pos": [
+    -2.0,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": ""
+  },
+  {
+   "name": "SNAP_E",
+   "pos": [
+    2.0,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": ""
+  }
+ ],
+ "structure": null,
+ "module": {
+  "length": 4.0,
+  "height": 0.9
+ }
+}

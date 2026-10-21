@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"sandbag_fighting_position"
+display_name = "Sandbag fighting position"
+category = "Defences"
+description = "Two-man sandbag fighting position, open rear, 0.72 m walls with a 0.36 m firing gap in the front: 3.8 x 3.2 m."
+mesh_path = "res://assets/military/props/sandbag_fighting_position.glb"
+size = Vector3(3.87, 0.743, 2.94)
+max_slope_deg = 14
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-1.92, 0, -1.57, 1.42, 0.72, 0.64), AABB(0.5, 0, -1.57, 1.42, 0.72, 0.64), AABB(-0.5, 0, -1.57, 1, 0.36, 0.64), AABB(-1.92, 0, -0.97, 0.64, 0.72, 2.32), AABB(1.28, 0, -0.97, 0.64, 0.72, 2.32)])
+ramps = Array[AABB]([])

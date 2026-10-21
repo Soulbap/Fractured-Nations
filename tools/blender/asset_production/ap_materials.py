@@ -65,6 +65,8 @@ MATERIALS = {
     "Asphalt":         _m("asphalt", "asphalt_normal", (1.0, 1.0, 1.0), 0.88, 0.0, 0.7, 4.0),
     "Gravel":          _m("gravel", "gravel_normal", (1.0, 1.0, 1.0), 0.95, 0.0, 1.0, 2.0),
     "Gravel_Dark":     _m("gravel", "gravel_normal", (0.80, 0.78, 0.74), 0.95, 0.0, 1.0, 2.0),
+    # AI-SQUAD-01: granite boulders (the gravel grain, grey with a cool cast, large tile so it reads as stone).
+    "Rock":            _m("concrete", "concrete_normal", (0.62, 0.62, 0.60), 0.96, 0.0, 1.0, 2.2),
     "Dirt":            _m("dirt", "dirt_normal", (1.0, 1.0, 1.0), 0.97, 0.0, 1.0, 4.0),
     # Soft goods.
     "Canvas_OD":       _m("canvas", "canvas_normal", (0.34, 0.36, 0.26), 0.92, 0.0, 0.7, 2.0, ("double",)),

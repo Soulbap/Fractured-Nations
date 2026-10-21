@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"log_barricade"
+display_name = "Log barricade"
+category = "Defences"
+description = "Stacked felled trunks 3.6 m long, 0.76 m high: improvised cover at a wood edge."
+mesh_path = "res://assets/military/props/log_barricade.glb"
+size = Vector3(3.612, 0.859, 1.041)
+max_slope_deg = 16
+max_ground_gap = 0.35
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-1.8, 0, -0.42, 3.6, 0.4, 0.84), AABB(-1.75, 0.4, -0.2, 3.5, 0.36, 0.4)])
+ramps = Array[AABB]([])

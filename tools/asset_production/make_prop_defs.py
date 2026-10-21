@@ -38,6 +38,12 @@ TABLE = {
     # Boom arm at 0.9 m is visual (vehicles stop at VEH_Stop later); only the post is solid.
     "boom_barrier": ("Defences", "Boom barrier", dict(nav=False, slope=6, gap=0.3, boxes=[[-0.2, 0.0, -0.2, 0.4, 1.1, 0.4]])),
     "guard_booth": ("Defences", None, dict(slope=8, gap=0.4)),
+    # AI-SQUAD-01 tactical cover: positions the squads actually use (CombatBrain cover search reads the
+    # collision boxes: 0.72 m sandbag walls with a firing gap, 0.76 m logs, 1.0-1.5 m boulders, a 0.8 m berm).
+    "sandbag_fighting_position": ("Defences", "Sandbag fighting position", dict(slope=14, gap=0.3)),
+    "log_barricade": ("Defences", "Log barricade", dict(slope=16, gap=0.35)),
+    "boulder_cluster": ("Defences", "Boulder group", dict(slope=24, gap=0.9)),
+    "earth_berm": ("Defences", "Earth berm", dict(linear=True, fit="PITCH", group="berm", slope=20, gap=0.45)),
     # Logistics
     "iso_container_20_od": ("Logistics", "Container 20 ft", dict(slope=6, gap=0.35)),
     "iso_container_40_od": ("Logistics", "Container 40 ft", dict(slope=5, gap=0.4)),

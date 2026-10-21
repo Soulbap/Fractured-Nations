@@ -234,6 +234,37 @@
   "glb_bytes": 100168,
   "glb": "res://assets/military/props/boom_barrier.glb"
  },
+ "boulder_cluster": {
+  "family": "prop",
+  "display_name": "Boulder group",
+  "category": "Defences",
+  "size_above_ground": [
+   3.605,
+   2.526,
+   1.401
+  ],
+  "footprint_xy": [
+   -1.8,
+   -1.109,
+   1.805,
+   1.417
+  ],
+  "tris": [
+   960,
+   240,
+   60
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Rock"
+  ],
+  "glb_bytes": 87444,
+  "glb": "res://assets/military/props/boulder_cluster.glb"
+ },
  "bridge_small": {
   "family": "road",
   "display_name": "Small road bridge 12 m",
@@ -640,6 +671,38 @@
   ],
   "glb_bytes": 78328,
   "glb": "res://assets/military/props/drum_pallet.glb"
+ },
+ "earth_berm": {
+  "family": "prop",
+  "display_name": "Earth berm",
+  "category": "Defences",
+  "size_above_ground": [
+   4.0,
+   1.9,
+   0.938
+  ],
+  "footprint_xy": [
+   -2.0,
+   -0.95,
+   2.0,
+   0.95
+  ],
+  "tris": [
+   508,
+   72,
+   28
+  ],
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "materials": [
+   "Dirt",
+   "Sandbag"
+  ],
+  "glb_bytes": 35456,
+  "glb": "res://assets/military/props/earth_berm.glb"
  },
  "field_toilet": {
   "family": "prop",
@@ -1529,6 +1592,38 @@
   "glb_bytes": 77168,
   "glb": "res://assets/military/props/light_tower.glb"
  },
+ "log_barricade": {
+  "family": "prop",
+  "display_name": "Log barricade",
+  "category": "Defences",
+  "size_above_ground": [
+   3.611,
+   1.041,
+   0.859
+  ],
+  "footprint_xy": [
+   -1.806,
+   -0.51,
+   1.806,
+   0.531
+  ],
+  "tris": [
+   672,
+   204,
+   60
+  ],
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "materials": [
+   "Timber",
+   "Timber_Dark"
+  ],
+  "glb_bytes": 69864,
+  "glb": "res://assets/military/props/log_barricade.glb"
+ },
  "medical_station": {
   "family": "building",
   "display_name": "Medical Station",
@@ -2284,6 +2379,38 @@
   ],
   "glb_bytes": 15792,
   "glb": "res://assets/military/roads/road_gravel_10m.glb"
+ },
+ "sandbag_fighting_position": {
+  "family": "prop",
+  "display_name": "Sandbag fighting position",
+  "category": "Defences",
+  "size_above_ground": [
+   3.871,
+   2.94,
+   0.743
+  ],
+  "footprint_xy": [
+   -1.935,
+   -1.354,
+   1.935,
+   1.586
+  ],
+  "tris": [
+   7788,
+   936,
+   72
+  ],
+  "surfaces": [
+   2,
+   2,
+   2
+  ],
+  "materials": [
+   "Dirt",
+   "Sandbag"
+  ],
+  "glb_bytes": 747448,
+  "glb": "res://assets/military/props/sandbag_fighting_position.glb"
  },
  "sandbag_single": {
   "family": "prop",

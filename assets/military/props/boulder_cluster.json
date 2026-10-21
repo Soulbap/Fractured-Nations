@@ -1,0 +1,84 @@
+{
+ "id": "boulder_cluster",
+ "family": "prop",
+ "display_name": "Boulder group",
+ "category": "Defences",
+ "description": "Three half-buried boulders, 1.5 / 1.1 / 0.8 m high, 3.4 x 2.4 m: hard natural cover.",
+ "bounds_min": [
+  -1.8,
+  -1.109,
+  -0.0
+ ],
+ "bounds_max": [
+  1.805,
+  1.417,
+  1.401
+ ],
+ "size_above_ground": [
+  3.605,
+  2.526,
+  1.401
+ ],
+ "footprint_xy": [
+  -1.8,
+  -1.109,
+  1.805,
+  1.417
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  960,
+  240,
+  60
+ ],
+ "surfaces": [
+  1,
+  1,
+  1
+ ],
+ "materials": [
+  "Rock"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   35
+  ],
+  [
+   35,
+   130
+  ],
+  [
+   130,
+   600
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.55,
+   -0.005,
+   -0.95,
+   2.0,
+   1.45,
+   1.6
+  ],
+  [
+   0.15,
+   0.0,
+   -0.35,
+   1.4,
+   1.0,
+   1.3
+  ],
+  [
+   -0.25,
+   0.0,
+   -1.2,
+   1.0,
+   0.7,
+   0.9
+  ]
+ ],
+ "markers": [],
+ "structure": null
+}

@@ -1,0 +1,77 @@
+{
+ "id": "log_barricade",
+ "family": "prop",
+ "display_name": "Log barricade",
+ "category": "Defences",
+ "description": "Stacked felled trunks 3.6 m long, 0.76 m high: improvised cover at a wood edge.",
+ "bounds_min": [
+  -1.806,
+  -0.51,
+  -0.1
+ ],
+ "bounds_max": [
+  1.806,
+  0.531,
+  0.859
+ ],
+ "size_above_ground": [
+  3.611,
+  1.041,
+  0.859
+ ],
+ "footprint_xy": [
+  -1.806,
+  -0.51,
+  1.806,
+  0.531
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  672,
+  204,
+  60
+ ],
+ "surfaces": [
+  2,
+  2,
+  1
+ ],
+ "materials": [
+  "Timber",
+  "Timber_Dark"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   25
+  ],
+  [
+   25,
+   90
+  ],
+  [
+   90,
+   400
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.8,
+   0.0,
+   -0.42,
+   3.6,
+   0.4,
+   0.84
+  ],
+  [
+   -1.75,
+   0.4,
+   -0.2,
+   3.5,
+   0.36,
+   0.4
+  ]
+ ],
+ "markers": [],
+ "structure": null
+}
