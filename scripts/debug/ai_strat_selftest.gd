@@ -75,6 +75,8 @@ func run(args: PackedStringArray) -> void:
 		_log("l_war", await _l_war())
 	if _want("k_near"):
 		_log("k_near", await _k_near())
+	if _want("m_perf"):
+		_log("m_perf", await _m_perf())
 	if _want("s0_repro"):
 		_log("s0_repro", await _s0_repro())
 	await _end_strat()
@@ -124,7 +126,7 @@ func _scene(n_att: int, n_def: int, att_hp := 0.0, def_hp := 0.0, dist := 520.0)
 ## Starts the attack as a (player-created) ATTACK operation and runs it up to `max_sim` simulated
 ## seconds, sampling every 10 s. Returns the operation's outcome, the stages and roles seen, the
 ## longest time the nearest attacker made no progress during the assault, and the trace.
-func _run_attack(sc: Dictionary, max_sim := 700.0, scale := 12.0) -> Dictionary:
+func _run_attack(sc: Dictionary, max_sim := 700.0, scale := 12.0, near := false) -> Dictionary:
 	var obj: ObjectiveState = sc.obj
 	var atk: Array = sc.atk
 	var defs: Array = sc.def
@@ -132,7 +134,7 @@ func _run_attack(sc: Dictionary, max_sim := 700.0, scale := 12.0) -> Dictionary:
 	var op := ws.start_operation(0, OperationState.Type.ATTACK, ids, obj.id, Vector3.INF, true)
 	if op == null:
 		return {"started": false}
-	demo.rts_camera.frame(Vector3(9000, 0, 9000), 0.0, 150.0)
+	demo.rts_camera.frame(obj.position if near else Vector3(9000, 0, 9000), 0.0, 120.0 if near else 150.0)
 	trace.clear()
 	var st := {"next": demo.sim.state.time, "stages": [], "roles": {}, "best": INF, "best_t": demo.sim.state.time, "max_stall": 0.0, "withdrew": false}
 	var w := await _warp(max_sim, scale, 200.0, func() -> bool:
@@ -683,32 +685,59 @@ func _l_war() -> Dictionary:
 	return _war_checks("L", st, run)
 
 
-## K: the same war with the camera on the fighting (tactical tier near the player): squads fight with
-## SquadTactics under the operations; the operations must still progress.
+## K: the same attack seen from near (camera on the objective, tactical tier) and from far (abstract tier
+## around the player's camera): the operation takes the same course - same stages, the same kind of outcome.
 func _k_near() -> Dictionary:
-	await _fresh()
-	_pause_ai(false)
-	var st := _new_war_stats()
-	var run := {}
-	# Let the first attack form (far), then move the camera to its target.
-	demo.rts_camera.frame(Vector3(9000, 0, -9000), 0.0, 150.0)
-	await _warp(400.0, 24.0, 100.0, func() -> bool:
-		for op: OperationState in war.active_operations():
-			if op.type == OperationState.Type.ATTACK and op.stage >= OperationState.Stage.DEPLOY:
-				return true
-		return false)
-	var focus := Vector3.INF
-	for op: OperationState in war.active_operations():
-		if op.type == OperationState.Type.ATTACK:
-			var o := war.objective(op.target_objective)
-			if o:
-				focus = o.position
-	if focus.is_finite():
-		demo.rts_camera.frame(focus, 0.0, 120.0)
-	await _seconds(2.0)
-	run = await _war_run(6.0, 12.0, st)
-	var out := _war_checks("K", st, run)
-	out["focus"] = [snappedf(focus.x, 1.0), snappedf(focus.z, 1.0)] if focus.is_finite() else []
+	var out := {}
+	for mode: String in ["far", "near", "far", "near"]:
+		var sc := await _scene(3, 1)
+		var r := await _run_attack(sc, 700.0, 12.0, mode == "near")
+		r.erase("op_obj")
+		r.erase("trace")
+		out[mode + str(out.size())] = r
+		_expect(r.started and r.op.phase != "engaging" and r.op.phase != "moving", "K(%s): the operation never finished (%s)" % [mode, str(r.get("op", ""))])
+		_expect(r.consistency.count == 0, "K(%s): records inconsistent" % mode)
+	var left := {"far": [], "near": []}
+	for k: String in out:
+		left[k.substr(0, 3 if k.begins_with("far") else 4)].append(out[k].get("attackers_left", -1))
+		_expect(out[k].get("owner", -1) == 0, "K: %s did not take the objective" % k)
+	out["attackers_left"] = left
+	return out
+
+
+# --- M: cost ---------------------------------------------------------------------------------------------------------------------------------
+
+## The strategic scorer, the influence grid and the coordinator measured in isolation: with the whole
+## world's squads and a handful of reports and operations running.
+func _m_perf() -> Dictionary:
+	var sc := await _scene(3, 1)
+	var ids := (sc.atk as Array).map(func(q: SquadState) -> int: return q.id)
+	var op := ws.start_operation(0, OperationState.Type.ATTACK, ids, (sc.obj as ObjectiveState).id, Vector3.INF, true)
+	for i in 6:
+		_report(1 + (i % 2), _near_point((sc.obj as ObjectiveState).position, _obj("North HQ").position, 300.0 + i * 120.0), 6 + i)
+	await _warp(60.0, 12.0, 30.0)
+	var out := {}
+	for fid in [1, 2]:
+		var fs := war.faction(fid)
+		var t0 := Time.get_ticks_usec()
+		for i in 100:
+			ws.strat.decide(fs)
+		out["decide_f%d_us" % fid] = snappedf(float(Time.get_ticks_usec() - t0) / 100.0, 1.0)
+	var t1 := Time.get_ticks_usec()
+	for i in 100:
+		ws.influence._t = -1000.0
+		ws.influence.update()
+	out["influence_us"] = snappedf(float(Time.get_ticks_usec() - t1) / 100.0, 1.0)
+	var obj: ObjectiveState = sc.obj
+	var t2 := Time.get_ticks_usec()
+	for i in 100:
+		if op.is_active():
+			ws.coord.update(op, obj)
+	out["coord_update_us"] = snappedf(float(Time.get_ticks_usec() - t2) / 100.0, 1.0)
+	out["squads"] = demo.sim.state.all_squads().size()
+	out["soldiers"] = demo.sim.state.soldiers().size()
+	_expect(out.decide_f1_us < 8000.0 and out.decide_f2_us < 8000.0, "M: a strategic decision costs %s us" % str([out.decide_f1_us, out.decide_f2_us]))
+	_expect(out.coord_update_us < 2000.0, "M: coordination costs %.0f us per update" % out.coord_update_us)
 	return out
 
 
