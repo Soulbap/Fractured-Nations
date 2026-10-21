@@ -47,6 +47,8 @@ func run(args: PackedStringArray) -> void:
 		_log("logistics", await _logistics())
 	if _want("depot_exit"):
 		_log("depot_exit", await _depot_exit())
+	if _want("perf_logistics"):
+		_log("perf_logistics", await _perf_logistics())
 	if _want("scenario"):
 		_log("scenario", await _scenario())
 	if _want("persist_logistics"):
@@ -1805,3 +1807,102 @@ func _depot_exit() -> Dictionary:
 
 func vs_line(u: UnitState, c: Vector3) -> String:
 	return "(%.1f,%.1f) yaw %.2f v %.1f %s ri %d %s" % [u.position.x - c.x, u.position.z - c.z, u.yaw, u.veh.speed, u.veh.status_name(), u.veh.route_i, u.veh.reason]
+
+
+# --- Performance -----------------------------------------------------------------------------------
+
+## n vehicles in a line along the first long road, ordered to a point far along it.
+func _road_fleet(n: int, start_index: int) -> Array[UnitState]:
+	var net: RoadNetwork = demo.sim.state.roads
+	var r: RoadNetwork.Road = net.world[0]
+	var out: Array[UnitState] = []
+	for i in n:
+		var k := start_index + i * 9
+		var p := r.points[k]
+		var q := r.points[k + 1]
+		var u := _veh(VehicleDefs.TRUCK if i % 3 != 2 else VehicleDefs.APC, p, atan2(-(q.x - p.x), -(q.z - p.z)))
+		out.append(u)
+	return out
+
+
+func _perf_logistics() -> Dictionary:
+	var out := {}
+	await _base()
+	var c: Vector3 = fob.center
+	var vs := demo.sim.vehicles
+	var net: RoadNetwork = demo.sim.state.roads
+	var r: RoadNetwork.Road = net.world[0]
+	brain.enabled = false
+	# a) One player-driven vehicle on the road, third-person camera.
+	var solo := _veh(VehicleDefs.TRUCK, r.points[300], atan2(-(r.points[301].x - r.points[300].x), -(r.points[301].z - r.points[300].z)))
+	await _physics(5)
+	demo.rts_camera.frame(solo.position, 0.0, 50.0)
+	await _seconds(2.0)
+	demo.game.drive(solo.id)
+	await _seconds(1.0)
+	_key(KEY_W, true)
+	out["player_vehicle"] = await _measure_render(8.0)
+	_key(KEY_W, false)
+	_key_tap(KEY_TAB)
+	await _physics(5)
+	vs.halt(solo.id)
+	# b) Six AI vehicles on the road, the camera on the first.
+	var fleet := _road_fleet(6, 700)
+	await _physics(5)
+	for u in fleet:
+		vs.order_drive(u.id, r.points[r.points.size() - 30])
+	demo.rts_camera.frame(fleet[0].position, 0.3, 80.0)
+	await _seconds(2.0)
+	out["ai_vehicles_6_rts"] = await _measure_render(8.0)
+	# c) A convoy of three.
+	var convoy_ids: Array = []
+	for u in fleet.slice(0, 3):
+		vs.halt(u.id)
+		convoy_ids.append(u.id)
+	vs.convoy.order_convoy(convoy_ids, r.points[r.points.size() - 60])
+	demo.rts_camera.frame(fleet[0].position, 0.3, 80.0)
+	await _seconds(2.0)
+	out["convoy_rts"] = await _measure_render(8.0)
+	# d) Vehicles moving in the yard of the populated base.
+	for u in fleet:
+		vs.halt(u.id)
+	var base_squads := [_spawn(0, c + Vector3(-20, 0, 20), 8), _spawn(0, c + Vector3(20, 0, 30), 8)]
+	var yard_vehicles: Array[UnitState] = []
+	for i in 3:
+		yard_vehicles.append(_veh(VehicleDefs.TRUCK if i < 2 else VehicleDefs.APC, c + Vector3(30 + i * 8, 0, 48), PI))
+	await _physics(5)
+	for i in yard_vehicles.size():
+		vs.order_drive(yard_vehicles[i].id, c + Vector3(30 + (i + 1) % 3 * 8, 0, 48 + (i % 2) * 6))
+	demo.rts_camera.frame(c + Vector3(30, 0, 40), 0.5, 70.0)
+	await _seconds(2.0)
+	out["near_populated_base"] = await _measure_render(8.0)
+	# e) Distant vehicles at each time compression: ten vehicles, nobody watching.
+	for u in yard_vehicles:
+		vs.halt(u.id)
+	var far_fleet := _road_fleet(10, 900)
+	await _physics(5)
+	for u in far_fleet:
+		vs.order_drive(u.id, r.points[r.points.size() - 40])
+	demo.rts_camera.frame(Vector3(9000, 0, 9000), 0.0, 120.0)
+	await _seconds(2.0)
+	var speeds := {}
+	for k in [1.0, 4.0, 8.0, 16.0]:
+		var t0 := demo.sim.tick_usec.duplicate()
+		var w := await _warp(40.0 if k > 1.0 else 20.0, k, 90.0)
+		var ticks: int = demo.sim.tick_usec.ticks - t0.ticks
+		speeds["x%d" % int(k)] = {"requested": k, "reached": w.speed, "vehicle_step_us": snappedf(float(demo.sim.tick_usec.vehicles - t0.vehicles) / maxi(ticks, 1), 0.1),
+			"sim_tick_us_total": snappedf(float(demo.sim.tick_usec.abstract + demo.sim.tick_usec.squads + demo.sim.tick_usec.vehicles + demo.sim.tick_usec.war + demo.sim.tick_usec.brain + demo.sim.tick_usec.combat
+				- t0.abstract - t0.squads - t0.vehicles - t0.war - t0.brain - t0.combat) / maxi(ticks, 1), 0.1)}
+	out["distant_vehicles_10"] = speeds
+	# f) Active war plus logistics at 8 x and 16 x.
+	brain.enabled = true
+	_pause_ai(false)
+	var war_speeds := {}
+	for k in [8.0, 16.0]:
+		var w2 := await _warp(40.0, k, 90.0)
+		war_speeds["x%d" % int(k)] = {"requested": k, "reached": w2.speed, "step_max_s": w2.step_max_s}
+	out["war_plus_logistics_10_vehicles"] = war_speeds
+	_pause_ai(true)
+	out["router"] = {"graph_nodes": vs.router.node_count(), "graph_build_ms": snappedf(vs.router.build_ms, 1.0), "plans": vs.router.plans, "plan_ms_avg": snappedf(vs.router.plan_ms_total / maxi(vs.router.plans, 1), 0.1), "plan_ms_max": snappedf(vs.router.plan_ms_max, 0.1)}
+	out["vehicles_in_world"] = vs.ids.size()
+	return out

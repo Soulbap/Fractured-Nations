@@ -3,7 +3,18 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **WORLD-INTEGRATION-03** (branch `feature/world-integration-03`, the new
+Current state: **LOGISTICS-01 / BASE-02** (branch `feature/logistics-01-base-02`, built on
+`feature/world-integration-03`) — the military operations layer: the 6x6 truck and 8x8 APC are
+persistent, drivable units (AI along the real road network, bridges and player-built roads, in
+the near and the abstract tier alike; direct control with a chase camera), infantry board,
+ride and disembark, one inventory model carries ammunition, fuel and supplies between depots
+by truck and convoy, soldiers resupply from depots, and bases are groups of working facilities
+(barracks recruit squads, the vehicle depot hands out vehicles, depots store and load) with optional,
+overridable automation. Controls: RMB vehicles / squads, **T** board, **U** unload, **P** take the
+wheel (W/S/A/D, V bumper view, Tab back), click a building for its panel; the strategic map shows
+vehicles, bases and your roads. See [docs/LOGISTICS-01_BASE-02_REPORT.md](docs/LOGISTICS-01_BASE-02_REPORT.md).
+
+Before that, **WORLD-INTEGRATION-03** (branch `feature/world-integration-03`, the new
 development baseline) — WORLD-PLAYTEST-01 and ASSET-PRODUCTION-01 brought together in one
 playable sandbox: the corrected 20 km world with its road network, player-built roads and
 yards; three infantry families in the war (North wears NATO kit, South Russian, East Chinese —

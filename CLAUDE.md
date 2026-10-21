@@ -6,7 +6,9 @@ Norwegian; code, comments and docs are English.
 
 ## Branch workflow
 
-- **`feature/world-integration-03` is the current development baseline** (worktree
+- **`feature/logistics-01-base-02`** (worktree `../fractured-nations-logistics01`) adds vehicles, transport,
+  logistics and functional bases on top of the integration baseline; continue from it.
+- **`feature/world-integration-03` is the integration baseline** (worktree
   `../fractured-nations-integration03`): `feature/unified-sandbox` (INTEGRATION-02) +
   `feature/world-playtest-01` + `feature/asset-production-01`, integrated in
   WORLD-INTEGRATION-03. New milestones branch from it, e.g. `feature/<milestone>`, and are
@@ -70,7 +72,9 @@ Norwegian; code, comments and docs are English.
 ## Practical notes
 
 - Test runs: `Godot_v4.7.2-stable_win64_console.exe --path . --resolution 1600x900 --log-file x.log res://scenes/game/world_ref_20km.tscn -- --sandbox-test [--shots] [--only a,b] [--shot-dir=res://docs/...]`.
-  Use the GUI exe with `--log-file` for runs that may spam errors. Integration scenarios of the
+  Use the GUI exe with `--log-file` for runs that may spam errors. LOGISTICS-01 scenarios:
+  `--logistics-test --only veh_drive,transport,logistics,convoy,bases,persist_logistics,scenario` (the `scenario`
+  run is the brief's end-to-end acceptance through the real controls). Integration scenarios of the
   combined baseline: `--integration03-test --only catalog,factions,base,base_nav,long_route,views,persist,vehicles,perf`.
 - After adding `class_name` scripts or assets run `Godot ... --headless --path . --import` once.
 - A script that fails to compile makes a test hang until timeout; check the log head first.
