@@ -29,6 +29,8 @@ extends RefCounted
 var deploy_timeout_s := 55.0
 var support_timeout_s := 40.0
 var assault_stall_s := 260.0
+## No squad attacking for this long: promote the support or break off.
+var idle_assault_s := 40.0
 var support_standoff_m := 190.0
 ## An operation whose weighted effectiveness falls below this withdraws (the profile may override).
 var withdraw_eff := 0.32
@@ -50,6 +52,7 @@ var updates := 0
 var _cool := {}
 ## op id -> since when no squad of the operation has seen an enemy.
 var _clear_since := {}
+var _idle_since := {}
 
 
 func _init(p_ws: WarSim) -> void:
@@ -348,6 +351,34 @@ func _update_assault(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dic
 					_send_assault(op, sq, obj, k + 2)
 					op.stage_why = "%s (reserve) committed: operation effectiveness %.2f" % [sq.squad_name, a.eff]
 		k += 1
+	# Nobody left who is attacking: the fit support goes in, otherwise the operation breaks off now instead of
+	# waiting for the stall timeout with squads that are too weak to move.
+	var attacking := false
+	for sq: SquadState in sqs:
+		var r: int = int(op.roles.get(sq.id, SquadState.OpRole.NONE))
+		if (r == SquadState.OpRole.ASSAULT or r == SquadState.OpRole.MANEUVER) and sq.tactic != SquadState.Tactic.NONE:
+			attacking = true
+	if attacking or obj.owner == op.faction:
+		_idle_since.erase(op.id)
+	else:
+		if not _idle_since.has(op.id):
+			_idle_since[op.id] = now
+		elif now - float(_idle_since[op.id]) > idle_assault_s:
+			var promoted := false
+			for sq: SquadState in sqs:
+				if int(op.roles.get(sq.id, 0)) == SquadState.OpRole.SUPPORT and _fitness(sq) >= 0.3:
+					op.roles[sq.id] = SquadState.OpRole.ASSAULT
+					sq.op_role = SquadState.OpRole.ASSAULT
+					role_changes += 1
+					_send_assault(op, sq, obj, 0)
+					op.stage_why = "%s goes in: no squad is attacking" % sq.squad_name
+					promoted = true
+					break
+			_idle_since.erase(op.id)
+			if not promoted:
+				timeouts += 1
+				withdraw(op, "no squad is fit to continue the assault")
+				return
 	# A depleted support squad is replaced by a reserve (rarely, explained).
 	_replace_support(op, sqs, obj)
 	if now - op.stage_since > assault_stall_s and obj.owner != op.faction:

@@ -77,6 +77,8 @@ func run(args: PackedStringArray) -> void:
 		_log("k_near", await _k_near())
 	if _want("m_perf"):
 		_log("m_perf", await _m_perf())
+	if _want("z_visual"):
+		_log("z_visual", await _z_visual())
 	if _want("s0_repro"):
 		_log("s0_repro", await _s0_repro())
 	await _end_strat()
@@ -739,6 +741,64 @@ func _m_perf() -> Dictionary:
 	_expect(out.decide_f1_us < 8000.0 and out.decide_f2_us < 8000.0, "M: a strategic decision costs %s us" % str([out.decide_f1_us, out.decide_f2_us]))
 	_expect(out.coord_update_us < 2000.0, "M: coordination costs %.0f us per update" % out.coord_update_us)
 	return out
+
+
+# --- Z: the autonomous attack as the player sees it (screenshots) ---------------------------------------------------------------
+
+## Three squads attack Haugen as an AI operation. The camera follows the force and the objective, the
+## debug overlay shows roles and stages; pictures at each stage change and at least every 15 s.
+func _z_visual() -> Dictionary:
+	var sc := await _scene(3, 1)
+	var obj: ObjectiveState = sc.obj
+	var atk: Array = sc.atk
+	var ids := atk.map(func(q: SquadState) -> int: return q.id)
+	demo.tactics_overlay.debug = true
+	if shots and demo.hud:
+		demo.hud.visible = false
+	trace.clear()
+	var next_sample := demo.sim.state.time
+	var op := ws.start_operation(0, OperationState.Type.ATTACK, ids, obj.id, Vector3.INF, false)
+	if op == null:
+		_expect(false, "Z: the attack could not start")
+		return {}
+	var yaw := atan2(-(obj.position.x - demo.sim.squads._centroid(atk[0]).x), -(obj.position.z - demo.sim.squads._centroid(atk[0]).z))
+	var last := ""
+	var last_t := -100.0
+	var frames := 0
+	var t0 := demo.sim.state.time
+	TimeCompression.apply(4.0, 64)
+	while op.is_active() and demo.sim.state.time - t0 < 600.0:
+		await tree.process_frame
+		var c := Vector3.ZERO
+		var n := 0
+		for sq: SquadState in atk:
+			if demo.sim.state.get_squad(sq.id):
+				c += demo.sim.squads._centroid(sq)
+				n += 1
+		if n == 0:
+			break
+		c /= n
+		var d := _flat(c, obj.position)
+		var focus := c.lerp(obj.position, 0.5) if d < 330.0 else c
+		var zoom := clampf(d * 0.25 + 24.0, 42.0, 110.0)
+		demo.rts_camera.frame(focus, yaw, zoom)
+		frames += 1
+		if demo.sim.state.time >= next_sample:
+			next_sample += 10.0
+			trace.append(_sample_op(op, atk, sc.def[0], obj))
+		var key := op.stage_name()
+		var t := demo.sim.state.time
+		if shots and frames > 20 and (key != last or t - last_t >= 15.0):
+			last = key
+			last_t = t
+			await tree.process_frame
+			_shot("z_%03d_%s" % [int(t - t0), key])
+	TimeCompression.reset()
+	demo.tactics_overlay.debug = false
+	if demo.hud:
+		demo.hud.visible = true
+	var inspector := ws.explain_faction(war.faction(0)) if ws.has_method("explain_faction") else []
+	return {"op": {"phase": op.phase_name(), "stage": op.stage_name(), "outcome": op.outcome}, "owner": obj.owner, "explain_op": ws.coord.explain(op), "trace": trace.slice(0, 70), "attackers_left": _alive_count(atk), "defenders_left": _alive_count(sc.def), "inspector_faction": inspector}
 
 
 # --- Output (own prefix and file) ----------------------------------------------------------------

@@ -142,7 +142,13 @@ func _draw_squad(sq: SquadState, used: int, selected: bool) -> int:
 		var text := sim.tactics.short_text(sq)
 		if debug:
 			var a := sim.tactics.assessment(sq)
-			text = "%s %s | eff %.2f supp %.2f" % [sq.squad_name, text if text != "" else "-", a.eff if not a.is_empty() else 0.0, a.supp if not a.is_empty() else 0.0]
+			var role := ""
+			if sq.op_role != SquadState.OpRole.NONE:
+				var op := sim.state.war.operation(sq.op_id)
+				role = " [%s%s]" % [SquadState.OP_ROLE_NAMES[sq.op_role].to_upper(), (" / " + op.stage_name()) if op else ""]
+			elif sq.defence_role != "":
+				role = " [%s]" % sq.defence_role.to_upper()
+			text = "%s%s %s | eff %.2f supp %.2f" % [sq.squad_name, role, text if text != "" else "-", a.eff if not a.is_empty() else 0.0, a.supp if not a.is_empty() else 0.0]
 		elif text != "":
 			text = "%s: %s" % [sq.squad_name, text.to_upper()]
 		if text != "":
