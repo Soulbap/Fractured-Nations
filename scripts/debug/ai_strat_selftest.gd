@@ -71,6 +71,10 @@ func run(args: PackedStringArray) -> void:
 		_log("j_persist", await _j_persist())
 	if _want("h_deadlock"):
 		_log("h_deadlock", await _h_deadlock())
+	if _want("l_war"):
+		_log("l_war", await _l_war())
+	if _want("k_near"):
+		_log("k_near", await _k_near())
 	if _want("s0_repro"):
 		_log("s0_repro", await _s0_repro())
 	await _end_strat()
@@ -595,6 +599,117 @@ func _alive_squads(sqs: Array) -> int:
 		if demo.sim.state.get_squad(sq.id):
 			n += 1
 	return n
+
+
+# --- L / K / M: the autonomous war, far and near, with timings ----------------------------------------------------------------
+
+func _war_sample(st: Dictionary) -> void:
+	var now := demo.sim.state.time
+	var lines: Array = []
+	var dup := {}
+	for op: OperationState in war.active_operations():
+		var obj := war.objective(op.target_objective)
+		var key := "%d-%d-%d" % [op.faction, op.type, op.target_objective]
+		if op.type == OperationState.Type.ATTACK:
+			if dup.has(key):
+				st.duplicates += 1
+			dup[key] = true
+		var sk := "%d:%s" % [op.id, op.stage_name()]
+		if st.stage_since.get(op.id, "") != sk:
+			st.stage_since[op.id] = sk
+			st.stage_t[op.id] = now
+		if op.stage != OperationState.Stage.APPROACH:  # the approach is a march of kilometres
+			st.max_stage_s = maxf(st.max_stage_s, now - float(st.stage_t[op.id]))
+		if op.roles.size() >= 2:
+			st.coordinated.erase(op.id)
+			st.coordinated[op.id] = true
+		lines.append("%s #%d %s %s %s sq=%d" % [WorldState.faction_name(op.faction), op.id, op.type_name(), obj.obj_name if obj else "-", op.stage_name(), op.squads.size()])
+	var s := ws.summary()
+	st.samples.append({"t": snappedf(now, 1.0), "ops": lines, "factions": s.factions.keys().map(func(k) -> String:
+		var f: Dictionary = s.factions[k]
+		return "%s %d obj %d sold | %s" % [k, f.objectives, f.soldiers, f.last_decision])})
+
+
+func _war_run(minutes: float, scale: float, st: Dictionary) -> Dictionary:
+	var ms := PackedFloat32Array()
+	var r0 := Time.get_ticks_msec()
+	var t0 := demo.sim.state.time
+	var next := t0
+	TimeCompression.apply(scale, 64)
+	while demo.sim.state.time - t0 < minutes * 60.0 and Time.get_ticks_msec() - r0 < 330000:
+		var t := Time.get_ticks_usec()
+		await tree.process_frame
+		ms.append((Time.get_ticks_usec() - t) / 1000.0)
+		if demo.sim.state.time >= next:
+			next += 30.0
+			_war_sample(st)
+	TimeCompression.reset()
+	var sorted := Array(ms)
+	sorted.sort()
+	return {"sim_min": snappedf((demo.sim.state.time - t0) / 60.0, 0.1), "real_s": snappedf((Time.get_ticks_msec() - r0) / 1000.0, 0.1),
+		"frame_ms_avg": snappedf(float(sorted.reduce(func(a, b): return a + b, 0.0)) / maxf(sorted.size(), 1.0), 0.01) if not sorted.is_empty() else 0.0,
+		"frame_ms_p99": snappedf(sorted[int(sorted.size() * 0.99)], 0.1) if not sorted.is_empty() else 0.0, "frame_ms_max": snappedf(sorted[-1], 0.1) if not sorted.is_empty() else 0.0}
+
+
+func _new_war_stats() -> Dictionary:
+	return {"samples": [], "duplicates": 0, "max_stage_s": 0.0, "stage_since": {}, "stage_t": {}, "coordinated": {}}
+
+
+func _war_checks(tag: String, st: Dictionary, run: Dictionary) -> Dictionary:
+	var done: Array = war.operations.values().filter(func(o: OperationState) -> bool: return not o.is_active())
+	var attacks: Array = war.operations.values().filter(func(o: OperationState) -> bool: return o.type == OperationState.Type.ATTACK)
+	var out := {"run": run, "operations_total": war.operations.size(), "attacks": attacks.size(), "coordinated_attacks": st.coordinated.size(),
+		"duplicate_attack_samples": st.duplicates, "max_stage_s": snappedf(st.max_stage_s, 1.0), "withdrawals": ws.coord.withdrawals, "joins": ws.strat.joins,
+		"decisions": ws.strat.decisions, "strat_us_max": ws.strat.usec_max, "coord_us_max": ws.coord.usec_max, "influence_us_max": ws.influence.usec_max,
+		"update_us_avg": snappedf(float(ws.update_usec) / maxi(ws.updates, 1), 0.1), "ai_us_max": ws.ai_usec_max, "finished_ops": done.size(),
+		"outcomes": done.slice(-12).map(func(o: OperationState) -> String: return "#%d %s %s: %s" % [o.id, o.type_name(), o.phase_name(), o.outcome]),
+		"samples": st.samples.slice(0, 40), "summary": ws.summary().factions}
+	_expect(st.duplicates == 0, "%s: two attacks of one faction on one objective ran at once" % tag)
+	_expect(st.max_stage_s <= 600.0, "%s: an operation stayed %.0f s in one stage" % [tag, st.max_stage_s])
+	_expect(_consistency().count == 0, "%s: operation records inconsistent" % tag)
+	_expect(attacks.size() >= 1, "%s: no attack ran" % tag)
+	_expect(run.frame_ms_max < 250.0, "%s: a frame took %.0f ms" % [tag, run.frame_ms_max])
+	return out
+
+
+## L: the war runs without the player (camera far away, abstract tier) for 40 simulated minutes.
+func _l_war() -> Dictionary:
+	await _fresh()
+	_pause_ai(false)
+	demo.rts_camera.frame(Vector3(9000, 0, -9000), 0.0, 150.0)
+	await _seconds(1.0)
+	var st := _new_war_stats()
+	var run := await _war_run(40.0, 24.0, st)
+	return _war_checks("L", st, run)
+
+
+## K: the same war with the camera on the fighting (tactical tier near the player): squads fight with
+## SquadTactics under the operations; the operations must still progress.
+func _k_near() -> Dictionary:
+	await _fresh()
+	_pause_ai(false)
+	var st := _new_war_stats()
+	var run := {}
+	# Let the first attack form (far), then move the camera to its target.
+	demo.rts_camera.frame(Vector3(9000, 0, -9000), 0.0, 150.0)
+	await _warp(400.0, 24.0, 100.0, func() -> bool:
+		for op: OperationState in war.active_operations():
+			if op.type == OperationState.Type.ATTACK and op.stage >= OperationState.Stage.DEPLOY:
+				return true
+		return false)
+	var focus := Vector3.INF
+	for op: OperationState in war.active_operations():
+		if op.type == OperationState.Type.ATTACK:
+			var o := war.objective(op.target_objective)
+			if o:
+				focus = o.position
+	if focus.is_finite():
+		demo.rts_camera.frame(focus, 0.0, 120.0)
+	await _seconds(2.0)
+	run = await _war_run(6.0, 12.0, st)
+	var out := _war_checks("K", st, run)
+	out["focus"] = [snappedf(focus.x, 1.0), snappedf(focus.z, 1.0)] if focus.is_finite() else []
+	return out
 
 
 # --- Output (own prefix and file) ----------------------------------------------------------------
