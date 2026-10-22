@@ -331,6 +331,8 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--road-audit" in args:
 		_road_audit = RoadAuditRunner.new(self)
 		_road_audit.run.call_deferred(args)
+	elif "--road-overlay" in args:
+		toggle_road_overlay.call_deferred()
 	elif "--ai-war-test" in args:
 		_ai_war_selftest = AIWarSelfTest.new(self)
 		_ai_war_selftest.run.call_deferred(args)
@@ -442,7 +444,26 @@ static func apply_time_scale(k: float) -> void:
 	TimeCompression.apply(k)
 
 
+## F8: the road audit overlay (disconnected networks, repaired gaps, near misses, unreachable places); a second press hides
+## it, the next one rebuilds it from the current roads.
+var _road_overlay: RoadAuditOverlay
+
+
+func toggle_road_overlay() -> void:
+	if _road_overlay != null and is_instance_valid(_road_overlay):
+		_road_overlay.queue_free()
+		_road_overlay = null
+		return
+	_road_overlay = RoadAuditOverlay.new(sim)
+	add_child(_road_overlay)
+	_road_overlay.rebuild()
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F8:
+		toggle_road_overlay()
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F7 and tactics_overlay:
 		tactics_overlay.debug = not tactics_overlay.debug
 		get_viewport().set_input_as_handled()

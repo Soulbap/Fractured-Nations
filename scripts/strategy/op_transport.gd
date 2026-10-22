@@ -648,8 +648,10 @@ func _start_transit(op: OperationState) -> void:
 	tr["unload"] = unload
 	var driving: Array = []
 	var convoy_ok := false
+	var cr_reason := "the vehicles are too close to the unloading point"
 	if ids.size() >= 2 and WarSim._flat(sim.state.get_unit(ids[0]).position, unload) > VehicleSim.CONVOY_MIN_M:
 		var cr := vsim.convoy.order_convoy(ids, unload, "Op #%d convoy" % op.id)
+		cr_reason = cr.reason
 		if cr.ok:
 			convoy_ok = true
 			driving = cr.driving.duplicate()
@@ -658,6 +660,8 @@ func _start_transit(op: OperationState) -> void:
 			for f: Dictionary in cr.failed:
 				_lose(op, int(f.id), "%s: %s" % [sim.state.get_unit(int(f.id)).unit_name, f.reason])
 	if not convoy_ok:
+		if ids.size() >= 2:
+			ws.log_event(op.faction, "op_transport", "%s #%d: no convoy (%s), the vehicles drive one by one" % [op.type_name(), op.id, str(cr_reason)], op.target_pos)
 		for vid in ids:
 			var res := vsim.order_drive(vid, unload, true)
 			if res.ok:

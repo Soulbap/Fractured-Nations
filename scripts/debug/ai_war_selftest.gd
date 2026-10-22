@@ -90,6 +90,10 @@ func run(args: PackedStringArray) -> void:
 		_log("r_obstacles", await _r_obstacles())
 	if _want("r_drive"):
 		_log("r_drive", await _r_drive())
+	if _want("r_convoy"):
+		_log("r_convoy", await _r_convoy())
+	if _want("r_overlay"):
+		_log("r_overlay", await _r_overlay())
 	if _want("r_yard"):
 		_log("r_yard", await _r_drive(true))
 	if only.has("v_yard"):
@@ -937,7 +941,13 @@ func _d_mech() -> Dictionary:
 
 func _e_convoy() -> Dictionary:
 	var n := await _ensure_vehicles(1, 3)
-	var obj := _far_objective(1, 4.0)
+	# A target up to 5 km away (the nearest to 4 km that South does not own); after other scenarios took objectives only a
+	# farther one may be left, which needs a longer run.
+	var obj := _far_objective(1, 4.0, 2.5, 5.0)
+	var run_s := 1800.0
+	if obj == null:
+		obj = _far_objective(1, 4.0)
+		run_s = 2800.0
 	_expect(obj != null and n >= 2, "E: no far objective or fewer than two vehicles (precondition: %d)" % n)
 	if obj == null:
 		return {}
@@ -956,8 +966,9 @@ func _e_convoy() -> Dictionary:
 		for sid in tasks[vid].squads:
 			_expect(not assigned.has(sid), "E: squad %d is assigned to two vehicles" % sid)
 			assigned[sid] = vid
-	var r := await _run_mech(sc, 1800.0, 8.0, false)
+	var r := await _run_mech(sc, run_s, 8.0, false)
 	out["run"] = r
+	out["events"] = war.events.filter(func(e: Dictionary) -> bool: return e.kind == "op_transport" or e.kind == "vehicle").slice(-24).map(func(e: Dictionary) -> String: return "%.0f %s" % [e.t, e.text])
 	_expect(r.convoy_seen, "E: the vehicles did not drive as a convoy")
 	_expect(r.problems.is_empty(), "E: transport invariants broken: %s" % str(r.problems))
 	_expect(r.members_still_aboard == 0, "E: %d soldiers still aboard" % r.members_still_aboard)
@@ -1779,6 +1790,59 @@ func _r_drive(yard_only := false) -> Dictionary:
 		await _seconds(1.5)
 		_shot("drive_r3")
 	_expect(r3.get("arrived", false), "R3: the truck did not get into its own base: %s" % str(r3))
+	return out
+
+
+## A short check (seconds): three trucks ordered as a convoy to far objectives form it, every member gets a route and starts
+## driving. (Regression: a follower's stopping place on the leader's route could not be driven to and no convoy formed.)
+func _r_convoy() -> Dictionary:
+	await _fresh()
+	var out := {}
+	var n := await _ensure_vehicles(1, 3)
+	_expect(n >= 3, "R convoy: fewer than three vehicles (%d)" % n)
+	var trucks := _vehicles_of(1)
+	var ids: Array = []
+	for u: UnitState in trucks:
+		if ids.size() < 3 and u.veh.job.is_empty() and u.order == UnitState.Order.NONE:
+			ids.append(u.id)
+	var formed := 0
+	for km: float in [2.5, 4.0, 5.5]:
+		var obj := _far_objective(1, km)
+		if obj == null:
+			continue
+		var dest := net_nearest(obj.position, 400.0)
+		var cr: Dictionary = demo.sim.vehicles.convoy.order_convoy(ids, dest, "r_convoy")
+		out["%.1f_km" % km] = {"ok": cr.ok, "reason": cr.reason, "driving": cr.get("driving", []).size(), "failed": cr.get("failed", [])}
+		_expect(cr.ok and cr.driving.size() == ids.size(), "R convoy: no convoy of %d to %s (%.1f km): %s" % [ids.size(), obj.obj_name, km, str(cr)])
+		if cr.ok:
+			formed += 1
+			await _physics(30)
+			for id in ids:
+				_expect(demo.sim.state.get_unit(id).veh.route.size() >= 2, "R convoy: a member has no route")
+			demo.sim.vehicles.convoy.stop(int(cr.convoy))
+			for id in ids:
+				demo.sim.vehicles.halt(id)
+	out["formed"] = formed
+	_expect(formed >= 2, "R convoy: only %d of the destinations formed a convoy" % formed)
+	return out
+
+
+## The road audit overlay builds on the real world and reports the same kind of numbers as the audit (a minute).
+func _r_overlay() -> Dictionary:
+	await _fresh()
+	var out := {}
+	var ov := RoadAuditOverlay.new(demo.sim)
+	demo.add_child(ov)
+	var t0 := Time.get_ticks_msec()
+	ov.rebuild()
+	out["build_ms"] = Time.get_ticks_msec() - t0
+	out["summary"] = ov.summary.slice(0, 12)
+	_expect(ov.summary.size() >= 1 and (ov.summary[0] as String).contains("roads"), "R overlay: no summary")
+	_expect(ov._mesh.get_surface_count() == 1, "R overlay: nothing was drawn")
+	demo.rts_camera.frame(_bs().bases_of(1)[0].anchor, 0.0, 700.0)
+	await _seconds(2.0)
+	_shot("road_overlay")
+	ov.queue_free()
 	return out
 
 

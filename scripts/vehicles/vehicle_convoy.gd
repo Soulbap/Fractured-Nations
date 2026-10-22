@@ -66,6 +66,10 @@ func order_convoy(ids: Array, dest: Vector3, name := "") -> Dictionary:
 			var back := mini(roundi(float(k) * SPACING_M / 3.0), lead_route.size() - 2)
 			goal = lead_route[lead_route.size() - 1 - back]
 		var res := vsim.order_drive(u.id, goal, true)
+		if not res.ok and goal != dest:
+			# The stopping place in the column behind the leader cannot be driven to (a point of the leader's lane in a
+			# structure or on a bank): the vehicle drives to the destination itself and keeps its place by the convoy's speed limit.
+			res = vsim.order_drive(u.id, dest, true)
 		if not res.ok:
 			failed.append({"id": u.id, "reason": res.reason})
 			continue
