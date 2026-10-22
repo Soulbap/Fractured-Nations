@@ -220,11 +220,13 @@ func _refuse(u: UnitState, assembly: Vector3, unload: Vector3) -> String:
 		return "destroyed"
 	if u.player_controlled or v.status == VehicleState.Status.PLAYER:
 		return "driven by the player"
-	if v.assign_kind != "":
+	# A vehicle driving home from an earlier task may be given a new one on the way (its drive home is replaced).
+	var returning := v.assign_kind == "return"
+	if v.assign_kind != "" and not returning:
 		return "already assigned (%s)" % v.assign_kind
 	if v.status == VehicleState.Status.NO_FUEL:
 		return "immobilised (%s)" % v.status_name()
-	if not v.job.is_empty() or v.convoy_id >= 0 or v.phase != VehicleState.Phase.NONE or u.order != UnitState.Order.NONE:
+	if not v.job.is_empty() or v.convoy_id >= 0 or v.phase != VehicleState.Phase.NONE or (u.order != UnitState.Order.NONE and not returning):
 		return "busy"
 	if not v.occupants.is_empty() or not v.pending.is_empty():
 		return "carrying passengers"

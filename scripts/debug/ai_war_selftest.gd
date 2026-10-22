@@ -72,6 +72,12 @@ func run(args: PackedStringArray) -> void:
 		_log("j_base_loss", await _j_base_loss())
 	if _want("l_player"):
 		_log("l_player", await _l_player())
+	if _want("m_save"):
+		_log("m_save", await _m_save())
+	if _want("n_long"):
+		_log("n_long", await _n_long())
+	if _want("o_war"):
+		_log("o_war", await _o_war())
 	if only.has("v_yard"):
 		_log("v_yard", await _v_yard())
 	if _want("m_move"):
@@ -1417,4 +1423,240 @@ func _l_player() -> Dictionary:
 	demo.sim.vehicles.release_control(vid, false)
 	for o: OperationState in war.active_operations():
 		ws.cancel(o.id, "test end")
+	return out
+
+
+# --- M: save / load ---------------------------------------------------------------------------------------------------------------------
+
+func _op_json(op_id: int) -> String:
+	var op := war.operation(op_id)
+	return JSON.stringify(op.to_dict()) if op else "gone"
+
+
+func _vehicles_json(fid: int) -> String:
+	var parts: Array[String] = []
+	for u: UnitState in _vehicles_of(fid):
+		var d := u.veh.to_dict()
+		d.erase("route")
+		d.erase("cap")
+		parts.append("%d:%s:%s:%s" % [u.id, JSON.stringify(d), str(u.position), str(u.order_target)])
+	return "|".join(parts)
+
+
+## A snapshot applied in place (the load path of a running game) at the given moment must change nothing that matters:
+## the operation record, the vehicles' records and the squads of the operation read the same afterwards.
+func _roundtrip(op_id: int, tag: String, out: Dictionary) -> void:
+	var before := _op_json(op_id)
+	var vbefore := _vehicles_json(1)
+	var squads_before := {}
+	for sq: SquadState in ws.squads_of(1):
+		squads_before[sq.id] = JSON.stringify(sq.to_dict())
+	var snap := demo.sim.state.snapshot()
+	demo.sim.state.apply_snapshot(snap)
+	var after := _op_json(op_id)
+	var vafter := _vehicles_json(1)
+	_expect(before == after, "M(%s): the operation record changed in a save / load" % tag)
+	_expect(vbefore == vafter, "M(%s): a vehicle record changed in a save / load" % tag)
+	var diff := 0
+	for sq: SquadState in ws.squads_of(1):
+		if squads_before.get(sq.id, "") != JSON.stringify(sq.to_dict()):
+			diff += 1
+	_expect(diff == 0, "M(%s): %d squad records changed" % [tag, diff])
+	var op2 := war.operation(op_id)
+	out[tag] = {"op_same": before == after, "vehicles_same": vbefore == vafter, "squads_changed": diff, "stage_after": op2.stage_name() if op2 else "gone", "mode_after": op2.transport.get("mode", "?") if op2 else "-",
+		"is_transport": op2.is_transport_stage() if op2 else false, "stage_int": int(op2.stage) if op2 else -99, "phase": op2.phase_name() if op2 else "-", "tasks": op2.transport.get("tasks", {}).keys().size() if op2 else -1}
+
+
+func _m_save() -> Dictionary:
+	var out := {}
+	await _ensure_vehicles(1, 2)
+	# Recruitment in progress: the queue survives the construction record's JSON round trip.
+	var bs := _bs()
+	var bar := bs.facility_of_kind(1, &"barracks")
+	for st in bs.facilities_of(bar.base_id):
+		while not st.facility.get("queue", []).is_empty():
+			bs.cancel_queue(st.id, 0)
+	var r := bs.recruit(bar.id)
+	_expect(r.ok, "M: recruiting failed: %s" % r.reason)
+	var parsed: Variant = JSON.parse_string(JSON.stringify(cs.to_dict()))
+	var q_after: Array = []
+	for sd in parsed.structures:
+		if int(sd.id) == bar.id:
+			q_after = sd.get("facility", {}).get("queue", [])
+	out["recruit_queue_saved"] = q_after.size()
+	_expect(q_after.size() == 1, "M: the recruit queue was not saved (%d entries)" % q_after.size())
+	bs.cancel_queue(bar.id, 0)
+	# A mechanized operation, saved in each transport stage and in the assault.
+	var obj := _far_objective(1, 3.5)
+	var sc := await _mech_scene(2, obj)
+	var op_id: int = sc.op.id
+	_expect(sc.op != null and sc.op.transport.get("mode", "") == "mech", "M: no mechanized operation")
+	var done := {}
+	var seen_stages := []
+	var want := ["assemble", "mount", "transit", "disembark", "deploy"]
+	var t0 := demo.sim.state.time
+	await _warp(1500.0, 8.0, 400.0, func() -> bool:
+		var op := war.operation(op_id)
+		if op == null:
+			return true
+		var name := op.stage_name()
+		if done.get("_last", "") != name:
+			done["_last"] = name
+			seen_stages.append("%s@%.0f since=%.0f" % [name, demo.sim.state.time - t0, demo.sim.state.time - op.stage_since])
+		if want.has(name) and not done.has(name):
+			var wait_s := 40.0 if name == "transit" else (6.0 if name == "assemble" else 0.0)  # mount and disembark last only seconds
+			if demo.sim.state.time - op.stage_since >= wait_s:
+				done[name] = true
+				_roundtrip(op_id, name, out)
+		return not op.is_active() or done.has("deploy"))
+	for w: String in want:
+		_expect(done.has(w), "M: no save was made in the %s stage" % w)
+	# After the loads the operation still ends up on the objective, with no inconsistency.
+	var op2 := war.operation(op_id)
+	_expect(op2 != null and (int(op2.stage) >= int(OperationState.Stage.DEPLOY) or not op2.is_active()), "M: the operation did not continue after the loads (%s)" % (op2.stage_name() if op2 else "gone"))
+	_expect(_consistency().count == 0, "M: records inconsistent after the loads")
+	var bad := _transport_problems(war.operation(op_id)) if war.operation(op_id) else []
+	_expect(bad.is_empty(), "M: transport invariants broken after the loads: %s" % str(bad))
+	out["final_stage"] = op2.stage_name() if op2 else "gone"
+	out["stages_seen"] = seen_stages
+	out["events"] = war.events.filter(func(e: Dictionary) -> bool: return e.faction == 1 or e.faction < 0).slice(-14).map(func(e: Dictionary) -> String: return "%.0f %s" % [e.t - t0, e.text])
+	for o: OperationState in war.active_operations():
+		ws.cancel(o.id, "test end")
+	return out
+
+
+# --- N: a long-distance operation ----------------------------------------------------------------------------------------------------------
+
+func _n_long() -> Dictionary:
+	await _ensure_vehicles(1, 3)
+	var obj := _far_objective(1, 7.5, 5.5, 11.0)
+	_expect(obj != null, "N: no objective farther than 5.5 km")
+	if obj == null:
+		return {}
+	var sc := await _mech_scene(3, obj)
+	var op: OperationState = sc.op
+	var km := _flat(obj.position, _bs().bases_of(1)[0].anchor) / 1000.0
+	var out := {"objective": obj.obj_name, "km": snappedf(km, 0.1), "mode": op.transport.get("mode", "") if op else "none", "why": op.transport.get("why", "") if op else ""}
+	_expect(op != null and op.transport.get("mode", "") == "mech", "N: the long operation did not go by vehicle: %s" % out.why)
+	if op == null:
+		return out
+	var r := await _run_mech(sc, 2400.0, 8.0, false)
+	out["run"] = r
+	_expect(r.problems.is_empty(), "N: transport invariants broken: %s" % str(r.problems))
+	_expect(r.members_still_aboard == 0, "N: soldiers are still aboard")
+	_expect(int(op.stage) >= int(OperationState.Stage.DEPLOY) or not op.is_active(), "N: the operation stalled in %s after %.0f s (%s)" % [op.stage_name(), demo.sim.state.time - op.started_at, op.stage_why])
+	var arrived := float(r.stage_times.get("deploy", r.stage_times.get("approach", 0.0)))
+	out["time_to_assault_s"] = arrived
+	# On foot at 4.5 m/s the same march would take km * 1000 * 1.25 / 4.5 seconds.
+	var foot_s := km * 1000.0 * 1.25 / 4.5
+	out["foot_estimate_s"] = snappedf(foot_s, 1.0)
+	_expect(arrived > 0.0 and arrived < foot_s * 0.75, "N: by vehicle %.0f s against %.0f s on foot: no saving" % [arrived, foot_s])
+	for o: OperationState in war.active_operations():
+		ws.cancel(o.id, "test end")
+	return out
+
+
+# --- O / P: the autonomous war with logistics, and its cost ---------------------------------------------------------------------------------
+
+func _o_war() -> Dictionary:
+	await _fresh()
+	_pause_ai(false)
+	Inventory.audit_reset()
+	var ledger0 := {}
+	var stock0 := {}
+	for fid in [1, 2]:
+		ledger0[fid] = war.faction(fid).ledger.duplicate(true)
+		stock0[fid] = _stock(fid)
+	var owners0 := {}
+	for o: ObjectiveState in war.all_objectives():
+		owners0[o.id] = o.owner
+	var mech0 := ws.mech.stats.duplicate()
+	var sup0 := ws.supply.stats.duplicate()
+	var econ0 := ws.econ.stats.duplicate()
+	var b0 := ws.bases.stats.duplicate()
+	var units0 := demo.sim.state.units.size()
+	var tick0 := demo.sim.tick_usec.duplicate()
+	var counters0 := {"counter": 0}
+	var st := _new_war_stats()
+	var seen_ops := {}
+	var types_seen := {}
+	var transport_stages := {}
+	demo.rts_camera.frame(Vector3(9000, 0, -9000), 0.0, 150.0)
+	await _seconds(1.0)
+	var run := await _war_run(40.0, 24.0, st)
+	for op: OperationState in war.operations.values():
+		types_seen[op.type_name()] = int(types_seen.get(op.type_name(), 0)) + 1
+	var out := {"run": run}
+	out["operation_types"] = types_seen
+	out["mech"] = {"mounted_ops": ws.mech.stats.mounted - mech0.mounted, "foot_ops": ws.mech.stats.foot - mech0.foot, "fallbacks": ws.mech.stats.fallbacks - mech0.fallbacks,
+		"convoys": ws.mech.stats.convoys - mech0.convoys, "arrived": ws.mech.stats.arrived - mech0.arrived, "returned": ws.mech.stats.returned - mech0.returned}
+	out["supply"] = {"recoveries": ws.supply.stats.recoveries - sup0.recoveries, "recovered": ws.supply.stats.recovered - sup0.recovered, "missions": ws.supply.stats.missions - sup0.missions,
+		"delivered": ws.supply.stats.delivered - sup0.delivered, "failed": ws.supply.stats.failed - sup0.failed, "kg_delivered": snappedf(ws.supply.stats.kg_delivered - sup0.kg_delivered, 1.0),
+		"assessed": ws.supply.stats.assessed - sup0.assessed, "delays": ws.supply.stats.delay - sup0.delay, "reduced": ws.supply.stats.reduced - sup0.reduced, "cancelled": ws.supply.stats.cancel - sup0.cancel}
+	out["econ"] = {"recruits": ws.econ.stats.recruits - econ0.recruits, "trucks": ws.econ.stats.trucks - econ0.trucks, "apcs": ws.econ.stats.apcs - econ0.apcs, "refuels": ws.econ.stats.refuels - econ0.refuels,
+		"repairs": ws.econ.stats.repairs - econ0.repairs, "refused": ws.econ.stats.refused - econ0.refused}
+	out["builds"] = {"started": ws.bases.stats.started - b0.started, "finished": ws.bases.stats.finished - b0.finished, "refused": ws.bases.stats.refused - b0.refused}
+	var counters := 0
+	for op: OperationState in war.operations.values():
+		if op.type == OperationState.Type.COUNTER:
+			counters += 1
+	out["counterattacks"] = counters
+	var changes := []
+	for o: ObjectiveState in war.all_objectives():
+		if o.owner != owners0[o.id]:
+			changes.append("%s %s->%s" % [o.obj_name, WorldState.faction_name(owners0[o.id]) if owners0[o.id] >= 0 else "-", WorldState.faction_name(o.owner) if o.owner >= 0 else "-"])
+	out["territory_changes"] = changes
+	# Resources: nothing negative, nothing created outside the ledgers.
+	var negative := 0
+	for st2: StructureState in cs.all():
+		if st2.inventory:
+			for k in Inventory.ITEMS:
+				if st2.inventory.get_qty(k) < -0.001:
+					negative += 1
+	var income := {"ammo": 0.0, "fuel": 0.0, "supplies": 0.0}
+	for fid in [1, 2]:
+		for k in income:
+			income[k] += float(war.faction(fid).ledger["in"][k]) - float(ledger0[fid]["in"][k])
+	var audit: Dictionary = Inventory.audit
+	var created := {}
+	for k in income:
+		var added := float(audit.added.get(StringName(k), 0.0)) - float(audit.refunded.get(StringName(k), 0.0))
+		created[k] = snappedf(added - income[k], 0.1)
+	out["inventory_audit"] = {"added": audit.added, "taken": audit.taken, "refunded": audit.refunded, "income_ledger": income, "unexplained_added": created, "negative_inventories": negative}
+	_expect(negative == 0, "O: %d inventories went negative" % negative)
+	for k in income:
+		_expect(absf(created[k]) < maxf(income[k] * 0.02, 5.0), "O: %s: %.1f added to inventories beyond the income ledger" % [k, created[k]])
+	# The factions did what the brief asks.
+	var recruited := 0
+	for fid in [1, 2]:
+		recruited += int(war.faction(fid).ledger.squads_recruited) - int(ledger0[fid].squads_recruited)
+	out["squads_recruited"] = recruited
+	_expect(recruited >= 1, "O: no squad was recruited through a barracks in 40 minutes")
+	_expect(ws.mech.stats.mounted - mech0.mounted >= 1, "O: no operation used vehicles")
+	_expect(not types_seen.is_empty() and types_seen.get("Attack", 0) >= 1, "O: no attack ran")
+	# Deadlock: no operation stays in a stage that is not a march longer than the limit; no vehicle stays assigned forever.
+	var stuck_assigned := 0
+	for fid in [1, 2]:
+		for u: UnitState in _vehicles_of(fid):
+			if u.veh.assign_kind != "" and u.veh.assign_id >= 0:
+				var okop := war.operation(u.veh.assign_id)
+				if u.veh.assign_kind == "op" and (okop == null or not okop.is_active()):
+					stuck_assigned += 1
+	out["vehicles_assigned_to_dead_operations"] = stuck_assigned
+	_expect(stuck_assigned == 0, "O: %d vehicles are assigned to an operation that is over" % stuck_assigned)
+	_expect(_consistency().count == 0, "O: records inconsistent %s" % str(_consistency().problems))
+	_expect(st.duplicates == 0, "O: two attacks on one objective at once")
+	# Performance (P).
+	var t1 := demo.sim.tick_usec
+	var ticks := maxi(int(t1.ticks) - int(tick0.ticks), 1)
+	var buckets := {}
+	for k: String in ["abstract", "squads", "tactics", "vehicles", "war", "brain", "combat"]:
+		buckets[k] = snappedf(float(int(t1[k]) - int(tick0[k])) / ticks, 0.1)
+	out["perf"] = {"frame_ms_avg": run.frame_ms_avg, "frame_ms_p99": run.frame_ms_p99, "frame_ms_max": run.frame_ms_max, "tick_us_avg": buckets,
+		"war_update_us_avg": snappedf(float(ws.update_usec) / maxi(ws.updates, 1), 0.1), "war_update_us_max": ws.update_usec_max,
+		"econ": ws.econ.summary(), "mech": ws.mech.summary(), "supply": ws.supply.summary(), "coord_us_max": ws.coord.usec_max, "strat_us_max": ws.strat.usec_max,
+		"route_ms_max": snappedf(ws.routes.route_ms_max, 0.01), "routes_planned": ws.routes.routes_planned, "vehicle_tick_us": snappedf(float(demo.sim.vehicles.tick_usec) / maxi(demo.sim.vehicles.ticks, 1), 0.1),
+		"units": demo.sim.state.units.size(), "units_start": units0}
+	out["samples"] = st.samples.slice(0, 40)
+	out["summary"] = ws.summary().factions
 	return out

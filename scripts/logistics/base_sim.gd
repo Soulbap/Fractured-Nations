@@ -300,7 +300,9 @@ func refund(bid: int, cost: Dictionary, first: StructureState = null) -> void:
 		for s in stores:
 			if left <= 0.0:
 				break
-			left -= s.inventory.add(StringName(k), left)
+			var put: float = s.inventory.add(StringName(k), left)
+			left -= put
+			Inventory.audit.refunded[StringName(k)] = float(Inventory.audit.refunded.get(StringName(k), 0.0)) + put
 
 
 func cost_text(cost: Dictionary) -> String:

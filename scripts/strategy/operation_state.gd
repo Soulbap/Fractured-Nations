@@ -105,7 +105,8 @@ func to_dict() -> Dictionary:
 		"phase_since": phase_since, "ended_at": ended_at, "outcome": outcome, "start_strength": start_strength,
 		"losses": losses, "player": player_ordered, "route": Array(route_preview), "contact": contact_id, "reason": reason,
 		"stage": stage, "stage_since": stage_since, "roles": roles.duplicate(), "wait": wait_reason, "stage_why": stage_why,
-		"withdraw_why": withdraw_why, "fallback": fallback_pos, "reassess_at": reassess_at, "assault_pos": assault_pos}
+		"withdraw_why": withdraw_why, "fallback": fallback_pos, "reassess_at": reassess_at, "assault_pos": assault_pos,
+		"vehicles": Array(vehicles), "transport": transport.duplicate(true), "readiness": readiness.duplicate(true), "supply_why": supply_why}
 
 
 static func from_dict(d: Dictionary) -> OperationState:

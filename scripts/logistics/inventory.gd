@@ -21,6 +21,12 @@ const UNITS := {&"ammo": "kg", &"fuel": "l", &"supplies": "kg"}
 ## Spare rounds one kilogram of the ammunition supply type stands for.
 const AMMO_ROUNDS_PER_KG := 5.0
 
+## AI-WAR-LOGISTICS-01 audit (statistics only, never read by the game): everything that entered or left any inventory through
+## add / take since the last reset, and how much of the added quantity was a refund of a cancelled order. Transfers between two
+## inventories change neither. Sources and sinks are therefore countable: added - refunded must equal the explicit income
+## (the faction ledgers) plus the starting stock, taken is what was paid or handed to soldiers.
+static var audit := {"added": {}, "taken": {}, "refunded": {}}
+
 var items := {AMMO: 0.0, FUEL: 0.0, SUPPLIES: 0.0}
 var capacity := INF
 ## Item types the store accepts (empty = all).
@@ -61,13 +67,18 @@ func room_for(item: StringName) -> float:
 func add(item: StringName, qty: float) -> float:
 	var q := minf(maxf(qty, 0.0), room_for(item))
 	items[item] = get_qty(item) + q
+	audit.added[item] = float(audit.added.get(item, 0.0)) + q
 	return q
 
 
 func take(item: StringName, qty: float) -> float:
 	var q := minf(maxf(qty, 0.0), get_qty(item))
 	items[item] = get_qty(item) - q
+	audit.taken[item] = float(audit.taken.get(item, 0.0)) + q
 	return q
+
+static func audit_reset() -> void:
+	audit = {"added": {}, "taken": {}, "refunded": {}}
 
 
 ## Moves up to `qty` of `item` from src to dst: as much as src has and dst has room for.
