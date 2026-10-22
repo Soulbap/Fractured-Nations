@@ -39,6 +39,13 @@ var stats := {"ordered": 0, "arrived": 0, "failed": 0, "recovered": 0, "replanne
 	"bypass_attempted": 0, "bypassed": 0}
 ## Last obstacle-scan result per vehicle id: free distance ahead along the route (m).
 var _gap := {}
+## What the last gap came from per vehicle id: "structure" or "vehicle" (a convoy member goes round a structure, never round the
+## vehicle in front of it).
+var _gap_kind := {}
+## Earliest simulated time a vehicle may plan a detour again after one failed (a failed detour search used to repeat every tick).
+var _bypass_retry := {}
+## Vehicles currently following their route in reverse (see _follow).
+var _rev_mode := {}
 var _on_road := {}
 
 
@@ -75,6 +82,9 @@ func _on_added(u: UnitState) -> void:
 func _on_removed(id: int) -> void:
 	ids.erase(id)
 	_gap.erase(id)
+	_gap_kind.erase(id)
+	_bypass_retry.erase(id)
+	_rev_mode.erase(id)
 
 
 # --- Orders ---------------------------------------------------------------------------------
@@ -420,6 +430,8 @@ func _step(u: UnitState, dt: float) -> void:
 			var err := wrapf(atan2(-off.x, -off.z) - u.yaw, -PI, PI)
 			# Straight back first: on full lock the nose swings into the wall it stands against and nothing moves.
 			steer_target = -signf(err) * d.max_steer if v.reverse_left < 3.5 else 0.0
+			# N1-B: the lock is only used where the swept body stays clear (a dead-end alley is backed out straight).
+			steer_target = _clear_reverse_steer(u, d, steer_target)
 			if absf(err) < 0.45:
 				v.reverse_left = 0.0
 		else:
@@ -485,9 +497,27 @@ func _follow(u: UnitState, v: VehicleState, d: VehicleDefs.Def, dt: float) -> Di
 	var cross := _cross_track(v, i, u.position)
 	if cross > 2.5:
 		speed = minf(speed, maxf(6.0 - cross * 0.6, 2.5))
+	if lz >= 0.0 or absf(alpha) <= 1.8:
+		_rev_mode.erase(u.id)
 	if lz < 0.0:
 		speed = minf(speed, 3.0)
 		steer = -signf(lx if absf(lx) > 0.01 else 1.0) * d.max_steer
+		# N1-B: the route goes on behind the vehicle (a parking place or dock facing a wall, the end of an alley): when the way
+		# ahead is closed - or the vehicle is already backing - it follows the route in reverse, steering the tail towards it,
+		# until the route lies roughly ahead again. Convoy members keep the old behaviour (no reversing into the column).
+		var backing := bool(_rev_mode.get(u.id, false))
+		if v.convoy_id < 0 and sim.structures and (backing and absf(alpha) > 1.8 or absf(alpha) > 2.4):
+			var fwd_probe := Vector3(-sin(u.yaw), 0.0, -cos(u.yaw))
+			var closed_ahead := _blocked_at(d, u.position + fwd_probe * 4.0, u.yaw) or _blocked_at(d, u.position + fwd_probe * 8.0, u.yaw)
+			if (backing or closed_ahead) and not _blocked_at(d, u.position - fwd_probe * 3.0, u.yaw):
+				_rev_mode[u.id] = true
+				var alpha_r := atan2(-lx, -lz)
+				var steer_r := clampf(atan2(2.0 * d.wheelbase * sin(alpha_r), dist), -d.max_steer, d.max_steer)
+				v.status = VehicleState.Status.DRIVING
+				v.reason = "Backing out"
+				u.move_state = UnitState.MoveState.MOVING
+				return {"speed": -2.5, "steer": _clear_reverse_steer(u, d, steer_r)}
+		_rev_mode.erase(u.id)
 	# Obstacles ahead along the route and the lead vehicle.
 	var gap := _gap_ahead(u, v, d, i)
 	if v.convoy_id >= 0:
@@ -507,6 +537,27 @@ func _follow(u: UnitState, v: VehicleState, d: VehicleDefs.Def, dt: float) -> Di
 		v.reason = ""
 	u.move_state = UnitState.MoveState.MOVING
 	return {"speed": speed, "steer": steer}
+
+
+## Reversing with the wheels turned swings the body; of full, half and no lock the first whose swept path (1.6 s of reversing) is
+## free of structures is used, else none (straight back).
+func _clear_reverse_steer(u: UnitState, d: VehicleDefs.Def, wanted: float) -> float:
+	if sim.structures == null or absf(wanted) < 0.01:
+		return wanted
+	for f: float in [1.0, 0.5]:
+		var st := wanted * f
+		var pos := u.position
+		var yaw := u.yaw
+		var clear := true
+		for _i in 8:
+			yaw += (-2.5) / d.wheelbase * tan(st) * 0.2
+			pos += Vector3(-sin(yaw), 0.0, -cos(yaw)) * (-2.5 * 0.2)
+			if _blocked_at(d, pos, yaw):
+				clear = false
+				break
+		if clear:
+			return st
+	return 0.0
 
 
 func _arrive(u: UnitState, v: VehicleState) -> void:
@@ -662,6 +713,7 @@ func _gap_ahead(u: UnitState, v: VehicleState, d: VehicleDefs.Def, i: int) -> fl
 		return entry[1] - 0.0
 	var look := clampf(v.speed * v.speed / (2.0 * d.brake * 0.7) + 10.0, 14.0, 45.0)
 	var gap := INF
+	var kind := ""
 	if sim.structures:
 		var n := v.route.size()
 		var k := i
@@ -670,6 +722,7 @@ func _gap_ahead(u: UnitState, v: VehicleState, d: VehicleDefs.Def, i: int) -> fl
 			var p := v.route[k]
 			if sim.structures.blocks_point(Vector2(p.x, p.z), d.collide_r):
 				gap = v.route_s[k] - base_s - d.length * 0.5
+				kind = "structure"
 				break
 			k += 2
 	# The nearest vehicle ahead (within the lane).
@@ -696,6 +749,8 @@ func _gap_ahead(u: UnitState, v: VehicleState, d: VehicleDefs.Def, i: int) -> fl
 						hit = true
 						break
 				if hit:
+					if float(s) < gap:
+						kind = "vehicle"
 					gap = minf(gap, float(s))
 					break
 		var ahead := off.dot(fwd)
@@ -704,15 +759,18 @@ func _gap_ahead(u: UnitState, v: VehicleState, d: VehicleDefs.Def, i: int) -> fl
 		if absf(off.dot(right)) > (d.width + o.veh.def().width) * 0.5 + 0.3:
 			continue
 		var g := ahead - d.length * 0.5 - o.veh.def().length * 0.5
+		if maxf(g, 0.0) < gap:
+			kind = "vehicle"
 		gap = minf(gap, maxf(g, 0.0))
 	_gap[u.id] = [ticks, gap]
+	_gap_kind[u.id] = kind
 	return gap
 
 
 func _check_stuck(u: UnitState, v: VehicleState, d: VehicleDefs.Def, target_speed: float, dt: float) -> void:
 	# Only counts while the vehicle is supposed to be moving and nothing legitimate holds it
 	# (a vehicle waiting behind another is not stuck; a long wait still ends in a report).
-	if target_speed < 0.8 and v.status != VehicleState.Status.WAITING:
+	if absf(target_speed) < 0.8 and v.status != VehicleState.Status.WAITING:
 		v._progress_t = 0.0
 		v._progress_ref = u.position
 		return
@@ -720,16 +778,18 @@ func _check_stuck(u: UnitState, v: VehicleState, d: VehicleDefs.Def, target_spee
 	if Vector2(u.position.x - v._progress_ref.x, u.position.z - v._progress_ref.z).length() > 1.5:
 		v._progress_ref = u.position
 		v._progress_t = 0.0
+		_block_cause.erase(u.id)  # N1-B: the cause belongs to the stop it was recorded at
 		if v.recoveries > 0 and v.odometer - v.stuck_s > 40.0:
 			v.recoveries = 0
 		return
 	# Something in the way (a wall, a parked vehicle): the vehicle does not wait for it to go away, it drives round it and back
 	# onto its route (a detour planned on the local grid, which knows footprints, slopes, water and the parked vehicles).
-	if v.status == VehicleState.Status.WAITING and v._progress_t >= 3.0 and v.bypasses < MAX_BYPASSES and v.convoy_id < 0:
+	if v.status == VehicleState.Status.WAITING and v._progress_t >= 3.0 and v.bypasses < MAX_BYPASSES and (v.convoy_id < 0 or _gap_kind.get(u.id, "") == "structure") and sim.state.time >= float(_bypass_retry.get(u.id, 0.0)):
 		if _try_bypass(u, v, d):
 			v._progress_t = 0.0
 			v._progress_ref = u.position
 			return
+		_bypass_retry[u.id] = sim.state.time + 6.0
 	var limit := STUCK_S if v.status != VehicleState.Status.WAITING else STUCK_S * 6.0
 	if v._progress_t < limit:
 		return
@@ -737,7 +797,9 @@ func _check_stuck(u: UnitState, v: VehicleState, d: VehicleDefs.Def, target_spee
 	v._progress_ref = u.position
 	# Held up so close to the goal by a vehicle that has already stopped there (a column that
 	# lost its order): count it as arrived instead of reporting a failure.
-	if v.route_remaining_m() < 45.0 and v.recoveries >= 1:
+	# Only when a vehicle holds it up: a structure in the way is a planning fault to recover from, not a place to give up
+	# (N1-B: the truck that clipped a depot corner 43 m from its dock was reported as arrived).
+	if v.route_remaining_m() < 45.0 and v.recoveries >= 1 and _block_cause.get(u.id, "") != "structure":
 		_arrive(u, v)
 		_event(u, "stopped behind another vehicle near the destination")
 		return

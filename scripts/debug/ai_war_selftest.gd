@@ -1738,19 +1738,34 @@ func _r_drive(yard_only := false) -> Dictionary:
 	if truck == null:
 		return out
 	var vs := demo.sim.vehicles
-	var home := truck.position
 	# 1. Out of the yard and along the road, with the physical body (camera on it): the vehicle from its real parking spot.
 	var b: Dictionary = bs.bases_of(1)[0]
+	# Precondition (N1-B: the scenario depended on the order of earlier ones - r_obstacles leaves its truck far away): the truck
+	# stands in its own base yard, at the vehicle depot's parking place.
+	if _flat(truck.position, b.anchor) > 150.0:
+		var dep := bs.facility_of_kind(1, &"vehicle")
+		var spot := demo.sim.logistics.parking_world(dep, 0)
+		truck.order = UnitState.Order.NONE
+		vs.halt(truck.id)
+		truck.position = Vector3(spot.x, vs.ground_at(spot), spot.z)
+		truck.yaw = dep.yaw
+		await _physics(2)
+	var home := truck.position
 	var audit := RoadAudit.new(demo.sim)
 	# A road point some 400 m away that the vehicle really reaches in under 1.5 km of driving (not one across a river).
 	var road := net_nearest(b.anchor + Vector3(0, 0, 400), 900.0)
+	var cand_log := []
 	for k in 8:
 		var ang := float(k) * TAU / 8.0
 		var cand := net_nearest(b.anchor + Vector3(cos(ang), 0.0, sin(ang)) * 400.0, 200.0)
 		var pl := vs.router.plan(truck.position, cand, truck.veh.def())
+		cand_log.append({"k": k, "ok": pl.ok, "len": snappedf(float(pl.get("length_m", -1.0)), 1.0), "road_share": snappedf(float(pl.get("road_m", 0.0)) / maxf(float(pl.get("length_m", 1.0)), 1.0), 0.01)})
 		if pl.ok and float(pl.length_m) < 1500.0 and float(pl.road_m) > 0.85 * float(pl.length_m) and float(pl.length_m) > 300.0:
 			road = cand
 			break
+	out["r1_candidates"] = cand_log
+	out["r1_start"] = [snappedf(truck.position.x, 0.1), snappedf(truck.position.z, 0.1)]
+	out["r1_goal"] = [snappedf(road.x, 0.1), snappedf(road.z, 0.1)]
 	var r1: Dictionary = await _drive(truck, road, 500.0, 6.0, true)
 	out["r1_yard_to_road_near"] = r1
 	if not r1.get("arrived", false):

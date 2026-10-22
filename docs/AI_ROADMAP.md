@@ -7,7 +7,11 @@ comparison — not repeated here) with the code that actually exists on
 [INTEGRATION-04_REPORT.md](INTEGRATION-04_REPORT.md) §4). Where the research assumed the
 LOGISTICS-01 *plan*, this document uses the *implemented* names.
 
-**Status (NAVIGATION N1 baseline, 2026-10-22).** All AI milestones up to AI-WAR-LOGISTICS-01 are on the single
+**Status (NAVIGATION N1-B, 2026-10-23).** N1-B (vehicle routing, base access, off-road clearance, soft links, plan caches) is
+complete: see [NAVIGATION-N1B_REPORT.md](NAVIGATION-N1B_REPORT.md) and §8. The next milestone is N1-C (bridges, tracked
+profiles), waiting for product-owner approval.
+
+**Earlier status (NAVIGATION N1 baseline, 2026-10-22).** All AI milestones up to AI-WAR-LOGISTICS-01 are on the single
 development branch `develop` in the one project folder. NAVIGATION N1 measurement, diagnostics and acceptance
 scenarios are complete; navigation implementation is waiting for product-owner approval. See
 [NAVIGATION-N1_REPORT.md](NAVIGATION-N1_REPORT.md) and §8.
@@ -343,3 +347,17 @@ in the research: one route per element, `AStarGrid2D.jumping_enabled` test, HPA*
   `WorldSim`, `SoldierBody` and `AreaNavigation`; do not add a competing navigation engine. No HPA*, flow
   fields or global per-unit searches without measured need. Do not begin implementation without explicit
   product-owner approval. Full findings and acceptance criteria: [NAVIGATION-N1_REPORT.md](NAVIGATION-N1_REPORT.md).
+
+### N1-B implementation (2026-10-23)
+
+* **Vehicle base access.** All 24 dock/parking spots of the AI bases now leave and re-enter (baseline 23/24). The faults were
+  clearance (a straight leg and a spline 1.9 m from a depot corner, lane shifts into structures, unchecked joins), a false
+  "arrived" 43 m from a dock, and a reverse that swung into walls. `VehicleSim` follows a route in reverse when it lies behind
+  a closed front.
+* **Off-road.** Trunks, rocks and settlement colliders (`StructureManager.blocks_trunk`) are hard obstacles for planning;
+  clearance tiers and a continuous line check replace the cell-centre test; trucks and APCs keep their distinct profiles.
+* **Road connectivity.** Short links from isolated streets to another component are planned per vehicle at route time (soft
+  links), never added to the graph. Audit failures 294 -> 104, unexplained 180 -> 2; the rest are steep isolated villages.
+* **Performance.** Plans avg 127 -> 57 ms, p99 326 -> 162 ms; yard bursts 427 -> 61 ms. Open: village starts in dense woods
+  (~290-430 ms) and the one-off vegetation cache rebuild after a structure change.
+* **Tests.** `--navigation-n1b-test` (N1B-01..10). Evidence and the order-dependent suites: [NAVIGATION-N1B_REPORT.md](NAVIGATION-N1B_REPORT.md).

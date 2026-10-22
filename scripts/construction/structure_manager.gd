@@ -97,6 +97,10 @@ var _dirty_cells := {}
 var _timer := 0.0
 var _tree_cache := {}
 var _tree_radii := {}
+## NAVIGATION N1-B: solid vegetation bucketed in TRUNK_SUB metre sub-cells per vegetation cell, built on first query.
+var _trunk_sub := {}
+var _trunk_max_r := 4.0
+const TRUNK_SUB := 8.0
 ## Vector2i water cell -> Array of [a, b, c] world-space triangles (set_water).
 var _water := {}
 ## Groundwork: original terrain height of every vertex a pad changed (Vector2i -> float).
@@ -1676,6 +1680,70 @@ func _trees_in(cell: Vector2i) -> Array:
 	return out
 
 
+## True when a circle (XZ) touches a solid vegetation instance: tree trunk, rock or settlement collider. Vehicles use it (the
+## router's cross-country legs); the same instances are the physical colliders next to the camera. False without vegetation.
+func blocks_trunk(p: Vector2, radius := 0.4) -> bool:
+	if vegetation == null or vegetation.library == null:
+		return false
+	var reach := radius + _trunk_max_r
+	var cs: float = vegetation.cell_size_m
+	var c0 := VegetationChunk.cell_of(Vector3(p.x - reach, 0.0, p.y - reach), cs)
+	var c1 := VegetationChunk.cell_of(Vector3(p.x + reach, 0.0, p.y + reach), cs)
+	for cx in range(c0.x, c1.x + 1):
+		for cz in range(c0.y, c1.y + 1):
+			var cell := Vector2i(cx, cz)
+			var sub: Dictionary = _trunk_sub.get(cell, {})
+			if sub.is_empty() and not _trunk_sub.has(cell):
+				sub = _build_trunk_sub(cell)
+			if sub.is_empty():
+				continue
+			for gx in range(floori((p.x - reach) / TRUNK_SUB), floori((p.x + reach) / TRUNK_SUB) + 1):
+				for gz in range(floori((p.y - reach) / TRUNK_SUB), floori((p.y + reach) / TRUNK_SUB) + 1):
+					for t: Array in sub.get(Vector2i(gx, gz), []):
+						var dx: float = t[0] - p.x
+						var dz: float = t[1] - p.y
+						var rr: float = t[2] + radius
+						if dx * dx + dz * dz < rr * rr:
+							return true
+	return false
+
+
+## Appends [x, z, radius] of every solid vegetation instance whose centre lies in `rect` (XZ) to `out` (flat array, 3 per instance).
+func trunks_in_rect(rect: Rect2, out: PackedFloat32Array) -> void:
+	if vegetation == null or vegetation.library == null:
+		return
+	var cs: float = vegetation.cell_size_m
+	var c0 := VegetationChunk.cell_of(Vector3(rect.position.x - _trunk_max_r, 0.0, rect.position.y - _trunk_max_r), cs)
+	var c1 := VegetationChunk.cell_of(Vector3(rect.end.x + _trunk_max_r, 0.0, rect.end.y + _trunk_max_r), cs)
+	for cx in range(c0.x, c1.x + 1):
+		for cz in range(c0.y, c1.y + 1):
+			var cell := Vector2i(cx, cz)
+			var sub: Dictionary = _trunk_sub.get(cell, {})
+			if sub.is_empty() and not _trunk_sub.has(cell):
+				sub = _build_trunk_sub(cell)
+			if sub.is_empty():
+				continue
+			for gx in range(floori((rect.position.x - _trunk_max_r) / TRUNK_SUB), floori((rect.end.x + _trunk_max_r) / TRUNK_SUB) + 1):
+				for gz in range(floori((rect.position.y - _trunk_max_r) / TRUNK_SUB), floori((rect.end.y + _trunk_max_r) / TRUNK_SUB) + 1):
+					for t: Array in sub.get(Vector2i(gx, gz), []):
+						if t[0] >= rect.position.x - 6.0 and t[0] <= rect.end.x + 6.0 and t[1] >= rect.position.y - 6.0 and t[1] <= rect.end.y + 6.0:
+							out.append(t[0])
+							out.append(t[1])
+							out.append(t[2])
+
+
+func _build_trunk_sub(cell: Vector2i) -> Dictionary:
+	var sub := {}
+	for t: Array in _trees_in(cell):
+		var k := Vector2i(floori(t[0] / TRUNK_SUB), floori(t[1] / TRUNK_SUB))
+		if not sub.has(k):
+			sub[k] = []
+		sub[k].append(t)
+		_trunk_max_r = maxf(_trunk_max_r, t[2])
+	_trunk_sub[cell] = sub
+	return sub
+
+
 func _obstacle_name(mesh_id: int) -> String:
 	var d := vegetation.library.get_def(mesh_id)
 	var n := d.name.to_lower() if d else "vegetation"
@@ -1712,6 +1780,7 @@ func clearings_for(s: StructureState, trees: bool) -> Array:
 ## colliders and navigation obstructions) and drops the cached trunks.
 func _apply_clearings() -> void:
 	_tree_cache.clear()
+	_trunk_sub.clear()
 	if vegetation == null or state == null:
 		return
 	var all_ids := {}
@@ -1747,6 +1816,19 @@ func blocks_point(p: Vector2, radius := 0.4) -> bool:
 				if _obb_circle(obb, p, radius):
 					return true
 	return false
+
+
+## The blocking boxes ([centre, axis x, axis z, half size]) that a circle touches: what blocks_point found (diagnostics).
+func blocking_boxes(p: Vector2, radius := 0.4) -> Array:
+	if _block_dirty:
+		_rebuild_block_grid()
+	var out: Array = []
+	for gx in range(floori((p.x - radius) / BLOCK_CELL), floori((p.x + radius) / BLOCK_CELL) + 1):
+		for gz in range(floori((p.y - radius) / BLOCK_CELL), floori((p.y + radius) / BLOCK_CELL) + 1):
+			for obb: Array in _block_grid.get(Vector2i(gx, gz), []):
+				if _obb_circle(obb, p, radius) and not out.has(obb):
+					out.append(obb)
+	return out
 
 
 func _rebuild_block_grid() -> void:

@@ -454,12 +454,12 @@ func diagnose_route(from: Vector3, to: Vector3, def: VehicleDefs.Def = null) -> 
 	var out := {"from": _xz(from), "to": _xz(to)}
 	var st := sim.structures
 	var free := func(_id: int, pos: Vector3) -> bool:
-		return st == null or not st.blocks_point(Vector2(pos.x, pos.z), def.collide_r + 0.3)
+		return st == null or not st.blocks_point(Vector2(pos.x, pos.z), router.road_clear_r(def))
 	for tag in ["start", "end"]:
 		var p: Vector3 = from if tag == "start" else to
 		var raw := router.nearest_nodes(p, 3, router.SNAP_RADIUS)
 		var fr := router.nearest_nodes(p, 3, router.SNAP_RADIUS, free)
-		out[tag + "_raw"] = raw.map(func(n: Dictionary) -> Dictionary: return {"road": n.road.name, "dist": snappedf(n.dist, 1.0), "blocked": st != null and st.blocks_point(Vector2(n.pos.x, n.pos.z), def.collide_r + 0.3)})
+		out[tag + "_raw"] = raw.map(func(n: Dictionary) -> Dictionary: return {"road": n.road.name, "dist": snappedf(n.dist, 1.0), "blocked": st != null and st.blocks_point(Vector2(n.pos.x, n.pos.z), router.road_clear_r(def))})
 		out[tag + "_free"] = fr.map(func(n: Dictionary) -> Dictionary: return {"road": n.road.name, "dist": snappedf(n.dist, 1.0)})
 		out[tag + "_leg_ok"] = router._leg(p, fr[0].pos, def).ok if not fr.is_empty() else false
 	var a := router.nearest_nodes(from, 1, router.SNAP_RADIUS, free)
@@ -470,7 +470,7 @@ func diagnose_route(from: Vector3, to: Vector3, def: VehicleDefs.Def = null) -> 
 		var blocked := []
 		for id in raw_path:
 			var q := router.astar.get_point_position(id)
-			if st != null and st.blocks_point(Vector2(q.x, q.z), def.collide_r + 0.3):
+			if st != null and st.blocks_point(Vector2(q.x, q.z), router.road_clear_r(def)):
 				blocked.append([snappedf(q.x, 1.0), snappedf(q.z, 1.0), router._node_road[id].name])
 		out["blocked_on_path"] = blocked.size()
 		out["blocked_samples"] = blocked.slice(0, 6)

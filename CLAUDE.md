@@ -130,6 +130,10 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   APIs as the player (see the interface map in [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md)). Order of
   authority: player > operation > squad tactic > reaction. No planner engine, behaviour-tree runtime,
   second blackboard, AI-only transport/vehicle/inventory/base system.
+- **Vehicle clearance (NAVIGATION N1-B).** `VehicleRouter` plans for the vehicle's `circle_r` plus a tracking margin; a route
+  must never be accepted on the bare footprint radius. Solid vegetation (`StructureManager.blocks_trunk`) is a hard obstacle
+  for cross-country legs; roads are not checked against it. A short link between road components is a *soft link* planned per
+  vehicle (`VehicleRouter._soft`), never a graph edge. Vehicle navigation tests: `--navigation-n1b-test`.
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are
