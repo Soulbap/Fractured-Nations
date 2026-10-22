@@ -58,6 +58,14 @@ func run(args: PackedStringArray) -> void:
 		_log("d_mech", await _d_mech())
 	if _want("e_convoy"):
 		_log("e_convoy", await _e_convoy())
+	if _want("f_preop"):
+		_log("f_preop", await _f_preop())
+	if _want("g_delivery"):
+		_log("g_delivery", await _g_delivery())
+	if only.has("g_nosave"):
+		_log("g_nosave", await _g_delivery(false))
+	if _want("h_shortage"):
+		_log("h_shortage", await _h_shortage())
 	if only.has("v_yard"):
 		_log("v_yard", await _v_yard())
 	if _want("m_move"):
@@ -958,4 +966,195 @@ func _v_yard() -> Dictionary:
 	await _warp(70.0, 6.0, 60.0)
 	for u: UnitState in vs:
 		out["end_%d" % u.id] = {"status": u.veh.status_name(), "reason": u.veh.reason, "dist_to_target": _flat(u.position, targets[u.id]), "diag": demo.sim.vehicles.diagnose(u)}
+	return out
+
+
+# --- F / G / H: supply ----------------------------------------------------------------------------------------------------------------
+
+func _rounds(sqs: Array) -> int:
+	var n := 0
+	for sq: SquadState in sqs:
+		for id in sq.members:
+			n += demo.sim.state.get_unit(id).reserve
+	return n
+
+
+func _ammo_kg(fid: int) -> float:
+	return _stock(fid).ammo
+
+
+## Spare rounds of every soldier of the faction, and the explicit ammunition income booked so far: stock changes are
+## then income - rounds the soldiers took / 5 (plus purchases, which the scenarios keep off).
+func _faction_rounds(fid: int) -> int:
+	var n := 0
+	for u: UnitState in demo.sim.state.soldiers():
+		if u.faction == fid:
+			n += u.reserve
+	return n
+
+
+func _income_kg(fid: int) -> float:
+	return float(war.faction(fid).ledger["in"]["ammo"])
+
+
+## F: an undersupplied squad prepares for an operation: shortage detected, the attack is delayed, the squad walks to the depot,
+## the depot's stock falls by exactly what the soldiers took, the attack is then supplied.
+func _f_preop() -> Dictionary:
+	await _fresh()
+	var out := {}
+	var f := war.faction(1)
+	var b: Dictionary = _bs().bases_of(1)[0]
+	var sqs: Array = []
+	for i in 2:
+		sqs.append(_spawn(1, _near_point(b.anchor + Vector3(cos(i * 2.0), 0, sin(i * 2.0)) * 60.0, b.anchor, 10.0), 8))
+	await _physics(10)
+	for sq: SquadState in sqs:
+		for id in sq.members:
+			demo.sim.state.get_unit(id).reserve = 20
+	var obj := _far_objective(1, 3.0)
+	var ids := sqs.map(func(s: SquadState) -> int: return s.id)
+	var depot_before := _ammo_kg(1)
+	var rounds_before := _rounds(sqs)
+	var income_before := _income_kg(1)
+	var all_rounds_before := _faction_rounds(1)
+	var r := ws.supply.assess_attack(f, ids, obj)
+	out["verdict"] = r.verdict
+	out["why"] = r.why
+	_expect(r.verdict == "delay", "F: the shortage was not detected (verdict %s: %s)" % [r.verdict, r.why])
+	for sq: SquadState in sqs:
+		_expect(sq.recover_site >= 0, "F: %s was not sent to a depot" % sq.squad_name)
+	_expect(not war.active_operations(1).any(func(o: OperationState) -> bool: return o.target_objective == obj.id), "F: an operation was started anyway")
+	await _warp(240.0, 8.0, 120.0, func() -> bool:
+		return sqs.all(func(s: SquadState) -> bool: return s.recover_site < 0))
+	var rounds_after := _rounds(sqs)
+	var depot_after := _ammo_kg(1)
+	var taken_kg := depot_before - depot_after + (_income_kg(1) - income_before)
+	var gained := _faction_rounds(1) - all_rounds_before
+	out["squad_rounds_gained"] = rounds_after - rounds_before
+	out["depot_kg_taken"] = snappedf(taken_kg, 0.1)
+	out["rounds_gained"] = gained
+	_expect(taken_kg > 1.0, "F: the depot's stock did not fall (%.1f)" % taken_kg)
+	_expect(absf(taken_kg * Inventory.AMMO_ROUNDS_PER_KG - float(gained)) < 6.0, "F: conservation: the depot lost %.1f kg (%.0f rounds), the soldiers gained %d rounds" % [taken_kg, taken_kg * Inventory.AMMO_ROUNDS_PER_KG, gained])
+	_expect(gained > 0 and rounds_after >= 16 * 100, "F: the squads are still undersupplied (%d rounds for 16 soldiers)" % rounds_after)
+	var r2 := ws.supply.assess_attack(f, ids, obj)
+	out["verdict_after"] = r2.verdict
+	_expect(r2.verdict == "go", "F: after the resupply the attack is still not ready (%s: %s)" % [r2.verdict, r2.why])
+	return out
+
+
+## G: a truck takes ammunition from the main depot to garrison squads 3+ km away, they take it, the truck brings the rest
+## back; every kilogram is accounted for. A save / load in the middle (state snapshot applied in place) does not change it.
+func _g_delivery(do_save := true) -> Dictionary:
+	await _fresh()
+	var out := {}
+	await _ensure_vehicles(1, 1)
+	var f := war.faction(1)
+	var obj := _far_objective(1, 3.0)
+	_expect(obj != null, "G: no far objective")
+	var spot := _near_point(obj.position, _bs().bases_of(1)[0].anchor, 80.0)
+	var sq := _spawn(1, spot, 8)
+	sq.station_objective = obj.id
+	await _physics(10)
+	for id in sq.members:
+		demo.sim.state.get_unit(id).reserve = 15
+	var truck: UnitState = _vehicles_of(1)[0]
+	var depot_before := _ammo_kg(1)
+	var rounds_before := _rounds([sq])
+	var cargo_before := truck.veh.cargo.total()
+	var income_before := _income_kg(1)
+	var all_rounds_before := _faction_rounds(1)
+	var res := ws.supply.request_supply(f, [sq.id], ws.squad_center(sq), "scenario G")
+	out["request"] = res.reason if not res.ok else "ok"
+	_expect(res.ok, "G: the supply mission was refused: %s" % res.reason)
+	if not res.ok:
+		return out
+	var mid: int = int(res.mission.id)
+	var seen := []
+	var saved := {"done": false}
+	var w := await _warp(2700.0, 8.0, 500.0, func() -> bool:
+		var m := ws.supply.mission(mid)  # looked up every tick: a load replaces the mission records
+		if m.is_empty():
+			return true
+		if seen.is_empty() or seen[-1] != m.state:
+			seen.append(m.state)
+		if do_save and m.state == "driving" and not saved.done:
+			saved.done = true
+			var tu := demo.sim.state.get_unit(truck.id)
+			var pre := {"route": tu.veh.route.size(), "i": tu.veh.route_i, "order": tu.order, "target": tu.order_target, "status": tu.veh.status_name(), "pos": tu.position, "speed": tu.veh.speed}
+			var snap := demo.sim.state.snapshot()
+			demo.sim.state.apply_snapshot(snap)  # a save / load at this very moment
+			var post := {"route": tu.veh.route.size(), "i": tu.veh.route_i, "order": tu.order, "target": tu.order_target, "status": tu.veh.status_name(), "pos": tu.position, "speed": tu.veh.speed, "same_obj": demo.sim.state.get_unit(truck.id) == tu}
+			out["save_pre"] = pre
+			out["save_post"] = post
+		return m.state == "done" or m.state == "failed")
+	var m := ws.supply.mission(mid)
+	out["states"] = seen
+	out["mission"] = {"state": m.get("state", "?"), "loaded": m.get("loaded", 0.0), "delivered": m.get("delivered", 0.0), "returned": m.get("returned", 0.0), "fail": m.get("fail", "")}
+	_expect(not m.is_empty() and m.state == "done", "G: the mission ended %s (%s)" % [m.get("state", "gone"), m.get("fail", "")])
+	for want in ["loading", "driving", "serving", "returning", "unloading"]:
+		_expect(seen.has(want), "G: the mission never reached %s (%s)" % [want, str(seen)])
+	var truck2 := demo.sim.state.get_unit(truck.id)
+	var depot_after := _ammo_kg(1)
+	var gained := _faction_rounds(1) - all_rounds_before
+	depot_before += _income_kg(1) - income_before  # the depot also received explicit income meanwhile
+	out["squad_rounds_gained"] = _rounds([sq]) - rounds_before
+	out["truck_diag"] = demo.sim.vehicles.diagnose(demo.sim.state.get_unit(truck.id)) if m.get("state", "") != "done" else {}
+	out["depot_taken_kg"] = snappedf(depot_before - depot_after, 0.1)
+	out["rounds_gained"] = gained
+	out["truck_cargo_after"] = truck2.veh.cargo.total()
+	_expect(_rounds([sq]) - rounds_before > 0, "G: the squad received nothing")
+	_expect(absf((depot_before - depot_after) * Inventory.AMMO_ROUNDS_PER_KG - float(gained)) < 8.0, "G: conservation: the depot lost %.1f kg, the squad gained %d rounds" % [depot_before - depot_after, gained])
+	_expect(truck2.veh.cargo.total() <= cargo_before + 0.5, "G: the truck brought back %.1f kg more than it started with" % (truck2.veh.cargo.total() - cargo_before))
+	_expect(truck2.veh.assign_kind == "", "G: the truck is still assigned (%s)" % truck2.veh.assign_kind)
+	return out
+
+
+## H: no ammunition in any store: nothing is created, the attack is cancelled with the numbers, recruiting is refused with
+## a reason, and the faction does not deadlock (it keeps deciding). Stock changes are only the explicit income.
+func _h_shortage() -> Dictionary:
+	await _fresh()
+	var out := {}
+	var f := war.faction(1)
+	var saved := {}
+	for st in demo.sim.logistics.stores(1):
+		saved[st.id] = st.inventory.get_qty(Inventory.AMMO)
+		st.inventory.take(Inventory.AMMO, 1.0e9)
+	var b: Dictionary = _bs().bases_of(1)[0]
+	var sqs: Array = []
+	for i in 3:
+		var sq := _spawn(1, _near_point(b.anchor + Vector3(cos(i * 2.0), 0, sin(i * 2.0)) * 60.0, b.anchor, 10.0), 8)
+		for id in sq.members:
+			demo.sim.state.get_unit(id).reserve = 10
+		sqs.append(sq)
+	await _physics(10)
+	var ledger0 := float(f.ledger["in"]["ammo"])
+	var rounds0 := _faction_rounds(1)
+	var stock0 := _ammo_kg(1)
+	_expect(stock0 < 0.01, "H: precondition: stock %.1f" % stock0)
+	var obj := _far_objective(1, 3.0)
+	var r := ws.supply.assess_attack(f, sqs.map(func(s: SquadState) -> int: return s.id), obj)
+	out["verdict"] = r.verdict
+	out["why"] = r.why
+	_expect(r.verdict == "cancel" or r.verdict == "reduced", "H: with no ammunition the attack was %s" % r.verdict)
+	_expect(not war.active_operations(1).any(func(o: OperationState) -> bool: return o.target_objective == obj.id), "H: an operation started without ammunition")
+	# The economy cannot recruit without ammunition for the recruits: refused with a reason, nothing paid.
+	var bar := _bs().facility_of_kind(1, &"barracks")
+	var rr := _bs().recruit(bar.id)
+	out["recruit"] = rr.reason
+	_expect(not rr.ok, "H: recruiting without ammunition was accepted")
+	# A strategic decision runs without error and records why.
+	var snap := _decide_now(1)
+	out["decision_notes"] = snap.get("notes", "")
+	var attack := _action(snap, "attack")
+	out["attack_action"] = {"status": attack.get("status", ""), "note": attack.get("note", "")} if not attack.is_empty() else {}
+	await _warp(120.0, 8.0, 60.0)
+	var stock1 := _ammo_kg(1)
+	var income := float(f.ledger["in"]["ammo"]) - ledger0
+	out["stock_after"] = snappedf(stock1, 0.1)
+	out["income_ledger"] = snappedf(income, 0.1)
+	var took := float(_faction_rounds(1) - rounds0) / Inventory.AMMO_ROUNDS_PER_KG
+	out["soldiers_took_kg"] = snappedf(took, 0.1)
+	_expect(absf(stock1 - (stock0 + income - took)) < 0.5, "H: ammunition appeared outside the ledger (stock %.1f = 0 + income %.1f - taken %.1f)" % [stock1, income, took])
+	for id in saved:
+		demo.sim.logistics.structure(id).inventory.items[Inventory.AMMO] = saved[id]
 	return out
