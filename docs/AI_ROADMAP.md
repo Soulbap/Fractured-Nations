@@ -306,6 +306,20 @@ in the research: one route per element, `AStarGrid2D.jumping_enabled` test, HPA*
 
 ## 8. NAVIGATION N1 hand-off
 
+### N1-A implementation (2026-10-22)
+
+* **Complete on `develop`.** Abstract infantry now uses bounded 5 m local route refinement only when a
+  direct step meets an obstacle. One search is budgeted per physics tick, a successful corridor is shared
+  by the squad, retries are bounded, and a closed route reports its reason instead of crossing geometry.
+* **Member recovery.** `SquadControl` tracks meaningful progress per soldier and gives a stalled member one
+  controlled retry while pausing for Hold, transport, possession and tactical reactions. The leader can no
+  longer hide a permanently stranded member.
+* **Parity verified.** N1-02, N1-08 and N1-09 now pass with 8/8; near -> far, far -> near and save/load keep
+  orders without teleportation. Vehicle N1-03/04/05 remain green and N1-06 remains unsupported by design.
+* **Scope choice.** `VehicleRouter` remains unchanged. N1-A uses a small profile-neutral infantry adapter
+  patterned on its bounded local grid; vehicle migration, dynamic bridges, vegetation costs and tracked
+  profiles remain N1-B/N1-C work. Full evidence: [NAVIGATION-N1A_REPORT.md](NAVIGATION-N1A_REPORT.md).
+
 * **Baseline complete.** `--navigation-n1-test [--only n1_01,...,n1_09]` provides nine isolated,
   deterministic acceptance scenarios and writes diagnostics only below `user://navigation_n1/`.
   Runtime counters now distinguish route failure reasons, graph builds/rebuilds, vehicle bypass attempts,

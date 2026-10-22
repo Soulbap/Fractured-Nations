@@ -1,6 +1,5 @@
-## NAVIGATION N1 baseline and acceptance diagnostics. This suite deliberately does not
-## repair navigation: each scenario records PASS, FAIL, KNOWN_FAIL or UNSUPPORTED so the
-## current limitations remain visible and reproducible.
+## NAVIGATION N1 baseline and N1-A acceptance diagnostics. Each scenario records PASS,
+## FAIL, KNOWN_FAIL or UNSUPPORTED so current limitations remain visible and reproducible.
 ##
 ##   Godot.exe --path . --resolution 1600x900 --log-file n1.log \
 ##     res://scenes/game/world_ref_20km.tscn -- --navigation-n1-test [--only n1_01,n1_02]
@@ -9,7 +8,8 @@
 class_name NavigationN1SelfTest
 extends AIWarSelfTest
 
-const IDS: Array[String] = ["n1_01", "n1_02", "n1_03", "n1_04", "n1_05", "n1_06", "n1_07", "n1_08", "n1_09"]
+const IDS: Array[String] = ["n1_01", "n1_02", "n1_03", "n1_04", "n1_05", "n1_06", "n1_07", "n1_08", "n1_09",
+	"n1a_10", "n1a_11"]
 
 var _site := Vector3.INF
 var _gate_cache := {}
@@ -20,6 +20,11 @@ var _gate_x := INF
 
 
 func run(args: PackedStringArray) -> void:
+	shots = "--shots" in args
+	_shot_dir = "user://navigation_n1/screenshots"
+	for a in args:
+		if a.begins_with("--shot-dir="):
+			_shot_dir = a.trim_prefix("--shot-dir=")
 	var oi := args.find("--only")
 	if oi >= 0 and oi + 1 < args.size():
 		only = args[oi + 1].split(",")
@@ -89,6 +94,8 @@ func _run_case(id: String) -> void:
 		"n1_07": data = await _n1_07()
 		"n1_08": data = await _n1_08()
 		"n1_09": data = await _n1_09()
+		"n1a_10": data = await _n1a_10()
+		"n1a_11": data = await _n1a_11()
 	_log_n1(id, data)
 
 
@@ -205,15 +212,22 @@ func _wait_navigation() -> void:
 		await _seconds(0.2)
 
 
-func _watch_squad(sq: SquadState, goal: Vector3, sim_s: float, scale: float, wall_z := INF) -> Dictionary:
-	var track := {"last": {}, "last_t": {}, "stall_max_s": 0.0, "inside_blocking_samples": 0, "samples": 0, "crossed_wall": false}
+func _watch_squad(sq: SquadState, goal: Vector3, sim_s: float, scale: float, wall_z := INF, shot_name := "") -> Dictionary:
+	var track := {"last": {}, "last_t": {}, "stall_max_s": 0.0, "inside_blocking_samples": 0, "samples": 0,
+		"crossed_wall": false, "shot": false}
 	var t0 := demo.sim.state.time
 	var rep0 := demo.sim.squads.route_replanned
 	var skip0 := demo.sim.squads.route_skips
 	var stall0 := demo.sim.squads.route_stall_events
 	var react0 := demo.sim.squads.route_stall_while_reacting
+	var member0 := demo.sim.squads.member_recoveries
+	var member_fail0 := demo.sim.squads.member_failures
+	var local0: Dictionary = demo.sim.local_nav_stats.duplicate(true)
 	var w := await _warp(sim_s, scale, 180.0, func() -> bool:
-		var done := true
+		if shots and shot_name != "" and not track.shot and demo.sim.state.time - t0 >= 5.0:
+			_shot(shot_name)
+			track.shot = true
+		var terminal := true
 		for id in sq.members:
 			var u := _u(id)
 			if u == null or not u.alive:
@@ -229,38 +243,58 @@ func _watch_squad(sq: SquadState, goal: Vector3, sim_s: float, scale: float, wal
 				track.last_t[id] = demo.sim.state.time
 			elif u.has_order():
 				track.stall_max_s = maxf(float(track.stall_max_s), demo.sim.state.time - float(track.last_t.get(id, demo.sim.state.time)))
-			if _flat(u.position, goal) > 14.0:
-				done = false
-		return done)
+			if u.order == UnitState.Order.MOVE or (u.move_state != UnitState.MoveState.ARRIVED and u.move_state != UnitState.MoveState.BLOCKED):
+				terminal = false
+		return terminal)
 	var arrived := 0
 	var blocked := 0
 	var bodies := 0
 	var dists := []
+	var target_dists := []
+	var members := []
 	for id in sq.members:
 		var u := _u(id)
 		if u == null:
 			continue
 		var d := _flat(u.position, goal)
+		var td := _flat(u.position, u.order_target)
 		dists.append(snappedf(d, 0.1))
-		arrived += 1 if d <= 14.0 else 0
+		target_dists.append(snappedf(td, 0.1))
+		var reached := u.order == UnitState.Order.NONE and u.move_state == UnitState.MoveState.ARRIVED \
+			and td <= 3.1 and d <= 20.0
+		arrived += 1 if reached else 0
 		blocked += 1 if u.move_state == UnitState.MoveState.BLOCKED else 0
 		bodies += 1 if u.has_body else 0
+		members.append({"id": id, "pos": [snappedf(u.position.x, 0.1), snappedf(u.position.z, 0.1)],
+			"target": [snappedf(u.order_target.x, 0.1), snappedf(u.order_target.z, 0.1)],
+			"centre_m": snappedf(d, 0.1), "target_m": snappedf(td, 0.1),
+			"order": u.order, "move_state": u.move_state, "reason": u.nav_reason})
 	return {
 		"arrived": arrived, "of": sq.members.size(), "blocked": blocked, "bodies_at_end": bodies,
 		"time_s": snappedf(demo.sim.state.time - t0, 1.0), "real_s": w.real_s,
-		"dist_m": dists, "stall_max_s": snappedf(track.stall_max_s, 0.1),
+		"dist_m": dists, "target_dist_m": target_dists, "members": members,
+		"stall_max_s": snappedf(track.stall_max_s, 0.1),
 		"inside_blocking_samples": track.inside_blocking_samples, "samples": track.samples,
 		"crossed_wall": track.crossed_wall,
 		"route_replans": demo.sim.squads.route_replanned - rep0,
 		"route_skips": demo.sim.squads.route_skips - skip0,
 		"route_stalls": demo.sim.squads.route_stall_events - stall0,
 		"stalls_while_reacting": demo.sim.squads.route_stall_while_reacting - react0,
+		"member_recoveries": demo.sim.squads.member_recoveries - member0,
+		"member_failures": demo.sim.squads.member_failures - member_fail0,
+		"local_searches": int(demo.sim.local_nav_stats.searches) - int(local0.searches),
+		"local_successes": int(demo.sim.local_nav_stats.successes) - int(local0.successes),
+		"local_failures": int(demo.sim.local_nav_stats.failures) - int(local0.failures),
+		"local_cache_hits": int(demo.sim.local_nav_stats.cache_hits) - int(local0.cache_hits),
+		"local_plan_ms_mean": snappedf((float(demo.sim.local_nav_stats.plan_ms_total) - float(local0.plan_ms_total)) \
+			/ maxf(float(int(demo.sim.local_nav_stats.searches) - int(local0.searches)), 1.0), 0.01),
+		"local_plan_ms_max": snappedf(float(demo.sim.local_nav_stats.plan_ms_max), 0.01),
 	}
 
 
-func _march(sq: SquadState, goal: Vector3, near: bool, sim_s := 240.0, wall_z := INF) -> Dictionary:
+func _march(sq: SquadState, goal: Vector3, near: bool, sim_s := 240.0, wall_z := INF, shot_name := "") -> Dictionary:
 	if near:
-		demo.rts_camera.frame(goal.lerp(ws.squad_center(sq), 0.5), 0.0, 105.0)
+		demo.rts_camera.frame(goal.lerp(ws.squad_center(sq), 0.5), 0.0, 80.0 if shots else 105.0)
 	else:
 		demo.rts_camera.frame(Vector3(9000, 0, -9000), 0.0, 150.0)
 	await _seconds(2.0)
@@ -268,7 +302,7 @@ func _march(sq: SquadState, goal: Vector3, near: bool, sim_s := 240.0, wall_z :=
 	for id in sq.members:
 		bodies0 += 1 if _u(id).has_body else 0
 	demo.sim.squads.order_move([sq.id], goal)
-	var out := await _watch_squad(sq, goal, sim_s, 10.0 if near else 16.0, wall_z)
+	var out := await _watch_squad(sq, goal, sim_s, 10.0 if near else 16.0, wall_z, shot_name)
 	out["tier_requested"] = "near" if near else "far"
 	out["bodies_at_start"] = bodies0
 	return out
@@ -286,7 +320,7 @@ func _n1_01() -> Dictionary:
 		return _classify("n1_01", "ERROR", {"reason": "building could not be placed"})
 	await _wait_navigation()
 	var sq := _spawn(0, c + Vector3(0, 0, 55), 8)
-	var move: Dictionary = await _march(sq, c + Vector3(0, 0, -55), true, 180.0)
+	var move: Dictionary = await _march(sq, c + Vector3(0, 0, -55), true, 180.0, INF, "n1a_building_detour")
 	await _remove_structures([b])
 	var passed: bool = move.arrived >= 6 and move.inside_blocking_samples == 0 and move.stall_max_s < 90.0
 	return _classify("n1_01", "PASS" if passed else "FAIL", {"movement": move, "obstacle": "barracks_block"},
@@ -318,7 +352,7 @@ func _gate_results() -> Dictionary:
 	cs.remove(blocker.id)
 	await _wait_navigation()
 	var near_sq := _spawn(0, c + Vector3(6, 0, 112), 8)
-	var near := await _march(near_sq, c + Vector3(0, 0, 20), true, 240.0, c.z + hz)
+	var near := await _march(near_sq, c + Vector3(0, 0, 20), true, 240.0, c.z + hz, "n1a_open_gate")
 	await _fresh()
 	var far_sq := _spawn(0, c + Vector3(0, 0, -115), 8)
 	var far := await _march(far_sq, c + Vector3(0, 0, 20), false, 600.0, c.z + hz)
@@ -331,7 +365,7 @@ func _gate_results() -> Dictionary:
 func _n1_02() -> Dictionary:
 	var g: Dictionary = await _gate_results()
 	var closed_ok: bool = g.closed_near.arrived == 0 and g.closed_far.arrived == 0 and g.closed_near.inside_blocking_samples == 0 and g.closed_far.inside_blocking_samples == 0
-	var open_ok: bool = g.open_near.arrived >= 6 and g.open_far.arrived >= 6 \
+	var open_ok: bool = g.open_near.arrived == 8 and g.open_far.arrived == 8 \
 		and g.open_near.stall_max_s < 25.0 and g.open_far.stall_max_s < 25.0 \
 		and g.open_near.inside_blocking_samples == 0 and g.open_far.inside_blocking_samples == 0
 	return _classify("n1_02", "PASS" if closed_ok and open_ok else "FAIL", g.duplicate(true),
@@ -340,17 +374,17 @@ func _n1_02() -> Dictionary:
 
 func _n1_08() -> Dictionary:
 	var g: Dictionary = await _gate_results()
-	var reproduced: bool = g.open_far.arrived < 6 or g.open_far.stall_max_s >= 25.0
-	return _classify("n1_08", "KNOWN_FAIL" if reproduced else "PASS", {"far_defence_line": g.open_far, "reproduced": reproduced},
-		"Expected baseline defect: far-tier soldiers slide along the perimeter instead of finding the distant opening consistently.")
+	var reproduced: bool = g.open_far.arrived < 8 or g.open_far.stall_max_s >= 25.0
+	return _classify("n1_08", "FAIL" if reproduced else "PASS", {"far_defence_line": g.open_far, "reproduced": reproduced},
+		"Far-tier infantry must refine its route through the valid opening without crossing the defence line.")
 
 
 func _n1_09() -> Dictionary:
 	var g: Dictionary = await _gate_results()
 	var n: Dictionary = g.open_near
 	var f: Dictionary = g.open_far
-	var near_reliable: bool = n.arrived >= 6 and n.stall_max_s < 25.0
-	var far_reliable: bool = f.arrived >= 6 and f.stall_max_s < 25.0
+	var near_reliable: bool = n.arrived == 8 and n.stall_max_s < 25.0
+	var far_reliable: bool = f.arrived == 8 and f.stall_max_s < 25.0
 	var reachable: bool = near_reliable and far_reliable
 	return _classify("n1_09", "PASS" if reachable else "FAIL", {
 		"near": n, "far": f, "reachability_equal": near_reliable == far_reliable,
@@ -358,6 +392,111 @@ func _n1_09() -> Dictionary:
 		"time_ratio_far_over_near": snappedf(float(f.time_s) / maxf(float(n.time_s), 0.1), 0.01),
 		"same_passage": n.crossed_wall and f.crossed_wall,
 	}, "Movement time may differ; valid-goal reachability must not depend on simulation tier.")
+
+
+## N1-A transition acceptance: the same order crosses both tier boundaries and survives
+## an in-place save/load. Per-frame displacement is recorded to reject teleport fixes.
+func _n1a_10() -> Dictionary:
+	await _fresh()
+	await _cleanup_test_structures()
+	var c := _find_site()
+	var near_far_sq := _spawn(0, c + Vector3(120, 0, 60), 8)
+	var near_far := await _transition_march(near_far_sq, c + Vector3(120, 0, -60), true, false)
+	await _fresh()
+	var far_near_sq := _spawn(0, c + Vector3(120, 0, 60), 8)
+	var far_near := await _transition_march(far_near_sq, c + Vector3(120, 0, -60), false, true, true)
+	var passed: bool = near_far.arrived == 8 and far_near.arrived == 8 \
+		and near_far.switched and far_near.switched and far_near.saved \
+		and near_far.max_step_m < 5.0 and far_near.max_step_m < 5.0 \
+		and near_far.orders_lost == 0 and far_near.orders_lost == 0
+	return _classify("n1a_10", "PASS" if passed else "FAIL", {"near_to_far": near_far, "far_to_near_save": far_near},
+		"Tier changes and save/load must retain targets and orders without teleporting.")
+
+
+func _transition_march(sq: SquadState, goal: Vector3, start_near: bool, end_near: bool, do_save := false) -> Dictionary:
+	var ids := Array(sq.members)
+	var start := ws.squad_center(sq)
+	demo.rts_camera.frame(start if start_near else Vector3(9000, 0, -9000), 0.0, 105.0)
+	await _seconds(2.0)
+	var bodies_start := 0
+	for id in ids:
+		bodies_start += 1 if _u(id).has_body else 0
+	demo.sim.squads.order_move([sq.id], goal)
+	var t0 := demo.sim.state.time
+	var track := {"switched": false, "saved": false, "lost_ids": {}, "max_step": 0.0, "last": {}}
+	await _warp(300.0, 10.0, 180.0, func() -> bool:
+		var elapsed := demo.sim.state.time - t0
+		if not track.switched and elapsed >= 8.0:
+			demo.rts_camera.frame(goal if end_near else Vector3(9000, 0, -9000), 0.0, 105.0)
+			track.switched = true
+		if do_save and track.switched and not track.saved and elapsed >= 16.0:
+			var snap := demo.sim.state.snapshot()
+			demo.sim.state.apply_snapshot(snap)
+			track.saved = true
+		var terminal := true
+		for id in ids:
+			var u := _u(id)
+			if u == null:
+				continue
+			var prev: Vector3 = track.last.get(id, u.position)
+			track.max_step = maxf(float(track.max_step), _flat(prev, u.position))
+			track.last[id] = u.position
+			if u.order == UnitState.Order.NONE and u.move_state != UnitState.MoveState.ARRIVED and u.move_state != UnitState.MoveState.BLOCKED:
+				track.lost_ids[id] = true
+			if u.order == UnitState.Order.MOVE:
+				terminal = false
+		return terminal and track.switched and (track.saved or not do_save))
+	if shots and end_near:
+		demo.rts_camera.frame(ws.squad_center(sq), 0.0, 55.0)
+		await _seconds(2.0)
+		_shot("n1a_far_promoted_near")
+	var arrived := 0
+	var bodies_end := 0
+	var inside := 0
+	var members := []
+	for id in ids:
+		var u := _u(id)
+		if u == null:
+			continue
+		arrived += 1 if u.move_state == UnitState.MoveState.ARRIVED and _flat(u.position, u.order_target) <= 3.1 else 0
+		bodies_end += 1 if u.has_body else 0
+		inside += 1 if sm.blocks_point(Vector2(u.position.x, u.position.z), 0.2) else 0
+		members.append({"id": id, "state": u.move_state, "order": u.order,
+			"target_m": snappedf(_flat(u.position, u.order_target), 0.1), "reason": u.nav_reason})
+	return {"arrived": arrived, "of": ids.size(), "bodies_start": bodies_start, "bodies_end": bodies_end,
+		"switched": track.switched, "saved": track.saved if do_save else true, "orders_lost": track.lost_ids.size(),
+		"max_step_m": snappedf(track.max_step, 0.01), "inside_obstacle_end": inside, "members": members}
+
+
+## A member legitimately holding a tactical reaction must not spend the navigation
+## recovery budget or lose its underlying squad order.
+func _n1a_11() -> Dictionary:
+	await _fresh()
+	await _cleanup_test_structures()
+	var c := _find_site() + Vector3(180, 0, 0)
+	var sq := _spawn(0, c + Vector3(0, 0, 35), 8)
+	demo.rts_camera.frame(Vector3(9000, 0, -9000), 0.0, 150.0)
+	await _seconds(2.0)
+	demo.sim.squads.order_move([sq.id], c + Vector3(0, 0, -35))
+	var held := _u(sq.members[3])
+	held.react_target = held.position
+	held.react_state = UnitState.ReactState.ARRIVED
+	held.tactic = UnitState.Tactic.IN_COVER
+	held.react_until = INF
+	var recover0 := demo.sim.squads.member_recoveries
+	await _warp(35.0, 16.0, 30.0)
+	var preserved := held.order == UnitState.Order.MOVE and held.is_reacting()
+	var recovery_during := demo.sim.squads.member_recoveries - recover0
+	if shots:
+		demo.rts_camera.frame(c, 0.0, 55.0)
+		await _seconds(2.0)
+		_shot("n1a_member_temporarily_behind")
+	held.clear_reaction()
+	var move := await _watch_squad(sq, c + Vector3(0, 0, -35), 120.0, 16.0)
+	var passed: bool = preserved and recovery_during == 0 and move.arrived == 8
+	return _classify("n1a_11", "PASS" if passed else "FAIL", {"order_preserved": preserved,
+		"recoveries_during_reaction": recovery_during, "after_reaction": move},
+		"A tactical reaction pauses member-stall accounting and the original order resumes afterwards.")
 
 
 # --- Vehicle helpers and N1-03 / N1-04 / N1-05 / N1-07 -----------------------------------
@@ -383,6 +522,10 @@ func _dynamic_vehicle() -> Dictionary:
 	var truck := _free_vehicle(1, VehicleDefs.TRUCK)
 	if truck == null:
 		return {"error": "no free truck"}
+	# Keep scenarios independent: N1-03 drives a persistent world vehicle, but N1-04/05
+	# must measure the same initial fleet regardless of case order.
+	var truck_before := {"position": truck.position, "yaw": truck.yaw, "order": truck.order,
+		"order_target": truck.order_target, "move_state": truck.move_state, "veh": truck.veh.to_dict()}
 	var trip := _candidate_trip(truck, 600.0, 12000.0)
 	if trip.is_empty():
 		return {"error": "no suitable trip"}
@@ -421,6 +564,12 @@ func _dynamic_vehicle() -> Dictionary:
 	if building:
 		cs.remove(building.id)
 	await _wait_navigation()
+	truck.position = truck_before.position
+	truck.yaw = truck_before.yaw
+	truck.order = truck_before.order
+	truck.order_target = truck_before.order_target
+	truck.move_state = truck_before.move_state
+	truck.veh.copy_from(truck_before.veh)
 	return _dynamic_vehicle_cache
 
 

@@ -50,6 +50,15 @@ var route_replanned := 0
 ## temporarily replaced the leader's movement with a reaction.
 var route_stall_events := 0
 var route_stall_while_reacting := 0
+## N1-A member watchdog. SoldierBody and WorldSim own actual movement; this layer only
+## notices an individual that the leader-level route watchdog cannot see and grants one
+## fresh attempt at the same authoritative slot.
+var member_stall_s := 25.0
+var member_replans := 1
+var member_stalls := 0
+var member_recoveries := 0
+var member_failures := 0
+var _member_progress := {}
 var _replans := {}
 ## squad id -> formation to take on the last leg of a routed player Move.
 var _end_formation := {}
@@ -400,6 +409,10 @@ func _update_status(sq: SquadState) -> void:
 	for id in sq.members:
 		var u := sim.state.get_unit(id)
 		if u == null or sq.is_detached(id) or u.player_controlled:
+			_member_progress.erase(id)
+			continue
+		if _recover_member_if_needed(sq, u):
+			moving += 1
 			continue
 		if u.move_state == UnitState.MoveState.MOVING and u.has_order():
 			moving += 1
@@ -410,6 +423,51 @@ func _update_status(sq: SquadState) -> void:
 		sq.status = status
 		sq.blocked = blocked
 		sim.state.squad_changed.emit(sq)
+
+
+func _recover_member_if_needed(sq: SquadState, u: UnitState) -> bool:
+	if u.vehicle_id >= 0 or u.is_reacting() or sq.order == SquadState.Order.HOLD:
+		# A tactical reaction, transport or Hold legitimately pauses formation movement.
+		var paused: Dictionary = _member_progress.get(u.id, {})
+		if not paused.is_empty():
+			paused.at = sim.state.time
+			paused.best = _flat(u.position, paused.target)
+			_member_progress[u.id] = paused
+		return false
+	if u.move_state == UnitState.MoveState.ARRIVED:
+		_member_progress.erase(u.id)
+		return false
+	var target := u.order_target
+	var p: Dictionary = _member_progress.get(u.id, {})
+	if p.is_empty() or _flat(p.get("target", Vector3.INF), target) > 0.5:
+		p = {"target": target, "best": _flat(u.position, target), "at": sim.state.time,
+			"last_pos": u.position, "attempts": 0, "failed": false}
+	var d := _flat(u.position, target)
+	if _flat(u.position, p.get("last_pos", u.position)) > 1.0:
+		p.last_pos = u.position
+		p.best = minf(float(p.best), d)
+		p.at = sim.state.time
+	var stalled := u.move_state == UnitState.MoveState.BLOCKED \
+		or (u.order == UnitState.Order.MOVE and sim.state.time - float(p.at) >= member_stall_s)
+	if stalled and int(p.attempts) < member_replans:
+		member_stalls += 1
+		member_recoveries += 1
+		p.attempts = int(p.attempts) + 1
+		p.at = sim.state.time
+		p.best = d
+		p.last_pos = u.position
+		p.failed = false
+		_member_progress[u.id] = p
+		sim.invalidate_local_route(u.id)
+		sim.state.issue_move(u.id, target, false)
+		return true
+	if stalled and not bool(p.failed):
+		member_failures += 1
+		p.failed = true
+		if u.nav_reason == "":
+			u.nav_reason = "blocked after member recovery budget"
+	_member_progress[u.id] = p
+	return false
 
 
 func _update_follow(sq: SquadState, force: bool) -> void:

@@ -37,6 +37,9 @@ var speed := 4.5
 var order := Order.NONE
 var order_target := Vector3.ZERO
 var move_state := MoveState.IDLE
+## NAVIGATION N1-A: concise reason for the current/last navigation outcome. This is
+## diagnostic state, but persisted so a blocked unit remains explainable after load.
+var nav_reason := ""
 ## True while the player drives this unit directly (orders are suspended, not lost).
 var player_controlled := false
 ## True while a physical body executes this unit (set by WorldSim when a body binds).
@@ -159,7 +162,7 @@ func to_dict() -> Dictionary:
 		"id": id, "name": unit_name, "kind": kind, "faction": faction,
 		"position": position, "yaw": yaw, "velocity": velocity,
 		"health": health, "max_health": max_health, "speed": speed,
-		"order": order, "order_target": order_target, "move_state": move_state,
+		"order": order, "order_target": order_target, "move_state": move_state, "nav_reason": nav_reason,
 		"player_controlled": player_controlled, "has_body": has_body, "loadout": loadout,
 		"veh": veh.to_dict() if veh else null, "vehicle_id": vehicle_id, "resupply": resupply_src,
 		"alive": alive, "weapon_id": weapon_id, "mag": mag, "reserve": reserve, "fire_auto": fire_auto,
@@ -192,6 +195,7 @@ static func from_dict(d: Dictionary) -> UnitState:
 	u.order = d.get("order", Order.NONE)
 	u.order_target = d.get("order_target", Vector3.ZERO)
 	u.move_state = d.get("move_state", MoveState.IDLE)
+	u.nav_reason = d.get("nav_reason", "")
 	u.player_controlled = d.get("player_controlled", false)
 	u.has_body = d.get("has_body", false)
 	u.copy_combat_from(d)

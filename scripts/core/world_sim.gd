@@ -54,8 +54,20 @@ var proxies := {}
 var detail: DetailManager
 ## Set when construction exists: abstract units do not pass through structures.
 var structures: StructureManager
-## Abstract units sliding along an obstacle: unit id -> side (+1 / -1).
-var _slide := {}
+## NAVIGATION N1-A: short obstacle refinements for abstract infantry. Routes are
+## transient; the authoritative order target remains on UnitState and a route is
+## recomputed after load or a tier transition if it is still needed.
+const INFANTRY_LOCAL_CELL := 5.0
+const INFANTRY_LOCAL_MAX_CELLS := 60000
+const INFANTRY_LOCAL_MAX_M := 500.0
+const INFANTRY_CLEARANCE_M := 0.5
+const INFANTRY_MAX_GRADE := 1.0
+var _local_routes := {}
+var _local_pending := {}
+var _local_attempts := {}
+var _local_route_cache := {}
+var local_nav_stats := {"searches": 0, "successes": 0, "failures": 0, "cache_hits": 0,
+	"recoveries": 0, "plan_ms_total": 0.0, "plan_ms_max": 0.0}
 ## Length of the last simulation step (s).
 var last_delta := 0.0
 ## Accumulated cost of the simulation parts (microseconds) and ticks counted.
@@ -63,6 +75,7 @@ var tick_usec := {"abstract": 0, "squads": 0, "tactics": 0, "war": 0, "brain": 0
 
 
 func register_body(id: int, body: Node3D) -> void:
+	_clear_local_route(id)
 	bodies[id] = body
 	var u := state.get_unit(id)
 	if u:
@@ -115,6 +128,7 @@ func _ready() -> void:
 	state.restored.connect(_on_restored)
 	state.unit_removed.connect(_on_unit_removed)
 	state.unit_died.connect(_on_unit_died)
+	state.order_changed.connect(_on_order_changed)
 	brain.connect_signals()
 	tactics.connect_signals()
 	# COMBAT-02: shots find nearby soldiers through the brain's grid.
@@ -142,6 +156,7 @@ func _on_unit_died(u: UnitState) -> void:
 
 ## A record went away (load without that unit): its body or proxy goes too.
 func _on_unit_removed(id: int) -> void:
+	_clear_local_route(id)
 	for reg: Dictionary in [bodies, proxies]:
 		var n: Node3D = reg.get(id)
 		if n:
@@ -153,6 +168,9 @@ func _physics_process(delta: float) -> void:
 	last_delta = delta
 	state.time += delta
 	var t0 := Time.get_ticks_usec()
+	# One bounded search per physics tick prevents a squad reaching a wall from causing
+	# eight A* spikes in the same frame. Waiting members keep their order and position.
+	_process_local_plan_budget()
 	for u in state.units.values():
 		if not u.has_body and u.alive and u.kind == UnitState.Kind.SOLDIER and u.vehicle_id < 0:
 			_abstract_step(u, delta)
@@ -184,6 +202,10 @@ func _physics_process(delta: float) -> void:
 ## A save was loaded into the existing records: bodies would write their old position
 ## back on the next tick, so they jump to the loaded one first.
 func _on_restored() -> void:
+	_local_routes.clear()
+	_local_pending.clear()
+	_local_attempts.clear()
+	_local_route_cache.clear()
 	# LOGISTICS-01: soldiers aboard a vehicle show nothing; the others show something again.
 	for u: UnitState in state.units.values():
 		if u.vehicle_id >= 0:
@@ -213,10 +235,14 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 			u.yaw = lerp_angle(u.yaw, u.watch_yaw, clampf(8.0 * delta, 0.0, 1.0))
 		return
 	var goal := u.react_target if reacting else u.order_target
-	var to := goal - u.position
+	var move_goal := _local_waypoint(u, goal, reacting)
+	var to := move_goal - u.position
 	to.y = 0.0
 	var dist := to.length()
-	if dist <= (0.5 if reacting else abstract_arrive_m):
+	if dist <= 1.0 and move_goal != goal:
+		_advance_local_route(u.id)
+		return
+	if dist <= (0.5 if reacting else abstract_arrive_m) and move_goal == goal:
 		u.position.x = goal.x
 		u.position.z = goal.z
 		_settle_height(u)
@@ -226,25 +252,204 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 		else:
 			u.order = UnitState.Order.NONE
 			u.move_state = UnitState.MoveState.ARRIVED
+			u.nav_reason = ""
 			u.anchor_pos = u.position
+		_clear_local_route(u.id)
 		return
 	var step := minf(u.speed * abstract_friction * delta, dist)
 	var dir := to / dist
-	if structures:
-		dir = _free_direction(u, dir, step)
-		if dir == Vector3.ZERO:
-			u.velocity = Vector3.ZERO
-			if reacting:
-				u.react_state = UnitState.ReactState.FAILED
-			else:
-				u.order = UnitState.Order.NONE
-				u.move_state = UnitState.MoveState.BLOCKED
-			return
+	if structures and _step_blocked(u.position, dir, step):
+		var invalid: Dictionary = _local_routes.get(u.id, {})
+		if bool(invalid.get("cached", false)):
+			_local_route_cache.erase(String(invalid.get("cache_key", "")))
+		_local_routes.erase(u.id)
+		_request_local_route(u, goal, reacting)
+		u.velocity = Vector3.ZERO
+		if not reacting:
+			u.move_state = UnitState.MoveState.MOVING
+		return
 	u.position += dir * step
 	u.velocity = dir * u.speed * abstract_friction
 	u.yaw = atan2(-dir.x, -dir.z)
 	u.move_state = UnitState.MoveState.MOVING
 	_settle_height(u)
+
+
+func _on_order_changed(u: UnitState) -> void:
+	_clear_local_route(u.id)
+	if u.order == UnitState.Order.MOVE:
+		u.nav_reason = ""
+
+
+func _clear_local_route(id: int) -> void:
+	_local_routes.erase(id)
+	_local_pending.erase(id)
+	_local_attempts.erase(id)
+
+
+func invalidate_local_route(id: int) -> void:
+	_clear_local_route(id)
+
+
+func _local_waypoint(u: UnitState, goal: Vector3, reacting: bool) -> Vector3:
+	var route: Dictionary = _local_routes.get(u.id, {})
+	if route.is_empty() or bool(route.get("reacting", false)) != reacting \
+			or _flat(route.get("goal", Vector3.INF), goal) > 0.5:
+		if not route.is_empty():
+			_local_routes.erase(u.id)
+		return goal
+	var pts: PackedVector3Array = route.pts
+	var i: int = route.i
+	while i < pts.size() - 1 and _flat(u.position, pts[i]) <= 1.0:
+		i += 1
+	route.i = i
+	_local_routes[u.id] = route
+	return pts[i] if i < pts.size() else goal
+
+
+func _advance_local_route(id: int) -> void:
+	var route: Dictionary = _local_routes.get(id, {})
+	if route.is_empty():
+		return
+	route.i = int(route.i) + 1
+	if int(route.i) >= (route.pts as PackedVector3Array).size():
+		_local_routes.erase(id)
+	else:
+		_local_routes[id] = route
+
+
+func _request_local_route(u: UnitState, goal: Vector3, reacting: bool) -> void:
+	if _local_pending.has(u.id):
+		return
+	var attempts: int = _local_attempts.get(u.id, 0)
+	if attempts >= 3:
+		_block_local_move(u, reacting, "local route retry budget exhausted")
+		return
+	if _flat(u.position, goal) > INFANTRY_LOCAL_MAX_M:
+		_block_local_move(u, reacting, "local obstacle beyond refinement range")
+		return
+	_local_pending[u.id] = {"goal": goal, "reacting": reacting}
+	_local_attempts[u.id] = attempts + 1
+	u.nav_reason = "local route queued"
+
+
+func _process_local_plan_budget() -> void:
+	if _local_pending.is_empty() or structures == null:
+		return
+	var id: int = _local_pending.keys()[0]
+	var req: Dictionary = _local_pending[id]
+	_local_pending.erase(id)
+	var u := state.get_unit(id)
+	if u == null or u.has_body or not u.alive or u.vehicle_id >= 0:
+		return
+	var reacting: bool = req.reacting
+	var goal: Vector3 = req.goal
+	if (reacting and (not u.is_reacting() or _flat(u.react_target, goal) > 0.5)) \
+			or (not reacting and (u.order != UnitState.Order.MOVE or _flat(u.order_target, goal) > 0.5)):
+		return
+	if not reacting:
+		var cached: PackedVector3Array = _local_route_cache.get(_squad_route_key(id), PackedVector3Array())
+		if cached.size() >= 2:
+			var adapted := cached.duplicate()
+			adapted.append(goal)
+			var cache_key := _squad_route_key(id)
+			_local_routes[id] = {"goal": goal, "reacting": false, "pts": adapted, "i": 1,
+				"cached": true, "cache_key": cache_key}
+			local_nav_stats.cache_hits += 1
+			local_nav_stats.recoveries += 1
+			u.nav_reason = "shared squad local route active"
+			return
+	var result := LocalRoutePlanner.plan(u.position, goal, INFANTRY_LOCAL_CELL,
+		INFANTRY_LOCAL_MAX_CELLS, INFANTRY_MAX_GRADE,
+		func(x: float, z: float) -> float: return _infantry_height(x, z),
+		func(x: float, z: float) -> bool: return _infantry_blocked(x, z), 75.0, 0.55, true, false)
+	local_nav_stats.searches += 1
+	local_nav_stats.plan_ms_total += float(result.ms)
+	local_nav_stats.plan_ms_max = maxf(float(local_nav_stats.plan_ms_max), float(result.ms))
+	if result.ok:
+		local_nav_stats.successes += 1
+		local_nav_stats.recoveries += 1
+		_local_routes[id] = {"goal": goal, "reacting": reacting, "pts": result.pts, "i": 1,
+			"cached": false}
+		if not reacting:
+			var cache_key := _squad_route_key(id)
+			if cache_key != "":
+				_local_route_cache[cache_key] = result.pts
+		u.nav_reason = "local route active"
+	else:
+		var shared := PackedVector3Array()
+		if not reacting:
+			shared = _local_route_cache.get(_squad_route_key(id), PackedVector3Array())
+		if shared.size() >= 2:
+			var adapted := shared.duplicate()
+			adapted.append(goal)
+			var cache_key := _squad_route_key(id)
+			_local_routes[id] = {"goal": goal, "reacting": false, "pts": adapted, "i": 1,
+				"cached": true, "cache_key": cache_key}
+			local_nav_stats.cache_hits += 1
+			local_nav_stats.recoveries += 1
+			u.nav_reason = "shared squad local route active"
+		else:
+			local_nav_stats.failures += 1
+			_block_local_move(u, reacting, String(result.reason))
+
+
+func _squad_route_key(unit_id: int) -> String:
+	var sq := state.squad_of(unit_id)
+	if sq == null or not sq.order_target.is_finite():
+		return ""
+	return "%d:%d:%d" % [sq.id, roundi(sq.order_target.x / 5.0), roundi(sq.order_target.z / 5.0)]
+
+
+func _block_local_move(u: UnitState, reacting: bool, reason: String) -> void:
+	u.velocity = Vector3.ZERO
+	u.nav_reason = "blocked: " + reason
+	if reacting:
+		u.react_state = UnitState.ReactState.FAILED
+	else:
+		u.order = UnitState.Order.NONE
+		u.move_state = UnitState.MoveState.BLOCKED
+		u.anchor_pos = u.position
+		state.order_changed.emit(u)
+
+
+func _infantry_height(x: float, z: float) -> float:
+	var p := Vector3(x, 0.0, z)
+	var h := terrain.data.get_height(p) if terrain else 0.0
+	var deck := state.roads.deck_height(p)
+	if not is_nan(deck):
+		return deck if is_nan(h) else maxf(h, deck)
+	return h
+
+
+func _infantry_blocked(x: float, z: float) -> bool:
+	var p := Vector3(x, 0.0, z)
+	# A bridge deck makes water passable, not structures placed on the deck.
+	if structures.blocks_point(Vector2(x, z), INFANTRY_CLEARANCE_M):
+		return true
+	if not is_nan(state.roads.deck_height(p)):
+		return false
+	return structures.is_wet(x, z)
+
+
+func _step_blocked(pos: Vector3, dir: Vector3, step: float) -> bool:
+	var p := Vector2(pos.x, pos.z)
+	var d := Vector2(dir.x, dir.z)
+	var near := maxf(step * 2.0, 0.3)
+	var look := maxf(step, 1.0)
+	var h0 := _infantry_height(pos.x, pos.z)
+	for distance: float in [near, look]:
+		var q: Vector2 = p + d * distance
+		if _infantry_blocked(q.x, q.y):
+			return true
+		var h1 := _infantry_height(q.x, q.y)
+		if is_nan(h0) or is_nan(h1) or absf(h1 - h0) / maxf(distance, 0.01) > INFANTRY_MAX_GRADE:
+			return true
+	return false
+
+
+static func _flat(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x - b.x, a.z - b.z).length()
 
 
 ## Height of an abstract unit: the terrain, or the bridge deck it stands on; a unit beside
@@ -265,49 +470,6 @@ func _settle_height(u: UnitState) -> void:
 				h = on.y
 		if not is_nan(h):
 			u.position.y = h
-
-
-## Abstract units have no physics; without this they walk straight through walls, HESCO
-## and fences. The next step is tested against the structures' blocking footprints
-## (StructureManager.blocks_point, a cell lookup): straight on if free, else sliding
-## 45° / 90° to one side (along a wall), else ZERO (the unit stops, BLOCKED). No path
-## search: an abstract unit does not find a gate on its own; it gets its navmesh path
-## again when it becomes detailed near the camera.
-func _free_direction(u: UnitState, dir: Vector3, step: float) -> Vector3:
-	var p := Vector2(u.position.x, u.position.z)
-	var look := maxf(step, 1.0)
-	# WORLD-INTEGRATION-03: the next step itself is tested too, not only the point 1 m
-	# ahead. Sliding at 45° along a wall, the look-ahead point cleared the footprint while
-	# the unit crept into it a few centimetres per tick, and "already inside: walk out"
-	# then let it walk straight through the wall.
-	var near := maxf(step * 2.0, 0.3)
-	if structures.blocks_point(p):
-		# Inside a footprint (built around it, or pushed in): out the way it came, else
-		# any free side; through it only when nothing else is free.
-		for deg: float in [180.0, 135.0, -135.0, 90.0, -90.0]:
-			var d := dir.rotated(Vector3.UP, deg_to_rad(deg))
-			if not structures.blocks_point(p + Vector2(d.x, d.z) * look):
-				return d
-		return dir
-	if not structures.blocks_point(p + Vector2(dir.x, dir.z) * look) and not structures.blocks_point(p + Vector2(dir.x, dir.z) * near):
-		_slide.erase(u.id)
-		return dir
-	# WORLD-SANDBOX-01: follow the obstacle on one side until the way to the target is
-	# free again (a gate in a HESCO perimeter, the end of a wall). Choosing a side anew
-	# every step made units slide back and forth in front of a wall forever.
-	var side: int = _slide.get(u.id, 0)
-	for attempt in 2:
-		if side == 0:
-			side = 1 if not structures.blocks_point(p + Vector2(dir.rotated(Vector3.UP, deg_to_rad(45.0)).x, dir.rotated(Vector3.UP, deg_to_rad(45.0)).z) * look) else -1
-		for deg: float in [45.0, 90.0, 135.0]:
-			var d := dir.rotated(Vector3.UP, deg_to_rad(deg * side))
-			var q := Vector2(d.x, d.z)
-			if not structures.blocks_point(p + q * look) and not structures.blocks_point(p + q * near):
-				_slide[u.id] = side
-				return d
-		side = -side
-	_slide.erase(u.id)
-	return Vector3.ZERO
 
 
 ## Counts for the HUD and tests: how many units have a body, how many are moving.

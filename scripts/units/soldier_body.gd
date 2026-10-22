@@ -282,6 +282,7 @@ func _finish(remaining: float, reacting: bool) -> void:
 func _finish_order(remaining: float) -> void:
 	unit.order = UnitState.Order.NONE
 	unit.move_state = UnitState.MoveState.ARRIVED if remaining <= blocked_distance else UnitState.MoveState.BLOCKED
+	unit.nav_reason = "" if unit.move_state == UnitState.MoveState.ARRIVED else "near path ended %.1f m from target" % remaining
 	unit.anchor_pos = global_position
 	_applied_target = Vector3.INF
 	sim.state.order_changed.emit(unit)

@@ -145,6 +145,7 @@ func issue_move(id: int, target: Vector3, cancel_reaction := true) -> bool:
 	u.order = UnitState.Order.MOVE
 	u.order_target = target
 	u.move_state = UnitState.MoveState.MOVING
+	u.nav_reason = ""
 	u.anchor_pos = Vector3.INF
 	# AI-SQUAD-01: the squad tactics set post_pos after this call; any other order ends the post.
 	u.post_pos = Vector3.INF
@@ -382,6 +383,7 @@ func apply_snapshot(snap: Dictionary) -> Dictionary:
 		u.order = fresh.order
 		u.order_target = fresh.order_target
 		u.move_state = fresh.move_state
+		u.nav_reason = fresh.nav_reason
 		u.loadout = fresh.loadout
 		u.vehicle_id = fresh.vehicle_id
 		u.resupply_src = fresh.resupply_src
