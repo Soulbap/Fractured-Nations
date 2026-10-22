@@ -58,6 +58,9 @@ var _progress_ref := Vector3.INF
 var _progress_t := 0.0
 var _stuck_stage := 0
 var _unstick_left := 0.0
+## Diagnostics (AI-WAR-LOGISTICS-01 movement parity): what the last AI step wanted.
+var dbg_desired := 0.0
+var dbg_next_dist := -1.0
 
 
 func _ready() -> void:
@@ -186,17 +189,32 @@ func _ai_step(delta: float) -> void:
 		else:
 			var dir := next - global_position
 			dir.y = 0.0
+			dbg_next_dist = dir.length()
+			# AI-WAR-LOGISTICS-01 (movement parity): the agent's next path point can lie under the soldier's feet
+			# (its own start point, or a point straight above / below it). The old code then asked for no movement
+			# at all, and as stuck detection ran only for a moving soldier, a whole squad could stand still on a
+			# valid path for minutes while the abstract tier walked the same route in a fraction of the time.
+			if dir.length_squared() <= 0.09:
+				dir = _next_distinct_dir()
 			if dir.length_squared() > 1e-4:
 				dir = dir.normalized()
 				desired = dir * walk_speed
 				_face(dir, delta)
-		if desired != Vector3.ZERO:
+			else:
+				_empty_path_s += delta
+				if _empty_path_s > 1.0:
+					_empty_path_s = 0.0
+					nav.target_position = goal
+		# A soldier that wants to go and gains no ground is stuck, whatever the reason (an order or reaction that was
+		# just finished above is over and has nothing to be stuck on).
+		if (reacting and unit.react_state == UnitState.ReactState.MOVING) or (not reacting and unit.order == UnitState.Order.MOVE):
 			_check_stuck(delta, remaining, reacting)
 	else:
 		_applied_target = Vector3.INF
 		# COMBAT-01b: standing, the soldier turns to what its AI watches (its target).
 		if not is_nan(unit.watch_yaw):
 			rotation.y = lerp_angle(rotation.y, unit.watch_yaw, clampf(turn_speed * delta, 0.0, 1.0))
+	dbg_desired = desired.length()
 	if _unstick_left > 0.0:
 		_unstick_left -= delta
 		_apply_velocity(desired, delta)
@@ -206,6 +224,18 @@ func _ai_step(delta: float) -> void:
 		_apply_velocity(_safe_velocity if desired != Vector3.ZERO else Vector3.ZERO, delta)
 	else:
 		_apply_velocity(desired, delta)
+
+
+## The first point of the current navigation path, from the agent's own index on, that lies more than 0.6 m
+## away on the ground (as a flat vector from the soldier); ZERO when there is none.
+func _next_distinct_dir() -> Vector3:
+	var path := nav.get_current_navigation_path()
+	for k in range(maxi(nav.get_current_navigation_path_index(), 0), path.size()):
+		var d := path[k] - global_position
+		d.y = 0.0
+		if d.length() > 0.6:
+			return d
+	return Vector3.ZERO
 
 
 ## The record's order was replaced from outside (load): apply it afresh.

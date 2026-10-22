@@ -54,3 +54,28 @@ extends Resource
 @export var focus_bonus := 1.5
 @export var route_risk_weight := 1.2
 @export var withdraw_eff := 0.32
+
+# --- AI-WAR-LOGISTICS-01: economy, force generation and logistics (numbers only, see WarEconomy / WarLogistics) ---
+## The starting stockpile of the faction's first supply depot is the shared FacilityDefs.START_STOCK times this.
+@export var start_stock_mult := 1.0
+## Trucks standing at the vehicle depot when the war begins (further vehicles are bought from the depot's stock).
+@export var start_trucks := 1
+## Explicit income, per owned objective value and minute, delivered to the faction's main base (kg / l / personnel).
+@export var income_supplies := 18.0
+@export var income_ammo := 10.0
+@export var income_fuel := 12.0
+@export var income_manpower := 0.25
+## The economy buys transport when it has fewer than these (a truck carries 12, an APC 8) and keeps the
+## stocks below as a floor for new purchases; recruiting stops at max_squads_econ squads.
+@export var want_trucks := 2
+@export var want_apcs := 1
+@export var max_squads_econ := 11
+@export var keep_ammo_kg := 600.0
+@export var keep_fuel_l := 800.0
+## A distant march (m) is done by vehicle when transport is free; shorter ones walk.
+@export var mech_min_m := 1500.0
+## Ammunition share (of a full load) below which a squad goes to a depot instead of an operation.
+@export var resupply_below := 0.55
+## Counterattack: share of a weakened attacker the local reserve must out-number, and the longest distance (m).
+@export var counter_ratio := 1.4
+@export var counter_range_m := 450.0

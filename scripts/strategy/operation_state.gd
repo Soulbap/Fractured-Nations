@@ -11,12 +11,15 @@
 ##             defence / the attack there.            -> COMPLETED on arrival.
 ##   MOVE      march to a point (the player's order, or an AI faction investigating a
 ##             contact: `contact_id`).                 -> COMPLETED on arrival.
+##   COUNTER   AI-WAR-LOGISTICS-01: the local reserve of a defended objective attacks a weakened, exposed attacker near it
+##             (`target_pos` = where the attackers are believed, `target_objective` = the objective defended); the squads
+##             keep their station, and go back to their defensive posture when it ends (success, failure or timeout).
 class_name OperationState
 extends RefCounted
 
-enum Type { ATTACK, DEFEND, REINFORCE, MOVE }
+enum Type { ATTACK, DEFEND, REINFORCE, MOVE, COUNTER }
 enum Phase { PLANNING, MOVING, ENGAGING, SECURING, COMPLETED, FAILED, CANCELLED }
-const TYPE_NAMES: Array[String] = ["Attack", "Defend", "Reinforce", "Move"]
+const TYPE_NAMES: Array[String] = ["Attack", "Defend", "Reinforce", "Move", "Counterattack"]
 const PHASE_NAMES: Array[String] = ["planning", "moving", "engaging", "securing", "completed", "failed", "cancelled"]
 
 var id := 0
@@ -47,8 +50,12 @@ var contact_id := -1
 ## staging point; DEPLOY: roles handed out, the fire support moves up; SUPPORT: support is set and
 ## suppressing; ASSAULT: the assault / maneuver squads close; SECURE: on the objective; WITHDRAW: breaking
 ## contact; DONE. Not a plan: the stage is read from what the squads actually do.
-enum Stage { APPROACH, DEPLOY, SUPPORT, ASSAULT, SECURE, WITHDRAW, DONE }
-const STAGE_NAMES: Array[String] = ["approach", "deploy", "support", "assault", "secure", "withdraw", "done"]
+## AI-WAR-LOGISTICS-01: a mechanized operation first runs the transport stages ASSEMBLE (squads and vehicles gather),
+## MOUNT (boarding), TRANSIT (the convoy drives) and DISEMBARK (unloading near the objective); they come before
+## APPROACH (the walk from the unloading point to the staging point), so every `stage >= APPROACH` test of the
+## attack stages is unchanged and the numeric values of the old stages are the same as in older saves.
+enum Stage { ASSEMBLE = -4, MOUNT = -3, TRANSIT = -2, DISEMBARK = -1, APPROACH = 0, DEPLOY = 1, SUPPORT = 2, ASSAULT = 3, SECURE = 4, WITHDRAW = 5, DONE = 6 }
+const STAGE_NAMES := {-4: "assemble", -3: "mount", -2: "transit", -1: "disembark", 0: "approach", 1: "deploy", 2: "support", 3: "assault", 4: "secure", 5: "withdraw", 6: "done"}
 var stage := Stage.APPROACH
 var stage_since := 0.0
 ## squad id -> SquadState.OpRole (temporary assignments, saved).
@@ -61,10 +68,23 @@ var fallback_pos := Vector3.INF
 var reassess_at := 0.0
 var assault_pos := Vector3.INF
 var reason := ""
+## AI-WAR-LOGISTICS-01: vehicles assigned to the operation (VehicleState.assign_* says the same from the other side),
+## the transport plan (assembly point, unloading point, drivers' task per vehicle, why foot / why mounted) and the
+## supply side (readiness decision, missions requested). Plain data, saved.
+var vehicles := PackedInt32Array()
+var transport := {}
+var readiness := {}
+## Why the operation was launched with less than it wanted (inspector).
+var supply_why := ""
 
 
 func stage_name() -> String:
-	return STAGE_NAMES[stage]
+	return STAGE_NAMES[int(stage)]
+
+
+## True while the operation is still moving by vehicle (assemble .. disembark).
+func is_transport_stage() -> bool:
+	return int(stage) < int(Stage.APPROACH)
 
 
 func is_active() -> bool:
@@ -118,4 +138,8 @@ static func from_dict(d: Dictionary) -> OperationState:
 	o.fallback_pos = d.get("fallback", Vector3.INF)
 	o.reassess_at = d.get("reassess_at", 0.0)
 	o.assault_pos = d.get("assault_pos", Vector3.INF)
+	o.vehicles = PackedInt32Array(d.get("vehicles", []))
+	o.transport = d.get("transport", {}).duplicate(true)
+	o.readiness = d.get("readiness", {}).duplicate(true)
+	o.supply_why = d.get("supply_why", "")
 	return o

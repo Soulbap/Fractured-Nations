@@ -507,6 +507,99 @@ func _replace_support(op: OperationState, sqs: Array, obj: ObjectiveState) -> vo
 			return
 
 
+# --- Counterattack of a defending reserve (AI-WAR-LOGISTICS-01) -------------------------------------------------------------
+
+## Success, failure and timeout limits of a counterattack.
+var counter_timeout_s := 260.0
+var counter_abort_eff := 0.36
+var counter_loss_ratio := 0.4
+var counter_clear_s := 20.0
+var counter_cool_ok_s := 150.0
+var counter_cool_fail_s := 420.0
+
+
+## The reserve attacks the believed attackers at op.target_pos with the ordinary squad tactics: a flank where the
+## ground gives a covered way (SquadTactics._plan decides), else a straight assault; the rest of the garrison keeps
+## its sector and fires. No new combat system: the operation owns the squads for its duration, then hands them back.
+func begin_counter(op: OperationState, obj: ObjectiveState) -> void:
+	op.phase = OperationState.Phase.ENGAGING
+	_set_stage(op, OperationState.Stage.ASSAULT, "the reserve of %s counterattacks the attackers believed at (%.0f, %.0f)" % [obj.obj_name if obj else "the objective", op.target_pos.x, op.target_pos.z])
+	var k := 0
+	for sq: SquadState in _squads(op):
+		op.roles[sq.id] = SquadState.OpRole.ASSAULT
+		sq.op_role = SquadState.OpRole.ASSAULT
+		var tactic := SquadState.Tactic.FLANK if k % 2 == 1 else SquadState.Tactic.ASSAULT
+		var res := sim.tactics.assign_for_operation(sq, tactic, op.target_pos, "operation #%d: counterattack from %s" % [op.id, obj.obj_name if obj else "the defence"], {"ext": true})
+		if not res.ok and tactic == SquadState.Tactic.FLANK:
+			res = sim.tactics.assign_for_operation(sq, SquadState.Tactic.ASSAULT, op.target_pos, "operation #%d: counterattack from %s" % [op.id, obj.obj_name if obj else "the defence"], {"ext": true})
+		if not res.ok:
+			op.stage_why += "; %s cannot attack (%s)" % [sq.squad_name, res.reason]
+		k += 1
+	op.assault_pos = op.target_pos
+
+
+## Once a second. Ends in success (no attacker is believed or seen near the target for counter_clear_s), failure
+## (effectiveness, losses, the objective contested or lost, time) or when nothing is left to command.
+func update_counter(op: OperationState, obj: ObjectiveState) -> void:
+	var now := sim.state.time
+	_prune(op)
+	var sqs := _squads(op)
+	if sqs.is_empty():
+		ws.end_operation(op, OperationState.Phase.FAILED, "the reserve was destroyed")
+		return
+	var a := _op_status(op, sqs, obj)
+	var believed := ws.intel.threat_near(op.faction, op.target_pos, 160.0)
+	if a.seen == 0 and believed <= 0:
+		if not _clear_since.has(op.id):
+			_clear_since[op.id] = now
+	else:
+		_clear_since.erase(op.id)
+	var why := ""
+	var success := false
+	if _clear_since.has(op.id) and now - float(_clear_since[op.id]) >= counter_clear_s:
+		success = true
+		why = "the attackers are gone from (%.0f, %.0f): the reserve returns" % [op.target_pos.x, op.target_pos.z]
+	elif obj != null and obj.owner != op.faction:
+		why = "%s was lost during the counterattack" % obj.obj_name
+	elif obj != null and obj.contested and obj.capture_faction >= 0 and obj.capture_faction != op.faction and obj.capture_progress > 0.4:
+		why = "the attackers are capturing %s: the reserve falls back to the defence" % obj.obj_name
+	elif float(a.soldiers) < op.start_strength * (1.0 - counter_loss_ratio):
+		why = "too many losses (%d of %d left)" % [a.soldiers, op.start_strength]
+	elif a.eff < counter_abort_eff and now - op.stage_since > 12.0:
+		why = "effectiveness %.2f: the counterattack is unfavourable" % a.eff
+	elif a.ammo < 0.12:
+		why = "ammunition down to %.0f%%" % (a.ammo * 100.0)
+	elif now - op.stage_since > counter_timeout_s:
+		why = "the counterattack took longer than %d s" % int(counter_timeout_s)
+	op.wait_reason = "" if why != "" else "counterattack in progress: %d of ours against %d seen, effectiveness %.2f" % [a.soldiers, a.seen, a.eff]
+	# A squad whose tactic ended (done, failed) is tasked again as long as the attack lasts.
+	if why == "":
+		for sq: SquadState in sqs:
+			if sq.tactic == SquadState.Tactic.NONE and now >= float(_cool.get(sq.id, 0.0)):
+				_cool[sq.id] = now + 10.0
+				sim.tactics.assign_for_operation(sq, SquadState.Tactic.ASSAULT, op.target_pos, "operation #%d: counterattack (resumed)" % op.id, {"ext": true})
+		return
+	_finish_counter(op, obj, sqs, success, why)
+
+
+func _finish_counter(op: OperationState, obj: ObjectiveState, sqs: Array, success: bool, why: String) -> void:
+	for sq: SquadState in sqs:
+		if sq.tactic != SquadState.Tactic.NONE and sq.tactic_owner == SquadState.Owner.OPERATION:
+			sim.tactics.cancel(sq, "counterattack ended")
+		sq.op_role = SquadState.OpRole.NONE
+	ws.war.counter_cool[op.target_objective] = now_plus(counter_cool_ok_s if success else counter_cool_fail_s)
+	_clear_since.erase(op.id)
+	if obj != null and obj.owner == op.faction:
+		ws._garrison(op, obj)  # back into the defensive posture: sectors and the local reserve
+	ws.log_event(op.faction, "counter", "Counterattack #%d at %s %s: %s" % [op.id, obj.obj_name if obj else "the objective", "succeeded" if success else "ended", why], op.target_pos)
+	_set_stage(op, OperationState.Stage.DONE, why)
+	ws.end_operation(op, OperationState.Phase.COMPLETED if success else OperationState.Phase.FAILED, why)
+
+
+func now_plus(s: float) -> float:
+	return sim.state.time + s
+
+
 # --- Measurements and helpers -------------------------------------------------------------------------------------
 
 ## The operation's combined state from its squads' own assessments: soldiers, a strength-weighted

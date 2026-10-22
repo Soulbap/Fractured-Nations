@@ -222,6 +222,24 @@ func add_squad(squad_name: String, faction: int, member_ids: Array, leader := -1
 	return sq
 
 
+## AI-WAR-LOGISTICS-01: soldiers (alive, of the squad's faction, in no squad) join an existing squad - replacements for its
+## casualties. Returns how many joined. The caller validates the fire teams (SquadTactics.validate).
+func add_to_squad(squad_id: int, member_ids: Array) -> int:
+	var sq := get_squad(squad_id)
+	if sq == null:
+		return 0
+	var n := 0
+	for id in member_ids:
+		var u := get_unit(id)
+		if u and u.kind == UnitState.Kind.SOLDIER and u.alive and u.faction == sq.faction and squad_of(id) == null and not sq.members.has(id):
+			sq.members.append(id)
+			n += 1
+	if n > 0:
+		_squad_index_dirty = true
+		squad_changed.emit(sq)
+	return n
+
+
 func get_squad(id: int) -> SquadState:
 	return squads.get(id)
 

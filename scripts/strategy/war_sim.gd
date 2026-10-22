@@ -57,6 +57,12 @@ var coord: OpCoordination
 ## AI-COMBAT-STRAT-01: the strategic picture (threat grid) and the decision scorer.
 var influence: StrategicInfluence
 var strat: StrategicDecision
+## AI-WAR-LOGISTICS-01: the AI factions' economy (income, recruiting, purchases), their bases (start compound,
+## later construction), mechanized transport of operations and supply missions / recovery.
+var econ: WarEconomy
+var bases: AiBases
+var mech: OpTransport
+var supply: WarLogistics
 var _profiles := {}
 var _t_capture := 0.0
 var _t_ops := 0.0
@@ -81,6 +87,10 @@ func _init(p_sim: WorldSim) -> void:
 	coord = OpCoordination.new(self)
 	influence = StrategicInfluence.new(self)
 	strat = StrategicDecision.new(self)
+	econ = WarEconomy.new(self)
+	bases = AiBases.new(self)
+	mech = OpTransport.new(self)
+	supply = WarLogistics.new(self)
 
 
 func setup(p_routes: StrategicRoutes) -> void:
@@ -119,10 +129,13 @@ func update(delta: float) -> void:
 		for op: OperationState in war.active_operations():
 			_update_operation(op)
 		ops_usec += Time.get_ticks_usec() - to
+		bases.update()
+		supply.update()
 	if _t_reserves >= 5.0:
 		_t_reserves = 0.0
 		for f: FactionState in war.factions.values():
 			_update_reserves(f)
+	econ.update(delta)
 	var now := sim.state.time
 	for f: FactionState in war.factions.values():
 		if not f.player and now >= f.next_decision_at:
@@ -221,6 +234,12 @@ func _transfer(o: ObjectiveState, f: int) -> void:
 	var of := war.faction(old)
 	if of:
 		of.objectives_lost += 1
+	# AI-WAR-LOGISTICS-01: the bases that stand on the objective change hands with it (their facilities serve
+	# the new owner and stop serving the old one).
+	if old >= 0:
+		for b: Dictionary in sim.logistics.bases.bases_of(old):
+			if _flat(b.anchor, o.position) <= o.radius + 60.0:
+				sim.logistics.bases.capture_base(b.id, f)
 	log_event(-1, "captured", "%s captured %s%s" % [WorldState.faction_name(f), o.obj_name,
 		(" from " + WorldState.faction_name(old)) if old >= 0 else ""], o.position)
 
@@ -308,7 +327,7 @@ func explain_faction(f: FactionState) -> Array[String]:
 		out.append("Decision at %d:%02d - %s" % [int(d.t / 3600.0), int(d.t / 60.0) % 60, d.notes])
 		if d.has("forces") and not d.forces.is_empty():
 			var fo: Dictionary = d.forces
-			out.append("  forces: %d available (%d soldiers, reserve kept %d of %d), %d committed, %d recovering, %d garrison" % [fo.available, fo.soldiers_available, fo.reserve_keep, fo.soldiers_total, fo.committed, fo.recovering, fo.garrison])
+			out.append("  forces: %d available (%d soldiers, reserve kept %d of %d), %d committed, %d recovering, %d garrison, %d newly recruited, %d squads with soldiers aboard" % [fo.available, fo.soldiers_available, fo.reserve_keep, fo.soldiers_total, fo.committed, fo.recovering, fo.garrison, fo.get("new", 0), fo.get("transported", 0)])
 		out.append("  focus: " + str(d.get("focus", "none")))
 		for e in d.get("exposed", []):
 			out.append("  exposed front: " + e)
@@ -320,7 +339,7 @@ func explain_faction(f: FactionState) -> Array[String]:
 			out.append("  investigate: " + d.investigate)
 		for i in mini(d.candidates.size(), 4):
 			var c: Dictionary = d.candidates[i]
-			out.append("  target %s: score %.2f (value %d, %.1f km)%s, %d defenders %s, needs %d%s" % [c.name, c.score, c.value, c.km, " retake" if c.retake else "", c.defenders, c.basis, c.need, " - too few free" if c.skipped else ""])
+			out.append("  target %s: score %.2f (value %d, %.1f km)%s, %d defenders %s, needs %d%s%s" % [c.name, c.score, c.value, c.km, " retake" if c.retake else "", c.defenders, c.basis, c.need, " - too few free" if c.skipped else "", (" | " + c.get("logi", "")) if c.get("logi", "") != "" else ""])
 		if d.attack != "":
 			out.append("  attack chosen: " + d.attack)
 	for op: OperationState in war.active_operations(f.id):
@@ -329,6 +348,15 @@ func explain_faction(f: FactionState) -> Array[String]:
 			"player" if op.player_ordered else "AI", (": " + op.reason) if op.reason != "" else ""])
 		for line in coord.explain(op):
 			out.append("    " + line)
+		for line in mech.explain(op):
+			out.append("    " + line)
+		if not op.readiness.is_empty():
+			out.append("    Readiness: %s - %s" % [op.readiness.get("verdict", ""), op.readiness.get("why", "")])
+		if op.supply_why != "":
+			out.append("    Supply: " + op.supply_why)
+	if not f.player or not sim.logistics.bases.bases_of(f.id).is_empty():
+		out.append_array(econ.explain(f))
+		out.append_array(supply.explain(f))
 	var best := intel.contacts_of(f.id)
 	best.sort_custom(func(a: ContactState, b: ContactState) -> bool: return a.conf * a.strength > b.conf * b.strength)
 	for c: ContactState in best.slice(0, 6):
@@ -402,22 +430,36 @@ func start_operation(f: int, type: OperationState.Type, squad_ids: Array, object
 	op.player_ordered = player
 	war.operations[op.id] = op
 	var any := false
+	var planned := {}
 	for sid in squad_ids:
 		var sq := sim.state.get_squad(sid)
 		if sq == null or sq.faction != f or sq.members.is_empty():
 			continue
 		if sq.op_id >= 0:
 			release_squads([sq.id], "reassigned")
-		if _send(op, sq):
+		var r := _plan_route(op, sq)
+		if not r.is_empty():
+			planned[sq.id] = r
 			op.squads.append(sq.id)
 			op.start_strength += strength(sq)
 			sq.op_id = op.id
-			sq.station_objective = -1
+			if type != OperationState.Type.COUNTER:
+				sq.station_objective = -1  # a counterattack keeps its station: the squad goes back to it
 			any = true
 	if not any:
 		war.operations.erase(op.id)
 		war.next_op_id -= 1
 		return null
+	# AI-WAR-LOGISTICS-01: a long march of an AI operation is made by vehicle when transport is free (OpTransport);
+	# the squads it does not carry, and every squad of a foot operation, walk the planned route at once.
+	var carried: Array = mech.plan(op) if (not player and type != OperationState.Type.MOVE and type != OperationState.Type.COUNTER) else []
+	if type == OperationState.Type.COUNTER:
+		op.transport = {"mode": "foot", "why": "a counterattack is local: no transport"}
+		coord.begin_counter(op, obj)
+	else:
+		for sid in op.squads:
+			if not carried.has(sid):
+				sim.squads.follow_route(sim.state.get_squad(sid), planned[sid])
 	op.phase = OperationState.Phase.MOVING
 	var fs := war.faction(f)
 	if fs:
@@ -430,10 +472,21 @@ func start_operation(f: int, type: OperationState.Type, squad_ids: Array, object
 ## Plans and starts the march of one squad for op. ATTACK stops at a staging point short
 ## of the objective; the others march into the objective area.
 func _send(op: OperationState, sq: SquadState) -> bool:
+	var r := _plan_route(op, sq)
+	if r.is_empty():
+		return false
+	sim.squads.follow_route(sq, r)
+	return true
+
+
+## The route of a squad for op (empty: none); sets the operation's staging point and route preview.
+func _plan_route(op: OperationState, sq: SquadState) -> PackedVector3Array:
+	if op.type == OperationState.Type.COUNTER:
+		return PackedVector3Array([op.target_pos])  # the squad tactics move the reserve, there is no march
 	var from := squad_center(sq)
 	var r := routes.route(from, op.target_pos, sim.terrain)
 	if r.is_empty():
-		return false
+		return r
 	if op.type == OperationState.Type.ATTACK:
 		r = _cut_before(r, op.target_pos, staging_m)
 		op.staging_pos = r[r.size() - 1]
@@ -444,8 +497,7 @@ func _send(op: OperationState, sq: SquadState) -> bool:
 			r[r.size() - 1] = _slot_in(obj, op.squads.size())
 	if op.route_preview.is_empty():
 		op.route_preview = r
-	sim.squads.follow_route(sq, r)
-	return true
+	return r
 
 
 ## The route up to the point where it first comes within dist of target.
@@ -494,6 +546,11 @@ func _update_operation(op: OperationState) -> void:
 	if op.squads.is_empty():
 		_end(op, OperationState.Phase.FAILED, "all squads lost")
 		return
+	# AI-WAR-LOGISTICS-01: while the squads ride (assemble .. disembark) OpTransport owns their movement.
+	if not op.transport.is_empty() and op.transport.get("mode", "foot") == "mech":
+		mech.update(op)
+		if op.is_transport_stage():
+			return
 	_track_march(op)
 	var obj := war.objective(op.target_objective)
 	var marching := false
@@ -501,7 +558,7 @@ func _update_operation(op: OperationState) -> void:
 		var sq := sim.state.get_squad(sid)
 		if not sq.route.is_empty():
 			marching = true
-		elif op.phase == OperationState.Phase.MOVING and sq.order != SquadState.Order.MOVE and _far_from_goal(op, sq):
+		elif op.type != OperationState.Type.COUNTER and op.phase == OperationState.Phase.MOVING and sq.order != SquadState.Order.MOVE and _far_from_goal(op, sq):
 			# Lost its route (blocked, a reaction ended it): plan again from where it is.
 			stuck_reroutes += 1
 			_send(op, sq)
@@ -591,6 +648,8 @@ func _update_operation(op: OperationState) -> void:
 					_garrison(op, obj)
 					_end(op, OperationState.Phase.COMPLETED, "arrived at %s" % obj.obj_name)
 				log_event(op.faction, "reinforcements", "Reinforcements arrived at %s" % (obj.obj_name if obj else "the front"), op.target_pos)
+		OperationState.Type.COUNTER:
+			coord.update_counter(op, obj)
 		OperationState.Type.MOVE:
 			if not marching:
 				for sid in op.squads:
@@ -757,6 +816,7 @@ func _end(op: OperationState, phase: OperationState.Phase, why: String) -> void:
 	op.ended_at = sim.state.time
 	op.outcome = why
 	march.erase(op.id)
+	mech.release_op(op, why)
 	for sid in op.squads:
 		var sq := sim.state.get_squad(sid)
 		if sq and sq.op_id == op.id:
@@ -785,6 +845,10 @@ func cancel(op_id: int, why := "cancelled") -> void:
 ## Finite replacements: when a faction has reserves left, fewer than max_squads squads
 ## and holds its HQ (else its most valuable objective), a new squad arrives there.
 func _update_reserves(f: FactionState) -> void:
+	# AI-WAR-LOGISTICS-01: an AI faction with a barracks recruits through it (WarEconomy: supplies, ammunition and
+	# personnel are paid); the free arrival below remains for the player's faction and for worlds without bases.
+	if not f.player and sim.logistics.bases.facility_of_kind(f.id, &"barracks") != null:
+		return
 	var now := sim.state.time
 	if f.reserves < 4 or now < f.next_reinforcement_at or squads_of(f.id).size() >= max_squads:
 		return
@@ -806,21 +870,30 @@ func _update_reserves(f: FactionState) -> void:
 
 ## New squad of n soldiers of faction f in a line around p (rifles equipped).
 func spawn_squad(f: FactionState, p: Vector3, n: int) -> SquadState:
-	var ids := []
 	f.squad_counter += 1
 	var tag := "%s%d" % [f.faction_name.left(1), f.squad_counter]
+	var ids := spawn_recruits(f, p, n, tag)
+	var sq := sim.state.add_squad(tag, f.id, ids)
+	# AI-SQUAD-01: war squads pick their formation from the terrain and the situation.
+	sq.formation_auto = true
+	sq.born_at = sim.state.time
+	return sq
+
+
+## n new soldiers (rifles equipped, no squad yet) in a line around p; the caller forms or joins a squad.
+func spawn_recruits(f: FactionState, p: Vector3, n: int, tag := "") -> Array:
+	var ids := []
+	if tag == "":
+		tag = "%s+" % f.faction_name.left(1)
 	for i in n:
 		var q := p + Vector3((i % 4 - 1.5) * 3.0, 0, (i / 4) * 3.0)
 		q = _ground(q)
 		var u := sim.state.add_unit(UnitState.Kind.SOLDIER, f.id, q + Vector3.UP * 0.3, 0.0, "%s-%d" % [tag, i + 1])
 		ids.append(u.id)
-	var sq := sim.state.add_squad(tag, f.id, ids)
-	# AI-SQUAD-01: war squads pick their formation from the terrain and the situation.
-	sq.formation_auto = true
 	sim.combat.equip_all(&"rifle")
 	if sim.detail:
 		sim.detail.create_missing_proxies()
-	return sq
+	return ids
 
 
 func _on_unit_died(u: UnitState) -> void:
@@ -1019,7 +1092,8 @@ func summary() -> Dictionary:
 	var out := {"time": snappedf(sim.state.time, 0.1), "factions": {}, "objectives": {}, "ops_active": war.active_operations().size(),
 		"ops_total": war.operations.size(), "update_us_avg": snappedf(float(update_usec) / maxi(updates, 1), 0.1), "update_us_max": update_usec_max,
 		"ai_us_max": ai_usec_max, "intel": intel.stats(), "routes": {"planned": routes.routes_planned if routes else 0, "ms_max": snappedf(routes.route_ms_max, 0.01) if routes else 0.0,
-		"ms_avg": snappedf(routes.route_ms_total / maxi(routes.routes_planned, 1), 0.01) if routes else 0.0}, "reroutes": stuck_reroutes}
+		"ms_avg": snappedf(routes.route_ms_total / maxi(routes.routes_planned, 1), 0.01) if routes else 0.0}, "reroutes": stuck_reroutes,
+		"econ": econ.summary(), "mech": mech.summary(), "supply": supply.summary(), "builds": bases.stats.duplicate()}
 	for f: FactionState in war.factions.values():
 		var soldiers := 0
 		for sq: SquadState in squads_of(f.id):

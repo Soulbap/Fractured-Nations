@@ -36,7 +36,7 @@ var sim: WorldSim
 var lsim: LogisticsSim
 var _tick := 0.0
 var _rule_timer := 0.0
-var stats := {"squads_recruited": 0, "vehicles_acquired": 0, "deliveries_by_rule": 0}
+var stats := {"squads_recruited": 0, "vehicles_acquired": 0, "deliveries_by_rule": 0, "soldiers_replaced": 0, "bases_captured": 0}
 
 
 func _init(p_lsim: LogisticsSim) -> void:
@@ -147,6 +147,64 @@ func base_kind(bid: int) -> String:
 	if kinds.has(&"hq"):
 		return "Main base"
 	return "Base" if kinds.size() >= 3 else "Outpost"
+
+
+## The faction's main base (the one with a headquarters, else the one with most facilities), -1 when it has none.
+func main_base(faction: int) -> int:
+	var best := -1
+	var best_score := -1
+	for b: Dictionary in bases_of(faction):
+		var sc := facilities_of(b.id).size() + (100 if base_kind(b.id) == "Main base" else 0)
+		if sc > best_score:
+			best_score = sc
+			best = b.id
+	return best
+
+
+## The first facility of a kind in the faction's bases (the nearest to `near` when given), or null.
+func facility_of_kind(faction: int, kind: StringName, near := Vector3.INF) -> StructureState:
+	var best: StructureState = null
+	var best_d := INF
+	for b: Dictionary in bases_of(faction):
+		for s in facilities_of(b.id):
+			if FacilityDefs.kind_of(s.type_id) != kind:
+				continue
+			var d := 0.0 if not near.is_finite() else Vector2(s.position.x - near.x, s.position.z - near.z).length()
+			if d < best_d:
+				best_d = d
+				best = s
+	return best
+
+
+## A base falls to another faction (its objective was captured): the buildings, their stores and their pending
+## orders change hands intact - the stock is the captor's loot and leaves the old owner's books (the old owner's
+## ledger records it) - queued recruits and vehicles are cancelled first (resources back into the stores, the
+## personnel back into the old faction's reserves, so nobody is lost or created). Vehicles standing there keep
+## their own faction. Returns {ok, loot, facilities}.
+func capture_base(bid: int, new_faction: int) -> Dictionary:
+	var b: Dictionary = _cs().bases.get(bid, {})
+	if b.is_empty() or int(b.faction) == new_faction:
+		return {"ok": false}
+	var old: int = b.faction
+	var loot := {"ammo": 0.0, "fuel": 0.0, "supplies": 0.0}
+	var n := 0
+	for s in facilities_of(bid):
+		while not s.facility.get("queue", []).is_empty():
+			cancel_queue(s.id, 0)
+		s.faction = new_faction
+		n += 1
+		if s.inventory != null:
+			for k in loot:
+				loot[k] += s.inventory.get_qty(StringName(k))
+	b["faction"] = new_faction
+	var of := sim.state.war.faction(old)
+	if of:
+		for k in loot:
+			of.ledger["lost_with_bases"][k] = float(of.ledger["lost_with_bases"][k]) + loot[k]
+	stats.bases_captured += 1
+	lsim._event(new_faction, "%s captured: %d facilities, %d supplies, %d ammunition, %d fuel" % [b.name, n, roundi(loot.supplies), roundi(loot.ammo), roundi(loot.fuel)])
+	lsim._event(old, "%s was lost to %s" % [b.name, WorldState.faction_name(new_faction)])
+	return {"ok": true, "loot": loot, "facilities": n}
 
 
 ## Everything the player may want to know about a base.
@@ -366,10 +424,51 @@ func _finish_squad(s: StructureState) -> void:
 	var front := def.bounds().position.z if def else -4.0
 	var at := s.position + Basis(Vector3.UP, s.yaw) * Vector3(0.0, 0.0, front - 5.0)
 	at.y = lsim.vsim.ground_at(at)
-	var sq := sim.war.spawn_squad(f, at, SQUAD_SIZE)
+	# AI-WAR-LOGISTICS-01: an AI faction's recruits first replace the casualties of a depleted squad resting at the
+	# base (the squad is rebuilt, not duplicated); what is left forms a new squad. The player's recruits always
+	# form a new squad (the player decides about his own squads).
+	var left := SQUAD_SIZE
+	if not f.player:
+		left = _fill_depleted(f, s, at, SQUAD_SIZE)
+	if left <= 0:
+		lsim._event(s.faction, "%d replacements join squads at %s" % [SQUAD_SIZE, lsim.store_name(s)])
+		return
+	var sq := sim.war.spawn_squad(f, at, left)
 	sq.station_objective = -1
+	sq.origin = "recruit"
+	sq.born_at = sim.state.time
+	f.ledger.squads_recruited = int(f.ledger.squads_recruited) + 1
 	stats.squads_recruited += 1
 	lsim._event(s.faction, "Squad %s is ready at %s" % [sq.squad_name, lsim.store_name(s)])
+
+
+## Recruits (n) join depleted squads of faction f that stand within the base: the most depleted first, up to
+## SQUAD_SIZE each. Returns the recruits that found no squad to join.
+func _fill_depleted(f: FactionState, barracks: StructureState, at: Vector3, n: int) -> int:
+	var b: Dictionary = _cs().bases.get(barracks.base_id, {})
+	var anchor: Vector3 = b.get("anchor", barracks.position)
+	var cands: Array = []
+	for sq: SquadState in sim.state.all_squads():
+		if sq.faction != f.id or sq.op_id >= 0 or sq.members.size() >= SQUAD_SIZE - 1 or sq.members.is_empty():
+			continue
+		if sq.tactic_owner == SquadState.Owner.PLAYER:
+			continue
+		if Vector2(sim.war.squad_center(sq).x - anchor.x, sim.war.squad_center(sq).z - anchor.z).length() > JOIN_M:
+			continue
+		cands.append(sq)
+	cands.sort_custom(func(a: SquadState, c: SquadState) -> bool: return a.members.size() < c.members.size())
+	for sq: SquadState in cands:
+		if n <= 0:
+			break
+		var take := mini(n, SQUAD_SIZE - sq.members.size())
+		if take <= 0:
+			continue
+		var ids := sim.war.spawn_recruits(f, at, take)
+		var joined := sim.state.add_to_squad(sq.id, ids)
+		sim.tactics.validate(sq)
+		n -= joined
+		stats.soldiers_replaced = int(stats.get("soldiers_replaced", 0)) + joined
+	return n
 
 
 func _finish_vehicle(s: StructureState, type_id: StringName) -> bool:
@@ -391,6 +490,9 @@ func _finish_vehicle(s: StructureState, type_id: StringName) -> bool:
 		var yaw := s.yaw  # facing out of the depot front
 		var u := sim.state.add_vehicle(type_id, s.faction, p, yaw)
 		u.veh.fuel = def.fuel_capacity
+		var bf := sim.state.war.faction(s.faction)
+		if bf:
+			bf.ledger.vehicles_bought = int(bf.ledger.vehicles_bought) + 1
 		if sim.detail:
 			sim.detail.create_missing_proxies()
 		stats.vehicles_acquired += 1

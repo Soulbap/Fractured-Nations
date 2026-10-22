@@ -44,6 +44,12 @@ var squad_id := -1
 var cargo: Inventory
 var convoy_id := -1
 var job := {}
+## AI-WAR-LOGISTICS-01: what an AI faction has committed the vehicle to: "" (free), "op" (assign_id = the operation
+## it carries squads for), "supply" (assign_id = the supply mission) or "return" (driving back to a base after a
+## task). Only WarSim code writes it, and only for vehicles that are not player-controlled; the player taking a
+## vehicle clears it (OpTransport / WarLogistics notice and adapt).
+var assign_kind := ""
+var assign_id := -1
 
 var phase := Phase.NONE
 var phase_since := 0.0
@@ -94,7 +100,7 @@ func to_dict() -> Dictionary:
 		rt.append([snappedf(p.x, 0.01), snappedf(p.y, 0.01), snappedf(p.z, 0.01)])
 	return {"type": String(type_id), "speed": speed, "steer": steer, "fuel": fuel, "odo": odometer,
 		"status": status, "reason": reason, "route": rt, "cap": Array(route_cap), "route_i": route_i,
-		"cargo": cargo.to_dict() if cargo else null, "convoy": convoy_id, "job": job,
+		"cargo": cargo.to_dict() if cargo else null, "convoy": convoy_id, "job": job, "assign": [assign_kind, assign_id],
 		"occ": Array(occupants), "pending": Array(pending), "squad": squad_id, "phase": phase, "phase_since": phase_since, "dest": transport_dest,
 		"info": route_info, "stuck": stuck_s, "reverse": reverse_left, "recoveries": recoveries, "replans": replans}
 
@@ -124,6 +130,9 @@ func copy_from(d: Dictionary) -> void:
 	cargo = Inventory.from_dict(d.cargo) if d.get("cargo") is Dictionary else Inventory.make(def().cargo_capacity)
 	convoy_id = d.get("convoy", -1)
 	job = d.get("job", {})
+	var asg: Array = d.get("assign", ["", -1])
+	assign_kind = String(asg[0])
+	assign_id = int(asg[1])
 	pending = PackedInt32Array(d.get("pending", []))
 	squad_id = d.get("squad", -1)
 	phase = d.get("phase", Phase.NONE)

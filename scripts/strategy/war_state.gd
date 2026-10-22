@@ -21,6 +21,14 @@ var contacts := {}
 var next_contact_id := 1
 ## Reports on their way to the faction (observed, not yet received): IntelSim.
 var intel_pending: Array = []
+## AI-WAR-LOGISTICS-01: supply missions of the AI factions (a truck takes supplies from a depot to a squad, an
+## operation or another depot): dictionaries, see WarLogistics. Saved with the war.
+var missions: Array = []
+var next_mission_id := 1
+## AI-WAR-LOGISTICS-01: buildings ordered by AI factions that are still under construction (AiBases).
+var builds: Array = []
+## AI-WAR-LOGISTICS-01: objective id -> time before which no new counterattack is launched there (after one ended).
+var counter_cool := {}
 
 
 func faction(id: int) -> FactionState:
@@ -70,7 +78,7 @@ func to_dict() -> Dictionary:
 			cl.append(c.to_dict())
 	return {"active": active, "player_faction": player_faction, "factions": f, "objectives": o, "operations": p,
 		"next_op_id": next_op_id, "log": events.duplicate(true), "contacts": cl, "next_contact": next_contact_id,
-		"intel_pending": intel_pending.duplicate(true)}
+		"intel_pending": intel_pending.duplicate(true), "missions": missions.duplicate(true), "next_mission": next_mission_id, "builds": builds.duplicate(true), "counter_cool": counter_cool.duplicate()}
 
 
 func from_dict(d: Dictionary) -> void:
@@ -98,3 +106,7 @@ func from_dict(d: Dictionary) -> void:
 		contacts[c.faction][c.id] = c
 	next_contact_id = d.get("next_contact", 1)
 	intel_pending = d.get("intel_pending", []).duplicate(true)
+	missions = d.get("missions", []).duplicate(true)
+	next_mission_id = d.get("next_mission", 1)
+	builds = d.get("builds", []).duplicate(true)
+	counter_cool = d.get("counter_cool", {}).duplicate()

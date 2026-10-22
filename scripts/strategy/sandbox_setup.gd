@@ -89,6 +89,8 @@ static func create(demo: CoreDemo, routes: StrategicRoutes) -> Dictionary:
 		f.reserves_start = d[3]
 		f.next_reinforcement_at = sim.war.reinforce_interval_s
 		f.next_decision_at = 20.0 + i * 7.0
+		# AI-WAR-LOGISTICS-01: the economy starts after the first strategic decision, with its own stagger.
+		f.econ_next_at = 30.0 + i * 5.0
 		war.factions[f.id] = f
 		var hq: ObjectiveState = by_name.get("%s HQ" % f.faction_name)
 		f.hq_objective = hq.id if hq else -1
@@ -105,12 +107,17 @@ static func create(demo: CoreDemo, routes: StrategicRoutes) -> Dictionary:
 				var sq := sim.war.spawn_squad(f, spot, SQUAD_SIZE)
 				sq.station_objective = o.id
 				squads += 1
+	var base_info := {}
+	var centre: ObjectiveState = by_name.get("Sentrum")
 	for f: FactionState in war.factions.values():
 		var hq := war.objective(f.hq_objective)
 		if hq and demo.structures:
 			_fortify(demo, hq)
+			# AI-WAR-LOGISTICS-01: the AI factions start with a real main base (the player builds his own).
+			if not f.player and not sim.war.bases.is_disabled():
+				base_info[f.faction_name] = sim.war.bases.create_start_base(f, hq.position, centre.position if centre else Vector3.ZERO)
 	sim.war.log_event(-1, "info", "The war begins: North (you), South (aggressive), East (defensive)")
-	return {"objectives": war.objectives.size(), "factions": war.factions.size(), "squads": squads,
+	return {"objectives": war.objectives.size(), "factions": war.factions.size(), "squads": squads, "bases": base_info,
 		"soldiers": sim.state.count_of(UnitState.Kind.SOLDIER)}
 
 

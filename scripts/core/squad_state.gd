@@ -126,6 +126,13 @@ var prev_yaw := 0.0
 ## Written by the decision code itself and saved, so a loaded squad still explains itself.
 var tactic_why := ""
 var tactic_rejected := ""
+## AI-WAR-LOGISTICS-01: where the squad came from ("start", "reserve", "recruit") and when, the structure it is
+## recovering at (resupply / replacements; -1 none) with the reason and the place it returns to afterwards.
+var origin := "start"
+var born_at := 0.0
+var recover_site := -1
+var recover_why := ""
+var home_pos := Vector3.INF
 
 
 func tactic_name() -> String:
@@ -182,6 +189,7 @@ func to_dict() -> Dictionary:
 		"tactic_dir": tactic_dir, "tactic_dest": tactic_dest, "tactic_route": Array(tactic_route), "tactic_route_i": tactic_route_i,
 		"tactic_replans": tactic_replans, "tactic_leg": tactic_leg, "op_role": op_role, "defence_role": defence_role, "tactic_ext": tactic_ext, "recover_until": recover_until, "tactic_op": tactic_op, "tactic_leg_since": tactic_leg_since, "formation_auto": formation_auto, "tactic_cooldown_until": tactic_cooldown_until, "tactic_commit_until": tactic_commit_until,
 		"prev_order": prev_order, "prev_target": prev_target, "prev_yaw": prev_yaw, "tactic_why": tactic_why, "tactic_rejected": tactic_rejected,
+		"origin": origin, "born_at": born_at, "recover_site": recover_site, "recover_why": recover_why, "home_pos": home_pos,
 	}
 
 
@@ -239,4 +247,9 @@ static func from_dict(d: Dictionary) -> SquadState:
 	s.prev_yaw = d.get("prev_yaw", 0.0)
 	s.tactic_why = d.get("tactic_why", "")
 	s.tactic_rejected = d.get("tactic_rejected", "")
+	s.origin = d.get("origin", "start")
+	s.born_at = d.get("born_at", 0.0)
+	s.recover_site = d.get("recover_site", -1)
+	s.recover_why = d.get("recover_why", "")
+	s.home_pos = d.get("home_pos", Vector3.INF)
 	return s

@@ -41,6 +41,14 @@ var focus_why := ""
 ## AI-INTEL-01: the last strategic decisions with what they were based on (runtime, newest
 ## last, at most WarSim.DECISIONS_MAX).
 var decisions: Array = []
+## AI-WAR-LOGISTICS-01: what the economy took in from explicit sources and spent (saved; WarEconomy), the
+## last economic decision in words (runtime), and when the next economic / logistic decisions are due.
+var ledger := {"in": {"ammo": 0.0, "fuel": 0.0, "supplies": 0.0}, "manpower": 0, "squads_recruited": 0, "vehicles_bought": 0,
+	"lost_with_bases": {"ammo": 0.0, "fuel": 0.0, "supplies": 0.0}}
+var econ_note := ""
+var econ_next_at := 0.0
+var supply_next_at := 0.0
+var econ_actions: Array = []
 
 
 func to_dict() -> Dictionary:
@@ -49,7 +57,8 @@ func to_dict() -> Dictionary:
 		"recovery_until": recovery_until, "next_decision": next_decision_at, "squad_counter": squad_counter,
 		"casualties": casualties, "kills": kills, "captured": objectives_captured, "lost": objectives_lost,
 		"ops_started": ops_started, "ops_succeeded": ops_succeeded, "ops_failed": ops_failed, "last_decision": last_decision,
-		"focus": [focus_kind, focus_objective, focus_since, focus_until, focus_utility, focus_why]}
+		"focus": [focus_kind, focus_objective, focus_since, focus_until, focus_utility, focus_why],
+		"ledger": ledger.duplicate(true), "econ_next": econ_next_at, "supply_next": supply_next_at}
 
 
 static func from_dict(d: Dictionary) -> FactionState:
@@ -80,4 +89,8 @@ static func from_dict(d: Dictionary) -> FactionState:
 	f.focus_until = fc[3]
 	f.focus_utility = fc[4]
 	f.focus_why = fc[5]
+	if d.has("ledger"):
+		f.ledger = d.ledger.duplicate(true)
+	f.econ_next_at = d.get("econ_next", 0.0)
+	f.supply_next_at = d.get("supply_next", 0.0)
 	return f
