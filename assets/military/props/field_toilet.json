@@ -75,5 +75,19 @@
    "note": ""
   }
  ],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "field_toilet_LOD0: 2 n-gons",
+   "1 parts fully enclosed, not touching (eyes/internals?): ['field_toilet_LOD0']"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: field_toilet_LOD0 (4 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

@@ -65,5 +65,21 @@
   ]
  ],
  "markers": [],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "floating/detached part in pallet_euro_LOD0 (8 verts at [0.0, -0.175, 0.133])",
+   "floating/detached part in pallet_euro_LOD0 (8 verts at [0.0, 0.175, 0.133])"
+  ],
+  "warnings": [
+   "pallet_euro_LOD0: duplicate verts=36 loose verts=0"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: pallet_euro_LOD0 (60 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

@@ -74,5 +74,20 @@
  ],
  "markers": [],
  "structure": null,
- "bore_m": 1.0
+ "bore_m": 1.0,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: road_culvert_LOD0 (4 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "road_culvert_LOD0: duplicate verts=88 loose verts=0"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: road_culvert_LOD0 (12 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

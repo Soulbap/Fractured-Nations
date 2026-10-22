@@ -122,6 +122,19 @@
   "category": "Vehicle training",
   "max_slope_deg": 3.0,
   "blocks_navigation": false,
-  "max_ground_gap": 0.3
+  "max_ground_gap": 0.3,
+  "walkable": true,
+  "sink": 0.15
+ },
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [],
+  "accepted": [
+   "hidden back-to-back faces: vehicle_parking_pad_LOD0 (35 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

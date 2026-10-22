@@ -65,5 +65,18 @@
   ]
  ],
  "markers": [],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: fuel_drum_LOD0 (115 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "fuel_drum_LOD0: 14 n-gons"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

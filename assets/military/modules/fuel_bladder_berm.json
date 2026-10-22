@@ -109,5 +109,20 @@
   "blocks_navigation": true,
   "max_ground_gap": 0.5
  },
- "capacity_m3": 50
+ "capacity_m3": 50,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: fuel_bladder_berm_LOD0 (10 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "fuel_bladder_berm_LOD0: duplicate verts=24 loose verts=0",
+   "fuel_bladder_berm_LOD0: 6 n-gons",
+   "1 parts fully enclosed, not touching (eyes/internals?): ['fuel_bladder_berm_LOD0']"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

@@ -1,0 +1,5137 @@
+{
+ "assets": {
+  "hq_building": {
+   "pass": false,
+   "errors": [
+    "z-fighting: hq_building_LOD0 (133 overlapping coplanar tri pairs)",
+    "floating/detached part in hq_building_LOD0 (24 verts at [6.4, 5.11, 2.1])",
+    "floating/detached part in hq_building_LOD0 (24 verts at [4.0, 5.11, 2.1])",
+    "floating/detached part in hq_building_LOD0 (24 verts at [-4.0, 5.11, 2.1])",
+    "floating/detached part in hq_building_LOD0 (24 verts at [-6.4, 5.11, 2.1])"
+   ],
+   "warnings": [
+    "hq_building_LOD0: duplicate verts=22 loose verts=0",
+    "hq_building_LOD0: 196 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: hq_building_LOD0 (249 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.6,
+   "zfighting": [
+    {
+     "where": "hq_building_LOD0",
+     "tri_pairs": 133
+    }
+   ],
+   "floating": [
+    {
+     "object": "hq_building_LOD0",
+     "island_verts": 24,
+     "center": [
+      6.4,
+      5.11,
+      2.1
+     ]
+    },
+    {
+     "object": "hq_building_LOD0",
+     "island_verts": 24,
+     "center": [
+      4.0,
+      5.11,
+      2.1
+     ]
+    },
+    {
+     "object": "hq_building_LOD0",
+     "island_verts": 24,
+     "center": [
+      -4.0,
+      5.11,
+      2.1
+     ]
+    },
+    {
+     "object": "hq_building_LOD0",
+     "island_verts": 24,
+     "center": [
+      -6.4,
+      5.11,
+      2.1
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "hq_building_LOD0": 4334,
+     "hq_building_LOD1": 1056,
+     "hq_building_LOD2": 156
+    },
+    "verts": {
+     "hq_building_LOD0": 2700,
+     "hq_building_LOD1": 706,
+     "hq_building_LOD2": 118
+    },
+    "materials_per_lod": {
+     "hq_building_LOD0": 7,
+     "hq_building_LOD1": 7,
+     "hq_building_LOD2": 5
+    },
+    "draw_calls_est": 19,
+    "texture_vram_mb_uncompressed": 59.7,
+    "budget": "pc",
+    "over_budget": [
+     "materials 7 > 6 (merge/atlas)"
+    ]
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "barracks_block": {
+   "pass": false,
+   "errors": [
+    "z-fighting: barracks_block_LOD0 (416 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "barracks_block_LOD0: duplicate verts=40 loose verts=0",
+    "barracks_block_LOD0: 114 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: barracks_block_LOD0 (477 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.45,
+   "zfighting": [
+    {
+     "where": "barracks_block_LOD0",
+     "tri_pairs": 416
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "barracks_block_LOD0": 4384,
+     "barracks_block_LOD1": 1180,
+     "barracks_block_LOD2": 136
+    },
+    "verts": {
+     "barracks_block_LOD0": 2798,
+     "barracks_block_LOD1": 802,
+     "barracks_block_LOD2": 106
+    },
+    "materials_per_lod": {
+     "barracks_block_LOD0": 6,
+     "barracks_block_LOD1": 4,
+     "barracks_block_LOD2": 4
+    },
+    "draw_calls_est": 14,
+    "texture_vram_mb_uncompressed": 49.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "supply_depot": {
+   "pass": false,
+   "errors": [
+    "z-fighting: supply_depot_LOD0 (84 overlapping coplanar tri pairs)",
+    "floating/detached part in supply_depot_LOD0 (4 verts at [-10.02, 4.0, 4.6])",
+    "floating/detached part in supply_depot_LOD0 (4 verts at [-10.02, -4.0, 4.6])",
+    "floating/detached part in supply_depot_LOD0 (4 verts at [10.02, -4.0, 4.6])",
+    "floating/detached part in supply_depot_LOD0 (4 verts at [10.02, 4.0, 4.6])"
+   ],
+   "warnings": [
+    "supply_depot_LOD0: duplicate verts=30 loose verts=0",
+    "supply_depot_LOD0: 58 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: supply_depot_LOD0 (470 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.6,
+   "zfighting": [
+    {
+     "where": "supply_depot_LOD0",
+     "tri_pairs": 84
+    }
+   ],
+   "floating": [
+    {
+     "object": "supply_depot_LOD0",
+     "island_verts": 4,
+     "center": [
+      -10.02,
+      4.0,
+      4.6
+     ]
+    },
+    {
+     "object": "supply_depot_LOD0",
+     "island_verts": 4,
+     "center": [
+      -10.02,
+      -4.0,
+      4.6
+     ]
+    },
+    {
+     "object": "supply_depot_LOD0",
+     "island_verts": 4,
+     "center": [
+      10.02,
+      -4.0,
+      4.6
+     ]
+    },
+    {
+     "object": "supply_depot_LOD0",
+     "island_verts": 4,
+     "center": [
+      10.02,
+      4.0,
+      4.6
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "supply_depot_LOD0": 2948,
+     "supply_depot_LOD1": 1004,
+     "supply_depot_LOD2": 120
+    },
+    "verts": {
+     "supply_depot_LOD0": 1850,
+     "supply_depot_LOD1": 650,
+     "supply_depot_LOD2": 106
+    },
+    "materials_per_lod": {
+     "supply_depot_LOD0": 7,
+     "supply_depot_LOD1": 5,
+     "supply_depot_LOD2": 5
+    },
+    "draw_calls_est": 17,
+    "texture_vram_mb_uncompressed": 50.3,
+    "budget": "pc",
+    "over_budget": [
+     "materials 7 > 6 (merge/atlas)"
+    ]
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "vehicle_depot": {
+   "pass": false,
+   "errors": [
+    "z-fighting: vehicle_depot_LOD0 (65 overlapping coplanar tri pairs)",
+    "floating/detached part in vehicle_depot_LOD0 (4 verts at [-8.0, 8.012, 6.12])",
+    "floating/detached part in vehicle_depot_LOD0 (4 verts at [0.0, 8.012, 6.12])",
+    "floating/detached part in vehicle_depot_LOD0 (4 verts at [8.0, 8.012, 6.12])",
+    "floating/detached part in vehicle_depot_LOD0 (4 verts at [12.52, -5.0, 4.92])",
+    "floating/detached part in vehicle_depot_LOD0 (4 verts at [12.52, 0.0, 4.92])",
+    "floating/detached part in vehicle_depot_LOD0 (4 verts at [12.52, 5.0, 4.92])",
+    "floating/detached part in vehicle_depot_LOD0 (4 verts at [-5.0, -8.02, 4.92])",
+    "floating/detached part in vehicle_depot_LOD0 (4 verts at [0.0, -8.02, 4.92])"
+   ],
+   "warnings": [
+    "vehicle_depot_LOD0: duplicate verts=16 loose verts=0",
+    "vehicle_depot_LOD0: 84 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: vehicle_depot_LOD0 (465 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.6,
+   "zfighting": [
+    {
+     "where": "vehicle_depot_LOD0",
+     "tri_pairs": 65
+    }
+   ],
+   "floating": [
+    {
+     "object": "vehicle_depot_LOD0",
+     "island_verts": 4,
+     "center": [
+      -8.0,
+      8.012,
+      6.12
+     ]
+    },
+    {
+     "object": "vehicle_depot_LOD0",
+     "island_verts": 4,
+     "center": [
+      0.0,
+      8.012,
+      6.12
+     ]
+    },
+    {
+     "object": "vehicle_depot_LOD0",
+     "island_verts": 4,
+     "center": [
+      8.0,
+      8.012,
+      6.12
+     ]
+    },
+    {
+     "object": "vehicle_depot_LOD0",
+     "island_verts": 4,
+     "center": [
+      12.52,
+      -5.0,
+      4.92
+     ]
+    },
+    {
+     "object": "vehicle_depot_LOD0",
+     "island_verts": 4,
+     "center": [
+      12.52,
+      0.0,
+      4.92
+     ]
+    },
+    {
+     "object": "vehicle_depot_LOD0",
+     "island_verts": 4,
+     "center": [
+      12.52,
+      5.0,
+      4.92
+     ]
+    },
+    {
+     "object": "vehicle_depot_LOD0",
+     "island_verts": 4,
+     "center": [
+      -5.0,
+      -8.02,
+      4.92
+     ]
+    },
+    {
+     "object": "vehicle_depot_LOD0",
+     "island_verts": 4,
+     "center": [
+      0.0,
+      -8.02,
+      4.92
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "vehicle_depot_LOD0": 3620,
+     "vehicle_depot_LOD1": 922,
+     "vehicle_depot_LOD2": 130
+    },
+    "verts": {
+     "vehicle_depot_LOD0": 2298,
+     "vehicle_depot_LOD1": 628,
+     "vehicle_depot_LOD2": 128
+    },
+    "materials_per_lod": {
+     "vehicle_depot_LOD0": 6,
+     "vehicle_depot_LOD1": 5,
+     "vehicle_depot_LOD2": 4
+    },
+    "draw_calls_est": 15,
+    "texture_vram_mb_uncompressed": 49.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "medical_station": {
+   "pass": false,
+   "errors": [
+    "z-fighting: medical_station_LOD0 (4 overlapping coplanar tri pairs)",
+    "floating/detached part in medical_station_LOD0 (4 verts at [0.0, 0.0, 3.33])"
+   ],
+   "warnings": [
+    "medical_station_LOD0: duplicate verts=34 loose verts=0",
+    "medical_station_LOD0: 16 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: medical_station_LOD0 (52 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.3,
+   "zfighting": [
+    {
+     "where": "medical_station_LOD0",
+     "tri_pairs": 4
+    }
+   ],
+   "floating": [
+    {
+     "object": "medical_station_LOD0",
+     "island_verts": 4,
+     "center": [
+      0.0,
+      0.0,
+      3.33
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "medical_station_LOD0": 1652,
+     "medical_station_LOD1": 282,
+     "medical_station_LOD2": 142
+    },
+    "verts": {
+     "medical_station_LOD0": 975,
+     "medical_station_LOD1": 226,
+     "medical_station_LOD2": 138
+    },
+    "materials_per_lod": {
+     "medical_station_LOD0": 7,
+     "medical_station_LOD1": 6,
+     "medical_station_LOD2": 5
+    },
+    "draw_calls_est": 18,
+    "texture_vram_mb_uncompressed": 46.3,
+    "budget": "pc",
+    "over_budget": [
+     "materials 7 > 6 (merge/atlas)"
+    ]
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "guard_tower_steel": {
+   "pass": false,
+   "errors": [
+    "z-fighting: guard_tower_steel_LOD0 (56 overlapping coplanar tri pairs)",
+    "floating/detached part in guard_tower_steel_LOD0 (12 verts at [-2.3, 0.0, 3.25])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.3, 0.0, 0.07])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.861, 1.352, 0.07])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.711, 2.187, 0.07])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-0.711, 2.187, 0.07])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-1.861, 1.352, 0.07])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-2.3, 0.0, 0.07])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.711, -2.187, 0.07])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.861, -1.352, 0.07])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.187, 0.711, 0.19])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.352, 1.861, 0.19])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.0, 2.3, 0.19])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-1.352, 1.861, 0.19])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-2.187, 0.711, 0.19])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.352, -1.861, 0.19])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.187, -0.711, 0.19])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.3, 0.0, 0.31])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.861, 1.352, 0.31])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.711, 2.187, 0.31])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-0.711, 2.187, 0.31])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-2.3, 0.0, 0.31])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.711, -2.187, 0.31])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.861, -1.352, 0.31])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.187, 0.711, 0.43])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.352, 1.861, 0.43])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.0, 2.3, 0.43])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-2.187, 0.711, 0.43])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.352, -1.861, 0.43])",
+    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.187, -0.711, 0.43])"
+   ],
+   "warnings": [
+    "guard_tower_steel_LOD0: 32 n-gons",
+    "10 parts fully enclosed, not touching (eyes/internals?): ['guard_tower_steel_LOD0', 'guard_tower_steel_LOD0', 'guard_tower_steel_LOD0', 'guard_tower_steel_LOD0', 'guard_tower_steel_LOD0']"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: guard_tower_steel_LOD0 (87 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.15,
+   "zfighting": [
+    {
+     "where": "guard_tower_steel_LOD0",
+     "tri_pairs": 56
+    }
+   ],
+   "floating": [
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 12,
+     "center": [
+      -2.3,
+      0.0,
+      3.25
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      2.3,
+      0.0,
+      0.07
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      1.861,
+      1.352,
+      0.07
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      0.711,
+      2.187,
+      0.07
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      -0.711,
+      2.187,
+      0.07
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      -1.861,
+      1.352,
+      0.07
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      -2.3,
+      0.0,
+      0.07
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      0.711,
+      -2.187,
+      0.07
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      1.861,
+      -1.352,
+      0.07
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      2.187,
+      0.711,
+      0.19
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      1.352,
+      1.861,
+      0.19
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      0.0,
+      2.3,
+      0.19
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      -1.352,
+      1.861,
+      0.19
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      -2.187,
+      0.711,
+      0.19
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      1.352,
+      -1.861,
+      0.19
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      2.187,
+      -0.711,
+      0.19
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      2.3,
+      0.0,
+      0.31
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      1.861,
+      1.352,
+      0.31
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      0.711,
+      2.187,
+      0.31
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      -0.711,
+      2.187,
+      0.31
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      -2.3,
+      0.0,
+      0.31
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      0.711,
+      -2.187,
+      0.31
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      1.861,
+      -1.352,
+      0.31
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      2.187,
+      0.711,
+      0.43
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      1.352,
+      1.861,
+      0.43
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      0.0,
+      2.3,
+      0.43
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      -2.187,
+      0.711,
+      0.43
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      1.352,
+      -1.861,
+      0.43
+     ]
+    },
+    {
+     "object": "guard_tower_steel_LOD0",
+     "island_verts": 24,
+     "center": [
+      2.187,
+      -0.711,
+      0.43
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "guard_tower_steel_LOD0": 2788,
+     "guard_tower_steel_LOD1": 824,
+     "guard_tower_steel_LOD2": 212
+    },
+    "verts": {
+     "guard_tower_steel_LOD0": 1610,
+     "guard_tower_steel_LOD1": 532,
+     "guard_tower_steel_LOD2": 140
+    },
+    "materials_per_lod": {
+     "guard_tower_steel_LOD0": 4,
+     "guard_tower_steel_LOD1": 4,
+     "guard_tower_steel_LOD2": 3
+    },
+    "draw_calls_est": 11,
+    "texture_vram_mb_uncompressed": 33.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "bunker_fighting": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "bunker_fighting_LOD0: duplicate verts=2 loose verts=0"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: bunker_fighting_LOD0 (16 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.6,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "bunker_fighting_LOD0": 4764,
+     "bunker_fighting_LOD1": 212,
+     "bunker_fighting_LOD2": 144
+    },
+    "verts": {
+     "bunker_fighting_LOD0": 2616,
+     "bunker_fighting_LOD1": 136,
+     "bunker_fighting_LOD2": 96
+    },
+    "materials_per_lod": {
+     "bunker_fighting_LOD0": 5,
+     "bunker_fighting_LOD1": 5,
+     "bunker_fighting_LOD2": 5
+    },
+    "draw_calls_est": 15,
+    "texture_vram_mb_uncompressed": 33.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "comms_station": {
+   "pass": false,
+   "errors": [
+    "z-fighting: comms_station_LOD0 (17 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "comms_station_LOD0: duplicate verts=212 loose verts=0",
+    "comms_station_LOD0: 36 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: comms_station_LOD0 (21 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.1,
+   "zfighting": [
+    {
+     "where": "comms_station_LOD0",
+     "tri_pairs": 17
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "comms_station_LOD0": 1954,
+     "comms_station_LOD1": 506,
+     "comms_station_LOD2": 118
+    },
+    "verts": {
+     "comms_station_LOD0": 1547,
+     "comms_station_LOD1": 320,
+     "comms_station_LOD2": 80
+    },
+    "materials_per_lod": {
+     "comms_station_LOD0": 6,
+     "comms_station_LOD1": 5,
+     "comms_station_LOD2": 4
+    },
+    "draw_calls_est": 15,
+    "texture_vram_mb_uncompressed": 59.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "training_facility": {
+   "pass": false,
+   "errors": [
+    "z-fighting: training_facility_LOD0 (66 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "training_facility_LOD0: duplicate verts=16 loose verts=0",
+    "training_facility_LOD0: 50 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: training_facility_LOD0 (155 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.5,
+   "zfighting": [
+    {
+     "where": "training_facility_LOD0",
+     "tri_pairs": 66
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "training_facility_LOD0": 1880,
+     "training_facility_LOD1": 616,
+     "training_facility_LOD2": 124
+    },
+    "verts": {
+     "training_facility_LOD0": 1202,
+     "training_facility_LOD1": 426,
+     "training_facility_LOD2": 98
+    },
+    "materials_per_lod": {
+     "training_facility_LOD0": 7,
+     "training_facility_LOD1": 5,
+     "training_facility_LOD2": 5
+    },
+    "draw_calls_est": 17,
+    "texture_vram_mb_uncompressed": 57.0,
+    "budget": "pc",
+    "over_budget": [
+     "materials 7 > 6 (merge/atlas)"
+    ]
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "range_firing_point": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "range_firing_point_LOD0: duplicate verts=60 loose verts=0",
+    "range_firing_point_LOD0: 14 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: range_firing_point_LOD0 (39 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.3,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "range_firing_point_LOD0": 1516,
+     "range_firing_point_LOD1": 332,
+     "range_firing_point_LOD2": 200
+    },
+    "verts": {
+     "range_firing_point_LOD0": 940,
+     "range_firing_point_LOD1": 300,
+     "range_firing_point_LOD2": 148
+    },
+    "materials_per_lod": {
+     "range_firing_point_LOD0": 7,
+     "range_firing_point_LOD1": 7,
+     "range_firing_point_LOD2": 4
+    },
+    "draw_calls_est": 18,
+    "texture_vram_mb_uncompressed": 59.7,
+    "budget": "pc",
+    "over_budget": [
+     "materials 7 > 6 (merge/atlas)"
+    ]
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "range_target_line": {
+   "pass": false,
+   "errors": [
+    "z-fighting: range_target_line_LOD0 (26 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "range_target_line_LOD0: duplicate verts=84 loose verts=0",
+    "range_target_line_LOD0: 2 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "range_target_line_LOD0",
+     "tri_pairs": 26
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "range_target_line_LOD0": 332,
+     "range_target_line_LOD1": 260,
+     "range_target_line_LOD2": 96
+    },
+    "verts": {
+     "range_target_line_LOD0": 332,
+     "range_target_line_LOD1": 284,
+     "range_target_line_LOD2": 176
+    },
+    "materials_per_lod": {
+     "range_target_line_LOD0": 5,
+     "range_target_line_LOD1": 5,
+     "range_target_line_LOD2": 3
+    },
+    "draw_calls_est": 13,
+    "texture_vram_mb_uncompressed": 35.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "range_backstop": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "range_backstop_LOD0: duplicate verts=8 loose verts=0",
+    "10 parts fully enclosed, not touching (eyes/internals?): ['range_backstop_LOD0', 'range_backstop_LOD0', 'range_backstop_LOD0', 'range_backstop_LOD0', 'range_backstop_LOD0']"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: range_backstop_LOD0 (8 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.2,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "range_backstop_LOD0": 156,
+     "range_backstop_LOD1": 156,
+     "range_backstop_LOD2": 36
+    },
+    "verts": {
+     "range_backstop_LOD0": 104,
+     "range_backstop_LOD1": 104,
+     "range_backstop_LOD2": 24
+    },
+    "materials_per_lod": {
+     "range_backstop_LOD0": 2,
+     "range_backstop_LOD1": 2,
+     "range_backstop_LOD2": 1
+    },
+    "draw_calls_est": 5,
+    "texture_vram_mb_uncompressed": 13.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "range_tower": {
+   "pass": false,
+   "errors": [
+    "floating/detached part in range_tower_LOD0 (8 verts at [-0.9, 1.45, 5.75])",
+    "floating/detached part in range_tower_LOD0 (8 verts at [0.9, 1.45, 5.75])"
+   ],
+   "warnings": [
+    "range_tower_LOD0: 4 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: range_tower_LOD0 (8 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.125,
+   "zfighting": [],
+   "floating": [
+    {
+     "object": "range_tower_LOD0",
+     "island_verts": 8,
+     "center": [
+      -0.9,
+      1.45,
+      5.75
+     ]
+    },
+    {
+     "object": "range_tower_LOD0",
+     "island_verts": 8,
+     "center": [
+      0.9,
+      1.45,
+      5.75
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "range_tower_LOD0": 364,
+     "range_tower_LOD1": 364,
+     "range_tower_LOD2": 180
+    },
+    "verts": {
+     "range_tower_LOD0": 240,
+     "range_tower_LOD1": 240,
+     "range_tower_LOD2": 120
+    },
+    "materials_per_lod": {
+     "range_tower_LOD0": 2,
+     "range_tower_LOD1": 2,
+     "range_tower_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "obstacle_wall": {
+   "pass": false,
+   "errors": [
+    "floating/detached part in obstacle_wall_LOD0 (8 verts at [0.0, -0.3, 0.6])",
+    "floating/detached part in obstacle_wall_LOD0 (8 verts at [0.0, 0.3, 0.6])"
+   ],
+   "warnings": [],
+   "accepted": [],
+   "ground_z": -0.3,
+   "zfighting": [],
+   "floating": [
+    {
+     "object": "obstacle_wall_LOD0",
+     "island_verts": 8,
+     "center": [
+      0.0,
+      -0.3,
+      0.6
+     ]
+    },
+    {
+     "object": "obstacle_wall_LOD0",
+     "island_verts": 8,
+     "center": [
+      0.0,
+      0.3,
+      0.6
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "obstacle_wall_LOD0": 144,
+     "obstacle_wall_LOD1": 120,
+     "obstacle_wall_LOD2": 120
+    },
+    "verts": {
+     "obstacle_wall_LOD0": 96,
+     "obstacle_wall_LOD1": 80,
+     "obstacle_wall_LOD2": 80
+    },
+    "materials_per_lod": {
+     "obstacle_wall_LOD0": 2,
+     "obstacle_wall_LOD1": 2,
+     "obstacle_wall_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 2.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "obstacle_balance": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "obstacle_balance_LOD0: 6 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.4,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "obstacle_balance_LOD0": 216,
+     "obstacle_balance_LOD1": 168,
+     "obstacle_balance_LOD2": 60
+    },
+    "verts": {
+     "obstacle_balance_LOD0": 132,
+     "obstacle_balance_LOD1": 108,
+     "obstacle_balance_LOD2": 36
+    },
+    "materials_per_lod": {
+     "obstacle_balance_LOD0": 2,
+     "obstacle_balance_LOD1": 2,
+     "obstacle_balance_LOD2": 1
+    },
+    "draw_calls_est": 5,
+    "texture_vram_mb_uncompressed": 2.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "obstacle_crawl": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "obstacle_crawl_LOD0: duplicate verts=8 loose verts=0",
+    "obstacle_crawl_LOD0: 72 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.1,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "obstacle_crawl_LOD0": 744,
+     "obstacle_crawl_LOD1": 732,
+     "obstacle_crawl_LOD2": 12
+    },
+    "verts": {
+     "obstacle_crawl_LOD0": 472,
+     "obstacle_crawl_LOD1": 440,
+     "obstacle_crawl_LOD2": 8
+    },
+    "materials_per_lod": {
+     "obstacle_crawl_LOD0": 2,
+     "obstacle_crawl_LOD1": 2,
+     "obstacle_crawl_LOD2": 1
+    },
+    "draw_calls_est": 5,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "obstacle_tires": {
+   "pass": false,
+   "errors": [
+    "z-fighting: obstacle_tires_LOD0 (282 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "obstacle_tires_LOD0: 64 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "obstacle_tires_LOD0",
+     "tri_pairs": 282
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "obstacle_tires_LOD0": 1536,
+     "obstacle_tires_LOD1": 704,
+     "obstacle_tires_LOD2": 320
+    },
+    "verts": {
+     "obstacle_tires_LOD0": 832,
+     "obstacle_tires_LOD1": 416,
+     "obstacle_tires_LOD2": 192
+    },
+    "materials_per_lod": {
+     "obstacle_tires_LOD0": 2,
+     "obstacle_tires_LOD1": 2,
+     "obstacle_tires_LOD2": 1
+    },
+    "draw_calls_est": 5,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "obstacle_net": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "obstacle_net_LOD0: duplicate verts=20 loose verts=0",
+    "obstacle_net_LOD0: 10 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.0334,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "obstacle_net_LOD0": 572,
+     "obstacle_net_LOD1": 104,
+     "obstacle_net_LOD2": 104
+    },
+    "verts": {
+     "obstacle_net_LOD0": 368,
+     "obstacle_net_LOD1": 68,
+     "obstacle_net_LOD2": 68
+    },
+    "materials_per_lod": {
+     "obstacle_net_LOD0": 2,
+     "obstacle_net_LOD1": 2,
+     "obstacle_net_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 14.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "obstacle_monkey_bars": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "obstacle_monkey_bars_LOD0: 38 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.3,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "obstacle_monkey_bars_LOD0": 428,
+     "obstacle_monkey_bars_LOD1": 120,
+     "obstacle_monkey_bars_LOD2": 80
+    },
+    "verts": {
+     "obstacle_monkey_bars_LOD0": 252,
+     "obstacle_monkey_bars_LOD1": 72,
+     "obstacle_monkey_bars_LOD2": 48
+    },
+    "materials_per_lod": {
+     "obstacle_monkey_bars_LOD0": 1,
+     "obstacle_monkey_bars_LOD1": 1,
+     "obstacle_monkey_bars_LOD2": 1
+    },
+    "draw_calls_est": 3,
+    "texture_vram_mb_uncompressed": 1.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "shoot_house": {
+   "pass": true,
+   "errors": [],
+   "warnings": [],
+   "accepted": [
+    "hidden back-to-back faces: shoot_house_LOD0 (38 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.3,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "shoot_house_LOD0": 396,
+     "shoot_house_LOD1": 276,
+     "shoot_house_LOD2": 228
+    },
+    "verts": {
+     "shoot_house_LOD0": 264,
+     "shoot_house_LOD1": 184,
+     "shoot_house_LOD2": 152
+    },
+    "materials_per_lod": {
+     "shoot_house_LOD0": 4,
+     "shoot_house_LOD1": 3,
+     "shoot_house_LOD2": 2
+    },
+    "draw_calls_est": 9,
+    "texture_vram_mb_uncompressed": 14.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "mout_wall_window": {
+   "pass": false,
+   "errors": [
+    "z-fighting: mout_wall_window_LOD0 (4 overlapping coplanar tri pairs)",
+    "floating/detached part in mout_wall_window_LOD0 (8 verts at [0.0, 0.0, 2.64])"
+   ],
+   "warnings": [
+    "mout_wall_window_LOD0: duplicate verts=8 loose verts=0"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: mout_wall_window_LOD0 (20 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "mout_wall_window_LOD0",
+     "tri_pairs": 4
+    }
+   ],
+   "floating": [
+    {
+     "object": "mout_wall_window_LOD0",
+     "island_verts": 8,
+     "center": [
+      0.0,
+      0.0,
+      2.64
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "mout_wall_window_LOD0": 72,
+     "mout_wall_window_LOD1": 72,
+     "mout_wall_window_LOD2": 48
+    },
+    "verts": {
+     "mout_wall_window_LOD0": 48,
+     "mout_wall_window_LOD1": 48,
+     "mout_wall_window_LOD2": 32
+    },
+    "materials_per_lod": {
+     "mout_wall_window_LOD0": 2,
+     "mout_wall_window_LOD1": 2,
+     "mout_wall_window_LOD2": 1
+    },
+    "draw_calls_est": 5,
+    "texture_vram_mb_uncompressed": 21.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "mout_wall_door": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "mout_wall_door_LOD0: duplicate verts=4 loose verts=0"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: mout_wall_door_LOD0 (18 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "mout_wall_door_LOD0": 48,
+     "mout_wall_door_LOD1": 48,
+     "mout_wall_door_LOD2": 36
+    },
+    "verts": {
+     "mout_wall_door_LOD0": 32,
+     "mout_wall_door_LOD1": 32,
+     "mout_wall_door_LOD2": 24
+    },
+    "materials_per_lod": {
+     "mout_wall_door_LOD0": 2,
+     "mout_wall_door_LOD1": 2,
+     "mout_wall_door_LOD2": 1
+    },
+    "draw_calls_est": 5,
+    "texture_vram_mb_uncompressed": 21.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "vehicle_ramp": {
+   "pass": false,
+   "errors": [
+    "vehicle_ramp_LOD0: 6 edges with inconsistent face winding",
+    "z-fighting: vehicle_ramp_LOD0 (4 overlapping coplanar tri pairs)",
+    "floating/detached part in vehicle_ramp_LOD0 (8 verts at [-2.1, 0.0, 1.3])"
+   ],
+   "warnings": [
+    "1 parts fully enclosed, not touching (eyes/internals?): ['vehicle_ramp_LOD0']"
+   ],
+   "accepted": [],
+   "ground_z": -0.4,
+   "zfighting": [
+    {
+     "where": "vehicle_ramp_LOD0",
+     "tri_pairs": 4
+    }
+   ],
+   "floating": [
+    {
+     "object": "vehicle_ramp_LOD0",
+     "island_verts": 8,
+     "center": [
+      -2.1,
+      0.0,
+      1.3
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "vehicle_ramp_LOD0": 34,
+     "vehicle_ramp_LOD1": 34,
+     "vehicle_ramp_LOD2": 22
+    },
+    "verts": {
+     "vehicle_ramp_LOD0": 32,
+     "vehicle_ramp_LOD1": 32,
+     "vehicle_ramp_LOD2": 16
+    },
+    "materials_per_lod": {
+     "vehicle_ramp_LOD0": 2,
+     "vehicle_ramp_LOD1": 2,
+     "vehicle_ramp_LOD2": 1
+    },
+    "draw_calls_est": 5,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "vehicle_parking_pad": {
+   "pass": true,
+   "errors": [],
+   "warnings": [],
+   "accepted": [
+    "hidden back-to-back faces: vehicle_parking_pad_LOD0 (35 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.3,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "vehicle_parking_pad_LOD0": 180,
+     "vehicle_parking_pad_LOD1": 108,
+     "vehicle_parking_pad_LOD2": 12
+    },
+    "verts": {
+     "vehicle_parking_pad_LOD0": 120,
+     "vehicle_parking_pad_LOD1": 72,
+     "vehicle_parking_pad_LOD2": 8
+    },
+    "materials_per_lod": {
+     "vehicle_parking_pad_LOD0": 3,
+     "vehicle_parking_pad_LOD1": 2,
+     "vehicle_parking_pad_LOD2": 1
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "repair_bay": {
+   "pass": false,
+   "errors": [
+    "z-fighting: repair_bay_LOD0 (6 overlapping coplanar tri pairs)",
+    "floating/detached part in repair_bay_LOD0 (8 verts at [0.0, 0.0, 5.7])"
+   ],
+   "warnings": [
+    "repair_bay_LOD0: duplicate verts=16 loose verts=0",
+    "repair_bay_LOD0: 2 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: repair_bay_LOD0 (44 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.3,
+   "zfighting": [
+    {
+     "where": "repair_bay_LOD0",
+     "tri_pairs": 6
+    }
+   ],
+   "floating": [
+    {
+     "object": "repair_bay_LOD0",
+     "island_verts": 8,
+     "center": [
+      0.0,
+      0.0,
+      5.7
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "repair_bay_LOD0": 428,
+     "repair_bay_LOD1": 404,
+     "repair_bay_LOD2": 140
+    },
+    "verts": {
+     "repair_bay_LOD0": 268,
+     "repair_bay_LOD1": 252,
+     "repair_bay_LOD2": 92
+    },
+    "materials_per_lod": {
+     "repair_bay_LOD0": 4,
+     "repair_bay_LOD1": 4,
+     "repair_bay_LOD2": 3
+    },
+    "draw_calls_est": 11,
+    "texture_vram_mb_uncompressed": 27.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "container_yard": {
+   "pass": false,
+   "errors": [
+    "z-fighting: container_yard_LOD0 (400 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "container_yard_LOD0: 4 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: container_yard_LOD0 (86 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.3,
+   "zfighting": [
+    {
+     "where": "container_yard_LOD0",
+     "tri_pairs": 400
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "container_yard_LOD0": 934,
+     "container_yard_LOD1": 246,
+     "container_yard_LOD2": 150
+    },
+    "verts": {
+     "container_yard_LOD0": 636,
+     "container_yard_LOD1": 180,
+     "container_yard_LOD2": 116
+    },
+    "materials_per_lod": {
+     "container_yard_LOD0": 8,
+     "container_yard_LOD1": 8,
+     "container_yard_LOD2": 4
+    },
+    "draw_calls_est": 20,
+    "texture_vram_mb_uncompressed": 54.3,
+    "budget": "pc",
+    "over_budget": [
+     "materials 8 > 6 (merge/atlas)"
+    ]
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "fuel_bladder_berm": {
+   "pass": false,
+   "errors": [
+    "z-fighting: fuel_bladder_berm_LOD0 (10 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "fuel_bladder_berm_LOD0: duplicate verts=24 loose verts=0",
+    "fuel_bladder_berm_LOD0: 6 n-gons",
+    "1 parts fully enclosed, not touching (eyes/internals?): ['fuel_bladder_berm_LOD0']"
+   ],
+   "accepted": [],
+   "ground_z": -1.18,
+   "zfighting": [
+    {
+     "where": "fuel_bladder_berm_LOD0",
+     "tri_pairs": 10
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "fuel_bladder_berm_LOD0": 780,
+     "fuel_bladder_berm_LOD1": 296,
+     "fuel_bladder_berm_LOD2": 138
+    },
+    "verts": {
+     "fuel_bladder_berm_LOD0": 446,
+     "fuel_bladder_berm_LOD1": 204,
+     "fuel_bladder_berm_LOD2": 117
+    },
+    "materials_per_lod": {
+     "fuel_bladder_berm_LOD0": 3,
+     "fuel_bladder_berm_LOD1": 3,
+     "fuel_bladder_berm_LOD2": 3
+    },
+    "draw_calls_est": 9,
+    "texture_vram_mb_uncompressed": 33.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "fuel_point": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "fuel_point_LOD0: duplicate verts=24 loose verts=0",
+    "fuel_point_LOD0: 12 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: fuel_point_LOD0 (14 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.3,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "fuel_point_LOD0": 344,
+     "fuel_point_LOD1": 236,
+     "fuel_point_LOD2": 84
+    },
+    "verts": {
+     "fuel_point_LOD0": 244,
+     "fuel_point_LOD1": 176,
+     "fuel_point_LOD2": 88
+    },
+    "materials_per_lod": {
+     "fuel_point_LOD0": 4,
+     "fuel_point_LOD1": 4,
+     "fuel_point_LOD2": 3
+    },
+    "draw_calls_est": 11,
+    "texture_vram_mb_uncompressed": 33.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "ammo_magazine": {
+   "pass": false,
+   "errors": [
+    "z-fighting: ammo_magazine_LOD0 (1 overlapping coplanar tri pairs)",
+    "floating/detached part in ammo_magazine_LOD0 (12 verts at [-7.5, 0.0, 4.5])",
+    "floating/detached part in ammo_magazine_LOD0 (12 verts at [7.5, 0.0, 4.5])"
+   ],
+   "warnings": [
+    "ammo_magazine_LOD0: duplicate verts=2 loose verts=0",
+    "ammo_magazine_LOD0: 6 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: ammo_magazine_LOD0 (16 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.2,
+   "zfighting": [
+    {
+     "where": "ammo_magazine_LOD0",
+     "tri_pairs": 1
+    }
+   ],
+   "floating": [
+    {
+     "object": "ammo_magazine_LOD0",
+     "island_verts": 12,
+     "center": [
+      -7.5,
+      0.0,
+      4.5
+     ]
+    },
+    {
+     "object": "ammo_magazine_LOD0",
+     "island_verts": 12,
+     "center": [
+      7.5,
+      0.0,
+      4.5
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "ammo_magazine_LOD0": 230,
+     "ammo_magazine_LOD1": 142,
+     "ammo_magazine_LOD2": 82
+    },
+    "verts": {
+     "ammo_magazine_LOD0": 156,
+     "ammo_magazine_LOD1": 100,
+     "ammo_magazine_LOD2": 64
+    },
+    "materials_per_lod": {
+     "ammo_magazine_LOD0": 5,
+     "ammo_magazine_LOD1": 5,
+     "ammo_magazine_LOD2": 3
+    },
+    "draw_calls_est": 13,
+    "texture_vram_mb_uncompressed": 54.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "comms_tower": {
+   "pass": false,
+   "errors": [
+    "z-fighting: comms_tower_LOD0 (10 overlapping coplanar tri pairs)",
+    "floating/detached part in comms_tower_LOD0 (8 verts at [0.0, 0.55, 22.0])",
+    "floating/detached part in comms_tower_LOD0 (8 verts at [-0.476, -0.275, 22.0])",
+    "floating/detached part in comms_tower_LOD0 (8 verts at [0.476, -0.275, 22.0])"
+   ],
+   "warnings": [
+    "comms_tower_LOD0: duplicate verts=282 loose verts=0",
+    "comms_tower_LOD0: 24 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.2,
+   "zfighting": [
+    {
+     "where": "comms_tower_LOD0",
+     "tri_pairs": 10
+    }
+   ],
+   "floating": [
+    {
+     "object": "comms_tower_LOD0",
+     "island_verts": 8,
+     "center": [
+      0.0,
+      0.55,
+      22.0
+     ]
+    },
+    {
+     "object": "comms_tower_LOD0",
+     "island_verts": 8,
+     "center": [
+      -0.476,
+      -0.275,
+      22.0
+     ]
+    },
+    {
+     "object": "comms_tower_LOD0",
+     "island_verts": 8,
+     "center": [
+      0.476,
+      -0.275,
+      22.0
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "comms_tower_LOD0": 1764,
+     "comms_tower_LOD1": 348,
+     "comms_tower_LOD2": 32
+    },
+    "verts": {
+     "comms_tower_LOD0": 1548,
+     "comms_tower_LOD1": 216,
+     "comms_tower_LOD2": 20
+    },
+    "materials_per_lod": {
+     "comms_tower_LOD0": 2,
+     "comms_tower_LOD1": 2,
+     "comms_tower_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "checkpoint_station": {
+   "pass": false,
+   "errors": [
+    "z-fighting: checkpoint_station_LOD0 (4 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "checkpoint_station_LOD0: duplicate verts=60 loose verts=0",
+    "checkpoint_station_LOD0: 8 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: checkpoint_station_LOD0 (64 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.3,
+   "zfighting": [
+    {
+     "where": "checkpoint_station_LOD0",
+     "tri_pairs": 4
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "checkpoint_station_LOD0": 444,
+     "checkpoint_station_LOD1": 444,
+     "checkpoint_station_LOD2": 248
+    },
+    "verts": {
+     "checkpoint_station_LOD0": 324,
+     "checkpoint_station_LOD1": 324,
+     "checkpoint_station_LOD2": 196
+    },
+    "materials_per_lod": {
+     "checkpoint_station_LOD0": 5,
+     "checkpoint_station_LOD1": 5,
+     "checkpoint_station_LOD2": 3
+    },
+    "draw_calls_est": 13,
+    "texture_vram_mb_uncompressed": 54.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "dfp_sandbag_ring": {
+   "pass": false,
+   "errors": [
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.3, 0.0, 0.065])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.3, 0.0, 0.065])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.267, 0.289, 0.185])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.267, 0.289, 0.185])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.267, -0.289, 0.185])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.267, -0.289, 0.185])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.3, 0.0, 0.305])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.171, 0.564, 0.305])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.171, 0.564, 0.305])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.3, 0.0, 0.305])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.171, -0.564, 0.305])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.171, -0.564, 0.305])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.267, 0.289, 0.425])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.267, 0.289, 0.425])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.267, -0.289, 0.425])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.267, -0.289, 0.425])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.3, 0.0, 0.545])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.171, 0.564, 0.545])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.171, 0.564, 0.545])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.3, 0.0, 0.545])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.171, -0.564, 0.545])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.171, -0.564, 0.545])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.267, 0.289, 0.665])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.267, 0.289, 0.665])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.267, -0.289, 0.665])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.267, -0.289, 0.665])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.3, 0.0, 0.785])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.171, 0.564, 0.785])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.171, 0.564, 0.785])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.3, 0.0, 0.785])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.171, -0.564, 0.785])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.171, -0.564, 0.785])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.267, 0.289, 0.905])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.267, 0.289, 0.905])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.267, -0.289, 0.905])",
+    "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.267, -0.289, 0.905])"
+   ],
+   "warnings": [],
+   "accepted": [],
+   "ground_z": -0.01,
+   "zfighting": [],
+   "floating": [
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.3,
+      0.0,
+      0.065
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.3,
+      0.0,
+      0.065
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.267,
+      0.289,
+      0.185
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.267,
+      0.289,
+      0.185
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.267,
+      -0.289,
+      0.185
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.267,
+      -0.289,
+      0.185
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.3,
+      0.0,
+      0.305
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.171,
+      0.564,
+      0.305
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.171,
+      0.564,
+      0.305
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.3,
+      0.0,
+      0.305
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.171,
+      -0.564,
+      0.305
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.171,
+      -0.564,
+      0.305
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.267,
+      0.289,
+      0.425
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.267,
+      0.289,
+      0.425
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.267,
+      -0.289,
+      0.425
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.267,
+      -0.289,
+      0.425
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.3,
+      0.0,
+      0.545
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.171,
+      0.564,
+      0.545
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.171,
+      0.564,
+      0.545
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.3,
+      0.0,
+      0.545
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.171,
+      -0.564,
+      0.545
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.171,
+      -0.564,
+      0.545
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.267,
+      0.289,
+      0.665
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.267,
+      0.289,
+      0.665
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.267,
+      -0.289,
+      0.665
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.267,
+      -0.289,
+      0.665
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.3,
+      0.0,
+      0.785
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.171,
+      0.564,
+      0.785
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.171,
+      0.564,
+      0.785
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.3,
+      0.0,
+      0.785
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.171,
+      -0.564,
+      0.785
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.171,
+      -0.564,
+      0.785
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.267,
+      0.289,
+      0.905
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.267,
+      0.289,
+      0.905
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      -1.267,
+      -0.289,
+      0.905
+     ]
+    },
+    {
+     "object": "dfp_sandbag_ring_LOD0",
+     "island_verts": 26,
+     "center": [
+      1.267,
+      -0.289,
+      0.905
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "dfp_sandbag_ring_LOD0": 4764,
+     "dfp_sandbag_ring_LOD1": 40,
+     "dfp_sandbag_ring_LOD2": 40
+    },
+    "verts": {
+     "dfp_sandbag_ring_LOD0": 2582,
+     "dfp_sandbag_ring_LOD1": 24,
+     "dfp_sandbag_ring_LOD2": 24
+    },
+    "materials_per_lod": {
+     "dfp_sandbag_ring_LOD0": 2,
+     "dfp_sandbag_ring_LOD1": 2,
+     "dfp_sandbag_ring_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 21.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "mg_nest": {
+   "pass": true,
+   "errors": [],
+   "warnings": [],
+   "accepted": [],
+   "ground_z": -0.009,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "mg_nest_LOD0": 6252,
+     "mg_nest_LOD1": 108,
+     "mg_nest_LOD2": 60
+    },
+    "verts": {
+     "mg_nest_LOD0": 3394,
+     "mg_nest_LOD1": 72,
+     "mg_nest_LOD2": 40
+    },
+    "materials_per_lod": {
+     "mg_nest_LOD0": 3,
+     "mg_nest_LOD1": 3,
+     "mg_nest_LOD2": 2
+    },
+    "draw_calls_est": 8,
+    "texture_vram_mb_uncompressed": 13.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "iso_container_20_od": {
+   "pass": false,
+   "errors": [
+    "z-fighting: iso_container_20_od_LOD0 (72 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "iso_container_20_od_LOD0: duplicate verts=14 loose verts=0",
+    "iso_container_20_od_LOD0: 8 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: iso_container_20_od_LOD0 (161 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "iso_container_20_od_LOD0",
+     "tri_pairs": 72
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "iso_container_20_od_LOD0": 1864,
+     "iso_container_20_od_LOD1": 240,
+     "iso_container_20_od_LOD2": 14
+    },
+    "verts": {
+     "iso_container_20_od_LOD0": 1072,
+     "iso_container_20_od_LOD1": 160,
+     "iso_container_20_od_LOD2": 12
+    },
+    "materials_per_lod": {
+     "iso_container_20_od_LOD0": 3,
+     "iso_container_20_od_LOD1": 3,
+     "iso_container_20_od_LOD2": 2
+    },
+    "draw_calls_est": 8,
+    "texture_vram_mb_uncompressed": 38.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "iso_container_20_tan": {
+   "pass": false,
+   "errors": [
+    "z-fighting: iso_container_20_tan_LOD0 (72 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "iso_container_20_tan_LOD0: duplicate verts=14 loose verts=0",
+    "iso_container_20_tan_LOD0: 8 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: iso_container_20_tan_LOD0 (161 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "iso_container_20_tan_LOD0",
+     "tri_pairs": 72
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "iso_container_20_tan_LOD0": 1864,
+     "iso_container_20_tan_LOD1": 240,
+     "iso_container_20_tan_LOD2": 14
+    },
+    "verts": {
+     "iso_container_20_tan_LOD0": 1072,
+     "iso_container_20_tan_LOD1": 160,
+     "iso_container_20_tan_LOD2": 12
+    },
+    "materials_per_lod": {
+     "iso_container_20_tan_LOD0": 3,
+     "iso_container_20_tan_LOD1": 3,
+     "iso_container_20_tan_LOD2": 2
+    },
+    "draw_calls_est": 8,
+    "texture_vram_mb_uncompressed": 38.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "iso_container_20_blue": {
+   "pass": false,
+   "errors": [
+    "z-fighting: iso_container_20_blue_LOD0 (72 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "iso_container_20_blue_LOD0: duplicate verts=14 loose verts=0",
+    "iso_container_20_blue_LOD0: 8 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: iso_container_20_blue_LOD0 (161 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "iso_container_20_blue_LOD0",
+     "tri_pairs": 72
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "iso_container_20_blue_LOD0": 1864,
+     "iso_container_20_blue_LOD1": 240,
+     "iso_container_20_blue_LOD2": 14
+    },
+    "verts": {
+     "iso_container_20_blue_LOD0": 1072,
+     "iso_container_20_blue_LOD1": 160,
+     "iso_container_20_blue_LOD2": 12
+    },
+    "materials_per_lod": {
+     "iso_container_20_blue_LOD0": 2,
+     "iso_container_20_blue_LOD1": 2,
+     "iso_container_20_blue_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 33.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "iso_container_20_rust": {
+   "pass": false,
+   "errors": [
+    "z-fighting: iso_container_20_rust_LOD0 (72 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "iso_container_20_rust_LOD0: duplicate verts=14 loose verts=0",
+    "iso_container_20_rust_LOD0: 8 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: iso_container_20_rust_LOD0 (161 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "iso_container_20_rust_LOD0",
+     "tri_pairs": 72
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "iso_container_20_rust_LOD0": 1864,
+     "iso_container_20_rust_LOD1": 240,
+     "iso_container_20_rust_LOD2": 14
+    },
+    "verts": {
+     "iso_container_20_rust_LOD0": 1072,
+     "iso_container_20_rust_LOD1": 160,
+     "iso_container_20_rust_LOD2": 12
+    },
+    "materials_per_lod": {
+     "iso_container_20_rust_LOD0": 2,
+     "iso_container_20_rust_LOD1": 2,
+     "iso_container_20_rust_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 33.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "iso_container_40_od": {
+   "pass": false,
+   "errors": [
+    "z-fighting: iso_container_40_od_LOD0 (72 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "iso_container_40_od_LOD0: duplicate verts=14 loose verts=0",
+    "iso_container_40_od_LOD0: 8 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: iso_container_40_od_LOD0 (146 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "iso_container_40_od_LOD0",
+     "tri_pairs": 72
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "iso_container_40_od_LOD0": 1816,
+     "iso_container_40_od_LOD1": 240,
+     "iso_container_40_od_LOD2": 14
+    },
+    "verts": {
+     "iso_container_40_od_LOD0": 1040,
+     "iso_container_40_od_LOD1": 160,
+     "iso_container_40_od_LOD2": 12
+    },
+    "materials_per_lod": {
+     "iso_container_40_od_LOD0": 3,
+     "iso_container_40_od_LOD1": 3,
+     "iso_container_40_od_LOD2": 2
+    },
+    "draw_calls_est": 8,
+    "texture_vram_mb_uncompressed": 38.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "iso_container_40_tan": {
+   "pass": false,
+   "errors": [
+    "z-fighting: iso_container_40_tan_LOD0 (72 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "iso_container_40_tan_LOD0: duplicate verts=14 loose verts=0",
+    "iso_container_40_tan_LOD0: 8 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: iso_container_40_tan_LOD0 (146 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "iso_container_40_tan_LOD0",
+     "tri_pairs": 72
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "iso_container_40_tan_LOD0": 1816,
+     "iso_container_40_tan_LOD1": 240,
+     "iso_container_40_tan_LOD2": 14
+    },
+    "verts": {
+     "iso_container_40_tan_LOD0": 1040,
+     "iso_container_40_tan_LOD1": 160,
+     "iso_container_40_tan_LOD2": 12
+    },
+    "materials_per_lod": {
+     "iso_container_40_tan_LOD0": 3,
+     "iso_container_40_tan_LOD1": 3,
+     "iso_container_40_tan_LOD2": 2
+    },
+    "draw_calls_est": 8,
+    "texture_vram_mb_uncompressed": 38.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "hesco_mil1_1": {
+   "pass": false,
+   "errors": [
+    "z-fighting: hesco_mil1_1_LOD0 (44 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "hesco_mil1_1_LOD0: 8 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "hesco_mil1_1_LOD0",
+     "tri_pairs": 44
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "hesco_mil1_1_LOD0": 140,
+     "hesco_mil1_1_LOD1": 36,
+     "hesco_mil1_1_LOD2": 24
+    },
+    "verts": {
+     "hesco_mil1_1_LOD0": 88,
+     "hesco_mil1_1_LOD1": 24,
+     "hesco_mil1_1_LOD2": 16
+    },
+    "materials_per_lod": {
+     "hesco_mil1_1_LOD0": 4,
+     "hesco_mil1_1_LOD1": 3,
+     "hesco_mil1_1_LOD2": 2
+    },
+    "draw_calls_est": 9,
+    "texture_vram_mb_uncompressed": 15.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "hesco_mil1_5": {
+   "pass": false,
+   "errors": [
+    "z-fighting: hesco_mil1_5_LOD0 (173 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "hesco_mil1_5_LOD0: 24 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "hesco_mil1_5_LOD0",
+     "tri_pairs": 173
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "hesco_mil1_5_LOD0": 348,
+     "hesco_mil1_5_LOD1": 36,
+     "hesco_mil1_5_LOD2": 24
+    },
+    "verts": {
+     "hesco_mil1_5_LOD0": 216,
+     "hesco_mil1_5_LOD1": 24,
+     "hesco_mil1_5_LOD2": 16
+    },
+    "materials_per_lod": {
+     "hesco_mil1_5_LOD0": 4,
+     "hesco_mil1_5_LOD1": 3,
+     "hesco_mil1_5_LOD2": 2
+    },
+    "draw_calls_est": 9,
+    "texture_vram_mb_uncompressed": 15.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "hesco_mil7_2": {
+   "pass": false,
+   "errors": [
+    "z-fighting: hesco_mil7_2_LOD0 (76 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "hesco_mil7_2_LOD0: 12 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "hesco_mil7_2_LOD0",
+     "tri_pairs": 76
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "hesco_mil7_2_LOD0": 192,
+     "hesco_mil7_2_LOD1": 36,
+     "hesco_mil7_2_LOD2": 24
+    },
+    "verts": {
+     "hesco_mil7_2_LOD0": 120,
+     "hesco_mil7_2_LOD1": 24,
+     "hesco_mil7_2_LOD2": 16
+    },
+    "materials_per_lod": {
+     "hesco_mil7_2_LOD0": 4,
+     "hesco_mil7_2_LOD1": 3,
+     "hesco_mil7_2_LOD2": 2
+    },
+    "draw_calls_est": 9,
+    "texture_vram_mb_uncompressed": 15.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "sandbag_single": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "sandbag_single_LOD0: 2 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": 0.0,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "sandbag_single_LOD0": 136,
+     "sandbag_single_LOD1": 44,
+     "sandbag_single_LOD2": 12
+    },
+    "verts": {
+     "sandbag_single_LOD0": 72,
+     "sandbag_single_LOD1": 24,
+     "sandbag_single_LOD2": 8
+    },
+    "materials_per_lod": {
+     "sandbag_single_LOD0": 1,
+     "sandbag_single_LOD1": 1,
+     "sandbag_single_LOD2": 1
+    },
+    "draw_calls_est": 3,
+    "texture_vram_mb_uncompressed": 10.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "sandbag_wall_2m": {
+   "pass": true,
+   "errors": [],
+   "warnings": [],
+   "accepted": [],
+   "ground_z": -0.009,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "sandbag_wall_2m_LOD0": 5760,
+     "sandbag_wall_2m_LOD1": 352,
+     "sandbag_wall_2m_LOD2": 12
+    },
+    "verts": {
+     "sandbag_wall_2m_LOD0": 2976,
+     "sandbag_wall_2m_LOD1": 192,
+     "sandbag_wall_2m_LOD2": 8
+    },
+    "materials_per_lod": {
+     "sandbag_wall_2m_LOD0": 1,
+     "sandbag_wall_2m_LOD1": 1,
+     "sandbag_wall_2m_LOD2": 1
+    },
+    "draw_calls_est": 3,
+    "texture_vram_mb_uncompressed": 10.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "sandbag_wall_low_2m": {
+   "pass": true,
+   "errors": [],
+   "warnings": [],
+   "accepted": [],
+   "ground_z": -0.009,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "sandbag_wall_low_2m_LOD0": 3600,
+     "sandbag_wall_low_2m_LOD1": 220,
+     "sandbag_wall_low_2m_LOD2": 12
+    },
+    "verts": {
+     "sandbag_wall_low_2m_LOD0": 1860,
+     "sandbag_wall_low_2m_LOD1": 120,
+     "sandbag_wall_low_2m_LOD2": 8
+    },
+    "materials_per_lod": {
+     "sandbag_wall_low_2m_LOD0": 1,
+     "sandbag_wall_low_2m_LOD1": 1,
+     "sandbag_wall_low_2m_LOD2": 1
+    },
+    "draw_calls_est": 3,
+    "texture_vram_mb_uncompressed": 10.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "sandbag_wall_green_2m": {
+   "pass": true,
+   "errors": [],
+   "warnings": [],
+   "accepted": [],
+   "ground_z": -0.009,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "sandbag_wall_green_2m_LOD0": 5760,
+     "sandbag_wall_green_2m_LOD1": 352,
+     "sandbag_wall_green_2m_LOD2": 12
+    },
+    "verts": {
+     "sandbag_wall_green_2m_LOD0": 2976,
+     "sandbag_wall_green_2m_LOD1": 192,
+     "sandbag_wall_green_2m_LOD2": 8
+    },
+    "materials_per_lod": {
+     "sandbag_wall_green_2m_LOD0": 1,
+     "sandbag_wall_green_2m_LOD1": 1,
+     "sandbag_wall_green_2m_LOD2": 1
+    },
+    "draw_calls_est": 3,
+    "texture_vram_mb_uncompressed": 10.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "t_wall": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "t_wall_LOD0: 6 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: t_wall_LOD0 (8 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "t_wall_LOD0": 164,
+     "t_wall_LOD1": 28,
+     "t_wall_LOD2": 28
+    },
+    "verts": {
+     "t_wall_LOD0": 96,
+     "t_wall_LOD1": 16,
+     "t_wall_LOD2": 16
+    },
+    "materials_per_lod": {
+     "t_wall_LOD0": 2,
+     "t_wall_LOD1": 1,
+     "t_wall_LOD2": 1
+    },
+    "draw_calls_est": 4,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "jersey_barrier": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "jersey_barrier_LOD0: 6 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: jersey_barrier_LOD0 (12 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "jersey_barrier_LOD0": 164,
+     "jersey_barrier_LOD1": 28,
+     "jersey_barrier_LOD2": 28
+    },
+    "verts": {
+     "jersey_barrier_LOD0": 96,
+     "jersey_barrier_LOD1": 16,
+     "jersey_barrier_LOD2": 16
+    },
+    "materials_per_lod": {
+     "jersey_barrier_LOD0": 2,
+     "jersey_barrier_LOD1": 1,
+     "jersey_barrier_LOD2": 1
+    },
+    "draw_calls_est": 4,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "chainlink_fence": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "chainlink_fence_LOD0: 18 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: chainlink_fence_LOD0 (44 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.5,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "chainlink_fence_LOD0": 282,
+     "chainlink_fence_LOD1": 62,
+     "chainlink_fence_LOD2": 42
+    },
+    "verts": {
+     "chainlink_fence_LOD0": 176,
+     "chainlink_fence_LOD1": 40,
+     "chainlink_fence_LOD2": 28
+    },
+    "materials_per_lod": {
+     "chainlink_fence_LOD0": 2,
+     "chainlink_fence_LOD1": 2,
+     "chainlink_fence_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 2.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "chainlink_gate": {
+   "pass": false,
+   "errors": [
+    "z-fighting: chainlink_gate_LOD0 (8 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "chainlink_gate_LOD0: duplicate verts=16 loose verts=0",
+    "chainlink_gate_LOD0: 38 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: chainlink_gate_LOD0 (50 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.6,
+   "zfighting": [
+    {
+     "where": "chainlink_gate_LOD0",
+     "tri_pairs": 8
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "chainlink_gate_LOD0": 492,
+     "chainlink_gate_LOD1": 204,
+     "chainlink_gate_LOD2": 44
+    },
+    "verts": {
+     "chainlink_gate_LOD0": 300,
+     "chainlink_gate_LOD1": 128,
+     "chainlink_gate_LOD2": 32
+    },
+    "materials_per_lod": {
+     "chainlink_gate_LOD0": 2,
+     "chainlink_gate_LOD1": 2,
+     "chainlink_gate_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 2.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "mesh_fence_temporary": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "mesh_fence_temporary_LOD0: 8 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": 0.0,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "mesh_fence_temporary_LOD0": 170,
+     "mesh_fence_temporary_LOD1": 170,
+     "mesh_fence_temporary_LOD2": 26
+    },
+    "verts": {
+     "mesh_fence_temporary_LOD0": 100,
+     "mesh_fence_temporary_LOD1": 100,
+     "mesh_fence_temporary_LOD2": 20
+    },
+    "materials_per_lod": {
+     "mesh_fence_temporary_LOD0": 3,
+     "mesh_fence_temporary_LOD1": 3,
+     "mesh_fence_temporary_LOD2": 2
+    },
+    "draw_calls_est": 8,
+    "texture_vram_mb_uncompressed": 13.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "boom_barrier": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "boom_barrier_LOD0: duplicate verts=44 loose verts=0",
+    "boom_barrier_LOD0: 4 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: boom_barrier_LOD0 (52 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.1,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "boom_barrier_LOD0": 708,
+     "boom_barrier_LOD1": 264,
+     "boom_barrier_LOD2": 36
+    },
+    "verts": {
+     "boom_barrier_LOD0": 396,
+     "boom_barrier_LOD1": 168,
+     "boom_barrier_LOD2": 24
+    },
+    "materials_per_lod": {
+     "boom_barrier_LOD0": 2,
+     "boom_barrier_LOD1": 2,
+     "boom_barrier_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "water_barrier": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "water_barrier_LOD0: 8 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: water_barrier_LOD0 (13 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "water_barrier_LOD0": 148,
+     "water_barrier_LOD1": 80,
+     "water_barrier_LOD2": 28
+    },
+    "verts": {
+     "water_barrier_LOD0": 84,
+     "water_barrier_LOD1": 48,
+     "water_barrier_LOD2": 16
+    },
+    "materials_per_lod": {
+     "water_barrier_LOD0": 1,
+     "water_barrier_LOD1": 1,
+     "water_barrier_LOD2": 1
+    },
+    "draw_calls_est": 3,
+    "texture_vram_mb_uncompressed": 1.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "traffic_cone": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "traffic_cone_LOD0: 6 n-gons",
+    "1 parts fully enclosed, not touching (eyes/internals?): ['traffic_cone_LOD0']"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: traffic_cone_LOD0 (14 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "traffic_cone_LOD0": 200,
+     "traffic_cone_LOD1": 36,
+     "traffic_cone_LOD2": 32
+    },
+    "verts": {
+     "traffic_cone_LOD0": 108,
+     "traffic_cone_LOD1": 22,
+     "traffic_cone_LOD2": 20
+    },
+    "materials_per_lod": {
+     "traffic_cone_LOD0": 1,
+     "traffic_cone_LOD1": 1,
+     "traffic_cone_LOD2": 1
+    },
+    "draw_calls_est": 3,
+    "texture_vram_mb_uncompressed": 1.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "guard_booth": {
+   "pass": false,
+   "errors": [
+    "z-fighting: guard_booth_LOD0 (26 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [],
+   "accepted": [
+    "hidden back-to-back faces: guard_booth_LOD0 (28 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.3,
+   "zfighting": [
+    {
+     "where": "guard_booth_LOD0",
+     "tri_pairs": 26
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "guard_booth_LOD0": 296,
+     "guard_booth_LOD1": 132,
+     "guard_booth_LOD2": 36
+    },
+    "verts": {
+     "guard_booth_LOD0": 192,
+     "guard_booth_LOD1": 88,
+     "guard_booth_LOD2": 24
+    },
+    "materials_per_lod": {
+     "guard_booth_LOD0": 3,
+     "guard_booth_LOD1": 3,
+     "guard_booth_LOD2": 2
+    },
+    "draw_calls_est": 8,
+    "texture_vram_mb_uncompressed": 22.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "pallet_euro": {
+   "pass": false,
+   "errors": [
+    "floating/detached part in pallet_euro_LOD0 (8 verts at [0.0, -0.175, 0.133])",
+    "floating/detached part in pallet_euro_LOD0 (8 verts at [0.0, 0.175, 0.133])"
+   ],
+   "warnings": [
+    "pallet_euro_LOD0: duplicate verts=36 loose verts=0"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: pallet_euro_LOD0 (60 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [],
+   "floating": [
+    {
+     "object": "pallet_euro_LOD0",
+     "island_verts": 8,
+     "center": [
+      0.0,
+      -0.175,
+      0.133
+     ]
+    },
+    {
+     "object": "pallet_euro_LOD0",
+     "island_verts": 8,
+     "center": [
+      0.0,
+      0.175,
+      0.133
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "pallet_euro_LOD0": 240,
+     "pallet_euro_LOD1": 12,
+     "pallet_euro_LOD2": 12
+    },
+    "verts": {
+     "pallet_euro_LOD0": 160,
+     "pallet_euro_LOD1": 8,
+     "pallet_euro_LOD2": 8
+    },
+    "materials_per_lod": {
+     "pallet_euro_LOD0": 2,
+     "pallet_euro_LOD1": 1,
+     "pallet_euro_LOD2": 1
+    },
+    "draw_calls_est": 4,
+    "texture_vram_mb_uncompressed": 2.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "supply_pallet": {
+   "pass": false,
+   "errors": [
+    "z-fighting: supply_pallet_LOD0 (88 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "supply_pallet_LOD0: duplicate verts=36 loose verts=0"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: supply_pallet_LOD0 (106 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "supply_pallet_LOD0",
+     "tri_pairs": 88
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "supply_pallet_LOD0": 732,
+     "supply_pallet_LOD1": 72,
+     "supply_pallet_LOD2": 24
+    },
+    "verts": {
+     "supply_pallet_LOD0": 488,
+     "supply_pallet_LOD1": 48,
+     "supply_pallet_LOD2": 16
+    },
+    "materials_per_lod": {
+     "supply_pallet_LOD0": 4,
+     "supply_pallet_LOD1": 2,
+     "supply_pallet_LOD2": 2
+    },
+    "draw_calls_est": 8,
+    "texture_vram_mb_uncompressed": 3.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "crate_large": {
+   "pass": false,
+   "errors": [
+    "z-fighting: crate_large_LOD0 (16 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [],
+   "accepted": [
+    "hidden back-to-back faces: crate_large_LOD0 (6 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "crate_large_LOD0",
+     "tri_pairs": 16
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "crate_large_LOD0": 110,
+     "crate_large_LOD1": 36,
+     "crate_large_LOD2": 36
+    },
+    "verts": {
+     "crate_large_LOD0": 76,
+     "crate_large_LOD1": 24,
+     "crate_large_LOD2": 24
+    },
+    "materials_per_lod": {
+     "crate_large_LOD0": 4,
+     "crate_large_LOD1": 2,
+     "crate_large_LOD2": 2
+    },
+    "draw_calls_est": 8,
+    "texture_vram_mb_uncompressed": 24.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "ammo_can": {
+   "pass": true,
+   "errors": [],
+   "warnings": [],
+   "accepted": [
+    "hidden back-to-back faces: ammo_can_LOD0 (4 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "ammo_can_LOD0": 112,
+     "ammo_can_LOD1": 24,
+     "ammo_can_LOD2": 12
+    },
+    "verts": {
+     "ammo_can_LOD0": 64,
+     "ammo_can_LOD1": 16,
+     "ammo_can_LOD2": 8
+    },
+    "materials_per_lod": {
+     "ammo_can_LOD0": 2,
+     "ammo_can_LOD1": 1,
+     "ammo_can_LOD2": 1
+    },
+    "draw_calls_est": 4,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "ammo_box_wood": {
+   "pass": false,
+   "errors": [
+    "z-fighting: ammo_box_wood_LOD0 (24 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "ammo_box_wood_LOD0: 4 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.005,
+   "zfighting": [
+    {
+     "where": "ammo_box_wood_LOD0",
+     "tri_pairs": 24
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "ammo_box_wood_LOD0": 138,
+     "ammo_box_wood_LOD1": 12,
+     "ammo_box_wood_LOD2": 12
+    },
+    "verts": {
+     "ammo_box_wood_LOD0": 90,
+     "ammo_box_wood_LOD1": 8,
+     "ammo_box_wood_LOD2": 8
+    },
+    "materials_per_lod": {
+     "ammo_box_wood_LOD0": 3,
+     "ammo_box_wood_LOD1": 1,
+     "ammo_box_wood_LOD2": 1
+    },
+    "draw_calls_est": 5,
+    "texture_vram_mb_uncompressed": 42.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "ammo_pallet": {
+   "pass": false,
+   "errors": [
+    "z-fighting: ammo_pallet_LOD0 (130 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "ammo_pallet_LOD0: duplicate verts=36 loose verts=0"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: ammo_pallet_LOD0 (182 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "ammo_pallet_LOD0",
+     "tri_pairs": 130
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "ammo_pallet_LOD0": 962,
+     "ammo_pallet_LOD1": 110,
+     "ammo_pallet_LOD2": 24
+    },
+    "verts": {
+     "ammo_pallet_LOD0": 644,
+     "ammo_pallet_LOD1": 76,
+     "ammo_pallet_LOD2": 16
+    },
+    "materials_per_lod": {
+     "ammo_pallet_LOD0": 5,
+     "ammo_pallet_LOD1": 3,
+     "ammo_pallet_LOD2": 2
+    },
+    "draw_calls_est": 10,
+    "texture_vram_mb_uncompressed": 35.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "jerrycan": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "jerrycan_LOD0: 2 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: jerrycan_LOD0 (8 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "jerrycan_LOD0": 168,
+     "jerrycan_LOD1": 12,
+     "jerrycan_LOD2": 12
+    },
+    "verts": {
+     "jerrycan_LOD0": 104,
+     "jerrycan_LOD1": 8,
+     "jerrycan_LOD2": 8
+    },
+    "materials_per_lod": {
+     "jerrycan_LOD0": 2,
+     "jerrycan_LOD1": 1,
+     "jerrycan_LOD2": 1
+    },
+    "draw_calls_est": 4,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "fuel_drum": {
+   "pass": false,
+   "errors": [
+    "z-fighting: fuel_drum_LOD0 (115 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "fuel_drum_LOD0: 14 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "fuel_drum_LOD0",
+     "tri_pairs": 115
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "fuel_drum_LOD0": 516,
+     "fuel_drum_LOD1": 132,
+     "fuel_drum_LOD2": 28
+    },
+    "verts": {
+     "fuel_drum_LOD0": 272,
+     "fuel_drum_LOD1": 72,
+     "fuel_drum_LOD2": 16
+    },
+    "materials_per_lod": {
+     "fuel_drum_LOD0": 2,
+     "fuel_drum_LOD1": 1,
+     "fuel_drum_LOD2": 1
+    },
+    "draw_calls_est": 4,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "fuel_drum_red": {
+   "pass": false,
+   "errors": [
+    "z-fighting: fuel_drum_red_LOD0 (115 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "fuel_drum_red_LOD0: 14 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "fuel_drum_red_LOD0",
+     "tri_pairs": 115
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "fuel_drum_red_LOD0": 516,
+     "fuel_drum_red_LOD1": 132,
+     "fuel_drum_red_LOD2": 28
+    },
+    "verts": {
+     "fuel_drum_red_LOD0": 272,
+     "fuel_drum_red_LOD1": 72,
+     "fuel_drum_red_LOD2": 16
+    },
+    "materials_per_lod": {
+     "fuel_drum_red_LOD0": 1,
+     "fuel_drum_red_LOD1": 1,
+     "fuel_drum_red_LOD2": 1
+    },
+    "draw_calls_est": 3,
+    "texture_vram_mb_uncompressed": 1.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "drum_pallet": {
+   "pass": false,
+   "errors": [
+    "floating/detached part in drum_pallet_LOD0 (4 verts at [0.0, 0.612, 0.3])"
+   ],
+   "warnings": [
+    "drum_pallet_LOD0: 24 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: drum_pallet_LOD0 (84 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [],
+   "floating": [
+    {
+     "object": "drum_pallet_LOD0",
+     "island_verts": 4,
+     "center": [
+      0.0,
+      0.612,
+      0.3
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "drum_pallet_LOD0": 926,
+     "drum_pallet_LOD1": 158,
+     "drum_pallet_LOD2": 92
+    },
+    "verts": {
+     "drum_pallet_LOD0": 492,
+     "drum_pallet_LOD1": 92,
+     "drum_pallet_LOD2": 56
+    },
+    "materials_per_lod": {
+     "drum_pallet_LOD0": 4,
+     "drum_pallet_LOD1": 4,
+     "drum_pallet_LOD2": 3
+    },
+    "draw_calls_est": 11,
+    "texture_vram_mb_uncompressed": 35.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "fuel_tank_skid": {
+   "pass": false,
+   "errors": [
+    "z-fighting: fuel_tank_skid_LOD0 (4 overlapping coplanar tri pairs)",
+    "floating/detached part in fuel_tank_skid_LOD0 (32 verts at [1.0, 1.05, 0.65])"
+   ],
+   "warnings": [
+    "fuel_tank_skid_LOD0: 44 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: fuel_tank_skid_LOD0 (2 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "fuel_tank_skid_LOD0",
+     "tri_pairs": 4
+    }
+   ],
+   "floating": [
+    {
+     "object": "fuel_tank_skid_LOD0",
+     "island_verts": 32,
+     "center": [
+      1.0,
+      1.05,
+      0.65
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "fuel_tank_skid_LOD0": 800,
+     "fuel_tank_skid_LOD1": 182,
+     "fuel_tank_skid_LOD2": 40
+    },
+    "verts": {
+     "fuel_tank_skid_LOD0": 464,
+     "fuel_tank_skid_LOD1": 114,
+     "fuel_tank_skid_LOD2": 24
+    },
+    "materials_per_lod": {
+     "fuel_tank_skid_LOD0": 3,
+     "fuel_tank_skid_LOD1": 3,
+     "fuel_tank_skid_LOD2": 2
+    },
+    "draw_calls_est": 8,
+    "texture_vram_mb_uncompressed": 33.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "generator_60kw": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "generator_60kw_LOD0: 8 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: generator_60kw_LOD0 (19 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "generator_60kw_LOD0": 262,
+     "generator_60kw_LOD1": 96,
+     "generator_60kw_LOD2": 24
+    },
+    "verts": {
+     "generator_60kw_LOD0": 170,
+     "generator_60kw_LOD1": 68,
+     "generator_60kw_LOD2": 16
+    },
+    "materials_per_lod": {
+     "generator_60kw_LOD0": 3,
+     "generator_60kw_LOD1": 3,
+     "generator_60kw_LOD2": 2
+    },
+    "draw_calls_est": 8,
+    "texture_vram_mb_uncompressed": 33.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "generator_60kw_tan": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "generator_60kw_tan_LOD0: 8 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: generator_60kw_tan_LOD0 (19 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "generator_60kw_tan_LOD0": 262,
+     "generator_60kw_tan_LOD1": 96,
+     "generator_60kw_tan_LOD2": 24
+    },
+    "verts": {
+     "generator_60kw_tan_LOD0": 170,
+     "generator_60kw_tan_LOD1": 68,
+     "generator_60kw_tan_LOD2": 16
+    },
+    "materials_per_lod": {
+     "generator_60kw_tan_LOD0": 3,
+     "generator_60kw_tan_LOD1": 3,
+     "generator_60kw_tan_LOD2": 2
+    },
+    "draw_calls_est": 8,
+    "texture_vram_mb_uncompressed": 33.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "light_tower": {
+   "pass": false,
+   "errors": [
+    "z-fighting: light_tower_LOD0 (12 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "light_tower_LOD0: 18 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "light_tower_LOD0",
+     "tri_pairs": 12
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "light_tower_LOD0": 516,
+     "light_tower_LOD1": 324,
+     "light_tower_LOD2": 72
+    },
+    "verts": {
+     "light_tower_LOD0": 308,
+     "light_tower_LOD1": 200,
+     "light_tower_LOD2": 44
+    },
+    "materials_per_lod": {
+     "light_tower_LOD0": 1,
+     "light_tower_LOD1": 1,
+     "light_tower_LOD2": 1
+    },
+    "draw_calls_est": 3,
+    "texture_vram_mb_uncompressed": 1.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "light_pole": {
+   "pass": false,
+   "errors": [
+    "z-fighting: light_pole_LOD0 (11 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "light_pole_LOD0: 6 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: light_pole_LOD0 (18 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.25,
+   "zfighting": [
+    {
+     "where": "light_pole_LOD0",
+     "tri_pairs": 11
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "light_pole_LOD0": 180,
+     "light_pole_LOD1": 116,
+     "light_pole_LOD2": 40
+    },
+    "verts": {
+     "light_pole_LOD0": 104,
+     "light_pole_LOD1": 68,
+     "light_pole_LOD2": 24
+    },
+    "materials_per_lod": {
+     "light_pole_LOD0": 2,
+     "light_pole_LOD1": 2,
+     "light_pole_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "radio_mast": {
+   "pass": false,
+   "errors": [
+    "z-fighting: radio_mast_LOD0 (14 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "radio_mast_LOD0: duplicate verts=1 loose verts=0",
+    "radio_mast_LOD0: 32 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.1,
+   "zfighting": [
+    {
+     "where": "radio_mast_LOD0",
+     "tri_pairs": 14
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "radio_mast_LOD0": 504,
+     "radio_mast_LOD1": 252,
+     "radio_mast_LOD2": 60
+    },
+    "verts": {
+     "radio_mast_LOD0": 320,
+     "radio_mast_LOD1": 156,
+     "radio_mast_LOD2": 36
+    },
+    "materials_per_lod": {
+     "radio_mast_LOD0": 3,
+     "radio_mast_LOD1": 3,
+     "radio_mast_LOD2": 1
+    },
+    "draw_calls_est": 7,
+    "texture_vram_mb_uncompressed": 22.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "tent_frame_6x4": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "tent_frame_6x4_LOD0: duplicate verts=4 loose verts=0",
+    "tent_frame_6x4_LOD0: 30 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: tent_frame_6x4_LOD0 (6 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.075,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "tent_frame_6x4_LOD0": 488,
+     "tent_frame_6x4_LOD1": 64,
+     "tent_frame_6x4_LOD2": 40
+    },
+    "verts": {
+     "tent_frame_6x4_LOD0": 322,
+     "tent_frame_6x4_LOD1": 42,
+     "tent_frame_6x4_LOD2": 26
+    },
+    "materials_per_lod": {
+     "tent_frame_6x4_LOD0": 3,
+     "tent_frame_6x4_LOD1": 2,
+     "tent_frame_6x4_LOD2": 1
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "tent_frame_10x6": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "tent_frame_10x6_LOD0: duplicate verts=4 loose verts=0",
+    "tent_frame_10x6_LOD0: 30 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: tent_frame_10x6_LOD0 (14 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.075,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "tent_frame_10x6_LOD0": 488,
+     "tent_frame_10x6_LOD1": 64,
+     "tent_frame_10x6_LOD2": 40
+    },
+    "verts": {
+     "tent_frame_10x6_LOD0": 322,
+     "tent_frame_10x6_LOD1": 42,
+     "tent_frame_10x6_LOD2": 26
+    },
+    "materials_per_lod": {
+     "tent_frame_10x6_LOD0": 2,
+     "tent_frame_10x6_LOD1": 2,
+     "tent_frame_10x6_LOD2": 1
+    },
+    "draw_calls_est": 5,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "camo_net_canopy": {
+   "pass": false,
+   "errors": [
+    "z-fighting: camo_net_canopy_LOD0 (16 overlapping coplanar tri pairs)",
+    "floating/detached part in camo_net_canopy_LOD0 (8 verts at [-4.475, -4.475, 1.285])",
+    "floating/detached part in camo_net_canopy_LOD0 (8 verts at [-4.475, 4.475, 1.285])",
+    "floating/detached part in camo_net_canopy_LOD0 (8 verts at [4.475, -4.475, 1.285])",
+    "floating/detached part in camo_net_canopy_LOD0 (8 verts at [4.475, 4.475, 1.285])"
+   ],
+   "warnings": [
+    "camo_net_canopy_LOD0: 10 n-gons",
+    "1 parts fully enclosed, not touching (eyes/internals?): ['camo_net_canopy_LOD0']"
+   ],
+   "accepted": [],
+   "ground_z": 0.0,
+   "zfighting": [
+    {
+     "where": "camo_net_canopy_LOD0",
+     "tri_pairs": 16
+    }
+   ],
+   "floating": [
+    {
+     "object": "camo_net_canopy_LOD0",
+     "island_verts": 8,
+     "center": [
+      -4.475,
+      -4.475,
+      1.285
+     ]
+    },
+    {
+     "object": "camo_net_canopy_LOD0",
+     "island_verts": 8,
+     "center": [
+      -4.475,
+      4.475,
+      1.285
+     ]
+    },
+    {
+     "object": "camo_net_canopy_LOD0",
+     "island_verts": 8,
+     "center": [
+      4.475,
+      -4.475,
+      1.285
+     ]
+    },
+    {
+     "object": "camo_net_canopy_LOD0",
+     "island_verts": 8,
+     "center": [
+      4.475,
+      4.475,
+      1.285
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "camo_net_canopy_LOD0": 260,
+     "camo_net_canopy_LOD1": 228,
+     "camo_net_canopy_LOD2": 128
+    },
+    "verts": {
+     "camo_net_canopy_LOD0": 173,
+     "camo_net_canopy_LOD1": 141,
+     "camo_net_canopy_LOD2": 81
+    },
+    "materials_per_lod": {
+     "camo_net_canopy_LOD0": 3,
+     "camo_net_canopy_LOD1": 2,
+     "camo_net_canopy_LOD2": 1
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 13.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "ibc_tank": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "ibc_tank_LOD0: duplicate verts=40 loose verts=0",
+    "ibc_tank_LOD0: 4 n-gons"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: ibc_tank_LOD0 (26 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "ibc_tank_LOD0": 384,
+     "ibc_tank_LOD1": 56,
+     "ibc_tank_LOD2": 24
+    },
+    "verts": {
+     "ibc_tank_LOD0": 244,
+     "ibc_tank_LOD1": 32,
+     "ibc_tank_LOD2": 16
+    },
+    "materials_per_lod": {
+     "ibc_tank_LOD0": 1,
+     "ibc_tank_LOD1": 1,
+     "ibc_tank_LOD2": 1
+    },
+    "draw_calls_est": 3,
+    "texture_vram_mb_uncompressed": 1.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "field_toilet": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "field_toilet_LOD0: 2 n-gons",
+    "1 parts fully enclosed, not touching (eyes/internals?): ['field_toilet_LOD0']"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: field_toilet_LOD0 (4 pairs) - delete to save tris"
+   ],
+   "ground_z": 0.0,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "field_toilet_LOD0": 152,
+     "field_toilet_LOD1": 112,
+     "field_toilet_LOD2": 24
+    },
+    "verts": {
+     "field_toilet_LOD0": 88,
+     "field_toilet_LOD1": 64,
+     "field_toilet_LOD2": 16
+    },
+    "materials_per_lod": {
+     "field_toilet_LOD0": 1,
+     "field_toilet_LOD1": 1,
+     "field_toilet_LOD2": 1
+    },
+    "draw_calls_est": 3,
+    "texture_vram_mb_uncompressed": 1.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "sign_stop": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "sign_stop_LOD0: duplicate verts=24 loose verts=0",
+    "sign_stop_LOD0: 4 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.5,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "sign_stop_LOD0": 80,
+     "sign_stop_LOD1": 48,
+     "sign_stop_LOD2": 48
+    },
+    "verts": {
+     "sign_stop_LOD0": 80,
+     "sign_stop_LOD1": 60,
+     "sign_stop_LOD2": 60
+    },
+    "materials_per_lod": {
+     "sign_stop_LOD0": 2,
+     "sign_stop_LOD1": 2,
+     "sign_stop_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 22.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "sign_yield": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "sign_yield_LOD0: duplicate verts=9 loose verts=0",
+    "sign_yield_LOD0: 2 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.5,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "sign_yield_LOD0": 60,
+     "sign_yield_LOD1": 28,
+     "sign_yield_LOD2": 28
+    },
+    "verts": {
+     "sign_yield_LOD0": 50,
+     "sign_yield_LOD1": 30,
+     "sign_yield_LOD2": 30
+    },
+    "materials_per_lod": {
+     "sign_yield_LOD0": 2,
+     "sign_yield_LOD1": 2,
+     "sign_yield_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 22.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "sign_no_entry": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "sign_no_entry_LOD0: duplicate verts=72 loose verts=0",
+    "sign_no_entry_LOD0: 4 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.5,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "sign_no_entry_LOD0": 144,
+     "sign_no_entry_LOD1": 112,
+     "sign_no_entry_LOD2": 112
+    },
+    "verts": {
+     "sign_no_entry_LOD0": 176,
+     "sign_no_entry_LOD1": 156,
+     "sign_no_entry_LOD2": 156
+    },
+    "materials_per_lod": {
+     "sign_no_entry_LOD0": 2,
+     "sign_no_entry_LOD1": 2,
+     "sign_no_entry_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 22.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "sign_speed_30": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "sign_speed_30_LOD0: duplicate verts=72 loose verts=0",
+    "sign_speed_30_LOD0: 4 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.5,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "sign_speed_30_LOD0": 144,
+     "sign_speed_30_LOD1": 112,
+     "sign_speed_30_LOD2": 112
+    },
+    "verts": {
+     "sign_speed_30_LOD0": 176,
+     "sign_speed_30_LOD1": 156,
+     "sign_speed_30_LOD2": 156
+    },
+    "materials_per_lod": {
+     "sign_speed_30_LOD0": 2,
+     "sign_speed_30_LOD1": 2,
+     "sign_speed_30_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 22.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "sign_speed_15": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "sign_speed_15_LOD0: duplicate verts=72 loose verts=0",
+    "sign_speed_15_LOD0: 4 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.5,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "sign_speed_15_LOD0": 144,
+     "sign_speed_15_LOD1": 112,
+     "sign_speed_15_LOD2": 112
+    },
+    "verts": {
+     "sign_speed_15_LOD0": 176,
+     "sign_speed_15_LOD1": 156,
+     "sign_speed_15_LOD2": 156
+    },
+    "materials_per_lod": {
+     "sign_speed_15_LOD0": 2,
+     "sign_speed_15_LOD1": 2,
+     "sign_speed_15_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 22.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "sign_warning": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "sign_warning_LOD0: duplicate verts=9 loose verts=0",
+    "sign_warning_LOD0: 2 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.5,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "sign_warning_LOD0": 60,
+     "sign_warning_LOD1": 28,
+     "sign_warning_LOD2": 28
+    },
+    "verts": {
+     "sign_warning_LOD0": 50,
+     "sign_warning_LOD1": 30,
+     "sign_warning_LOD2": 30
+    },
+    "materials_per_lod": {
+     "sign_warning_LOD0": 2,
+     "sign_warning_LOD1": 2,
+     "sign_warning_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 22.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "sign_restricted": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "sign_restricted_LOD0: duplicate verts=12 loose verts=0",
+    "sign_restricted_LOD0: 2 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.5,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "sign_restricted_LOD0": 64,
+     "sign_restricted_LOD1": 32,
+     "sign_restricted_LOD2": 32
+    },
+    "verts": {
+     "sign_restricted_LOD0": 56,
+     "sign_restricted_LOD1": 36,
+     "sign_restricted_LOD2": 36
+    },
+    "materials_per_lod": {
+     "sign_restricted_LOD0": 2,
+     "sign_restricted_LOD1": 2,
+     "sign_restricted_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 22.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "sign_checkpoint": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "sign_checkpoint_LOD0: duplicate verts=12 loose verts=0",
+    "sign_checkpoint_LOD0: 2 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.5,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "sign_checkpoint_LOD0": 64,
+     "sign_checkpoint_LOD1": 32,
+     "sign_checkpoint_LOD2": 32
+    },
+    "verts": {
+     "sign_checkpoint_LOD0": 56,
+     "sign_checkpoint_LOD1": 36,
+     "sign_checkpoint_LOD2": 36
+    },
+    "materials_per_lod": {
+     "sign_checkpoint_LOD0": 2,
+     "sign_checkpoint_LOD1": 2,
+     "sign_checkpoint_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 22.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "road_asphalt_10m": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "road_asphalt_10m_LOD0: duplicate verts=18 loose verts=0"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: road_asphalt_10m_LOD0 (4 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.6,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "road_asphalt_10m_LOD0": 56,
+     "road_asphalt_10m_LOD1": 56,
+     "road_asphalt_10m_LOD2": 20
+    },
+    "verts": {
+     "road_asphalt_10m_LOD0": 64,
+     "road_asphalt_10m_LOD1": 64,
+     "road_asphalt_10m_LOD2": 40
+    },
+    "materials_per_lod": {
+     "road_asphalt_10m_LOD0": 4,
+     "road_asphalt_10m_LOD1": 4,
+     "road_asphalt_10m_LOD2": 3
+    },
+    "draw_calls_est": 11,
+    "texture_vram_mb_uncompressed": 37.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "road_gravel_10m": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "road_gravel_10m_LOD0: duplicate verts=14 loose verts=0"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: road_gravel_10m_LOD0 (4 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.5,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "road_gravel_10m_LOD0": 32,
+     "road_gravel_10m_LOD1": 16,
+     "road_gravel_10m_LOD2": 16
+    },
+    "verts": {
+     "road_gravel_10m_LOD0": 44,
+     "road_gravel_10m_LOD1": 32,
+     "road_gravel_10m_LOD2": 32
+    },
+    "materials_per_lod": {
+     "road_gravel_10m_LOD0": 3,
+     "road_gravel_10m_LOD1": 2,
+     "road_gravel_10m_LOD2": 2
+    },
+    "draw_calls_est": 7,
+    "texture_vram_mb_uncompressed": 21.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "road_dirt_10m": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "road_dirt_10m_LOD0: duplicate verts=20 loose verts=0"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: road_dirt_10m_LOD0 (4 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.4,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "road_dirt_10m_LOD0": 34,
+     "road_dirt_10m_LOD1": 22,
+     "road_dirt_10m_LOD2": 22
+    },
+    "verts": {
+     "road_dirt_10m_LOD0": 52,
+     "road_dirt_10m_LOD1": 44,
+     "road_dirt_10m_LOD2": 44
+    },
+    "materials_per_lod": {
+     "road_dirt_10m_LOD0": 2,
+     "road_dirt_10m_LOD1": 1,
+     "road_dirt_10m_LOD2": 1
+    },
+    "draw_calls_est": 4,
+    "texture_vram_mb_uncompressed": 21.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "guardrail_4m": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "guardrail_4m_LOD0: duplicate verts=14 loose verts=0"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: guardrail_4m_LOD0 (24 pairs) - delete to save tris"
+   ],
+   "ground_z": -1.0,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "guardrail_4m_LOD0": 72,
+     "guardrail_4m_LOD1": 72,
+     "guardrail_4m_LOD2": 48
+    },
+    "verts": {
+     "guardrail_4m_LOD0": 60,
+     "guardrail_4m_LOD1": 60,
+     "guardrail_4m_LOD2": 44
+    },
+    "materials_per_lod": {
+     "guardrail_4m_LOD0": 1,
+     "guardrail_4m_LOD1": 1,
+     "guardrail_4m_LOD2": 1
+    },
+    "draw_calls_est": 3,
+    "texture_vram_mb_uncompressed": 1.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "guardrail_end": {
+   "pass": true,
+   "errors": [],
+   "warnings": [
+    "guardrail_end_LOD0: duplicate verts=63 loose verts=0"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: guardrail_end_LOD0 (144 pairs) - delete to save tris"
+   ],
+   "ground_z": -1.0,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "guardrail_end_LOD0": 264,
+     "guardrail_end_LOD1": 264,
+     "guardrail_end_LOD2": 228
+    },
+    "verts": {
+     "guardrail_end_LOD0": 174,
+     "guardrail_end_LOD1": 174,
+     "guardrail_end_LOD2": 150
+    },
+    "materials_per_lod": {
+     "guardrail_end_LOD0": 1,
+     "guardrail_end_LOD1": 1,
+     "guardrail_end_LOD2": 1
+    },
+    "draw_calls_est": 3,
+    "texture_vram_mb_uncompressed": 1.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "road_delineator": {
+   "pass": true,
+   "errors": [],
+   "warnings": [],
+   "accepted": [
+    "hidden back-to-back faces: road_delineator_LOD0 (6 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.3,
+   "zfighting": [],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "road_delineator_LOD0": 68,
+     "road_delineator_LOD1": 24,
+     "road_delineator_LOD2": 12
+    },
+    "verts": {
+     "road_delineator_LOD0": 40,
+     "road_delineator_LOD1": 16,
+     "road_delineator_LOD2": 8
+    },
+    "materials_per_lod": {
+     "road_delineator_LOD0": 1,
+     "road_delineator_LOD1": 1,
+     "road_delineator_LOD2": 1
+    },
+    "draw_calls_est": 3,
+    "texture_vram_mb_uncompressed": 1.0,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "road_culvert": {
+   "pass": false,
+   "errors": [
+    "z-fighting: road_culvert_LOD0 (4 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "road_culvert_LOD0: duplicate verts=88 loose verts=0"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: road_culvert_LOD0 (12 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.3,
+   "zfighting": [
+    {
+     "where": "road_culvert_LOD0",
+     "tri_pairs": 4
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "road_culvert_LOD0": 304,
+     "road_culvert_LOD1": 172,
+     "road_culvert_LOD2": 140
+    },
+    "verts": {
+     "road_culvert_LOD0": 256,
+     "road_culvert_LOD1": 112,
+     "road_culvert_LOD2": 92
+    },
+    "materials_per_lod": {
+     "road_culvert_LOD0": 2,
+     "road_culvert_LOD1": 2,
+     "road_culvert_LOD2": 1
+    },
+    "draw_calls_est": 5,
+    "texture_vram_mb_uncompressed": 10.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "bridge_small": {
+   "pass": false,
+   "errors": [
+    "z-fighting: bridge_small_LOD0 (70 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "bridge_small_LOD0: duplicate verts=8 loose verts=0"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: bridge_small_LOD0 (76 pairs) - delete to save tris"
+   ],
+   "ground_z": -3.0,
+   "zfighting": [
+    {
+     "where": "bridge_small_LOD0",
+     "tri_pairs": 70
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "bridge_small_LOD0": 432,
+     "bridge_small_LOD1": 432,
+     "bridge_small_LOD2": 168
+    },
+    "verts": {
+     "bridge_small_LOD0": 288,
+     "bridge_small_LOD1": 288,
+     "bridge_small_LOD2": 112
+    },
+    "materials_per_lod": {
+     "bridge_small_LOD0": 4,
+     "bridge_small_LOD1": 4,
+     "bridge_small_LOD2": 2
+    },
+    "draw_calls_est": 10,
+    "texture_vram_mb_uncompressed": 22.3,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "truck_6x6": {
+   "pass": false,
+   "errors": [
+    "z-fighting: truck_6x6_LOD0 (78 overlapping coplanar tri pairs)",
+    "floating/detached part in truck_6x6_LOD0 (28 verts at [-0.925, 0.85, 0.75])",
+    "floating/detached part in truck_6x6_LOD0 (8 verts at [0.0, -4.15, 0.95])",
+    "floating/detached part in truck_6x6_LOD0 (24 verts at [0.925, 0.8, 0.7])"
+   ],
+   "warnings": [
+    "truck_6x6_LOD0: duplicate verts=12 loose verts=0",
+    "truck_6x6_LOD0: 58 n-gons",
+    "2 parts fully enclosed, not touching (eyes/internals?): ['truck_6x6_LOD0', 'truck_6x6_LOD0']"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: truck_6x6_LOD0 (36 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.0441,
+   "zfighting": [
+    {
+     "where": "truck_6x6_LOD0",
+     "tri_pairs": 78
+    }
+   ],
+   "floating": [
+    {
+     "object": "truck_6x6_LOD0",
+     "island_verts": 28,
+     "center": [
+      -0.925,
+      0.85,
+      0.75
+     ]
+    },
+    {
+     "object": "truck_6x6_LOD0",
+     "island_verts": 8,
+     "center": [
+      0.0,
+      -4.15,
+      0.95
+     ]
+    },
+    {
+     "object": "truck_6x6_LOD0",
+     "island_verts": 24,
+     "center": [
+      0.925,
+      0.8,
+      0.7
+     ]
+    }
+   ],
+   "stats": {
+    "tris": {
+     "truck_6x6_LOD0": 4104,
+     "truck_6x6_LOD1": 902,
+     "truck_6x6_LOD2": 274
+    },
+    "verts": {
+     "truck_6x6_LOD0": 2422,
+     "truck_6x6_LOD1": 524,
+     "truck_6x6_LOD2": 162
+    },
+    "materials_per_lod": {
+     "truck_6x6_LOD0": 4,
+     "truck_6x6_LOD1": 3,
+     "truck_6x6_LOD2": 3
+    },
+    "draw_calls_est": 10,
+    "texture_vram_mb_uncompressed": 43.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "apc_8x8": {
+   "pass": false,
+   "errors": [
+    "z-fighting: apc_8x8_LOD0 (92 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "apc_8x8_LOD0: duplicate verts=8 loose verts=0",
+    "apc_8x8_LOD0: 98 n-gons",
+    "1 parts fully enclosed, not touching (eyes/internals?): ['apc_8x8_LOD0']"
+   ],
+   "accepted": [
+    "hidden back-to-back faces: apc_8x8_LOD0 (75 pairs) - delete to save tris"
+   ],
+   "ground_z": -0.0445,
+   "zfighting": [
+    {
+     "where": "apc_8x8_LOD0",
+     "tri_pairs": 92
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "apc_8x8_LOD0": 4944,
+     "apc_8x8_LOD1": 936,
+     "apc_8x8_LOD2": 300
+    },
+    "verts": {
+     "apc_8x8_LOD0": 2908,
+     "apc_8x8_LOD1": 524,
+     "apc_8x8_LOD2": 172
+    },
+    "materials_per_lod": {
+     "apc_8x8_LOD0": 2,
+     "apc_8x8_LOD1": 2,
+     "apc_8x8_LOD2": 2
+    },
+    "draw_calls_est": 6,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "wheel_truck": {
+   "pass": false,
+   "errors": [
+    "z-fighting: wheel_truck_LOD0 (14 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "wheel_truck_LOD0: 8 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.0441,
+   "zfighting": [
+    {
+     "where": "wheel_truck_LOD0",
+     "tri_pairs": 14
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "wheel_truck_LOD0": 496,
+     "wheel_truck_LOD1": 72,
+     "wheel_truck_LOD2": 28
+    },
+    "verts": {
+     "wheel_truck_LOD0": 292,
+     "wheel_truck_LOD1": 40,
+     "wheel_truck_LOD2": 16
+    },
+    "materials_per_lod": {
+     "wheel_truck_LOD0": 2,
+     "wheel_truck_LOD1": 2,
+     "wheel_truck_LOD2": 1
+    },
+    "draw_calls_est": 5,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  },
+  "wheel_apc": {
+   "pass": false,
+   "errors": [
+    "z-fighting: wheel_apc_LOD0 (13 overlapping coplanar tri pairs)"
+   ],
+   "warnings": [
+    "wheel_apc_LOD0: 8 n-gons"
+   ],
+   "accepted": [],
+   "ground_z": -0.0445,
+   "zfighting": [
+    {
+     "where": "wheel_apc_LOD0",
+     "tri_pairs": 13
+    }
+   ],
+   "floating": [],
+   "stats": {
+    "tris": {
+     "wheel_apc_LOD0": 496,
+     "wheel_apc_LOD1": 72,
+     "wheel_apc_LOD2": 28
+    },
+    "verts": {
+     "wheel_apc_LOD0": 292,
+     "wheel_apc_LOD1": 40,
+     "wheel_apc_LOD2": 16
+    },
+    "materials_per_lod": {
+     "wheel_apc_LOD0": 2,
+     "wheel_apc_LOD1": 2,
+     "wheel_apc_LOD2": 1
+    },
+    "draw_calls_est": 5,
+    "texture_vram_mb_uncompressed": 11.7,
+    "budget": "pc",
+    "over_budget": []
+   },
+   "eps": 0.002,
+   "tol": 0.03
+  }
+ },
+ "failed": [
+  "hq_building",
+  "barracks_block",
+  "supply_depot",
+  "vehicle_depot",
+  "medical_station",
+  "guard_tower_steel",
+  "comms_station",
+  "training_facility",
+  "range_target_line",
+  "range_tower",
+  "obstacle_wall",
+  "obstacle_tires",
+  "mout_wall_window",
+  "vehicle_ramp",
+  "repair_bay",
+  "container_yard",
+  "fuel_bladder_berm",
+  "ammo_magazine",
+  "comms_tower",
+  "checkpoint_station",
+  "dfp_sandbag_ring",
+  "iso_container_20_od",
+  "iso_container_20_tan",
+  "iso_container_20_blue",
+  "iso_container_20_rust",
+  "iso_container_40_od",
+  "iso_container_40_tan",
+  "hesco_mil1_1",
+  "hesco_mil1_5",
+  "hesco_mil7_2",
+  "chainlink_gate",
+  "guard_booth",
+  "pallet_euro",
+  "supply_pallet",
+  "crate_large",
+  "ammo_box_wood",
+  "ammo_pallet",
+  "fuel_drum",
+  "fuel_drum_red",
+  "drum_pallet",
+  "fuel_tank_skid",
+  "light_tower",
+  "light_pole",
+  "radio_mast",
+  "camo_net_canopy",
+  "road_culvert",
+  "bridge_small",
+  "truck_6x6",
+  "apc_8x8",
+  "wheel_truck",
+  "wheel_apc"
+ ],
+ "new_findings": {
+  "hq_building": [
+   "z-fighting: hq_building_LOD0 (133 overlapping coplanar tri pairs)",
+   "floating/detached part in hq_building_LOD0 (24 verts at [6.4, 5.11, 2.1])",
+   "floating/detached part in hq_building_LOD0 (24 verts at [4.0, 5.11, 2.1])",
+   "floating/detached part in hq_building_LOD0 (24 verts at [-4.0, 5.11, 2.1])",
+   "floating/detached part in hq_building_LOD0 (24 verts at [-6.4, 5.11, 2.1])"
+  ],
+  "barracks_block": [
+   "z-fighting: barracks_block_LOD0 (416 overlapping coplanar tri pairs)"
+  ],
+  "supply_depot": [
+   "z-fighting: supply_depot_LOD0 (84 overlapping coplanar tri pairs)",
+   "floating/detached part in supply_depot_LOD0 (4 verts at [-10.02, 4.0, 4.6])",
+   "floating/detached part in supply_depot_LOD0 (4 verts at [-10.02, -4.0, 4.6])",
+   "floating/detached part in supply_depot_LOD0 (4 verts at [10.02, -4.0, 4.6])",
+   "floating/detached part in supply_depot_LOD0 (4 verts at [10.02, 4.0, 4.6])"
+  ],
+  "vehicle_depot": [
+   "z-fighting: vehicle_depot_LOD0 (65 overlapping coplanar tri pairs)",
+   "floating/detached part in vehicle_depot_LOD0 (4 verts at [-8.0, 8.012, 6.12])",
+   "floating/detached part in vehicle_depot_LOD0 (4 verts at [0.0, 8.012, 6.12])",
+   "floating/detached part in vehicle_depot_LOD0 (4 verts at [8.0, 8.012, 6.12])",
+   "floating/detached part in vehicle_depot_LOD0 (4 verts at [12.52, -5.0, 4.92])",
+   "floating/detached part in vehicle_depot_LOD0 (4 verts at [12.52, 0.0, 4.92])",
+   "floating/detached part in vehicle_depot_LOD0 (4 verts at [12.52, 5.0, 4.92])",
+   "floating/detached part in vehicle_depot_LOD0 (4 verts at [-5.0, -8.02, 4.92])",
+   "floating/detached part in vehicle_depot_LOD0 (4 verts at [0.0, -8.02, 4.92])"
+  ],
+  "medical_station": [
+   "z-fighting: medical_station_LOD0 (4 overlapping coplanar tri pairs)",
+   "floating/detached part in medical_station_LOD0 (4 verts at [0.0, 0.0, 3.33])"
+  ],
+  "guard_tower_steel": [
+   "z-fighting: guard_tower_steel_LOD0 (56 overlapping coplanar tri pairs)",
+   "floating/detached part in guard_tower_steel_LOD0 (12 verts at [-2.3, 0.0, 3.25])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.3, 0.0, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.861, 1.352, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.711, 2.187, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-0.711, 2.187, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-1.861, 1.352, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-2.3, 0.0, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.711, -2.187, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.861, -1.352, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.187, 0.711, 0.19])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.352, 1.861, 0.19])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.0, 2.3, 0.19])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-1.352, 1.861, 0.19])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-2.187, 0.711, 0.19])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.352, -1.861, 0.19])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.187, -0.711, 0.19])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.3, 0.0, 0.31])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.861, 1.352, 0.31])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.711, 2.187, 0.31])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-0.711, 2.187, 0.31])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-2.3, 0.0, 0.31])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.711, -2.187, 0.31])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.861, -1.352, 0.31])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.187, 0.711, 0.43])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.352, 1.861, 0.43])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.0, 2.3, 0.43])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-2.187, 0.711, 0.43])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.352, -1.861, 0.43])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.187, -0.711, 0.43])"
+  ],
+  "comms_station": [
+   "z-fighting: comms_station_LOD0 (17 overlapping coplanar tri pairs)"
+  ],
+  "training_facility": [
+   "z-fighting: training_facility_LOD0 (66 overlapping coplanar tri pairs)"
+  ],
+  "range_target_line": [
+   "z-fighting: range_target_line_LOD0 (26 overlapping coplanar tri pairs)"
+  ],
+  "range_tower": [
+   "floating/detached part in range_tower_LOD0 (8 verts at [-0.9, 1.45, 5.75])",
+   "floating/detached part in range_tower_LOD0 (8 verts at [0.9, 1.45, 5.75])"
+  ],
+  "obstacle_wall": [
+   "floating/detached part in obstacle_wall_LOD0 (8 verts at [0.0, -0.3, 0.6])",
+   "floating/detached part in obstacle_wall_LOD0 (8 verts at [0.0, 0.3, 0.6])"
+  ],
+  "obstacle_tires": [
+   "z-fighting: obstacle_tires_LOD0 (282 overlapping coplanar tri pairs)"
+  ],
+  "mout_wall_window": [
+   "z-fighting: mout_wall_window_LOD0 (4 overlapping coplanar tri pairs)",
+   "floating/detached part in mout_wall_window_LOD0 (8 verts at [0.0, 0.0, 2.64])"
+  ],
+  "vehicle_ramp": [
+   "vehicle_ramp_LOD0: 6 edges with inconsistent face winding",
+   "z-fighting: vehicle_ramp_LOD0 (4 overlapping coplanar tri pairs)",
+   "floating/detached part in vehicle_ramp_LOD0 (8 verts at [-2.1, 0.0, 1.3])"
+  ],
+  "repair_bay": [
+   "z-fighting: repair_bay_LOD0 (6 overlapping coplanar tri pairs)",
+   "floating/detached part in repair_bay_LOD0 (8 verts at [0.0, 0.0, 5.7])"
+  ],
+  "container_yard": [
+   "z-fighting: container_yard_LOD0 (400 overlapping coplanar tri pairs)"
+  ],
+  "fuel_bladder_berm": [
+   "z-fighting: fuel_bladder_berm_LOD0 (10 overlapping coplanar tri pairs)"
+  ],
+  "ammo_magazine": [
+   "z-fighting: ammo_magazine_LOD0 (1 overlapping coplanar tri pairs)",
+   "floating/detached part in ammo_magazine_LOD0 (12 verts at [-7.5, 0.0, 4.5])",
+   "floating/detached part in ammo_magazine_LOD0 (12 verts at [7.5, 0.0, 4.5])"
+  ],
+  "comms_tower": [
+   "z-fighting: comms_tower_LOD0 (10 overlapping coplanar tri pairs)",
+   "floating/detached part in comms_tower_LOD0 (8 verts at [0.0, 0.55, 22.0])",
+   "floating/detached part in comms_tower_LOD0 (8 verts at [-0.476, -0.275, 22.0])",
+   "floating/detached part in comms_tower_LOD0 (8 verts at [0.476, -0.275, 22.0])"
+  ],
+  "checkpoint_station": [
+   "z-fighting: checkpoint_station_LOD0 (4 overlapping coplanar tri pairs)"
+  ],
+  "dfp_sandbag_ring": [
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.3, 0.0, 0.065])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.3, 0.0, 0.065])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.267, 0.289, 0.185])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.267, 0.289, 0.185])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.267, -0.289, 0.185])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.267, -0.289, 0.185])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.3, 0.0, 0.305])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.171, 0.564, 0.305])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.171, 0.564, 0.305])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.3, 0.0, 0.305])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.171, -0.564, 0.305])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.171, -0.564, 0.305])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.267, 0.289, 0.425])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.267, 0.289, 0.425])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.267, -0.289, 0.425])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.267, -0.289, 0.425])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.3, 0.0, 0.545])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.171, 0.564, 0.545])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.171, 0.564, 0.545])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.3, 0.0, 0.545])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.171, -0.564, 0.545])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.171, -0.564, 0.545])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.267, 0.289, 0.665])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.267, 0.289, 0.665])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.267, -0.289, 0.665])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.267, -0.289, 0.665])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.3, 0.0, 0.785])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.171, 0.564, 0.785])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.171, 0.564, 0.785])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.3, 0.0, 0.785])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.171, -0.564, 0.785])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.171, -0.564, 0.785])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.267, 0.289, 0.905])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.267, 0.289, 0.905])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [-1.267, -0.289, 0.905])",
+   "floating/detached part in dfp_sandbag_ring_LOD0 (26 verts at [1.267, -0.289, 0.905])"
+  ],
+  "iso_container_20_od": [
+   "z-fighting: iso_container_20_od_LOD0 (72 overlapping coplanar tri pairs)"
+  ],
+  "iso_container_20_tan": [
+   "z-fighting: iso_container_20_tan_LOD0 (72 overlapping coplanar tri pairs)"
+  ],
+  "iso_container_20_blue": [
+   "z-fighting: iso_container_20_blue_LOD0 (72 overlapping coplanar tri pairs)"
+  ],
+  "iso_container_20_rust": [
+   "z-fighting: iso_container_20_rust_LOD0 (72 overlapping coplanar tri pairs)"
+  ],
+  "iso_container_40_od": [
+   "z-fighting: iso_container_40_od_LOD0 (72 overlapping coplanar tri pairs)"
+  ],
+  "iso_container_40_tan": [
+   "z-fighting: iso_container_40_tan_LOD0 (72 overlapping coplanar tri pairs)"
+  ],
+  "hesco_mil1_1": [
+   "z-fighting: hesco_mil1_1_LOD0 (44 overlapping coplanar tri pairs)"
+  ],
+  "hesco_mil1_5": [
+   "z-fighting: hesco_mil1_5_LOD0 (173 overlapping coplanar tri pairs)"
+  ],
+  "hesco_mil7_2": [
+   "z-fighting: hesco_mil7_2_LOD0 (76 overlapping coplanar tri pairs)"
+  ],
+  "chainlink_gate": [
+   "z-fighting: chainlink_gate_LOD0 (8 overlapping coplanar tri pairs)"
+  ],
+  "guard_booth": [
+   "z-fighting: guard_booth_LOD0 (26 overlapping coplanar tri pairs)"
+  ],
+  "pallet_euro": [
+   "floating/detached part in pallet_euro_LOD0 (8 verts at [0.0, -0.175, 0.133])",
+   "floating/detached part in pallet_euro_LOD0 (8 verts at [0.0, 0.175, 0.133])"
+  ],
+  "supply_pallet": [
+   "z-fighting: supply_pallet_LOD0 (88 overlapping coplanar tri pairs)"
+  ],
+  "crate_large": [
+   "z-fighting: crate_large_LOD0 (16 overlapping coplanar tri pairs)"
+  ],
+  "ammo_box_wood": [
+   "z-fighting: ammo_box_wood_LOD0 (24 overlapping coplanar tri pairs)"
+  ],
+  "ammo_pallet": [
+   "z-fighting: ammo_pallet_LOD0 (130 overlapping coplanar tri pairs)"
+  ],
+  "fuel_drum": [
+   "z-fighting: fuel_drum_LOD0 (115 overlapping coplanar tri pairs)"
+  ],
+  "fuel_drum_red": [
+   "z-fighting: fuel_drum_red_LOD0 (115 overlapping coplanar tri pairs)"
+  ],
+  "drum_pallet": [
+   "floating/detached part in drum_pallet_LOD0 (4 verts at [0.0, 0.612, 0.3])"
+  ],
+  "fuel_tank_skid": [
+   "z-fighting: fuel_tank_skid_LOD0 (4 overlapping coplanar tri pairs)",
+   "floating/detached part in fuel_tank_skid_LOD0 (32 verts at [1.0, 1.05, 0.65])"
+  ],
+  "light_tower": [
+   "z-fighting: light_tower_LOD0 (12 overlapping coplanar tri pairs)"
+  ],
+  "light_pole": [
+   "z-fighting: light_pole_LOD0 (11 overlapping coplanar tri pairs)"
+  ],
+  "radio_mast": [
+   "z-fighting: radio_mast_LOD0 (14 overlapping coplanar tri pairs)"
+  ],
+  "camo_net_canopy": [
+   "z-fighting: camo_net_canopy_LOD0 (16 overlapping coplanar tri pairs)",
+   "floating/detached part in camo_net_canopy_LOD0 (8 verts at [-4.475, -4.475, 1.285])",
+   "floating/detached part in camo_net_canopy_LOD0 (8 verts at [-4.475, 4.475, 1.285])",
+   "floating/detached part in camo_net_canopy_LOD0 (8 verts at [4.475, -4.475, 1.285])",
+   "floating/detached part in camo_net_canopy_LOD0 (8 verts at [4.475, 4.475, 1.285])"
+  ],
+  "road_culvert": [
+   "z-fighting: road_culvert_LOD0 (4 overlapping coplanar tri pairs)"
+  ],
+  "bridge_small": [
+   "z-fighting: bridge_small_LOD0 (70 overlapping coplanar tri pairs)"
+  ],
+  "truck_6x6": [
+   "z-fighting: truck_6x6_LOD0 (78 overlapping coplanar tri pairs)",
+   "floating/detached part in truck_6x6_LOD0 (28 verts at [-0.925, 0.85, 0.75])",
+   "floating/detached part in truck_6x6_LOD0 (8 verts at [0.0, -4.15, 0.95])",
+   "floating/detached part in truck_6x6_LOD0 (24 verts at [0.925, 0.8, 0.7])"
+  ],
+  "apc_8x8": [
+   "z-fighting: apc_8x8_LOD0 (92 overlapping coplanar tri pairs)"
+  ],
+  "wheel_truck": [
+   "z-fighting: wheel_truck_LOD0 (14 overlapping coplanar tri pairs)"
+  ],
+  "wheel_apc": [
+   "z-fighting: wheel_apc_LOD0 (13 overlapping coplanar tri pairs)"
+  ]
+ },
+ "check": {
+  "profile": "game",
+  "eps": 0.002,
+  "tol": 0.03,
+  "budget": "pc",
+  "max_tris": 300000,
+  "uv": false
+ },
+ "checked": 96
+}

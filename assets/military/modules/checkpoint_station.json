@@ -192,5 +192,21 @@
   "max_slope_deg": 4.0,
   "blocks_navigation": false,
   "max_ground_gap": 0.4
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: checkpoint_station_LOD0 (4 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "checkpoint_station_LOD0: duplicate verts=60 loose verts=0",
+   "checkpoint_station_LOD0: 8 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: checkpoint_station_LOD0 (64 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

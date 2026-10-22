@@ -71,5 +71,17 @@
   "max_slope_deg": 10.0,
   "blocks_navigation": true,
   "max_ground_gap": 0.3
+ },
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "obstacle_net_LOD0: duplicate verts=20 loose verts=0",
+   "obstacle_net_LOD0: 10 n-gons"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

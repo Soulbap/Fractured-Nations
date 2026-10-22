@@ -106,5 +106,20 @@
  ],
  "structure": null,
  "span_m": 12.0,
- "deck_width_m": 7.5
+ "deck_width_m": 7.5,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: bridge_small_LOD0 (70 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "bridge_small_LOD0: duplicate verts=8 loose verts=0"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: bridge_small_LOD0 (76 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

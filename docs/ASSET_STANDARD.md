@@ -97,6 +97,7 @@ where neither is visible.
 
 ```
 blender -b --factory-startup --python tools/blender/asset_production/build_assets.py -- --export [--family F] [--only ID,..] [--previews DIR] [--lods] [--textures]
+    [--qa] [--qa-strict] [--qa-baseline benchmarks/asset01/qa_baseline.json] [--qa-sheets DIR] [--qa-report P]
 benchmarks/asset01/run_lab.sh --validate            # every catalogued asset; exit 1 on failures
 benchmarks/asset01/run_lab.sh --shots [filter]      # Godot 2 x 2 sheets -> docs/asset01/godot/
 benchmarks/asset01/run_lab.sh --lod [filter]        # the three LODs at their real distances
@@ -108,3 +109,24 @@ modules, registered in its `BUILDERS` dict. The validator checks: LOD0/1/2 prese
 LOD0 first, triangle counts never rising, contiguous LOD ranges, every surface a library
 material, vertex colours present, bounds equal to the Blender metadata (orientation),
 no floating, collision shape count and marker positions.
+
+### Blender-side QA gate (BLENDER-SKILLS-01)
+
+`--qa` runs the `blender-asset-qa` and `blender-game-optimization` scripts of the
+project-scoped agent skills (`.claude/skills/`, MIT, EL4CTEO/blender-skills) on LOD0 of
+every built asset through `tools/blender/asset_production/ap_qa.py`: closed parts with
+inward normals, coplanar overlapping faces (z-fighting), detached parts, degenerate faces,
+duplicate vertices, unapplied scale, plus triangle / material / texture budgets. These are
+the defects the Godot validator cannot see. Library tolerances live in `ap_qa.CHECK` (eps
+2 mm, contact 3 cm, UV check off: box projection and palette point UVs are by design); a
+builder may set `asset.qa = {...}` to override them for one asset.
+
+* With `--export`, the verdict is written into the sidecar (`"qa"`) next to the other numbers.
+* `benchmarks/asset01/qa_baseline.json` is the recorded state of the library (the known
+  backlog). `--qa-strict --qa-baseline <it>` fails the build only on findings that are new
+  against it; `--qa-strict` alone fails on any finding. After fixing a backlog item, rerun with
+  `--qa-report benchmarks/asset01/qa_baseline.json` to re-record.
+* `--qa-sheets DIR` renders a random-colour-per-part Workbench sheet per asset (detached
+  parts stand out) for a look before the Godot screenshots.
+
+Generic skills and our conventions: `.claude/skills/fn-blender-pipeline/SKILL.md`.

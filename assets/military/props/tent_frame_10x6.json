@@ -91,5 +91,19 @@
   "max_slope_deg": 8.0,
   "max_ground_gap": 0.3,
   "blocks_navigation": true
+ },
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "tent_frame_10x6_LOD0: duplicate verts=4 loose verts=0",
+   "tent_frame_10x6_LOD0: 30 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: tent_frame_10x6_LOD0 (14 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

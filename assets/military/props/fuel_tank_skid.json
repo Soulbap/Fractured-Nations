@@ -88,5 +88,21 @@
   }
  ],
  "structure": null,
- "capacity_l": 10000
+ "capacity_l": 10000,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: fuel_tank_skid_LOD0 (4 overlapping coplanar tri pairs)",
+   "floating/detached part in fuel_tank_skid_LOD0 (32 verts at [1.0, 1.05, 0.65])"
+  ],
+  "warnings": [
+   "fuel_tank_skid_LOD0: 44 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: fuel_tank_skid_LOD0 (2 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

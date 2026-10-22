@@ -65,5 +65,17 @@
   ]
  ],
  "markers": [],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "sign_stop_LOD0: duplicate verts=24 loose verts=0",
+   "sign_stop_LOD0: 4 n-gons"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

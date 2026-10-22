@@ -68,5 +68,23 @@
    "note": "vehicle / equipment parks under the net"
   }
  ],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: camo_net_canopy_LOD0 (16 overlapping coplanar tri pairs)",
+   "floating/detached part in camo_net_canopy_LOD0 (8 verts at [-4.475, -4.475, 1.285])",
+   "floating/detached part in camo_net_canopy_LOD0 (8 verts at [-4.475, 4.475, 1.285])",
+   "floating/detached part in camo_net_canopy_LOD0 (8 verts at [4.475, -4.475, 1.285])",
+   "floating/detached part in camo_net_canopy_LOD0 (8 verts at [4.475, 4.475, 1.285])"
+  ],
+  "warnings": [
+   "camo_net_canopy_LOD0: 10 n-gons",
+   "1 parts fully enclosed, not touching (eyes/internals?): ['camo_net_canopy_LOD0']"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

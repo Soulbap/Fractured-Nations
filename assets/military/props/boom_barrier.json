@@ -94,5 +94,19 @@
    "note": "vehicle stops here (lane centre)"
   }
  ],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "boom_barrier_LOD0: duplicate verts=44 loose verts=0",
+   "boom_barrier_LOD0: 4 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: boom_barrier_LOD0 (52 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

@@ -67,5 +67,20 @@
   ]
  ],
  "markers": [],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "floating/detached part in drum_pallet_LOD0 (4 verts at [0.0, 0.612, 0.3])"
+  ],
+  "warnings": [
+   "drum_pallet_LOD0: 24 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: drum_pallet_LOD0 (84 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

@@ -78,5 +78,18 @@
   }
  ],
  "structure": null,
- "power_kw": 60
+ "power_kw": 60,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "generator_60kw_tan_LOD0: 8 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: generator_60kw_tan_LOD0 (19 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

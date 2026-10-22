@@ -96,5 +96,21 @@
    "note": "open / close the gate"
   }
  ],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: chainlink_gate_LOD0 (8 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "chainlink_gate_LOD0: duplicate verts=16 loose verts=0",
+   "chainlink_gate_LOD0: 38 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: chainlink_gate_LOD0 (50 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

@@ -67,5 +67,18 @@
   ]
  ],
  "markers": [],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: crate_large_LOD0 (16 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [],
+  "accepted": [
+   "hidden back-to-back faces: crate_large_LOD0 (6 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

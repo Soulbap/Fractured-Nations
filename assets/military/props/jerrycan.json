@@ -65,5 +65,18 @@
   ]
  ],
  "markers": [],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "jerrycan_LOD0: 2 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: jerrycan_LOD0 (8 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

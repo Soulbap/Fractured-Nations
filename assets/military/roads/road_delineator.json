@@ -64,5 +64,16 @@
   ]
  ],
  "markers": [],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [],
+  "accepted": [
+   "hidden back-to-back faces: road_delineator_LOD0 (6 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

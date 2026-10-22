@@ -134,5 +134,19 @@
   "max_slope_deg": 8.0,
   "blocks_navigation": true,
   "max_ground_gap": 0.3
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: range_target_line_LOD0 (26 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "range_target_line_LOD0: duplicate verts=84 loose verts=0",
+   "range_target_line_LOD0: 2 n-gons"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

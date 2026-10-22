@@ -117,5 +117,19 @@
   "max_slope_deg": 3.0,
   "blocks_navigation": false,
   "max_ground_gap": 0.4
+ },
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "fuel_point_LOD0: duplicate verts=24 loose verts=0",
+   "fuel_point_LOD0: 12 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: fuel_point_LOD0 (14 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

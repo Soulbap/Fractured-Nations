@@ -66,5 +66,18 @@
   ]
  ],
  "markers": [],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: ammo_box_wood_LOD0 (24 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "ammo_box_wood_LOD0: 4 n-gons"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

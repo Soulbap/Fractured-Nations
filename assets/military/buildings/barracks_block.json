@@ -164,5 +164,21 @@
   "role": "accommodation",
   "rooms": 8,
   "beds": 32
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: barracks_block_LOD0 (416 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "barracks_block_LOD0: duplicate verts=40 loose verts=0",
+   "barracks_block_LOD0: 114 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: barracks_block_LOD0 (477 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

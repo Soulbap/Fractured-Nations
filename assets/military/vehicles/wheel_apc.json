@@ -71,5 +71,18 @@
  "wheel": {
   "radius_m": 0.6,
   "width_m": 0.4
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: wheel_apc_LOD0 (13 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "wheel_apc_LOD0: 8 n-gons"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

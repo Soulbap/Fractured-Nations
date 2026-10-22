@@ -263,8 +263,38 @@ class Asset:
             f.material_index = new.index(nm)
         self.slots[i] = new
 
+    @staticmethod
+    def _orient_closed_islands(bm):
+        """BLENDER-SKILLS-01: every closed (watertight) connected part gets outward-facing,
+        consistently wound faces. Primitives are built from many small shells (boxes, lofts,
+        prisms, roofs) whose winding depended on the construction frame; the QA gate found
+        inside-out shells in half the library. Open parts (signs, decals, single sheets) are
+        left alone: their facing is authored."""
+        bm.verts.ensure_lookup_table()
+        parent = list(range(len(bm.verts)))
+
+        def find(i):
+            while parent[i] != i:
+                parent[i] = parent[parent[i]]
+                i = parent[i]
+            return i
+        for e in bm.edges:
+            a, b = find(e.verts[0].index), find(e.verts[1].index)
+            if a != b:
+                parent[a] = b
+        open_islands = {find(e.verts[0].index) for e in bm.edges if len(e.link_faces) != 2}
+        faces = [f for f in bm.faces if find(f.verts[0].index) not in open_islands]
+        if faces:
+            bmesh.ops.recalc_face_normals(bm, faces=faces)
+
     def build(self, coll, tex_dir):
         objs = []
+        for i in ALL:
+            bm = self.bms[i]
+            if not bm.faces:
+                objs.append(None)
+                continue
+            self._orient_closed_islands(bm)
         for i in ALL:
             bm = self.bms[i]
             if not bm.faces:
@@ -448,12 +478,14 @@ def write_structure_def(meta, def_dir, glb_res_path):
            '[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]\n\n'
            "[resource]\nscript = ExtResource(\"1_def\")\n"
            'id = &"%s"\ndisplay_name = "%s"\ncategory = "%s"\ndescription = "%s"\nmesh_path = "%s"\n'
-           "size = Vector3(%g, %g, %g)\nmax_slope_deg = %g\nmax_ground_gap = %g\nsink = %g\nblocks_navigation = %s\n"
+           "size = Vector3(%g, %g, %g)\nmax_slope_deg = %g\nmax_ground_gap = %g\nsink = %g\nblocks_navigation = %s\n%s"
            "collision_boxes = Array[AABB]([%s])\nramps = Array[AABB]([%s])\n") % (
         meta["id"], meta["display_name"], s.get("category", meta["category"] or "Buildings"),
         meta["description"].replace('"', "'"), glb_res_path, round(size[0], 3), round(size[1], 3), round(size[2], 3),
         s.get("max_slope_deg", 7.0), s.get("max_ground_gap", round(meta["foundation_depth"] * 2, 2) or 0.4),
-        s.get("sink", 0.05), "true" if s.get("blocks_navigation", True) else "false", aabbs, ramps)
+        s.get("sink", 0.05), "true" if s.get("blocks_navigation", True) else "false",
+        # WORLD-INTEGRATION-03: no collision body / nav obstacle at all (pads, wire, tyre runs).
+        "walkable = true\n" if s.get("walkable") else "", aabbs, ramps)
     with open(os.path.join(def_dir, meta["id"] + ".tres"), "w", encoding="utf-8") as f:
         f.write(txt)
 

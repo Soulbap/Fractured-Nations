@@ -91,5 +91,21 @@
   "max_slope_deg": 6.0,
   "blocks_navigation": true,
   "max_ground_gap": 0.4
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: mout_wall_window_LOD0 (4 overlapping coplanar tri pairs)",
+   "floating/detached part in mout_wall_window_LOD0 (8 verts at [0.0, 0.0, 2.64])"
+  ],
+  "warnings": [
+   "mout_wall_window_LOD0: duplicate verts=8 loose verts=0"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: mout_wall_window_LOD0 (20 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

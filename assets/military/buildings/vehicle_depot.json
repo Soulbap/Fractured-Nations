@@ -192,5 +192,29 @@
    5.0
   ],
   "max_vehicle": "8x8 APC / 6x6 truck"
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: vehicle_depot_LOD0 (65 overlapping coplanar tri pairs)",
+   "floating/detached part in vehicle_depot_LOD0 (4 verts at [-8.0, 8.012, 6.12])",
+   "floating/detached part in vehicle_depot_LOD0 (4 verts at [0.0, 8.012, 6.12])",
+   "floating/detached part in vehicle_depot_LOD0 (4 verts at [8.0, 8.012, 6.12])",
+   "floating/detached part in vehicle_depot_LOD0 (4 verts at [12.52, -5.0, 4.92])",
+   "floating/detached part in vehicle_depot_LOD0 (4 verts at [12.52, 0.0, 4.92])",
+   "floating/detached part in vehicle_depot_LOD0 (4 verts at [12.52, 5.0, 4.92])",
+   "floating/detached part in vehicle_depot_LOD0 (4 verts at [-5.0, -8.02, 4.92])",
+   "floating/detached part in vehicle_depot_LOD0 (4 verts at [0.0, -8.02, 4.92])"
+  ],
+  "warnings": [
+   "vehicle_depot_LOD0: duplicate verts=16 loose verts=0",
+   "vehicle_depot_LOD0: 84 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: vehicle_depot_LOD0 (465 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

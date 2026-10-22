@@ -170,5 +170,27 @@
   "storage_m2": 280.0,
   "pallet_positions": 180,
   "dock_doors": 2
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: supply_depot_LOD0 (84 overlapping coplanar tri pairs)",
+   "floating/detached part in supply_depot_LOD0 (4 verts at [-10.02, 4.0, 4.6])",
+   "floating/detached part in supply_depot_LOD0 (4 verts at [-10.02, -4.0, 4.6])",
+   "floating/detached part in supply_depot_LOD0 (4 verts at [10.02, -4.0, 4.6])",
+   "floating/detached part in supply_depot_LOD0 (4 verts at [10.02, 4.0, 4.6])"
+  ],
+  "warnings": [
+   "supply_depot_LOD0: duplicate verts=30 loose verts=0",
+   "supply_depot_LOD0: 58 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: supply_depot_LOD0 (470 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": [
+   "materials 7 > 6 (merge/atlas)"
+  ]
  }
 }

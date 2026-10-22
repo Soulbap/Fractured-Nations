@@ -68,5 +68,20 @@
   ]
  ],
  "markers": [],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: ammo_pallet_LOD0 (130 overlapping coplanar tri pairs)"
+  ],
+  "warnings": [
+   "ammo_pallet_LOD0: duplicate verts=36 loose verts=0"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: ammo_pallet_LOD0 (182 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

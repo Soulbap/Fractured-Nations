@@ -64,5 +64,19 @@
   ]
  ],
  "markers": [],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "traffic_cone_LOD0: 6 n-gons",
+   "1 parts fully enclosed, not touching (eyes/internals?): ['traffic_cone_LOD0']"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: traffic_cone_LOD0 (14 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

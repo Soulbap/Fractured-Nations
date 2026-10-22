@@ -151,4 +151,8 @@ Norwegian; code, comments and docs are English.
 - Blender asset pipeline: `tools/blender/` (+Y forward, one joined mesh, origin on the ground,
   material names drive faction colours; character: `tools/blender/character/`, standard in
   `docs/CHARACTER_STANDARD.md`). Always inspect imported assets in Godot, not only Blender.
+  The `blender-*` agent skills (EL4CTEO/blender-skills, MIT) are installed in
+  `.claude/skills/`; start Blender work with `fn-blender-pipeline` (our conventions on top of
+  them) and run the QA gate `build_assets.py -- --qa` after geometry changes
+  (`--qa-strict --qa-baseline benchmarks/asset01/qa_baseline.json` = no new defects).
 - Python on Windows: open files with `encoding='utf-8'`.

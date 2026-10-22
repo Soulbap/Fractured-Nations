@@ -85,5 +85,18 @@
    "note": ""
   }
  ],
- "structure": null
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "water_barrier_LOD0: 8 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: water_barrier_LOD0 (13 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
 }

@@ -90,5 +90,18 @@
  "module": {
   "length": 3.0,
   "height": 2.4
+ },
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "chainlink_fence_LOD0: 18 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: chainlink_fence_LOD0 (44 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

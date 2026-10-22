@@ -70,5 +70,19 @@
   "max_slope_deg": 10.0,
   "blocks_navigation": true,
   "max_ground_gap": 1.0
+ },
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "range_backstop_LOD0: duplicate verts=8 loose verts=0",
+   "10 parts fully enclosed, not touching (eyes/internals?): ['range_backstop_LOD0', 'range_backstop_LOD0', 'range_backstop_LOD0', 'range_backstop_LOD0', 'range_backstop_LOD0']"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: range_backstop_LOD0 (8 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

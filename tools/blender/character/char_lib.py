@@ -86,7 +86,14 @@ def bm_box(bm, size, center, mat=0, rot=None):
         m = rot.to_4x4() @ m
     m = Matrix.Translation(center) @ m
     bmesh.ops.transform(bm, matrix=m, verts=vs)
-    for f in {f for v in vs for f in v.link_faces}:
+    faces = {f for v in vs for f in v.link_faces}
+    # BLENDER-SKILLS-01: a reflecting transform (a frame whose axes are left-handed, or a
+    # negative size) turns the cube inside out. The vertices land where the caller meant;
+    # only the winding is wrong, so flip it back. Found by the asset QA gate on every
+    # door, window, AC unit and step built on an ap_kit Frame.
+    if m.to_3x3().determinant() < 0.0:
+        bmesh.ops.reverse_faces(bm, faces=list(faces))
+    for f in faces:
         f.material_index = mat
     return vs
 
@@ -153,6 +160,10 @@ def tube_along(bm, points, radii, segs=10, mat=0, cap=True, flat=1.0, up=Vector(
         faces.append(bm.faces.new(rings[-1]))
     for f in faces:
         f.material_index = mat
+    # BLENDER-SKILLS-01: the ring frame (side, upv, d) is left-handed, so the shell's winding
+    # depended on the path direction and vertical tubes (fallback side axis) came out inside
+    # out (lifting loops, fence outriggers, downpipes). Orient the shell outward explicitly.
+    bmesh.ops.recalc_face_normals(bm, faces=faces)
     return [v for r in rings for v in r]
 
 

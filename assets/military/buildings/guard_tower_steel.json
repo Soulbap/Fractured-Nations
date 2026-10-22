@@ -111,5 +111,50 @@
   "max_slope_deg": 10.0,
   "blocks_navigation": true,
   "max_ground_gap": 0.6
+ },
+ "qa": {
+  "pass": false,
+  "errors": [
+   "z-fighting: guard_tower_steel_LOD0 (56 overlapping coplanar tri pairs)",
+   "floating/detached part in guard_tower_steel_LOD0 (12 verts at [-2.3, 0.0, 3.25])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.3, 0.0, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.861, 1.352, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.711, 2.187, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-0.711, 2.187, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-1.861, 1.352, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-2.3, 0.0, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.711, -2.187, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.861, -1.352, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.187, 0.711, 0.19])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.352, 1.861, 0.19])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.0, 2.3, 0.19])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-1.352, 1.861, 0.19])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-2.187, 0.711, 0.19])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.352, -1.861, 0.19])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.187, -0.711, 0.19])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.3, 0.0, 0.31])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.861, 1.352, 0.31])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.711, 2.187, 0.31])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-0.711, 2.187, 0.31])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-2.3, 0.0, 0.31])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.711, -2.187, 0.31])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.861, -1.352, 0.31])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.187, 0.711, 0.43])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.352, 1.861, 0.43])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.0, 2.3, 0.43])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-2.187, 0.711, 0.43])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.352, -1.861, 0.43])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.187, -0.711, 0.43])"
+  ],
+  "warnings": [
+   "guard_tower_steel_LOD0: 32 n-gons",
+   "10 parts fully enclosed, not touching (eyes/internals?): ['guard_tower_steel_LOD0', 'guard_tower_steel_LOD0', 'guard_tower_steel_LOD0', 'guard_tower_steel_LOD0', 'guard_tower_steel_LOD0']"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: guard_tower_steel_LOD0 (87 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }
