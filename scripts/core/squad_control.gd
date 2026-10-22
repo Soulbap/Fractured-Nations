@@ -46,6 +46,10 @@ var route_min_m := 150.0
 var route_replans := 3
 var routed_orders := 0
 var route_replanned := 0
+## NAVIGATION N1: distinguishes obstacle stalls from stalls while CombatBrain has
+## temporarily replaced the leader's movement with a reaction.
+var route_stall_events := 0
+var route_stall_while_reacting := 0
 var _replans := {}
 ## squad id -> formation to take on the last leg of a routed player Move.
 var _end_formation := {}
@@ -191,6 +195,9 @@ func _update_route(sq: SquadState) -> void:
 	if prog[2] != sq.route_i or d < prog[0] - 2.0:
 		_leg_progress[sq.id] = [d, sim.state.time, sq.route_i]
 	elif sim.state.time - prog[1] > route_stall_s:
+		route_stall_events += 1
+		if leader.is_reacting():
+			route_stall_while_reacting += 1
 		_leg_progress.erase(sq.id)
 		if _replan(sq):
 			return

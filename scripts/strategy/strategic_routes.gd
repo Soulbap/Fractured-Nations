@@ -47,6 +47,11 @@ var last_route_ms := 0.0
 var routes_planned := 0
 var route_ms_total := 0.0
 var route_ms_max := 0.0
+## NAVIGATION N1 diagnostics. A failed request is counted as a plan and retains only
+## its reason and rounded endpoints; this is runtime instrumentation, not saved state.
+var routes_failed := 0
+var failure_reasons := {}
+var last_failure := {}
 var bridges: Array[Vector3] = []
 ## WORLD-PLAYTEST-01: the road network the grid follows, and the grid as built from the
 ## world alone (terrain, water, world roads), so built roads can be added and removed.
@@ -377,10 +382,11 @@ func route(from: Vector3, to: Vector3, terrain: Terrain3D) -> PackedVector3Array
 	var a := nearest_passable(from)
 	var b := nearest_passable(to)
 	if a.x < 0 or b.x < 0:
+		_fail_count(t0, from, to, "no passable endpoint")
 		return out
 	var cells := astar.get_id_path(a, b)
 	if cells.is_empty():
-		_count(t0)
+		_fail_count(t0, from, to, "disconnected passable cells")
 		return out
 	# Keep corners and every 4th cell, then re-check each straight leg on the grid; a
 	# leg that crosses an impassable cell gets the cell path's midpoint inserted.
@@ -441,6 +447,18 @@ func _count(t0: int) -> void:
 	routes_planned += 1
 	route_ms_total += last_route_ms
 	route_ms_max = maxf(route_ms_max, last_route_ms)
+
+
+func _fail_count(t0: int, from: Vector3, to: Vector3, reason: String) -> void:
+	_count(t0)
+	routes_failed += 1
+	failure_reasons[reason] = int(failure_reasons.get(reason, 0)) + 1
+	last_failure = {
+		"reason": reason,
+		"from": [snappedf(from.x, 0.1), snappedf(from.z, 0.1)],
+		"to": [snappedf(to.x, 0.1), snappedf(to.z, 0.1)],
+		"ms": snappedf(last_route_ms, 0.01),
+	}
 
 
 static func _dist_to_poly(p: Vector2, poly: PackedVector2Array) -> float:

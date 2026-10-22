@@ -35,7 +35,8 @@ var ids: Array[int] = []
 var ticks := 0
 var tick_usec := 0
 ## Orders given / failed / arrived (statistics for tests and the report).
-var stats := {"ordered": 0, "arrived": 0, "failed": 0, "recovered": 0, "replanned": 0, "bypassed": 0}
+var stats := {"ordered": 0, "arrived": 0, "failed": 0, "recovered": 0, "replanned": 0,
+	"bypass_attempted": 0, "bypassed": 0}
 ## Last obstacle-scan result per vehicle id: free distance ahead along the route (m).
 var _gap := {}
 var _on_road := {}
@@ -771,6 +772,7 @@ func _check_stuck(u: UnitState, v: VehicleState, d: VehicleDefs.Def, target_spee
 ## leg from where the vehicle stands; the leg replaces that stretch of the route (the rest is kept). Returns false when no
 ## leg can be planned (then the old recovery - reversing, planning again - runs).
 func _try_bypass(u: UnitState, v: VehicleState, d: VehicleDefs.Def) -> bool:
+	stats.bypass_attempted += 1
 	var n := v.route.size()
 	if n < 4 or v.route_s.size() != n:
 		return false

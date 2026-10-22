@@ -53,6 +53,15 @@ var plans := 0
 var plan_ms_total := 0.0
 var plan_ms_max := 0.0
 var last_plan_ms := 0.0
+## NAVIGATION N1 diagnostics; none of these fields affect planning.
+var failed_plans := 0
+var failure_reasons := {}
+var last_failure := {}
+var graph_builds := 0
+var graph_rebuilds := 0
+var graph_ms_total := 0.0
+var graph_ms_max := 0.0
+var last_rebuild_reason := "initial"
 
 var _next_id := 0
 ## node id -> Road (null once removed)
@@ -98,12 +107,14 @@ func setup(p_net: RoadNetwork, p_routes: StrategicRoutes, p_terrain: Terrain3D, 
 
 func _on_changed(_rect: Rect2) -> void:
 	_dirty = true
+	last_rebuild_reason = "road network changed"
 	_fail_cache.clear()
 
 
 ## Structures were built or removed: road vertices disabled because a structure stood on them
 ## are tried again.
 func _on_structures_changed(_rect: Rect2) -> void:
+	last_rebuild_reason = "structure area changed"
 	_fail_cache.clear()
 	for id in _disabled:
 		if astar.has_point(id):
@@ -134,8 +145,16 @@ func ensure_built() -> void:
 		built = true
 		_dirty = false
 		build_ms = (Time.get_ticks_usec() - t0) / 1000.0
+		graph_builds += 1
+		graph_ms_total += build_ms
+		graph_ms_max = maxf(graph_ms_max, build_ms)
 	elif _dirty:
+		var t0 := Time.get_ticks_usec()
 		_sync_built()
+		var ms := (Time.get_ticks_usec() - t0) / 1000.0
+		graph_rebuilds += 1
+		graph_ms_total += ms
+		graph_ms_max = maxf(graph_ms_max, ms)
 
 
 func _sync_built() -> void:
@@ -397,16 +416,32 @@ func plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 		var cached: Dictionary = _fail_cache[key].res.duplicate()
 		cached["ms"] = 0.0
 		cached["cached"] = true
+		_count_plan(cached, from, to, def)
 		return cached
 	var res := _plan(from, to, def)
 	if not res.ok:
 		_fail_cache[key] = {"t": now_ms, "res": res}
 	res["ms"] = (Time.get_ticks_usec() - t0) / 1000.0
-	last_plan_ms = res.ms
-	plans += 1
-	plan_ms_total += res.ms
-	plan_ms_max = maxf(plan_ms_max, res.ms)
+	_count_plan(res, from, to, def)
 	return res
+
+
+func _count_plan(res: Dictionary, from: Vector3, to: Vector3, def: VehicleDefs.Def) -> void:
+	last_plan_ms = float(res.ms)
+	plans += 1
+	plan_ms_total += last_plan_ms
+	plan_ms_max = maxf(plan_ms_max, last_plan_ms)
+	if not res.ok:
+		failed_plans += 1
+		var reason := String(res.get("reason", "unknown"))
+		failure_reasons[reason] = int(failure_reasons.get(reason, 0)) + 1
+		last_failure = {
+			"reason": reason,
+			"from": [snappedf(from.x, 0.1), snappedf(from.z, 0.1)],
+			"to": [snappedf(to.x, 0.1), snappedf(to.z, 0.1)],
+			"vehicle": String(def.id),
+			"ms": snappedf(last_plan_ms, 0.01),
+		}
 
 
 func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
