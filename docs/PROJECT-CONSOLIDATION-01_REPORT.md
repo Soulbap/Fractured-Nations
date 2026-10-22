@@ -7,7 +7,7 @@ Date 2026-10-22. Godot 4.7.2. Evidence tags: **[GIT]** repository state, **[CODE
 
 | | Before | After |
 |---|---|---|
-| Project folders | 15 (main folder + 14 worktrees), the main folder on an old branch without the world | **`C:\Users\Hafnor\Desktop\Game Dev\fractured-nations`** on `develop`, with the canonical world |
+| Project folders | 14 (main folder + 13 worktrees), the main folder on an old branch without the world | **`C:\Users\Hafnor\Desktop\Game Dev\fractured-nations`** on `develop`, with the canonical world |
 | Development line | a chain of milestone branches, newest `feature/ai-war-logistics-01` (not pushed at the time of the audit) | **`develop`** (local = `origin/develop`); `main` unchanged at `80c494a` |
 | Unintegrated work | `feature/combat-tech-01`, `feature/blender-skills-01` (1 commit each) | merged into `develop` |
 | World data | git-ignored copies in each worktree, three different versions | one canonical copy, a committed SHA-256 manifest, an external backup |
@@ -204,7 +204,7 @@ route queue copied from `CombatBrain`; no HPA* / flow fields without a measured 
 
 ## 9. Worktree cleanup plan (nothing removed)
 
-All 14 worktrees are on branches contained in `develop` and pushed to `origin`; all are clean except `unified`.
+All 13 worktrees are on branches contained in `develop` and pushed to `origin`; all are clean except `unified`.
 
 | Worktree | Branch | Unique content | Recommendation |
 |---|---|---|---|
