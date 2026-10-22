@@ -486,8 +486,13 @@ func _update_missions() -> void:
 			continue
 		var src := lsim.structure(int(m.src))
 		if src == null or src.faction != int(m.faction):
-			if m.state in ["loading", "driving", "serving"]:
-				m["src_lost"] = true
+			if m.state == "loading" and m.kind != "restock":
+				# The depot it loads from changed hands: the loading stops (cargo already aboard stays the truck's).
+				lsim.cancel_job(u.id, "the depot was lost")
+				_fail(m, "the source depot was lost to the enemy", u)
+				continue
+			if m.state in ["driving", "serving"]:
+				m["src_lost"] = true  # it will return to another depot of the faction (or keep the cargo aboard)
 		if m.kind == "restock":
 			if u.veh.job.is_empty():
 				var dst := lsim.structure(int(m.dst))

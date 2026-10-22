@@ -65,18 +65,26 @@ func create_start_base(f: FactionState, anchor: Vector3, toward: Vector3) -> Dic
 	var best_yaw := 0.0
 	var p := ws.profile(f)
 	var base_dir := atan2(toward.z - anchor.z, toward.x - anchor.x)
-	for dist: float in [75.0, 100.0, 130.0, 160.0]:
-		for k in 16:
-			var a := base_dir + (k / 2 + 1) * (TAU / 16.0) * (1.0 if k % 2 == 0 else -1.0) if k > 0 else base_dir
-			var c := Vector3(anchor.x + cos(a) * dist, 0.0, anchor.z + sin(a) * dist)
-			c.y = ws._ground(c).y
-			for yaw: float in [0.0, PI * 0.5, PI, -PI * 0.5]:
-				var plan := _plan_layout(c, yaw)
-				if plan.size() > best_plan.size():
-					best_plan = plan
-					best_center = c
-					best_yaw = yaw
-				if plan.size() == START_LAYOUT.size():
+	# Two passes: the compound must stand within 120 m of a road (the vehicles live on roads); only when no such place
+	# holds the whole compound is any buildable place accepted.
+	for need_road in [true, false]:
+		for dist: float in [75.0, 100.0, 130.0, 160.0, 200.0]:
+			for k in 24:
+				var a := base_dir + (k / 2 + 1) * (TAU / 24.0) * (1.0 if k % 2 == 0 else -1.0) if k > 0 else base_dir
+				var c := Vector3(anchor.x + cos(a) * dist, 0.0, anchor.z + sin(a) * dist)
+				c.y = ws._ground(c).y
+				for yaw: float in [0.0, PI * 0.5, PI, -PI * 0.5]:
+					# The yard lies in front of the buildings (local -Z): a road must pass within 90 m of its middle.
+					if need_road and sim.state.roads.nearest(c + Basis(Vector3.UP, yaw) * Vector3(-15.0, 0.0, -50.0), 90.0, 0, 0.0).is_empty():
+						continue
+					var plan := _plan_layout(c, yaw)
+					if plan.size() > best_plan.size():
+						best_plan = plan
+						best_center = c
+						best_yaw = yaw
+					if plan.size() == START_LAYOUT.size():
+						break
+				if best_plan.size() == START_LAYOUT.size():
 					break
 			if best_plan.size() == START_LAYOUT.size():
 				break
@@ -85,6 +93,7 @@ func create_start_base(f: FactionState, anchor: Vector3, toward: Vector3) -> Dic
 	if best_plan.is_empty():
 		return {"ok": false, "reason": "no buildable ground near the headquarters", "placed": 0}
 	var cs := sim.state.construction
+	_clear_yard(best_center, best_yaw)
 	var placed := 0
 	var vdepot: StructureState = null
 	for e: Dictionary in best_plan:
@@ -112,6 +121,23 @@ func create_start_base(f: FactionState, anchor: Vector3, toward: Vector3) -> Dic
 				sim.logistics.bases.stats.vehicles_acquired -= 1
 				f.ledger.vehicles_bought = int(f.ledger.vehicles_bought) - 1
 	return {"ok": true, "placed": placed, "missing": START_LAYOUT.size() - placed, "center": best_center, "yaw": best_yaw, "trucks": trucks}
+
+
+## Trees are cleared on the yard in front of the compound and along a lane from it to the nearest road point, so the
+## vehicles (whose cross-country planner knows no trees) reach the road: records like the construction clearings
+## ({c: [x, z], yaw, h: [half x, half z]}), applied by the vegetation streamer.
+func _clear_yard(center: Vector3, yaw: float) -> void:
+	var basis := Basis(Vector3.UP, yaw)
+	var yard := center + basis * Vector3(-15.0, 0.0, -50.0)
+	var list: Array = [{"c": [yard.x, yard.z], "yaw": -yaw, "h": [42.0, 28.0], "trees": true}]
+	var road := sim.state.roads.nearest(yard, 100.0, 0, 0.0)
+	if not road.is_empty():
+		var rp: Vector3 = road.pos
+		var d := Vector2(rp.x - yard.x, rp.z - yard.z)
+		if d.length() > 20.0:
+			var mid := Vector2(yard.x, yard.z) + d * 0.5
+			list.append({"c": [mid.x, mid.y], "yaw": atan2(d.y, d.x), "h": [d.length() * 0.5 + 6.0, 8.0], "trees": true})
+	sim.state.construction.add_clearings(list)
 
 
 ## The buildings of START_LAYOUT that check_building accepts at `center` with `yaw` (all of them or fewer);

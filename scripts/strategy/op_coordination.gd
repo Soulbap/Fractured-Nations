@@ -548,7 +548,16 @@ func update_counter(op: OperationState, obj: ObjectiveState) -> void:
 		ws.end_operation(op, OperationState.Phase.FAILED, "the reserve was destroyed")
 		return
 	var a := _op_status(op, sqs, obj)
+	# The reserve has reached the place and sees nobody there: the report was out of date (or the attackers fell);
+	# the contacts there are cleared like an investigation clears them.
+	var nearest := INF
+	for sq: SquadState in sqs:
+		nearest = minf(nearest, _flat(sim.squads._centroid(sq), op.target_pos))
 	var believed := ws.intel.threat_near(op.faction, op.target_pos, 160.0)
+	if nearest < 80.0 and a.seen == 0:
+		believed = 0
+		for c: ContactState in ws.intel.contacts_near(op.faction, op.target_pos, 140.0):
+			ws.intel.clear_contact(op.faction, c.id, now - 12.0)
 	if a.seen == 0 and believed <= 0:
 		if not _clear_since.has(op.id):
 			_clear_since[op.id] = now

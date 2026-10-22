@@ -77,7 +77,7 @@ func plan(op: OperationState) -> Array:
 	var dist := WarSim._flat(from, goal)
 	if dist < p.mech_min_m:
 		return _foot(op, "the march is %d m, transport is used from %d m" % [roundi(dist), roundi(p.mech_min_m)])
-	var assembly := _assembly_point(sqs, from)
+	var assembly := _assembly_point(sqs, from, goal, op.faction)
 	var unload := _unload_point(op, assembly, goal)
 	var cands := candidates(op.faction, assembly, unload)
 	if cands.is_empty():
@@ -249,8 +249,26 @@ func _home_of(u: UnitState) -> Vector3:
 
 ## Where the squads and the vehicles meet: the centre of the squads, moved onto a road within 150 m when there is one
 ## (the trucks park on it, in line, instead of in the trees), else the biggest squad's own spot when the centre is impassable.
-func _assembly_point(sqs: Array, from: Vector3) -> Vector3:
+func _assembly_point(sqs: Array, from: Vector3, goal: Vector3, faction: int) -> Vector3:
 	var p := from
+	# Squads standing inside a base (fresh recruits, a garrison of the HQ) do not assemble among its buildings: the vehicles
+	# would have to turn round in the yard. The point is moved out of the compound, towards the objective.
+	for b: Dictionary in sim.logistics.bases.bases_of(faction):
+		if WarSim._flat(b.anchor, from) < 130.0:
+			var dir := Vector3(goal.x - b.anchor.x, 0.0, goal.z - b.anchor.z).normalized()
+			# Prefer a spot on a road (vehicles drive well on roads; the cross-country planner knows no trees).
+			var found := false
+			for dist: float in [150.0, 190.0, 120.0, 230.0, 300.0]:
+				for ang: float in [0.0, 0.5, -0.5, 1.0, -1.0]:
+					var q := ws._ground(b.anchor + dir.rotated(Vector3.UP, ang) * dist)
+					var rd := sim.state.roads.nearest(q, 120.0, 0, 0.0)
+					if not rd.is_empty() and (ws.routes == null or not ws.routes.ready or ws.routes.passable(rd.pos)):
+						p = ws._ground(rd.pos)
+						found = true
+						break
+				if found:
+					break
+			break
 	if ws.routes and ws.routes.ready and not ws.routes.passable(p):
 		sqs.sort_custom(func(a: SquadState, b: SquadState) -> bool: return a.members.size() > b.members.size())
 		p = ws.squad_center(sqs[0])
@@ -364,6 +382,11 @@ func _lose(op: OperationState, vid: int, why: String) -> void:
 	var u := sim.state.get_unit(vid)
 	if u and u.veh and u.alive:
 		t["diag"] = vsim.diagnose(u)  # what held it up, for the inspector and the tests
+		var near_s := []
+		for st: StructureState in sim.state.construction.all():
+			if not st.is_line() and Vector2(st.position.x - u.position.x, st.position.z - u.position.z).length() < 40.0:
+				near_s.append("%s %.0f m yaw %.2f" % [st.type_id, Vector2(st.position.x - u.position.x, st.position.z - u.position.z).length(), st.yaw])
+		t["diag"]["structures_near"] = near_s
 	var player_took := u != null and u.player_controlled
 	if u and u.veh and u.veh.assign_kind == "op" and u.veh.assign_id == op.id:
 		u.veh.assign_kind = ""
@@ -388,6 +411,32 @@ func _lose(op: OperationState, vid: int, why: String) -> void:
 			continue
 		_to_foot(op, sq, why, was)
 	ws.log_event(op.faction, "op_transport", "%s #%d: %s - %s" % [op.type_name(), op.id, why, "its squads walk"], u.position if u else op.target_pos)
+
+
+## A squad left the operation (a player order, a reassignment): it is no longer planned for transport; a vehicle that has
+## no squad left to carry is let go (it goes home) unless it already carries somebody.
+func squad_released(op: OperationState, sq: SquadState) -> void:
+	var tr := op.transport
+	if tr.get("mode", "foot") != "mech":
+		return
+	var carried: Array = tr.carried
+	var i := carried.find(sq.id)
+	if i >= 0:
+		carried.remove_at(i)
+	var late: Array = tr.get("late_foot", [])
+	if late.has(sq.id):
+		late.erase(sq.id)
+	for vid: int in tr.tasks.keys():
+		var t: Dictionary = tr.tasks[vid]
+		var sl: Array = t.get("squads", [])
+		if not sl.has(sq.id):
+			continue
+		sl.erase(sq.id)
+		var u := sim.state.get_unit(vid)
+		if sl.is_empty() and t.state != "lost" and t.state != "returning" and u and u.veh and u.veh.occupants.is_empty():
+			if u.veh.phase != VehicleState.Phase.NONE:
+				vt.cancel(vid)
+			_lose(op, vid, "%s has no squad to carry any more (%s left the operation)" % [u.unit_name, sq.squad_name])
 
 
 func _aboard(sq: SquadState, vid: int) -> int:

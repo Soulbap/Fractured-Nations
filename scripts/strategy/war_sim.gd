@@ -398,6 +398,8 @@ func release_squads(squad_ids: Array, why: String) -> void:
 		sq.op_role = SquadState.OpRole.NONE
 		sq.defence_role = ""
 		sim.squads.clear_route(sq)
+		if op and not op.transport.is_empty():
+			mech.squad_released(op, sq)
 		if op:
 			var i := op.squads.find(sq.id)
 			if i >= 0:

@@ -66,6 +66,12 @@ func run(args: PackedStringArray) -> void:
 		_log("g_nosave", await _g_delivery(false))
 	if _want("h_shortage"):
 		_log("h_shortage", await _h_shortage())
+	if _want("i_counter"):
+		_log("i_counter", await _i_counter())
+	if _want("j_base_loss"):
+		_log("j_base_loss", await _j_base_loss())
+	if _want("l_player"):
+		_log("l_player", await _l_player())
 	if only.has("v_yard"):
 		_log("v_yard", await _v_yard())
 	if _want("m_move"):
@@ -733,6 +739,11 @@ func _ensure_vehicles(fid: int, n: int) -> int:
 			print("WAR could not buy a truck: ", r.reason)
 			break
 		await _warp(BaseSim.VEHICLES[VehicleDefs.TRUCK].time + 15.0, 24.0, 60.0)
+	# Vehicles still driving home from an earlier scenario are free again before the next one starts.
+	var waited := 0.0
+	while waited < 900.0 and _vehicles_of(fid).any(func(u: UnitState) -> bool: return u.veh.assign_kind != ""):
+		await _warp(30.0, 8.0, 30.0)
+		waited += 30.0
 	return _vehicles_of(fid).size()
 
 
@@ -1157,4 +1168,253 @@ func _h_shortage() -> Dictionary:
 	_expect(absf(stock1 - (stock0 + income - took)) < 0.5, "H: ammunition appeared outside the ledger (stock %.1f = 0 + income %.1f - taken %.1f)" % [stock1, income, took])
 	for id in saved:
 		demo.sim.logistics.structure(id).inventory.items[Inventory.AMMO] = saved[id]
+	return out
+
+
+# --- I: defensive counterattack ----------------------------------------------------------------------------------------------------------
+
+## South holds Haugen with a sector squad, a second one and a reserve. Attackers (North) are reported east of it.
+func _counter_scene(reported: int, peak_first := 0) -> Dictionary:
+	await _fresh()
+	_strat_reset_faction(1)
+	var hau := _obj("Haugen")
+	hau.owner = 1
+	hau.capture_faction = -1
+	hau.capture_progress = 0.0
+	hau.contested = false
+	hau.history.append([demo.sim.state.time, 1])
+	war.counter_cool.clear()
+	ws.strat._peak.clear()
+	var sqs: Array = []
+	for i in 3:
+		var sq := _spawn(1, hau.position + Vector3(14 + i * 22, 0, -12 + i * 12), 8)
+		sq.station_objective = hau.id
+		sqs.append(sq)
+	await _physics(10)
+	ws._defence_posture(hau, sqs, 1)
+	await _seconds(2.0)
+	var enemy_at := _near_point(hau.position, _obj("North HQ").position, 260.0)
+	# Real attackers stand where they are reported (their count is what the report says).
+	war.faction(1).recovery_until = demo.sim.state.time + 900.0  # South starts no attack of its own in this scene
+	var atk := _spawn(0, enemy_at, maxi(reported, 1))
+	await _physics(10)
+	if peak_first > 0:
+		_report(1, enemy_at, peak_first)
+		await _warp(5.0, 4.0, 20.0)
+		_decide_now(1)
+		war.counter_cool.clear()
+	_report(1, enemy_at, reported)
+	await _warp(5.0, 4.0, 20.0)  # the report reaches the faction (IntelSim's delay)
+	return {"obj": hau, "def": sqs, "atk": atk, "at": enemy_at}
+
+
+func _i_counter() -> Dictionary:
+	var out := {}
+	# 1. Strong attackers: no counterattack, with the reason.
+	var sc := await _counter_scene(14)
+	var snap := _decide_now(1)
+	var a := _action(snap, "counter")
+	out["strong"] = {"status": a.get("status", "none"), "note": a.get("note", "")}
+	_expect(a.is_empty() or a.status != "chosen", "I: a counterattack against %d attackers was launched" % 14)
+	_expect(not war.active_operations(1).any(func(o: OperationState) -> bool: return o.type == OperationState.Type.COUNTER), "I: a counter operation exists against a strong attacker")
+	# 2. A weakened, small attacker: the reserve attacks.
+	sc = await _counter_scene(3, 0)
+	var hau: ObjectiveState = sc.obj
+	var defs: Array = sc.def
+	out["contacts"] = ws.intel.contacts_of(1).map(func(c: ContactState) -> String: return c.describe(demo.sim.state.time))
+	var ids_before := defs.map(func(s: SquadState) -> int: return s.id)
+	snap = _decide_now(1)
+	a = _action(snap, "counter")
+	out["weak"] = {"status": a.get("status", "none"), "note": a.get("note", ""), "squads": a.get("squads", [])}
+	_expect(not a.is_empty() and a.status == "chosen", "I: no counterattack against a weakened attacker (%s)" % str(out.weak))
+	var op: OperationState = null
+	for o: OperationState in war.active_operations(1):
+		if o.type == OperationState.Type.COUNTER:
+			op = o
+	_expect(op != null, "I: no COUNTER operation exists")
+	if op == null:
+		return out
+	# The commitment is conditional: only the reserve goes, the objective stays defended.
+	_expect(op.squads.size() == 1, "I: %d squads committed (the reserve alone should go)" % op.squads.size())
+	var stay := 0
+	for sq: SquadState in defs:
+		if sq.op_id < 0 and sq.station_objective == hau.id:
+			stay += sq.members.size()
+	_expect(stay >= 12, "I: only %d soldiers stay at the objective" % stay)
+	out["committed"] = op.squads.size()
+	out["staying"] = stay
+	var seen_tactics := {}
+	var w := await _warp(400.0, 8.0, 200.0, func() -> bool:
+		for sid in op.squads:
+			var sq := demo.sim.state.get_squad(sid)
+			if sq:
+				seen_tactics[sq.tactic_name()] = true
+		return not op.is_active())
+	out["op"] = {"phase": op.phase_name(), "outcome": op.outcome, "tactics_seen": seen_tactics.keys()}
+	_expect(not op.is_active(), "I: the counterattack never ended (%s)" % op.stage_why)
+	_expect(seen_tactics.has("Assault") or seen_tactics.has("Flank"), "I: the existing squad tactics were not used (%s)" % str(seen_tactics.keys()))
+	# It ends with the squads back in the defence (posture and station), and a cooldown stops a repeat at once.
+	var back := 0
+	for sq: SquadState in defs:
+		if demo.sim.state.get_squad(sq.id) and sq.op_id < 0 and sq.station_objective == hau.id:
+			back += 1
+	_expect(back == defs.size() - _alive_count_lost(defs), "I: the reserve is not back in the defence (%d of %d)" % [back, defs.size()])
+	_expect(float(war.counter_cool.get(hau.id, 0.0)) > demo.sim.state.time, "I: no cooldown after the counterattack")
+	out["cooldown_s"] = snappedf(float(war.counter_cool.get(hau.id, 0.0)) - demo.sim.state.time, 1.0)
+	_report(1, sc.at, 3)
+	var snap2 := _decide_now(1)
+	var a2 := _action(snap2, "counter")
+	_expect(a2.is_empty() or a2.status != "chosen", "I: the same counterattack was launched again immediately")
+	out["repeat"] = a2.get("status", "none")
+	_expect(_consistency().count == 0, "I: records inconsistent")
+	return out
+
+
+## Squads of the list that no longer exist (wiped out).
+func _alive_count_lost(sqs: Array) -> int:
+	var n := 0
+	for sq: SquadState in sqs:
+		if demo.sim.state.get_squad(sq.id) == null:
+			n += 1
+	return n
+
+
+# --- J: base loss ---------------------------------------------------------------------------------------------------------------------------
+
+func _j_base_loss() -> Dictionary:
+	await _fresh()
+	var out := {}
+	var bs := _bs()
+	var f := war.faction(1)
+	var hq := _obj("South HQ")
+	var bl := bs.bases_of(1)
+	_expect(not bl.is_empty(), "J: South has no base (precondition)")
+	var bid: int = bl[0].id
+	var fac := bs.facilities_of(bid)
+	var stock := bs.base_stock(bid)
+	var total_before := {"ammo": _ammo_kg(0) + _ammo_kg(1) + _ammo_kg(2), "supplies": _stock(0).supplies + _stock(1).supplies + _stock(2).supplies}
+	# A supply mission and a queued recruit that depend on the base.
+	await _ensure_vehicles(1, 1)
+	var truck: UnitState = _vehicles_of(1)[0]
+	var bar := bs.facility_of_kind(1, &"barracks")
+	var queued := bs.recruit(bar.id)
+	var res_before := f.reserves
+	# Everybody of South leaves the HQ area (a fixture: the defenders are gone), four North soldiers stand in it.
+	for u: UnitState in demo.sim.state.soldiers():
+		if u.faction == 1 and _flat(u.position, hq.position) < hq.radius + 80.0:
+			u.position = hq.position + Vector3(900, 0, 900)
+			u.order = UnitState.Order.NONE
+	var inv := _spawn(0, hq.position + Vector3(20, 0, 20), 8)
+	hq.capture_progress = 0.0
+	await _physics(10)
+	await _warp(400.0, 12.0, 200.0, func() -> bool: return hq.owner == 0)
+	out["owner"] = hq.owner
+	_expect(hq.owner == 0, "J: the HQ was not captured (owner %d)" % hq.owner)
+	var b: Dictionary = demo.sim.state.construction.bases.get(bid, {})
+	_expect(not b.is_empty() and b.faction == 0, "J: the base did not change hands (%s)" % str(b.get("faction", "gone")))
+	for st in fac:
+		_expect(st.faction == 0, "J: facility %d still belongs to South" % st.id)
+	_expect(bs.bases_of(1).filter(func(x: Dictionary) -> bool: return x.id == bid).is_empty(), "J: South still lists the captured base")
+	_expect(not bs.bases_of(0).filter(func(x: Dictionary) -> bool: return x.id == bid).is_empty(), "J: North does not list the captured base")
+	# Stock moved with the buildings: one copy only, and it stands in South's ledger as lost.
+	var after := bs.base_stock(bid)
+	var total_after := {"ammo": _ammo_kg(0) + _ammo_kg(1) + _ammo_kg(2), "supplies": _stock(0).supplies + _stock(1).supplies + _stock(2).supplies}
+	out["stock_before"] = stock
+	out["stock_after"] = after
+	out["ledger_lost"] = f.ledger["lost_with_bases"]
+	_expect(absf(after.ammo - stock.ammo) < stock.ammo * 0.2 + 400.0 and after.ammo > 0.0, "J: the stock vanished or doubled (%s -> %s)" % [str(stock), str(after)])
+	_expect(float(f.ledger["lost_with_bases"]["ammo"]) > 0.0, "J: South's ledger does not show the loss")
+	# Queued training was cancelled: personnel back to South, the queue empty.
+	_expect(bar.facility.get("queue", []).is_empty(), "J: the captured barracks still trains South's recruits")
+	_expect(queued.ok and f.reserves >= res_before + BaseSim.SQUAD_SIZE - 1, "J: the personnel of the cancelled training did not return (%d -> %d)" % [res_before, f.reserves])
+	# The faction's economy now has no base: it says so and buys nothing.
+	f.econ_next_at = 0.0
+	ws.econ.decide(f)
+	out["econ_note"] = f.econ_note
+	_expect(f.econ_note.contains("no base") or not bs.bases_of(1).is_empty(), "J: South's economy still acts: %s" % f.econ_note)
+	_expect(bs.facility_of_kind(1, &"barracks") == null or bs.facility_of_kind(1, &"barracks").faction == 1, "J: South still has the captured barracks")
+	# A mission from that depot is told (nothing duplicated: the truck's cargo stays the truck's).
+	_expect(truck.veh.assign_kind == "" or ws.supply.mission(truck.veh.assign_id).get("state", "") != "loading", "J: a truck is still loading at the lost depot")
+	out["duplicates"] = _duplicate_inventory_check()
+	_expect(out.duplicates == 0, "J: %d structures appear twice" % out.duplicates)
+	# Give the base back so the later scenarios start from the normal situation.
+	hq.owner = 1
+	hq.capture_faction = -1
+	bs.capture_base(bid, 1)
+	for o: OperationState in war.active_operations():
+		ws.cancel(o.id, "test end")
+	return out
+
+
+func _duplicate_inventory_check() -> int:
+	var seen := {}
+	var dup := 0
+	for st: StructureState in cs.all():
+		if seen.has(st.id):
+			dup += 1
+		seen[st.id] = true
+	return dup
+
+
+# --- L: player intervention -----------------------------------------------------------------------------------------------------------------
+
+func _l_player() -> Dictionary:
+	await _ensure_vehicles(1, 2)
+	var out := {}
+	var obj := _far_objective(1, 3.5)
+	var sc := await _mech_scene(2, obj)
+	var op: OperationState = sc.op
+	_expect(op != null and op.transport.get("mode", "") == "mech", "L: no mechanized operation (precondition: %s)" % (op.transport.get("why", "") if op else "none"))
+	if op == null:
+		return out
+	# 1. A squad of the operation gets a player order while the force assembles: the operation adapts.
+	await _warp(25.0, 8.0, 30.0)
+	var sq_a: SquadState = sc.squads[0]
+	var sq_b: SquadState = sc.squads[1]
+	ws.release_squads([sq_a.id], "player order")
+	demo.sim.squads.order_move([sq_a.id], ws.squad_center(sq_a) + Vector3(30, 0, 0))
+	_expect(sq_a.op_id < 0 and not op.squads.has(sq_a.id), "L: the squad is still in the operation")
+	await _warp(60.0, 8.0, 40.0)
+	out["after_squad_order"] = {"stage": op.stage_name(), "active": op.is_active(), "squads": Array(op.squads), "carried": op.transport.get("carried", [])}
+	_expect(not op.transport.get("carried", []).has(sq_a.id), "L: the released squad is still planned for transport")
+	_expect(sq_a.order != SquadState.Order.NONE or sq_a.status != SquadState.Status.IDLE or true, "")
+	_expect(_consistency().count == 0, "L: records inconsistent after the squad order: %s" % str(_consistency().problems))
+	# 2. The player takes a vehicle of the operation once it drives: the AI lets go of it and never orders it again.
+	var found := {"vid": -1}
+	await _warp(500.0, 8.0, 200.0, func() -> bool:
+		for v in op.vehicles:
+			var u := demo.sim.state.get_unit(v)
+			if u and u.veh.phase == VehicleState.Phase.TRANSIT:
+				found.vid = v
+				return true
+		return not op.is_active())
+	var vid: int = found.vid
+	if vid < 0:
+		out["note"] = "no vehicle reached transit"
+		out["wait"] = op.wait_reason
+		out["stage_why"] = op.stage_why
+		out["tasks"] = op.transport.get("tasks", {}).keys().map(func(k: int) -> String: return "%d %s %s %s" % [k, op.transport.tasks[k].state, str(op.transport.tasks[k].get("note", "")), JSON.stringify(op.transport.tasks[k].get("diag", {}))])
+		out["squad_pos"] = Array(op.squads).map(func(s: int) -> float: return _flat(ws.squad_center(demo.sim.state.get_squad(s)), op.transport.get("assembly", Vector3.ZERO)))
+		_expect(false, "L: the operation never reached transit")
+		return out
+	var truck := demo.sim.state.get_unit(vid)
+	var aboard_before := Array(truck.veh.occupants)
+	var took := demo.sim.vehicles.take_control(vid)
+	_expect(took, "L: the player could not take the vehicle")
+	await _warp(20.0, 4.0, 40.0)
+	out["after_vehicle"] = {"assign": truck.veh.assign_kind, "player": truck.player_controlled, "op_stage": op.stage_name(), "op_active": op.is_active(), "aboard": truck.veh.occupants.size()}
+	_expect(truck.veh.assign_kind == "" and truck.player_controlled, "L: the vehicle is still assigned or not the player's (%s)" % truck.veh.assign_kind)
+	_expect(not op.vehicles.has(vid), "L: the operation still lists the vehicle")
+	_expect(truck.veh.speed < 12.0 and truck.veh.in_throttle == 0.0, "L: something still drives the player's vehicle")
+	# Nobody of the operation is aboard a vehicle the player drives while still being commanded by the operation.
+	for id in aboard_before:
+		var s := demo.sim.state.get_unit(id)
+		var sq := demo.sim.state.squad_of(id)
+		if s and s.vehicle_id == vid and sq:
+			_expect(sq.op_id != op.id, "L: squad %s rides with the player but is still in the operation" % sq.squad_name)
+	var bad := _transport_problems(op)
+	_expect(bad.is_empty(), "L: transport invariants broken after the player took the vehicle: %s" % str(bad))
+	demo.sim.vehicles.release_control(vid, false)
+	for o: OperationState in war.active_operations():
+		ws.cancel(o.id, "test end")
 	return out

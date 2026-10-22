@@ -87,7 +87,7 @@ func decide(f: FactionState) -> void:
 	_update_focus(f, p, chosen, now)
 	snap.focus = describe_focus(f)
 	snap.actions = actions.map(func(a: Dictionary) -> Dictionary:
-		return {"kind": a.kind, "name": a.name, "utility": snappedf(a.utility, 0.01), "need": a.get("need", 0), "basis": a.get("basis", ""), "status": a.status, "note": a.get("note", "")}).slice(0, 8)
+		return {"kind": a.kind, "name": a.name, "utility": snappedf(a.utility, 0.01), "need": a.get("need", 0), "basis": a.get("basis", ""), "status": a.status, "note": a.get("note", "")}).slice(0, 14)
 	for e: Dictionary in ws.influence.exposed(f.id, 600.0).slice(0, 3):
 		snap.exposed.append("%s %.1f" % [e.objective.obj_name, e.threat])
 	# 2b. An uncertain report near ground the faction holds: one squad goes and looks.
