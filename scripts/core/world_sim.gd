@@ -21,6 +21,12 @@ signal view_added(id: int, view: Node3D)
 @export var terrain: Terrain3D
 ## Distance at which an abstract unit counts as arrived.
 @export var abstract_arrive_m := 1.0
+## AI-WAR-LOGISTICS-01 (near/far parity): bodies lose a few percent of their walking speed to turning, crowd avoidance
+## and navmesh detours that the straight-line abstract step does not have. Measured on the same routes (open ground,
+## dense woods, slopes, a three-squad column march) the bodies take 4-8 % longer; the abstract step takes that
+## friction into account so the same march takes about the same time in both tiers. Not a terrain effect: the terrain
+## itself affects both tiers through the same route and the same ground (no tier is faster over woods or slopes).
+@export var abstract_friction := 0.93
 
 var state := WorldState.new()
 ## UNIT-01A: turns squad orders (state.squads) into per-unit move orders.
@@ -222,7 +228,7 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 			u.move_state = UnitState.MoveState.ARRIVED
 			u.anchor_pos = u.position
 		return
-	var step := minf(u.speed * delta, dist)
+	var step := minf(u.speed * abstract_friction * delta, dist)
 	var dir := to / dist
 	if structures:
 		dir = _free_direction(u, dir, step)
@@ -235,7 +241,7 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 				u.move_state = UnitState.MoveState.BLOCKED
 			return
 	u.position += dir * step
-	u.velocity = dir * u.speed
+	u.velocity = dir * u.speed * abstract_friction
 	u.yaw = atan2(-dir.x, -dir.z)
 	u.move_state = UnitState.MoveState.MOVING
 	_settle_height(u)

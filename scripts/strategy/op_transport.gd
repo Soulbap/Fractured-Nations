@@ -30,6 +30,8 @@ const MOUNT_TIMEOUT_S := 150.0
 const DISEMBARK_TIMEOUT_S := 45.0
 ## Assembly: a vehicle this close to its slot, and squads this close to the assembly point, count as there.
 const SLOT_REACH_M := 30.0
+## Seconds between the departures of the vehicles of one operation from their yard.
+const DEPART_GAP_S := 9.0
 const SQUADS_NEAR_M := 110.0
 ## Straight-line distance x this is the planning estimate of a drive (fuel, expected time).
 const DETOUR := 1.4
@@ -133,10 +135,15 @@ func plan(op: OperationState) -> Array:
 		# Each vehicle waits in its own slot beside the assembly point.
 		var slot := _slot(assembly, from, k, tasks.size())
 		tasks[vid]["slot"] = slot
-		var res := vsim.order_drive(vid, slot, true)
-		if not res.ok:
-			tasks[vid]["state"] = "lost"
-			tasks[vid]["note"] = "cannot drive to the assembly point: %s" % res.reason
+		if k == 0:
+			var res := vsim.order_drive(vid, slot, true)
+			if not res.ok:
+				tasks[vid]["state"] = "lost"
+				tasks[vid]["note"] = "cannot drive to the assembly point: %s" % res.reason
+		else:
+			# Vehicles leave a crowded yard one after the other (the second would otherwise block the first in the depot).
+			tasks[vid]["state"] = "queued"
+			tasks[vid]["depart_at"] = sim.state.time + DEPART_GAP_S * k
 		k += 1
 	op.vehicles = vids
 	for sid in carried:
@@ -215,7 +222,7 @@ func _refuse(u: UnitState, assembly: Vector3, unload: Vector3) -> String:
 		return "driven by the player"
 	if v.assign_kind != "":
 		return "already assigned (%s)" % v.assign_kind
-	if v.status == VehicleState.Status.BLOCKED or v.status == VehicleState.Status.NO_FUEL:
+	if v.status == VehicleState.Status.NO_FUEL:
 		return "immobilised (%s)" % v.status_name()
 	if not v.job.is_empty() or v.convoy_id >= 0 or v.phase != VehicleState.Phase.NONE or u.order != UnitState.Order.NONE:
 		return "busy"
@@ -236,23 +243,41 @@ func _home_of(u: UnitState) -> Vector3:
 	var s := sim.logistics.nearest_store(u.position, u.faction, &"", &"vehicle")
 	if s == null:
 		return u.position
-	return sim.logistics.parking_world(s, 0)
+	# One parking spot per vehicle (by its id), so the vehicles of a convoy do not all drive to the same place.
+	return sim.logistics.parking_world(s, u.id % 6)
 
 
+## Where the squads and the vehicles meet: the centre of the squads, moved onto a road within 150 m when there is one
+## (the trucks park on it, in line, instead of in the trees), else the biggest squad's own spot when the centre is impassable.
 func _assembly_point(sqs: Array, from: Vector3) -> Vector3:
 	var p := from
 	if ws.routes and ws.routes.ready and not ws.routes.passable(p):
-		# The mean of the squads fell on an impassable cell: the biggest squad's own spot.
 		sqs.sort_custom(func(a: SquadState, b: SquadState) -> bool: return a.members.size() > b.members.size())
 		p = ws.squad_center(sqs[0])
+	var road := sim.state.roads.nearest(p, 150.0, 0, 0.0)
+	_road_dir = Vector3.INF
+	if not road.is_empty():
+		var rp: Vector3 = road.pos
+		if ws.routes == null or not ws.routes.ready or ws.routes.passable(rp):
+			p = rp
+			_road_dir = Vector3(road.dir.x, 0.0, road.dir.y)
 	return ws._ground(p)
 
 
+var _road_dir := Vector3.INF
+
+
+## Slot k of n for a waiting vehicle: along the road (or spread sideways) 22 m apart, on ground a vehicle may stand on.
 func _slot(assembly: Vector3, from: Vector3, k: int, n: int) -> Vector3:
-	var dir := Vector3(sin(float(k) * 1.3), 0.0, cos(float(k) * 1.3))
-	var side := 14.0 * (k - (n - 1) * 0.5)
-	var p := assembly + Vector3(dir.z, 0.0, -dir.x) * side + dir * 24.0 * (1.0 if k % 2 == 0 else -1.0) * 0.0
-	return ws._ground(p)
+	var dir := _road_dir if _road_dir.is_finite() else Vector3(1.0, 0.0, 0.0)
+	var off := 22.0 * (float(k) - float(n - 1) * 0.5)
+	var side := Vector3(-dir.z, 0.0, dir.x)
+	for attempt in 6:
+		var shift := side * (attempt / 2 + 1) * 8.0 * (1.0 if attempt % 2 == 0 else -1.0) if attempt > 0 else Vector3.ZERO
+		var p := ws._ground(assembly + dir * off + shift)
+		if vsim.spot_valid(p) and (ws.routes == null or not ws.routes.ready or ws.routes.passable(p)):
+			return p
+	return ws._ground(assembly + dir * off)
 
 
 ## The point the vehicles unload at: the staging point (an attack) or the objective's edge (a reinforcement), moved
@@ -337,6 +362,8 @@ func _lose(op: OperationState, vid: int, why: String) -> void:
 	stats.fallbacks += 1
 	op.transport.log.append("%.0f %s" % [sim.state.time, why])
 	var u := sim.state.get_unit(vid)
+	if u and u.veh and u.alive:
+		t["diag"] = vsim.diagnose(u)  # what held it up, for the inspector and the tests
 	var player_took := u != null and u.player_controlled
 	if u and u.veh and u.veh.assign_kind == "op" and u.veh.assign_id == op.id:
 		u.veh.assign_kind = ""
@@ -410,6 +437,14 @@ func _update_assemble(op: OperationState) -> void:
 			continue
 		live += 1
 		var u := sim.state.get_unit(vid)
+		if t.state == "queued":
+			if now >= float(t.depart_at):
+				var res := vsim.order_drive(vid, t.slot, true)
+				if res.ok:
+					t["state"] = "to_assembly"
+				else:
+					_lose(op, vid, "%s cannot drive to the assembly point: %s" % [u.unit_name, res.reason])
+					continue
 		if t.state == "to_assembly":
 			var at := WarSim._flat(u.position, t.slot) <= SLOT_REACH_M
 			var halted := u.order == UnitState.Order.NONE and absf(u.veh.speed) < 0.6
@@ -425,7 +460,7 @@ func _update_assemble(op: OperationState) -> void:
 					_lose(op, vid, "%s cannot reach the assembly point: %s" % [u.unit_name, res.reason])
 					continue
 		if t.state != "ready":
-			waiting.append("%s %d m away" % [u.unit_name, roundi(WarSim._flat(u.position, t.slot))])
+			waiting.append("%s %d m away%s" % [u.unit_name, roundi(WarSim._flat(u.position, t.slot)), " (waiting its turn)" if t.state == "queued" else ""])
 	var sq_far: Array[String] = []
 	for sid in tr.carried:
 		var sq := sim.state.get_squad(sid)
@@ -443,7 +478,7 @@ func _update_assemble(op: OperationState) -> void:
 		if timed_out:
 			ws.coord.timeouts += 1
 			for vid: int in tasks.keys():
-				if tasks[vid].state == "to_assembly":
+				if tasks[vid].state == "to_assembly" or tasks[vid].state == "queued":
 					_lose(op, vid, "%s did not arrive in %d s" % [sim.state.get_unit(vid).unit_name, int(ASSEMBLE_TIMEOUT_S)])
 		_start_mount(op, "timeout: the vehicles that are there leave" if timed_out else "")
 
@@ -728,6 +763,9 @@ func update_returns() -> void:
 		if done:
 			u.veh.assign_kind = ""
 			u.veh.assign_id = -1
+			if u.alive and u.veh.status == VehicleState.Status.BLOCKED:
+				u.veh.status = VehicleState.Status.PARKED  # stopped short of home: it stands there, it is not broken
+				u.veh.reason = ""
 			stats.returned += 1
 
 

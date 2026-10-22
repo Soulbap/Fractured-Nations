@@ -27,8 +27,8 @@ const BUILD_TIME_S := {
 const MIN_GAP_M := 7.0
 ## The starting compound: [type, local x, local z] in a frame whose -Z is the front of the buildings.
 const START_LAYOUT := [
-	[&"vehicle_depot", -26.0, -22.0], [&"supply_depot", 4.0, -22.0], [&"fuel_point", 32.0, -20.0],
-	[&"hq_building", 0.0, 12.0], [&"barracks_block", -32.0, 12.0], [&"ammo_magazine", 32.0, 10.0],
+	[&"vehicle_depot", -38.0, -22.0], [&"supply_depot", 8.0, -22.0], [&"fuel_point", 38.0, -20.0],
+	[&"hq_building", 0.0, 12.0], [&"barracks_block", -36.0, 12.0], [&"ammo_magazine", 38.0, 10.0],
 ]
 
 var ws: WarSim

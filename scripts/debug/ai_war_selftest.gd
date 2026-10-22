@@ -58,6 +58,8 @@ func run(args: PackedStringArray) -> void:
 		_log("d_mech", await _d_mech())
 	if _want("e_convoy"):
 		_log("e_convoy", await _e_convoy())
+	if only.has("v_yard"):
+		_log("v_yard", await _v_yard())
 	if _want("m_move"):
 		_log("m_move", await _m_move())
 	if _want("m_march"):
@@ -835,7 +837,8 @@ func _run_mech(sc: Dictionary, max_sim := 1500.0, scale := 8.0, near := false, u
 				members_aboard += 1
 	return {"op": {"phase": op.phase_name(), "stage": op.stage_name(), "outcome": op.outcome}, "stages": st.stages, "stage_times": st.t, "problems": st.problems, "max_aboard": st.max_aboard,
 		"convoy_seen": st.convoy, "vehicles_used": st.vehicles_used.size(), "members_still_aboard": members_aboard, "vehicles_before": vs0, "vehicles_after": _vehicles_of(1).size(),
-		"warp": w, "transport": op.transport.get("why", ""), "mode": op.transport.get("mode", ""), "log": op.transport.get("log", [])}
+		"warp": w, "transport": op.transport.get("why", ""), "mode": op.transport.get("mode", ""), "log": op.transport.get("log", []),
+		"diag": op.transport.get("tasks", {}).values().filter(func(t: Dictionary) -> bool: return t.has("diag")).map(func(t: Dictionary) -> Dictionary: return t.diag)}
 
 
 func _d_mech() -> Dictionary:
@@ -934,4 +937,25 @@ func _e_convoy() -> Dictionary:
 		for o: OperationState in war.active_operations():
 			ws.cancel(o.id, "test end")
 	_expect(reused, "E: the vehicles could not be used for a second operation (%s)" % str(out.get("second_use", "")))
+	return out
+
+
+## Diagnostic: each South vehicle is sent 150 m out of the yard; what holds it up is printed.
+func _v_yard() -> Dictionary:
+	await _ensure_vehicles(1, 3)
+	var dep := _bs().facility_of_kind(1, &"vehicle")
+	var out := {"depot": [dep.position.x, dep.position.z, dep.yaw]}
+	var vs := _vehicles_of(1)
+	var targets := {}
+	var k := 0
+	for u: UnitState in vs:
+		var front := Basis(Vector3.UP, dep.yaw) * Vector3(-20.0 + k * 15.0, 0.0, -70.0)
+		var t := demo.on_ground(dep.position.x + front.x, dep.position.z + front.z, 0.0)
+		targets[u.id] = t
+		var r := demo.sim.vehicles.order_drive(u.id, t)
+		out["order_%d" % u.id] = {"ok": r.ok, "reason": r.get("reason", ""), "pos": [u.position.x, u.position.z], "yaw": u.yaw}
+		k += 1
+	await _warp(70.0, 6.0, 60.0)
+	for u: UnitState in vs:
+		out["end_%d" % u.id] = {"status": u.veh.status_name(), "reason": u.veh.reason, "dist_to_target": _flat(u.position, targets[u.id]), "diag": demo.sim.vehicles.diagnose(u)}
 	return out
