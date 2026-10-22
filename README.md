@@ -3,7 +3,11 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Current state: **AI-COMBAT-STRAT-01** (branch `feature/ai-combat-strat-01`, built on `feature/ai-squad-01`) — AI attacks
+Newest: **AI-WAR-LOGISTICS-01** (branch `feature/ai-war-logistics-01`) — AI factions have bases and income, recruit, take
+vehicles, move squads in convoys over a road network that was audited and repaired (`--road-audit`, overlay **F8**), supply
+and counterattack; see [docs/AI-WAR-LOGISTICS-01_REPORT.md](docs/AI-WAR-LOGISTICS-01_REPORT.md).
+
+Previous state: **AI-COMBAT-STRAT-01** (branch `feature/ai-combat-strat-01`, built on `feature/ai-squad-01`) — AI attacks
 are coordinated operations: the squads get roles (assault, fire support, maneuver, reserve, security) and the
 operation moves through approach, deploy, support, assault and secure; it breaks off with cover fire when it is losing
 and its survivors recover before they are used again. AI factions score attack / reinforce / join / garrison from what

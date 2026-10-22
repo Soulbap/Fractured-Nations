@@ -148,6 +148,17 @@ INTEL-01+OBS-01 → SQUAD-01 → STRAT-01 → BASE-AI-01 → OPS-01 → VEH-01 �
 * **Done when.** Scenario A passes deterministically (seed) and a player-ordered squad is unaffected.
 * **Visible.** Squads split, one pins the enemy while the other moves around.
 
+### AI-WAR-LOGISTICS-01 — autonomous warfare with bases, economy, transport and a verified road network — **DONE** (with limitations)
+* **Delivered.** AI bases (compound, income ledger, recruitment, vehicle depots), mechanised operations (ASSEMBLE, MOUNT,
+  TRANSIT as convoys, DISEMBARK) with foot fallbacks, readiness and resupply, counterattacks, a logistics-aware strategic
+  scorer, the near/far movement-speed fix, and a road audit (`--road-audit`, overlay F8) with the corrections it led to:
+  graph gap repair, bridging of blocked road stretches, right-hand lane, off-road vehicles, run-time obstacle bypass and
+  three-point-turn recovery, validated parking spots, open gates in the HQ perimeters. Report:
+  [AI-WAR-LOGISTICS-01_REPORT.md](AI-WAR-LOGISTICS-01_REPORT.md).
+* **Open items.** Faction logistics inspector panel and route/convoy overlays; trees and rocks in the cross-country planner;
+  VehicleRouter rebuild spike after construction (~130 ms); a full-war performance run after the final road changes; visual
+  boarding/convoy sequence; Kvernes and Elvetun are not truck-enterable.
+
 ### AI-COMBAT-STRAT-01 — coordinated operations and strategic decisions — **DONE** (replaces AI-STRAT-01 below)
 * **Delivered.** Attack operations use the squad tactics by default and run as one operation with roles and stages
   (`OpCoordination`); an operation can withdraw to a fallback point under cover and release its squads;

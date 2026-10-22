@@ -6,7 +6,12 @@ Norwegian; code, comments and docs are English.
 
 ## Branch workflow
 
-- **`feature/ai-combat-strat-01` is the current development branch** (worktree `../fractured-nations-aistrat01`):
+- **`feature/ai-war-logistics-01` is the newest AI branch** (worktree `../fractured-nations-aiwar01`): AI-COMBAT-STRAT-01 +
+  AI-WAR-LOGISTICS-01 (AI bases and economy, mechanised operations and convoys, resupply, counterattacks, the road network
+  audit `--road-audit` / overlay F8 and the vehicle navigation fixes; report
+  [docs/AI-WAR-LOGISTICS-01_REPORT.md](docs/AI-WAR-LOGISTICS-01_REPORT.md)). Scenarios: `--ai-war-test [--only a_init,...,r_yard,r_obstacles,r_convoy,r_overlay,r_exit]`.
+  Prefer the short road scenarios (`r_yard`, `r_convoy`, `r_overlay`, minutes) over `r_drive` (20 km routes, ~20 minutes).
+- `feature/ai-combat-strat-01` is the baseline below it (worktree `../fractured-nations-aistrat01`):
   `feature/ai-squad-01` + AI-COMBAT-STRAT-01 (coordinated multi-squad operations, withdrawal, the strategic
   utility scorer, defence sectors; report [docs/AI-COMBAT-STRAT-01_REPORT.md](docs/AI-COMBAT-STRAT-01_REPORT.md)).
   New AI milestones branch from it.
