@@ -7,8 +7,10 @@ comparison — not repeated here) with the code that actually exists on
 [INTEGRATION-04_REPORT.md](INTEGRATION-04_REPORT.md) §4). Where the research assumed the
 LOGISTICS-01 *plan*, this document uses the *implemented* names.
 
-**Status (PROJECT-CONSOLIDATION-01, 2026-10-22).** All AI milestones up to AI-WAR-LOGISTICS-01 are on the single
-development branch `develop` in the one project folder; the next milestone is **NAVIGATION N1** (§8).
+**Status (NAVIGATION N1 baseline, 2026-10-22).** All AI milestones up to AI-WAR-LOGISTICS-01 are on the single
+development branch `develop` in the one project folder. NAVIGATION N1 measurement, diagnostics and acceptance
+scenarios are complete; navigation implementation is waiting for product-owner approval. See
+[NAVIGATION-N1_REPORT.md](NAVIGATION-N1_REPORT.md) and §8.
 
 **Earlier status.** AI-INTEL-01 and AI-OBS-01 are **done** (branch `feature/ai-intel-01`, report
 [AI-INTEL-01_OBS-01_REPORT.md](AI-INTEL-01_OBS-01_REPORT.md)): factions hold a persistent, aging contact
@@ -302,24 +304,28 @@ vehicles with passengers), 1 min each at 1×, 4× and 8× compression. Report av
 time compression. Budget: no frame > 33 ms at 1×, 8× reached, tick ≤ 2 ms avg. Mitigations already named
 in the research: one route per element, `AStarGrid2D.jumping_enabled` test, HPA* only if needed.
 
-## 8. How to start the next milestone without ambiguity
+## 8. NAVIGATION N1 hand-off
 
-* **Where:** the project folder `C:\Users\Hafnor\Desktop\Game Dev\fractured-nations` on branch `develop`
-  (PROJECT-CONSOLIDATION-01). No new milestone branch or worktree; commit each logical phase to `develop`.
-  The older "branch from feature/…" instructions in this document are history.
-* **Next milestone: NAVIGATION N1 — Baseline, Off-road & Obstacle Navigation Foundation.** It starts by
-  measuring before changing anything (route cost and count, replans, stuck squads and vehicles, bridge
-  crossings, off-road routes, routes round buildings and walls, near/far differences, CPU with several
-  operations, whether `CombatBrain` reactions trip the 25 s route-stall timer) and then covers, in later
-  phases: infantry navigation near and far from the player; off-road profiles per vehicle type (wheeled
-  truck / APC, tracked APC / tank, which do not exist yet); terrain and vegetation obstacles; buildings,
-  walls, gates and defence lines (a closed wall is blocked, an open gate is a passage, in both tiers);
-  roads, bridges and dynamic blockages; re-routing; consistent passability near and far; performance and
-  diagnostics. The existing systems are extended, not replaced: `StrategicRoutes`, `RoadNetwork`,
-  `VehicleRouter` (its 3 m local planner is the candidate shared local layer), `VehicleSim`,
-  `SquadControl`, `SquadTactics`, `CombatBrain`, `SoldierBody`, `AreaNavigation`. Analysis, gaps and
-  the planned acceptance scenarios: [PROJECT-CONSOLIDATION-01_REPORT.md](PROJECT-CONSOLIDATION-01_REPORT.md) §8.
-  No HPA*, flow fields or new navigation engine without a measured need.
-* Known navigation failure to start from: `--integration03-test --only base_nav` fails
-  `abstract_round_wall_into_base` (4 of 8 far-tier soldiers reach the base round a wall; identical on
-  `337c72f`, so it predates the consolidation).
+* **Baseline complete.** `--navigation-n1-test [--only n1_01,...,n1_09]` provides nine isolated,
+  deterministic acceptance scenarios and writes diagnostics only below `user://navigation_n1/`.
+  Runtime counters now distinguish route failure reasons, graph builds/rebuilds, vehicle bypass attempts,
+  squad route stalls and stalls while reacting. They do not change planning or movement.
+* **Measured defect.** The same 16.1 m gate is reliable near the camera (7/8 at the goal, maximum stall
+  0.3 s) but not in the abstract tier (6/8, two remain about 47 m away, maximum stall 522.2 s). The closed
+  perimeter remains blocked in both tiers and no sampled unit penetrates a structure. This reproduces and
+  narrows the older `base_nav` failure: `WorldSim._free_direction` is local wall sliding, not pathfinding;
+  `SquadControl` watches only the leader, so stranded formation members do not trigger a route replan.
+* **Vehicle baseline.** Runtime local bypass, distinct truck/APC route costs and a three-vehicle bridge
+  convoy work. Selectively disabling one bridge is unsupported because bridges are inferred geometry, not
+  route entities. The road audit currently finds 18 components and 294 failures in 2604 location/profile
+  requests; the legacy yard/exit reproduction still exposes blocked service approaches.
+* **Implementation order after approval.** (1) extract the existing 3 m local search behind one profile-
+  driven interface; (2) use one squad-level local corridor for abstract infantry while retaining near-tier
+  `NavigationAgent3D`; (3) unify passability/profile inputs and dirty-region versioning for structures and
+  roads; (4) add explicit wheeled/tracked profiles and only then vegetation costs; (5) harden service-point,
+  convoy and bridge constraints; (6) repeat the nine scenarios plus targeted regressions and performance.
+  Bridge destruction remains outside N1 until a persistent bridge entity is designed.
+* **Guardrails.** Extend `StrategicRoutes`, `RoadNetwork`, `VehicleRouter`, `VehicleSim`, `SquadControl`,
+  `WorldSim`, `SoldierBody` and `AreaNavigation`; do not add a competing navigation engine. No HPA*, flow
+  fields or global per-unit searches without measured need. Do not begin implementation without explicit
+  product-owner approval. Full findings and acceptance criteria: [NAVIGATION-N1_REPORT.md](NAVIGATION-N1_REPORT.md).
