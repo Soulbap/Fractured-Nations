@@ -1654,9 +1654,10 @@ func _o_war() -> Dictionary:
 		buckets[k] = snappedf(float(int(t1[k]) - int(tick0[k])) / ticks, 0.1)
 	out["perf"] = {"frame_ms_avg": run.frame_ms_avg, "frame_ms_p99": run.frame_ms_p99, "frame_ms_max": run.frame_ms_max, "tick_us_avg": buckets,
 		"war_update_us_avg": snappedf(float(ws.update_usec) / maxi(ws.updates, 1), 0.1), "war_update_us_max": ws.update_usec_max,
-		"econ": ws.econ.summary(), "mech": ws.mech.summary(), "supply": ws.supply.summary(), "coord_us_max": ws.coord.usec_max, "strat_us_max": ws.strat.usec_max,
+		"econ": ws.econ.summary(), "mech": ws.mech.summary(), "supply": ws.supply.summary(), "coord_us_max": ws.coord.usec_max, "strat_us_max": ws.strat.usec_max, "strat_parts_us_max": ws.strat.part_us_max,
 		"route_ms_max": snappedf(ws.routes.route_ms_max, 0.01), "routes_planned": ws.routes.routes_planned, "vehicle_tick_us": snappedf(float(demo.sim.vehicles.tick_usec) / maxi(demo.sim.vehicles.ticks, 1), 0.1),
 		"units": demo.sim.state.units.size(), "units_start": units0}
 	out["samples"] = st.samples.slice(0, 40)
 	out["summary"] = ws.summary().factions
+	out["events"] = war.events.filter(func(e: Dictionary) -> bool: return e.kind in ["supply", "op_transport", "recovery", "counter", "build", "op_failed", "op_done", "withdraw", "logistics", "vehicle"]).slice(-110).map(func(e: Dictionary) -> String: return "%.0f [%s] %s" % [e.t, e.kind, e.text])
 	return out

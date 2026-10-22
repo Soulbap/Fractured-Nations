@@ -42,6 +42,16 @@ var joins := 0
 var focus_changes := 0
 
 
+## Largest cost (microseconds) of each part of a decision, for the performance report.
+var part_us_max := {}
+
+
+func _note_us(part: String, t0: int) -> void:
+	var d := Time.get_ticks_usec() - t0
+	if d > int(part_us_max.get(part, 0)):
+		part_us_max[part] = d
+
+
 func _init(p_ws: WarSim) -> void:
 	ws = p_ws
 	sim = p_ws.sim
@@ -69,18 +79,24 @@ func decide(f: FactionState) -> void:
 		"available": forces.available.size(), "soldiers_available": forces.soldiers_available, "soldiers_total": forces.soldiers_total, "reserve_keep": forces.reserve_keep}
 	var free: Array = forces.available.duplicate()
 	var actions: Array = []
+	var tq := Time.get_ticks_usec()
 	_collect_defence(f, p, free, actions, snap)
 	_collect_counters(f, p, actions, now)
 	_collect_joins(f, p, free, actions)
 	_collect_garrisons(f, p, actions)
+	_note_us("collect_a", tq)
+	tq = Time.get_ticks_usec()
 	_collect_attacks(f, p, forces, actions, snap, now)
+	_note_us("collect_attacks", tq)
 	_apply_focus(f, p, actions, now)
 	actions.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.utility > b.utility)
 	var chosen: Array = []
 	for act: Dictionary in actions:
 		if act.status != "candidate":
 			continue
+		tq = Time.get_ticks_usec()
 		var res := _execute(f, p, act, free, forces, notes)
+		_note_us("execute_" + str(act.kind), tq)
 		act.status = res
 		if res == "chosen":
 			chosen.append(act)
@@ -91,9 +107,13 @@ func decide(f: FactionState) -> void:
 	for e: Dictionary in ws.influence.exposed(f.id, 600.0).slice(0, 3):
 		snap.exposed.append("%s %.1f" % [e.objective.obj_name, e.threat])
 	# 2b. An uncertain report near ground the faction holds: one squad goes and looks.
+	tq = Time.get_ticks_usec()
 	ws._investigate(f, p, free, notes, snap)
+	_note_us("investigate", tq)
+	tq = Time.get_ticks_usec()
 	# 4. Forward deployment: free squads idling at the HQ move up to the front.
 	var moved := ws._forward(f, p, free)
+	_note_us("forward", tq)
 	if moved != "":
 		notes.append(moved)
 	f.last_decision = "; ".join(notes) if not notes.is_empty() else "hold"

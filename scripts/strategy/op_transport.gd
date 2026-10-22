@@ -36,8 +36,10 @@ const SQUADS_NEAR_M := 110.0
 ## Straight-line distance x this is the planning estimate of a drive (fuel, expected time).
 const DETOUR := 1.4
 ## Distance from where vehicles are to the assembly point beyond which a vehicle is not considered.
-const MAX_FETCH_M := 7000.0
+const MAX_FETCH_M := 3500.0
 
+## vehicle id -> time before which it is not offered for transport again (it got stuck on the way).
+var _bad := {}
 var ws: WarSim
 var sim: WorldSim
 var vsim: VehicleSim
@@ -77,9 +79,15 @@ func plan(op: OperationState) -> Array:
 	var dist := WarSim._flat(from, goal)
 	if dist < p.mech_min_m:
 		return _foot(op, "the march is %d m, transport is used from %d m" % [roundi(dist), roundi(p.mech_min_m)])
+	var tq := Time.get_ticks_usec()
 	var assembly := _assembly_point(sqs, from, goal, op.faction)
+	ws.strat._note_us("mech_assembly", tq)
+	tq = Time.get_ticks_usec()
 	var unload := _unload_point(op, assembly, goal)
+	ws.strat._note_us("mech_unload", tq)
+	tq = Time.get_ticks_usec()
 	var cands := candidates(op.faction, assembly, unload)
+	ws.strat._note_us("mech_candidates", tq)
 	if cands.is_empty():
 		return _foot(op, "no free transport vehicle (%s)" % _why_none(op.faction))
 	# First fit: squads (largest first) into the nearest vehicles with seats; squads that do not fit walk.
@@ -107,26 +115,30 @@ func plan(op: OperationState) -> Array:
 			left_out.append(sq.squad_name)
 	if tasks.is_empty():
 		return _foot(op, "no vehicle has %d free seats" % order[0].members.size())
-	# The first vehicle's way to the assembly point and on to the unloading point must exist.
-	var probe_id: int = tasks.keys()[0]
-	var pu := sim.state.get_unit(probe_id)
-	var r1 := vsim.router.plan(pu.position, assembly, pu.veh.def())
-	if not r1.ok:
-		return _foot(op, "no route for %s to the assembly point: %s" % [pu.unit_name, r1.reason])
-	var r2 := vsim.router.plan(assembly, unload, pu.veh.def())
-	if not r2.ok:
-		return _foot(op, "no vehicle route to the unloading point: %s" % r2.reason)
+	# The way from the assembly point to the unloading point must exist (one plan; every vehicle plans its own way to its
+	# slot when it is ordered there, and a vehicle that cannot is dropped then, with the squads walking).
+	var pu := sim.state.get_unit(tasks.keys()[0])
+	# The vehicle route assembly -> unloading point is checked one second into ASSEMBLE (one route plan per tick, never
+	# several inside the strategic decision that starts the operation); the planning estimate is the straight line.
+	var r1 := {"length_m": WarSim._flat(pu.position, assembly) * DETOUR}
+	var r2 := {"length_m": WarSim._flat(assembly, unload) * DETOUR}
 	op.transport.mode = "mech"
 	op.transport.assembly = assembly
 	op.transport.unload = unload
 	op.transport.tasks = tasks
 	op.transport.carried = carried
 	op.transport.expected_s = (float(r1.length_m) + float(r2.length_m)) / 7.0
+	# The vehicle farthest from the assembly point needs about its distance at 5 m/s, plus the staggered departures.
+	var far_m := 0.0
+	for vid: int in tasks:
+		far_m = maxf(far_m, WarSim._flat(sim.state.get_unit(vid).position, assembly))
+	op.transport["assemble_limit"] = clampf(far_m * DETOUR / 5.0 + 120.0 + DEPART_GAP_S * tasks.size(), 150.0, 600.0)
 	op.transport.why = "%d of %d squads by %d vehicle(s): march %d m, vehicle route %.1f km" % [carried.size(), sqs.size(), tasks.size(), roundi(dist), (float(r1.length_m) + float(r2.length_m)) / 1000.0]
 	if not left_out.is_empty():
 		op.transport.why += "; no seats for " + ", ".join(left_out) + " (they walk)"
 	var vids := PackedInt32Array()
 	var k := 0
+	tq = Time.get_ticks_usec()
 	for vid: int in tasks:
 		var u := sim.state.get_unit(vid)
 		u.veh.assign_kind = "op"
@@ -146,10 +158,13 @@ func plan(op: OperationState) -> Array:
 			tasks[vid]["depart_at"] = sim.state.time + DEPART_GAP_S * k
 		k += 1
 	op.vehicles = vids
+	ws.strat._note_us("mech_orders", tq)
+	tq = Time.get_ticks_usec()
 	for sid in carried:
 		var sq := sim.state.get_squad(sid)
 		ws.sim.squads.order_move([sid], assembly)
 		sq.op_role = SquadState.OpRole.NONE
+	ws.strat._note_us("mech_squad_orders", tq)
 	stats.mounted += 1
 	stats.vehicles_used += tasks.size()
 	_set_stage(op, OperationState.Stage.ASSEMBLE, "assembling at (%.0f, %.0f): %s" % [assembly.x, assembly.z, op.transport.why])
@@ -218,6 +233,8 @@ func _refuse(u: UnitState, assembly: Vector3, unload: Vector3) -> String:
 	var v := u.veh
 	if not u.alive or v.status == VehicleState.Status.DISABLED:
 		return "destroyed"
+	if float(_bad.get(u.id, 0.0)) > sim.state.time:
+		return "got stuck recently"
 	if u.player_controlled or v.status == VehicleState.Status.PLAYER:
 		return "driven by the player"
 	# A vehicle driving home from an earlier task may be given a new one on the way (its drive home is replaced).
@@ -377,6 +394,8 @@ func _lose(op: OperationState, vid: int, why: String) -> void:
 	if t.is_empty() or t.state == "lost":
 		return
 	var was: String = t.state
+	if why.contains("Path blocked") or why.contains("stopped on the way") or why.contains("did not arrive"):
+		_bad[vid] = sim.state.time + 900.0
 	t["state"] = "lost"
 	t["note"] = why
 	stats.fallbacks += 1
@@ -480,6 +499,14 @@ func _update_assemble(op: OperationState) -> void:
 	var tr := op.transport
 	var now := sim.state.time
 	var tasks: Dictionary = tr.tasks
+	if not tr.get("route_checked", false) and now - op.stage_since >= 1.0:
+		tr["route_checked"] = true
+		var first := sim.state.get_unit(tasks.keys()[0])
+		var chk := vsim.router.plan(tr.assembly, tr.unload, first.veh.def())
+		if not chk.ok:
+			_all_foot(op, "no vehicle route to the unloading point: %s" % chk.reason)
+			return
+		tr["expected_s"] = float(chk.length_m) / 7.0 * 2.0
 	var waiting: Array[String] = []
 	var live := 0
 	for vid: int in tasks:
@@ -524,13 +551,14 @@ func _update_assemble(op: OperationState) -> void:
 		_all_foot(op, "no vehicle left to carry the squads")
 		return
 	op.wait_reason = "" if waiting.is_empty() and sq_far.is_empty() else "assembling: %s%s" % [", ".join(waiting), ("; squads " + ", ".join(sq_far)) if not sq_far.is_empty() else ""]
-	var timed_out := now - op.stage_since > ASSEMBLE_TIMEOUT_S
+	var limit: float = float(tr.get("assemble_limit", ASSEMBLE_TIMEOUT_S))
+	var timed_out := now - op.stage_since > limit
 	if (waiting.is_empty() and sq_far.is_empty()) or timed_out:
 		if timed_out:
 			ws.coord.timeouts += 1
 			for vid: int in tasks.keys():
 				if tasks[vid].state == "to_assembly" or tasks[vid].state == "queued":
-					_lose(op, vid, "%s did not arrive in %d s" % [sim.state.get_unit(vid).unit_name, int(ASSEMBLE_TIMEOUT_S)])
+					_lose(op, vid, "%s did not arrive in %d s" % [sim.state.get_unit(vid).unit_name, int(limit)])
 		_start_mount(op, "timeout: the vehicles that are there leave" if timed_out else "")
 
 

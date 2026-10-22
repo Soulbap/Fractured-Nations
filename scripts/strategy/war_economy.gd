@@ -27,6 +27,8 @@ var ticks := 0
 var stats := {"income_ticks": 0, "recruits": 0, "trucks": 0, "apcs": 0, "refuels": 0, "repairs": 0, "refused": 0}
 var _t_income := 0.0
 var _mp_acc := {}
+## objective id -> time before which no new building is ordered there (after a failed search / a field-defence order).
+var _build_cool := {}
 
 
 func _init(p_ws: WarSim) -> void:
@@ -239,7 +241,7 @@ func _collect_builds(f: FactionState, p: FactionProfile, s: Dictionary, actions:
 		var best: ObjectiveState = null
 		var best_front := INF
 		for o: ObjectiveState in ws.war.owned_by(f.id):
-			if o.is_hq() or ws.threatened.get(o.id, false):
+			if o.is_hq() or ws.threatened.get(o.id, false) or float(_build_cool.get(o.id, 0.0)) > now:
 				continue
 			var far := true
 			for b: Dictionary in bs.bases_of(f.id):
@@ -266,7 +268,7 @@ func _collect_builds(f: FactionState, p: FactionProfile, s: Dictionary, actions:
 	# 3. Field defences at a threatened garrisoned objective.
 	if supplies >= AiBases.BUILD_COST[&"sandbag_fighting_position"] + 1500.0:
 		for o: ObjectiveState in ws.war.owned_by(f.id):
-			if not ws.threatened.get(o.id, false) or ws._garrison_count(f.id, o.id) < 1:
+			if not ws.threatened.get(o.id, false) or ws._garrison_count(f.id, o.id) < 1 or float(_build_cool.get(o.id, 0.0)) > now:
 				continue
 			if ws.bases.pending_of(f.id, &"sandbag_fighting_position", o.position, o.radius).size() + _built_near(f.id, &"sandbag_fighting_position", o.position, o.radius) >= 3:
 				continue
@@ -287,9 +289,11 @@ func _execute(f: FactionState, p: FactionProfile, s: Dictionary, a: Dictionary) 
 	match a.kind:
 		"build_forward":
 			var o := ws.war.objective(a.objective)
-			var res := ws.bases.request(f, &"supply_storage", o.position, "forward supply store at %s" % o.obj_name)
+			var res := ws.bases.request(f, &"supply_storage", o.position, "forward supply store at %s" % o.obj_name, true)
 			if res.ok:
 				stats["builds"] = int(stats.get("builds", 0)) + 1
+			else:
+				_build_cool[o.id] = sim.state.time + 300.0
 			return res
 		"build_barracks":
 			var b: Dictionary = bs.bases_of(f.id)[0]
@@ -301,6 +305,7 @@ func _execute(f: FactionState, p: FactionProfile, s: Dictionary, a: Dictionary) 
 			return res
 		"build_defence":
 			var o := ws.war.objective(a.objective)
+			_build_cool[o.id] = sim.state.time + 45.0
 			# Between the objective's centre and the believed threat, at the edge of the garrison's ring.
 			var at := o.position
 			var best := 0.0

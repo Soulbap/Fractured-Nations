@@ -163,7 +163,7 @@ func _plan_layout(center: Vector3, yaw: float) -> Array:
 ## Orders a building for faction f near `near`: finds a site (ring search 25-140 m, never within MIN_GAP_M of
 ## another structure or a pending order), pays BUILD_COST from the faction's bases (nearest store with the
 ## supplies first) and queues it. Returns {ok, reason, pos}.
-func request(f: FactionState, type_id: StringName, near: Vector3, why: String) -> Dictionary:
+func request(f: FactionState, type_id: StringName, near: Vector3, why: String, need_road := false) -> Dictionary:
 	if _sm() == null:
 		return {"ok": false, "reason": "no construction system"}
 	var def := StructureCatalog.get_def(type_id)
@@ -174,7 +174,7 @@ func request(f: FactionState, type_id: StringName, near: Vector3, why: String) -
 	if bid < 0:
 		stats.refused += 1
 		return {"ok": false, "reason": "not enough supplies (%d kg needed)" % roundi(BUILD_COST[type_id])}
-	var site := find_site(def, near, 25.0, 140.0)
+	var site := find_site(def, near, 25.0, 140.0, need_road)
 	if not site.ok:
 		stats.refused += 1
 		return {"ok": false, "reason": "no buildable site near (%.0f, %.0f): %s" % [near.x, near.z, site.reason]}
@@ -203,21 +203,42 @@ func _payer_base(f: FactionState, near: Vector3, supplies: float) -> int:
 	return best
 
 
-func find_site(def: StructureDef, near: Vector3, min_r: float, max_r: float) -> Dictionary:
+## A site for `def` on a ring search round `near` (5 rings, 10 directions, turned a little every call). The cheap filters (passable, not
+## crowded, a road within 70 m when need_road: stores that trucks must reach) run first; at most MAX_CHECKS full placement checks
+## (check_building, about a millisecond each) are made per call, so a search never costs a visible frame - a failed search is tried
+## again, from other directions, at the next economic decision.
+const MAX_CHECKS := 10
+var _phase := 0.0
+
+
+func find_site(def: StructureDef, near: Vector3, min_r: float, max_r: float, need_road := false) -> Dictionary:
 	var reason := "ground"
+	var checks := 0
+	_phase += 0.61
 	for r: float in [min_r, min_r + 20.0, min_r + 45.0, min_r + 75.0, max_r]:
-		var n := clampi(int(r / 8.0), 8, 20)
-		for k in n:
-			var a := TAU * k / n + r * 0.013
+		for k in 10:
+			var a := TAU * k / 10.0 + r * 0.013 + _phase
 			var c := Vector3(near.x + cos(a) * r, 0.0, near.z + sin(a) * r)
 			c.y = ws._ground(c).y
 			if not ws.routes.passable(c):
 				reason = "impassable"
 				continue
+			if need_road and sim.state.roads.nearest(c, 70.0, 0, 0.0).is_empty():
+				reason = "no road within 70 m"
+				continue
 			if _crowded(c, def):
 				reason = "too close to other structures"
 				continue
+			if checks >= MAX_CHECKS:
+				return {"ok": false, "reason": "no site found in %d placement checks (%s)" % [MAX_CHECKS, reason]}
+			checks += 1
 			var yaw := fposmod(a + PI * 0.5, TAU) - PI
+			if need_road:
+				# The front of the building (its dock) faces the nearest road point, so trucks drive straight in.
+				var rd := sim.state.roads.nearest(c, 70.0, 0, 0.0)
+				if not rd.is_empty():
+					var to_road: Vector3 = rd.pos - c
+					yaw = atan2(-to_road.x, -to_road.z)
 			var chk := _sm().check_building(def, c, yaw, -1, true)
 			if chk.ok:
 				return {"ok": true, "pos": chk.xform.origin, "yaw": yaw}
