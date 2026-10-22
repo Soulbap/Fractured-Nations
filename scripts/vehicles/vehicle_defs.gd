@@ -48,6 +48,10 @@ class Def:
 	var plan_decel := 2.0
 	## Cross-country ceiling (m/s) and the steepest ground the vehicle drives (rise / run).
 	var offroad_speed := 7.0
+	## Route planning: how many metres of road one metre of cross-country driving costs. Trucks prefer roads (3), an APC copes with
+	## terrain far better (1.7), a tracked vehicle would use about 1.2: the planner takes the straight way across country whenever
+	## that is cheaper for *this* vehicle, it is never road-only.
+	var offroad_factor := 3.0
 	var max_grade := 0.40
 	var wheel_radius := 0.625
 	var fuel_capacity := 200.0
@@ -92,6 +96,9 @@ static func get_def(id: StringName) -> Def:
 			d.fuel_capacity = 280.0
 			d.fuel_per_km = 1.6
 			d.max_health = 900.0
+			d.offroad_factor = 1.7
+			d.offroad_speed = 9.0
+			d.max_grade = 0.55
 			d.passengers = 8
 			d.door_z = 4.7
 			d.cargo_capacity = 800.0

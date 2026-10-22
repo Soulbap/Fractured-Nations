@@ -72,6 +72,10 @@ var profile := PackedFloat32Array()
 var route_s := PackedFloat32Array()
 var _progress_ref := Vector3.INF
 var _progress_t := 0.0
+## Detours taken round obstacles on the current order (VehicleSim._try_bypass), capped per order.
+var bypasses := 0
+## Runtime only: where the vehicle wants to point after backing out (INF: no goal, back out on opposite lock).
+var reverse_goal := Vector3.INF
 ## Obstacle report of the physics probe of a body (near tier): free distance ahead.
 var probe_ahead := INF
 

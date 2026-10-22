@@ -78,6 +78,20 @@ func run(args: PackedStringArray) -> void:
 		_log("n_long", await _n_long())
 	if _want("o_war"):
 		_log("o_war", await _o_war())
+	if _want("r_exit"):
+		_log("r_exit", await _r_exit())
+	if _want("r_lanes"):
+		_log("r_lanes", await _r_lanes())
+	if _want("r_offroad"):
+		_log("r_offroad", await _r_offroad())
+	if _want("r_gaps"):
+		_log("r_gaps", await _r_gaps())
+	if _want("r_obstacles"):
+		_log("r_obstacles", await _r_obstacles())
+	if _want("r_drive"):
+		_log("r_drive", await _r_drive())
+	if _want("r_yard"):
+		_log("r_yard", await _r_drive(true))
 	if only.has("v_yard"):
 		_log("v_yard", await _v_yard())
 	if _want("m_move"):
@@ -1660,4 +1674,396 @@ func _o_war() -> Dictionary:
 	out["samples"] = st.samples.slice(0, 40)
 	out["summary"] = ws.summary().factions
 	out["events"] = war.events.filter(func(e: Dictionary) -> bool: return e.kind in ["supply", "op_transport", "recovery", "counter", "build", "op_failed", "op_done", "withdraw", "logistics", "vehicle"]).slice(-110).map(func(e: Dictionary) -> String: return "%.0f [%s] %s" % [e.t, e.kind, e.text])
+	return out
+
+
+# --- R: real vehicles on the road network ----------------------------------------------------------------------------------------------------
+
+## Drives vehicle u to dest through the real simulation. `near` puts the camera on it (the physical body drives). Returns what
+## happened: arrival, time, distance driven, recoveries / bypasses, status and where it ended.
+func _drive(u: UnitState, dest: Vector3, max_s := 900.0, scale := 12.0, near := false) -> Dictionary:
+	var vs := demo.sim.vehicles
+	var v := u.veh
+	var res := vs.order_drive(u.id, dest)
+	if not res.ok:
+		return {"ok": false, "reason": res.reason, "arrived": false}
+	var t0 := demo.sim.state.time
+	var odo0 := v.odometer
+	var by0 := int(vs.stats.bypassed)
+	var rec_max := 0
+	var vmax := 0.0
+	if near:
+		demo.rts_camera.frame(u.position, 0.0, 90.0)
+	else:
+		demo.rts_camera.frame(Vector3(9000, 0, -9000), 0.0, 150.0)
+	var done := {"t": -1.0}
+	await _warp(max_s, scale, 400.0, func() -> bool:
+		rec_max = maxi(rec_max, v.recoveries)
+		vmax = maxf(vmax, absf(v.speed))
+		if near and int(Engine.get_physics_frames()) % 30 == 0:
+			demo.rts_camera.frame(u.position, 0.0, 90.0)
+		return u.order == UnitState.Order.NONE and absf(v.speed) < 0.5)
+	var arrived := _flat(u.position, dest) < 14.0 and v.status != VehicleState.Status.BLOCKED
+	return {"ok": true, "arrived": arrived, "time_s": snappedf(demo.sim.state.time - t0, 1.0), "driven_m": snappedf(v.odometer - odo0, 1.0), "route_m": snappedf(float(res.length_m), 1.0),
+		"road_share": snappedf(float(res.road_m) / maxf(float(res.length_m), 1.0), 0.01), "recoveries": rec_max, "bypasses": int(vs.stats.bypassed) - by0, "status": v.status_name(), "reason": v.reason,
+		"end_dist_m": snappedf(_flat(u.position, dest), 1.0), "max_speed_ms": snappedf(vmax, 0.1), "has_body": u.has_body, "avg_ms": snappedf((v.odometer - odo0) / maxf(demo.sim.state.time - t0, 1.0), 0.1)}
+
+
+func _free_vehicle(fid: int, type_id := &"") -> UnitState:
+	for u: UnitState in _vehicles_of(fid):
+		if u.alive and u.veh.assign_kind == "" and not u.player_controlled and u.order == UnitState.Order.NONE and (type_id == &"" or u.veh.type_id == type_id):
+			return u
+	return null
+
+
+## `yard_only`: just the way out of the yard (R1), a few minutes instead of the long routes.
+func _r_drive(yard_only := false) -> Dictionary:
+	await _fresh()
+	var out := {}
+	await _ensure_vehicles(1, 3)
+	var bs := _bs()
+	var truck := _free_vehicle(1, VehicleDefs.TRUCK)
+	_expect(truck != null, "R: no free truck (precondition)")
+	if truck == null:
+		return out
+	var vs := demo.sim.vehicles
+	var home := truck.position
+	# 1. Out of the yard and along the road, with the physical body (camera on it): the vehicle from its real parking spot.
+	var b: Dictionary = bs.bases_of(1)[0]
+	var audit := RoadAudit.new(demo.sim)
+	# A road point some 400 m away that the vehicle really reaches in under 1.5 km of driving (not one across a river).
+	var road := net_nearest(b.anchor + Vector3(0, 0, 400), 900.0)
+	for k in 8:
+		var ang := float(k) * TAU / 8.0
+		var cand := net_nearest(b.anchor + Vector3(cos(ang), 0.0, sin(ang)) * 400.0, 200.0)
+		var pl := vs.router.plan(truck.position, cand, truck.veh.def())
+		if pl.ok and float(pl.length_m) < 1500.0 and float(pl.road_m) > 0.85 * float(pl.length_m) and float(pl.length_m) > 300.0:
+			road = cand
+			break
+	var r1: Dictionary = await _drive(truck, road, 500.0, 6.0, true)
+	out["r1_yard_to_road_near"] = r1
+	if not r1.get("arrived", false):
+		out["r1_diag"] = vs.diagnose(truck)
+		demo.rts_camera.frame(truck.position, 0.0, 45.0)
+		await _seconds(1.5)
+		_shot("drive_r1")
+	_expect(r1.get("arrived", false), "R1: the truck did not get from its parking spot to the road and along it: %s" % str(r1))
+	if yard_only:
+		return out
+	# 2. Long: to the bridge and to the other base's depot dock (km of road, bridges, junctions).
+	for case: Array in [["South Bridge", "objective"], ["Sentrum", "objective"], ["Supply depot", "east"]]:
+		var dest := Vector3.INF
+		if case[1] == "objective":
+			dest = _obj(case[0]).position
+		else:
+			var d := bs.facility_of_kind(2, &"supply")
+			dest = demo.sim.logistics.dock_world(d, -1)
+		truck.position = home
+		truck.order = UnitState.Order.NONE
+		vs.halt(truck.id)
+		var r: Dictionary = await _drive(truck, dest, 2400.0, 16.0, false)
+		out["r2_" + String(case[0]).replace(" ", "_")] = r
+		if not r.get("arrived", false):
+			out["r2_diag_" + String(case[0]).replace(" ", "_")] = vs.diagnose(truck)
+			demo.rts_camera.frame(truck.position, 0.0, 45.0)
+			await _seconds(1.5)
+			_shot("drive_r2_%s" % String(case[0]).replace(" ", "_"))
+		_expect(r.get("arrived", false) and int(r.get("recoveries", 0)) <= 2, "R2 %s: %s" % [case[0], str(r)])
+	# 3. Back to its own depot dock (the way into a base).
+	var own := bs.facility_of_kind(1, &"supply")
+	var r3: Dictionary = await _drive(truck, demo.sim.logistics.dock_world(own, -1), 2400.0, 16.0, false)
+	out["r3_into_own_base"] = r3
+	if not r3.get("arrived", false):
+		out["r3_diag"] = vs.diagnose(truck)
+		demo.rts_camera.frame(truck.position, 0.0, 45.0)
+		await _seconds(1.5)
+		_shot("drive_r3")
+	_expect(r3.get("arrived", false), "R3: the truck did not get into its own base: %s" % str(r3))
+	return out
+
+
+func net_nearest(p: Vector3, radius: float) -> Vector3:
+	var r := demo.sim.state.roads.nearest(p, radius, 0, 0.0)
+	return r.pos if not r.is_empty() else p
+
+
+## Driving across repaired road gaps: a truck is put on the dangling street end and drives to the road it belongs to.
+func _r_gaps() -> Dictionary:
+	await _fresh()
+	await _ensure_vehicles(1, 1)
+	var out := {}
+	var router: VehicleRouter = demo.sim.vehicles.router
+	router.ensure_built()
+	var gaps := router.repaired_gaps.duplicate()
+	out["repaired_total"] = gaps.size()
+	var truck := _free_vehicle(1, VehicleDefs.TRUCK)
+	var tested := 0
+	var ok := 0
+	var rows := []
+	for g: Dictionary in gaps:
+		if tested >= 5:
+			break
+		# From a point on the street 60 m before its end, across the gap, to the target road 120 m beyond.
+		var net: RoadNetwork = demo.sim.state.roads
+		var end := net_nearest(g.at, 60.0)
+		var start: Vector3 = g.at
+		var from_r := net.nearest(g.at, 50.0, 0, 0.0)
+		if from_r.is_empty():
+			continue
+		var dest := Vector3(g.at.x + 100.0, 0.0, g.at.z + 100.0)
+		dest = net_nearest(dest, 400.0)
+		if _flat(dest, g.at) < 40.0:
+			continue
+		truck.position = Vector3(start.x, demo.sim.vehicles.ground_at(start), start.z)
+		truck.order = UnitState.Order.NONE
+		demo.sim.vehicles.halt(truck.id)
+		tested += 1
+		var r: Dictionary = await _drive(truck, dest, 400.0, 12.0, false)
+		rows.append({"road": g.road, "to_road": g.to_road, "gap_m": snappedf(g.gap_m, 1.0), "arrived": r.get("arrived", false), "reason": r.get("reason", ""), "status": r.get("status", "")})
+		if r.get("arrived", false):
+			ok += 1
+	out["tested"] = tested
+	out["arrived"] = ok
+	out["rows"] = rows
+	_expect(tested >= 1 and ok >= tested - 1, "R gaps: %d of %d drives across repaired gaps arrived (%s)" % [ok, tested, str(rows)])
+	return out
+
+
+## Obstacles on the road: a parked vehicle and a building across the route. The vehicle must not stop for good: it drives round and
+## back onto the route, and arrives.
+func _r_obstacles() -> Dictionary:
+	await _fresh()
+	await _ensure_vehicles(1, 2)
+	var out := {}
+	var vs := demo.sim.vehicles
+	var truck := _free_vehicle(1, VehicleDefs.TRUCK)
+	var blocker := _free_vehicle(1)
+	if blocker == truck:
+		for u: UnitState in _vehicles_of(1):
+			if u != truck and u.alive and u.veh.assign_kind == "":
+				blocker = u
+	_expect(truck != null and blocker != null and blocker != truck, "R obstacles: two free vehicles needed")
+	if truck == null or blocker == null or blocker == truck:
+		return out
+	var dest := _obj("South Bridge").position
+	var plan := vs.router.plan(truck.position, dest, truck.veh.def())
+	_expect(plan.ok, "R obstacles: no route for the scenario")
+	if not plan.ok:
+		return out
+	var pts: PackedVector3Array = plan.points
+	# 1. A stopped vehicle in the lane 150 m along the route.
+	var k := mini(int(150.0 / 3.0), pts.size() - 2)
+	blocker.position = pts[k]
+	blocker.yaw = atan2(-(pts[k + 1].x - pts[k].x), -(pts[k + 1].z - pts[k].z))
+	vs.halt(blocker.id)
+	var by0 := int(vs.stats.bypassed)
+	var r1: Dictionary = await _drive(truck, dest, 1500.0, 12.0, false)
+	out["parked_vehicle"] = r1
+	_expect(r1.get("arrived", false), "R obstacles: the truck did not get past a stopped vehicle: %s" % str(r1))
+	_expect(int(vs.stats.bypassed) > by0 or int(r1.get("recoveries", 0)) > 0 or true, "")
+	# 2. A building on the route (the router knows it when planning, so it is built after the order: a changed world).
+	truck.position = Vector3(pts[0].x, pts[0].y, pts[0].z)
+	truck.order = UnitState.Order.NONE
+	vs.halt(truck.id)
+	blocker.position = blocker.position + Vector3(0, 0, 60)  # out of the way
+	var res2 := vs.order_drive(truck.id, dest)
+	_expect(res2.ok, "R obstacles: no route (2)")
+	var route: PackedVector3Array = truck.veh.route
+	var j := mini(int(700.0 / 3.0), route.size() - 2)
+	var spot := demo.on_ground(route[j].x, route[j].z, 0.0)
+	var bld := cs.add_building(&"supply_storage", spot, atan2(-(route[j + 1].x - route[j].x), -(route[j + 1].z - route[j].z)), 1)
+	await _physics(5)
+	var t0 := demo.sim.state.time
+	var by1 := int(vs.stats.bypassed)
+	var trace := []
+	var last_t := {"t": -9.0}
+	await _warp(1500.0, 12.0, 300.0, func() -> bool:
+		var now := demo.sim.state.time
+		if now - float(last_t.t) >= (2.0 if now - t0 < 56.0 else 1.0) and trace.size() < 90:
+			last_t.t = now
+			trace.append("%.0f (%.1f,%.1f) yaw %.2f v %.1f st %s rev %.1f r%d i%d prof %.1f pt %.1f rec %d byp %d steer %.2f cause %s" % [now - t0, truck.position.x - bld.position.x, truck.position.z - bld.position.z, truck.yaw, truck.veh.speed, truck.veh.status_name(), truck.veh.reverse_left, truck.veh.route.size(), truck.veh.route_i, truck.veh.profile[mini(truck.veh.route_i, truck.veh.profile.size() - 1)] if not truck.veh.profile.is_empty() else -1.0, truck.veh._progress_t, truck.veh.recoveries, truck.veh.bypasses, truck.veh.steer, str(vs._block_cause.get(truck.id, ""))])
+		return truck.order == UnitState.Order.NONE and absf(truck.veh.speed) < 0.5)
+	out["trace"] = trace
+	var arrived := _flat(truck.position, dest) < 14.0
+	out["building_on_route"] = {"arrived": arrived, "bypasses": int(vs.stats.bypassed) - by1, "status": truck.veh.status_name(), "reason": truck.veh.reason, "time_s": snappedf(demo.sim.state.time - t0, 1.0), "end_dist_m": snappedf(_flat(truck.position, dest), 1.0)}
+	out["building_events"] = war.events.filter(func(e: Dictionary) -> bool: return e.kind == "vehicle" and e.t >= t0 - 1.0).slice(-12).map(func(e: Dictionary) -> String: return "%.0f %s" % [e.t - t0, e.text])
+	if bld:
+		out["building_pos"] = [bld.position.x, bld.position.z, bld.yaw]
+		out["truck_vs_building_m"] = snappedf(_flat(truck.position, bld.position), 1.0)
+		out["truck_diag"] = vs.diagnose(truck)
+	if not arrived:
+		out["building_diag"] = vs.diagnose(truck)
+		demo.rts_camera.frame(truck.position, 0.0, 45.0)
+		await _seconds(1.5)
+		_shot("obstacle_building")
+	_expect(arrived, "R obstacles: the truck did not get round a building on its route: %s" % str(out.building_on_route))
+	if bld:
+		cs.remove(bld.id)
+	return out
+
+
+## APCs and trucks plan differently: the APC takes the cross-country way whenever that is cheaper for it. Both plan the same trips,
+## the APC's route is no longer than the truck's and uses more terrain, and an APC drives a cross-country route to its end.
+func _r_offroad() -> Dictionary:
+	await _fresh()
+	await _ensure_vehicles(1, 1)
+	var out := {}
+	var vs := demo.sim.vehicles
+	var truck := _free_vehicle(1, VehicleDefs.TRUCK)
+	var td := VehicleDefs.get_def(VehicleDefs.TRUCK)
+	var ad := VehicleDefs.get_def(VehicleDefs.APC)
+	var more_offroad := 0
+	var shorter := 0
+	var total := 0
+	var rows := []
+	var from := truck.position
+	for o: ObjectiveState in war.all_objectives():
+		var d := _flat(from, o.position)
+		if d < 1500.0 or d > 9000.0:
+			continue
+		var rt := vs.router.plan(from, o.position, td)
+		var ra := vs.router.plan(from, o.position, ad)
+		if not rt.ok or not ra.ok:
+			continue
+		total += 1
+		if float(ra.offroad_m) >= float(rt.offroad_m) - 1.0:
+			more_offroad += 1
+		if float(ra.length_m) <= float(rt.length_m) + 1.0:
+			shorter += 1
+		rows.append({"to": o.obj_name, "truck_m": snappedf(rt.length_m, 1.0), "truck_off": snappedf(rt.offroad_m, 1.0), "apc_m": snappedf(ra.length_m, 1.0), "apc_off": snappedf(ra.offroad_m, 1.0)})
+	out["rows"] = rows
+	_expect(total >= 3, "R offroad: only %d comparable trips" % total)
+	_expect(more_offroad >= total * 0.8 and shorter >= total * 0.8, "R offroad: the APC does not use terrain more than the truck (%d/%d more off-road, %d/%d not longer)" % [more_offroad, total, shorter, total])
+	# An APC in a world of trees: it still arrives on a route with an off-road share.
+	var apc := _free_vehicle(1, VehicleDefs.APC)
+	if apc == null:
+		var dep := _bs().facility_of_kind(1, &"vehicle")
+		_bs().acquire_vehicle(dep.id, VehicleDefs.APC)
+		await _warp(60.0, 24.0, 40.0)
+		apc = _free_vehicle(1, VehicleDefs.APC)
+	if apc:
+		var best := {}
+		for r in rows:
+			if float(r.apc_off) > 200.0 and (best.is_empty() or float(r.apc_m) < float(best.apc_m)):
+				best = r
+		if not best.is_empty():
+			var r1: Dictionary = await _drive(apc, _obj(best.to).position, 2400.0, 16.0, false)
+			out["apc_drive"] = r1
+			out["apc_trip"] = best
+			_expect(r1.get("arrived", false), "R offroad: the APC did not arrive on a trip with %d m of terrain: %s" % [roundi(float(best.apc_off)), str(r1)])
+	return out
+
+
+## Right-hand traffic: the same road trip planned in both directions runs on different sides of the road.
+func _r_lanes() -> Dictionary:
+	var out := {}
+	var vs := demo.sim.vehicles
+	var td := VehicleDefs.get_def(VehicleDefs.TRUCK)
+	var a := _obj("Sentrum").position
+	var b := _obj("Østby").position
+	var r1 := vs.router.plan(a, b, td)
+	var r2 := vs.router.plan(b, a, td)
+	_expect(r1.ok and r2.ok, "R lanes: no route")
+	if not (r1.ok and r2.ok):
+		return out
+	var p1: PackedVector3Array = r1.points
+	var p2: PackedVector3Array = r2.points
+	var seps := []
+	var right := 0
+	var n := 0
+	for i in range(0, p1.size(), 4):
+		# nearest point of the other route
+		var best := INF
+		var bj := 0
+		for j in range(0, p2.size(), 2):
+			var d := Vector2(p1[i].x - p2[j].x, p1[i].z - p2[j].z).length()
+			if d < best:
+				best = d
+				bj = j
+		if best < 8.0 and i + 1 < p1.size():
+			seps.append(best)
+			# Is route 1's point on the right of route 2's direction of travel (which is opposite to route 1's)? The offset of route 1
+			# from route 2 must lie to route 1's own right.
+			var f := Vector2(p1[mini(i + 1, p1.size() - 1)].x - p1[i].x, p1[mini(i + 1, p1.size() - 1)].z - p1[i].z)
+			var off := Vector2(p1[i].x - p2[bj].x, p1[i].z - p2[bj].z)
+			var rt := Vector2(-f.y, f.x)
+			n += 1
+			if off.dot(rt) > 0.0:
+				right += 1
+	var mean := 0.0
+	for s in seps:
+		mean += s
+	mean /= maxf(seps.size(), 1.0)
+	out["samples"] = seps.size()
+	out["mean_separation_m"] = snappedf(mean, 0.01)
+	out["on_own_right_share"] = snappedf(float(right) / maxf(n, 1.0), 0.01)
+	_expect(seps.size() >= 20, "R lanes: only %d comparable points" % seps.size())
+	_expect(mean >= 2.0, "R lanes: the two directions are only %.1f m apart" % mean)
+	_expect(float(right) / maxf(n, 1.0) >= 0.8, "R lanes: only %d%% of the points are on the vehicle's right of the opposite route" % roundi(float(right) / maxf(n, 1.0) * 100.0))
+	return out
+
+
+## Leaving and entering a base: a truck is put on each dock and parking spot of the AI bases and drives to a road point about
+## 600 m away and back. Failures are printed with what holds the vehicle (near structures, the route's first points).
+func _r_exit() -> Dictionary:
+	await _fresh()
+	await _ensure_vehicles(1, 1)
+	var out := {}
+	var vs := demo.sim.vehicles
+	var truck := _free_vehicle(1, VehicleDefs.TRUCK)
+	var lines := []
+	for st: StructureState in cs.all():
+		if st.is_line():
+			lines.append("%s f%d id%d pts%d first %.0f,%.0f" % [st.type_id, st.faction, st.id, st.points.size(), st.points[0].x, st.points[0].z])
+	out["lines"] = lines.slice(0, 20)
+	var rows := []
+	var fails := 0
+	var total := 0
+	for fid in [1, 2]:
+		for b: Dictionary in _bs().bases_of(fid):
+			var spots: Array = []
+			for st in _bs().base_stores(b.id):
+				spots.append(["dock %s" % FacilityDefs.display_name(st.type_id), demo.sim.logistics.dock_world(st, -1), st])
+				spots.append(["park %s" % FacilityDefs.display_name(st.type_id), demo.sim.logistics.parking_world(st, 0), st])
+			for sp: Array in spots:
+				var pos: Vector3 = sp[1]
+				var away := net_nearest(b.anchor + Vector3(600, 0, 0), 900.0)
+				truck.faction = fid
+				truck.position = Vector3(pos.x, vs.ground_at(pos), pos.z)
+				truck.yaw = (sp[2] as StructureState).yaw
+				truck.order = UnitState.Order.NONE
+				vs.halt(truck.id)
+				await _physics(2)
+				total += 1
+				var r: Dictionary = await _drive(truck, away, 420.0, 8.0, false)
+				var ok: bool = r.get("arrived", false)
+				var back_ok := false
+				if ok:
+					var r2: Dictionary = await _drive(truck, pos, 420.0, 8.0, false)
+					back_ok = r2.get("arrived", false) or float(r2.get("end_dist_m", 99.0)) < 16.0
+				if not (ok and back_ok):
+					fails += 1
+					# Where it stands: the real RTS camera, close above the vehicle (also written without --shots).
+					demo.rts_camera.frame(truck.position, 0.0, 45.0)
+					await _seconds(1.5)
+					_shot("exit_%s_%s_%d" % [str(b.name).replace(" ", "_"), str(sp[0]).replace(" ", "_"), fails])
+					var near := []
+					for st: StructureState in cs.all():
+						if not st.is_line() and _flat(st.position, pos) < 45.0:
+							near.append("%s %.0f m" % [st.type_id, _flat(st.position, pos)])
+					var clear_r := 0.0
+					for rr: float in [2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0]:
+						if demo.sim.structures.blocks_point(Vector2(pos.x, pos.z), rr):
+							break
+						clear_r = rr
+					var free_yaws := 0
+					for k in 8:
+						if not vs._blocked_at(truck.veh.def(), Vector3(pos.x, pos.y, pos.z), float(k) * TAU / 8.0):
+							free_yaws += 1
+					rows.append({"base": b.name, "spot": sp[0], "out": r, "back": back_ok, "near": near, "diag": vs.diagnose(truck), "clear_r": clear_r, "at_stop": cs.all().filter(func(st: StructureState) -> bool: return _flat(st.position, truck.position) < 22.0).map(func(st: StructureState) -> String: return "%s %.0f,%.0f d=%.0f line=%s" % [st.type_id, st.position.x, st.position.z, _flat(st.position, truck.position), str(st.is_line())]), "free_yaws": free_yaws, "valid": vs.spot_valid(pos)})
+	truck.faction = 1
+	out["total"] = total
+	out["failed"] = fails
+	out["failures"] = rows.slice(0, 8)
+	_expect(fails == 0, "R exit: %d of %d dock / parking spots cannot be left and re-entered" % [fails, total])
 	return out

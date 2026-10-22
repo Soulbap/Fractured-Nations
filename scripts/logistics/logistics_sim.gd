@@ -147,10 +147,19 @@ func _free_slot(s: StructureState, vid: int) -> int:
 ## Where a vehicle goes when its job is done, out of the way of the next vehicle at the dock.
 func parking_world(s: StructureState, slot: int) -> Vector3:
 	var p := FacilityDefs.dock_point(s, slot)
-	var back := Basis(Vector3.UP, s.yaw) * Vector3(0, 0, -16.0)
-	p += back
-	p.y = vsim.ground_at(p)
-	return p
+	var b := Basis(Vector3.UP, s.yaw)
+	# The first spot of the yard in front of the building that is clear of every structure (a vehicle's footprint) and of
+	# vehicles: 16 m beyond the dock, else further out and to the sides (AI-WAR-LOGISTICS-01: the old fixed spot could lie
+	# inside the next building, and a vehicle sent there could not even be ordered).
+	for out_m: float in [16.0, 24.0, 32.0, 42.0]:
+		for side: float in [0.0, 7.0, -7.0, 14.0, -14.0]:
+			var q := p + b * Vector3(side, 0.0, -out_m)
+			q.y = vsim.ground_at(q)
+			if vsim.spot_valid(q) and (sim.structures == null or not sim.structures.blocks_point(Vector2(q.x, q.z), 3.6)):
+				return q
+	var fallback := p + b * Vector3(0, 0, -16.0)
+	fallback.y = vsim.ground_at(fallback)
+	return fallback
 
 
 # --- Vehicle jobs -----------------------------------------------------------------------------

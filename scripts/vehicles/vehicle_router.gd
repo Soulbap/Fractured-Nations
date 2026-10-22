@@ -22,10 +22,22 @@ const LINK_M := 10.5
 ## Cost units are metres on the fastest road class (weight 1.0 = primary road, whose travel
 ## cost is 0.4 in RoadNetwork); AStar3D's straight-line estimate then never overestimates.
 const ROAD_UNIT := 0.4
-const OFFROAD_COST := 3.0
+## Right-hand traffic: road points shift this far (m, at most one fifth of the road width) to the right of the travel direction,
+## on roads at least LANE_MIN_WIDTH wide.
+const LANE_OFFSET_M := 1.9
+const LANE_MIN_WIDTH := 6.0
 ## Road candidates tried at each end, and how far a road may be from the endpoint (m).
 const CANDIDATES := 3
+const BYPASS_CLEARANCE_M := 1.8
 const SNAP_RADIUS := 700.0
+## How far a place may be from the main road network and still be routed to it (across country) when its own nearest roads
+## are isolated segments.
+const MAIN_SNAP_RADIUS := 1500.0
+## A dangling road end this close (m) to a vertex of another road is joined to it: the generated village streets stop 10-30 m
+## short of the road they belong to (found by RoadAudit), and a vehicle simply drives the few metres across.
+const GAP_FIX_M := 32.0
+## ... and only when the two heights differ by less than this (m): no join between a road and the one under or over it.
+const GAP_FIX_DY := 4.0
 const LEG_CELL := 3.0
 const LEG_MAX_CELLS := 60000
 
@@ -57,6 +69,18 @@ var min_width := 4.5
 ## Parked vehicles (not the one being planned) as circles [x, z, radius]: cross-country legs
 ## and the yard grid steer round them. Set by VehicleSim before every plan.
 var parked_circles: Array = []
+## Joins made by the gap repair: [{road, to_road, gap_m, at: Vector3}] (RoadAudit reports and draws them).
+var repaired_gaps: Array = []
+## Connected component of every graph vertex (id -> component number) and the number of the largest one: a place whose nearest
+## roads are only a few stray street segments is also offered the nearest vertices of the main network.
+var _comp_of := {}
+var _main_comp := -1
+## Failed plans (see plan()).
+var _fail_cache := {}
+const FAIL_CACHE_S := 90
+## Extra clearance (m) added to the footprint circle while a bypass leg is planned (VehicleSim._try_bypass): a detour has to pass
+## with room to spare, not touch the corner of what it goes round.
+var _extra := 0.0
 var debug_legs := false
 var last_leg_debug := ""
 
@@ -74,11 +98,13 @@ func setup(p_net: RoadNetwork, p_routes: StrategicRoutes, p_terrain: Terrain3D, 
 
 func _on_changed(_rect: Rect2) -> void:
 	_dirty = true
+	_fail_cache.clear()
 
 
 ## Structures were built or removed: road vertices disabled because a structure stood on them
 ## are tried again.
 func _on_structures_changed(_rect: Rect2) -> void:
+	_fail_cache.clear()
 	for id in _disabled:
 		if astar.has_point(id):
 			astar.set_point_disabled(id, false)
@@ -101,6 +127,10 @@ func ensure_built() -> void:
 		for r: RoadNetwork.Road in net.all_roads():
 			for id in _ids_of[r.key]:
 				_link_junctions(id)
+		repaired_gaps.clear()
+		for r: RoadNetwork.Road in net.all_roads():
+			_repair_gap_ends(r)
+		_compute_components()
 		built = true
 		_dirty = false
 		build_ms = (Time.get_ticks_usec() - t0) / 1000.0
@@ -118,6 +148,8 @@ func _sync_built() -> void:
 			_add_road(r)
 			for id in _ids_of[r.key]:
 				_link_junctions(id)
+			_repair_gap_ends(r)
+	_compute_components()
 
 
 func node_count() -> int:
@@ -187,9 +219,73 @@ func _link_junctions(id: int) -> void:
 			astar.connect_points(id, other, true)
 
 
+## Components of the graph (BFS over the AStar3D connections), the largest is the main network.
+func _compute_components() -> void:
+	_comp_of.clear()
+	var sizes := {}
+	var next := 0
+	for id: int in astar.get_point_ids():
+		if _comp_of.has(id):
+			continue
+		var stack: Array[int] = [id]
+		_comp_of[id] = next
+		var n := 0
+		while not stack.is_empty():
+			var cur: int = stack.pop_back()
+			n += 1
+			for nb: int in astar.get_point_connections(cur):
+				if not _comp_of.has(nb):
+					_comp_of[nb] = next
+					stack.append(nb)
+		sizes[next] = n
+		next += 1
+	_main_comp = -1
+	var best := 0
+	for k in sizes:
+		if sizes[k] > best:
+			best = sizes[k]
+			_main_comp = k
+
+
+## A road end (first / last vertex) that is not joined to any other road: the nearest vertex of another road within GAP_FIX_M
+## (and GAP_FIX_DY in height) gets a link. The router graph only; the road meshes stay as generated.
+func _repair_gap_ends(r: RoadNetwork.Road) -> void:
+	var ids: PackedInt32Array = _ids_of.get(r.key, PackedInt32Array())
+	if ids.size() < 2:
+		return
+	for end_id: int in [ids[0], ids[ids.size() - 1]]:
+		var joined := false
+		for nb: int in astar.get_point_connections(end_id):
+			if _node_road[nb] != r:
+				joined = true
+		if joined:
+			continue
+		var p := astar.get_point_position(end_id)
+		var c := Vector2i(floori(p.x / HASH), floori(p.z / HASH))
+		var best := -1
+		var best_d := GAP_FIX_M
+		for dx in range(-3, 4):
+			for dz in range(-3, 4):
+				for other: int in _cells.get(c + Vector2i(dx, dz), []):
+					var rr: RoadNetwork.Road = _node_road[other]
+					if rr == null or rr == r:
+						continue
+					var q := astar.get_point_position(other)
+					if absf(q.y - p.y) > GAP_FIX_DY:
+						continue
+					var d := Vector2(p.x - q.x, p.z - q.z).length()
+					if d < best_d:
+						best_d = d
+						best = other
+		if best >= 0:
+			astar.connect_points(end_id, best, true)
+			var rr2: RoadNetwork.Road = _node_road[best]
+			repaired_gaps.append({"road": r.name, "to_road": rr2.name, "gap_m": best_d, "at": (p + astar.get_point_position(best)) * 0.5})
+
+
 ## The closest graph vertices to p, at most `count`, on different roads, within `radius`
-## (flat distance): [{id, pos, dist, road}].
-func nearest_nodes(p: Vector3, count: int, radius: float) -> Array:
+## (flat distance): [{id, pos, dist, road}]. `accept` (optional Callable(id, pos) -> bool) filters vertices first.
+func nearest_nodes(p: Vector3, count: int, radius: float, accept := Callable(), distinct := true) -> Array:
 	var found: Array = []
 	var seen_roads := {}
 	var rings := ceili(radius / HASH)
@@ -209,6 +305,8 @@ func nearest_nodes(p: Vector3, count: int, radius: float) -> Array:
 		for o in offs:
 			for id: int in _cells.get(c + o, []):
 				var q := astar.get_point_position(id)
+				if accept.is_valid() and not accept.call(id, q):
+					continue  # filtered here, so the early stop below counts only usable vertices
 				cand.append([Vector2(p.x - q.x, p.z - q.z).length(), id])
 		# Stop once enough candidates exist and every farther ring is beyond the best of them.
 		if cand.size() >= count * 4:
@@ -218,13 +316,69 @@ func nearest_nodes(p: Vector3, count: int, radius: float) -> Array:
 		if e[0] > radius:
 			break
 		var rd: RoadNetwork.Road = _node_road[e[1]]
-		if rd == null or seen_roads.has(rd.key):
+		if rd == null or (distinct and seen_roads.has(rd.key)):
 			continue
 		seen_roads[rd.key] = true
 		found.append({"id": e[1], "pos": astar.get_point_position(e[1]), "dist": e[0], "road": rd})
 		if found.size() >= count:
 			break
 	return found
+
+
+## Vertices a vehicle may enter the roads from near p: the nearest on distinct roads (as before) and a few more along the
+## nearest road, spaced 30 m apart within 300 m - the vertex 16 m away may sit below a bank the vehicle cannot climb while the one
+## 50 m along the road is easy.
+func _enter_candidates(p: Vector3, free: Callable) -> Array:
+	var out := nearest_nodes(p, CANDIDATES, SNAP_RADIUS, free)
+	var more := nearest_nodes(p, 40, 160.0, free, false)
+	for m: Dictionary in more:
+		var far_enough := true
+		for o: Dictionary in out:
+			if Vector2(o.pos.x - m.pos.x, o.pos.z - m.pos.z).length() < 30.0:
+				far_enough = false
+				break
+		if far_enough and out.size() < CANDIDATES + 4:
+			out.append(m)
+	return out
+
+
+## The candidate list always holds a vertex of the main road network when one lies within MAIN_SNAP_RADIUS: a village at the end of a
+## few unconnected streets is reached through the nearest road of the network, the last stretch is driven across country.
+func _with_main(list: Array, p: Vector3, free: Callable) -> Array:
+	if _main_comp < 0:
+		return list
+	for n: Dictionary in list:
+		if _comp_of.get(n.id, -1) == _main_comp:
+			return list
+	var main_only := func(id: int, pos: Vector3) -> bool:
+		return _comp_of.get(id, -1) == _main_comp and free.call(id, pos)
+	return list + nearest_nodes(p, 2, MAIN_SNAP_RADIUS, main_only)
+
+
+## Distance (m) from p to the nearest vertex of the main road network, -1 when it is farther than max_m.
+func main_network_distance(p: Vector3, max_m: float) -> float:
+	ensure_built()
+	var main_only := func(id: int, _pos: Vector3) -> bool:
+		return _comp_of.get(id, -1) == _main_comp
+	var near := nearest_nodes(p, 1, max_m, main_only)
+	return near[0].dist if not near.is_empty() else -1.0
+
+
+## Can a vehicle get from p onto the road network (the cross-country leg to one of the nearest road vertices)? A road route is
+## worth nothing if the vehicle cannot enter it: this is the check for a parking spot, a dock or an assembly point.
+## {ok, dist, node, pos} or {ok: false, reason}.
+func access_to_road(p: Vector3, def: VehicleDefs.Def) -> Dictionary:
+	ensure_built()
+	var free := func(_id: int, pos: Vector3) -> bool:
+		return structures == null or not structures.blocks_point(Vector2(pos.x, pos.z), def.collide_r + 0.3)
+	var cands := _with_main(_enter_candidates(p, free), p, free)
+	if cands.is_empty():
+		return {"ok": false, "reason": "no road within %d m" % roundi(SNAP_RADIUS)}
+	for a: Dictionary in cands:
+		var leg := _leg(p, a.pos, def)
+		if leg.ok:
+			return {"ok": true, "dist": a.dist, "node": a.id, "pos": a.pos, "leg_m": _length(leg.pts)}
+	return {"ok": false, "reason": "no drivable way onto the road (nearest road %d m away: water, cliffs or structures in the way)" % roundi(cands[0].dist)}
 
 
 # --- Planning ---------------------------------------------------------------------------
@@ -234,7 +388,19 @@ func nearest_nodes(p: Vector3, count: int, radius: float) -> Array:
 func plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 	var t0 := Time.get_ticks_usec()
 	ensure_built()
+	# A route that failed is not searched again for FAIL_CACHE_S (a failed search costs up to a second on bad ground: every
+	# leg attempt is a grid search); the key is the two places on a 25 m grid and the vehicle type. Cleared when roads or
+	# structures change.
+	var key := "%d,%d>%d,%d:%s" % [roundi(from.x / 25.0), roundi(from.z / 25.0), roundi(to.x / 25.0), roundi(to.z / 25.0), def.id]
+	var now_ms := Time.get_ticks_msec()
+	if _fail_cache.has(key) and now_ms - int(_fail_cache[key].t) < FAIL_CACHE_S * 1000:
+		var cached: Dictionary = _fail_cache[key].res.duplicate()
+		cached["ms"] = 0.0
+		cached["cached"] = true
+		return cached
 	var res := _plan(from, to, def)
+	if not res.ok:
+		_fail_cache[key] = {"t": now_ms, "res": res}
 	res["ms"] = (Time.get_ticks_usec() - t0) / 1000.0
 	last_plan_ms = res.ms
 	plans += 1
@@ -252,31 +418,43 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 	# 1. Cross-country all the way.
 	var direct := _leg(from, to, def)
 	if direct.ok:
-		cands.append({"cost": _length(direct.pts) * OFFROAD_COST, "legs": [direct], "road": [], "names": []})
+		cands.append({"cost": _length(direct.pts) * def.offroad_factor, "legs": [direct], "road": [], "names": []})
 	# 2. Via roads: a few road vertices near each end, cheapest road cost first.
-	var a_list := nearest_nodes(from, CANDIDATES, SNAP_RADIUS)
-	var b_list := nearest_nodes(to, CANDIDATES, SNAP_RADIUS)
+	# Road vertices inside a structure (a base's perimeter or buildings stand on the road that leads into it) cannot be entered
+	# from, or left to: the nearest *free* vertices are the candidates, the cross-country leg (which knows the footprints and
+	# finds a gate) does the rest.
+	var free := func(_id: int, pos: Vector3) -> bool:
+		return structures == null or not structures.blocks_point(Vector2(pos.x, pos.z), def.collide_r + 0.3)
+	var a_list := _with_main(_enter_candidates(from, free), from, free)
+	var b_list := _with_main(_enter_candidates(to, free), to, free)
 	var combos: Array = []
 	for a: Dictionary in a_list:
 		for b: Dictionary in b_list:
-			var ids := _clear_path(a.id, b.id, def)
-			if ids.is_empty():
+			var rp := _road_path(a.id, b.id, def)
+			if rp.is_empty():
 				continue
-			var cost: float = _path_cost(ids) + (a.dist + b.dist) * OFFROAD_COST
-			combos.append({"cost": cost, "ids": ids, "a": a, "b": b})
+			var ids: PackedInt64Array = rp.ids
+			var cost: float = _path_cost(ids) + (a.dist + b.dist) * def.offroad_factor + float(rp.gap_m) * def.offroad_factor
+			combos.append({"cost": cost, "ids": ids, "gaps": rp.gaps, "a": a, "b": b})
 	combos.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return x.cost < y.cost)
 	var tried := 0
+	var bad_a := {}  # vertices whose cross-country leg already failed: the other combos using them are skipped
+	var bad_b := {}
 	var why: Array = ["direct %s" % direct.ok, "road candidates %d/%d, combos %d" % [a_list.size(), b_list.size(), combos.size()]]
 	for cb: Dictionary in combos:
-		if tried >= 3:
+		if tried >= 4:
 			break
+		if bad_a.has(cb.a.id) or bad_b.has(cb.b.id):
+			continue
 		tried += 1
 		var la := _leg(from, cb.a.pos, def)
 		if not la.ok:
+			bad_a[cb.a.id] = true
 			why.append("start leg %.0f m failed" % cb.a.dist)
 			continue
 		var lb := _leg(cb.b.pos, to, def)
 		if not lb.ok:
+			bad_b[cb.b.id] = true
 			why.append("end leg %.0f m failed" % cb.b.dist)
 			continue
 		var road_pts := PackedVector3Array()
@@ -286,8 +464,8 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 			var rd: RoadNetwork.Road = _node_road[id]
 			if rd and not names.has(rd.name):
 				names.append(rd.name)
-		var cost: float = _path_cost(cb.ids) + (_length(la.pts) + _length(lb.pts)) * OFFROAD_COST
-		cands.append({"cost": cost, "legs": [la, lb], "road": cb.ids, "names": names, "road_pts": road_pts})
+		var cost: float = _path_cost(cb.ids) + (_length(la.pts) + _length(lb.pts)) * def.offroad_factor
+		cands.append({"cost": cost, "legs": [la, lb], "road": cb.ids, "gaps": cb.gaps, "names": names, "road_pts": road_pts})
 		break
 	if cands.is_empty():
 		var f := _fail("No drivable route (water, cliffs or structures in the way)")
@@ -297,24 +475,49 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 	return _assemble(cands[0], from, to, def)
 
 
-## The cheapest road path a -> b whose vertices are not inside structures: blocked vertices
-## are switched off and the search repeated (a perimeter wall across a road closes it).
-func _clear_path(a: int, b: int, def: VehicleDefs.Def) -> PackedInt64Array:
-	for _attempt in 8:
-		var ids := astar.get_id_path(a, b)
-		if ids.is_empty() or structures == null:
-			return ids
-		var bad: Array[int] = []
-		for id in ids:
-			var p := astar.get_point_position(id)
+## The cheapest road path a -> b. Road vertices inside a structure (a wall across the road, a base's buildings) are not a dead
+## end: the vehicle leaves the road before them and rejoins it behind them, so each blocked stretch is replaced by a
+## cross-country leg between the free vertices on both sides (the leg planner knows the footprints and finds a gate or goes
+## round). {ids, gaps: [{from, to, pts}], gap_m}, or {} when a stretch cannot be bypassed.
+func _road_path(a: int, b: int, def: VehicleDefs.Def) -> Dictionary:
+	var ids := astar.get_id_path(a, b)
+	if ids.is_empty():
+		return {}
+	var n := ids.size()
+	var blocked := PackedByteArray()
+	blocked.resize(n)
+	if structures != null:
+		for k in n:
+			var p := astar.get_point_position(ids[k])
 			if structures.blocks_point(Vector2(p.x, p.z), def.collide_r + 0.3):
-				bad.append(id)
-		if bad.is_empty():
-			return ids
-		for id in bad:
-			astar.set_point_disabled(id, true)
-			_disabled.append(id)
-	return PackedInt64Array()
+				blocked[k] = 1
+	var gaps: Array = []
+	var gap_m := 0.0
+	var k := 0
+	while k < n:
+		if blocked[k] == 0:
+			k += 1
+			continue
+		var j := k
+		while j + 1 < n and blocked[j + 1] == 1:
+			j += 1
+		if k == 0 or j == n - 1:
+			return {}
+		var leg := _leg(astar.get_point_position(ids[k - 1]), astar.get_point_position(ids[j + 1]), def)
+		if not leg.ok:
+			return {}
+		gaps.append({"from": k - 1, "to": j + 1, "pts": leg.pts})
+		gap_m += _length(leg.pts)
+		k = j + 1
+	return {"ids": ids, "gaps": gaps, "gap_m": gap_m}
+
+
+## A cross-country leg a -> b for a vehicle that has to get round something on its way (VehicleSim bypass): {ok, pts}.
+func bypass_leg(a: Vector3, b: Vector3, def: VehicleDefs.Def, clearance := BYPASS_CLEARANCE_M) -> Dictionary:
+	_extra = clearance
+	var r := _leg(a, b, def)
+	_extra = 0.0
+	return r
 
 
 func _fail(reason: String) -> Dictionary:
@@ -345,21 +548,56 @@ func _assemble(cand: Dictionary, from: Vector3, to: Vector3, def: VehicleDefs.De
 	var off_cap := def.offroad_speed
 	_append(ctrl, cap, legs[0].pts, off_cap)
 	off_m += _length(legs[0].pts)
+	var lane_idx: Array = []  # [index in ctrl, road] of road points that may move to the right-hand lane
 	if not cand.road.is_empty():
 		var ids: PackedInt64Array = cand.road
-		for i in ids.size():
+		var gap_from := {}
+		var gap_to := {}
+		for g: Dictionary in cand.get("gaps", []):
+			gap_from[int(g.from)] = g
+			gap_to[int(g.to)] = true
+		var i := 0
+		var last_p := Vector3.INF
+		while i < ids.size():
 			var rd: RoadNetwork.Road = _node_road[ids[i]]
 			var c: float = def.class_speed.get(rd.cls, 12.0) if not rd.built else 9.0
 			var p := astar.get_point_position(ids[i])
 			if ctrl.size() > 0 and Vector2(ctrl[-1].x - p.x, ctrl[-1].z - p.z).length() < 1.0:
 				cap[cap.size() - 1] = maxf(cap[cap.size() - 1], c)
+			else:
+				ctrl.append(p)
+				cap.append(c)
+				if last_p.is_finite() and not gap_to.has(i):
+					road_m += Vector2(p.x - last_p.x, p.z - last_p.z).length()
+				var near_end := i < 2 or i >= ids.size() - 2 or gap_to.has(i) or gap_from.has(i) or gap_to.has(i - 1) or gap_from.has(i + 1)
+				if not near_end:
+					lane_idx.append([ctrl.size() - 1, rd])
+			last_p = p
+			if gap_from.has(i):
+				var g: Dictionary = gap_from[i]
+				_append(ctrl, cap, g.pts, off_cap)
+				off_m += _length(g.pts)
+				last_p = Vector3.INF
+				i = int(g.to)
 				continue
-			ctrl.append(p)
-			cap.append(c)
-			if i > 0:
-				road_m += Vector2(p.x - astar.get_point_position(ids[i - 1]).x, p.z - astar.get_point_position(ids[i - 1]).z).length()
+			i += 1
 		_append(ctrl, cap, legs[1].pts, off_cap)
 		off_m += _length(legs[1].pts)
+	# Drive on the right: road points move to the right of the direction of travel (half a lane, at most 2 m) on roads wide
+	# enough for two lanes, so two vehicles meeting on a road pass each other instead of blocking each other.
+	var shifted := ctrl.duplicate()
+	for e: Array in lane_idx:
+		var idx: int = e[0]
+		var rd2: RoadNetwork.Road = e[1]
+		if rd2.width < LANE_MIN_WIDTH or idx <= 0 or idx >= ctrl.size() - 1:
+			continue
+		var f := Vector3(ctrl[idx + 1].x - ctrl[idx - 1].x, 0.0, ctrl[idx + 1].z - ctrl[idx - 1].z)
+		if f.length() < 0.5:
+			continue
+		f = f.normalized()
+		var lane := minf(rd2.width * 0.2, LANE_OFFSET_M)
+		shifted[idx] = ctrl[idx] + Vector3(-f.z, 0.0, f.x) * lane
+	ctrl = shifted
 	# Cross-country points that coincide with a road vertex take the road's ceiling.
 	var pts := PackedVector3Array()
 	var caps := PackedFloat32Array()
@@ -432,9 +670,9 @@ func line_ok(a: Vector3, b: Vector3, def: VehicleDefs.Def) -> bool:
 		if not is_nan(prev_h) and absf(h - prev_h) / maxf(step, 0.1) > def.max_grade:
 			return false
 		prev_h = h
-		if structures and (structures.blocks_point(Vector2(p.x, p.z), def.circle_r) or structures.is_wet(p.x, p.z)):
+		if structures and (structures.blocks_point(Vector2(p.x, p.z), def.circle_r + _extra) or structures.is_wet(p.x, p.z)):
 			return false
-		if _near_parked(p.x, p.z, def.circle_r):
+		if _near_parked(p.x, p.z, def.circle_r + _extra):
 			return false
 	return true
 
@@ -509,9 +747,9 @@ func _local_plan(a: Vector3, b: Vector3, def: VehicleDefs.Def) -> Dictionary:
 			var cx := lo.x + (x + 0.5) * LEG_CELL
 			var cz := lo.y + (z + 0.5) * LEG_CELL
 			if not bad and structures:
-				bad = structures.blocks_point(Vector2(cx, cz), def.circle_r) or structures.is_wet(cx, cz)
+				bad = structures.blocks_point(Vector2(cx, cz), def.circle_r + _extra) or structures.is_wet(cx, cz)
 			if not bad and not parked_circles.is_empty():
-				bad = _near_parked(cx, cz, def.circle_r)
+				bad = _near_parked(cx, cz, def.circle_r + _extra)
 			if bad:
 				blocked[z * nx + x] = 1
 				grid.set_point_solid(Vector2i(x, z), true)

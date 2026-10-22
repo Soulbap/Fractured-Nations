@@ -139,4 +139,21 @@ static func _fortify(demo: CoreDemo, hq: ObjectiveState) -> void:
 		for seg: Array in [[a, mid - dir * gap], [mid + dir * gap, b]]:
 			var p0: Vector2 = seg[0]
 			var p1: Vector2 = seg[1]
-			cs.add_line(&"hesco", PackedVector3Array([demo.on_ground(c.x + p0.x, c.z + p0.y, 0.0), demo.on_ground(c.x + p1.x, c.z + p1.y, 0.0)]))
+			# A road that crosses the perimeter keeps its way through: the wall is left open there (a gate), else no vehicle
+			# could drive in or out of the HQ (found by the AI-WAR-LOGISTICS-01 exit test).
+			var length := p0.distance_to(p1)
+			var run_start := -1.0
+			var t := 0.0
+			while t <= length + 0.01:
+				var q := p0.lerp(p1, t / maxf(length, 0.01))
+				var open := demo.sim.state.roads.on_road(Vector3(c.x + q.x, 0.0, c.z + q.y), 6.0)
+				if not open and run_start < 0.0:
+					run_start = t
+				if (open or t >= length) and run_start >= 0.0:
+					var run_end := t if open else length
+					if run_end - run_start >= 3.0:
+						var r0 := p0.lerp(p1, run_start / maxf(length, 0.01))
+						var r1 := p0.lerp(p1, run_end / maxf(length, 0.01))
+						cs.add_line(&"hesco", PackedVector3Array([demo.on_ground(c.x + r0.x, c.z + r0.y, 0.0), demo.on_ground(c.x + r1.x, c.z + r1.y, 0.0)]))
+					run_start = -1.0
+				t += 1.0

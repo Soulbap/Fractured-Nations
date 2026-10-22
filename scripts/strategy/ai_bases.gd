@@ -27,8 +27,8 @@ const BUILD_TIME_S := {
 const MIN_GAP_M := 7.0
 ## The starting compound: [type, local x, local z] in a frame whose -Z is the front of the buildings.
 const START_LAYOUT := [
-	[&"vehicle_depot", -38.0, -22.0], [&"supply_depot", 8.0, -22.0], [&"fuel_point", 38.0, -20.0],
-	[&"hq_building", 0.0, 12.0], [&"barracks_block", -36.0, 12.0], [&"ammo_magazine", 38.0, 10.0],
+	[&"vehicle_depot", -50.0, -30.0], [&"supply_depot", 6.0, -30.0], [&"fuel_point", 52.0, -28.0],
+	[&"hq_building", 0.0, 32.0], [&"barracks_block", -48.0, 32.0], [&"ammo_magazine", 52.0, 30.0],
 ]
 
 var ws: WarSim
@@ -75,7 +75,7 @@ func create_start_base(f: FactionState, anchor: Vector3, toward: Vector3) -> Dic
 				c.y = ws._ground(c).y
 				for yaw: float in [0.0, PI * 0.5, PI, -PI * 0.5]:
 					# The yard lies in front of the buildings (local -Z): a road must pass within 90 m of its middle.
-					if need_road and sim.state.roads.nearest(c + Basis(Vector3.UP, yaw) * Vector3(-15.0, 0.0, -50.0), 90.0, 0, 0.0).is_empty():
+					if need_road and sim.state.roads.nearest(c + Basis(Vector3.UP, yaw) * Vector3(-15.0, 0.0, -58.0), 90.0, 0, 0.0).is_empty():
 						continue
 					var plan := _plan_layout(c, yaw)
 					if plan.size() > best_plan.size():
@@ -128,7 +128,7 @@ func create_start_base(f: FactionState, anchor: Vector3, toward: Vector3) -> Dic
 ## ({c: [x, z], yaw, h: [half x, half z]}), applied by the vegetation streamer.
 func _clear_yard(center: Vector3, yaw: float) -> void:
 	var basis := Basis(Vector3.UP, yaw)
-	var yard := center + basis * Vector3(-15.0, 0.0, -50.0)
+	var yard := center + basis * Vector3(-15.0, 0.0, -58.0)
 	var list: Array = [{"c": [yard.x, yard.z], "yaw": -yaw, "h": [42.0, 28.0], "trees": true}]
 	var road := sim.state.roads.nearest(yard, 100.0, 0, 0.0)
 	if not road.is_empty():
@@ -155,7 +155,25 @@ func _plan_layout(center: Vector3, yaw: float) -> Array:
 		if not chk.ok:
 			continue
 		out.append({"type": e[0], "pos": chk.xform.origin, "yaw": yaw})
+	# A wall (the HQ's HESCO perimeter) must not cross the compound, its yard or the lane out: the vehicles could not leave
+	# (found with the exit test: trucks stopped at a wall that cut the yard).
+	if out.size() == START_LAYOUT.size() and _walled(center, basis):
+		return []
 	return out
+
+
+## True when a structure stands on the compound's footprint including the yard in front of it (sampled on a 6 m grid).
+func _walled(center: Vector3, basis: Basis) -> bool:
+	var x := -78.0
+	while x <= 78.0:
+		var z := -82.0
+		while z <= 52.0:
+			var q: Vector3 = center + basis * Vector3(x, 0.0, z)
+			if _sm().blocks_point(Vector2(q.x, q.z), 2.5):
+				return true
+			z += 6.0
+		x += 6.0
+	return false
 
 
 # --- Later construction ------------------------------------------------------------------------------------------------

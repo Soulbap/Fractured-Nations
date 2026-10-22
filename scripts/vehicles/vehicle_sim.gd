@@ -21,6 +21,8 @@ const STUCK_S := 5.0
 ## Vehicles ordered together farther than this drive as a convoy.
 const CONVOY_MIN_M := 600.0
 const MAX_RECOVERIES := 4
+## Detours round obstacles allowed per order.
+const MAX_BYPASSES := 3
 
 var sim: WorldSim
 var router := VehicleRouter.new()
@@ -33,7 +35,7 @@ var ids: Array[int] = []
 var ticks := 0
 var tick_usec := 0
 ## Orders given / failed / arrived (statistics for tests and the report).
-var stats := {"ordered": 0, "arrived": 0, "failed": 0, "recovered": 0, "replanned": 0}
+var stats := {"ordered": 0, "arrived": 0, "failed": 0, "recovered": 0, "replanned": 0, "bypassed": 0}
 ## Last obstacle-scan result per vehicle id: free distance ahead along the route (m).
 var _gap := {}
 var _on_road := {}
@@ -195,9 +197,11 @@ func order_drive(id: int, target: Vector3, from_transport := false) -> Dictionar
 	u.order_target = t
 	u.move_state = UnitState.MoveState.MOVING
 	v.recoveries = 0
+	v.bypasses = 0
 	v.replans = 0
 	v.stuck_s = 0.0
 	v.reverse_left = 0.0
+	v.reverse_goal = Vector3.INF
 	v.reason = ""
 	stats.ordered += 1
 	sim.state.order_changed.emit(u)
@@ -408,8 +412,18 @@ func _step(u: UnitState, dt: float) -> void:
 		v.reverse_left -= dt
 		target_speed = -2.5
 		rate = d.accel
-		# Back out on opposite lock, so the nose swings away from what it hit.
-		steer_target = -signf(v.steer if absf(v.steer) > 0.05 else 1.0) * d.max_steer
+		if v.reverse_goal.is_finite():
+			# Back out turning the nose towards where the route goes on (a three-point turn in a yard): reversing flips
+			# the steering sense, and the manoeuvre ends once the vehicle points roughly the right way.
+			var off := v.reverse_goal - u.position
+			var err := wrapf(atan2(-off.x, -off.z) - u.yaw, -PI, PI)
+			# Straight back first: on full lock the nose swings into the wall it stands against and nothing moves.
+			steer_target = -signf(err) * d.max_steer if v.reverse_left < 3.5 else 0.0
+			if absf(err) < 0.45:
+				v.reverse_left = 0.0
+		else:
+			# Back out on opposite lock, so the nose swings away from what it hit.
+			steer_target = -signf(v.steer if absf(v.steer) > 0.05 else 1.0) * d.max_steer
 	elif u.order == UnitState.Order.MOVE and v.route.size() >= 2:
 		following = true
 		var res := _follow(u, v, d, dt)
@@ -542,6 +556,10 @@ func _point_at(v: VehicleState, i: int, dist: float) -> Vector3:
 
 # --- Movement ----------------------------------------------------------------------------------
 
+## Why a vehicle last stopped in place in _integrate (diagnostics only).
+var _block_cause := {}
+
+
 func _integrate(u: UnitState, v: VehicleState, d: VehicleDefs.Def, dt: float) -> void:
 	var yaw_rate := v.speed / d.wheelbase * tan(v.steer)
 	var new_yaw := u.yaw + yaw_rate * dt
@@ -555,6 +573,7 @@ func _integrate(u: UnitState, v: VehicleState, d: VehicleDefs.Def, dt: float) ->
 		var was_in := _blocked_at(d, u.position, u.yaw)
 		if not was_in and _blocked_at(d, np, new_yaw):
 			blocked = true
+			_block_cause[u.id] = "structure"
 	if not blocked and (absf(np.x) > MAP_LIMIT or absf(np.z) > MAP_LIMIT):
 		blocked = true
 	# The player's vehicle never drives through another vehicle: a footprint that is clear now
@@ -567,6 +586,7 @@ func _integrate(u: UnitState, v: VehicleState, d: VehicleDefs.Def, dt: float) ->
 		var front := np + fwd * (d.length * 0.5 * (1.0 if moving_fwd else -1.0))
 		if is_nan(sim.state.roads.deck_height(front)) and sim.structures.is_wet(front.x, front.z):
 			blocked = true
+			_block_cause[u.id] = "water"
 	if blocked:
 		v.speed = 0.0
 		u.velocity = Vector3.ZERO
@@ -702,6 +722,13 @@ func _check_stuck(u: UnitState, v: VehicleState, d: VehicleDefs.Def, target_spee
 		if v.recoveries > 0 and v.odometer - v.stuck_s > 40.0:
 			v.recoveries = 0
 		return
+	# Something in the way (a wall, a parked vehicle): the vehicle does not wait for it to go away, it drives round it and back
+	# onto its route (a detour planned on the local grid, which knows footprints, slopes, water and the parked vehicles).
+	if v.status == VehicleState.Status.WAITING and v._progress_t >= 3.0 and v.bypasses < MAX_BYPASSES and v.convoy_id < 0:
+		if _try_bypass(u, v, d):
+			v._progress_t = 0.0
+			v._progress_ref = u.position
+			return
 	var limit := STUCK_S if v.status != VehicleState.Status.WAITING else STUCK_S * 6.0
 	if v._progress_t < limit:
 		return
@@ -715,8 +742,13 @@ func _check_stuck(u: UnitState, v: VehicleState, d: VehicleDefs.Def, target_spee
 		return
 	v.recoveries += 1
 	v.stuck_s = v.odometer
-	if v.recoveries <= 2:
-		v.reverse_left = 3.5
+	# Recoveries alternate: back out first (straight back, then turning towards the route), then a detour from the freed
+	# position, then back out again. A detour started wedged against a corner only swings the vehicle into it.
+	if v.recoveries % 2 == 0 and v.bypasses < MAX_BYPASSES and _try_bypass(u, v, d):
+		return
+	if v.recoveries <= 3:
+		v.reverse_left = 5.0
+		v.reverse_goal = _point_at(v, clampi(v.route_i, 0, maxi(v.route.size() - 2, 0)), 18.0) if v.route.size() >= 2 else Vector3.INF
 		v.reason = "Stuck: reversing"
 		stats.recovered += 1
 		_event(u, "stuck, reversing")
@@ -733,6 +765,71 @@ func _check_stuck(u: UnitState, v: VehicleState, d: VehicleDefs.Def, target_spee
 			_fail(u, "Path blocked: " + res.reason)
 	else:
 		_fail(u, "Path blocked: could not get free")
+
+
+## Drives round an obstacle on the route: the first route point 20-120 m ahead that is free becomes the goal of a cross-country
+## leg from where the vehicle stands; the leg replaces that stretch of the route (the rest is kept). Returns false when no
+## leg can be planned (then the old recovery - reversing, planning again - runs).
+func _try_bypass(u: UnitState, v: VehicleState, d: VehicleDefs.Def) -> bool:
+	var n := v.route.size()
+	if n < 4 or v.route_s.size() != n:
+		return false
+	var i := clampi(v.route_i, 0, n - 2)
+	_collect_parked(u)
+	# Rejoin points at least 35 m on: a truck cannot follow a tighter S-bend round a building without cutting its corner.
+	for ahead: float in [35.0, 55.0, 80.0, 120.0]:
+		var k := i
+		while k < n - 1 and v.route_s[k] - v.route_s[i] < ahead:
+			k += 1
+		if k >= n - 1 and ahead > 35.0:
+			break
+		var q := v.route[k]
+		if sim.structures and sim.structures.blocks_point(Vector2(q.x, q.z), d.collide_r + 0.6):
+			continue
+		if router._near_parked(q.x, q.z, d.circle_r):
+			continue
+		# Each failed detour clears the obstacle by more (the vehicle cut the corner of the last one).
+		var leg := router.bypass_leg(u.position, q, d, router.BYPASS_CLEARANCE_M + 1.6 * float(v.bypasses))
+		if not leg.ok or leg.pts.size() < 2:
+			continue
+		var detour := _resample(leg.pts, 3.0)
+		var new_route := PackedVector3Array(detour)
+		var new_cap := PackedFloat32Array()
+		for _j in detour.size():
+			new_cap.append(d.offroad_speed)
+		for j in range(k + 1, n):
+			new_route.append(v.route[j])
+			new_cap.append(v.route_cap[j] if j < v.route_cap.size() else d.offroad_speed)
+		v.route = new_route
+		v.route_cap = new_cap
+		v.route_i = 0
+		prepare_route(v)
+		v.bypasses += 1
+		# Standing close in front of the obstacle the vehicle first backs off a few metres, so it can swing round it.
+		if float(_gap.get(u.id, [0, INF])[1]) < 9.0:
+			v.reverse_left = 2.2
+			v.reverse_goal = Vector3.INF
+		v.reason = "Detour round an obstacle"
+		stats.bypassed += 1
+		_event(u, "drives round an obstacle (%.0f m detour, rejoins the route %.0f m ahead)" % [RoadNetwork.length_of(leg.pts), ahead])
+		return true
+	return false
+
+
+## A polyline resampled to points `step` metres apart (heights from the ground).
+func _resample(pts: PackedVector3Array, step: float) -> PackedVector3Array:
+	var out := PackedVector3Array()
+	out.append(pts[0])
+	for k in range(1, pts.size()):
+		var a := pts[k - 1]
+		var b := pts[k]
+		var len := Vector2(b.x - a.x, b.z - a.z).length()
+		var m := maxi(1, ceili(len / step))
+		for s in range(1, m + 1):
+			var p := a.lerp(b, float(s) / m)
+			p.y = ground_at(p)
+			out.append(p)
+	return out
 
 
 func _fail(u: UnitState, reason: String) -> void:
@@ -770,6 +867,7 @@ func diagnose(u: UnitState) -> Dictionary:
 	out["gap_cached"] = _gap.get(u.id, [0, INF])[1]
 	out["profile_here"] = snappedf(v.profile[mini(v.route_i, v.profile.size() - 1)], 0.1) if not v.profile.is_empty() else -1.0
 	out["yaw"] = snappedf(u.yaw, 0.01)
+	out["block_cause"] = _block_cause.get(u.id, "")
 	out["first_route"] = [snappedf(v.route[0].x - u.position.x, 0.1), snappedf(v.route[0].z - u.position.z, 0.1)] if not v.route.is_empty() else []
 	var near := []
 	for oid in ids:
