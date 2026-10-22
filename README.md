@@ -3,7 +3,15 @@
 Modern military sandbox in Godot 4. One large, continuous 3D world shared by the FPS,
 RTS and 2D-map views.
 
-Newest: **AI-WAR-LOGISTICS-01** (branch `feature/ai-war-logistics-01`) — AI factions have bases and income, recruit, take
+**Project standard (PROJECT-CONSOLIDATION-01):** one Godot project in the folder
+`C:\Users\Hafnor\Desktop\Game Dev\fractured-nations`, one active development branch **`develop`** (`main` is the
+stable branch, updated only with the product owner's approval), one canonical development world **`ref_20km`**
+(main scene `scenes/game/world_ref_20km.tscn`, checked with `worlds/ref_20km.manifest.json`). All earlier feature
+branches are contained in `develop` and stay as history. Next milestone: **NAVIGATION N1** (baseline, off-road and
+obstacle navigation). See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
+[CLAUDE.md](CLAUDE.md).
+
+Newest gameplay: **AI-WAR-LOGISTICS-01** (merged into `develop`) — AI factions have bases and income, recruit, take
 vehicles, move squads in convoys over a road network that was audited and repaired (`--road-audit`, overlay **F8**), supply
 and counterattack; see [docs/AI-WAR-LOGISTICS-01_REPORT.md](docs/AI-WAR-LOGISTICS-01_REPORT.md).
 
@@ -160,9 +168,11 @@ All addons are committed to the repository. Nothing has to be installed separate
 
 ## Opening the project
 
-1. Clone the repository and check out the branch you want (`main` is the stable baseline,
-   `feature/world-tech-01` has the prototype).
-2. Open `project.godot` with Godot 4.7.2. The first import takes about a minute.
+1. Clone the repository and check out `develop` (the active development branch; `main` is the
+   stable branch). On the development machine the project lives in
+   `C:\Users\Hafnor\Desktop\Game Dev\fractured-nations`, next to the Godot executables.
+2. Put the canonical world data in place (it is not in git, see *Reference world* below) and open
+   `project.godot` with Godot 4.7.2. The first import takes about a minute.
 3. If the editor shows errors about Terrain3D on first open, restart the editor once.
    GDExtensions load at startup.
 
@@ -385,8 +395,20 @@ reference map (`docs/terrain01/reference_map_03.png`) with Nordic trees, rocks, 
 and road furniture from the project's Blender pipeline. See
 [docs/WORLD-TERRAIN-01_REPORT.md](docs/WORLD-TERRAIN-01_REPORT.md).
 
-Generated data (~2.4 GB) is not committed. Build it once (about 14 minutes; `--assets` also
-regenerates the Blender assets, whose outputs are committed):
+It is the **canonical development world**: the default for development, integration and tests,
+not a finished or locked map. Generated data (~2.4 GB, 540 files) is not committed; the committed
+manifest `worlds/ref_20km.manifest.json` records every file's SHA-256 and role (source / generated /
+analysis / preview / editor metadata / config). Check a copy with
+
+```bash
+python tools/terrain_ref/world_manifest.py verify --ignore-editor-metadata
+```
+
+and re-create the manifest (`create --note "..."`) after an intended world change. The consolidated
+copy is backed up in `../fractured-nations-backups/2026-10-22_PROJECT-CONSOLIDATION-01/`; restore from
+there rather than rebuilding, because a rebuild is not bit-identical to the edited data. To build a
+world from scratch (about 14 minutes; `--assets` also regenerates the Blender assets, whose outputs
+are committed):
 
 ```bash
 bash tools/terrain_ref/build_ref_world.sh

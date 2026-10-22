@@ -4,39 +4,66 @@ Modern military sandbox in Godot 4.7.2 (Vulkan, Jolt, Terrain3D). User-facing ov
 launch instructions: [README.md](README.md). Chat language with the product owner is
 Norwegian; code, comments and docs are English.
 
-## Branch workflow
+## Project standard (PROJECT-CONSOLIDATION-01) — read this first
 
-- **`feature/ai-war-logistics-01` is the newest AI branch** (worktree `../fractured-nations-aiwar01`): AI-COMBAT-STRAT-01 +
-  AI-WAR-LOGISTICS-01 (AI bases and economy, mechanised operations and convoys, resupply, counterattacks, the road network
-  audit `--road-audit` / overlay F8 and the vehicle navigation fixes; report
-  [docs/AI-WAR-LOGISTICS-01_REPORT.md](docs/AI-WAR-LOGISTICS-01_REPORT.md)). Scenarios: `--ai-war-test [--only a_init,...,r_yard,r_obstacles,r_convoy,r_overlay,r_exit]`.
-  Prefer the short road scenarios (`r_yard`, `r_convoy`, `r_overlay`, minutes) over `r_drive` (20 km routes, ~20 minutes).
-- `feature/ai-combat-strat-01` is the baseline below it (worktree `../fractured-nations-aistrat01`):
-  `feature/ai-squad-01` + AI-COMBAT-STRAT-01 (coordinated multi-squad operations, withdrawal, the strategic
-  utility scorer, defence sectors; report [docs/AI-COMBAT-STRAT-01_REPORT.md](docs/AI-COMBAT-STRAT-01_REPORT.md)).
-  New AI milestones branch from it.
-- `feature/ai-squad-01` (worktree `../fractured-nations-aisquad01`) is the baseline below it:
-  `feature/ai-intel-01` + AI-SQUAD-01 (fire teams, suppression, squad tactics, tactical RTS orders, cover props).
-  New AI milestones branch from it; the plan is [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md).
-- `feature/ai-intel-01` (worktree `../fractured-nations-aiintel01`) is the baseline below it:
-  `feature/integration-04` + AI-INTEL-01 / AI-OBS-01 (faction contact intelligence and the AI inspector).
-- `feature/integration-04` (worktree `../fractured-nations-integration04`) is the integration baseline below it:
-  `feature/world-integration-03` + `feature/logistics-01-base-02` (vehicles, transport, logistics, bases)
-  + `research/ai-architecture-01` (docs only), integrated in INTEGRATION-04. New milestones branch from
-  it (`feature/<milestone>`) and merge back into it or its successor. The AI plan is
-  [docs/AI_ROADMAP.md](docs/AI_ROADMAP.md); the next milestone is AI-INTEL-01.
-- `feature/world-integration-03` (worktree `../fractured-nations-integration03`) is the previous baseline
-  and `feature/logistics-01-base-02` (worktree `../fractured-nations-logistics01`) its logistics branch;
-  both stay as history.
-- Do not continue parallel development on the old feature branches
-  (`feature/world-sandbox-01b`, `feature/character-01`, `feature/combat-*`, ...). They stay
-  as they are, with their worktrees, as history.
-- Use a git worktree per milestone (`../fractured-nations-<milestone>`). Generated, git-ignored
-  data (`worlds/ref_*`, `scenes/world/ref_*.tscn`, `.godot/`) is copied from an existing
-  worktree or rebuilt with `tools/terrain_ref/build_ref_world.sh` (about 14 min).
-- Nothing is merged into `main` without the product owner's explicit approval. Commit and
-  push milestone results; never force-push.
+- **One project, one folder:** all ordinary development happens in
+  `C:\Users\Hafnor\Desktop\Game Dev\fractured-nations` (this folder, the repository's main worktree).
+  It is the only active Godot game project. Check `git -C <this folder> branch --show-current` says
+  `develop` before you change anything; if you find yourself in a `../fractured-nations-<name>` folder,
+  you are in an old worktree kept as history — stop and move here.
+- **One active line: `develop`.** Work, commit and push on `develop`, in separate commits per logical
+  phase. `main` is the stable branch and is only updated (fast-forward from `develop`) with the
+  product owner's explicit approval. Never force-push, never rewrite pushed history.
+- **No permanent milestone branches and no new worktrees.** A milestone is a series of commits on
+  `develop` plus its report. A temporary branch is allowed for a risky experiment only; merge it back
+  into `develop` (ordinary merge) when it is done and do not leave it as a parallel game version. Do
+  not create worktrees or project copies without a concrete technical reason agreed with the product owner.
+- **Old branches stay as history.** Every earlier `feature/*` / `research/*` branch (up to
+  `feature/ai-war-logistics-01` @ `337c72f`) is contained in `develop`; their worktrees
+  (`../fractured-nations-*`) are only kept until the product owner approves removing them
+  (status: [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md)). Do not develop there.
+- **Session workflow:** open this project → read this file and the roadmap ([docs/AI_ROADMAP.md](docs/AI_ROADMAP.md),
+  the next milestone is **NAVIGATION N1**) → read the systems you will touch (owners below) → implement →
+  targeted tests + visual Godot validation → update the report / README → commit to `develop`.
 - Each milestone ends with a report in `docs/<MILESTONE>_REPORT.md` and an updated README.
+
+## Canonical development world: `ref_20km`
+
+- Main scene `res://scenes/game/world_ref_20km.tscn` (`project.godot` main scene) instances the generated
+  world scene `res://scenes/world/ref_20km.tscn`. Config `worlds/ref_20km/world_config.tres`
+  (`ReferenceWorldConfig`): currently 20 000 × 20 000 m centred on the origin, Terrain3D vertex spacing
+  1.953125 m, region size 1024, seed 3031. These are the current values, not limits: size, terrain, roads,
+  bridges, rivers, lakes, forests, settlements, bases and faction areas can all be changed in this project.
+- **Sources** (`worlds/ref_20km/source/`, written by `tools/terrain_ref/generate.py` from
+  `tools/terrain_ref/layout_ref03.json`): `height.r32`, `control.r32`, `color.rgba8`, `roads.json`,
+  `water.json`, `sites.json`, `vegetation.png`, `info.png`, `generation_stats.json`, `macro_height.npy`;
+  `playability.json` / `playability_map.png` come from `analyze.py`. **Generated** (by `tools/build_world.gd`
+  + `ReferenceWorldBuilder`): `terrain/` (Terrain3D regions), `vegetation/`, `water/`, `terrain_assets.tres`,
+  `terrain_material.tres`, `scenes/world/ref_20km.tscn` (bridges/culverts re-placed by
+  `tools/terrain_ref/rebuild_structures.gd`). Full rebuild: `tools/terrain_ref/build_ref_world.sh` (~14 min).
+- Everything except `world_config.tres` is git-ignored (2.4 GB). The committed manifest
+  `worlds/ref_20km.manifest.json` (SHA-256 of all 540 files) identifies the canonical copy:
+  `python tools/terrain_ref/world_manifest.py verify --ignore-editor-metadata` must say OK. After an
+  intended world change, re-create it (`... world_manifest.py create --note "<what changed>"`) and commit it.
+  Backup of the consolidated copy: `../fractured-nations-backups/2026-10-22_PROJECT-CONSOLIDATION-01/`.
+- **Do not regenerate the world to "repair" it**: the generated files carry later editor re-saves and
+  structure placement, so a rebuild is not bit-identical and can lose edits. Restore from the backup instead.
+- Other worlds: `worlds/test_2km` (tracked, small test world); `worlds/tile_*`, `real_20km`, `scale_4km`,
+  `edit_test_2km` in this folder are old git-ignored benchmark worlds (kept, not used by the game).
+
+## System owners (do not build parallel versions)
+
+`WorldSim` (tick, both tiers, abstract movement) · `WarSim` (faction strategy, operations; owns `OpCoordination`,
+`StrategicDecision`, `IntelSim`, `WarEconomy`, `AiBases`, `OpTransport`, `WarLogistics`, `StrategicRoutes`) ·
+`OperationState` (operation data, stages incl. transport stages) · `SquadControl` (squad orders, formation slots,
+route following / replanning) · `SquadTactics` + `SquadPositions` (tactical legs, flank, bound, posts) ·
+`CombatBrain` (perception, firing, cover reactions via `react_target`; never routes) · `SoldierBody` (near-tier
+body: NavigationAgent3D + RVO, stuck handling) · `DetailManager` + `AreaNavigation` (near tier, runtime navmesh
+around the observer) · `VehicleSim` (only vehicle mover) / `VehicleRouter` (vehicle routes over `RoadNetwork`) /
+`VehicleConvoy` / `VehicleTransport` · `RoadNetwork` (`WorldState.roads`, the only road data) ·
+`StrategicRoutes` (50 m world grid for infantry routes) · `StructureManager` / `ConstructionState` (structures,
+groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Navigation analysis and the N1 plan:
+[docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md).
 
 ## Architecture principles
 
@@ -146,7 +173,15 @@ Norwegian; code, comments and docs are English.
   (each resets its own state; results in `benchmarks/raw/ai_intel_test.json`). Strategic map developer keys:
   **I** AI inspector (cycles factions: their contact picture, last decisions, operations), **T** (with the
   inspector on) true squad positions, labelled TRUTH, click one to inspect that squad.
-- After adding `class_name` scripts or assets run `Godot ... --headless --path . --import` once.
+- AI-WAR-LOGISTICS-01 scenarios: `--ai-war-test [--only a_init,b_recruit,c_vehicle,d_mech,e_convoy,f_preop,g_delivery,h_shortage,i_counter,j_base_loss,l_player,m_save,n_long,o_war,m_move,m_march,m_haugen]`
+  and the road scenarios `--only r_yard,r_exit,r_lanes,r_offroad,r_gaps,r_obstacles,r_convoy,r_overlay` (minutes);
+  `r_drive` drives 20 km routes (~20 minutes, optional). `--road-audit` writes `benchmarks/raw/road_audit.json`.
+- After adding `class_name` scripts or assets run `Godot ... --headless --path . --import` once (two
+  "placeholder instance" SCRIPT ERRORs from VegetationMask / VegetationMeshDef during a headless import are known
+  and harmless).
+- `docs/combat_tech01/lab/` is an isolated COMBAT-TECH-01 experiment with its own `project.godot` (reference
+  material, incomplete: its third-party files were never committed). The editor skips that folder; it is not a
+  second game project.
 - A script that fails to compile makes a test hang until timeout; check the log head first.
 - Blender asset pipeline: `tools/blender/` (+Y forward, one joined mesh, origin on the ground,
   material names drive faction colours; character: `tools/blender/character/`, standard in

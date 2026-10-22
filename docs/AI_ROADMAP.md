@@ -7,7 +7,10 @@ comparison — not repeated here) with the code that actually exists on
 [INTEGRATION-04_REPORT.md](INTEGRATION-04_REPORT.md) §4). Where the research assumed the
 LOGISTICS-01 *plan*, this document uses the *implemented* names.
 
-**Status.** AI-INTEL-01 and AI-OBS-01 are **done** (branch `feature/ai-intel-01`, report
+**Status (PROJECT-CONSOLIDATION-01, 2026-10-22).** All AI milestones up to AI-WAR-LOGISTICS-01 are on the single
+development branch `develop` in the one project folder; the next milestone is **NAVIGATION N1** (§8).
+
+**Earlier status.** AI-INTEL-01 and AI-OBS-01 are **done** (branch `feature/ai-intel-01`, report
 [AI-INTEL-01_OBS-01_REPORT.md](AI-INTEL-01_OBS-01_REPORT.md)): factions hold a persistent, aging contact
 picture built from reports; strategic decisions read it; the map shows it and a developer inspector explains
 decisions and squads. **AI-SQUAD-01 is done** (branch `feature/ai-squad-01`, report [AI-SQUAD-01_REPORT.md](AI-SQUAD-01_REPORT.md)): fire teams, suppression, DEFEND / SUPPRESS / ASSAULT / FLANK / BOUND / REPOSITION / WITHDRAW / REGROUP, tactical RTS orders, four cover props. Everything else below is still planned. Next recommended: **AI-STRAT-01**.
@@ -301,12 +304,22 @@ in the research: one route per element, `AStarGrid2D.jumping_enabled` test, HPA*
 
 ## 8. How to start the next milestone without ambiguity
 
-* Branch from `feature/ai-intel-01` (worktree `../fractured-nations-<milestone>`).
-* **AI-SQUAD-01** (recommended next) touches `SquadControl` / `SquadState` and `CombatBrain._tactics`
-  (suppression, `suppress_at`), and reads `IntelSim.contacts_near` for flank / suppress targets. It must
-  keep the order of authority (player > operation > squad tactic > reaction): a tactic ends on any player
-  order, and squads aboard a vehicle never run one. It must **not** touch `scripts/vehicles/` or
-  `scripts/logistics/`.
-* Test set: `--ai-intel-test --only h_player,e_tiers,j_perf` (authority, tiers, cost), `--squad-test`,
-  `--combat-tactics-test`, `--sandbox-test --only war,persist`,
-  plus a new tactics scenario file in the `--ai-intel-test` style (each scenario resets its own state).
+* **Where:** the project folder `C:\Users\Hafnor\Desktop\Game Dev\fractured-nations` on branch `develop`
+  (PROJECT-CONSOLIDATION-01). No new milestone branch or worktree; commit each logical phase to `develop`.
+  The older "branch from feature/…" instructions in this document are history.
+* **Next milestone: NAVIGATION N1 — Baseline, Off-road & Obstacle Navigation Foundation.** It starts by
+  measuring before changing anything (route cost and count, replans, stuck squads and vehicles, bridge
+  crossings, off-road routes, routes round buildings and walls, near/far differences, CPU with several
+  operations, whether `CombatBrain` reactions trip the 25 s route-stall timer) and then covers, in later
+  phases: infantry navigation near and far from the player; off-road profiles per vehicle type (wheeled
+  truck / APC, tracked APC / tank, which do not exist yet); terrain and vegetation obstacles; buildings,
+  walls, gates and defence lines (a closed wall is blocked, an open gate is a passage, in both tiers);
+  roads, bridges and dynamic blockages; re-routing; consistent passability near and far; performance and
+  diagnostics. The existing systems are extended, not replaced: `StrategicRoutes`, `RoadNetwork`,
+  `VehicleRouter` (its 3 m local planner is the candidate shared local layer), `VehicleSim`,
+  `SquadControl`, `SquadTactics`, `CombatBrain`, `SoldierBody`, `AreaNavigation`. Analysis, gaps and
+  the planned acceptance scenarios: [PROJECT-CONSOLIDATION-01_REPORT.md](PROJECT-CONSOLIDATION-01_REPORT.md) §8.
+  No HPA*, flow fields or new navigation engine without a measured need.
+* Known navigation failure to start from: `--integration03-test --only base_nav` fails
+  `abstract_round_wall_into_base` (4 of 8 far-tier soldiers reach the base round a wall; identical on
+  `337c72f`, so it predates the consolidation).
