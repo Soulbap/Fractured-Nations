@@ -1,0 +1,3651 @@
+{
+  "world": "ref_20km",
+  "roads_json": {
+    "roads": 124,
+    "points": 30300,
+    "components": [
+      {
+        "roads": 90,
+        "names": [
+          "Rv1 vest-sørøst",
+          "Rv2 nord-øst",
+          "Fv nord-sentrum",
+          "Fv sentrum-sør",
+          "Fv sentrum-øst",
+          "Fv sentrum-vest",
+          "Fv sørvest",
+          "Fv sør-tverr"
+        ],
+        "km": 296.79
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Sentrum gate 20"
+        ],
+        "km": 0.45
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Sentrum gate 21"
+        ],
+        "km": 0.35
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Strand gate 2"
+        ],
+        "km": 0.21
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Verket gate 2"
+        ],
+        "km": 0.18
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Elvetun gate 1"
+        ],
+        "km": 0.17
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Vestli gate 1"
+        ],
+        "km": 0.18
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Bruvoll gate 1"
+        ],
+        "km": 0.16
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Elvebakken gate 1"
+        ],
+        "km": 0.16
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Kvernes gate 1"
+        ],
+        "km": 0.15
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Lia gate 1"
+        ],
+        "km": 0.15
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Ødegård gate 3"
+        ],
+        "km": 0.16
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Verket gate 3"
+        ],
+        "km": 0.16
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Østmark gate 2"
+        ],
+        "km": 0.15
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Grensen gate 2"
+        ],
+        "km": 0.15
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Bakken gate 2"
+        ],
+        "km": 0.15
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Vestvatn gate 1"
+        ],
+        "km": 0.15
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Nordvik gate 1"
+        ],
+        "km": 0.15
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Vestli gate 2"
+        ],
+        "km": 0.15
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Vestli gate 3"
+        ],
+        "km": 0.14
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Åsbygda gate 1"
+        ],
+        "km": 0.14
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Nordre gate 2"
+        ],
+        "km": 0.14
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Elvebakken gate 2"
+        ],
+        "km": 0.14
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Moen gate 2"
+        ],
+        "km": 0.15
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Østre gate 1"
+        ],
+        "km": 0.14
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Haugen gate 1"
+        ],
+        "km": 0.14
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Sørli gate 2"
+        ],
+        "km": 0.14
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Bakken gate 1"
+        ],
+        "km": 0.13
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Vestvatn gate 2"
+        ],
+        "km": 0.14
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Lia gate 2"
+        ],
+        "km": 0.13
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Kvernes gate 2"
+        ],
+        "km": 0.1
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Nordre gate 3"
+        ],
+        "km": 0.09
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Østby gate 3"
+        ],
+        "km": 0.08
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Nordre gate 1"
+        ],
+        "km": 0.05
+      },
+      {
+        "roads": 1,
+        "names": [
+          "Fjellfoten gate 2"
+        ],
+        "km": 0.05
+      }
+    ],
+    "ends": [
+      {
+        "road": "Rv1 vest-sørøst",
+        "class": "primary",
+        "end": "start",
+        "pos": [
+          -10000,
+          -5600
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Rv1 vest-sørøst",
+        "class": "primary",
+        "end": "end",
+        "pos": [
+          10000,
+          9000
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Rv2 nord-øst",
+        "class": "primary",
+        "end": "start",
+        "pos": [
+          -5800,
+          -10000
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Rv2 nord-øst",
+        "class": "primary",
+        "end": "end",
+        "pos": [
+          10000,
+          -900
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Fv nord-sentrum",
+        "class": "secondary",
+        "end": "start",
+        "pos": [
+          -3008,
+          -7487
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Fv nord-sentrum",
+        "class": "secondary",
+        "end": "end",
+        "pos": [
+          -900,
+          -1800
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Fv sentrum-sør",
+        "class": "secondary",
+        "end": "start",
+        "pos": [
+          -900,
+          -1800
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Fv sentrum-sør",
+        "class": "secondary",
+        "end": "end",
+        "pos": [
+          -1800,
+          10000
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Fv sentrum-øst",
+        "class": "secondary",
+        "end": "start",
+        "pos": [
+          -900,
+          -1800
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Fv sentrum-øst",
+        "class": "secondary",
+        "end": "end",
+        "pos": [
+          10000,
+          1700
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Fv sentrum-vest",
+        "class": "secondary",
+        "end": "start",
+        "pos": [
+          -900,
+          -1800
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Fv sentrum-vest",
+        "class": "secondary",
+        "end": "end",
+        "pos": [
+          -10000,
+          -1900
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Fv sørvest",
+        "class": "secondary",
+        "end": "start",
+        "pos": [
+          -10000,
+          3500
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Fv sørvest",
+        "class": "secondary",
+        "end": "end",
+        "pos": [
+          -1478,
+          7096
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Fv sør-tverr",
+        "class": "secondary",
+        "end": "start",
+        "pos": [
+          -1478,
+          7096
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Fv sør-tverr",
+        "class": "secondary",
+        "end": "end",
+        "pos": [
+          10000,
+          5200
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Fv øst nord-sør",
+        "class": "secondary",
+        "end": "start",
+        "pos": [
+          4217,
+          -3929
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Fv øst nord-sør",
+        "class": "secondary",
+        "end": "end",
+        "pos": [
+          3205,
+          6984
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Fv vest-lia",
+        "class": "secondary",
+        "end": "start",
+        "pos": [
+          -10000,
+          1900
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Fv vest-lia",
+        "class": "secondary",
+        "end": "end",
+        "pos": [
+          -4003,
+          -115
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv nordvest",
+        "class": "local",
+        "end": "start",
+        "pos": [
+          -8506,
+          -4938
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv nordvest",
+        "class": "local",
+        "end": "end",
+        "pos": [
+          -7600,
+          -10000
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Lv innsjø",
+        "class": "local",
+        "end": "start",
+        "pos": [
+          -6801,
+          5288
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv innsjø",
+        "class": "local",
+        "end": "end",
+        "pos": [
+          -6098,
+          1706
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv fjellvatn",
+        "class": "local",
+        "end": "start",
+        "pos": [
+          5597,
+          -3383
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv fjellvatn",
+        "class": "local",
+        "end": "end",
+        "pos": [
+          10000,
+          -8700
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Lv nordre",
+        "class": "local",
+        "end": "start",
+        "pos": [
+          704,
+          -6470
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv nordre",
+        "class": "local",
+        "end": "end",
+        "pos": [
+          1800,
+          -10000
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Lv fjellfoten",
+        "class": "local",
+        "end": "start",
+        "pos": [
+          2087,
+          -5512
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv fjellfoten",
+        "class": "local",
+        "end": "end",
+        "pos": [
+          3200,
+          -5400
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv fjellfoten nord",
+        "class": "local",
+        "end": "start",
+        "pos": [
+          703,
+          -8394
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv fjellfoten nord",
+        "class": "local",
+        "end": "end",
+        "pos": [
+          6000,
+          -9000
+        ],
+        "kind": "dead end, unexplained",
+        "near": null
+      },
+      {
+        "road": "Lv åsbygda",
+        "class": "local",
+        "end": "start",
+        "pos": [
+          -6500,
+          -2800
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv åsbygda",
+        "class": "local",
+        "end": "end",
+        "pos": [
+          -6403,
+          -598
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv kvernes",
+        "class": "local",
+        "end": "start",
+        "pos": [
+          -8608,
+          -1742
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv kvernes",
+        "class": "local",
+        "end": "end",
+        "pos": [
+          -8506,
+          -4938
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv nordvik",
+        "class": "local",
+        "end": "start",
+        "pos": [
+          -5000,
+          -8600
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv nordvik",
+        "class": "local",
+        "end": "end",
+        "pos": [
+          -8582,
+          -7004
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv haugen",
+        "class": "local",
+        "end": "start",
+        "pos": [
+          -1596,
+          -4376
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv haugen",
+        "class": "local",
+        "end": "end",
+        "pos": [
+          -5503,
+          -3301
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv bruvoll",
+        "class": "local",
+        "end": "start",
+        "pos": [
+          -1103,
+          -7192
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv bruvoll",
+        "class": "local",
+        "end": "end",
+        "pos": [
+          -450,
+          -6300
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Bruvoll gate 1",
+          "gap_m": 20.0,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Lv bakken",
+        "class": "local",
+        "end": "start",
+        "pos": [
+          5598,
+          2300
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv bakken",
+        "class": "local",
+        "end": "end",
+        "pos": [
+          7903,
+          -1403
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv sørmoen",
+        "class": "local",
+        "end": "start",
+        "pos": [
+          -3794,
+          5479
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv sørmoen",
+        "class": "local",
+        "end": "end",
+        "pos": [
+          -1700,
+          902
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv fjellpass",
+        "class": "track",
+        "end": "start",
+        "pos": [
+          3200,
+          -5400
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv fjellpass",
+        "class": "track",
+        "end": "end",
+        "pos": [
+          7900,
+          -10000
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Lv østheia",
+        "class": "track",
+        "end": "start",
+        "pos": [
+          9003,
+          2099
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv østheia",
+        "class": "track",
+        "end": "end",
+        "pos": [
+          6698,
+          5743
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv søråsen",
+        "class": "track",
+        "end": "start",
+        "pos": [
+          3205,
+          6984
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv søråsen",
+        "class": "track",
+        "end": "end",
+        "pos": [
+          6600,
+          10000
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Lv storvatn",
+        "class": "track",
+        "end": "start",
+        "pos": [
+          -6801,
+          5288
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv storvatn",
+        "class": "track",
+        "end": "end",
+        "pos": [
+          -2400,
+          6409
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv tjernet",
+        "class": "track",
+        "end": "start",
+        "pos": [
+          -8415,
+          4272
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv tjernet",
+        "class": "track",
+        "end": "end",
+        "pos": [
+          -10000,
+          5800
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Lv vestheia",
+        "class": "track",
+        "end": "start",
+        "pos": [
+          -8002,
+          1797
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv vestheia",
+        "class": "track",
+        "end": "end",
+        "pos": [
+          -10000,
+          100
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Lv nordvest-skog",
+        "class": "track",
+        "end": "start",
+        "pos": [
+          -6500,
+          -2800
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv nordvest-skog",
+        "class": "track",
+        "end": "end",
+        "pos": [
+          -5000,
+          -8600
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv sørøst-skog",
+        "class": "track",
+        "end": "start",
+        "pos": [
+          1600,
+          7189
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv sørøst-skog",
+        "class": "track",
+        "end": "end",
+        "pos": [
+          1600,
+          10000
+        ],
+        "kind": "map edge",
+        "near": null
+      },
+      {
+        "road": "Lv østmoen",
+        "class": "track",
+        "end": "start",
+        "pos": [
+          9003,
+          2099
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv østmoen",
+        "class": "track",
+        "end": "end",
+        "pos": [
+          7891,
+          190
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv midtskog",
+        "class": "track",
+        "end": "start",
+        "pos": [
+          -2656,
+          -5356
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Lv midtskog",
+        "class": "track",
+        "end": "end",
+        "pos": [
+          -4003,
+          -115
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1105,
+          -1319
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Sentrum gate 14",
+          "gap_m": 27.7,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -670,
+          -1331
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Sentrum gate 18",
+          "gap_m": 27.7,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1248,
+          -1411
+        ],
+        "kind": "dead end (street)",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -532,
+          -1430
+        ],
+        "kind": "dead end (street)",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 3",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1330,
+          -1504
+        ],
+        "kind": "dead end (street)",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 3",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -455,
+          -1527
+        ],
+        "kind": "dead end (street)",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 4",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1382,
+          -1597
+        ],
+        "kind": "dead end (street)",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 4",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -500,
+          -1620
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Fv sentrum-øst",
+          "gap_m": 35.9,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 5",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1411,
+          -1692
+        ],
+        "kind": "dead end (street)",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 5",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -616,
+          -1712
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 6",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1422,
+          -1786
+        ],
+        "kind": "dead end (street)",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 6",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -689,
+          -1806
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 7",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1416,
+          -1881
+        ],
+        "kind": "dead end (street)",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 7",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -681,
+          -1901
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Sentrum gate 18",
+          "gap_m": 31.6,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 8",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1392,
+          -1977
+        ],
+        "kind": "dead end (street)",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 8",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -652,
+          -1997
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Sentrum gate 19",
+          "gap_m": 31.7,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 9",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1345,
+          -2073
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Fv sentrum-vest",
+          "gap_m": 42.1,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 9",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -643,
+          -2092
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Sentrum gate 19",
+          "gap_m": 20.3,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 10",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1268,
+          -2170
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Sentrum gate 12",
+          "gap_m": 30.2,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 10",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -633,
+          -2187
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 11",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1130,
+          -2269
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Sentrum gate 14",
+          "gap_m": 27.7,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 11",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -695,
+          -2281
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Sentrum gate 18",
+          "gap_m": 27.7,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 12",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1279,
+          -1759
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Sentrum gate 6",
+          "gap_m": 30.8,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 12",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -1289,
+          -2148
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv sentrum-vest",
+          "gap_m": 22.5,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 13",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1173,
+          -1355
+        ],
+        "kind": "dead end (street)",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 13",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -1196,
+          -2230
+        ],
+        "kind": "dead end (street)",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 14",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1077,
+          -1308
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Sentrum gate 1",
+          "gap_m": 12.0,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 14",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -1103,
+          -2282
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Sentrum gate 11",
+          "gap_m": 12.0,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 15",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -981,
+          -1284
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Sentrum gate 1",
+          "gap_m": 38.8,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 15",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -1008,
+          -2311
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Sentrum gate 11",
+          "gap_m": 38.8,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 16",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -886,
+          -1278
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv sentrum-sør",
+          "gap_m": 12.3,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 16",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -914,
+          -2322
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv nord-sentrum",
+          "gap_m": 15.5,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 17",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -792,
+          -1289
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Sentrum gate 1",
+          "gap_m": 38.8,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 17",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -819,
+          -2316
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Sentrum gate 11",
+          "gap_m": 38.8,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 18",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -697,
+          -1318
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Sentrum gate 1",
+          "gap_m": 12.0,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 18",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -723,
+          -2292
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Sentrum gate 11",
+          "gap_m": 12.0,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sentrum gate 19",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -604,
+          -1370
+        ],
+        "kind": "dead end (street)",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 19",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -627,
+          -2245
+        ],
+        "kind": "dead end (street)",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 20",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -518,
+          -1718
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv sentrum-øst",
+          "gap_m": 31.1,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Sentrum gate 20",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -530,
+          -2168
+        ],
+        "kind": "dead end (street)",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 21",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -422,
+          -1678
+        ],
+        "kind": "dead end (street)",
+        "near": null
+      },
+      {
+        "road": "Sentrum gate 21",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -431,
+          -2030
+        ],
+        "kind": "dead end (street)",
+        "near": null
+      },
+      {
+        "road": "Østby gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          3052,
+          2179
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Østby gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          3430,
+          2191
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Østby gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          2960,
+          2081
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Østby gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          3254,
+          2090
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Østby",
+          "m": 190
+        }
+      },
+      {
+        "road": "Østby gate 3",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          3175,
+          1993
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Østby gate 10",
+          "gap_m": 32.7,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Østby gate 3",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          3257,
+          1995
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Østby",
+          "m": 96
+        }
+      },
+      {
+        "road": "Østby gate 4",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          2908,
+          1889
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Østby",
+          "m": 342
+        }
+      },
+      {
+        "road": "Østby gate 4",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          3592,
+          1911
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Østby",
+          "m": 342
+        }
+      },
+      {
+        "road": "Østby gate 5",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          2925,
+          1795
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Østby gate 8",
+          "gap_m": 43.6,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Østby gate 5",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          3581,
+          1815
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Østby gate 14",
+          "gap_m": 43.6,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Østby gate 6",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          2972,
+          1701
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Østby gate 6",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          3540,
+          1719
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Østby gate 7",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          3070,
+          1609
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Østby gate 7",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          3448,
+          1621
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Østby gate 8",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          2959,
+          2080
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Østby gate 8",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          2971,
+          1702
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Østby gate 9",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          3051,
+          2178
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Østby gate 9",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          3069,
+          1610
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Østby gate 10",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          3153,
+          1969
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv øst nord-sør",
+          "gap_m": 24.6,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Østby gate 10",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          3165,
+          1569
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Østby gate 7",
+          "gap_m": 43.6,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Østby gate 11",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          3249,
+          1930
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv øst nord-sør",
+          "gap_m": 28.9,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Østby gate 11",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          3261,
+          1558
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv øst nord-sør",
+          "gap_m": 20.3,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Østby gate 12",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          3335,
+          2231
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Østby gate 1",
+          "gap_m": 43.6,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Østby gate 12",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          3355,
+          1575
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Østby gate 7",
+          "gap_m": 43.6,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Østby gate 13",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          3431,
+          2190
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Østby gate 13",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          3449,
+          1622
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Østby gate 14",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          3529,
+          2098
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Østby",
+          "m": 342
+        }
+      },
+      {
+        "road": "Østby gate 14",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          3541,
+          1720
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Nordvik gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -5000,
+          -8620
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv nordvik",
+          "gap_m": 20.0,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Nordvik gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -5000,
+          -8768
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Nordvik",
+          "m": 168
+        }
+      },
+      {
+        "road": "Nordvik gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -5000,
+          -8580
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Nordvik gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -5000,
+          -8389
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Nordvik",
+          "m": 211
+        }
+      },
+      {
+        "road": "Nordvik gate 3",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -4946,
+          -8600
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Nordvik",
+          "m": 54
+        }
+      },
+      {
+        "road": "Nordvik gate 3",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -4946,
+          -8456
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv nordvest-skog",
+          "gap_m": 13.6,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Elvetun gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -2999,
+          -7520
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Rv2 nord-øst",
+          "gap_m": 33.2,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Elvetun gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -2991,
+          -7693
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Elvetun",
+          "m": 193
+        }
+      },
+      {
+        "road": "Elvetun gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -3001,
+          -7480
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Elvetun gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -3008,
+          -7316
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv nord-sentrum",
+          "gap_m": 13.9,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Bruvoll gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -450,
+          -6280
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv bruvoll",
+          "gap_m": 20.0,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Bruvoll gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -450,
+          -6117
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Bruvoll",
+          "m": 183
+        }
+      },
+      {
+        "road": "Vestli gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -8200,
+          -4320
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv kvernes",
+          "gap_m": 24.9,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Vestli gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -8200,
+          -4496
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Vestli",
+          "m": 196
+        }
+      },
+      {
+        "road": "Vestli gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -8200,
+          -4280
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv kvernes",
+          "gap_m": 23.9,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Vestli gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -8200,
+          -4135
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Vestli",
+          "m": 165
+        }
+      },
+      {
+        "road": "Vestli gate 3",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -8146,
+          -4300
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Vestli",
+          "m": 54
+        }
+      },
+      {
+        "road": "Vestli gate 3",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -8146,
+          -4444
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Vestli",
+          "m": 154
+        }
+      },
+      {
+        "road": "Åsbygda gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -6500,
+          -2820
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv nordvest-skog",
+          "gap_m": 10.7,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Åsbygda gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -6500,
+          -2963
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Åsbygda",
+          "m": 163
+        }
+      },
+      {
+        "road": "Åsbygda gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -6500,
+          -2780
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Åsbygda gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -6500,
+          -2633
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Åsbygda",
+          "m": 167
+        }
+      },
+      {
+        "road": "Kvernes gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -8706,
+          -1619
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Kvernes gate 2",
+          "gap_m": 40.0,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Kvernes gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -8755,
+          -1762
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Kvernes",
+          "m": 171
+        }
+      },
+      {
+        "road": "Kvernes gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -8694,
+          -1581
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Kvernes gate 1",
+          "gap_m": 40.0,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Kvernes gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -8660,
+          -1483
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Kvernes",
+          "m": 124
+        }
+      },
+      {
+        "road": "Haugen gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1614,
+          -4415
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Haugen gate 2",
+          "gap_m": 40.0,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Haugen gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -1708,
+          -4518
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Haugen",
+          "m": 160
+        }
+      },
+      {
+        "road": "Haugen gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1586,
+          -4385
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Haugen gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -1473,
+          -4261
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Nordre gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          1500,
+          -9490
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Nordre",
+          "m": 90
+        }
+      },
+      {
+        "road": "Nordre gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          1500,
+          -9541
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Nordre",
+          "m": 141
+        }
+      },
+      {
+        "road": "Nordre gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          1500,
+          -9360
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Nordre",
+          "m": 40
+        }
+      },
+      {
+        "road": "Nordre gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          1500,
+          -9219
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv nordre",
+          "gap_m": 29.3,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Nordre gate 3",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          1554,
+          -9349
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Nordre",
+          "m": 75
+        }
+      },
+      {
+        "road": "Nordre gate 3",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          1554,
+          -9256
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Nordre",
+          "m": 154
+        }
+      },
+      {
+        "road": "Elvebakken gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          700,
+          -8420
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv nordre",
+          "gap_m": 26.1,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Elvebakken gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          700,
+          -8584
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Elvebakken",
+          "m": 184
+        }
+      },
+      {
+        "road": "Elvebakken gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          700,
+          -8380
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv nordre",
+          "gap_m": 13.2,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Elvebakken gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          700,
+          -8235
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Elvebakken",
+          "m": 165
+        }
+      },
+      {
+        "road": "Fjellfoten gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          2900,
+          -7832
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Fjellfoten gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          2900,
+          -7959
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Fjellfoten",
+          "m": 159
+        }
+      },
+      {
+        "road": "Fjellfoten gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          2900,
+          -7719
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Fjellfoten",
+          "m": 81
+        }
+      },
+      {
+        "road": "Fjellfoten gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          2900,
+          -7668
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Fjellfoten",
+          "m": 132
+        }
+      },
+      {
+        "road": "Lia gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          3200,
+          -5420
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv fjellfoten",
+          "gap_m": 20.0,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Lia gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          3200,
+          -5573
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Lia",
+          "m": 173
+        }
+      },
+      {
+        "road": "Lia gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          3200,
+          -5380
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv fjellfoten",
+          "gap_m": 16.8,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Lia gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          3200,
+          -5250
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Lia",
+          "m": 150
+        }
+      },
+      {
+        "road": "Ødegård gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          4251,
+          -1920
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Ødegård gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          4261,
+          -2084
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Ødegård gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          4249,
+          -1880
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Ødegård gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          4236,
+          -1668
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv øst nord-sør",
+          "gap_m": 22.2,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Ødegård gate 3",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          4310,
+          -1896
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Ødegård",
+          "m": 60
+        }
+      },
+      {
+        "road": "Ødegård gate 3",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          4300,
+          -1737
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Fv øst nord-sør",
+          "gap_m": 42.2,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Strand gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -6788,
+          5284
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Strand gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -6681,
+          5131
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Strand",
+          "m": 207
+        }
+      },
+      {
+        "road": "Strand gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -6812,
+          5316
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv storvatn",
+          "gap_m": 13.4,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Strand gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -6931,
+          5486
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Strand",
+          "m": 228
+        }
+      },
+      {
+        "road": "Strand gate 3",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -6751,
+          5335
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Strand",
+          "m": 60
+        }
+      },
+      {
+        "road": "Strand gate 3",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -6843,
+          5465
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Sørli gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -3813,
+          5485
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv sørvest",
+          "gap_m": 15.8,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sørli gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -3908,
+          5376
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Sørli gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -3787,
+          5515
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Fv sørvest",
+          "gap_m": 32.9,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Sørli gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -3698,
+          5618
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Sørli",
+          "m": 156
+        }
+      },
+      {
+        "road": "Sørli gate 3",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -3762,
+          5467
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv sørvest",
+          "gap_m": 16.5,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sørli gate 3",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -3672,
+          5569
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Sørli",
+          "m": 145
+        }
+      },
+      {
+        "road": "Moen gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1489,
+          7083
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Moen gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -1398,
+          6944
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Moen gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1511,
+          7117
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Fv sørvest",
+          "gap_m": 34.6,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Moen gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -1591,
+          7239
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Moen",
+          "m": 166
+        }
+      },
+      {
+        "road": "Moen gate 3",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -1455,
+          7129
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Moen gate 3",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -1533,
+          7250
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Moen",
+          "m": 154
+        }
+      },
+      {
+        "road": "Verket gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -359,
+          6132
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv sentrum-sør",
+          "gap_m": 13.6,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Verket gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -434,
+          5973
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv sentrum-sør",
+          "gap_m": 14.5,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Verket gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -341,
+          6168
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Verket gate 1",
+          "gap_m": 40.0,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Verket gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -263,
+          6333
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Verket",
+          "m": 203
+        }
+      },
+      {
+        "road": "Verket gate 3",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -296,
+          6124
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Verket",
+          "m": 60
+        }
+      },
+      {
+        "road": "Verket gate 3",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -364,
+          5980
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Verket",
+          "m": 171
+        }
+      },
+      {
+        "road": "Skogli gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -3994,
+          -119
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Skogli gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -3949,
+          -279
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv midtskog",
+          "gap_m": 19.5,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Skogli gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -4006,
+          -81
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Skogli gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -4044,
+          55
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv vest-lia",
+          "gap_m": 15.7,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sørhaug gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          2807,
+          3581
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Sørhaug gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          2856,
+          3438
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv øst nord-sør",
+          "gap_m": 30.5,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sørhaug gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          2793,
+          3619
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Sørhaug gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          2751,
+          3741
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv øst nord-sør",
+          "gap_m": 23.0,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sletta gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          2689,
+          5683
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Sletta gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          2620,
+          5574
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv øst nord-sør",
+          "gap_m": 11.0,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Sletta gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          2711,
+          5717
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Sletta gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          2793,
+          5846
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv øst nord-sør",
+          "gap_m": 27.1,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Østmark gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          6693,
+          6281
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Østmark gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          6629,
+          6115
+        ],
+        "kind": "near miss, router soft link",
+        "near": {
+          "road": "Fv sør-tverr",
+          "gap_m": 35.8,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Østmark gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          6707,
+          6319
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv sør-tverr",
+          "gap_m": 31.4,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Østmark gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          6762,
+          6463
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Østmark",
+          "m": 175
+        }
+      },
+      {
+        "road": "Østmark gate 3",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          6748,
+          6282
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv sør-tverr",
+          "gap_m": 10.9,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Østmark gate 3",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          6796,
+          6409
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Østmark",
+          "m": 145
+        }
+      },
+      {
+        "road": "Grensen gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          9193,
+          5381
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Grensen gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          9139,
+          5247
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Grensen",
+          "m": 165
+        }
+      },
+      {
+        "road": "Grensen gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          9207,
+          5419
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv sør-tverr",
+          "gap_m": 31.1,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Grensen gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          9263,
+          5559
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Grensen",
+          "m": 172
+        }
+      },
+      {
+        "road": "Østre gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          8996,
+          2080
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv østmoen",
+          "gap_m": 14.3,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Østre gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          8969,
+          1940
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Østre",
+          "m": 163
+        }
+      },
+      {
+        "road": "Østre gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          9004,
+          2120
+        ],
+        "kind": "joined",
+        "near": null
+      },
+      {
+        "road": "Østre gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          9029,
+          2250
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv østheia",
+          "gap_m": 22.8,
+          "same_component": true
+        }
+      },
+      {
+        "road": "Bakken gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          5600,
+          780
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv bakken",
+          "gap_m": 23.4,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Bakken gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          5600,
+          650
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Bakken",
+          "m": 150
+        }
+      },
+      {
+        "road": "Bakken gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          5600,
+          820
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv bakken",
+          "gap_m": 14.8,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Bakken gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          5600,
+          972
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Bakken",
+          "m": 172
+        }
+      },
+      {
+        "road": "Vestvatn gate 1",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -6111,
+          1684
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Lv innsjø",
+          "gap_m": 23.6,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Vestvatn gate 1",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -6199,
+          1557
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Vestvatn",
+          "m": 174
+        }
+      },
+      {
+        "road": "Vestvatn gate 2",
+        "class": "street",
+        "end": "start",
+        "pos": [
+          -6089,
+          1716
+        ],
+        "kind": "near miss, router repairs it",
+        "near": {
+          "road": "Fv vest-lia",
+          "gap_m": 14.0,
+          "same_component": false
+        }
+      },
+      {
+        "road": "Vestvatn gate 2",
+        "class": "street",
+        "end": "end",
+        "pos": [
+          -6010,
+          1830
+        ],
+        "kind": "dead end at a place",
+        "near": {
+          "place": "Vestvatn",
+          "m": 158
+        }
+      }
+    ],
+    "end_kinds": {
+      "dead end (street)": 16,
+      "dead end at a place": 51,
+      "dead end, unexplained": 1,
+      "joined": 87,
+      "map edge": 18,
+      "near miss, router repairs it": 54,
+      "near miss, router soft link": 21
+    },
+    "junction_entries": [
+      {
+        "pos": [
+          -2447,
+          -1251
+        ],
+        "roads": [
+          "Fv sentrum-vest",
+          "Rv1 vest-sørøst"
+        ],
+        "ok": true
+      },
+      {
+        "pos": [
+          -398,
+          1704
+        ],
+        "roads": [
+          "Fv sentrum-sør",
+          "Rv1 vest-sørøst"
+        ],
+        "ok": true
+      },
+      {
+        "pos": [
+          2650,
+          5079
+        ],
+        "roads": [
+          "Fv øst nord-sør",
+          "Rv1 vest-sørøst"
+        ],
+        "ok": true
+      },
+      {
+        "pos": [
+          -3008,
+          -7487
+        ],
+        "roads": [
+          "Elvetun gate 2",
+          "Fv nord-sentrum",
+          "Rv2 nord-øst"
+        ],
+        "ok": true
+      },
+      {
+        "pos": [
+          4217,
+          -3929
+        ],
+        "roads": [
+          "Fv øst nord-sør",
+          "Rv2 nord-øst"
+        ],
+        "ok": true
+      },
+      {
+        "pos": [
+          -900,
+          -1800
+        ],
+        "roads": [
+          "Fv nord-sentrum",
+          "Fv sentrum-sør",
+          "Fv sentrum-vest",
+          "Fv sentrum-øst",
+          "Sentrum gate 16",
+          "Sentrum gate 6"
+        ],
+        "ok": true
+      },
+      {
+        "pos": [
+          -1478,
+          7096
+        ],
+        "roads": [
+          "Fv sentrum-sør",
+          "Fv sør-tverr",
+          "Fv sørvest",
+          "Moen gate 1"
+        ],
+        "ok": true
+      },
+      {
+        "pos": [
+          3252,
+          1899
+        ],
+        "roads": [
+          "Fv sentrum-øst",
+          "Fv øst nord-sør",
+          "Østby gate 11",
+          "Østby gate 4"
+        ],
+        "ok": true
+      },
+      {
+        "pos": [
+          -4003,
+          -115
+        ],
+        "roads": [
+          "Fv sentrum-vest",
+          "Fv vest-lia",
+          "Lv midtskog",
+          "Skogli gate 1"
+        ],
+        "ok": true
+      },
+      {
+        "pos": [
+          3205,
+          6984
+        ],
+        "roads": [
+          "Fv sør-tverr",
+          "Fv øst nord-sør",
+          "Lv søråsen"
+        ],
+        "ok": true
+      }
+    ],
+    "duplicate_junction_entries": [],
+    "zero_length_segments": [],
+    "duplicate_roads": []
+  },
+  "road_generator_scene": {
+    "road_points": 4545,
+    "containers": 113,
+    "intersections": 10,
+    "edges": 4558,
+    "dangling_paths": [],
+    "one_way_container_edges": [],
+    "duplicate_edges": [],
+    "components": [
+      4555
+    ],
+    "component_count": 1,
+    "isolated_points": [],
+    "open_ends": 10,
+    "open_ends_where_roads_json_joins": [],
+    "points_off_roads_json": [],
+    "points_off_roads_json_count": 0,
+    "roads_json_not_covered": [],
+    "junction_entries_without_intersection": [],
+    "components_mixing_roads_json_components": []
+  },
+  "bridges": {
+    "spans": [
+      {
+        "id": "bridge_r0_s0",
+        "road": "Rv1 vest-sørøst",
+        "span_m": 98.3,
+        "centre": [
+          1173,
+          4539
+        ],
+        "structure": "RoadStructures/Bridge_00",
+        "structure_m": 1.8
+      },
+      {
+        "id": "bridge_r1_s0",
+        "road": "Rv2 nord-øst",
+        "span_m": 98.4,
+        "centre": [
+          77,
+          -6726
+        ],
+        "structure": "RoadStructures/Bridge_01",
+        "structure_m": 1.8
+      },
+      {
+        "id": "bridge_r4_s0",
+        "road": "Fv sentrum-øst",
+        "span_m": 109.9,
+        "centre": [
+          57,
+          -1165
+        ],
+        "structure": "RoadStructures/Bridge_02",
+        "structure_m": 0.0
+      },
+      {
+        "id": "bridge_r7_s0",
+        "road": "Fv sør-tverr",
+        "span_m": 109.9,
+        "centre": [
+          824,
+          7348
+        ],
+        "structure": "RoadStructures/Bridge_03",
+        "structure_m": 0.0
+      }
+    ],
+    "bridge_structures": 4,
+    "spans_without_structure": []
+  }
+}

@@ -7,6 +7,11 @@ comparison — not repeated here) with the code that actually exists on
 [INTEGRATION-04_REPORT.md](INTEGRATION-04_REPORT.md) §4). Where the research assumed the
 LOGISTICS-01 *plan*, this document uses the *implemented* names.
 
+**Status (NAV-PERF-01B+C, 2026-10-23).** Route planning is incremental: one `RouteService` queue with a 2 ms frame budget,
+priorities, cancellation and reuse; squads, operations, vehicles and convoys wait for their routes. Frame spikes from planning fell
+from ~150-160 ms to ~10 ms. Road connectivity checked (findings in the report). Open: GUI visual run, one logistics convoy scenario.
+Report: [NAV-PERF-01BC_REPORT.md](NAV-PERF-01BC_REPORT.md).
+
 **Status (NAV-INF-01, 2026-10-23).** Long infantry marches now finish, near and far: the stall after the Centre Bridge was several separate defects
 (spurious terrain heights, retry budgets that never renewed on progress, near bodies stopping at the road lip and on 40+ degree banks). Report:
 [NAV-INF-01_REPORT.md](NAV-INF-01_REPORT.md). Open: near-tier bodies wade rivers (the navmesh has no water); the full NAVINF suite and the visual run were
