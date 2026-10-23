@@ -585,3 +585,35 @@ static func _dist_to_poly(p: Vector2, poly: PackedVector2Array) -> float:
 	for i in poly.size():
 		best = minf(best, LineOfFire._point_segment_dist2d(p, poly[i], poly[(i + 1) % poly.size()]))
 	return best
+
+
+## NAV-PERF-01B: one route() as a RouteService job ("infantry"). Measured on ref_20km the whole search is 0.4-2.5 ms for 3-27 km
+## routes (the native A* over the 50 m grid 0.05-1.5 ms of it), so it is one step and not split further; the service runs as many
+## of them per frame as its budget holds. Result: {ok, route, reason}.
+class Runner:
+	var routes: StrategicRoutes
+	var from: Vector3
+	var to: Vector3
+	var terrain: Terrain3D
+	var result := {}
+
+	func _init(p_routes: StrategicRoutes, p_from: Vector3, p_to: Vector3, p_terrain: Terrain3D) -> void:
+		routes = p_routes
+		from = p_from
+		to = p_to
+		terrain = p_terrain
+
+	func step(_deadline_us: int) -> bool:
+		var r := routes.route(from, to, terrain)
+		result = {"ok": r.size() >= 2, "route": r, "reason": "" if r.size() >= 2 else String(routes.last_failure.get("reason", "no route"))}
+		return true
+
+	func reset() -> void:
+		result = {}
+
+
+## The dedupe key of a route search: requests from the same 50 m cell to the same 50 m cell are one search.
+func job_key(from: Vector3, to: Vector3) -> String:
+	var a := world_to_cell(from)
+	var b := world_to_cell(to)
+	return "inf:%d,%d>%d,%d" % [a.x, a.y, b.x, b.y]

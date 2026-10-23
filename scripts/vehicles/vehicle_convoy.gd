@@ -55,41 +55,93 @@ func order_convoy(ids: Array, dest: Vector3, name := "") -> Dictionary:
 	var lg := _state()
 	var cid := lg.next_convoy_id
 	lg.next_convoy_id += 1
-	var failed := []
-	var driving: Array = []
-	var lead_route := PackedVector3Array()
-	for k in members.size():
-		var u := sim.state.get_unit(members[k])
-		var goal := dest
-		if k > 0 and lead_route.size() > 2:
-			# Stop in column behind the leader's end of route.
+	var cname := name if name != "" else "Convoy %d" % cid
+	# NAV-PERF-01B: the leader's route is asked for first (RouteService); the others are sent when it comes, to their stopping
+	# places in column behind its end (_on_leader_route). Until then the convoy is "forming": its vehicles hold.
+	lg.convoys[cid] = {"members": members.duplicate(), "dest": dest, "leader": members[0], "name": cname, "odo0": {}, "start": sim.state.time, "forming": true}
+	for id in members:
+		sim.state.get_unit(id).veh.convoy_id = cid
+	if not _send_leader(cid):
+		return {"ok": false, "reason": "Convoy not formed: no vehicle can be ordered", "failed": []}
+	return {"ok": true, "pending": true, "reason": "", "convoy": cid, "driving": members.duplicate(), "failed": []}
+
+
+## Orders the convoy's first vehicle to the destination; false (and the convoy dissolved) when no member can be ordered.
+func _send_leader(cid: int) -> bool:
+	var c: Dictionary = _state().convoys.get(cid, {})
+	while c.members.size() >= 2:
+		var lead: int = c.members[0]
+		c.leader = lead
+		var res := vsim.request_drive(lead, c.dest, true, RouteService.Priority.CONVOY, _on_leader_route.bind(cid))
+		if res.ok:
+			return true
+		_drop_member(cid, lead)
+	# One vehicle left: no convoy, it drives alone.
+	if c.members.size() == 1:
+		var last: int = c.members[0]
+		_dissolve(cid)
+		vsim.request_drive(last, c.dest, true, RouteService.Priority.CONVOY)
+		return false
+	_dissolve(cid)
+	return false
+
+
+## The leader's answer. No route: it leaves (reported blocked) and the next vehicle leads. A route: the others are sent to their
+## stopping places in column behind its end; a stopping place that cannot be reached (a point of the leader's lane in a structure
+## or on a bank) is replaced by the destination itself, the vehicle keeps its place by the convoy's speed limit.
+func _on_leader_route(u: UnitState, res: Dictionary, cid: int) -> bool:
+	var c: Dictionary = _state().convoys.get(cid, {})
+	if c.is_empty() or not c.get("forming", false) or c.leader != u.id:
+		return false
+	if not res.ok:
+		_drop_member(cid, u.id)
+		if sim.war:
+			sim.war.log_event(u.faction, "logistics", "%s: %s cannot lead (%s)" % [c.name, u.unit_name, res.reason])
+		if not _send_leader(cid):
+			_state().convoys.erase(cid)
+		return false
+	c.erase("forming")
+	var lead_route := u.veh.route
+	var odo := {u.id: u.veh.odometer}
+	for k in range(1, c.members.size()):
+		var m := sim.state.get_unit(c.members[k])
+		var goal: Vector3 = c.dest
+		if lead_route.size() > 2:
 			var back := mini(roundi(float(k) * SPACING_M / 3.0), lead_route.size() - 2)
 			goal = lead_route[lead_route.size() - 1 - back]
-		var res := vsim.order_drive(u.id, goal, true)
-		if not res.ok and goal != dest:
-			# The stopping place in the column behind the leader cannot be driven to (a point of the leader's lane in a
-			# structure or on a bank): the vehicle drives to the destination itself and keeps its place by the convoy's speed limit.
-			res = vsim.order_drive(u.id, dest, true)
-		if not res.ok:
-			failed.append({"id": u.id, "reason": res.reason})
-			continue
-		if k == 0:
-			lead_route = u.veh.route
-		u.veh.convoy_id = cid
-		driving.append(u.id)
-	if driving.size() < 2:
-		for id in driving:
-			sim.state.get_unit(id).veh.convoy_id = -1
-		return {"ok": false, "reason": "Convoy not formed: %s" % (failed[0].reason if not failed.is_empty() else "no route"), "failed": failed}
-	var cname := name if name != "" else "Convoy %d" % cid
-	var odo := {}
-	for id in driving:
-		odo[id] = sim.state.get_unit(id).veh.odometer
-	lg.convoys[cid] = {"members": driving, "dest": dest, "leader": driving[0], "name": cname, "odo0": odo, "start": sim.state.time}
+		odo[m.id] = m.veh.odometer
+		vsim.request_drive(m.id, goal, true, RouteService.Priority.CONVOY, _on_member_route.bind(cid, goal))
+	c["odo0"] = odo
+	c["start"] = sim.state.time
 	if sim.war:
-		var lu := sim.state.get_unit(driving[0])
-		sim.war.log_event(lu.faction, "logistics", "%s: %d vehicles, %.1f km" % [cname, driving.size(), lu.veh.route_remaining_m() / 1000.0])
-	return {"ok": true, "reason": "", "convoy": cid, "driving": driving, "failed": failed}
+		sim.war.log_event(u.faction, "logistics", "%s: %d vehicles, %.1f km" % [c.name, c.members.size(), u.veh.route_remaining_m() / 1000.0])
+	return false
+
+
+func _on_member_route(u: UnitState, res: Dictionary, cid: int, goal: Vector3) -> bool:
+	var c: Dictionary = _state().convoys.get(cid, {})
+	if res.ok or c.is_empty() or goal == c.dest:
+		return false
+	# The stopping place cannot be driven to: the destination itself (handled: not reported blocked).
+	vsim.request_drive(u.id, c.dest, true, RouteService.Priority.CONVOY)
+	return true
+
+
+func _drop_member(cid: int, id: int) -> void:
+	var c: Dictionary = _state().convoys.get(cid, {})
+	c.members.erase(id)
+	var u := sim.state.get_unit(id)
+	if u and u.veh:
+		u.veh.convoy_id = -1
+
+
+func _dissolve(cid: int) -> void:
+	var c: Dictionary = _state().convoys.get(cid, {})
+	for id in c.get("members", []):
+		var u := sim.state.get_unit(id)
+		if u and u.veh:
+			u.veh.convoy_id = -1
+	_state().convoys.erase(cid)
 
 
 ## A member's order was replaced or it was lost: it leaves; a convoy of one dissolves.

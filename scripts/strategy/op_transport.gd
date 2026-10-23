@@ -148,7 +148,7 @@ func plan(op: OperationState) -> Array:
 		var slot := _slot(assembly, from, k, tasks.size())
 		tasks[vid]["slot"] = slot
 		if k == 0:
-			var res := vsim.order_drive(vid, slot, true)
+			var res := vsim.request_drive(vid, slot, true)
 			if not res.ok:
 				tasks[vid]["state"] = "lost"
 				tasks[vid]["note"] = "cannot drive to the assembly point: %s" % res.reason
@@ -495,18 +495,32 @@ func _to_foot(op: OperationState, sq: SquadState, why: String, _was := "") -> vo
 
 # --- ASSEMBLE -----------------------------------------------------------------------------------------------------------
 
+## The vehicle route assembly -> unloading point was checked (NAV-PERF-01B: a RouteService job): no route sends everyone on foot.
+func _on_route_check(job: RouteService.Job, op_id: int) -> void:
+	var op := ws.war.operation(op_id)
+	if op == null or not op.is_active() or op.transport.get("mode", "foot") != "mech" or int(op.transport.get("route_job", -1)) != job.id:
+		return
+	var tr := op.transport
+	tr["route_checked"] = true
+	if not job.result.get("ok", false):
+		_all_foot(op, "no vehicle route to the unloading point: %s" % String(job.result.get("reason", "no route")))
+		return
+	tr["expected_s"] = float(job.result.length_m) / 7.0 * 2.0
+
 func _update_assemble(op: OperationState) -> void:
 	var tr := op.transport
 	var now := sim.state.time
 	var tasks: Dictionary = tr.tasks
-	if not tr.get("route_checked", false) and now - op.stage_since >= 1.0:
-		tr["route_checked"] = true
+	if not tr.get("route_checked", false) and now - op.stage_since >= 1.0 and not sim.routing.is_pending(int(tr.get("route_job", -1))):
+		# NAV-PERF-01B: the check is a RouteService job (the vehicles keep assembling meanwhile); _on_route_check takes the answer.
 		var first := sim.state.get_unit(tasks.keys()[0])
-		var chk := vsim.router.plan(tr.assembly, tr.unload, first.veh.def())
-		if not chk.ok:
-			_all_foot(op, "no vehicle route to the unloading point: %s" % chk.reason)
+		var job := sim.routing.submit(&"vehicle", "op_check:%d" % op.id, RouteService.Priority.OPERATION, "",
+			VehicleRouter.PlanRunner.new(vsim.router, tr.assembly, tr.unload, first.veh.def(), []), _on_route_check.bind(op.id), tr.assembly, tr.unload)
+		tr["route_job"] = job.id
+		if job.is_done():
+			_on_route_check(job, op.id)
+		if not op.is_active() or op.transport.get("mode", "foot") != "mech":
 			return
-		tr["expected_s"] = float(chk.length_m) / 7.0 * 2.0
 	var waiting: Array[String] = []
 	var live := 0
 	for vid: int in tasks:
@@ -517,7 +531,7 @@ func _update_assemble(op: OperationState) -> void:
 		var u := sim.state.get_unit(vid)
 		if t.state == "queued":
 			if now >= float(t.depart_at):
-				var res := vsim.order_drive(vid, t.slot, true)
+				var res := vsim.request_drive(vid, t.slot, true)
 				if res.ok:
 					t["state"] = "to_assembly"
 				else:
@@ -533,7 +547,7 @@ func _update_assemble(op: OperationState) -> void:
 				continue
 			elif halted:
 				# Stopped short of the slot (blocked by another vehicle): try the slot again, then the assembly point.
-				var res := vsim.order_drive(vid, t.slot, true)
+				var res := vsim.request_drive(vid, t.slot, true)
 				if not res.ok:
 					_lose(op, vid, "%s cannot reach the assembly point: %s" % [u.unit_name, res.reason])
 					continue
@@ -545,7 +559,7 @@ func _update_assemble(op: OperationState) -> void:
 		if sq and WarSim._flat(ws.squad_center(sq), tr.assembly) > SQUADS_NEAR_M:
 			sq_far.append("%s %d m" % [sq.squad_name, roundi(WarSim._flat(ws.squad_center(sq), tr.assembly))])
 			# A squad that stopped short (blocked, a reaction ended its move) is sent again.
-			if sq.order != SquadState.Order.MOVE and sq.route.is_empty():
+			if sq.order != SquadState.Order.MOVE and not ws.sim.squads.marching(sq):
 				ws.sim.squads.order_move([sid], tr.assembly)
 	if live == 0:
 		_all_foot(op, "no vehicle left to carry the squads")
@@ -663,7 +677,7 @@ func _start_transit(op: OperationState) -> void:
 		if ids.size() >= 2:
 			ws.log_event(op.faction, "op_transport", "%s #%d: no convoy (%s), the vehicles drive one by one" % [op.type_name(), op.id, str(cr_reason)], op.target_pos)
 		for vid in ids:
-			var res := vsim.order_drive(vid, unload, true)
+			var res := vsim.request_drive(vid, unload, true)
 			if res.ok:
 				driving.append(vid)
 			else:
@@ -680,7 +694,10 @@ func _start_transit(op: OperationState) -> void:
 		tasks[vid]["t0"] = sim.state.time
 		tasks[vid]["odo0"] = u.veh.odometer
 	tr["transit_since"] = sim.state.time
+	# NAV-PERF-01B: the routes may still be planned: the estimate is the straight line with the usual detour until they come.
 	var len_m := sim.state.get_unit(driving[0]).veh.route_remaining_m()
+	if len_m <= 0.0:
+		len_m = WarSim._flat(sim.state.get_unit(driving[0]).position, unload) * DETOUR
 	tr["expected_s"] = len_m / 7.0
 	_set_stage(op, OperationState.Stage.TRANSIT, "%d vehicle(s)%s to (%.0f, %.0f), %.1f km, about %d min" % [driving.size(), " in a convoy" if convoy_ok else "", unload.x, unload.z, len_m / 1000.0, ceili(len_m / 7.0 / 60.0)])
 
@@ -746,7 +763,7 @@ func _finish(op: OperationState) -> void:
 		var sq := sim.state.get_squad(sid)
 		if sq == null or sq.op_id != op.id:
 			continue
-		if sq.route.is_empty() and (tr.carried.has(sid) or tr.get("late_foot", []).has(sid)):
+		if not sim.squads.marching(sq) and (tr.carried.has(sid) or tr.get("late_foot", []).has(sid)):
 			ws._send(op, sq)
 			n += 1
 	tr["late_foot"] = []
@@ -790,7 +807,7 @@ func _return_vehicles(op: OperationState) -> void:
 		u.veh.assign_id = op.id
 		t["state"] = "returning"
 		var home: Vector3 = t.get("home", u.position)
-		var res := vsim.order_drive(vid, home, true)
+		var res := vsim.request_drive(vid, home, true)
 		if not res.ok:
 			# No way home: stay here and be free (the economy refuels / the next task sends it).
 			u.veh.assign_kind = ""
@@ -823,7 +840,7 @@ func release_op(op: OperationState, why: String) -> void:
 				u.veh.assign_kind = "return"
 				u.veh.assign_id = op.id
 				var home: Vector3 = t.get("home", u.position)
-				if not vsim.order_drive(vid, home, true).ok:
+				if not vsim.request_drive(vid, home, true).ok:
 					u.veh.assign_kind = ""
 					u.veh.assign_id = -1
 			else:

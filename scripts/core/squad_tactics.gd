@@ -176,7 +176,7 @@ func _aboard(sq: SquadState) -> bool:
 ## Nobody commands the squad right now (idle, holding, garrisoning, or at the objective its
 ## operation is attacking), so it may choose a tactic. Not while it marches or follows.
 func _autonomy_ok(sq: SquadState) -> bool:
-	if not sq.route.is_empty():
+	if sim.squads.marching(sq):
 		return false
 	if sq.op_role != SquadState.OpRole.NONE and sq.op_id >= 0:
 		return false  # the operation coordinates it

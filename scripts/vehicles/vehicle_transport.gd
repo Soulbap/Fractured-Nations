@@ -65,7 +65,7 @@ func order_transport(vid: int, squad_id: int, dest := Vector3.INF) -> Dictionary
 	var far := _flat(_centroid(ids), u.position) > APPROACH_M
 	if far and v.phase != VehicleState.Phase.BOARDING:
 		v.phase = VehicleState.Phase.APPROACH
-		var res := vsim.order_drive(vid, _approach_point(u, _centroid(ids)), true)
+		var res := vsim.request_drive(vid, _approach_point(u, _centroid(ids)), true)
 		if not res.ok:
 			v.phase = VehicleState.Phase.NONE
 			v.squad_id = -1
@@ -283,7 +283,7 @@ func _update_boarding(u: UnitState, v: VehicleState, now: float) -> void:
 		if v.transport_dest.is_finite():
 			v.phase = VehicleState.Phase.TRANSIT
 			v.phase_since = now
-			var res := vsim.order_drive(u.id, v.transport_dest, true)
+			var res := vsim.request_drive(u.id, v.transport_dest, true)
 			if not res.ok:
 				v.phase = VehicleState.Phase.NONE
 		else:

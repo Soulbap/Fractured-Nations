@@ -266,7 +266,7 @@ func _drive_to_stage(u: UnitState, v: VehicleState) -> Dictionary:
 		u.order = UnitState.Order.NONE
 		_begin_work(u, v)
 		return {"ok": true, "reason": ""}
-	return vsim.order_drive(u.id, dock, true)
+	return vsim.request_drive(u.id, dock, true)
 
 
 func _begin_work(u: UnitState, v: VehicleState) -> void:
@@ -330,7 +330,7 @@ func _done(u: UnitState, v: VehicleState, msg: String) -> void:
 	v.job = {}
 	if s:
 		var park := parking_world(s, int(j.get("slot", 0)))
-		vsim.order_drive(u.id, park, true)
+		vsim.request_drive(u.id, park, true)
 
 
 ## One tick of a vehicle's job (called from VehicleSim while a job is set).
@@ -367,7 +367,7 @@ func update_vehicle(u: UnitState, v: VehicleState) -> void:
 						if int(j.retries) > 12:
 							_fail(u, "The dock stayed occupied")
 						else:
-							var rs := vsim.order_drive(u.id, dock, true)
+							var rs := vsim.request_drive(u.id, dock, true)
 							if not rs.ok:
 								_fail(u, "Cannot reach the depot: " + rs.reason)
 		"loading", "unloading", "refueling", "repairing":

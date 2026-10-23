@@ -45,6 +45,8 @@ var _delays := {}
 var _restock_cool := {}
 ## demand group key (operation / garrison) -> time before which no supply mission is requested for it again.
 var _demand_cool := {}
+## NAV-PERF-01B: truck route checks of supply requests in planning (key -> {job, res}); runtime only.
+var _route_checks := {}
 
 
 func _init(p_ws: WarSim) -> void:
@@ -255,7 +257,7 @@ func update_recovery(f: FactionState) -> void:
 			continue
 		if sq.op_id >= 0 or sq.members.is_empty() or sq.tactic != SquadState.Tactic.NONE or sq.recover_until > sim.state.time:
 			continue
-		if sq.tactic_owner == SquadState.Owner.PLAYER or sq.order == SquadState.Order.MOVE and not sq.route.is_empty():
+		if sq.tactic_owner == SquadState.Owner.PLAYER or sq.order == SquadState.Order.MOVE and sim.squads.marching(sq):
 			continue
 		if _under_fire(sq):
 			continue
@@ -314,8 +316,23 @@ func request_supply(f: FactionState, squad_ids: Array, at: Vector3, why: String,
 	var point := _safe_point(f, at, src.store.position)
 	if not point.is_finite():
 		return {"ok": false, "reason": "no safe delivery point on a road within 260 m of the squads, or enemies are believed within %d m of it" % roundi(SAFE_M)}
-	# The truck must be able to drive there: one route plan before anything is loaded.
-	var chk := sim.vehicles.router.plan(lsim.dock_world(src.store, truck.id), point, truck.veh.def())
+	# The truck must be able to drive there: one route plan before anything is loaded. NAV-PERF-01B: a RouteService job; until its
+	# answer the request is "pending" (asked again a moment later), then the answer is used once.
+	var dock := lsim.dock_world(src.store, truck.id)
+	var ck := "%d>%d,%d:%s" % [int(src.store.id), roundi(point.x), roundi(point.z), String(truck.veh.type_id)]
+	var check: Dictionary = _route_checks.get(ck, {})
+	if check.is_empty() or (not check.has("res") and not sim.routing.is_pending(int(check.job))):
+		var job := sim.routing.submit(&"vehicle", "supply_check:" + ck, RouteService.Priority.OPERATION, "",
+			VehicleRouter.PlanRunner.new(sim.vehicles.router, dock, point, truck.veh.def(), []), func(j: RouteService.Job) -> void:
+				if _route_checks.has(ck):
+					_route_checks[ck]["res"] = j.result, dock, point)
+		_route_checks[ck] = {"job": job.id}
+		if job.is_done():
+			_route_checks[ck]["res"] = job.result
+	if not _route_checks[ck].has("res"):
+		return {"ok": false, "pending": true, "reason": "checking the truck route"}
+	var chk: Dictionary = _route_checks[ck].res
+	_route_checks.erase(ck)
 	if not chk.ok:
 		return {"ok": false, "reason": "no truck route from %s to the delivery point: %s" % [lsim.store_name(src.store), chk.reason]}
 	var qty := minf(minf(need * 1.15, LOAD_KG), float(src.kg))
@@ -433,6 +450,9 @@ func _demand(f: FactionState) -> void:
 		var res := request_supply(f, ids, at, "squads below %d%% ammunition (%s)" % [roundi(p.resupply_below * 100.0 * 0.8), key], op_id)
 		if res.ok:
 			return
+		if res.get("pending", false):
+			_demand_cool[key] = sim.state.time + 2.0  # the truck route is being checked: asked again in a moment
+			continue
 		_demand_cool[key] = sim.state.time + 240.0  # not asked again every few seconds
 		var op := ws.war.operation(op_id)
 		if op:
@@ -535,7 +555,7 @@ func _update_missions() -> void:
 						_fail(m, "nothing was loaded (%.0f kg)" % loaded, u)
 						continue
 					m["loaded"] = loaded
-					var res := ws.sim.vehicles.order_drive(u.id, m.dest)
+					var res := ws.sim.vehicles.request_drive(u.id, m.dest)
 					# order_drive (not from transport) clears nothing of ours: the assignment stays.
 					if not res.ok:
 						_fail(m, "the truck cannot drive to the squads: %s" % res.reason, u)
@@ -645,7 +665,7 @@ func _return(m: Dictionary, u: UnitState, note: String) -> void:
 	m["src"] = src.id
 	m["note"] = note
 	var dock := lsim.dock_world(src, u.id)
-	var res := sim.vehicles.order_drive(u.id, dock)
+	var res := sim.vehicles.request_drive(u.id, dock)
 	u.veh.assign_kind = "supply"
 	u.veh.assign_id = int(m.id)
 	if not res.ok:

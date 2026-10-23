@@ -44,6 +44,10 @@ var brain := CombatBrain.new(self)
 ## WORLD-SANDBOX-01: the strategic simulation (capture, operations, faction AI, reserves,
 ## intelligence); idle unless the world has an active war (state.war.active).
 var war := WarSim.new(self)
+## NAV-PERF-01B: the one route planning service (squad marches, local refinements, vehicle routes), stepped once per rendered frame.
+var routing := RouteService.new()
+var _routing_bound := false
+var _routing_ticks := 0
 ## Parent of bodies and proxies (corpse markers are created here).
 var units_root: Node3D
 ## id -> Node3D body (detailed tier)
@@ -69,6 +73,7 @@ const INFANTRY_RETRY_BUDGET := 3
 const INFANTRY_RETRY_RENEW_M := 10.0
 const INFANTRY_FAIL_MEMORY_S := 20.0
 var _local_routes := {}
+## unit id -> RouteService job id of the walker's local refinement in progress (the token: a result for another job is dropped).
 var _local_pending := {}
 var _local_attempts := {}
 ## NAV-INF-01: where the current run of attempts began. The retry budget is for one blockage: a walker that has covered
@@ -144,6 +149,8 @@ func _ready() -> void:
 	state.unit_died.connect(_on_unit_died)
 	state.order_changed.connect(_on_order_changed)
 	state.roads.bridge_changed.connect(_on_bridge_changed)
+	state.roads.bridge_changed.connect(func(b: RoadNetwork.Bridge) -> void: routing.invalidate("bridge %s %s" % [b.id, b.state_name()]))
+	state.roads.changed.connect(func(rect: Rect2) -> void: routing.invalidate("roads changed", rect.grow(60.0)))
 	brain.connect_signals()
 	tactics.connect_signals()
 	# COMBAT-02: shots find nearby soldiers through the brain's grid.
@@ -179,13 +186,25 @@ func _on_unit_removed(id: int) -> void:
 			n.queue_free()
 
 
+## NAV-PERF-01B: route searches run here, within the service's budget per rendered frame. Under time compression a frame carries
+## several simulation steps; the budget is per step, up to the compression factor (about the same simulated waiting time as at 1x;
+## TimeCompression keeps the frame within its own budget by running fewer steps). Steps a slow frame had to catch up do not raise
+## it: a hitch is not followed by a longer route slice.
+func _process(_delta: float) -> void:
+	if not _routing_bound and structures != null:
+		_routing_bound = true
+		structures.area_changed.connect(func(rect: Rect2) -> void: routing.invalidate("structures changed", rect.grow(10.0)))
+		structures.terrain_edited.connect(func(rect: Rect2) -> void: routing.invalidate("terrain edited", rect.grow(10.0)))
+	var ticks := Engine.get_physics_frames()
+	var steps := clampi(ticks - _routing_ticks, 1, maxi(1, roundi(Engine.time_scale)))
+	_routing_ticks = ticks
+	routing.step(steps)
+
+
 func _physics_process(delta: float) -> void:
 	last_delta = delta
 	state.time += delta
 	var t0 := Time.get_ticks_usec()
-	# One bounded search per physics tick prevents a squad reaching a wall from causing
-	# eight A* spikes in the same frame. Waiting members keep their order and position.
-	_process_local_plan_budget()
 	for u in state.units.values():
 		if not u.has_body and u.alive and u.kind == UnitState.Kind.SOLDIER and u.vehicle_id < 0:
 			_abstract_step(u, delta)
@@ -217,6 +236,8 @@ func _physics_process(delta: float) -> void:
 ## A save was loaded into the existing records: bodies would write their old position
 ## back on the next tick, so they jump to the loaded one first.
 func _on_restored() -> void:
+	# NAV-PERF-01B: searches for the old state are dropped; squads and vehicles that were waiting for a route ask again.
+	routing.cancel_all("save loaded")
 	_local_routes.clear()
 	_local_pending.clear()
 	_local_attempts.clear()
@@ -296,6 +317,8 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 ## dropped (and the retry budgets renewed); every walker re-checks the deck at its next step, and squads re-plan their routes.
 func _on_bridge_changed(_b: RoadNetwork.Bridge) -> void:
 	_local_routes.clear()
+	for id: int in _local_pending:
+		routing.cancel_owner("unit:%d" % id, "bridge changed")
 	_local_pending.clear()
 	_local_attempts.clear()
 	_local_anchor.clear()
@@ -311,13 +334,20 @@ func _on_order_changed(u: UnitState) -> void:
 
 func _clear_local_route(id: int) -> void:
 	_local_routes.erase(id)
-	_local_pending.erase(id)
+	if _local_pending.has(id):
+		routing.cancel_owner("unit:%d" % id, "order changed")
+		_local_pending.erase(id)
 	_local_attempts.erase(id)
 	_local_anchor.erase(id)
 
 
 func invalidate_local_route(id: int) -> void:
 	_clear_local_route(id)
+
+
+## NAV-PERF-01B: the walker waits for its local refinement (SquadControl does not count that as a stall).
+func local_route_pending(id: int) -> bool:
+	return _local_pending.has(id)
 
 
 func _local_waypoint(u: UnitState, goal: Vector3, reacting: bool) -> Vector3:
@@ -362,49 +392,159 @@ func _request_local_route(u: UnitState, goal: Vector3, reacting: bool) -> void:
 	if _flat(u.position, goal) > INFANTRY_LOCAL_MAX_M:
 		_block_local_move(u, reacting, "local obstacle beyond refinement range")
 		return
-	_local_pending[u.id] = {"goal": goal, "reacting": reacting}
+	if structures == null:
+		return
 	_local_attempts[u.id] = attempts + 1
 	u.nav_reason = "local route queued"
+	var lj := LocalJob.new(self, u.id, goal, reacting)
+	var prio: int = RouteService.Priority.COMBAT if reacting else squads.route_priority(state.squad_of(u.id))
+	var job := routing.submit(&"infantry_local", "unit:%d" % u.id, prio, "", lj, _on_local_job, u.position, goal,
+		LocalRoutePlanner.Search.area_for(u.position, goal, INFANTRY_LOCAL_CELL, 75.0, 0.55))
+	_local_pending[u.id] = job.id
+	if job.is_done():
+		_on_local_job(job)
 
 
-func _process_local_plan_budget() -> void:
-	if _local_pending.is_empty() or structures == null:
-		return
-	var id: int = _local_pending.keys()[0]
-	var req: Dictionary = _local_pending[id]
+## NAV-PERF-01B: one abstract walker's local refinement as a RouteService job (it replaces the old one-search-per-physics-tick queue,
+## whose single search took 100-450 ms inside one tick). Every step that walks a route or builds a grid stops at the frame's deadline
+## and goes on in the next frame. What squad mates found meanwhile (their shared route, a search from the same spot that failed) is
+## looked at when the job starts, not when it was queued: members that stand together still do not each repeat a search (NAV-INF-01).
+## The order is the one the old queue used: shared route (walkable from here?), then the failure memory, then an own search, and
+## after a failed search the shared route once more.
+class LocalJob:
+	var sim: WorldSim
+	var id := 0
+	var goal := Vector3.ZERO
+	var reacting := false
+	var fail_key := ""
+	var search: LocalRoutePlanner.Search = null
+	var result := {}
+	var _phase := 0
+	var _shared := PackedVector3Array()
+	var _walk: LocalRoutePlanner.Walk = null
+
+	func _init(p_sim: WorldSim, p_id: int, p_goal: Vector3, p_reacting: bool) -> void:
+		sim = p_sim
+		id = p_id
+		goal = p_goal
+		reacting = p_reacting
+
+	func step(deadline_us: int) -> bool:
+		while true:
+			match _phase:
+				0:
+					var u: UnitState = sim._local_walker(self)
+					if u == null:
+						result = {"ok": false, "skip": true}
+						return true
+					_phase = 2
+					if not reacting:
+						_shared = sim._shared_candidate(u, goal)
+						if not _shared.is_empty():
+							_walk = sim._shared_walk(u, _shared)
+							_phase = 1
+				1, 4:
+					if not _walk.step(deadline_us):
+						return false
+					var walkable := not _walk.bad.is_finite()
+					_walk = null
+					if walkable:
+						result = {"ok": true, "shared": true, "pts": _shared, "searched": _phase == 4, "search": search.result if search else {}}
+						return true
+					sim._local_route_cache.erase(sim._squad_route_key(id))
+					if _phase == 4:
+						result = search.result
+						return true
+					_phase = 2
+				2:
+					var blocked: String = sim._local_fail_memory(self)
+					if blocked != "":
+						result = {"ok": false, "blocked": blocked}
+						return true
+					search = sim._local_search(self)
+					_phase = 3
+				3:
+					if not search.step(deadline_us):
+						return false
+					result = search.result
+					if result.ok or reacting:
+						return true
+					var u2: UnitState = sim.state.get_unit(id)
+					_shared = sim._shared_candidate(u2, goal) if u2 else PackedVector3Array()
+					if _shared.is_empty():
+						return true
+					_walk = sim._shared_walk(u2, _shared)
+					_phase = 4
+		return true
+
+	func reset() -> void:
+		search = null
+		_walk = null
+		_phase = 0
+		result = {}
+
+	func debug_state() -> Dictionary:
+		return {"job_phase": _phase, "shared_points": _shared.size(), "search": search.debug_state() if search else {}}
+
+
+## The walker of a local job, or null when its order changed (or it got a body, died, boarded) since the request.
+func _local_walker(lj: LocalJob) -> UnitState:
+	var u := state.get_unit(lj.id)
+	if u == null or u.has_body or not u.alive or u.vehicle_id >= 0:
+		return null
+	if (lj.reacting and (not u.is_reacting() or _flat(u.react_target, lj.goal) > 0.5)) \
+			or (not lj.reacting and (u.order != UnitState.Order.MOVE or _flat(u.order_target, lj.goal) > 0.5)):
+		return null
+	return u
+
+
+## "" or the reason a squad mate's search from the same 50 m cell failed a moment ago (the walker does not repeat it).
+func _local_fail_memory(lj: LocalJob) -> String:
+	if lj.reacting or _squad_route_key(lj.id) == "":
+		return ""
+	var u := state.get_unit(lj.id)
+	lj.fail_key = "%s@%d,%d" % [_squad_route_key(lj.id), floori(u.position.x / 50.0), floori(u.position.z / 50.0)]
+	if state.time - float(_local_fail.get(lj.fail_key, -1.0e9)) < INFANTRY_FAIL_MEMORY_S:
+		return "no local passage (a squad mate's search from here failed %.0f s ago)" % (state.time - float(_local_fail[lj.fail_key]))
+	return ""
+
+
+func _local_search(lj: LocalJob) -> LocalRoutePlanner.Search:
+	var u := state.get_unit(lj.id)
+	var ctx := _infantry_area(LocalRoutePlanner.Search.area_for(u.position, lj.goal, INFANTRY_LOCAL_CELL, 75.0, 0.55))
+	return LocalRoutePlanner.Search.new(u.position, lj.goal, INFANTRY_LOCAL_CELL, INFANTRY_LOCAL_MAX_CELLS, INFANTRY_MAX_GRADE,
+		func(x: float, z: float) -> float: return _infantry_height_in(x, z, ctx),
+		func(x: float, z: float) -> bool: return _infantry_blocked_in(x, z, ctx), 75.0, 0.55, true, false,
+		Callable(self, "_step_blocked"), 1.0)
+
+
+func _on_local_job(job: RouteService.Job) -> void:
+	var lj: LocalJob = job.runner
+	var id := lj.id
+	if int(_local_pending.get(id, -1)) != job.id:
+		return  # replaced: a newer order or request owns the walker now
 	_local_pending.erase(id)
 	var u := state.get_unit(id)
-	if u == null or u.has_body or not u.alive or u.vehicle_id >= 0:
+	var result := job.result
+	if u == null or bool(result.get("skip", false)):
 		return
-	var reacting: bool = req.reacting
-	var goal: Vector3 = req.goal
-	if (reacting and (not u.is_reacting() or _flat(u.react_target, goal) > 0.5)) \
-			or (not reacting and (u.order != UnitState.Order.MOVE or _flat(u.order_target, goal) > 0.5)):
+	var reacting := lj.reacting
+	var goal := lj.goal
+	if result.has("blocked"):
+		_block_local_move(u, reacting, String(result.blocked))
 		return
-	if not reacting:
-		var adapted := _shared_route(u, goal)
-		if not adapted.is_empty():
-			_local_routes[id] = {"goal": goal, "reacting": false, "pts": adapted, "i": 1,
-				"cached": true, "cache_key": _squad_route_key(id)}
-			local_nav_stats.cache_hits += 1
-			local_nav_stats.recoveries += 1
-			u.nav_reason = "shared squad local route active"
-			return
-	var fail_key := ""
-	if not reacting and _squad_route_key(id) != "":
-		fail_key = "%s@%d,%d" % [_squad_route_key(id), floori(u.position.x / 50.0), floori(u.position.z / 50.0)]
-		if state.time - float(_local_fail.get(fail_key, -1.0e9)) < INFANTRY_FAIL_MEMORY_S:
-			_block_local_move(u, reacting, "no local passage (a squad mate's search from here failed %.0f s ago)" % (state.time - float(_local_fail[fail_key])))
-			return
-	var result := LocalRoutePlanner.plan(u.position, goal, INFANTRY_LOCAL_CELL,
-		INFANTRY_LOCAL_MAX_CELLS, INFANTRY_MAX_GRADE,
-		func(x: float, z: float) -> float: return _infantry_height(x, z),
-		func(x: float, z: float) -> bool: return _infantry_blocked(x, z), 75.0, 0.55, true, false,
-		Callable(self, "_step_blocked"), 1.0)
-	local_nav_stats.searches += 1
-	local_nav_stats.repairs += int(result.get("repairs", 0))
-	local_nav_stats.plan_ms_total += float(result.ms)
-	local_nav_stats.plan_ms_max = maxf(float(local_nav_stats.plan_ms_max), float(result.ms))
+	var searched: Dictionary = result.get("search", {}) if bool(result.get("shared", false)) else result
+	if not bool(result.get("shared", false)) or bool(result.get("searched", false)):
+		local_nav_stats.searches += 1
+		local_nav_stats.repairs += int(searched.get("repairs", 0))
+		local_nav_stats.plan_ms_total += float(searched.get("ms", 0.0))
+		local_nav_stats.plan_ms_max = maxf(float(local_nav_stats.plan_ms_max), float(searched.get("ms", 0.0)))
+	if bool(result.get("shared", false)):
+		_local_routes[id] = {"goal": goal, "reacting": false, "pts": result.pts, "i": 1, "cached": true, "cache_key": _squad_route_key(id)}
+		local_nav_stats.cache_hits += 1
+		local_nav_stats.recoveries += 1
+		u.nav_reason = "shared squad local route active"
+		return
 	if result.ok:
 		local_nav_stats.successes += 1
 		local_nav_stats.recoveries += 1
@@ -416,36 +556,27 @@ func _process_local_plan_budget() -> void:
 				_local_route_cache[cache_key] = result.pts
 		u.nav_reason = "local route active"
 	else:
-		var adapted := PackedVector3Array() if reacting else _shared_route(u, goal)
-		if not adapted.is_empty():
-			_local_routes[id] = {"goal": goal, "reacting": false, "pts": adapted, "i": 1,
-				"cached": true, "cache_key": _squad_route_key(id)}
-			local_nav_stats.cache_hits += 1
-			local_nav_stats.recoveries += 1
-			u.nav_reason = "shared squad local route active"
-		else:
-			local_nav_stats.failures += 1
-			if fail_key != "":
-				_local_fail[fail_key] = state.time
-			_block_local_move(u, reacting, String(result.reason))
+		local_nav_stats.failures += 1
+		if lj.fail_key != "":
+			_local_fail[lj.fail_key] = state.time
+		_block_local_move(u, reacting, String(result.reason))
 
 
-## The squad's shared local route, adapted to this walker, or empty. NAV-INF-01: the route was planned from another member's
-## position; it is only used when this walker can walk it from where it stands (the same test the plan was verified with),
-## otherwise it is dropped from the cache and the walker plans its own.
-func _shared_route(u: UnitState, goal: Vector3) -> PackedVector3Array:
-	var key := _squad_route_key(u.id)
-	var cached: PackedVector3Array = _local_route_cache.get(key, PackedVector3Array())
+## The squad's shared local route for this walker (the cached route with the walker's goal appended), not yet checked; empty: none.
+func _shared_candidate(u: UnitState, goal: Vector3) -> PackedVector3Array:
+	var cached: PackedVector3Array = _local_route_cache.get(_squad_route_key(u.id), PackedVector3Array())
 	if cached.size() < 2:
 		return PackedVector3Array()
 	var adapted := cached.duplicate()
 	adapted.append(goal)
+	return adapted
+
+
+## The walker's own test along a shared route from where it stands (resumable).
+func _shared_walk(u: UnitState, adapted: PackedVector3Array) -> LocalRoutePlanner.Walk:
 	var walk := PackedVector3Array([u.position])
 	walk.append_array(adapted.slice(1))
-	if LocalRoutePlanner.first_unwalkable(walk, Callable(self, "_step_blocked"), 1.0).is_finite():
-		_local_route_cache.erase(key)
-		return PackedVector3Array()
-	return adapted
+	return LocalRoutePlanner.Walk.new(walk, Callable(self, "_step_blocked"), 1.0)
 
 
 func _squad_route_key(unit_id: int) -> String:
@@ -470,6 +601,34 @@ func _block_local_move(u: UnitState, reacting: bool, reason: String) -> void:
 		u.move_state = UnitState.MoveState.BLOCKED
 		u.anchor_pos = u.position
 		state.order_changed.emit(u)
+
+
+## NAV-PERF-01B: what a search area holds, measured once per search so the per-cell tests can skip what cannot be there: no blocking
+## footprint in reach, no bridge deck, ground well above any water surface. The answers are those of _infantry_blocked /
+## _infantry_height (the same tests, far fewer calls).
+func _infantry_area(rect: Rect2) -> Dictionary:
+	var r := rect.grow(INFANTRY_CLEARANCE_M + 2.0)
+	return {"block": structures.blocks_in_rect(r), "deck": not state.roads.bridges_in(rect.grow(30.0)).is_empty(),
+		"wet_top": structures.water_top_in_rect(r)}
+
+
+func _infantry_height_in(x: float, z: float, ctx: Dictionary) -> float:
+	if ctx.deck:
+		return _infantry_height(x, z)
+	return terrain.data.get_height(Vector3(x, 0.0, z)) if terrain else 0.0
+
+
+func _infantry_blocked_in(x: float, z: float, ctx: Dictionary) -> bool:
+	if ctx.block and structures.blocks_point(Vector2(x, z), INFANTRY_CLEARANCE_M):
+		return true
+	if ctx.deck:
+		var p := Vector3(x, 0.0, z)
+		if not is_nan(state.roads.deck_height(p)):
+			return state.roads.blocking_bridge_at(p) != null
+	var h := structures._height(x, z)
+	if is_nan(h) or h >= float(ctx.wet_top) + 0.15:
+		return false
+	return structures._wet(x, z, h)
 
 
 func _infantry_height(x: float, z: float) -> float:

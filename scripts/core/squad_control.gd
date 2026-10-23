@@ -87,6 +87,10 @@ func _init(p_sim: WorldSim) -> void:
 var bridge_reroutes := 0
 var bridge_blocked := 0
 var route_block_reason := {}
+## NAV-PERF-01B: route requests made, answered without a route; squad id -> the closed bridge a "bridge" request goes round.
+var route_requests := 0
+var route_failures := 0
+var _bridge_wait := {}
 
 
 ## A bridge was closed or disabled: squads on a route over its deck plan again from where they stand, or stop with a reason when
@@ -132,15 +136,16 @@ func _reroute_around(sq: SquadState, b: RoadNetwork.Bridge) -> void:
 	var routes: StrategicRoutes = sim.war.routes if sim.war else null
 	var goal := sq.route[sq.route.size() - 1]
 	if routes != null and routes.ready:
-		var r := routes.route(_centroid(sq), goal, sim.terrain)
-		if r.size() >= 2:
-			r[r.size() - 1] = goal
-			bridge_reroutes += 1
-			route_block_reason.erase(sq.id)
-			follow_route(sq, r, sq.formation)
-			return
-	# No other way: the march stops where the squad stands, with the reason kept for whoever asked for it (an operation reads
-	# `route_block_reason` through WarSim; a player squad shows it in the log).
+		# NAV-PERF-01B: asked for; the squad walks on meanwhile (its walkers refuse the closed deck), _on_route_job takes the answer.
+		_bridge_wait[sq.id] = b.id
+		request_route(sq, goal, "bridge", sq.formation)
+		return
+	_stop_for_bridge(sq, b)
+
+
+## No other way round a closed bridge: the march stops where the squad stands, with the reason kept for whoever asked for it (an
+## operation reads `route_block_reason` through WarSim; a player squad shows it in the log).
+func _stop_for_bridge(sq: SquadState, b: RoadNetwork.Bridge) -> void:
 	bridge_blocked += 1
 	route_block_reason[sq.id] = "%s is %s and no other crossing is reachable" % [b.name, b.state_name()]
 	clear_route(sq)
@@ -172,6 +177,7 @@ func order_move(squad_ids: Array, target: Vector3) -> int:
 	var total := 0.0
 	for sq: SquadState in sqs:
 		sim.tactics.on_order(sq)
+		drop_route_wait(sq)
 		_auto_formation(sq, target)
 		var w := _width(sq)
 		widths.append(w)
@@ -207,17 +213,150 @@ func _routed_move(sq: SquadState, target: Vector3) -> bool:
 	var from := _centroid(sq)
 	if _flat(from, target) < route_min_m and routes._leg_clear(from, target):
 		return false
-	var r := routes.route(from, target, sim.terrain)
-	if r.size() < 2:
-		return false
-	r[r.size() - 1] = target
-	_replans.erase(sq.id)
-	routed_orders += 1
-	# March in column (narrow enough for bridges and tracks), take the ordered formation
-	# again for the last leg.
-	_end_formation[sq.id] = _end_formation.get(sq.id, sq.formation)
-	follow_route(sq, r, SquadState.Formation.COLUMN)
+	# NAV-PERF-01B: the route is asked for; the squad stands (status MOVING, "route pending") until it comes. No route: the old
+	# straight walk to the slots (_on_route_job).
+	request_route(sq, target, "move", sq.formation)
 	return true
+
+
+# --- Route requests (NAV-PERF-01B) --------------------------------------------------
+
+## Asks RouteService for the squad's strategic route to `goal`. kind: "move" (an order: the route is walked when it comes, the
+## squad stands meanwhile), "replan" (a stalled leg: the old route is walked on meanwhile), "bridge" (round a closed bridge), "op"
+## (an operation's march: WarSim takes the answer). The request replaces any earlier one of the squad; asking again for the same
+## thing keeps the search that is under way. Nothing is decided before the answer: pending is not "unreachable".
+func request_route(sq: SquadState, goal: Vector3, kind: String, formation: int) -> void:
+	var routes: StrategicRoutes = sim.war.routes if sim.war else null
+	if routes == null or not routes.ready:
+		return
+	sq.route_wait_goal = goal
+	sq.route_wait_kind = kind
+	sq.route_wait_form = formation
+	route_requests += 1
+	if kind == "move" or kind == "op":
+		sq.status = SquadState.Status.MOVING
+	_submit_wait(sq)
+
+
+func _submit_wait(sq: SquadState) -> void:
+	var routes: StrategicRoutes = sim.war.routes
+	var from := _centroid(sq)
+	var goal := sq.route_wait_goal
+	var job := sim.routing.submit(&"infantry", "squad:%d" % sq.id, route_priority(sq), routes.job_key(from, goal),
+		StrategicRoutes.Runner.new(routes, from, goal, sim.terrain), _on_route_job.bind(sq.id), from, goal)
+	sq.route_job = job.id
+	if job.is_done():
+		_on_route_job(job, sq.id)
+
+
+## True while the squad waits for a route it asked for.
+func route_waiting(sq: SquadState) -> bool:
+	return sq.route_wait_goal.is_finite()
+
+
+## On the march: walking a route, or waiting for the one it asked for (NAV-PERF-01B: an empty route alone does not mean idle).
+func marching(sq: SquadState) -> bool:
+	return not sq.route.is_empty() or sq.route_wait_goal.is_finite()
+
+
+## Forgets a route request (a new order replaced it); its search is cancelled, a late answer is ignored.
+func drop_route_wait(sq: SquadState) -> void:
+	if not sq.route_wait_goal.is_finite():
+		return
+	sim.routing.cancel_owner("squad:%d" % sq.id, "squad order replaced")
+	sq.route_wait_goal = Vector3.INF
+	sq.route_wait_kind = ""
+	sq.route_job = -1
+	_bridge_wait.erase(sq.id)
+
+
+func _on_route_job(job: RouteService.Job, sq_id: int) -> void:
+	var sq := sim.state.get_squad(sq_id)
+	if sq == null or sq.route_job != job.id or not sq.route_wait_goal.is_finite():
+		return  # a newer request or order owns the squad
+	var kind := sq.route_wait_kind
+	var goal := sq.route_wait_goal
+	var formation := sq.route_wait_form
+	sq.route_wait_goal = Vector3.INF
+	sq.route_wait_kind = ""
+	sq.route_job = -1
+	var r := PackedVector3Array()
+	if job.ok():
+		r = (job.result.route as PackedVector3Array).duplicate()
+		# A shared or reused search started in the same 50 m cell: the squad starts from where it stands.
+		if job.from.is_finite() and sim.war.routes.passable(job.from):
+			r[0] = job.from
+		r[r.size() - 1] = goal
+	var why := job.reason if job.reason != "" else "no route"
+	match kind:
+		"move":
+			if r.size() < 2:
+				route_failures += 1
+				_send_to_slots(sq, sq.order_target, sq.order_yaw, true)
+				return
+			_replans.erase(sq.id)
+			routed_orders += 1
+			# March in column (narrow enough for bridges and tracks), take the ordered formation again for the last leg.
+			_end_formation[sq.id] = _end_formation.get(sq.id, formation)
+			follow_route(sq, r, SquadState.Formation.COLUMN)
+		"replan":
+			if r.size() < 2:
+				route_failures += 1
+				route_skips += 1
+				_skip_leg(sq)
+				return
+			route_replanned += 1
+			_keep_route(sq, r, formation)
+		"bridge":
+			var bid: String = _bridge_wait.get(sq.id, "")
+			_bridge_wait.erase(sq.id)
+			var b := sim.state.roads.get_bridge(bid)
+			if r.size() < 2:
+				route_failures += 1
+				if b != null and not b.is_open():
+					_stop_for_bridge(sq, b)
+				return
+			bridge_reroutes += 1
+			route_block_reason.erase(sq.id)
+			_keep_route(sq, r, formation)
+		"op":
+			if sim.war:
+				sim.war.on_route_ready(sq, r, why)
+
+
+## A new route for a march under way: walked from its first waypoint, the order and the squad's state stay as they are.
+func _keep_route(sq: SquadState, r: PackedVector3Array, formation: int) -> void:
+	sq.route = r
+	sq.route_i = 0
+	sq.formation = formation
+	_route_leg(sq)
+
+
+## A leg the squad could not finish and no new route for: the next waypoint is tried (the last one ends the march).
+func _skip_leg(sq: SquadState) -> void:
+	if sq.route.is_empty():
+		return
+	if sq.route_i >= sq.route.size() - 1:
+		clear_route(sq)
+		route_finished.emit(sq)
+		return
+	sq.route_i += 1
+	_route_leg(sq)
+
+
+## NAV-PERF-01B: how urgent a squad's route is: the player's own squads, then squads in contact or running a tactic, then operations;
+## everything else (strategic moves) last. RouteService ages waiting requests, so none waits for ever.
+func route_priority(sq: SquadState) -> int:
+	if sq == null:
+		return RouteService.Priority.STRATEGIC
+	var war := sim.state.war
+	if sq.tactic_owner == SquadState.Owner.PLAYER or ((not war.active or sq.faction == war.player_faction) and sq.op_id < 0):
+		return RouteService.Priority.PLAYER
+	if sq.tactic != SquadState.Tactic.NONE:
+		return RouteService.Priority.COMBAT
+	if sq.op_id >= 0:
+		return RouteService.Priority.OPERATION
+	return RouteService.Priority.STRATEGIC
 
 
 # --- Routes (WORLD-SANDBOX-01) ---------------------------------------------------
@@ -228,6 +367,7 @@ func _routed_move(sq: SquadState, target: Vector3) -> bool:
 ## reactions and the HUD treat it like any other move.
 func follow_route(sq: SquadState, route: PackedVector3Array, formation := SquadState.Formation.COLUMN) -> void:
 	sim.tactics.on_order(sq)
+	drop_route_wait(sq)
 	sq.route = route
 	sq.route_i = 0
 	if route.is_empty():
@@ -238,6 +378,7 @@ func follow_route(sq: SquadState, route: PackedVector3Array, formation := SquadS
 
 ## Drops a squad's route (its current order stays as it is).
 func clear_route(sq: SquadState) -> void:
+	drop_route_wait(sq)
 	sq.route = PackedVector3Array()
 	sq.route_i = 0
 	if _end_formation.has(sq.id):
@@ -285,6 +426,9 @@ func _update_route(sq: SquadState) -> void:
 		if leader.is_reacting():
 			route_stall_while_reacting += 1
 		_leg_progress.erase(sq.id)
+		# NAV-PERF-01B: a new route is already on its way: no second request, no skipped leg (no request-cancel-request loop).
+		if route_waiting(sq):
+			return
 		if _replan(sq):
 			return
 		finished = true
@@ -311,13 +455,9 @@ func _replan(sq: SquadState) -> bool:
 	if routes == null or not routes.ready or n >= route_replans or sq.route.is_empty():
 		return false
 	var goal := sq.route[sq.route.size() - 1]
-	var r := routes.route(_centroid(sq), goal, sim.terrain)
-	if r.size() < 2:
-		return false
-	r[r.size() - 1] = goal
+	# NAV-PERF-01B: asked for; the squad keeps walking its old route until the answer comes (_on_route_job).
 	_replans[sq.id] = n + 1
-	route_replanned += 1
-	follow_route(sq, r, sq.formation)
+	request_route(sq, goal, "replan", sq.formation)
 	return true
 
 
@@ -335,6 +475,7 @@ func _order_move_one(sq: SquadState, target: Vector3, yaw: float) -> void:
 func order_hold(squad_ids: Array) -> void:
 	for sq: SquadState in _squads(squad_ids):
 		sim.tactics.on_order(sq)
+		drop_route_wait(sq)
 		sq.order = SquadState.Order.HOLD
 		sq.order_target = Vector3.INF
 		sq.follow_unit_id = -1
@@ -359,6 +500,7 @@ func order_follow(squad_ids: Array, unit_id: int) -> int:
 		if sq.has_member(unit_id):
 			continue
 		sim.tactics.on_order(sq)
+		drop_route_wait(sq)
 		sq.order = SquadState.Order.FOLLOW
 		sq.order_target = Vector3.INF
 		sq.follow_squad_id = target_squad.id if target_squad else -1
@@ -381,6 +523,7 @@ func order_regroup(squad_ids: Array, point := Vector3.INF) -> int:
 		if leader == null:
 			continue
 		sim.tactics.on_order(sq)
+		drop_route_wait(sq)
 		_auto_formation(sq, point if point.is_finite() else leader.position)
 		var centre: Vector3 = point if point.is_finite() else leader.position
 		var yaw := leader.yaw if not point.is_finite() else _yaw_towards(_centroid(sq), point, leader.yaw)
@@ -475,10 +618,19 @@ func update(delta: float) -> void:
 			_update_follow(sq, false)
 		if not sq.route.is_empty():
 			_update_route(sq)
+		elif sq.route_wait_goal.is_finite() and not sim.routing.is_pending(sq.route_job):
+			# The request was lost (a save loaded, the queue reset): ask again, nothing else changes.
+			_submit_wait(sq)
 		_update_status(sq)
 
 
 func _update_status(sq: SquadState) -> void:
+	# NAV-PERF-01B: waiting for the route of an order: moving, not done.
+	if sq.route.is_empty() and (sq.route_wait_kind == "move" or sq.route_wait_kind == "op") and sq.route_wait_goal.is_finite():
+		if sq.status != SquadState.Status.MOVING:
+			sq.status = SquadState.Status.MOVING
+			sim.state.squad_changed.emit(sq)
+		return
 	if sq.order == SquadState.Order.NONE or sq.order == SquadState.Order.HOLD:
 		return
 	var moving := 0
@@ -503,7 +655,8 @@ func _update_status(sq: SquadState) -> void:
 
 
 func _recover_member_if_needed(sq: SquadState, u: UnitState) -> bool:
-	if u.vehicle_id >= 0 or u.is_reacting() or sq.order == SquadState.Order.HOLD:
+	# NAV-PERF-01B: a walker waiting for its local refinement is not stalled either.
+	if u.vehicle_id >= 0 or u.is_reacting() or sq.order == SquadState.Order.HOLD or sim.local_route_pending(u.id):
 		# A tactical reaction, transport or Hold legitimately pauses formation movement.
 		var paused: Dictionary = _member_progress.get(u.id, {})
 		if not paused.is_empty():

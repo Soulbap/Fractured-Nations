@@ -71,6 +71,13 @@ var roe := Roe.WEAPONS_FREE
 var op_id := -1
 var route := PackedVector3Array()
 var route_i := 0
+## NAV-PERF-01B: a strategic route asked for and not answered yet (RouteService): its goal (INF: none), what it is for ("move": an
+## order that walks it when it comes, "replan": a stalled leg, "bridge": round a closed bridge, "op": an operation's march) and the
+## formation to march in. Saved, so a squad loaded while waiting asks again; the job id is not (route_job, runtime only).
+var route_wait_goal := Vector3.INF
+var route_wait_kind := ""
+var route_wait_form := 0
+var route_job := -1
 var station_objective := -1
 
 # --- Fire teams and tactics (AI-SQUAD-01). Persisted with the squad. ---
@@ -182,7 +189,7 @@ func to_dict() -> Dictionary:
 		"follow_unit": follow_unit_id, "follow_squad": follow_squad_id,
 		"formation": formation, "spacing": spacing, "detached": Array(detached),
 		"status": status, "blocked": Array(blocked), "fallen": Array(fallen), "roe": roe,
-		"op": op_id, "route": Array(route), "route_i": route_i, "station": station_objective,
+		"op": op_id, "route": Array(route), "route_i": route_i, "route_wait": [route_wait_goal, route_wait_kind, route_wait_form], "station": station_objective,
 		"teams": teams.map(func(t: PackedInt32Array) -> Array: return Array(t)), "team_leaders": Array(team_leaders), "team_roles": Array(team_roles),
 		"tactic": tactic, "tactic_owner": tactic_owner, "tactic_phase": tactic_phase, "tactic_since": tactic_since,
 		"tactic_phase_since": tactic_phase_since, "tactic_target": tactic_target, "tactic_contact": tactic_contact,
@@ -215,6 +222,10 @@ static func from_dict(d: Dictionary) -> SquadState:
 	s.op_id = d.get("op", -1)
 	s.route = PackedVector3Array(d.get("route", []))
 	s.route_i = d.get("route_i", 0)
+	var rw: Array = d.get("route_wait", [Vector3.INF, "", 0])
+	s.route_wait_goal = rw[0]
+	s.route_wait_kind = rw[1]
+	s.route_wait_form = rw[2]
 	s.station_objective = d.get("station", -1)
 	for t in d.get("teams", []):
 		s.teams.append(PackedInt32Array(t))

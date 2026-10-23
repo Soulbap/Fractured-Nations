@@ -284,6 +284,8 @@ func explain_squad(sq: SquadState) -> Array[String]:
 				rem += _flat(cur, sq.route[i])
 				cur = sq.route[i]
 			out.append("Route: waypoint %d of %d, %.0f m to go" % [sq.route_i + 1, sq.route.size(), rem])
+		elif sim.squads.route_waiting(sq):
+			out.append("Route: being planned (%s)" % sq.route_wait_kind)
 	elif sq.station_objective >= 0 and war.objective(sq.station_objective):
 		out.append("Commanded by: nobody - garrison of %s%s" % [war.objective(sq.station_objective).obj_name, (" (" + sq.defence_role + ")") if sq.defence_role != "" else ""])
 	elif sq.faction == war.player_faction:
@@ -438,63 +440,122 @@ func start_operation(f: int, type: OperationState.Type, squad_ids: Array, object
 	op.player_ordered = player
 	war.operations[op.id] = op
 	var any := false
-	var planned := {}
 	for sid in squad_ids:
 		var sq := sim.state.get_squad(sid)
 		if sq == null or sq.faction != f or sq.members.is_empty():
 			continue
 		if sq.op_id >= 0:
 			release_squads([sq.id], "reassigned")
-		var r := _plan_route(op, sq)
-		if not r.is_empty():
-			planned[sq.id] = r
-			op.squads.append(sq.id)
-			op.start_strength += strength(sq)
-			sq.op_id = op.id
-			if type != OperationState.Type.COUNTER:
-				sq.station_objective = -1  # a counterattack keeps its station: the squad goes back to it
-			any = true
+		op.squads.append(sq.id)
+		op.start_strength += strength(sq)
+		sq.op_id = op.id
+		if type != OperationState.Type.COUNTER:
+			sq.station_objective = -1  # a counterattack keeps its station: the squad goes back to it
+		any = true
 	if not any:
 		war.operations.erase(op.id)
 		war.next_op_id -= 1
 		return null
-	# AI-WAR-LOGISTICS-01: a long march of an AI operation is made by vehicle when transport is free (OpTransport);
-	# the squads it does not carry, and every squad of a foot operation, walk the planned route at once.
-	var carried: Array = mech.plan(op) if (not player and type != OperationState.Type.MOVE and type != OperationState.Type.COUNTER) else []
-	if type == OperationState.Type.COUNTER:
-		op.transport = {"mode": "foot", "why": "a counterattack is local: no transport"}
-		coord.begin_counter(op, obj)
-	else:
-		for sid in op.squads:
-			if not carried.has(sid):
-				sim.squads.follow_route(sim.state.get_squad(sid), planned[sid])
 	op.phase = OperationState.Phase.MOVING
 	var fs := war.faction(f)
 	if fs:
 		fs.ops_started += 1
 	var where := obj.obj_name if obj else "(%.0f, %.0f)" % [target.x, target.z]
 	log_event(f, "op_start", "%s #%d: %s, %d squads, %d soldiers" % [op.type_name(), op.id, where, op.squads.size(), op.start_strength], target)
+	if type == OperationState.Type.COUNTER:
+		op.transport = {"mode": "foot", "why": "a counterattack is local: no transport"}
+		coord.begin_counter(op, obj)
+		return op
+	# NAV-PERF-01B: the squads' routes are asked for (one RouteService search per start cell, shared by squads standing together);
+	# the operation begins - transport plan, the march - when the first one arrives (on_route_ready). A squad that gets no route
+	# leaves the operation as before; when none gets one the operation is cancelled ("no route").
+	op.starting = true
+	op.wait_reason = "planning routes"
+	for sid in op.squads.duplicate():
+		# A reused route can answer at once and begin the operation; squads the vehicles took do not ask for a foot route.
+		if op.is_active() and op.squads.has(sid) and not _carried(op, sid):
+			_send(op, sim.state.get_squad(sid))
 	return op
 
 
-## Plans and starts the march of one squad for op. ATTACK stops at a staging point short
-## of the objective; the others march into the objective area.
+func _carried(op: OperationState, sid: int) -> bool:
+	return op.transport.get("mode", "foot") == "mech" and (op.transport.get("carried", []) as Array).has(sid)
+
+
+## Asks for the march of one squad for op (the answer comes to on_route_ready). ATTACK stops at a staging point short of the
+## objective; the others march into the objective area. Returns false when no route can be asked for.
 func _send(op: OperationState, sq: SquadState) -> bool:
-	var r := _plan_route(op, sq)
-	if r.is_empty():
+	if op.type == OperationState.Type.COUNTER:
+		sim.squads.follow_route(sq, PackedVector3Array([op.target_pos]))  # the squad tactics move the reserve, there is no march
+		return true
+	if routes == null or not routes.ready:
 		return false
-	sim.squads.follow_route(sq, r)
+	sim.squads.request_route(sq, op.target_pos, "op", SquadState.Formation.COLUMN)
 	return true
 
 
-## The route of a squad for op (empty: none); sets the operation's staging point and route preview.
-func _plan_route(op: OperationState, sq: SquadState) -> PackedVector3Array:
-	if op.type == OperationState.Type.COUNTER:
-		return PackedVector3Array([op.target_pos])  # the squad tactics move the reserve, there is no march
-	var from := squad_center(sq)
-	var r := routes.route(from, op.target_pos, sim.terrain)
-	if r.is_empty():
-		return r
+## NAV-PERF-01B: a squad's operation route arrived (r empty: none, `why`). Starts the operation on its first answer, gives the squad
+## its march, or records the failure (retried after ROUTE_RETRY_S, the operation fails after ROUTE_BLOCKED_TIMEOUT_S, as before).
+func on_route_ready(sq: SquadState, r: PackedVector3Array, why: String) -> void:
+	var op := war.operation(sq.op_id)
+	if op == null or not op.is_active() or not op.squads.has(sq.id):
+		return
+	var now := sim.state.time
+	if r.size() < 2:
+		if op.starting:
+			release_squads([sq.id], "no route")
+			if op.is_active() and op.squads.is_empty():
+				_end(op, OperationState.Phase.CANCELLED, "no route (%s)" % why)
+			elif op.is_active() and not _starting_wait(op):
+				_end(op, OperationState.Phase.CANCELLED, "no route (%s)" % why)
+			return
+		blocked_routes += 1
+		_route_retry[sq.id] = now + ROUTE_RETRY_S
+		var reason := String(sim.squads.route_block_reason.get(sq.id, ""))
+		if reason == "":
+			reason = "no route (%s)" % why
+		op.wait_reason = "route blocked: " + reason
+		if op.blocked_since < 0.0:
+			op.blocked_since = now
+			log_event(op.faction, "navigation", "Operation %d: %s" % [op.id, op.wait_reason], squad_center(sq))
+		return
+	r = _shape_route(op, sq, r)
+	if op.starting:
+		_begin(op)
+		if _carried(op, sq.id):
+			return  # the vehicles take it
+	_route_retry.erase(sq.id)
+	op.blocked_since = -1.0
+	if op.wait_reason.begins_with("route blocked") or op.wait_reason == "planning routes":
+		op.wait_reason = ""
+	sim.squads.follow_route(sq, r)
+
+
+## True while one of op's squads still waits for its route (an operation that is starting).
+func _starting_wait(op: OperationState) -> bool:
+	for sid in op.squads:
+		var sq := sim.state.get_squad(sid)
+		if sq and sim.squads.route_waiting(sq):
+			return true
+	return false
+
+
+## The operation begins with its first route (the staging point is known): AI-WAR-LOGISTICS-01 - a long march of an AI operation
+## is made by vehicle when transport is free (OpTransport); squads the vehicles carry stop waiting for their foot route.
+func _begin(op: OperationState) -> void:
+	op.starting = false
+	if op.wait_reason == "planning routes":
+		op.wait_reason = ""
+	var carried: Array = mech.plan(op) if (not op.player_ordered and op.type != OperationState.Type.MOVE) else []
+	for sid in carried:
+		var sq := sim.state.get_squad(sid)
+		if sq:
+			sim.squads.drop_route_wait(sq)
+
+
+## The route of a squad for op, shaped for the operation: ATTACK ends at the staging point (set on the first route), the others at
+## a spot inside the objective; the first route is the operation's preview.
+func _shape_route(op: OperationState, sq: SquadState, r: PackedVector3Array) -> PackedVector3Array:
 	if op.type == OperationState.Type.ATTACK:
 		r = _cut_before(r, op.target_pos, staging_m)
 		op.staging_pos = r[r.size() - 1]
@@ -502,7 +563,8 @@ func _plan_route(op: OperationState, sq: SquadState) -> PackedVector3Array:
 		var obj := war.objective(op.target_objective)
 		if obj:
 			# The end of the march: a spot inside the objective, spread per squad.
-			r[r.size() - 1] = _slot_in(obj, op.squads.size())
+			var k := op.squads.find(sq.id)
+			r[r.size() - 1] = _slot_in(obj, k if k >= 0 else op.squads.size())
 	if op.route_preview.is_empty():
 		op.route_preview = r
 	return r
@@ -564,30 +626,20 @@ func _update_operation(op: OperationState) -> void:
 	var marching := false
 	for sid in op.squads:
 		var sq := sim.state.get_squad(sid)
-		if not sq.route.is_empty():
+		if sim.squads.marching(sq):
 			marching = true
 		elif op.type != OperationState.Type.COUNTER and op.phase == OperationState.Phase.MOVING and sq.order != SquadState.Order.MOVE and _far_from_goal(op, sq):
 			# Lost its route (blocked, a reaction ended it): plan again from where it is. A failed plan is not repeated every
-			# second: it waits ROUTE_RETRY_S, says why in the operation, and ends the operation after ROUTE_BLOCKED_TIMEOUT_S.
+			# second: it waits ROUTE_RETRY_S, says why in the operation (on_route_ready), and ends the operation after
+			# ROUTE_BLOCKED_TIMEOUT_S. NAV-PERF-01B: the request is answered later; waiting for it is marching, not a failure.
 			if now >= float(_route_retry.get(sq.id, 0.0)):
 				stuck_reroutes += 1
-				if _send(op, sq):
-					_route_retry.erase(sq.id)
-					op.blocked_since = -1.0
-				else:
-					blocked_routes += 1
-					_route_retry[sq.id] = now + ROUTE_RETRY_S
-					var why := String(sim.squads.route_block_reason.get(sq.id, ""))
-					if why == "":
-						why = "no route (%s)" % String(routes.last_failure.get("reason", "unreachable"))
-					op.wait_reason = "route blocked: " + why
-					if op.blocked_since < 0.0:
-						op.blocked_since = now
-						log_event(op.faction, "navigation", "Operation %d: %s" % [op.id, op.wait_reason], squad_center(sq))
-					elif now - op.blocked_since > ROUTE_BLOCKED_TIMEOUT_S:
-						_end(op, OperationState.Phase.FAILED, op.wait_reason)
-						return
+				_route_retry[sq.id] = now + ROUTE_RETRY_S
+				_send(op, sq)
 			marching = true
+	if op.blocked_since >= 0.0 and now - op.blocked_since > ROUTE_BLOCKED_TIMEOUT_S:
+		_end(op, OperationState.Phase.FAILED, op.wait_reason)
+		return
 	match op.type:
 		OperationState.Type.ATTACK:
 			if obj and obj.owner == op.faction:
@@ -630,7 +682,7 @@ func _update_operation(op: OperationState) -> void:
 					if coordinated:
 						break
 					var sq := sim.state.get_squad(sid)
-					if sq.route.is_empty() and sq.order != SquadState.Order.MOVE and sq.tactic == SquadState.Tactic.NONE and _flat(squad_center(sq), obj.position) > obj.radius * 0.8:
+					if not sim.squads.marching(sq) and sq.order != SquadState.Order.MOVE and sq.tactic == SquadState.Tactic.NONE and _flat(squad_center(sq), obj.position) > obj.radius * 0.8:
 						sim.squads.follow_route(sq, PackedVector3Array([_slot_in(obj, sid % 5)]), SquadState.Formation.LINE)
 		OperationState.Type.DEFEND:
 			if obj and obj.owner != op.faction and not obj.contested and obj.capture_faction < 0 and obj.owner >= 0:
@@ -809,14 +861,17 @@ func join_operation(op: OperationState, squad_ids: Array, why := "") -> bool:
 			continue
 		if sq.op_id >= 0:
 			release_squads([sq.id], "reassigned")
-		if _send(op, sq):
-			op.squads.append(sq.id)
-			op.start_strength += strength(sq)
-			sq.op_id = op.id
-			sq.station_objective = -1
-			op.roles[sq.id] = SquadState.OpRole.REINFORCE
-			sq.op_role = SquadState.OpRole.REINFORCE
-			any = true
+		if routes == null or not routes.ready:
+			continue
+		op.squads.append(sq.id)
+		op.start_strength += strength(sq)
+		sq.op_id = op.id
+		sq.station_objective = -1
+		op.roles[sq.id] = SquadState.OpRole.REINFORCE
+		sq.op_role = SquadState.OpRole.REINFORCE
+		any = true
+		# NAV-PERF-01B: the march is asked for after the squad joined (the answer finds it in the operation).
+		_send(op, sq)
 	if any:
 		op.stage_why = "reinforced: " + why
 		log_event(op.faction, "reinforce", "%s #%d receives %d more squads" % [op.type_name(), op.id, squad_ids.size()], op.target_pos)

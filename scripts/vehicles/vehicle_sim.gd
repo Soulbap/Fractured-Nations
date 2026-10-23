@@ -76,10 +76,22 @@ func refresh() -> void:
 	ids.sort()
 	_closed_stop.clear()
 	_replan_queue.clear()
+	_drive_job.clear()
+	_drive_wait.clear()
 	for u: UnitState in sim.state.units.values():
 		if u.kind == UnitState.Kind.VEHICLE and u.veh:
 			prepare_route(u.veh)
 			_scan_closed(u)
+	# NAV-PERF-01B: vehicles saved while their route was being planned ask again (after WorldSim dropped the old searches).
+	call_deferred("_resubmit_waiting")
+
+
+func _resubmit_waiting() -> void:
+	for id in ids:
+		var u: UnitState = sim.state.units.get(id)
+		if u and u.alive and u.veh and u.order == UnitState.Order.MOVE and u.veh.route.size() < 2 and not u.player_controlled and not _drive_job.has(id):
+			_drive_wait[id] = {"kind": "order", "then": Callable()}
+			_submit_drive(u, u.order_target, _drive_priority(u, true))
 
 
 func _on_added(u: UnitState) -> void:
@@ -96,6 +108,7 @@ func _on_removed(id: int) -> void:
 	_rev_mode.erase(id)
 	_closed_stop.erase(id)
 	_replan_queue.erase(id)
+	_drop_drive(id)
 
 
 # --- Orders ---------------------------------------------------------------------------------
@@ -110,7 +123,7 @@ func order_group(vids: Array, dest: Vector3) -> Dictionary:
 	if vids.size() >= 2 and first and Vector2(dest.x - first.position.x, dest.z - first.position.z).length() > CONVOY_MIN_M:
 		var cr := convoy.order_convoy(vids, dest)
 		if cr.ok:
-			texts.append("%s: %d vehicles, %.1f km" % [sim.state.logistics.convoys[cr.convoy].name, cr.driving.size(), first.veh.route_remaining_m() / 1000.0])
+			texts.append("%s: %d vehicles, planning the route" % [sim.state.logistics.convoys[cr.convoy].name, cr.driving.size()])
 			for f in cr.failed:
 				texts.append("%s: %s" % [sim.state.get_unit(f.id).unit_name, f.reason])
 			return {"n": cr.driving.size(), "texts": texts}
@@ -123,10 +136,11 @@ func order_group(vids: Array, dest: Vector3) -> Dictionary:
 			var fwd := Vector3(dest.x - u.position.x, 0.0, dest.z - u.position.z).normalized()
 			at = dest + Vector3(fwd.z, 0.0, -fwd.x) * ((i - half * 0.5) * 12.0)
 		i += 1
-		var res := order_drive(id, at)
+		# NAV-PERF-01B: the route is planned within the frame budget; the vehicle reports it (or why there is none) when it comes.
+		var res := request_drive(id, at)
 		if res.ok:
 			n += 1
-			texts.append("%s: %.1f km (%.1f km by road)" % [u.unit_name, res.length_m / 1000.0, res.road_m / 1000.0])
+			texts.append("%s: planning the route" % u.unit_name)
 		else:
 			texts.append("%s: %s" % [u.unit_name, res.reason])
 	return {"n": n, "texts": texts}
@@ -175,8 +189,9 @@ func _collect_parked(u: UnitState) -> void:
 	router.parked_circles = out
 
 
-## Plans a route to `target` for a vehicle and starts driving it. Returns the planner result
-## ({ok, reason, length_m, road_m, ...}); on failure the vehicle keeps its previous order.
+## Plans a route to `target` for a vehicle and starts driving it, at once (the whole plan runs in this call: tests, tools and
+## comparisons; normal play uses request_drive). Returns the planner result ({ok, reason, length_m, road_m, ...}); on failure the
+## vehicle keeps its previous order.
 func order_drive(id: int, target: Vector3, from_transport := false) -> Dictionary:
 	var u := sim.state.get_unit(id)
 	if u == null or u.veh == null or not u.alive:
@@ -184,21 +199,8 @@ func order_drive(id: int, target: Vector3, from_transport := false) -> Dictionar
 	var v := u.veh
 	if v.status == VehicleState.Status.DISABLED:
 		return {"ok": false, "reason": "The vehicle is disabled"}
-	if not from_transport:
-		sim.logistics.bases.on_manual_order(id)
-	if not from_transport and v.convoy_id >= 0:
-		convoy.leave(id)
-	if not from_transport and not v.job.is_empty():
-		sim.logistics.cancel_job(id, "replaced by a move order")
-	if not from_transport:
-		match v.phase:
-			VehicleState.Phase.APPROACH:
-				transport.cancel(id)
-			VehicleState.Phase.BOARDING:
-				# A Move order while boarding: leave now with whoever is aboard.
-				transport.depart(u, v, target)
-			VehicleState.Phase.TRANSIT:
-				v.transport_dest = target
+	_drop_drive(id)
+	_take_order(u, v, target, from_transport)
 	var t := Vector3(target.x, ground_at(target), target.z)
 	_collect_parked(u)
 	var res := router.plan(u.position, t, v.def())
@@ -214,6 +216,153 @@ func order_drive(id: int, target: Vector3, from_transport := false) -> Dictionar
 		_event(u, "cannot go there: %s" % res.reason)
 		stats.failed += 1
 		return res
+	_start_route(u, v, t, res)
+	return res
+
+
+## NAV-PERF-01B: unit id -> RouteService job id of the vehicle's route in planning (the token: an answer for another job is dropped).
+var _drive_job := {}
+## What waiting vehicles do with their answer: unit id -> {then: Callable, kind: "order" | "bridge" | "stuck"}.
+var _drive_wait := {}
+var drive_requests := 0
+
+
+## NAV-PERF-01B: order_drive for normal play. The vehicle takes the order now (order MOVE to the target), stops where it is and
+## waits (status WAITING, "planning route") while RouteService plans its route within the frame budget; the answer is applied only
+## if it still belongs to the vehicle's current order (a newer order, a halt or the player taking the wheel drops it). No route
+## (or not enough fuel for it) ends like a failed replan: "Path blocked: <reason>", status BLOCKED, the order cleared - which
+## transport, logistics, convoys and operations already handle. `then(u, res)` is called with the answer (on a failure it may
+## return true: handled, the vehicle is not marked blocked). Returns {ok, pending} or, for an order that cannot be given at all
+## (no vehicle, disabled), {ok: false, reason}.
+func request_drive(id: int, target: Vector3, from_transport := false, priority := -1, then := Callable()) -> Dictionary:
+	var u := sim.state.get_unit(id)
+	if u == null or u.veh == null or not u.alive:
+		return {"ok": false, "reason": "No such vehicle"}
+	var v := u.veh
+	if v.status == VehicleState.Status.DISABLED:
+		return {"ok": false, "reason": "The vehicle is disabled"}
+	_drop_drive(id)
+	_take_order(u, v, target, from_transport)
+	var t := Vector3(target.x, ground_at(target), target.z)
+	var prio := priority if priority >= 0 else _drive_priority(u, from_transport)
+	# The order is the vehicle's from now on; it stops and waits for its route.
+	_clear_order(u, VehicleState.Status.WAITING)
+	u.order = UnitState.Order.MOVE
+	u.order_target = t
+	u.move_state = UnitState.MoveState.MOVING
+	v.reason = "planning route"
+	sim.state.order_changed.emit(u)
+	_drive_wait[id] = {"then": then, "kind": "order"}
+	drive_requests += 1
+	_submit_drive(u, t, prio)
+	if not _drive_job.has(id):
+		return {"ok": u.order == UnitState.Order.MOVE, "pending": false, "reason": v.reason}
+	return {"ok": true, "pending": true, "reason": ""}
+
+
+func _submit_drive(u: UnitState, t: Vector3, prio: int) -> void:
+	_collect_parked(u)
+	var parked := router.parked_circles.duplicate()
+	var d := u.veh.def()
+	var job := sim.routing.submit(&"vehicle", "vehicle:%d" % u.id, prio, router.job_key(u.position, t, d, parked),
+		VehicleRouter.PlanRunner.new(router, u.position, t, d, parked), _on_drive_job.bind(u.id), u.position, t)
+	_drive_job[u.id] = job.id
+	if job.is_done():
+		_on_drive_job(job, u.id)
+
+
+## True while the vehicle waits for a route it asked for.
+func route_pending(id: int) -> bool:
+	return _drive_job.has(id)
+
+
+## Forgets a route being planned for the vehicle (its order was replaced, it was halted or taken over).
+func _drop_drive(id: int) -> void:
+	if _drive_job.has(id):
+		sim.routing.cancel_owner("vehicle:%d" % id, "vehicle order replaced")
+	_drive_job.erase(id)
+	_drive_wait.erase(id)
+
+
+func _drive_priority(u: UnitState, from_transport: bool) -> int:
+	var war := sim.state.war
+	if not from_transport and (not war.active or u.faction == war.player_faction):
+		return RouteService.Priority.PLAYER
+	if u.veh.convoy_id >= 0 or not u.veh.job.is_empty():
+		return RouteService.Priority.CONVOY
+	if u.veh.assign_kind != "" or u.veh.phase != VehicleState.Phase.NONE:
+		return RouteService.Priority.OPERATION
+	return RouteService.Priority.STRATEGIC
+
+
+func _on_drive_job(job: RouteService.Job, id: int) -> void:
+	if int(_drive_job.get(id, -1)) != job.id:
+		return  # a newer order owns the vehicle
+	_drive_job.erase(id)
+	var w: Dictionary = _drive_wait.get(id, {})
+	_drive_wait.erase(id)
+	var u := sim.state.get_unit(id)
+	if u == null or u.veh == null or not u.alive or u.order != UnitState.Order.MOVE or u.player_controlled:
+		return
+	var v := u.veh
+	var d := v.def()
+	var res := job.result
+	var kind: String = w.get("kind", "order")
+	var then: Callable = w.get("then", Callable())
+	if kind == "bridge" and (not _closed_stop.has(id) or not _scan_closed(u, false)):
+		return  # reopened, or already past the deck
+	if res.ok:
+		var need: float = float(res.length_m) / 1000.0 * d.fuel_per_km * 1.05
+		if v.fuel < need:
+			res = {"ok": false, "reason": "Insufficient fuel: the route needs %d l, the tank has %d l" % [ceili(need), roundi(v.fuel)]}
+	if not res.ok:
+		if then.is_valid() and bool(then.call(u, res)):
+			return
+		if kind == "bridge":
+			_closed_stop.erase(id)
+			stats.bridge_blocked += 1
+		leave_convoy_of(u)
+		_fail(u, "Path blocked: " + String(res.reason), kind == "bridge")
+		return
+	match kind:
+		"order":
+			_start_route(u, v, u.order_target, res)
+		"bridge":
+			_apply_route(u, res)
+			v.reason = ""
+			v.replans = 0
+			stats.bridge_replans += 1
+			_event(u, "new route round the closed bridge (%.1f km)" % (float(res.length_m) / 1000.0))
+		"stuck":
+			_apply_route(u, res)
+			v.reason = "Stuck: route planned again"
+			_event(u, "stuck, new route")
+	if then.is_valid():
+		then.call(u, res)
+
+
+## What a new order cancels before the route is planned (convoy, job, transport phases), as before.
+func _take_order(u: UnitState, v: VehicleState, target: Vector3, from_transport: bool) -> void:
+	var id := u.id
+	if not from_transport:
+		sim.logistics.bases.on_manual_order(id)
+	if not from_transport and v.convoy_id >= 0:
+		convoy.leave(id)
+	if not from_transport and not v.job.is_empty():
+		sim.logistics.cancel_job(id, "replaced by a move order")
+	if not from_transport:
+		match v.phase:
+			VehicleState.Phase.APPROACH:
+				transport.cancel(id)
+			VehicleState.Phase.BOARDING:
+				# A Move order while boarding: leave now with whoever is aboard.
+				transport.depart(u, v, target)
+			VehicleState.Phase.TRANSIT:
+				v.transport_dest = target
+
+
+## The planned route is driven: the order, the counters and the state a new order starts with.
+func _start_route(u: UnitState, v: VehicleState, t: Vector3, res: Dictionary) -> void:
 	_apply_route(u, res)
 	u.order = UnitState.Order.MOVE
 	u.order_target = t
@@ -227,7 +376,6 @@ func order_drive(id: int, target: Vector3, from_transport := false) -> Dictionar
 	v.reason = ""
 	stats.ordered += 1
 	sim.state.order_changed.emit(u)
-	return res
 
 
 func _apply_route(u: UnitState, res: Dictionary) -> void:
@@ -292,6 +440,7 @@ func spot_valid(p: Vector3) -> bool:
 
 
 func _clear_order(u: UnitState, status: int) -> void:
+	_drop_drive(u.id)
 	var v := u.veh
 	u.order = UnitState.Order.NONE
 	u.order_target = Vector3.ZERO
@@ -308,6 +457,7 @@ func take_control(id: int) -> bool:
 	var u := sim.state.get_unit(id)
 	if u == null or u.veh == null or not u.alive or u.veh.status == VehicleState.Status.DISABLED:
 		return false
+	_drop_drive(id)
 	u.player_controlled = true
 	u.veh.status = VehicleState.Status.PLAYER
 	u.veh.in_throttle = 0.0
@@ -331,7 +481,7 @@ func release_control(id: int, resume := true) -> void:
 	v.status = VehicleState.Status.PARKED
 	if resume and u.order == UnitState.Order.MOVE and u.order_target.is_finite():
 		# Internal: the vehicle keeps its convoy, job and transport state; only the route is planned again.
-		order_drive(id, u.order_target, true)
+		request_drive(id, u.order_target, true)
 	elif not resume:
 		_clear_order(u, VehicleState.Status.PARKED)
 
@@ -347,6 +497,8 @@ func _on_bridge_changed(b: RoadNetwork.Bridge) -> void:
 			if u == null or u.veh == null or not _scan_closed(u, false):
 				_closed_stop.erase(id)
 				_replan_queue.erase(id)
+				if String(_drive_wait.get(id, {}).get("kind", "")) == "bridge":
+					_drop_drive(id)
 		return
 	for id in ids:
 		var u: UnitState = sim.state.units.get(id)
@@ -378,6 +530,9 @@ func _scan_closed(u: UnitState, queue := true) -> bool:
 ## One new route per tick for the vehicles that stopped short of a closed bridge (a search can cost 100 ms or more; the queue keeps
 ## a burst of them from landing in one frame). A vehicle whose order, route or bridge changed meanwhile is simply skipped.
 func _process_replans() -> void:
+	# NAV-PERF-01B: each holding vehicle asks RouteService for its way round (they used to be planned here, one per tick, each
+	# search up to a few hundred milliseconds); it keeps braking short of the deck meanwhile. A vehicle whose order, route or bridge
+	# changed is skipped, as before; the answer is checked again when it comes (_on_drive_job).
 	while not _replan_queue.is_empty():
 		var id: int = _replan_queue.pop_front()
 		var u: UnitState = sim.state.units.get(id)
@@ -386,25 +541,8 @@ func _process_replans() -> void:
 			continue
 		if not _closed_stop.has(id) or not _scan_closed(u, false):
 			continue  # reopened, or already past the deck
-		var v := u.veh
-		var d := v.def()
-		_collect_parked(u)
-		var res := router.plan(u.position, u.order_target, d)
-		if res.ok:
-			var need: float = res.length_m / 1000.0 * d.fuel_per_km * 1.05
-			if v.fuel >= need:
-				_apply_route(u, res)
-				v.reason = ""
-				v.replans = 0
-				stats.bridge_replans += 1
-				_event(u, "new route round the closed bridge (%.1f km)" % (float(res.length_m) / 1000.0))
-				return
-			res = {"ok": false, "reason": "Insufficient fuel: the other route needs %d l, the tank has %d l" % [ceili(need), roundi(v.fuel)]}
-		_closed_stop.erase(id)
-		stats.bridge_blocked += 1
-		leave_convoy_of(u)
-		_fail(u, "Path blocked: " + String(res.reason), true)
-		return
+		_drive_wait[id] = {"kind": "bridge", "then": Callable()}
+		_submit_drive(u, u.order_target, RouteService.Priority.CONVOY)
 
 
 # --- Route preparation ------------------------------------------------------------------------
@@ -529,7 +667,8 @@ func _step(u: UnitState, dt: float) -> void:
 		steer_target = res.steer
 	else:
 		if v.status != VehicleState.Status.NO_FUEL and v.status != VehicleState.Status.BLOCKED:
-			v.status = VehicleState.Status.PARKED
+			# NAV-PERF-01B: a vehicle waiting for its route stands still, waiting (not parked: it has an order).
+			v.status = VehicleState.Status.WAITING if _drive_job.has(u.id) else VehicleState.Status.PARKED
 		v.stuck_s = 0.0
 	# Fuel.
 	if v.fuel <= 0.0 and (target_speed != 0.0):
@@ -877,8 +1016,9 @@ func _gap_ahead(u: UnitState, v: VehicleState, d: VehicleDefs.Def, i: int) -> fl
 
 
 func _check_stuck(u: UnitState, v: VehicleState, d: VehicleDefs.Def, target_speed: float, dt: float) -> void:
-	# N1-C1: holding short of a closed bridge while another route is found is not a stuck vehicle.
-	if _closed_stop.has(u.id):
+	# N1-C1: holding short of a closed bridge while another route is found is not a stuck vehicle. NAV-PERF-01B: nor is one
+	# whose new route is being planned (no recovery starts while it waits: no request-cancel-request loop).
+	if _closed_stop.has(u.id) or _drive_job.has(u.id):
 		v._progress_t = 0.0
 		v._progress_ref = u.position
 		return
@@ -932,14 +1072,10 @@ func _check_stuck(u: UnitState, v: VehicleState, d: VehicleDefs.Def, target_spee
 	elif v.recoveries <= MAX_RECOVERIES and v.replans < 2:
 		v.replans += 1
 		stats.replanned += 1
-		var target := u.order_target
-		var res := router.plan(u.position, target, d)
-		if res.ok:
-			_apply_route(u, res)
-			v.reason = "Stuck: route planned again"
-			_event(u, "stuck, new route")
-		else:
-			_fail(u, "Path blocked: " + res.reason)
+		# NAV-PERF-01B: asked for; the answer is applied (or the vehicle reported blocked) in _on_drive_job.
+		v.reason = "Stuck: planning a new route"
+		_drive_wait[u.id] = {"kind": "stuck", "then": Callable()}
+		_submit_drive(u, u.order_target, _drive_priority(u, true))
 	else:
 		_fail(u, "Path blocked: could not get free")
 

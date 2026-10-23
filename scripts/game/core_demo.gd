@@ -342,6 +342,8 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 		_road_audit.run.call_deferred(args)
 	elif "--road-overlay" in args:
 		toggle_road_overlay.call_deferred()
+	elif "--route-overlay" in args:
+		toggle_route_overlay.call_deferred()
 	elif "--ai-war-test" in args:
 		_ai_war_selftest = AIWarSelfTest.new(self)
 		_ai_war_selftest.run.call_deferred(args)
@@ -478,6 +480,17 @@ static func apply_time_scale(k: float) -> void:
 ## F8: the road audit overlay (disconnected networks, repaired gaps, near misses, unreachable places); a second press hides
 ## it, the next one rebuilds it from the current roads.
 var _road_overlay: RoadAuditOverlay
+## NAV-PERF-01B: route planning overlay (F6, or `--route-overlay`).
+var _route_overlay: RouteServiceOverlay
+
+
+func toggle_route_overlay() -> void:
+	if _route_overlay != null and is_instance_valid(_route_overlay):
+		_route_overlay.queue_free()
+		_route_overlay = null
+		return
+	_route_overlay = RouteServiceOverlay.new(sim)
+	add_child(_route_overlay)
 
 
 func toggle_road_overlay() -> void:
@@ -491,6 +504,10 @@ func toggle_road_overlay() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F6:
+		toggle_route_overlay()
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F8:
 		toggle_road_overlay()
 		get_viewport().set_input_as_handled()

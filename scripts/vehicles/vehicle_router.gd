@@ -145,6 +145,54 @@ var _deck_hit := false
 ## The closed bridge the vehicle being planned stands on (null: none). Its deck stays usable for the plan, so a vehicle on a
 ## closed bridge can leave it; no other closed deck is.
 var _start_bridge: RoadNetwork.Bridge = null
+## NAV-PERF-01B: the slice of a resumable plan in progress (PlanRunner): {deadline (usec), memo, work, aborted}; empty for a plan
+## that runs to its end at once (every synchronous caller). See PlanRunner.
+var _slice := {}
+
+
+## NAV-PERF-01B checkpoint before a piece of work (a leg, a grid search, the assembly): true when the plan has to stop here - the
+## slice's deadline has passed and at least one piece was finished in it. Every caller up the chain then returns at once and caches
+## nothing; the runner calls plan() again in the next frame and the finished pieces come from its memo.
+func _stop() -> bool:
+	if _slice.is_empty():
+		return false
+	if not _slice.aborted and int(_slice.work) > 0 and Time.get_ticks_usec() >= int(_slice.deadline):
+		_slice.aborted = true
+	return _slice.aborted
+
+
+## The same inside a loop whose progress is kept in the memo (a local grid being built): only the deadline counts.
+func _late() -> bool:
+	if _slice.is_empty():
+		return false
+	if not _slice.aborted and Time.get_ticks_usec() >= int(_slice.deadline):
+		_slice.aborted = true
+	return _slice.aborted
+
+
+## True once the plan in progress stopped at a checkpoint (results seen now are incomplete, not failures).
+func _halted() -> bool:
+	return not _slice.is_empty() and bool(_slice.aborted)
+
+
+func _worked(what := "") -> void:
+	if not _slice.is_empty():
+		_slice.work = int(_slice.work) + 1
+		# Diagnostics: the longest stretch between two finished pieces of this slice, and what ended it.
+		var now := Time.get_ticks_usec()
+		var ms := (now - int(_slice.get("mark", now))) / 1000.0
+		_slice["mark"] = now
+		if not _slice.has("log"):
+			_slice["log"] = []
+		_slice.log.append("%s %.2f" % [what, ms])
+		if ms > float(_slice.get("piece_ms", 0.0)):
+			_slice["piece_ms"] = ms
+			_slice["piece"] = what
+
+
+## The resumable plan's memo (finished pieces by key), or a throwaway dictionary for a plan run at once.
+func _memo() -> Dictionary:
+	return _slice.memo if not _slice.is_empty() else {}
 
 
 func setup(p_net: RoadNetwork, p_routes: StrategicRoutes, p_terrain: Terrain3D, p_structures: StructureManager) -> void:
@@ -532,8 +580,10 @@ func _soft_path(a: int, b: int) -> Dictionary:
 	for l: Dictionary in _soft.get(ca, []):
 		if _comp_of.get(l.b, -1) != cb:
 			continue
-		var p1 := _road_id_path(a, l.a)
-		var p2 := _road_id_path(l.b, b)
+		var p1 := _memo_path(a, l.a)
+		var p2 := _memo_path(l.b, b) if not _halted() else PackedInt64Array()
+		if _halted():
+			return {}
 		if p1.is_empty() or p2.is_empty():
 			continue
 		var cost := _path_cost(p1) + _path_cost(p2) + float(l.gap_m) * 3.0
@@ -596,7 +646,17 @@ func nearest_nodes(p: Vector3, count: int, radius: float, accept := Callable(), 
 	var rings := ceili(radius / HASH)
 	var c := Vector2i(floori(p.x / HASH), floori(p.z / HASH))
 	var cand: Array = []
-	for r in range(0, rings + 1):
+	# NAV-PERF-01B: in a resumable plan the ring scan stops at the deadline (every 4 rings) and goes on from its memo.
+	var memo := _memo()
+	var nk := "nn:%.1f,%.1f:%d:%.0f:%s" % [p.x, p.z, count, radius, distinct]
+	var r0 := 0
+	if memo.has(nk):
+		r0 = int(memo[nk].r)
+		cand = memo[nk].cand
+	for r in range(r0, rings + 1):
+		if not _slice.is_empty() and r > r0 and (r - r0) % 4 == 0 and _late():
+			memo[nk] = {"r": r, "cand": cand}
+			return []
 		var offs: Array[Vector2i] = []
 		if r == 0:
 			offs.append(Vector2i.ZERO)
@@ -721,6 +781,9 @@ func plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 		return hit
 	var res := _plan(from, to, def)
 	_start_bridge = null
+	if _halted():
+		# NAV-PERF-01B: stopped at a checkpoint; nothing is cached or counted, the runner goes on in the next frame.
+		return {"ok": false, "halted": true, "reason": "planning", "points": PackedVector3Array(), "caps": PackedFloat32Array()}
 	if not res.ok:
 		_fail_cache[key] = {"t": now_ms, "res": res}
 	else:
@@ -770,16 +833,35 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 	# finds a gate) does the rest.
 	var free := func(id: int, pos: Vector3) -> bool:
 		return not astar.is_point_disabled(id) and (structures == null or not structures.blocks_point(Vector2(pos.x, pos.z), road_clear_r(def)))
-	var tc := Time.get_ticks_usec()
-	var a_list := _with_main(_enter_candidates(from, free), from, free)
-	var b_list := _with_main(_enter_candidates(to, free), to, free)
-	prof.cand_ms += (Time.get_ticks_usec() - tc) / 1000.0
+	# NAV-PERF-01B: a resumable plan keeps the candidate lists, road paths, combinations and legs in its memo; a plan run at once
+	# gets a throwaway one (the same work as before).
+	var memo := _memo()
+	for end_i in 2:
+		var ck := "cand%d" % end_i
+		if memo.has(ck):
+			continue
+		var tc := Time.get_ticks_usec()
+		var at := from if end_i == 0 else to
+		var near := _enter_candidates(at, free)
+		var lst := _with_main(near, at, free) if not _halted() else []
+		prof.cand_ms += (Time.get_ticks_usec() - tc) / 1000.0
+		if _halted():
+			return _fail("halted")
+		memo[ck] = lst
+		_worked("candidates")
+	var a_list: Array = memo.cand0
+	var b_list: Array = memo.cand1
 	var why: Array = ["road candidates %d/%d" % [a_list.size(), b_list.size()]]
-	var seen_pair := {}
+	if not memo.has("seen_pair"):
+		memo["seen_pair"] = {}
+		memo["road_blocked"] = {}
+		memo["combo_of"] = {}
+	var seen_pair: Dictionary = memo.seen_pair
+	var combo_of: Dictionary = memo.combo_of
 	var bad_a := {}  # vertices whose cross-country leg already failed: the other combos using them are skipped
 	var bad_b := {}
-	# Candidate paths overlap heavily. Footprints cannot change during this synchronous plan.
-	var road_blocked := {}
+	# Candidate paths overlap heavily. Footprints cannot change during one plan (a change restarts a resumable one).
+	var road_blocked: Dictionary = memo.road_blocked
 	var legs_tried := 0
 	var narrow_bridges := false
 	for br: RoadNetwork.Bridge in net.bridges:
@@ -792,30 +874,43 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 	for stage in [0, 1]:
 		var la_list := _stage_list(a_list, stage)
 		var lb_list := _stage_list(b_list, stage)
-		var combos: Array = []
-		for a: Dictionary in la_list:
-			for b: Dictionary in lb_list:
-				var pk: int = int(a.id) * 1000003 + int(b.id)
-				if seen_pair.has(pk):
-					continue
-				seen_pair[pk] = true
-				var tp := Time.get_ticks_usec()
-				var ids := _road_id_path(a.id, b.id)
-				prof.astar_ms += (Time.get_ticks_usec() - tp) / 1000.0
-				prof.astar_calls += 1
-				var soft_k := -1
-				if ids.is_empty():
-					var sp := _soft_path(a.id, b.id)
-					if sp.is_empty():
+		var ck := "combos%d" % stage
+		var combos: Array = memo.get(ck, [])
+		if not memo.has(ck):
+			for a: Dictionary in la_list:
+				for b: Dictionary in lb_list:
+					var pk: int = int(a.id) * 1000003 + int(b.id)
+					# A pair an earlier stage examined is not examined again (seen_pair: pair -> its stage).
+					if seen_pair.has(pk) and int(seen_pair[pk]) < stage:
 						continue
-					ids = sp.ids
-					soft_k = sp.k
-				# N1-C1: a bridge deck narrower than the vehicle (plus DECK_CLEARANCE_M) cannot be used; the combo is dropped.
-				if narrow_bridges and _bridge_unfit(ids, def) != null:
-					why.append("bridge too narrow for %s" % def.id)
-					continue
-				combos.append({"cost": _path_cost(ids) + (a.dist + b.dist) * def.offroad_factor, "ids": ids, "a": a, "b": b, "soft_k": soft_k})
-		combos.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return x.cost < y.cost)
+					# A resumable plan keeps each pair's combination (or null: none) so a later slice does not redo its costs.
+					if combo_of.has(pk):
+						if combo_of[pk] != null:
+							combos.append(combo_of[pk])
+						continue
+					var ids := _memo_path(a.id, b.id)
+					if _halted():
+						return _fail("halted")
+					seen_pair[pk] = stage
+					var soft_k := -1
+					if ids.is_empty():
+						var sp := _soft_path(a.id, b.id)
+						if _halted():
+							return _fail("halted")
+						if sp.is_empty():
+							combo_of[pk] = null
+							continue
+						ids = sp.ids
+						soft_k = sp.k
+					# N1-C1: a bridge deck narrower than the vehicle (plus DECK_CLEARANCE_M) cannot be used; the combo is dropped.
+					if narrow_bridges and _bridge_unfit(ids, def) != null:
+						why.append("bridge too narrow for %s" % def.id)
+						combo_of[pk] = null
+						continue
+					combo_of[pk] = {"cost": _path_cost(ids) + (a.dist + b.dist) * def.offroad_factor, "ids": ids, "a": a, "b": b, "soft_k": soft_k}
+					combos.append(combo_of[pk])
+			combos.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return x.cost < y.cost)
+			memo[ck] = combos
 		why.append("stage %d combos %d" % [stage, combos.size()])
 		var found := 0
 		var scanned := 0
@@ -826,18 +921,28 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 				continue
 			scanned += 1
 			var tr := Time.get_ticks_usec()
-			var rp := _road_gaps(cb.ids, def, int(cb.soft_k), road_blocked)
+			var gk := "gaps:%d:%d:%d" % [int(cb.a.id), int(cb.b.id), int(cb.soft_k)]
+			var rp: Dictionary = memo[gk] if memo.has(gk) else _road_gaps(cb.ids, def, int(cb.soft_k), road_blocked)
 			prof.roadpath_ms += (Time.get_ticks_usec() - tr) / 1000.0
+			if _halted():
+				return _fail("halted")
+			if not memo.has(gk):
+				memo[gk] = rp
+				_worked("road gaps %d vertices" % cb.ids.size())
 			if rp.is_empty():
 				why.append("road blocked, no gap leg" if int(cb.soft_k) < 0 else "soft link not drivable")
 				continue
 			legs_tried += 1
 			var la := _leg(from, cb.a.pos, def)
+			if _halted():
+				return _fail("halted")
 			if not la.ok:
 				bad_a[cb.a.id] = true
 				why.append("start leg %.0f m failed" % cb.a.dist)
 				continue
 			var lb := _leg(cb.b.pos, to, def)
+			if _halted():
+				return _fail("halted")
 			if not lb.ok:
 				bad_b[cb.b.id] = true
 				why.append("end leg %.0f m failed" % cb.b.dist)
@@ -862,6 +967,8 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 		_piece_limit = 3 if best_road < INF else 99
 		direct = _leg(from, to, def)
 		_piece_limit = 99
+		if _halted():
+			return _fail("halted")
 		if direct.ok:
 			cands.append({"cost": _length(direct.pts) * def.offroad_factor, "legs": [direct], "road": [], "names": []})
 	why.append("direct %s" % direct.ok)
@@ -875,9 +982,12 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 		f["why"] = why
 		return f
 	cands.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return x.cost < y.cost)
+	if _stop():
+		return _fail("halted")
 	var ta := Time.get_ticks_usec()
 	var assembled := _assemble(cands[0], from, to, def)
 	prof.assemble_ms += (Time.get_ticks_usec() - ta) / 1000.0
+	_worked("assembly %d points" % (assembled.points as PackedVector3Array).size())
 	return assembled
 
 
@@ -914,7 +1024,7 @@ func _road_gaps(ids: PackedInt64Array, def: VehicleDefs.Def, soft_k := -1, block
 	if soft_k >= 0:
 		# The soft link: ids[soft_k] -> ids[soft_k + 1] is no graph edge, a short cross-country leg planned for this vehicle.
 		var sl := _leg(astar.get_point_position(ids[soft_k]), astar.get_point_position(ids[soft_k + 1]), def)
-		if not sl.ok:
+		if not sl.ok or _halted():
 			return {}
 		gaps.append({"from": soft_k, "to": soft_k + 1, "pts": sl.pts})
 		gap_m += _length(sl.pts)
@@ -929,7 +1039,7 @@ func _road_gaps(ids: PackedInt64Array, def: VehicleDefs.Def, soft_k := -1, block
 		if k == 0 or j == n - 1:
 			return {}
 		var leg := _leg(astar.get_point_position(ids[k - 1]), astar.get_point_position(ids[j + 1]), def)
-		if not leg.ok:
+		if not leg.ok or _halted():
 			return {}
 		gaps.append({"from": k - 1, "to": j + 1, "pts": leg.pts})
 		gap_m += _length(leg.pts)
@@ -967,108 +1077,133 @@ func _length(pts: PackedVector3Array) -> float:
 ## Builds the final polyline of a chosen candidate: control points with speed ceilings,
 ## spline-resampled to about 3 m, heights from the ground (and bridge decks).
 func _assemble(cand: Dictionary, from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
-	var ctrl := PackedVector3Array()
-	var cap := PackedFloat32Array()
-	var legs: Array = cand.legs
-	var road_m := 0.0
-	var off_m := 0.0
+	# NAV-PERF-01B: three pieces of a resumable plan (control points and lanes; spline and speed ceilings; heights, a few hundred
+	# points between deadline checks), kept in the memo between slices. A plan run at once does them in one go as before.
+	var memo := _memo()
+	if not memo.has("asm"):
+		memo["asm"] = {"stage": 0}
+	var asm: Dictionary = memo.asm
 	var off_cap := def.offroad_speed
-	_append(ctrl, cap, legs[0].pts, off_cap)
-	off_m += _length(legs[0].pts)
-	var lane_idx: Array = []  # [index in ctrl, road] of road points that may move to the right-hand lane
-	if not cand.road.is_empty():
-		var ids: PackedInt64Array = cand.road
-		var gap_from := {}
-		var gap_to := {}
-		for g: Dictionary in cand.get("gaps", []):
-			gap_from[int(g.from)] = g
-			gap_to[int(g.to)] = true
-		var i := 0
-		var last_p := Vector3.INF
-		while i < ids.size():
-			var rd: RoadNetwork.Road = _node_road[ids[i]]
-			var c: float = def.class_speed.get(rd.cls, 12.0) if not rd.built else 9.0
-			var p := astar.get_point_position(ids[i])
-			if ctrl.size() > 0 and Vector2(ctrl[-1].x - p.x, ctrl[-1].z - p.z).length() < 1.0:
-				cap[cap.size() - 1] = maxf(cap[cap.size() - 1], c)
-			else:
-				ctrl.append(p)
-				cap.append(c)
-				if last_p.is_finite() and not gap_to.has(i):
-					road_m += Vector2(p.x - last_p.x, p.z - last_p.z).length()
-				var near_end := i < 2 or i >= ids.size() - 2 or gap_to.has(i) or gap_from.has(i) or gap_to.has(i - 1) or gap_from.has(i + 1)
-				if not near_end:
-					lane_idx.append([ctrl.size() - 1, rd])
-			last_p = p
-			if gap_from.has(i):
-				var g: Dictionary = gap_from[i]
-				_append(ctrl, cap, g.pts, off_cap)
-				off_m += _length(g.pts)
-				last_p = Vector3.INF
-				i = int(g.to)
+	if asm.stage == 0:
+		var ctrl := PackedVector3Array()
+		var cap := PackedFloat32Array()
+		var legs: Array = cand.legs
+		var road_m := 0.0
+		var off_m := 0.0
+		_append(ctrl, cap, legs[0].pts, off_cap)
+		off_m += _length(legs[0].pts)
+		var lane_idx: Array = []  # [index in ctrl, road] of road points that may move to the right-hand lane
+		if not cand.road.is_empty():
+			var ids: PackedInt64Array = cand.road
+			var gap_from := {}
+			var gap_to := {}
+			for g: Dictionary in cand.get("gaps", []):
+				gap_from[int(g.from)] = g
+				gap_to[int(g.to)] = true
+			var i := 0
+			var last_p := Vector3.INF
+			while i < ids.size():
+				var rd: RoadNetwork.Road = _node_road[ids[i]]
+				var c: float = def.class_speed.get(rd.cls, 12.0) if not rd.built else 9.0
+				var p := astar.get_point_position(ids[i])
+				if ctrl.size() > 0 and Vector2(ctrl[-1].x - p.x, ctrl[-1].z - p.z).length() < 1.0:
+					cap[cap.size() - 1] = maxf(cap[cap.size() - 1], c)
+				else:
+					ctrl.append(p)
+					cap.append(c)
+					if last_p.is_finite() and not gap_to.has(i):
+						road_m += Vector2(p.x - last_p.x, p.z - last_p.z).length()
+					var near_end := i < 2 or i >= ids.size() - 2 or gap_to.has(i) or gap_from.has(i) or gap_to.has(i - 1) or gap_from.has(i + 1)
+					if not near_end:
+						lane_idx.append([ctrl.size() - 1, rd])
+				last_p = p
+				if gap_from.has(i):
+					var g: Dictionary = gap_from[i]
+					_append(ctrl, cap, g.pts, off_cap)
+					off_m += _length(g.pts)
+					last_p = Vector3.INF
+					i = int(g.to)
+					continue
+				i += 1
+			_append(ctrl, cap, legs[1].pts, off_cap)
+			off_m += _length(legs[1].pts)
+		# Drive on the right: road points move to the right of the direction of travel (half a lane, at most 2 m) on roads wide
+		# enough for two lanes, so two vehicles meeting on a road pass each other instead of blocking each other.
+		var shifted := ctrl.duplicate()
+		for e: Array in lane_idx:
+			var idx: int = e[0]
+			var rd2: RoadNetwork.Road = e[1]
+			if rd2.width < LANE_MIN_WIDTH or idx <= 0 or idx >= ctrl.size() - 1:
 				continue
-			i += 1
-		_append(ctrl, cap, legs[1].pts, off_cap)
-		off_m += _length(legs[1].pts)
-	# Drive on the right: road points move to the right of the direction of travel (half a lane, at most 2 m) on roads wide
-	# enough for two lanes, so two vehicles meeting on a road pass each other instead of blocking each other.
-	var shifted := ctrl.duplicate()
-	for e: Array in lane_idx:
-		var idx: int = e[0]
-		var rd2: RoadNetwork.Road = e[1]
-		if rd2.width < LANE_MIN_WIDTH or idx <= 0 or idx >= ctrl.size() - 1:
-			continue
-		var f := Vector3(ctrl[idx + 1].x - ctrl[idx - 1].x, 0.0, ctrl[idx + 1].z - ctrl[idx - 1].z)
-		if f.length() < 0.5:
-			continue
-		f = f.normalized()
-		var lane := minf(rd2.width * 0.2, LANE_OFFSET_M)
-		# N1-B: a lane that would move the point into a structure or trunk is shortened, down to the road's centre line.
-		var side := Vector3(-f.z, 0.0, f.x)
-		while lane > 0.2 and structures != null and structures.blocks_point(Vector2(ctrl[idx].x + side.x * lane, ctrl[idx].z + side.z * lane), def.circle_r):
-			lane *= 0.5
-		if lane <= 0.2:
-			continue
-		shifted[idx] = ctrl[idx] + side * lane
-	ctrl = shifted
-	# Cross-country points that coincide with a road vertex take the road's ceiling.
-	var pts := PackedVector3Array()
-	var caps := PackedFloat32Array()
-	if ctrl.size() < 2:
-		ctrl = PackedVector3Array([from, to])
-		cap = PackedFloat32Array([off_cap, off_cap])
-	var sp := RoadNetwork.spline(ctrl, 3.0)
-	var k := 0
-	for q in sp:
-		# nearest control point at or after the previous one gives the ceiling
-		while k + 1 < ctrl.size() and Vector2(q.x - ctrl[k + 1].x, q.z - ctrl[k + 1].z).length() < Vector2(q.x - ctrl[k].x, q.z - ctrl[k].z).length():
-			k += 1
-		if pts.size() > 0 and Vector2(pts[-1].x - q.x, pts[-1].z - q.z).length() < 0.5:
-			continue
-		pts.append(q)
-		caps.append(cap[k])
-	pts[0] = from
-	pts[pts.size() - 1] = to
-	var bridges := 0
-	var on_deck := false
-	var bridge_ids: Array = []
-	for i in pts.size():
-		var h: float = terrain.data.get_height(pts[i]) if terrain else pts[i].y
-		var deck := net.deck_height(pts[i])
+			var f := Vector3(ctrl[idx + 1].x - ctrl[idx - 1].x, 0.0, ctrl[idx + 1].z - ctrl[idx - 1].z)
+			if f.length() < 0.5:
+				continue
+			f = f.normalized()
+			var lane := minf(rd2.width * 0.2, LANE_OFFSET_M)
+			# N1-B: a lane that would move the point into a structure or trunk is shortened, down to the road's centre line.
+			var side := Vector3(-f.z, 0.0, f.x)
+			while lane > 0.2 and structures != null and structures.blocks_point(Vector2(ctrl[idx].x + side.x * lane, ctrl[idx].z + side.z * lane), def.circle_r):
+				lane *= 0.5
+			if lane <= 0.2:
+				continue
+			shifted[idx] = ctrl[idx] + side * lane
+		asm.merge({"stage": 1, "ctrl": shifted, "cap": cap, "road_m": road_m, "off_m": off_m}, true)
+		_worked("assembly lanes %d points" % shifted.size())
+		if _stop():
+			return _fail("halted")
+	if asm.stage == 1:
+		# Cross-country points that coincide with a road vertex take the road's ceiling.
+		var ctrl: PackedVector3Array = asm.ctrl
+		var cap: PackedFloat32Array = asm.cap
+		var pts := PackedVector3Array()
+		var caps := PackedFloat32Array()
+		if ctrl.size() < 2:
+			ctrl = PackedVector3Array([from, to])
+			cap = PackedFloat32Array([off_cap, off_cap])
+		var sp := RoadNetwork.spline(ctrl, 3.0)
+		var k := 0
+		for q in sp:
+			# nearest control point at or after the previous one gives the ceiling
+			while k + 1 < ctrl.size() and Vector2(q.x - ctrl[k + 1].x, q.z - ctrl[k + 1].z).length() < Vector2(q.x - ctrl[k].x, q.z - ctrl[k].z).length():
+				k += 1
+			if pts.size() > 0 and Vector2(pts[-1].x - q.x, pts[-1].z - q.z).length() < 0.5:
+				continue
+			pts.append(q)
+			caps.append(cap[k])
+		pts[0] = from
+		pts[pts.size() - 1] = to
+		asm.merge({"stage": 2, "pts": pts, "caps": caps, "i": 0, "bridges": 0, "on_deck": false, "bridge_ids": []}, true)
+		_worked("assembly spline %d points" % pts.size())
+		if _stop():
+			return _fail("halted")
+	var pts2: PackedVector3Array = asm.pts
+	asm.pts = PackedVector3Array()
+	var bridges: int = asm.bridges
+	var on_deck: bool = asm.on_deck
+	var bridge_ids: Array = asm.bridge_ids
+	var i2: int = asm.i
+	while i2 < pts2.size():
+		var h: float = terrain.data.get_height(pts2[i2]) if terrain else pts2[i2].y
+		var deck := net.deck_height(pts2[i2])
 		if not is_nan(deck):
 			h = deck if is_nan(h) else maxf(h, deck)
 			if not on_deck:
 				bridges += 1
 			on_deck = true
-			var br := net.bridge_at(pts[i])
+			var br := net.bridge_at(pts2[i2])
 			if br != null and not bridge_ids.has(br.id):
 				bridge_ids.append(br.id)
 		else:
 			on_deck = false
 		if not is_nan(h):
-			pts[i].y = h
-	return {"ok": true, "reason": "", "points": pts, "caps": caps, "length_m": _length(pts), "road_m": road_m,
-		"offroad_m": off_m, "bridges": bridges, "bridge_ids": bridge_ids, "roads": cand.names, "cost": cand.cost}
+			pts2[i2].y = h
+		i2 += 1
+		if i2 % 256 == 0 and i2 < pts2.size() and _late():
+			asm.merge({"pts": pts2, "i": i2, "bridges": bridges, "on_deck": on_deck, "bridge_ids": bridge_ids}, true)
+			return _fail("halted")
+	memo.erase("asm")
+	return {"ok": true, "reason": "", "points": pts2, "caps": asm.caps, "length_m": _length(pts2), "road_m": asm.road_m,
+		"offroad_m": asm.off_m, "bridges": bridges, "bridge_ids": bridge_ids, "roads": cand.names, "cost": cand.cost}
 
 
 ## Cross-country control points; a long straight piece gets a point every LEG_DENSIFY_M, so the Catmull-Rom spline of the whole
@@ -1148,6 +1283,13 @@ func _leg(a: Vector3, b: Vector3, def: VehicleDefs.Def) -> Dictionary:
 	var d := Vector2(b.x - a.x, b.z - a.z).length()
 	if d < 1.0:
 		return {"ok": true, "pts": PackedVector3Array([a, b])}
+	# NAV-PERF-01B: a resumable plan finds the legs it finished in an earlier slice in its memo (also those never cached globally).
+	var memo := _memo()
+	var mk := "leg:%.2f,%.2f>%.2f,%.2f:%s:%d:%d:%s" % [a.x, a.z, b.x, b.z, def.id, roundi(_extra * 10.0), _piece_limit, _start_bridge.id if _start_bridge else ""]
+	if memo.has(mk):
+		return memo[mk]
+	if _stop():
+		return {"ok": false, "pts": PackedVector3Array(), "halted": true}
 	var t0 := Time.get_ticks_usec()
 	prof.leg_calls += 1
 	var lk := ""
@@ -1160,6 +1302,8 @@ func _leg(a: Vector3, b: Vector3, def: VehicleDefs.Def) -> Dictionary:
 		leg_cache_misses += 1
 	_deck_hit = false
 	var res := _leg_inner(a, b, def, d)
+	if _halted():
+		return {"ok": false, "pts": PackedVector3Array(), "halted": true}
 	if _deck_hit:
 		res = res.duplicate()
 		res["deck"] = true
@@ -1170,6 +1314,8 @@ func _leg(a: Vector3, b: Vector3, def: VehicleDefs.Def) -> Dictionary:
 		_leg_cache[lk] = res
 		_leg_cells[lk] = _cells_of_points(res.pts) if res.ok else _cells_of_search(a, b)
 	prof.leg_ms += (Time.get_ticks_usec() - t0) / 1000.0
+	memo[mk] = res
+	_worked("leg %.0f m" % d)
 	return res
 
 
@@ -1197,7 +1343,7 @@ func _leg_inner(a: Vector3, b: Vector3, def: VehicleDefs.Def, d: float) -> Dicti
 		return {"ok": true, "pts": PackedVector3Array([a, b])}
 	if d <= 500.0:
 		var loc := _local_plan(a, b, def)
-		if loc.ok:
+		if loc.ok or _halted():
 			return loc
 	if _extra == 0.0 and line_ok(a, b, def):
 		return {"ok": true, "pts": PackedVector3Array([a, b])}
@@ -1226,6 +1372,8 @@ func _leg_inner(a: Vector3, b: Vector3, def: VehicleDefs.Def, d: float) -> Dicti
 					ok = false
 					break
 				var piece := _local_plan(r[i - 1], r[i], def, 40.0)
+				if _halted():
+					return piece
 				if not piece.ok:
 					ok = false
 					break
@@ -1258,17 +1406,7 @@ func _local_plan_inner(a: Vector3, b: Vector3, def: VehicleDefs.Def, margin_m :=
 	var nz := ceili((hi.y - lo.y) / LEG_CELL)
 	if nx * nz > LEG_MAX_CELLS:
 		return {"ok": false, "pts": PackedVector3Array()}
-	prof.local_cells += nx * nz
-	var heights := PackedFloat32Array()
-	heights.resize((nx + 1) * (nz + 1))
-	for z in nz + 1:
-		for x in nx + 1:
-			heights[z * (nx + 1) + x] = _height(lo.x + x * LEG_CELL, lo.y + z * LEG_CELL)
 	var r0: float = def.circle_r + _extra
-	var wide := PackedByteArray()
-	wide.resize(nx * nz)
-	var tight := PackedByteArray()
-	tight.resize(nx * nz)
 	var max_dh := def.max_grade * LEG_CELL
 	# NAVIGATION N1-B: two clearance levels from one pass. `tight` is what the vehicle's circles need; `wide` adds LEG_MARGIN so
 	# the planned line leaves room for the pure-pursuit tracking error (a route 0.3 m past the footprint clipped a corner in
@@ -1279,38 +1417,85 @@ func _local_plan_inner(a: Vector3, b: Vector3, def: VehicleDefs.Def, margin_m :=
 	var search_rect := Rect2(lo, hi - lo).grow(8.0)
 	var any_block := structures != null and structures.blocks_in_rect(search_rect)
 	var wet_top: float = (structures.water_top_in_rect(search_rect) + 1.0) if structures != null else -INF
-	for z in nz:
-		for x in nx:
+	# NAV-PERF-01B: the grid is built in pieces (heights, cells, trunks) that a resumable plan keeps in its memo between slices; a
+	# plan run at once builds it in one go as before. The arrays are taken out of the memo while they are filled (one reference:
+	# no copy on write) and put back.
+	var memo := _memo()
+	var gk := "grid:%.2f,%.2f>%.2f,%.2f:%s:%.2f:%.2f" % [a.x, a.z, b.x, b.z, def.id, margin_m, _extra]
+	var g: Dictionary = memo.get(gk, {})
+	if g.is_empty():
+		prof.local_cells += nx * nz
+		g = {"phase": 0, "i": 0, "heights": PackedFloat32Array(), "wide": PackedByteArray(), "tight": PackedByteArray(), "trunks": PackedFloat32Array()}
+		memo[gk] = g
+	var heights: PackedFloat32Array = g.heights
+	var wide: PackedByteArray = g.wide
+	var tight: PackedByteArray = g.tight
+	g.heights = PackedFloat32Array()
+	g.wide = PackedByteArray()
+	g.tight = PackedByteArray()
+	var i: int = g.i
+	var halted := false
+	if g.phase == 0:
+		heights.resize((nx + 1) * (nz + 1))
+		wide.resize(nx * nz)
+		tight.resize(nx * nz)
+		g.phase = 1
+		i = 0
+	if g.phase == 1:
+		var n := (nx + 1) * (nz + 1)
+		while i < n:
+			heights[i] = _height(lo.x + (i % (nx + 1)) * LEG_CELL, lo.y + (i / (nx + 1)) * LEG_CELL)
+			i += 1
+			if i % 96 == 0 and i < n and _late():
+				halted = true
+				break
+		if not halted:
+			g.phase = 2
+			i = 0
+	if not halted and g.phase == 2:
+		var n2 := nx * nz
+		while i < n2:
+			var x := i % nx
+			var z := i / nx
 			var h00 := heights[z * (nx + 1) + x]
 			var h10 := heights[z * (nx + 1) + x + 1]
 			var h01 := heights[(z + 1) * (nx + 1) + x]
 			var cx := lo.x + (x + 0.5) * LEG_CELL
 			var cz := lo.y + (z + 0.5) * LEG_CELL
-			var i := z * nx + x
+			var ci := i
+			i += 1
+			if i % 48 == 0 and i < n2 and _late():
+				halted = true
 			if is_nan(h00) or absf(h10 - h00) > max_dh or absf(h01 - h00) > max_dh:
-				tight[i] = 1
-				wide[i] = 1
-				continue
-			var c2 := Vector2(cx, cz)
-			if structures:
+				tight[ci] = 1
+				wide[ci] = 1
+			else:
+				var c2 := Vector2(cx, cz)
 				var hmin := minf(minf(h00, h10), minf(h01, heights[(z + 1) * (nx + 1) + x + 1]))
-				if ((is_nan(hmin) or hmin <= wet_top) and structures.is_wet(cx, cz)) or (any_block and structures.blocks_point(c2, r0)):
-					tight[i] = 1
-					wide[i] = 1
-					continue
-			if not parked_circles.is_empty() and _near_parked(cx, cz, r0):
-				tight[i] = 1
-				wide[i] = 1
-				continue
-			if margin_r > 0.0 and any_block:
-				if structures.blocks_point(c2, r0 + margin_r):
-					wide[i] = 1
-	# Trunks, rocks and settlement colliders are stamped into the grids: every instance blocks the cells whose centre lies within
-	# its radius plus the clearance (one pass over the instances instead of two spatial queries per cell).
-	if structures:
-		var trunks := PackedFloat32Array()
-		structures.trunks_in_rect(Rect2(lo, hi - lo), trunks)
-		for t in range(0, trunks.size(), 3):
+				if structures and (((is_nan(hmin) or hmin <= wet_top) and structures.is_wet(cx, cz)) or (any_block and structures.blocks_point(c2, r0))):
+					tight[ci] = 1
+					wide[ci] = 1
+				elif not parked_circles.is_empty() and _near_parked(cx, cz, r0):
+					tight[ci] = 1
+					wide[ci] = 1
+				elif margin_r > 0.0 and any_block and structures.blocks_point(c2, r0 + margin_r):
+					wide[ci] = 1
+			if halted:
+				break
+		if not halted:
+			g.phase = 3
+			i = 0
+			# Trunks, rocks and settlement colliders are stamped into the grids: every instance blocks the cells whose centre lies
+			# within its radius plus the clearance (one pass over the instances instead of two spatial queries per cell).
+			if structures:
+				var trunks := PackedFloat32Array()
+				structures.trunks_in_rect(Rect2(lo, hi - lo), trunks)
+				g.trunks = trunks
+	if not halted and g.phase == 3:
+		var trunks: PackedFloat32Array = g.trunks
+		while i < trunks.size():
+			var t := i
+			i += 3
 			var tr_r: float = trunks[t + 2] + TRUNK_EXTRA_M
 			var reach_w: float = tr_r + r0 + margin_r
 			var x0 := clampi(floori((trunks[t] - reach_w - lo.x) / LEG_CELL), 0, nx - 1)
@@ -1328,6 +1513,18 @@ func _local_plan_inner(a: Vector3, b: Vector3, def: VehicleDefs.Def, margin_m :=
 						wide[ii] = 1
 					elif margin_r > 0.0 and dd < reach_w * reach_w:
 						wide[ii] = 1
+			if (i / 3) % 64 == 0 and i < trunks.size() and _late():
+				halted = true
+				break
+		if not halted:
+			g.phase = 4
+			g.trunks = PackedFloat32Array()
+	g.i = i
+	g.heights = heights
+	g.wide = wide
+	g.tight = tight
+	if halted:
+		return {"ok": false, "pts": PackedVector3Array(), "halted": true}
 	var ca := Vector2i(clampi(int((a.x - lo.x) / LEG_CELL), 0, nx - 1), clampi(int((a.z - lo.y) / LEG_CELL), 0, nz - 1))
 	var cb := Vector2i(clampi(int((b.x - lo.x) / LEG_CELL), 0, nx - 1), clampi(int((b.z - lo.y) / LEG_CELL), 0, nz - 1))
 	var best := {}
@@ -1336,7 +1533,17 @@ func _local_plan_inner(a: Vector3, b: Vector3, def: VehicleDefs.Def, margin_m :=
 		if pass_i == 0 and margin_r <= 0.0:
 			continue
 		var grid_used := wide if pass_i == 0 else tight
-		var kept := _grid_search(grid_used, nx, nz, ca, cb, lo, r0 + (margin_r * 0.5 if pass_i == 0 else 0.0))
+		# NAV-PERF-01B: each grid search (a native A* plus the string-pulling line tests) is one piece of work of a resumable plan.
+		var pk := "pass%d" % pass_i
+		var kept: Array[Vector2i] = []
+		if g.has(pk):
+			kept = g[pk]
+		else:
+			if _stop():
+				return {"ok": false, "pts": PackedVector3Array(), "halted": true}
+			kept = _grid_search(grid_used, nx, nz, ca, cb, lo, r0 + (margin_r * 0.5 if pass_i == 0 else 0.0))
+			g[pk] = kept
+			_worked("grid search %d cells" % (nx * nz))
 		if kept.is_empty():
 			continue
 		var pts := PackedVector3Array()
@@ -1359,9 +1566,7 @@ func _local_plan_inner(a: Vector3, b: Vector3, def: VehicleDefs.Def, margin_m :=
 					var cell := Vector2i(x, z)
 					row2 += "S" if cell == ca else ("G" if cell == cb else ("*" if on_path.has(cell) else ("#" if grid_used[z * nx + x] == 1 else (":" if wide[z * nx + x] == 0 and tight[z * nx + x] == 1 else "."))))
 				rows2.append(row2)
-			last_leg_debug = "pass %d (0=wide 1=tight) lo=(%.0f,%.0f)
-" % [pass_i, lo.x, lo.y] + "
-".join(rows2)
+			last_leg_debug = "pass %d (0=wide 1=tight) lo=(%.0f,%.0f)\n" % [pass_i, lo.x, lo.y] + "\n".join(rows2)
 		# The joins between the real end points and the grid path are straight pieces the grid never saw: when the end point lay
 		# in blocked cells (a dock in front of a building) the piece may cross the very thing the grid avoids. Then the next
 		# (tighter) search gets its turn; the last result stands.
@@ -1378,8 +1583,7 @@ func _local_plan_inner(a: Vector3, b: Vector3, def: VehicleDefs.Def, margin_m :=
 			for x in nx:
 				row += "S" if Vector2i(x, z) == cc else ("G" if Vector2i(x, z) == cd else ("#" if used[z * nx + x] == 1 else "."))
 			rows.append(row)
-		last_leg_debug = "
-".join(rows)
+		last_leg_debug = "\n".join(rows)
 	return {"ok": false, "pts": PackedVector3Array()}
 
 
@@ -1444,6 +1648,26 @@ func _grid_search(blocked: PackedByteArray, nx: int, nz: int, ca: Vector2i, cb: 
 	return out
 
 
+## NAV-PERF-01B: a road A* path a -> b through the resumable plan's memo (each search one piece of work, a checkpoint before it); a
+## plan run at once searches as before.
+func _memo_path(a: int, b: int) -> PackedInt64Array:
+	var memo := _memo()
+	if not memo.has("paths"):
+		memo["paths"] = {}
+	var key := a * 1000003 + b
+	if memo.paths.has(key):
+		return memo.paths[key]
+	if _stop():
+		return PackedInt64Array()
+	var tp := Time.get_ticks_usec()
+	var ids := _road_id_path(a, b)
+	prof.astar_ms += (Time.get_ticks_usec() - tp) / 1000.0
+	prof.astar_calls += 1
+	memo.paths[key] = ids
+	_worked("road A*")
+	return ids
+
+
 func _road_id_path(a: int, b: int) -> PackedInt64Array:
 	var started := Time.get_ticks_usec()
 	var path := astar.get_id_path(a, b)
@@ -1491,3 +1715,68 @@ static func _grid_clear(blocked: PackedByteArray, nx: int, a: Vector2i, b: Vecto
 		if blocked[floori(y) * nx + floori(x)] == 1 or blocked[ceili(y) * nx + ceili(x)] == 1:
 			return false
 	return true
+
+
+## NAV-PERF-01B: one vehicle plan as a RouteService job ("vehicle"). Each step calls plan() with a deadline: the plan runs until a
+## checkpoint finds the deadline passed (road candidates, every road A*, every leg, each part of a local grid - heights, cells, trunk
+## stamping - each grid search, the assembly) and returns "halted"; the finished pieces wait in `memo` and the next step goes on
+## from there. A step always finishes at least one piece, so a plan always ends; the pieces themselves (one native A*, one grid
+## search, the assembly) are the unit of work and are not split. The parked vehicles the plan avoids are taken when the job is made
+## (VehicleSim._collect_parked) and put in place for each step. reset(): the world changed, start again.
+class PlanRunner:
+	var router: VehicleRouter
+	var from: Vector3
+	var to: Vector3
+	var def: VehicleDefs.Def
+	var parked: Array
+	var memo := {}
+	var result := {}
+	var steps := 0
+	## Diagnostics: the longest piece of work seen in a step (ms) and what it was.
+	var max_piece_ms := 0.0
+	var max_piece := ""
+	## Diagnostics: the slowest step (ms) and the pieces it finished, in order.
+	var slowest_ms := 0.0
+	var slowest_log: Array = []
+
+	func _init(p_router: VehicleRouter, p_from: Vector3, p_to: Vector3, p_def: VehicleDefs.Def, p_parked: Array) -> void:
+		router = p_router
+		from = p_from
+		to = p_to
+		def = p_def
+		parked = p_parked
+
+	func step(deadline_us: int) -> bool:
+		steps += 1
+		var saved := router.parked_circles
+		router.parked_circles = parked
+		router._slice = {"deadline": deadline_us, "memo": memo, "work": 0, "aborted": false, "mark": Time.get_ticks_usec()} if deadline_us > 0 else {}
+		var t0 := Time.get_ticks_usec()
+		var res := router.plan(from, to, def)
+		var ms := (Time.get_ticks_usec() - t0) / 1000.0
+		if not router._slice.is_empty() and ms > slowest_ms:
+			slowest_ms = ms
+			slowest_log = (router._slice.get("log", []) as Array).duplicate()
+			slowest_log.append("end %.2f (aborted %s, deadline in %.2f ms at start)" % [(Time.get_ticks_usec() - int(router._slice.mark)) / 1000.0, router._slice.aborted, (deadline_us - t0) / 1000.0])
+		if not router._slice.is_empty() and float(router._slice.get("piece_ms", 0.0)) > max_piece_ms:
+			max_piece_ms = float(router._slice.piece_ms)
+			max_piece = String(router._slice.get("piece", ""))
+		router._slice = {}
+		router.parked_circles = saved
+		if bool(res.get("halted", false)):
+			return false
+		result = res
+		return true
+
+	func reset() -> void:
+		memo = {}
+		result = {}
+
+	func debug_state() -> Dictionary:
+		return {"steps": steps, "memo_keys": memo.size(), "max_piece": max_piece, "max_piece_ms": snappedf(max_piece_ms, 0.01),
+			"slowest_ms": snappedf(slowest_ms, 0.01), "slowest": slowest_log}
+
+
+## The dedupe key of a vehicle plan: the same ends (1 m), vehicle type and parked vehicles are the same search.
+func job_key(from: Vector3, to: Vector3, def: VehicleDefs.Def, parked: Array) -> String:
+	return "veh:%d,%d>%d,%d:%s:%d" % [roundi(from.x), roundi(from.z), roundi(to.x), roundi(to.z), def.id, parked.hash()]

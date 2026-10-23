@@ -103,6 +103,8 @@ var _trunk_max_r := 4.0
 const TRUNK_SUB := 8.0
 ## Vector2i water cell -> Array of [a, b, c] world-space triangles (set_water).
 var _water := {}
+## NAV-PERF-01B: water cell -> the highest triangle corner in it. Ground 0.15 m above it is dry without walking the triangles.
+var _water_top := {}
 ## Groundwork: original terrain height of every vertex a pad changed (Vector2i -> float).
 var _orig_heights := {}
 ## Original grass mask texels (copy of the world mask image) and the pending dirty area.
@@ -1502,6 +1504,7 @@ func pick_surface(p: Vector3) -> int:
 ## polygons under its Water node) so placement can reject points under water.
 func set_water(root: Node) -> void:
 	_water.clear()
+	_water_top.clear()
 	if root == null:
 		return
 	var tris := 0
@@ -1524,6 +1527,7 @@ func set_water(root: Node) -> void:
 					if not _water.has(k):
 						_water[k] = []
 					_water[k].append(tri)
+					_water_top[k] = maxf(float(_water_top.get(k, -INF)), maxf(a.y, maxf(b.y, c.y)))
 			tris += 1
 	print("StructureManager: water index %d triangles in %d cells" % [tris, _water.size()])
 
@@ -1548,7 +1552,12 @@ func is_wet(x: float, z: float) -> bool:
 
 ## Terrain height h at (x, z) is below the water level or under a water surface.
 func _wet(x: float, z: float, h: float) -> bool:
-	return h < water_level or h < water_height(x, z) + 0.15
+	if h < water_level:
+		return true
+	# The same answer without the triangle walk when the ground is above every water surface of its cell.
+	if h >= float(_water_top.get(Vector2i(floori(x / WATER_CELL), floori(z / WATER_CELL)), -INF)) + 0.15:
+		return false
+	return h < water_height(x, z) + 0.15
 
 
 # --- Geometry helpers -------------------------------------------------------------

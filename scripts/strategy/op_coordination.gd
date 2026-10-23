@@ -347,7 +347,7 @@ func _update_assault(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dic
 						sim.tactics.assign_for_operation(sq, SquadState.Tactic.SUPPRESS, _fire_target(op, obj), "operation #%d: fire support (resumed)" % op.id, {"standoff": support_standoff_m})
 			SquadState.OpRole.REINFORCE:
 				# Joined while the assault runs: goes in as soon as it has arrived at the staging point.
-				if sq.route.is_empty() and sq.tactic == SquadState.Tactic.NONE and obj.owner != op.faction:
+				if not sim.squads.marching(sq) and sq.tactic == SquadState.Tactic.NONE and obj.owner != op.faction:
 					op.roles[sq.id] = SquadState.OpRole.ASSAULT
 					sq.op_role = SquadState.OpRole.ASSAULT
 					_send_assault(op, sq, obj, k + 1)
@@ -365,7 +365,7 @@ func _update_assault(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dic
 	var attacking := false
 	for sq: SquadState in sqs:
 		var r: int = int(op.roles.get(sq.id, SquadState.OpRole.NONE))
-		if (r == SquadState.OpRole.ASSAULT or r == SquadState.OpRole.MANEUVER) and (sq.tactic != SquadState.Tactic.NONE or not sq.route.is_empty()):
+		if (r == SquadState.OpRole.ASSAULT or r == SquadState.OpRole.MANEUVER) and (sq.tactic != SquadState.Tactic.NONE or sim.squads.marching(sq)):
 			attacking = true
 	if attacking or obj.owner == op.faction:
 		_idle_since.erase(op.id)
