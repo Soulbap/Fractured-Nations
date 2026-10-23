@@ -388,12 +388,11 @@ func _start_sandbox() -> void:
 	# WORLD-PLAYTEST-01: one road network for the world roads and the built ones; the route
 	# grid follows it.
 	sim.state.roads.load_world(src)
-	# WORLD-SETTLEMENT-01: a settlement prototype has its own route grid cache and ground paint.
-	var proto := SettlementProto.active()
-	if not proto.is_empty():
-		SettlementProto.paint(terrain, JSON.parse_string(FileAccess.get_file_as_string(src + "roads.json")))
-	var grid_cache := "user://strategic/%s_grid%s.bin" % [config.world_name, "" if proto.is_empty() else "_" + proto]
-	routes.setup(terrain, config.half_size(), src, grid_cache, sim.state.roads)
+	# WORLD-SETTLEMENT-02: the settlement layer's heights and ground paint, before the route grid reads the
+	# terrain (its cache has its own name, so switching the layer off never reuses it).
+	SettlementLayer.apply_terrain(terrain, config.world_name)
+	var layer := "_settlements" if SettlementLayer.enabled(config.world_name) else ""
+	routes.setup(terrain, config.half_size(), src, "user://strategic/%s_grid%s.bin" % [config.world_name, layer], sim.state.roads)
 	sim.war.setup(routes)
 	sim.vehicles.setup(routes)
 	bridge_markers = BridgeMarkers.new()

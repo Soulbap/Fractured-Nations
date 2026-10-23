@@ -149,8 +149,8 @@ func load_world(src: String) -> int:
 	_blocking.clear()
 	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(src + "roads.json"))
 	if data is Dictionary:
-		# WORLD-SETTLEMENT-01: a settlement prototype (--settlement-proto) swaps local streets.
-		data = SettlementProto.patch_roads(data)
+		# WORLD-SETTLEMENT-02: the settlement layer replaces the generated streets with its local roads.
+		data = SettlementLayer.patch_roads(data, src.trim_suffix("/").get_base_dir().get_file())
 		for i in data.roads.size():
 			var r: Dictionary = data.roads[i]
 			if r.points.size() < 2:

@@ -1,0 +1,290 @@
+[
+ {
+  "name": "Sentrum_1top",
+  "pos": [
+   -900.0,
+   0,
+   -1800.0
+  ],
+  "height": 1540.0,
+  "yaw_deg": 0,
+  "pitch_deg": -89.5,
+  "fov": 70
+ },
+ {
+  "name": "Sentrum_2oblique",
+  "pos": [
+   -515.0,
+   0,
+   -700.0
+  ],
+  "height": 495.0,
+  "yaw_deg": -19.3,
+  "pitch_deg": -23,
+  "fov": 65
+ },
+ {
+  "name": "Ostby_1top",
+  "pos": [
+   3250.0,
+   0,
+   1900.0
+  ],
+  "height": 1007.9999999999999,
+  "yaw_deg": 0,
+  "pitch_deg": -89.5,
+  "fov": 70
+ },
+ {
+  "name": "Ostby_2oblique",
+  "pos": [
+   3502.0,
+   0,
+   2620.0
+  ],
+  "height": 324.0,
+  "yaw_deg": -19.3,
+  "pitch_deg": -23,
+  "fov": 65
+ },
+ {
+  "name": "Odegard_1top",
+  "pos": [
+   4250.0,
+   0,
+   -1900.0
+  ],
+  "height": 560.0,
+  "yaw_deg": 0,
+  "pitch_deg": -89.5,
+  "fov": 70
+ },
+ {
+  "name": "Odegard_2oblique",
+  "pos": [
+   4418.0,
+   0,
+   -1420.0
+  ],
+  "height": 216.0,
+  "yaw_deg": -19.3,
+  "pitch_deg": -23,
+  "fov": 65
+ },
+ {
+  "name": "Verket_1top",
+  "pos": [
+   -350.0,
+   0,
+   6150.0
+  ],
+  "height": 560.0,
+  "yaw_deg": 0,
+  "pitch_deg": -89.5,
+  "fov": 70
+ },
+ {
+  "name": "Verket_2oblique",
+  "pos": [
+   -182.0,
+   0,
+   6630.0
+  ],
+  "height": 216.0,
+  "yaw_deg": -19.3,
+  "pitch_deg": -23,
+  "fov": 65
+ },
+ {
+  "name": "Nordvik_1top",
+  "pos": [
+   -5000.0,
+   0,
+   -8600.0
+  ],
+  "height": 503.99999999999994,
+  "yaw_deg": 0,
+  "pitch_deg": -89.5,
+  "fov": 70
+ },
+ {
+  "name": "Nordvik_2oblique",
+  "pos": [
+   -4832.0,
+   0,
+   -8120.0
+  ],
+  "height": 216.0,
+  "yaw_deg": -19.3,
+  "pitch_deg": -23,
+  "fov": 65
+ },
+ {
+  "name": "Sletta_1top",
+  "pos": [
+   2700.0,
+   0,
+   5700.0
+  ],
+  "height": 448.0,
+  "yaw_deg": 0,
+  "pitch_deg": -89.5,
+  "fov": 70
+ },
+ {
+  "name": "Sletta_2oblique",
+  "pos": [
+   2868.0,
+   0,
+   6180.0
+  ],
+  "height": 216.0,
+  "yaw_deg": -19.3,
+  "pitch_deg": -23,
+  "fov": 65
+ },
+ {
+  "name": "Fjellfoten_1top",
+  "pos": [
+   2900.0,
+   0,
+   -7800.0
+  ],
+  "height": 448.0,
+  "yaw_deg": 0,
+  "pitch_deg": -89.5,
+  "fov": 70
+ },
+ {
+  "name": "Fjellfoten_2oblique",
+  "pos": [
+   3068.0,
+   0,
+   -7320.0
+  ],
+  "height": 216.0,
+  "yaw_deg": -19.3,
+  "pitch_deg": -23,
+  "fov": 65
+ },
+ {
+  "name": "Lia_1top",
+  "pos": [
+   3200.0,
+   0,
+   -5400.0
+  ],
+  "height": 448.0,
+  "yaw_deg": 0,
+  "pitch_deg": -89.5,
+  "fov": 70
+ },
+ {
+  "name": "Lia_2oblique",
+  "pos": [
+   3368.0,
+   0,
+   -4920.0
+  ],
+  "height": 216.0,
+  "yaw_deg": -19.3,
+  "pitch_deg": -23,
+  "fov": 65
+ },
+ {
+  "name": "Strand_1top",
+  "pos": [
+   -6800.0,
+   0,
+   5300.0
+  ],
+  "height": 560.0,
+  "yaw_deg": 0,
+  "pitch_deg": -89.5,
+  "fov": 70
+ },
+ {
+  "name": "Strand_2oblique",
+  "pos": [
+   -6632.0,
+   0,
+   5780.0
+  ],
+  "height": 216.0,
+  "yaw_deg": -19.3,
+  "pitch_deg": -23,
+  "fov": 65
+ },
+ {
+  "name": "Bruvoll_1top",
+  "pos": [
+   -450.0,
+   0,
+   -6300.0
+  ],
+  "height": 448.0,
+  "yaw_deg": 0,
+  "pitch_deg": -89.5,
+  "fov": 70
+ },
+ {
+  "name": "Bruvoll_2oblique",
+  "pos": [
+   -282.0,
+   0,
+   -5820.0
+  ],
+  "height": 216.0,
+  "yaw_deg": -19.3,
+  "pitch_deg": -23,
+  "fov": 65
+ },
+ {
+  "name": "Sentrum_3ground",
+  "pos": [
+   -862.93,
+   0,
+   -1544.02
+  ],
+  "height": 1.8,
+  "yaw_deg": 97.28936537035707,
+  "pitch_deg": -3,
+  "fov": 70
+ },
+ {
+  "name": "Ostby_3ground",
+  "pos": [
+   3365.44,
+   0,
+   1973.08
+  ],
+  "height": 1.8,
+  "yaw_deg": 179.86869740180424,
+  "pitch_deg": -3,
+  "fov": 70
+ },
+ {
+  "name": "Nordvik_3ground",
+  "pos": [
+   -4920.52,
+   0,
+   -8503.63
+  ],
+  "height": 1.8,
+  "yaw_deg": 17.638643250338973,
+  "pitch_deg": -3,
+  "fov": 70
+ },
+ {
+  "name": "Flyslette_road",
+  "pos": [
+   8184.3,
+   0,
+   -3955.9799999999996
+  ],
+  "height": 260,
+  "yaw_deg": -45,
+  "pitch_deg": -35,
+  "fov": 70
+ }
+]

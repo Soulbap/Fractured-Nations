@@ -56,9 +56,8 @@ func _run() -> void:
 	_world.add_child(_cam)
 	_cam.current = true
 	_terrain.set_camera(_cam)
-	# WORLD-SETTLEMENT-01: --settlement-proto=<name> also shows the prototype's ground paint.
-	if not SettlementProto.active().is_empty():
-		SettlementProto.paint(_terrain, JSON.parse_string(FileAccess.get_file_as_string("res://worlds/ref_20km/source/roads.json")))
+	# WORLD-SETTLEMENT-02: the settlement layer's heights and ground paint (off with --no-settlements).
+	SettlementLayer.apply_terrain(_terrain, String(o.get("scene", "res://scenes/world/ref_20km.tscn")).get_file().get_basename())
 	get_root().msaa_3d = Viewport.MSAA_4X
 	var out_dir: String = o.get("out", "res://docs/terrain01/shots")
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(out_dir))

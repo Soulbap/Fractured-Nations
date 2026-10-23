@@ -103,11 +103,10 @@ func _init_overrides() -> void:
 		var world_dir := data_directory.get_base_dir()
 		var override_path := OS.get_environment("FRACTURED_WORLD_OVERRIDES")
 		if override_path.is_empty():
-			# WORLD-SETTLEMENT-01: a settlement prototype brings its own overrides file.
-			override_path = SettlementProto.overrides_path()
-		if override_path.is_empty():
 			override_path = world_dir.get_base_dir().path_join(world_dir.get_file() + ".overrides.json")
 		overrides = WorldOverrides.new(self, override_path)
+		# WORLD-SETTLEMENT-02: the settlements' removals and buildings, a layer under the user's overrides.
+		overrides.layer_path = SettlementLayer.overrides_path(world_dir.get_file())
 		overrides.load_file()
 
 
@@ -399,8 +398,10 @@ func _cell_distance(obs: Array[Vector3], cell: Vector2i, by_mesh: Dictionary) ->
 	var cs := cell_size_m
 	var y := 0.0
 	for mesh_id in by_mesh:
-		y = by_mesh[mesh_id][7]
-		break
+		# Overrides can empty a buffer (every instance of that mesh removed).
+		if by_mesh[mesh_id].size() > 7:
+			y = by_mesh[mesh_id][7]
+			break
 	var best := INF
 	for o in obs:
 		var dx := maxf(absf(o.x - (cell.x + 0.5) * cs) - cs * 0.5, 0.0)

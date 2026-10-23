@@ -831,7 +831,8 @@ func _plan_props() -> void:
 	var placed: Array = [] # [Vector2, radius]
 	var counts := {}
 	var house_tints := [Color(1, 1, 1), Color(1, 1, 1), Color(1.0, 0.86, 0.52), Color(0.95, 0.45, 0.36), Color(0.82, 0.86, 0.9)]
-	for st in sites.settlements:
+	# WORLD-SETTLEMENT-02: with a settlement layer the random buildings in the settlement circles are off.
+	for st in ([] if sites.get("settlement_layer", false) else sites.settlements):
 		var c := Vector2(st.pos[0], st.pos[2])
 		var r: float = st.radius_m
 		var town: bool = st.kind == "town"

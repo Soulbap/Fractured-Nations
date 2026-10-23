@@ -105,8 +105,11 @@ func setup(terrain: Terrain3D, half: float, src: String, cache_path: String, p_n
 ## Times and sizes of the files the grid is derived from.
 static func fingerprint(src: String) -> String:
 	var parts := []
-	for f in ["roads.json", "water.json", "height.r32"]:
-		var path: String = src + f
+	var paths: Array = (["roads.json", "water.json", "height.r32"] as Array).map(func(f: String) -> String: return src + f)
+	# WORLD-SETTLEMENT-02: the settlement layer changes roads and heights.
+	paths.append_array(Array(SettlementLayer.files(src.trim_suffix("/").get_base_dir().get_file())))
+	for path: String in paths:
+		var f := path.get_file()
 		var sz := -1
 		if FileAccess.file_exists(path):
 			var fa := FileAccess.open(path, FileAccess.READ)
