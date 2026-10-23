@@ -23,20 +23,15 @@ var _timer := 0.0
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0, 0, 0, 0.55)
-	sb.content_margin_left = 8
-	sb.content_margin_right = 8
-	sb.content_margin_top = 6
-	sb.content_margin_bottom = 6
-	add_theme_stylebox_override("panel", sb)
+	custom_minimum_size = Vector2(292, 0)
+	add_theme_stylebox_override("panel", FieldManual.panel(FieldManual.OLIVE, 0.88, 8))
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 2)
+	box.add_theme_constant_override("separation", 4)
 	add_child(box)
 	var title := Label.new()
-	title.text = "SQUADS  (click select, Shift add, FREE / HOLD = fire)"
-	title.add_theme_font_size_override("font_size", 13)
-	title.modulate = Color(0.8, 0.85, 0.7)
+	title.text = "TASK FORCE"
+	FieldManual.style_label(title, 13, FieldManual.OLIVE)
+	title.tooltip_text = "Click to select. Shift-click adds a squad. ROE is available in the command deck (Y)."
 	box.add_child(title)
 	_scroll = ScrollContainer.new()
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -83,18 +78,16 @@ func _process(delta: float) -> void:
 func _add_row(sq: SquadState) -> void:
 	var b := Button.new()
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_size_override("font_size", 13)
-	b.custom_minimum_size = Vector2(360, 0)
+	FieldManual.style_button(b, FieldManual.BLUE)
+	b.custom_minimum_size = Vector2(222, 30)
 	var sid := sq.id
 	b.gui_input.connect(func(ev: InputEvent) -> void:
 		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
 			rts.select_squads([sid], ev.shift_pressed)
 			accept_event())
 	var roe := Button.new()
-	roe.focus_mode = Control.FOCUS_NONE
-	roe.add_theme_font_size_override("font_size", 13)
-	roe.custom_minimum_size = Vector2(54, 0)
+	FieldManual.style_button(roe, FieldManual.AMBER)
+	roe.custom_minimum_size = Vector2(54, 30)
 	roe.tooltip_text = "Rules of engagement: FREE = weapons free, HOLD = hold fire (Y)"
 	roe.pressed.connect(func() -> void:
 		var s := sim.state.get_squad(sid)
@@ -111,26 +104,13 @@ func _add_row(sq: SquadState) -> void:
 
 
 func row_text(sq: SquadState) -> String:
-	var progress := ""
-	match sq.status:
-		SquadState.Status.MOVING:
-			progress = "moving"
-		SquadState.Status.DONE:
-			progress = "in position" if sq.order != SquadState.Order.HOLD else "holding"
-		SquadState.Status.PARTIAL:
-			progress = "%d blocked" % sq.blocked.size()
-	var order := sq.order_name()
+	var order := sq.order_name().to_upper()
 	if sq.tactic != SquadState.Tactic.NONE:
 		order = sim.tactics.short_text(sq).to_upper()
-	if sq.order == SquadState.Order.FOLLOW:
-		var t := sim.squads.follow_target(sq)
-		var other := sim.state.get_squad(sq.follow_squad_id)
-		order = "Follow %s" % (other.squad_name if other else (t.unit_name if t else "?"))
-	var detached := "  %d detached" % sq.detached.size() if not sq.detached.is_empty() else ""
-	var fallen := " +%d fallen" % sq.fallen.size() if not sq.fallen.is_empty() else ""
+	elif sq.order == SquadState.Order.FOLLOW:
+		order = "FOLLOW"
 	var fighting := 0
 	var under_fire := 0
-	var cover := 0
 	for id in sq.members:
 		var u := sim.state.get_unit(id)
 		if u == null:
@@ -139,15 +119,8 @@ func row_text(sq: SquadState) -> String:
 			fighting += 1
 		if u.under_fire_until >= sim.state.time:
 			under_fire += 1
-		if u.tactic == UnitState.Tactic.IN_COVER or u.tactic == UnitState.Tactic.SEEK_COVER:
-			cover += 1
-	var parts: Array[String] = []
-	if fighting > 0:
-		parts.append("%d engaging" % fighting)
-	if under_fire > 0:
-		parts.append("%d under fire" % under_fire)
-	if cover > 0:
-		parts.append("%d to / in cover" % cover)
-	var combat := ("  | " + ", ".join(parts)) if not parts.is_empty() else ""
-	return "%s  [%s]  %d%s  %s  %s %s%s%s" % [sq.squad_name, WorldState.faction_name(sq.faction).left(1), sq.members.size(), fallen,
-		sq.formation_name(), order, ("· " + progress) if progress != "" else "", detached, combat]
+	var state := "ENGAGED" if fighting > 0 else ("UNDER FIRE" if under_fire > 0 else order)
+	if sq.status == SquadState.Status.PARTIAL:
+		state = "BLOCKED"
+	var effective := maxi(0, sq.members.size() - sq.fallen.size())
+	return "%s   %d/%d   %s" % [sq.squad_name.to_upper(), effective, sq.members.size(), state]

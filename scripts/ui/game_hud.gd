@@ -221,25 +221,15 @@ func _ready() -> void:
 	_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	_label.position = Vector2(12, 0)
 	_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0, 0, 0, 0.55)
-	sb.content_margin_left = 10
-	sb.content_margin_right = 10
-	sb.content_margin_top = 6
-	sb.content_margin_bottom = 6
-	_label.add_theme_stylebox_override("normal", sb)
+	_label.add_theme_stylebox_override("normal", FieldManual.panel(FieldManual.OLIVE, 0.88, 8))
+	FieldManual.style_label(_label, 14, FieldManual.INK)
 	add_child(_label)
 	_ammo = Label.new()
 	_ammo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ammo.add_theme_font_size_override("font_size", 26)
+	_ammo.add_theme_font_size_override("font_size", 18)
 	_ammo.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	var asb := StyleBoxFlat.new()
-	asb.bg_color = Color(0, 0, 0, 0.45)
-	asb.content_margin_left = 14
-	asb.content_margin_right = 14
-	asb.content_margin_top = 6
-	asb.content_margin_bottom = 6
-	_ammo.add_theme_stylebox_override("normal", asb)
+	_ammo.add_theme_stylebox_override("normal", FieldManual.panel(FieldManual.OLIVE, 0.90, 8))
+	_ammo.add_theme_color_override("font_color", FieldManual.INK)
 	_ammo.visible = false
 	add_child(_ammo)
 	squad_panel = SquadPanel.new()
@@ -272,7 +262,6 @@ func _on_war_event(e: Dictionary) -> void:
 		return
 	var l := Label.new()
 	l.text = e.text
-	l.add_theme_font_size_override("font_size", 15)
 	var col := Color(0.92, 0.92, 0.88)
 	match e.kind:
 		"captured":
@@ -283,14 +272,8 @@ func _on_war_event(e: Dictionary) -> void:
 			col = Color(0.6, 0.95, 0.6)
 		"op_failed":
 			col = Color(1.0, 0.45, 0.45)
-	l.add_theme_color_override("font_color", col)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0, 0, 0, 0.6)
-	sb.content_margin_left = 10
-	sb.content_margin_right = 10
-	sb.content_margin_top = 3
-	sb.content_margin_bottom = 3
-	l.add_theme_stylebox_override("normal", sb)
+	FieldManual.style_label(l, 14, col)
+	l.add_theme_stylebox_override("normal", FieldManual.panel(col, 0.91, 6))
 	_notes_box.add_child(l)
 	_notes.append([l, Time.get_ticks_msec() / 1000.0 + 9.0])
 	while _notes.size() > 4:
@@ -396,7 +379,9 @@ func _update_ammo() -> void:
 		status = "RELOADING %s\n" % ("|".repeat(int(frac * 12)) + ".".repeat(12 - int(frac * 12)))
 	elif u.mag == 0:
 		status = "EMPTY - R\n" if u.reserve > 0 else "NO AMMO\n"
-	_ammo.text = "%s%d / %d   %s\nHP %d" % [status, u.mag, u.reserve, mode, ceili(u.health)]
+	var health_fraction := clampf(u.health / maxf(u.max_health, 1.0), 0.0, 1.0)
+	var bar := "■".repeat(roundi(health_fraction * 8.0)) + "□".repeat(8 - roundi(health_fraction * 8.0))
+	_ammo.text = "%s%s\n%d  /  %d   %s\nHP %d  %s" % [status, def.display_name.to_upper(), u.mag, u.reserve, mode, ceili(u.health), bar]
 	var vs := get_viewport().get_visible_rect().size
 	_ammo.position = Vector2(vs.x - _ammo.size.x - 16, vs.y - _ammo.size.y - 16)
 
@@ -409,17 +394,17 @@ func _war_text() -> String:
 	var lines: Array[String] = []
 	if game.mode == GameController.Mode.FPS:
 		var u := sim.state.get_unit(game.possessed_id)
-		lines.append("FIRST PERSON  %s" % (u.unit_name if u else "-"))
+		lines.append("%s  ·  TAB TACTICAL  ·  M MAP" % (u.unit_name.to_upper() if u else "FIRST PERSON"))
 		var sq := sim.state.squad_of(u.id) if u else null
 		if sq:
-			lines.append("Squad %s (%d%s): %s - the others keep their orders" % [sq.squad_name, sq.members.size(), ", you lead" if sq.leader_id == u.id else "", sq.order_name()])
+			lines.append("%s  %d/%d  ·  %s" % [sq.squad_name.to_upper(), maxi(0, sq.members.size() - sq.fallen.size()), sq.members.size(), sq.order_name().to_upper()])
 		if show_controls:
 			lines.append("LMB fire, R reload, V semi/auto, RMB aim | WASD move, Shift sprint, Space jump, Esc release mouse, F fly")
-		lines.append("Tab tactical view · M strategic map · F1 %s controls" % ("hide" if show_controls else "all"))
+		lines.append("LMB FIRE  ·  R RELOAD  ·  V FIRE MODE  ·  F1 %s CONTROLS" % ("HIDE" if show_controls else "MORE"))
 	elif game.mode == GameController.Mode.DRIVE:
 		var du := sim.state.get_unit(game.driving_id)
 		lines.append("DRIVING  %s" % (sim.vehicles.describe(du) if du else "-"))
-		lines.append("W/S throttle / brake-reverse · A/D steer · Space handbrake · V bumper view · RMB drag look · wheel zoom · Tab back to tactical (the vehicle resumes its order)")
+		lines.append("W/S DRIVE  ·  A/D STEER  ·  SPACE BRAKE  ·  TAB TACTICAL")
 	elif construction and construction.active:
 		lines.append_array(construction.status_lines())
 	else:
@@ -440,12 +425,13 @@ func _war_text() -> String:
 			lines.append("Selected: %s%d soldiers" % [("squads " + ", ".join(sq_names) + " · ") if not sq_names.is_empty() else "", rts.selected.size()])
 		if rts.current_message() != "":
 			lines.append(rts.current_message())
-		lines.append("TACTICAL  M strategic map · LMB select · RMB move · P take over a soldier · Tab first person · F1 %s controls" % ("hide" if show_controls else "all"))
+		lines.append("LMB SELECT  ·  RMB MOVE  ·  B BUILD  ·  M MAP  ·  TAB FIRST PERSON  ·  F1 %s CONTROLS" % ("HIDE" if show_controls else "MORE"))
 	var parts: Array[String] = []
 	for fs: FactionState in war.factions.values():
 		parts.append("%s %d" % [fs.faction_name, war.owned_by(fs.id).size()])
-	lines.append("WAR  objectives %s · your operations %d · speed %s (, .) · F5 save · F9 load" % [
-		" / ".join(parts), war.active_operations(pf).size(), TimeCompression.label()])
+	if show_controls:
+		lines.append("WAR  objectives %s · your operations %d · speed %s (, .) · F5 save · F9 load" % [
+			" / ".join(parts), war.active_operations(pf).size(), TimeCompression.label()])
 	if construction and construction.message != "" and Time.get_ticks_msec() / 1000.0 < construction._message_until:
 		lines.append(construction.message)
 	if show_debug:
@@ -468,23 +454,19 @@ func _text() -> String:
 	if game.mode == GameController.Mode.FPS:
 		var u := sim.state.get_unit(game.possessed_id)
 		var who := "%s (%s)" % [u.unit_name, WorldState.faction_name(u.faction)] if u else "-"
-		lines.append("FIRST PERSON  controlling %s" % who)
-		if u and u.has_order():
-			lines.append("Order: move to %s  (suspended while possessed, resumes on release)" % _fmt(u.order_target))
+		lines.append("%s  ·  TAB TACTICAL  ·  M MAP" % who.to_upper())
 		var sq := sim.state.squad_of(u.id) if u else null
 		if sq:
 			lines.append("Squad %s (%d%s) order: %s - the others keep their orders" % [sq.squad_name, sq.members.size(), ", you lead" if sq.leader_id == u.id else "", sq.order_name()])
-		lines.append("LMB fire, R reload, V semi/auto, RMB aim | Tab tactical view | WASD move, Shift sprint, Space jump, Esc release mouse, F fly, F4 AI debug")
+		lines.append("LMB FIRE  ·  R RELOAD  ·  V FIRE MODE  ·  F1 MORE CONTROLS")
 	elif construction and construction.active:
 		lines.append_array(construction.status_lines())
 	else:
 		var back := sim.state.get_unit(game.possessed_id)
-		lines.append("TACTICAL  WASD pan, Q/E rotate, wheel zoom, middle-drag rotate")
+		lines.append("TACTICAL COMMAND")
 		if Time.get_ticks_msec() / 1000.0 < death_note_until and back and not back.alive:
 			lines.append("%s was killed. Select a living soldier and press P to take over." % back.unit_name)
-		lines.append("LMB select / drag box, Shift add, Ctrl+click squad, Ctrl+A all, RMB move, H hold, P or double-click possess, B construction, Tab back to %s" % (back.unit_name if back and back.alive else "soldier"))
-		lines.append("Squads: F + click follow, G regroup (Shift+G at cursor), V line / column, [ ] spacing, Y weapons free / hold fire | F4 AI debug")
-		lines.append("Tactics: Z assault, K suppress, L flank, J defend, Backspace withdraw, Shift+RMB bounds | F7 tactics overlay")
+		lines.append("LMB SELECT  ·  RMB MOVE  ·  B BUILD  ·  M MAP  ·  TAB %s" % (back.unit_name.to_upper() if back and back.alive else "FIRST PERSON"))
 		var sel: Array[String] = []
 		var moving := 0
 		for id in rts.selected:
@@ -501,13 +483,14 @@ func _text() -> String:
 			shown if not sel.is_empty() else "none", "  (%d moving)" % moving if moving > 0 else ""])
 		if rts.current_message() != "":
 			lines.append(rts.current_message())
-	lines.append("Units %d (%d soldiers, %d vehicles)  moving %d  bodies %d  sim time %.0f s" % [
-		st.units, sim.state.count_of(UnitState.Kind.SOLDIER), sim.state.count_of(UnitState.Kind.VEHICLE), st.moving, st.bodies, st.time])
-	if construction and construction.structures:
+	if show_debug:
+		lines.append("Units %d (%d soldiers, %d vehicles)  moving %d  bodies %d  sim time %.0f s" % [
+			st.units, sim.state.count_of(UnitState.Kind.SOLDIER), sim.state.count_of(UnitState.Kind.VEHICLE), st.moving, st.bodies, st.time])
+	if show_debug and construction and construction.structures:
 		var cs := construction.structures.stats()
 		lines.append("Structures %d (%d modules)  drawn cells %d  collision cells %d" % [cs.structures, cs.instances, cs.visible_cells, cs.collision_cells])
-		if construction.message != "" and not construction.active:
-			lines.append(construction.message)
+	if construction and construction.message != "" and not construction.active:
+		lines.append(construction.message)
 	if war_sim and war_sim.enabled:
 		var war := war_sim.war
 		var pf := war.player_faction

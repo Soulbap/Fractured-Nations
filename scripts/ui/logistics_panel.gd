@@ -37,36 +37,27 @@ var _dest_box: OptionButton
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	custom_minimum_size = Vector2(380, 0)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0, 0, 0, 0.62)
-	sb.border_width_left = 3
-	sb.border_color = Color(0.45, 0.7, 1.0)
-	sb.content_margin_left = 10
-	sb.content_margin_right = 10
-	sb.content_margin_top = 8
-	sb.content_margin_bottom = 8
-	add_theme_stylebox_override("panel", sb)
+	custom_minimum_size = Vector2(330, 0)
+	add_theme_stylebox_override("panel", FieldManual.panel(FieldManual.BLUE, 0.91, 8))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
 	add_child(box)
 	_title = Label.new()
-	_title.add_theme_font_size_override("font_size", 15)
-	_title.modulate = Color(0.75, 0.9, 1.0)
+	FieldManual.style_label(_title, 14, FieldManual.BLUE)
 	box.add_child(_title)
 	_body = RichTextLabel.new()
 	_body.bbcode_enabled = true
 	_body.fit_content = true
 	_body.scroll_active = false
-	_body.add_theme_font_size_override("normal_font_size", 13)
+	_body.add_theme_font_size_override("normal_font_size", 12)
+	_body.add_theme_color_override("default_color", FieldManual.INK)
 	_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(_body)
 	_actions = VBoxContainer.new()
 	_actions.add_theme_constant_override("separation", 3)
 	box.add_child(_actions)
 	_status = Label.new()
-	_status.add_theme_font_size_override("font_size", 13)
-	_status.modulate = Color(1.0, 0.9, 0.5)
+	FieldManual.style_label(_status, 12, FieldManual.AMBER)
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(_status)
 	visible = false
@@ -167,7 +158,7 @@ func _button(text: String, fn: Callable, tip := "") -> Button:
 	var bt := Button.new()
 	bt.text = text
 	bt.tooltip_text = tip
-	bt.add_theme_font_size_override("font_size", 12)
+	FieldManual.style_button(bt, FieldManual.BLUE)
 	bt.pressed.connect(fn)
 	return bt
 

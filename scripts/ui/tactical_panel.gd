@@ -32,33 +32,27 @@ const ENTRIES := [
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0, 0, 0, 0.62)
-	sb.content_margin_left = 8
-	sb.content_margin_right = 8
-	sb.content_margin_top = 5
-	sb.content_margin_bottom = 5
-	sb.set_corner_radius_all(3)
-	add_theme_stylebox_override("panel", sb)
+	custom_minimum_size = Vector2(0, 0)
+	add_theme_stylebox_override("panel", FieldManual.panel(FieldManual.OLIVE, 0.91, 8))
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 3)
+	box.add_theme_constant_override("separation", 5)
 	add_child(box)
 	_title = Label.new()
-	_title.add_theme_font_size_override("font_size", 12)
-	_title.modulate = Color(0.8, 0.85, 0.7)
+	FieldManual.style_label(_title, 13, FieldManual.OLIVE)
 	box.add_child(_title)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
+	var row := HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 4)
+	row.add_theme_constant_override("v_separation", 4)
 	box.add_child(row)
 	for e: Array in ENTRIES:
-		row.add_child(_make_button(e[1] + " [" + e[2] + "]", e[3], func() -> void: rts.arm_tactic(e[0]), e[0]))
-	row.add_child(_make_button("Regroup [G]", "Reassemble on the leader (waits for calm)", func() -> void: rts.order_regroup(), -2))
-	row.add_child(_make_button("Fire [Y]", "Hold fire / weapons free (a soldier that is hit still defends itself)", func() -> void: rts.toggle_roe(), -3))
+		row.add_child(_make_button(e[1].to_upper() + "  " + e[2], e[3], func() -> void: rts.arm_tactic(e[0]), e[0]))
+	row.add_child(_make_button("REGROUP  G", "Reassemble on the leader (waits for calm)", func() -> void: rts.order_regroup(), -2))
+	row.add_child(_make_button("ROE  Y", "Hold fire / weapons free (a soldier that is hit still defends itself)", func() -> void: rts.toggle_roe(), -3))
 	_status = Label.new()
-	_status.add_theme_font_size_override("font_size", 12)
+	FieldManual.style_label(_status, 12, FieldManual.SECONDARY)
 	box.add_child(_status)
 	_feedback = Label.new()
-	_feedback.add_theme_font_size_override("font_size", 12)
+	FieldManual.style_label(_feedback, 12, FieldManual.SUCCESS)
 	box.add_child(_feedback)
 
 
@@ -66,8 +60,7 @@ func _make_button(text: String, tip: String, on_press: Callable, key: int) -> Bu
 	var b := Button.new()
 	b.text = text
 	b.tooltip_text = tip
-	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_size_override("font_size", 13)
+	FieldManual.style_button(b, FieldManual.AMBER)
 	b.pressed.connect(on_press)
 	_buttons[key] = b
 	return b
@@ -81,7 +74,12 @@ func _process(delta: float) -> void:
 	var sqs := rts.selected_squads()
 	if sqs.is_empty():
 		return
-	_title.text = "TACTICS - %d squad%s  (Shift + right click: move by bounds)" % [sqs.size(), "" if sqs.size() == 1 else "s"]
+	var strength := 0
+	for sid in sqs:
+		var selected: SquadState = sim.state.get_squad(sid)
+		if selected:
+			strength += maxi(0, selected.members.size() - selected.fallen.size())
+	_title.text = "COMMAND DECK  ·  %d SQUAD%s  ·  %d READY" % [sqs.size(), "" if sqs.size() == 1 else "S", strength]
 	for key in _buttons:
 		var b: Button = _buttons[key]
 		b.modulate = Color(1.0, 0.9, 0.3) if key == rts.armed_tactic else Color.WHITE
@@ -96,7 +94,7 @@ func _process(delta: float) -> void:
 		var what := sim.tactics.short_text(sq)
 		if what == "":
 			what = sq.order_name()
-		lines.append("%s: %s (%s)%s%s" % [sq.squad_name, what, sq.owner_name() if sq.tactic != SquadState.Tactic.NONE else "-", eff, supp])
+		lines.append("%s  ·  %s%s%s" % [sq.squad_name.to_upper(), what, eff, supp])
 	if sqs.size() > 3:
 		lines.append("+%d more" % (sqs.size() - 3))
 	_status.text = "\n".join(lines)

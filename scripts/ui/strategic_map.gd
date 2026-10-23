@@ -105,6 +105,7 @@ var _hint: RichTextLabel
 var _ops_box: VBoxContainer
 var _log: RichTextLabel
 var _buttons := {}
+var _panel_bg: PanelContainer
 
 const COL_ATTACK := Color(1.0, 0.45, 0.35)
 const COL_REINFORCE := Color(0.55, 0.95, 0.55)
@@ -140,15 +141,23 @@ func _ready() -> void:
 
 
 ## Whole map in view.
+func _panel_active() -> bool:
+	return not selected_squads.is_empty() or selected_objective >= 0 or selected_op >= 0 or not selected_vehicles.is_empty() or selected_structure >= 0
+
+
+func _panel_width() -> float:
+	return PANEL_W if _panel_active() else 0.0
+
+
 func fit_all() -> void:
 	var vs := get_viewport_rect().size if is_inside_tree() else Vector2(1600, 900)
-	zoom = minf((vs.x - PANEL_W - 40.0) / (half * 2.0), (vs.y - 60.0) / (half * 2.0))
+	zoom = minf((vs.x - _panel_width() - 40.0) / (half * 2.0), (vs.y - 60.0) / (half * 2.0))
 	_zoom_min = zoom * 0.85
 	view_center = Vector2(0.0, 0.0)
 
 
 func map_rect() -> Rect2:
-	return Rect2(Vector2.ZERO, Vector2(size.x - PANEL_W, size.y))
+	return Rect2(Vector2.ZERO, Vector2(size.x - _panel_width(), size.y))
 
 
 func to_screen(p: Vector3) -> Vector2:
@@ -179,24 +188,16 @@ func zoom_by(factor: float, anchor: Vector2) -> void:
 # --- Panel ------------------------------------------------------------------------------
 
 func _build_panel() -> void:
-	var bg := PanelContainer.new()
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.06, 0.08, 0.09, 1.0)
-	sb.border_width_left = 1
-	sb.border_color = Color(0.2, 0.24, 0.26)
-	sb.content_margin_left = 12
-	sb.content_margin_right = 12
-	sb.content_margin_top = 10
-	sb.content_margin_bottom = 10
-	bg.add_theme_stylebox_override("panel", sb)
-	bg.anchor_left = 1.0
-	bg.anchor_right = 1.0
-	bg.anchor_bottom = 1.0
-	bg.offset_left = -PANEL_W
-	add_child(bg)
+	_panel_bg = PanelContainer.new()
+	_panel_bg.add_theme_stylebox_override("panel", FieldManual.panel(FieldManual.OLIVE, 0.94, 10))
+	_panel_bg.anchor_left = 1.0
+	_panel_bg.anchor_right = 1.0
+	_panel_bg.anchor_bottom = 1.0
+	_panel_bg.offset_left = -PANEL_W
+	add_child(_panel_bg)
 	var panel := VBoxContainer.new()
 	panel.add_theme_constant_override("separation", 6)
-	bg.add_child(panel)
+	_panel_bg.add_child(panel)
 	_header = _label(16)
 	panel.add_child(_header)
 	_factions = _label(12)
@@ -212,8 +213,7 @@ func _build_panel() -> void:
 	for b: Array in [["attack", "Attack"], ["defend", "Defend"], ["reinforce", "Reinforce"], ["move", "Move"], ["cancel", "Cancel op"], ["view", "View (G)"]]:
 		var btn := Button.new()
 		btn.text = b[1]
-		btn.focus_mode = Control.FOCUS_NONE
-		btn.add_theme_font_size_override("font_size", 13)
+		FieldManual.style_button(btn, FieldManual.AMBER)
 		var key: String = b[0]
 		btn.pressed.connect(func() -> void: _button(key))
 		row.add_child(btn)
@@ -311,6 +311,11 @@ func _process(_delta: float) -> void:
 
 
 func _refresh_panel() -> void:
+	var panel_was_visible := _panel_bg.visible if _panel_bg else false
+	if _panel_bg:
+		_panel_bg.visible = _panel_active()
+		if panel_was_visible != _panel_bg.visible:
+			queue_redraw()
 	var war := sim.state.war
 	var t := sim.state.time
 	var me := war.faction(faction)

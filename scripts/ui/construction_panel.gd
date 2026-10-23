@@ -23,6 +23,7 @@ var controller: ConstructionController
 var _buttons := {}
 var _base_buttons := {}
 var _base_info: Label
+var _placement: Label
 var _headers := {}
 var _sections := {}
 var _open_category := ""
@@ -39,20 +40,13 @@ func _ready() -> void:
 	offset_right = -12
 	offset_top = 12
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.06, 0.07, 0.06, 0.82)
-	sb.border_color = Color(0.45, 0.5, 0.38, 0.9)
-	sb.set_border_width_all(1)
-	sb.set_corner_radius_all(4)
-	sb.set_content_margin_all(10)
-	add_theme_stylebox_override("panel", sb)
+	add_theme_stylebox_override("panel", FieldManual.panel(FieldManual.OLIVE, 0.92, 10))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
 	add_child(box)
 	var title := Label.new()
 	title.text = "CONSTRUCTION"
-	title.add_theme_font_size_override("font_size", 15)
-	title.add_theme_color_override("font_color", COL_TEXT)
+	FieldManual.style_label(title, 15, FieldManual.OLIVE)
 	box.add_child(title)
 	box.add_child(_caption("BASE"))
 	for id: StringName in ConstructionController.BASE_TYPES:
@@ -79,6 +73,11 @@ func _ready() -> void:
 	_base_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_base_info.custom_minimum_size = Vector2(230, 0)
 	box.add_child(_base_info)
+	_placement = Label.new()
+	_placement.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_placement.custom_minimum_size = Vector2(230, 0)
+	_placement.visible = false
+	box.add_child(_placement)
 	box.add_child(HSeparator.new())
 	box.add_child(_caption("ALL STRUCTURES"))
 	# The categories scroll when the open one is taller than the screen allows (Defences
@@ -137,6 +136,7 @@ func _process(delta: float) -> void:
 	if _poll <= 0.0:
 		_poll = 0.25
 		_refresh_base()
+		_refresh_placement()
 
 
 ## Base buttons: what can be built now and a line about the player's base.
@@ -170,14 +170,27 @@ func refresh() -> void:
 		_buttons[id].button_pressed = placing and controller.def.id == id
 	_delete.button_pressed = controller.tool == ConstructionController.Tool.DELETE
 	_refresh_base()
+	_refresh_placement()
 	_fit_scroll.call_deferred()
+
+
+func _refresh_placement() -> void:
+	if _placement == null or controller == null:
+		return
+	var placing := controller.tool == ConstructionController.Tool.PLACE and controller.def != null
+	_placement.visible = placing
+	if not placing:
+		return
+	var ok := bool(controller.check.get("ok", false))
+	var state := "VALID PLACEMENT" if ok else "INVALID — " + String(controller.check.get("reason", "choose a valid surface")).to_upper()
+	_placement.text = "%s\n%s\nLMB PLACE  ·  R ROTATE  ·  ESC CANCEL" % [controller.def.display_name.to_upper(), state]
+	_placement.add_theme_color_override("font_color", FieldManual.SUCCESS if ok else FieldManual.DANGER)
 
 
 func _caption(text: String) -> Label:
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_size_override("font_size", 11)
-	l.add_theme_color_override("font_color", COL_DIM)
+	FieldManual.style_label(l, 11, FieldManual.SECONDARY)
 	return l
 
 
@@ -193,7 +206,7 @@ func _button(text: String, cb: Callable, toggle := false) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.toggle_mode = toggle
-	b.focus_mode = Control.FOCUS_NONE
+	FieldManual.style_button(b, FieldManual.OLIVE)
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	b.custom_minimum_size = Vector2(210, 0)
 	b.pressed.connect(func() -> void:
