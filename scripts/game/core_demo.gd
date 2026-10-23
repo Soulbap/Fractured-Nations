@@ -383,6 +383,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--sandbox-test" in args:
 		_sandbox_selftest = SandboxSelfTest.new(self)
 		_sandbox_selftest.run.call_deferred(args)
+	elif "--ui01c2-test" in args:
+		_ui01c_selftest = UI01C2SelfTest.new(self)
+		_ui01c_selftest.run.call_deferred(args)
 	elif "--ui01c-test" in args:
 		_ui01c_selftest = UI01CSelfTest.new(self)
 		_ui01c_selftest.run.call_deferred(args)

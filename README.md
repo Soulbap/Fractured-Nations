@@ -233,8 +233,17 @@ squads selected, the **command panel** at the bottom shows the selection (streng
 health, ammunition, suppression, formation, rules of engagement) and every order grouped as MOVE /
 COMBAT / DEFENCE / SQUAD with its key; with nothing selected a quiet key-hint bar takes its place.
 F1 shows every control, F3 the technical counters and the frame-time overlay, F4 the AI debug view.
-In first person and while driving, your faction is shown at the top. The HUD is built on the
-FRACTURED NATIONS UI kit (`scripts/ui/kit/`, report [docs/UI-01C_PHASE1_REPORT.md](docs/UI-01C_PHASE1_REPORT.md)).
+Selected squads are framed by corner brackets with their tag; each soldier is a small dot. A selected
+vehicle or facility opens its panel top right (status, fuel, cargo, stock and its orders).
+
+In first person the weapon (rounds in the magazine, reserve, fire mode) sits bottom right, health bottom
+left, your squad and its order top right, and a reload prompt appears under the crosshair when the
+magazine runs low. In construction (B) the build menu on the right has the base, categories and a card
+with a picture per building; the panel at the bottom says whether the spot is valid, why not, and the keys.
+The strategic map (M) keeps the command panel, map layers and operations on the left and an inspector on
+the right for whatever is selected. All of it is built on the FRACTURED NATIONS UI kit (`scripts/ui/kit/`,
+reports [UI-01C phase 1](docs/UI-01C_PHASE1_REPORT.md), [phase 2](docs/UI-01C_PHASE2_REPORT.md)); building
+thumbnails come from `tools/ui/make_structure_thumbs.gd`.
 
 | Key | First person (possessing a soldier) |
 |---|---|

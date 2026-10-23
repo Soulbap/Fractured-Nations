@@ -229,8 +229,8 @@ func _checks() -> Dictionary:
 	await _physics(5)
 	out.fps = {"mode": demo.game.mode, "roster": hud.squad_panel.visible, "panel": hud.tactical_panel.visible, "badge": hud._badge.visible,
 		"hints": hud._hints.visible, "body": body != null}
-	_expect(demo.game.mode == GameController.Mode.FPS and not hud.squad_panel.visible and not hud._hints.visible and hud._badge.visible,
-		"first person: RTS HUD hidden, faction badge shown")
+	_expect(demo.game.mode == GameController.Mode.FPS and not hud.squad_panel.visible and not hud._hints.visible and hud._fps._squad.visible,
+		"first person: RTS HUD hidden, squad card (with the side) shown")
 	await _leave()
 	await _physics(5)
 	out.back = {"mode": demo.game.mode, "roster": hud.squad_panel.visible}
