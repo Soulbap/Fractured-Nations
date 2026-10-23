@@ -17,6 +17,7 @@ extends RefCounted
 const MAX_REPAIRS := 6
 ## The most cells one repair closes (a bank is closed along its length, not the whole grid).
 const MAX_CLOSE_CELLS := 24
+static var native_astar_max_ms := 0.0
 
 
 static func plan(a: Vector3, b: Vector3, cell: float, max_cells: int, max_grade: float,
@@ -77,7 +78,9 @@ static func plan(a: Vector3, b: Vector3, cell: float, max_cells: int, max_grade:
 	var pts := PackedVector3Array()
 	var repairs := 0
 	while true:
+		var astar_started := Time.get_ticks_usec()
 		var path := grid.get_id_path(ca, cb)
+		native_astar_max_ms = maxf(native_astar_max_ms, (Time.get_ticks_usec() - astar_started) / 1000.0)
 		if path.is_empty():
 			return _failed("no walkable local passage" if repairs > 0 else "no local passage", started, nx * nz)
 

@@ -43,6 +43,8 @@ func run(args: PackedStringArray) -> void:
 	results["workload"] = await _workload_perf()
 	results["after_structure"] = await _structure_perf()
 	results["infantry_over_bridge"] = await _infantry_over_bridge()
+	results["native_astar_max_ms"] = {"road": _vr().native_road_astar_max_ms, "vehicle_local": _vr().native_local_astar_max_ms,
+		"strategic": demo.routes.native_astar_max_ms, "infantry_local": LocalRoutePlanner.native_astar_max_ms}
 	_finish_perf()
 
 
@@ -141,7 +143,57 @@ func _woods_perf() -> Dictionary:
 		warm.append(_timed_plan(dense.a, dense.b, ad))
 	out["warm"] = _percentiles(warm.map(func(r: Dictionary) -> float: return r.wall_ms))
 	out["warm_prof_last"] = warm[-1].prof
+	out["trunk_index_comparison"] = _trunk_index_comparison(dense.a, dense.b)
 	return out
+
+
+## Compare the previous rectangular bucket traversal with the current index on the same warmed data.
+func _trunk_index_comparison(a: Vector3, b: Vector3) -> Dictionary:
+	var lo := Vector2(minf(a.x, b.x), minf(a.z, b.z)) - Vector2.ONE * 105.0
+	var hi := Vector2(maxf(a.x, b.x), maxf(a.z, b.z)) + Vector2.ONE * 105.0
+	var rect := Rect2(lo, hi - lo)
+	var old_times: Array = []
+	var new_times: Array = []
+	var equal := true
+	for repetition in 5:
+		var old := PackedFloat32Array()
+		var current := PackedFloat32Array()
+		var t := Time.get_ticks_usec()
+		_old_trunks_in_rect(rect, old)
+		old_times.append((Time.get_ticks_usec() - t) / 1000.0)
+		t = Time.get_ticks_usec()
+		sm.trunks_in_rect(rect, current)
+		new_times.append((Time.get_ticks_usec() - t) / 1000.0)
+		var old_rows: Array = []
+		var new_rows: Array = []
+		for i in range(0, old.size(), 3):
+			old_rows.append(Vector3(old[i], old[i + 1], old[i + 2]))
+		for i in range(0, current.size(), 3):
+			new_rows.append(Vector3(current[i], current[i + 1], current[i + 2]))
+		# The arrays need not be in the same order, but every collider must be present.
+		old_rows.sort_custom(func(x: Vector3, y: Vector3) -> bool: return x.x < y.x if x.x != y.x else (x.y < y.y if x.y != y.y else x.z < y.z))
+		new_rows.sort_custom(func(x: Vector3, y: Vector3) -> bool: return x.x < y.x if x.x != y.x else (x.y < y.y if x.y != y.y else x.z < y.z))
+		equal = equal and old_rows == new_rows
+	return {"equal": equal, "old_ms": _percentiles(old_times), "new_ms": _percentiles(new_times)}
+
+
+func _old_trunks_in_rect(rect: Rect2, out: PackedFloat32Array) -> void:
+	var cs: float = sm.vegetation.cell_size_m
+	var c0 := VegetationChunk.cell_of(Vector3(rect.position.x - sm._trunk_max_r, 0, rect.position.y - sm._trunk_max_r), cs)
+	var c1 := VegetationChunk.cell_of(Vector3(rect.end.x + sm._trunk_max_r, 0, rect.end.y + sm._trunk_max_r), cs)
+	for cx in range(c0.x, c1.x + 1):
+		for cz in range(c0.y, c1.y + 1):
+			var cell := Vector2i(cx, cz)
+			var sub: Dictionary = sm._trunk_sub.get(cell, {})
+			if sub.is_empty() and not sm._trunk_sub.has(cell):
+				sub = sm._build_trunk_sub(cell)
+			if sub.is_empty():
+				continue
+			for gx in range(floori((rect.position.x - sm._trunk_max_r) / sm.TRUNK_SUB), floori((rect.end.x + sm._trunk_max_r) / sm.TRUNK_SUB) + 1):
+				for gz in range(floori((rect.position.y - sm._trunk_max_r) / sm.TRUNK_SUB), floori((rect.end.y + sm._trunk_max_r) / sm.TRUNK_SUB) + 1):
+					for trunk: Array in sub.get(Vector2i(gx, gz), []):
+						if trunk[0] >= rect.position.x - 6.0 and trunk[0] <= rect.end.x + 6.0 and trunk[1] >= rect.position.y - 6.0 and trunk[1] <= rect.end.y + 6.0:
+							out.append_array(PackedFloat32Array([trunk[0], trunk[1], trunk[2]]))
 
 
 ## Fixed workload: truck plans between objective pairs 2-8 km apart (24 pairs, the same on every run), cold router caches.

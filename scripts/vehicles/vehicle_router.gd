@@ -68,6 +68,9 @@ var plans := 0
 var plan_ms_total := 0.0
 var plan_ms_max := 0.0
 var last_plan_ms := 0.0
+## Largest uninterrupted native A* call observed since this router was created.
+var native_road_astar_max_ms := 0.0
+var native_local_astar_max_ms := 0.0
 ## NAVIGATION N1 diagnostics; none of these fields affect planning.
 var failed_plans := 0
 var failure_reasons := {}
@@ -289,7 +292,7 @@ func _bridge_cause(a_list: Array, b_list: Array) -> Dictionary:
 	var found := {}
 	for a: Dictionary in a_list.slice(0, 3):
 		for b: Dictionary in b_list.slice(0, 3):
-			var ids := astar.get_id_path(a.id, b.id)
+			var ids := _road_id_path(a.id, b.id)
 			if ids.is_empty():
 				continue
 			var names: Array = []
@@ -529,8 +532,8 @@ func _soft_path(a: int, b: int) -> Dictionary:
 	for l: Dictionary in _soft.get(ca, []):
 		if _comp_of.get(l.b, -1) != cb:
 			continue
-		var p1 := astar.get_id_path(a, l.a)
-		var p2 := astar.get_id_path(l.b, b)
+		var p1 := _road_id_path(a, l.a)
+		var p2 := _road_id_path(l.b, b)
 		if p1.is_empty() or p2.is_empty():
 			continue
 		var cost := _path_cost(p1) + _path_cost(p2) + float(l.gap_m) * 3.0
@@ -775,6 +778,8 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 	var seen_pair := {}
 	var bad_a := {}  # vertices whose cross-country leg already failed: the other combos using them are skipped
 	var bad_b := {}
+	# Candidate paths overlap heavily. Footprints cannot change during this synchronous plan.
+	var road_blocked := {}
 	var legs_tried := 0
 	var narrow_bridges := false
 	for br: RoadNetwork.Bridge in net.bridges:
@@ -795,7 +800,7 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 					continue
 				seen_pair[pk] = true
 				var tp := Time.get_ticks_usec()
-				var ids := astar.get_id_path(a.id, b.id)
+				var ids := _road_id_path(a.id, b.id)
 				prof.astar_ms += (Time.get_ticks_usec() - tp) / 1000.0
 				prof.astar_calls += 1
 				var soft_k := -1
@@ -821,7 +826,7 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 				continue
 			scanned += 1
 			var tr := Time.get_ticks_usec()
-			var rp := _road_gaps(cb.ids, def, int(cb.soft_k))
+			var rp := _road_gaps(cb.ids, def, int(cb.soft_k), road_blocked)
 			prof.roadpath_ms += (Time.get_ticks_usec() - tr) / 1000.0
 			if rp.is_empty():
 				why.append("road blocked, no gap leg" if int(cb.soft_k) < 0 else "soft link not drivable")
@@ -837,15 +842,13 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 				bad_b[cb.b.id] = true
 				why.append("end leg %.0f m failed" % cb.b.dist)
 				continue
-			var road_pts := PackedVector3Array()
 			var names: Array = []
 			for id: int in cb.ids:
-				road_pts.append(astar.get_point_position(id))
 				var rd: RoadNetwork.Road = _node_road[id]
 				if rd and not names.has(rd.name):
 					names.append(rd.name)
 			var cost: float = _path_cost(cb.ids) + (_length(la.pts) + _length(lb.pts)) * def.offroad_factor + float(rp.gap_m) * def.offroad_factor
-			cands.append({"cost": cost, "legs": [la, lb], "road": cb.ids, "gaps": rp.gaps, "names": names, "road_pts": road_pts})
+			cands.append({"cost": cost, "legs": [la, lb], "road": cb.ids, "gaps": rp.gaps, "names": names})
 			found += 1
 		if not cands.is_empty() and found > 0:
 			break
@@ -894,14 +897,17 @@ func _stage_list(list: Array, stage: int) -> Array:
 ## leaves the road before them and rejoins it behind them, so each blocked stretch is replaced by a cross-country leg between
 ## the free vertices on both sides (the leg planner knows the footprints and finds a gate or goes round).
 ## {ids, gaps: [{from, to, pts}], gap_m}, or {} when a stretch cannot be bypassed.
-func _road_gaps(ids: PackedInt64Array, def: VehicleDefs.Def, soft_k := -1) -> Dictionary:
+func _road_gaps(ids: PackedInt64Array, def: VehicleDefs.Def, soft_k := -1, blocked_cache := {}) -> Dictionary:
 	var n := ids.size()
 	var blocked := PackedByteArray()
 	blocked.resize(n)
 	if structures != null:
 		for k in n:
-			var p := astar.get_point_position(ids[k])
-			if structures.blocks_point(Vector2(p.x, p.z), road_clear_r(def)):
+			var id := ids[k]
+			if not blocked_cache.has(id):
+				var p := astar.get_point_position(id)
+				blocked_cache[id] = structures.blocks_point(Vector2(p.x, p.z), road_clear_r(def))
+			if blocked_cache[id]:
 				blocked[k] = 1
 	var gaps: Array = []
 	var gap_m := 0.0
@@ -1421,7 +1427,9 @@ func _grid_search(blocked: PackedByteArray, nx: int, nz: int, ca: Vector2i, cb: 
 	for i in blocked.size():
 		if blocked[i] == 1:
 			grid.set_point_solid(Vector2i(i % nx, i / nx), true)
+	var search_started := Time.get_ticks_usec()
 	var path := grid.get_id_path(sa, sb)
+	native_local_astar_max_ms = maxf(native_local_astar_max_ms, (Time.get_ticks_usec() - search_started) / 1000.0)
 	if path.is_empty():
 		return out
 	# String-pulling: keep a vertex only where the grid line from the last kept one is blocked.
@@ -1434,6 +1442,13 @@ func _grid_search(blocked: PackedByteArray, nx: int, nz: int, ca: Vector2i, cb: 
 		out.append(path[j])
 		i = j
 	return out
+
+
+func _road_id_path(a: int, b: int) -> PackedInt64Array:
+	var started := Time.get_ticks_usec()
+	var path := astar.get_id_path(a, b)
+	native_road_astar_max_ms = maxf(native_road_astar_max_ms, (Time.get_ticks_usec() - started) / 1000.0)
+	return path
 
 
 static func _free_cell(blocked: PackedByteArray, nx: int, nz: int, c: Vector2i) -> Vector2i:

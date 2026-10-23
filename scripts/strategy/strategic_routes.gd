@@ -423,6 +423,9 @@ func nearest_passable(p: Vector3, max_r := 12) -> Vector2i:
 
 ## Waypoints (ground heights from the terrain) from `from` to `to`, the last one being
 ## `to` itself when it is passable. Empty when no route exists.
+var native_astar_max_ms := 0.0
+
+
 func route(from: Vector3, to: Vector3, terrain: Terrain3D) -> PackedVector3Array:
 	var t0 := Time.get_ticks_usec()
 	var out := PackedVector3Array()
@@ -431,7 +434,9 @@ func route(from: Vector3, to: Vector3, terrain: Terrain3D) -> PackedVector3Array
 	if a.x < 0 or b.x < 0:
 		_fail_count(t0, from, to, "no passable endpoint")
 		return out
+	var astar_started := Time.get_ticks_usec()
 	var cells := astar.get_id_path(a, b)
+	native_astar_max_ms = maxf(native_astar_max_ms, (Time.get_ticks_usec() - astar_started) / 1000.0)
 	if cells.is_empty():
 		_fail_count(t0, from, to, "disconnected passable cells")
 		return out

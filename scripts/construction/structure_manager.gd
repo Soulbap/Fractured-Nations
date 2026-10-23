@@ -1730,13 +1730,20 @@ func trunks_in_rect(rect: Rect2, out: PackedFloat32Array) -> void:
 				sub = _build_trunk_sub(cell)
 			if sub.is_empty():
 				continue
-			for gx in range(floori((rect.position.x - _trunk_max_r) / TRUNK_SUB), floori((rect.end.x + _trunk_max_r) / TRUNK_SUB) + 1):
-				for gz in range(floori((rect.position.y - _trunk_max_r) / TRUNK_SUB), floori((rect.end.y + _trunk_max_r) / TRUNK_SUB) + 1):
-					for t: Array in sub.get(Vector2i(gx, gz), []):
-						if t[0] >= rect.position.x - 6.0 and t[0] <= rect.end.x + 6.0 and t[1] >= rect.position.y - 6.0 and t[1] <= rect.end.y + 6.0:
-							out.append(t[0])
-							out.append(t[1])
-							out.append(t[2])
+			# Iterate occupied buckets only. The old loops visited the entire query rectangle
+			# once per vegetation cell, even though most buckets belonged to other cells.
+			var gx0 := floori((rect.position.x - _trunk_max_r) / TRUNK_SUB)
+			var gx1 := floori((rect.end.x + _trunk_max_r) / TRUNK_SUB)
+			var gz0 := floori((rect.position.y - _trunk_max_r) / TRUNK_SUB)
+			var gz1 := floori((rect.end.y + _trunk_max_r) / TRUNK_SUB)
+			for bucket: Vector2i in sub:
+				if bucket.x < gx0 or bucket.x > gx1 or bucket.y < gz0 or bucket.y > gz1:
+					continue
+				for t: Array in sub[bucket]:
+					if t[0] >= rect.position.x - 6.0 and t[0] <= rect.end.x + 6.0 and t[1] >= rect.position.y - 6.0 and t[1] <= rect.end.y + 6.0:
+						out.append(t[0])
+						out.append(t[1])
+						out.append(t[2])
 
 
 func _build_trunk_sub(cell: Vector2i) -> Dictionary:

@@ -383,3 +383,10 @@ in the research: one route per element, `AStarGrid2D.jumping_enabled` test, HPA*
 * **Tests.** `--navigation-n1c1-test` (N1C1-01..12, 07n), `--navigation-n1c1-perf`. Open: no physical barrier for the player's
   soldier, single plans up to ~240 ms. Evidence: [NAVIGATION-N1C1_REPORT.md](NAVIGATION-N1C1_REPORT.md).
 
+### NAV-PERF-01 investigation (in progress)
+
+* **Not complete.** NAV-PERF-01A reduces repeated vegetation-index and candidate work while keeping synchronous planning. Its
+  isolated index comparison improved, but whole-plan timings varied widely and large stalls remain. The baseline, tests and
+  caller/invalidation constraints are recorded in [NAV-PERF-01_REPORT.md](NAV-PERF-01_REPORT.md). Incremental planning, full
+  acceptance tests, rendered-frame measurements and visual terrain verification remain outstanding.
+
