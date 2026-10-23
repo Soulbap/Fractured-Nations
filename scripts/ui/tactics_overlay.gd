@@ -149,8 +149,11 @@ func _draw_squad(sq: SquadState, used: int, selected: bool) -> int:
 			elif sq.defence_role != "":
 				role = " [%s]" % sq.defence_role.to_upper()
 			text = "%s%s %s | eff %.2f supp %.2f" % [sq.squad_name, role, text if text != "" else "-", a.eff if not a.is_empty() else 0.0, a.supp if not a.is_empty() else 0.0]
+		elif text != "" and rts and rts.selected_squads().has(sq.id):
+			# UI-01C: a selected squad already carries the HUD's field tag with the same words.
+			text = ""
 		elif text != "":
-			text = "%s: %s" % [sq.squad_name, text.to_upper()]
+			text = "%s · %s" % [sq.squad_name.to_upper(), text.to_upper()]
 		if text != "":
 			_label(used, c + Vector3.UP * 7.0, text, col if sq.tactic != SquadState.Tactic.NONE else Color(0.8, 0.8, 0.8))
 			used += 1
@@ -164,8 +167,10 @@ func _label(i: int, at: Vector3, text: String, col: Color) -> void:
 		l.no_depth_test = true
 		l.fixed_size = true
 		l.pixel_size = 0.0011
-		l.font_size = 22
-		l.outline_size = 8
+		l.font = FNUI.font("semibold")
+		l.font_size = 17
+		l.outline_size = 6
+		l.outline_modulate = Color(FNUI.BG, 0.85)
 		l.render_priority = 11
 		add_child(l)
 		_labels.append(l)

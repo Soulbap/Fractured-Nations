@@ -40,8 +40,12 @@ var _notes_box: VBoxContainer
 ## control, F3 the technical counters (units, bodies, structures, detail tier).
 var show_controls := false
 var show_debug := false
-## The player's faction, top left (war only).
+## The player's faction, top centre (war only; first person and driving - in the tactical view the
+## faction heads the Task Force roster).
 var _badge: Label
+## UI-01C: the tactical view's key hints, bottom left while nothing is selected (the command panel
+## carries its own keys).
+var _hints: FNPanel
 
 
 class Overlay extends Control:
@@ -180,7 +184,6 @@ class Overlay extends Control:
 		var cam := hud.rts.rig.camera if hud.rts.rig else null
 		if cam == null or not cam.current:
 			return
-		var font := ThemeDB.fallback_font
 		for sid in hud.rts.selected_squads():
 			var sq := hud.sim.state.get_squad(sid)
 			var col := WorldState.faction_color(sq.faction).lerp(Color.WHITE, 0.35)
@@ -198,15 +201,27 @@ class Overlay extends Control:
 				draw_circle(pb, 4.0, Color(col, 0.85))
 			var leader := hud.sim.state.get_unit(sq.leader_id)
 			if leader and not cam.is_position_behind(leader.position + Vector3.UP * 2.4):
-				var p := cam.unproject_position(leader.position + Vector3.UP * 2.4)
-				var text := "%s  %s" % [sq.squad_name, sq.order_name()]
+				# UI-01C field tag: callsign and status (the roster's words), hold fire flagged, a pin to the leader.
+				var p := cam.unproject_position(leader.position + Vector3.UP * 2.4).round()
+				var st := SquadPanel.squad_status(hud.sim, sq)
+				var nf := FNUI.font("semibold")
+				var cf := FNUI.caps_font()
+				var status: String = st.text
 				if sq.roe == SquadState.Roe.HOLD_FIRE:
-					text += "  HOLD FIRE"
-					col = Color(1.0, 0.7, 0.25)
-				var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
-				draw_rect(Rect2(p + Vector2(-w * 0.5 - 4, -16), Vector2(w + 8, 20)), Color(0, 0, 0, 0.5), true)
-				draw_string(font, p + Vector2(-w * 0.5, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, col)
-				draw_circle(p + Vector2(0, 10), 3.0, Color(1, 0.9, 0.3))
+					status += "  ·  HOLD FIRE"
+				var nw := nf.get_string_size(sq.squad_name.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, FNUI.BODY).x
+				var sw := cf.get_string_size(status, HORIZONTAL_ALIGNMENT_LEFT, -1, FNUI.CAPTION - 1).x
+				var w := nw + sw + 6.0 + 11.0
+				var r := Rect2(p + Vector2(-w * 0.5, -18), Vector2(w, 14))
+				r.position.x = clampf(r.position.x, 4.0, size.x - w - 4.0)
+				draw_rect(r, Color(FNUI.BG, 0.82), true)
+				draw_rect(r, Color(FNUI.ACCENT, 0.9), false, 1.0)
+				draw_rect(Rect2(r.position, Vector2(2, r.size.y)), col, true)
+				draw_string(nf, r.position + Vector2(6, 11), sq.squad_name.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, FNUI.BODY, FNUI.INK)
+				draw_string(cf, r.position + Vector2(6 + nw + 5, 10.5), status, HORIZONTAL_ALIGNMENT_LEFT, -1, FNUI.CAPTION - 1,
+					FNUI.ARMED if sq.roe == SquadState.Roe.HOLD_FIRE else st.color)
+				draw_line(p + Vector2(0, -4), p + Vector2(0, 4), Color(FNUI.ACCENT, 0.9), 1.0)
+				draw_circle(p + Vector2(0, 5), 1.8, FNUI.ACCENT)
 
 
 func _ready() -> void:
@@ -221,9 +236,21 @@ func _ready() -> void:
 	_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	_label.position = Vector2(12, 0)
 	_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_label.add_theme_stylebox_override("normal", FieldManual.panel(FieldManual.OLIVE, 0.88, 8))
-	FieldManual.style_label(_label, 14, FieldManual.INK)
+	_label.add_theme_stylebox_override("normal", FNUI.panel_style(FNUI.S3))
+	_label.add_theme_font_override("font", FNUI.font("regular", false))
+	_label.add_theme_font_size_override("font_size", FNUI.BODY)
+	_label.add_theme_color_override("font_color", FNUI.INK)
 	add_child(_label)
+	_hints = FNPanel.new(Color.TRANSPARENT, FNUI.S3)
+	_hints.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var hb := HBoxContainer.new()
+	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hb.add_theme_constant_override("separation", FNUI.S5)
+	for k: Array in [["LMB", "Select"], ["RMB", "Move"], ["B", "Build"], ["M", "Map"], ["Tab", "First person"], ["F1", "Controls"]]:
+		hb.add_child(FNKeyHint.new(k[0], k[1]))
+	_hints.add_child(hb)
+	_hints.visible = false
+	add_child(_hints)
 	_ammo = Label.new()
 	_ammo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ammo.add_theme_font_size_override("font_size", 18)
@@ -233,7 +260,7 @@ func _ready() -> void:
 	_ammo.visible = false
 	add_child(_ammo)
 	squad_panel = SquadPanel.new()
-	squad_panel.position = Vector2(12, 250)
+	squad_panel.position = Vector2(FNUI.EDGE, FNUI.EDGE)
 	squad_panel.visible = false
 	add_child(squad_panel)
 	tactical_panel = TacticalPanel.new()
@@ -300,7 +327,7 @@ func _process(_delta: float) -> void:
 	while not _notes.is_empty() and _notes[0][1] < now_s:
 		_notes[0][0].queue_free()
 		_notes.pop_front()
-	_notes_box.position = Vector2(get_viewport().get_visible_rect().size.x * 0.5 - _notes_box.size.x * 0.5, 54)
+	var vp := get_viewport().get_visible_rect().size
 	if logistics_panel.rts == null and rts:
 		logistics_panel.rts = rts
 		logistics_panel.sim = sim
@@ -309,22 +336,37 @@ func _process(_delta: float) -> void:
 	if squad_panel.rts == null and rts:
 		squad_panel.rts = rts
 		squad_panel.sim = sim
-	squad_panel.visible = rts != null and game != null and game.mode == GameController.Mode.RTS and not (construction and construction.active) and not sim.state.squads.is_empty()
-	squad_panel.max_bottom = _label.position.y - 8.0
 	if tactical_panel.rts == null and rts:
 		tactical_panel.rts = rts
 		tactical_panel.sim = sim
+	# UI-01C layout of the tactical view: Task Force top left (below the F3 overlay), the selection and
+	# command panel bottom centre while squads are selected, otherwise the key hints bottom left; the
+	# text box (messages, F1 controls, F3 counters) sits above whichever is at the bottom.
+	var in_rts: bool = rts != null and game != null and game.mode == GameController.Mode.RTS and not (construction and construction.active)
+	var war_on: bool = war_sim != null and war_sim.enabled
+	squad_panel.visible = in_rts and not sim.state.squads.is_empty()
+	var top := float(FNUI.EDGE)
+	if game and game.diagnostics:
+		top = maxf(top, game.diagnostics.overlay_bottom() + 8.0)
+	squad_panel.position = Vector2(FNUI.EDGE, top)
 	var squads_selected: bool = rts != null and not rts.selected_squads().is_empty()
-	tactical_panel.visible = squads_selected and game != null and game.mode == GameController.Mode.RTS and not (construction and construction.active)
+	tactical_panel.visible = squads_selected and in_rts
+	_hints.visible = in_rts and war_on and not tactical_panel.visible
+	var floor_y := vp.y - 12.0
+	squad_panel.max_bottom = vp.y - FNUI.EDGE
 	if tactical_panel.visible:
-		# The deck is a temporary, centred action surface; it never becomes a permanent right-hand wall.
-		var vp := get_viewport().get_visible_rect().size
-		tactical_panel.position = Vector2(maxf((vp.x - tactical_panel.size.x) * 0.5, 8.0), _label.position.y - tactical_panel.size.y - 12.0)
+		tactical_panel.position = Vector2(maxf(roundf((vp.x - tactical_panel.size.x) * 0.5), 8.0), vp.y - tactical_panel.size.y - FNUI.EDGE)
+		floor_y = tactical_panel.position.y - 8.0
 		if tactical_panel.position.x < squad_panel.position.x + squad_panel.size.x + 12.0:
-			squad_panel.max_bottom = minf(squad_panel.max_bottom, tactical_panel.position.y - 12.0)
+			squad_panel.max_bottom = tactical_panel.position.y - 12.0
+	elif _hints.visible:
+		_hints.position = Vector2(FNUI.EDGE, vp.y - _hints.size.y - FNUI.EDGE)
+		floor_y = _hints.position.y - 8.0
+		squad_panel.max_bottom = _hints.position.y - 12.0
 	_update_ammo()
-	_badge.visible = war_sim != null and war_sim.enabled
-	if _badge.visible and _badge.text == "":
+	# The faction badge: first person, driving and construction (the tactical view shows it in the roster).
+	_badge.visible = war_on and not in_rts
+	if war_on and _badge.text == "":
 		var pf := war_sim.war.player_faction
 		var col := WorldState.faction_color(pf)
 		_badge.text = "YOU ARE %s" % WorldState.faction_name(pf).to_upper()
@@ -339,10 +381,17 @@ func _process(_delta: float) -> void:
 		bsb.content_margin_bottom = 4
 		_badge.add_theme_stylebox_override("normal", bsb)
 	if _badge.visible:
-		_badge.position = Vector2(get_viewport().get_visible_rect().size.x * 0.5 - _badge.size.x * 0.5, 12)
+		_badge.position = Vector2(vp.x * 0.5 - _badge.size.x * 0.5, 12)
+	_notes_box.position = Vector2(vp.x * 0.5 - _notes_box.size.x * 0.5, 54 if _badge.visible else FNUI.EDGE)
 	if Engine.get_process_frames() % 6 == 0:
-		_label.text = _text()
-		_label.position = Vector2(12, get_viewport().get_visible_rect().size.y - _label.size.y - 12)
+		var text := _text()
+		if text != _label.text:
+			_label.text = text
+			_label.size = Vector2.ZERO
+		_label.visible = text != ""
+	_label.position = Vector2(FNUI.EDGE if in_rts else 12.0, floor_y - _label.size.y)
+	if _label.visible:
+		squad_panel.max_bottom = minf(squad_panel.max_bottom, _label.position.y - 8.0)
 
 
 ## COMBAT-01a: shots, hits and damage that concern the possessed soldier.
@@ -418,14 +467,15 @@ func _war_text() -> String:
 			lines.append("LMB select / drag box, Shift add, Ctrl+click squad, Ctrl+A all, RMB move, H hold, P or double-click possess (soldier) / drive (vehicle), B construction")
 			lines.append("Squads: F + click follow, G regroup (Shift+G at cursor), V line / column, [ ] spacing, Y weapons free / hold fire · T board a selected vehicle, U unload (squad + vehicle selected: RMB = transport there) | F4 AI debug, F3 stats")
 			lines.append("Tactics (at the cursor, or arm from the bar and click): Z assault, K suppress, L flank, J defend, Backspace withdraw, Shift+RMB move by bounds · Shift+V formations (auto / line / column / wedge ...) | F7 fire teams, posts and missions")
-		var sq_names: Array[String] = []
-		for sid in rts.selected_squads():
-			sq_names.append(sim.state.get_squad(sid).squad_name)
-		if not rts.selected.is_empty():
-			lines.append("Selected: %s%d soldiers" % [("squads " + ", ".join(sq_names) + " · ") if not sq_names.is_empty() else "", rts.selected.size()])
-		if rts.current_message() != "":
+		# UI-01C: selected squads, their orders and the controller's messages are in the command panel,
+		# the keys in the hint bar; this box only carries what has no other place.
+		var panel_up := not rts.selected_squads().is_empty()
+		if not rts.selected.is_empty() and not panel_up:
+			lines.append("Selected: %d soldiers" % rts.selected.size())
+		if rts.current_message() != "" and not panel_up:
 			lines.append(rts.current_message())
-		lines.append("LMB SELECT  ·  RMB MOVE  ·  B BUILD  ·  M MAP  ·  TAB FIRST PERSON  ·  F1 %s CONTROLS" % ("HIDE" if show_controls else "MORE"))
+		if show_controls:
+			lines.append("F1 hide controls")
 	var parts: Array[String] = []
 	for fs: FactionState in war.factions.values():
 		parts.append("%s %d" % [fs.faction_name, war.owned_by(fs.id).size()])
