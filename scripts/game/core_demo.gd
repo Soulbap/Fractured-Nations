@@ -64,6 +64,7 @@ var _combat_ai_selftest: CombatAISelfTest
 var _combat_scale_selftest: CombatScaleSelfTest
 var _combat_tactics_selftest: CombatTacticsSelfTest
 var _sandbox_selftest: SandboxSelfTest
+var _ui01c_selftest: UI01CSelfTest
 var _ai_intel_selftest: AIIntelSelfTest
 var _ai_squad_selftest: AISquadSelfTest
 var _ai_strat_selftest: AIStratSelfTest
@@ -382,6 +383,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--sandbox-test" in args:
 		_sandbox_selftest = SandboxSelfTest.new(self)
 		_sandbox_selftest.run.call_deferred(args)
+	elif "--ui01c-test" in args:
+		_ui01c_selftest = UI01CSelfTest.new(self)
+		_ui01c_selftest.run.call_deferred(args)
 
 
 ## WORLD-SANDBOX-01: the strategic route grid (cached in user://), the war state and the
