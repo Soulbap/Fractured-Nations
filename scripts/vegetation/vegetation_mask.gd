@@ -5,6 +5,7 @@
 ##
 ## Built deterministically from world data by WorldBuilder and stored as
 ## worlds/<name>/vegetation/mask.res.
+@tool
 class_name VegetationMask
 extends Resource
 

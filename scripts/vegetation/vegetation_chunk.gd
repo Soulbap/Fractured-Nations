@@ -7,6 +7,7 @@
 ## Chunks are written by WorldBuilder.scatter_vegetation (deterministic per cell) and
 ## read by VegetationStreamer. Future persistent world state (felled trees, cover
 ## values) can live next to the same cell keys without touching the visuals.
+@tool
 class_name VegetationChunk
 extends Resource
 

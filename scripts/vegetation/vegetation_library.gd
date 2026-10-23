@@ -1,4 +1,5 @@
 ## The set of vegetation mesh types a world can store, indexed by mesh id.
+@tool
 class_name VegetationLibrary
 extends Resource
 

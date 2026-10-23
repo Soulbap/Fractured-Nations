@@ -314,6 +314,18 @@ Open `scenes/world/test_2km.tscn` in the editor.
   edits in that layer. A copy of the terrain data is written to
   `worlds/<name>/terrain_backup/` first.
 
+### Viewing the reference world in the editor (EDITOR-WORLD-01, phase 1)
+
+Open `scenes/world/ref_20km.tscn` (not the main scene) to see the real game world without
+running it: terrain, roads, water, bridges, trees, rocks, houses and grass. A new
+**Viewpoints** menu in the 3D toolbar moves the *editor* camera (overview, every town and
+village from `sites.json`, plateaus and base sites) at a safe height over Terrain3D. The
+editor camera starts at y=0, below the 50-1200 m terrain, so use that menu or fly up first.
+The plugin raises the editor's 3D Z-Far preference to 30 km on first enable (takes effect
+after one editor restart; per open viewport: View > Settings > Z-Far). Editing terrain and
+roads is phase 2 and not yet supported as a workflow; see
+[docs/EDITOR-WORLD-01_REPORT.md](docs/EDITOR-WORLD-01_REPORT.md).
+
 ### Building a world from the command line
 
 ```bash

@@ -3,6 +3,7 @@
 ## The scene is a Node3D with MeshInstance3D children named <name>_LOD0..n (the same
 ## convention as the Terrain3D mesh assets). The streamer uses two LODs: the first
 ## child near the camera and the last child beyond near_range.
+@tool
 class_name VegetationMeshDef
 extends Resource
 
