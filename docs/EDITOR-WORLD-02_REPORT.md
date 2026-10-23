@@ -1,4 +1,170 @@
-# EDITOR-WORLD-02 — phase A investigation (implementation not started)
+# EDITOR-WORLD-02 (B + C) — visual world editing, persistence and runtime integration
+
+**Status: B and C accepted** (19 of 19 acceptance items, see section 6) with the limitations in section 10.
+Done on branch `develop`; the earlier commits `64ce3e6` (connector fix) and `df83ef2` (plugin + override layer) are
+on `develop`, the work of this report is in the commits listed at the end. Canonical world data untouched
+(`world_manifest.py verify` OK: 535 files, 0 changed; `scenes/world/ref_20km.tscn` byte-identical to the isolated copy).
+
+## 1. What exists now
+
+- **`world_edit` editor plugin** (`addons/world_edit/plugin.gd`): select, move/rotate/scale, add, remove, restore,
+  undo/redo, save; edits static world instances (trees, rocks, houses, barns ...) of the `VegetationStreamer`.
+- **Override layer** (`scripts/vegetation/world_overrides.gd`): versioned JSON next to the world
+  (`worlds/<world>.overrides.json`, or `FRACTURED_WORLD_OVERRIDES`). Chunk files are never written.
+- **Streamer integration** (`vegetation_streamer.gd`): effective cell view for rendering and all queries
+  (colliders, line of fire, navmesh obstructions, construction), chunk unload/reload hooks, `reload_chunk`.
+- **Runtime wiring fix**: `DetailManager` never connected to `clearings_changed` (it was connected in `_ready`, before
+  `core_demo` assigned `navigation.vegetation`/`detail.navigation`), so a moved house did not rebake the navmesh in the
+  game. Now `DetailManager.connect_vegetation()` is called from `core_demo` after the wiring.
+- **Bug fixed in the layer**: `Dictionary.duplicate()` is shallow and packed arrays are shared by reference, so
+  appending a moved instance would have modified the loaded chunk in memory. Buffers are copied before appending
+  (found by `tools/test_world_overrides_ref.gd`).
+
+## 2. User guide (`world_edit`)
+
+Open `res://scenes/world/ref_20km.tscn`, 3D view; the **World objects** toolbar is at the top of the viewport.
+1. Switch **World objects** on (it selects the vegetation node; the plugin is active while that node or the selection proxy is selected).
+2. **Click an object** to select it (ray against mesh bounding boxes, then the nearest candidates against the mesh triangles;
+   the nearest visible surface wins). The status line shows type, id, position, rotation (deg) and scale.
+   A translucent copy marks the selection and Godot's own gizmo appears on it: **drag to move/rotate/scale**; the edit is applied
+   when the mouse is released (exact values can also be typed in the Inspector for the proxy node `WorldObjectSelection`).
+   Clicks within ~110 px of the gizmo go to the gizmo; **Ctrl+click** forces a new pick.
+3. **Add**: choose the object in the list and press *Add* (placed on the terrain in front of the camera), or switch on **Place**
+   and click on the terrain. **Remove** (or Delete) hides the object; **Removed** lists everything removed and restores the
+   chosen entry; **Reset** returns a moved generated object to its baseline position.
+4. **Undo / Redo** (buttons, Ctrl+Z, Ctrl+Shift+Z / Ctrl+Y while the 3D view has focus) use the plugin's own history
+   (scene history is not used, so road/terrain undo is never involved).
+5. **Save** writes the override file only. The file is also saved when the editor saves or closes (`_save_external_data`) and a
+   close prompt warns about unsaved world edits (`_get_unsaved_status`). Removed manual objects are deleted for good on save.
+6. The scene itself is never changed by this tool; do not save `ref_20km.tscn` for world object edits.
+The in-game result needs nothing else: the streamer loads the same override file at start.
+
+## 3. Data and identity model
+
+- Record: `{kind: generated|added, mesh, transform (12 floats), removed, [cell, index, chunk_hash]}`; id `g:<cx>:<cz>:<mesh>:<index>`
+  for generated instances and `a:<random 128 bit>` for additions. All 16 floats of the source record other than the transform
+  (colour) are kept for generated instances.
+- A generated record is bound to the **SHA-256 of its source chunk file** (baseline). If the file no longer has that hash the
+  record is *unresolved*: it is reported, never applied and never moved to another object. Additions need no baseline.
+- Static editor objects are not `WorldState.construction`; player-built structures are untouched.
+- Collision proxies are the library's: tree = vertical capsule, rock/house = sphere (`collider` in the library; the radius scales with the
+  instance scale, rotation does not matter for these shapes).
+
+## 4. Hash cache and revision strategy (C1)
+
+Before: every cell lookup cleared the hash cache and re-read/hashed the 1-2 MB chunk file (about 4-13 ms per lookup, 100 hashes per 100 lookups).
+Now (`world_overrides.gd` header documents it):
+- **Revision per chunk file** = `{sha256, mtime, size, checked_at}`. The hash is computed when first needed and *always when the streamer
+  (re)loads the chunk*, so the in-memory chunk is bound to the hash taken at load. Lookups reuse it and never read the file.
+- **Trust boundary:** chunk files are immutable base-world data while a session runs. A controlled writer (generator, editor file reload)
+  calls `invalidate_chunk()/invalidate_all()`. Anything else is *detected*: `poll()` (driven by the streamer, at most one `stat`
+  per chunk per second) and `chunk_hash()` compare mtime and size with the revision; a difference drops the revision, makes the streamer
+  re-read the chunk (resource cache bypassed) and hashes again, after which records of the old baseline are unresolved.
+  mtime/size only ever *trigger* a rehash, they are never accepted as proof of identity.
+- Unknown revision (file missing/unreadable): generated records are not used; additions still load.
+- **Per-cell effective cache** and per-cell indexes (`_src`, `_dst`): cells without overrides cost nothing, other cells are built once
+  until a record or revision changes.
+- No generator-written manifest was added: a manifest hash is not proof that a file is unchanged either, and the chunk format and the
+  generator stay unchanged. The existing `worlds/ref_20km.manifest.json` still checks the whole world offline.
+- Not covered: bytes replaced between two polls with identical size *and* mtime (the next chunk load rehashes anyway).
+
+## 5. Performance (`tools/bench_world_overrides.gd`, real ref_20km chunks, at most 10 overrides per cell, headless, one machine)
+
+Before = pre-revision layer (`docs/ew02/bench_before.json`), after = `docs/ew02/bench_after.json`. avg / max ms per cell lookup; hashes = SHA-256 computations.
+
+| overrides (cells) | phase | before avg / max, hashes | after avg / max, hashes |
+|---|---|---|---|
+| 100 (10) | cold 100 lookups | 7.7 / 43.3, 100 | 0.60 / 43.6, 1 (the chunk load itself) |
+| | warm 100 lookups | 7.5 / 42.8, 100 | 0.15 / 0.27, 0 |
+| | after chunk unload + reload | 11.6 / 48.4, 100 | 0.21 / 4.6, 1 |
+| | edit one override | 5.8 ms, 102 hashes | 0.74 ms, 0 hashes |
+| 500 (51) | cold / warm / reload (avg) | 7.5 / 11.7 / 11.6, 100 hashes each | 0.61 / 0.13 / 0.21, 1 / 0 / 1 |
+| | edit one override | 7.9 ms, 102 | 3.5 ms, 0 |
+| 1000 (102) | cold / warm / reload (avg) | 10.5 / 11.6 / 13.4, 100 hashes each | 1.04 / 0.13 / 0.84, 2 / 0 / 2 |
+| | edit one override | 151 ms, 104 | 7.0 ms, 0 |
+
+One-time cost (validation) = one hash per override-bearing chunk per load; normal operation = 0 hashes. The 43 ms maxima are the
+first synchronous chunk read from disk. In the real game (`--ew02-test c1`): 500 warm lookups 8.6 ms, 0 hashes, unload + reload exactly 1 hash.
+(The old-layer benchmark was run with only the first 100 of its warm lookups at 500/1000 overrides.)
+
+## 6. Acceptance results
+
+Legend: GUI = real Godot 4.7.2 editor, isolated project copy + isolated world copy + scratch override file, probe plugin
+`tools/ew02_acceptance/gui_probe` (results `docs/ew02/gui_phase1.json`, `gui_phase2.json`); RT = real `ref_20km` game scene,
+`--ew02-test` (`docs/ew02/runtime_results.json`).
+
+| ID | Result | Evidence |
+|---|---|---|
+| EW02B-01 select tree | PASS | GUI, real mouse events (`Input.parse_input_event`) on an isolated tree: exact tree (0.0 m) |
+| EW02B-02 select house | PASS | GUI, real mouse events, house at Haugen |
+| EW02B-03 move/rotate/scale | PASS | proxy transform (tree: +7/+3 m, 30 deg, x1.4; house +20 m, 30 deg) auto-applied, colour preserved byte for byte |
+| EW02B-04 undo/redo | PASS | toolbar buttons and Ctrl+Z / Ctrl+Shift+Z key events, also for removal and reset |
+| EW02B-05 add | PASS | tree, stone, house via *Add*, tree via *Place* click on terrain (real mouse) |
+| EW02B-06 remove/restore | PASS | generated + manual remove, *Removed* menu restore, reset to baseline, again after restart |
+| EW02B-07 save + reopen | PASS | save button, editor quit, fresh editor: 7 records, 0 unresolved, objects displayed once at their new places |
+| EW02B-08 editor/runtime parity | PASS | game started with the same file: effective-data SHA, displayed MultiMesh SHA, LOD of the edited meshes and override-file SHA identical; collision at all 6 placed objects |
+| EW02B-09 unload/reload | PASS | RT b6: unload + reload, no duplicate, no loss, 0 unresolved |
+| EW02B-10 between cells/chunks | PASS | RT b6: other cell, other chunk, empty cell (manual), remove + restore |
+| EW02C-01 revision/hash cache | PASS | RT c1 + synthetic live-change test (poll detects a rewritten chunk: record unresolved, new content loaded) |
+| EW02C-02 100/500/1000 | PASS | section 5 |
+| EW02C-03 collision | PASS | RT c2/c2t, `PhysicsDirectSpaceState3D.intersect_ray` against the instance colliders: moved house hits at the new place and not at the old, removed none, added hits, scale 2 hits 6 m off centre while scale 1 does not, trunk capsule moves/rotates/scales (radius 0.16 vs 0.32 m) |
+| EW02C-04 navmesh | PASS | RT c3: one batched async rebake per move (not a full re-centre); nearest walkable point to the footprint centre: 4.8 m before (blocked), 0.0 after the house moved away, 5.0 at the new place, 0.0 after removal |
+| EW02C-05 line of fire | PASS | RT c4: `LineOfFire.trace` blocker `tree` at the new place only, `range` at the old; removed none; added blocks; the cell cache is dropped on change |
+| EW02C-06 scatter protection | PASS | `tools/test_world_overrides.gd`: a blocked scatter leaves every file in the directory byte-identical, the consent flag is not left on, overrides intact |
+| EW02C-07 no world data changed | PASS | manifest OK before and after all runs; `ref_20km.tscn` identical; no `WorldObjectSelection` in the scene |
+| EW02C-08 no automatic flatten | PASS | GUI: the road connector history shows no `Flatten terrain under roads`; scene tab not dirty after opening and after all operations |
+| EW02C-09 runtime without plugin | PASS | RT c1/c2/c4 in a project copy with `world_edit` disabled (the game never loads editor plugins anyway) |
+
+Regression: `--integration03-test --only catalog,views` PASS (twice). `catalog,base,base_nav,views` failed once on `views`
+("damaging_shots 1, damage_events 0", combat shot randomness; `base`/`base_nav` were fine) and passed on the identical rerun. I take it as flaky
+but did not prove it was flaky before this work. Synthetic suite and `test_world_overrides_ref.gd` PASS.
+
+## 7. Parity details
+
+Same code path for editor and game (`VegetationStreamer` + the override file). Compared after the GUI session wrote its file:
+`effective_sha b890bb12...` (7x7 cells around the edits), `displayed_sha 13cfa339...`, LOD map of the edited meshes, override file `d773ea7c...`: all equal.
+Per-object id/transform/mesh/colour equality follows from the identical effective-data digest (it contains the 16 floats of every instance).
+
+## 8. Screenshots (real editor, `docs/ew02/`)
+
+`p1_02_tree_selected.png`, `p1_05_house_moved.png`, `p1_06_added_objects.png`, `p2_02_house_after_restart.png` (after the editor restart).
+
+## 9. Reproduce
+
+Runtime: `FRACTURED_WORLD_OVERRIDES=<scratch.json> Godot --headless --path . res://scenes/game/world_ref_20km.tscn -- --ew02-test [--only c1,c2,c2t,c3,c4,b6,parity] [--ew02-digest=<gui_digest.json>]`.
+GUI: copy the project and `worlds/ref_20km` to a scratch folder, enable `res://tools/ew02_acceptance/gui_probe/plugin.cfg` there only, run the editor with
+`FRACTURED_WORLD_OVERRIDES`, `EW02_OUT`, `EW02_PHASE=1`, then `=2` (fresh editor). Benchmark: `tools/bench_world_overrides.gd -- new|old` (the `old` layer copy is not in the repository).
+
+## 10. Known limitations
+
+- **The real gizmo drag was not driven**: synthetic OS-level mouse events did not move Godot's gizmo handles (`gizmo_real_mouse_drag moved_m = 0`).
+  Moves were made by setting the proxy transform, which goes through the same auto-apply path. The step that takes Godot's own scene-history
+  gizmo entry back (so the scene does not look modified) was tested with an action of the same kind (`Translate`), not with the real gizmo; its
+  action-name list (`GIZMO_ACTIONS`) is an assumption about Godot's labels. The scene-dirty indicator was read from the scene tab title, and it
+  did not turn dirty even right after the simulated action, so that check is weak evidence.
+- Selection is by nearest visible surface: in dense forest a click on a trunk behind foliage selects the foliage tree in front.
+  Test trees were chosen isolated for that reason. Only library instances (trees, rocks, houses ...), not grass or Terrain3D painting.
+- Collision, line of fire and navmesh use the library's simple shapes (house = sphere r 4 m x scale, 8.4 m square navmesh obstruction), not the building mesh.
+- The override file is one file per world, with no merge tooling. A generator re-run changes chunk hashes and makes generated records unresolved
+  (reported, not migrated); there is no migration workflow.
+- Revision detection granularity is 1 s and relies on mtime/size to *notice* an external change (section 4).
+- The toolbar is wide and clips in a small editor window.
+- `--ew02-test` in a debug run reported leaked RIDs at engine shutdown and once a segmentation fault at exit (results are written before).
+
+## 11. Outstanding
+
+- Drive the real gizmo (or replace it with plugin-owned handles) and verify the dirty-scene behaviour with it.
+- Optional: a soldier-level (SoldierBody) walk around a moved house; the navmesh itself is verified.
+- Optional: migration of overrides after a re-scatter; generator-emitted persistent instance ids.
+- Optional: picking that sees through foliage cards; multi-selection and duplicate.
+
+## Commits
+
+`efca115` (revision cache, runtime test, plugin workflow, wiring fixes) and the acceptance/documentation commit after it (see `git log`).
+
+---
+
+# Appendix: EDITOR-WORLD-02 investigation log (phases A and prototype, kept as history)
 
 ## Status and architectural decision
 

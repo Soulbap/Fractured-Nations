@@ -500,17 +500,32 @@ func _case_parity() -> Dictionary:
 	data.editor_effective_sha = ref.effective_sha
 	data.records = layer.records.size()
 	data.unresolved = layer.unresolved.size()
-	# Displayed data: only cells that are inside the activation range are comparable.
-	data.displayed_sha = Digest.sha(Digest.displayed_lines(veg, cells))
+	var focus: Array = []
+	for c in ref.focus_cells:
+		focus.append(Vector2i(int(c[0]), int(c[1])))
+	var meshes: Array = []
+	for m in ref.focus_meshes:
+		meshes.append(int(m))
+	# Place the observer at the same spot as the editor camera did so the displayed set is comparable.
+	await _go(Vector3((centre.x + 0.5) * veg.cell_size_m, 0, (centre.y + 0.5) * veg.cell_size_m))
+	data.displayed_sha = Digest.sha(Digest.displayed_lines(veg, focus, meshes))
 	data.editor_displayed_sha = ref.displayed_sha
 	var lods := {}
 	for key: Vector3i in veg.active_lod:
-		if cells.has(Vector2i(key.x, key.y)):
+		if focus.has(Vector2i(key.x, key.y)) and meshes.has(key.z):
 			lods["%d,%d,%d" % [key.x, key.y, key.z]] = veg.active_lod[key]
+	var editor_lods := {}
+	for k in ref.lod:
+		if meshes.has(int(str(k).split(",")[2])):
+			editor_lods[k] = int(ref.lod[k])
 	data.lod = lods
-	data.editor_lod = ref.lod
+	data.editor_lod = editor_lods
+	data.lod_same = JSON.stringify(lods) == JSON.stringify(editor_lods)
+	data.override_file_sha = FileAccess.get_sha256(layer.path)
+	data.editor_override_sha = ref.override_sha
 	data.houses_checked = []
-	var ok: bool = data.effective_sha == data.editor_effective_sha and data.unresolved == 0 and data.records > 0
+	var ok: bool = data.effective_sha == data.editor_effective_sha and data.unresolved == 0 and data.records > 0 \
+		and data.override_file_sha == data.editor_override_sha and data.displayed_sha == data.editor_displayed_sha and data.lod_same
 	# Collision at every placed house/tree of the file.
 	var hits_ok := true
 	for id in layer.records:

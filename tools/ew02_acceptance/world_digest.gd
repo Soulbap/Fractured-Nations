@@ -21,10 +21,10 @@ static func lines(streamer: VegetationStreamer, cells: Array) -> PackedStringArr
 
 
 ## Same for what is displayed: the buffers of the active MultiMeshes in `cells` (+ their LOD).
-static func displayed_lines(streamer: VegetationStreamer, cells: Array) -> PackedStringArray:
+static func displayed_lines(streamer: VegetationStreamer, cells: Array, meshes: Array = []) -> PackedStringArray:
 	var out := PackedStringArray()
 	for key: Vector3i in streamer.active:
-		if not cells.has(Vector2i(key.x, key.y)):
+		if not cells.has(Vector2i(key.x, key.y)) or (not meshes.is_empty() and not meshes.has(key.z)):
 			continue
 		var buf: PackedFloat32Array = streamer.active[key].multimesh.buffer
 		for i in buf.size() / VegetationChunk.FLOATS_PER_INSTANCE:

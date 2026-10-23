@@ -12,6 +12,11 @@ LOGISTICS-01 *plan*, this document uses the *implemented* names.
 [NAV-INF-01_REPORT.md](NAV-INF-01_REPORT.md). Open: near-tier bodies wade rivers (the navmesh has no water); the full NAVINF suite and the visual run were
 only partly repeated after the last world change. The next milestone is still N1-C2 (not started), then NAV-PERF-01.
 
+**Status (EDITOR-WORLD-02B+C, 2026-10-23).** The `world_edit` editor plugin and the baseline-bound override layer are accepted (driven in a real editor,
+editor/runtime parity, collision, navmesh rebake, line of fire, streaming, chunk revision cache with 0 hashes in normal operation). Navigation impact:
+`DetailManager` now really listens to `clearings_changed`, so object overrides and construction clearings rebake the navmesh (one batched async rebake).
+Details and limits: [docs/EDITOR-WORLD-02_REPORT.md](EDITOR-WORLD-02_REPORT.md). The next milestone stays NAVIGATION N1.
+
 **Status (NAVIGATION N1-C1, 2026-10-23).** N1-C1 (persistent bridges with open/closed/disabled state, route invalidation for vehicles,
 convoys, infantry and operations, targeted cache invalidation, lower planning spikes) is complete: see
 [NAVIGATION-N1C1_REPORT.md](NAVIGATION-N1C1_REPORT.md). The next milestone is N1-C2 (tracked profiles, pivot turns), waiting for

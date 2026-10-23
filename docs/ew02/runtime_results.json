@@ -1,0 +1,264 @@
+{
+  "b6": {
+    "crossed_chunk": true,
+    "displayed_far": 1,
+    "displayed_far_after_reload": 1,
+    "displayed_manual": 1,
+    "displayed_manual_removed": 0,
+    "displayed_manual_restored": 1,
+    "displayed_new_1": 1,
+    "displayed_new_after_reload": 1,
+    "displayed_old_1": 0,
+    "displayed_old_2": 0,
+    "displayed_old_after_reload": 0,
+    "displayed_original_restored": 1,
+    "duplicates": 1,
+    "empty_cell": [
+      -13,
+      -14
+    ],
+    "moved_cell_differs": true,
+    "status": "PASS",
+    "unresolved_after_reload": 0
+  },
+  "c1": {
+    "after_reload_hashes": 0,
+    "reload_hashes": 1,
+    "status": "PASS",
+    "unresolved": 0,
+    "warm_500_lookups_ms": 8.58,
+    "warm_hashes": 0
+  },
+  "c2": {
+    "added_hits": 2,
+    "dbg": {
+      "active": 5,
+      "any_hit": "{ \"position\": (-921.7733, 220.872, -2045.169), \"normal\": (-1.0, 0.0, 0.0), \"face_index\": -1, \"collider_id\": 1485505080440, \"collider\": InstanceColliders:<StaticBody3D#1485505080440>, \"shape\": 3, \"rid\": RID(82991653065026) }",
+      "buckets": 52,
+      "ids": "[1, 2, 3, 4, 5, 6, 9, 10, 12, 16, 17, 18]",
+      "indexed": 9,
+      "last": "(-917.7733, 221.7642, -2045.169)",
+      "origin": "(-917.7733, 219.672, -2045.169)",
+      "streamer": true,
+      "target": "TerrainAnchorCamera:<Camera3D#1487216356515>",
+      "target_pos": "(-917.7733, 221.7642, -2045.169)",
+      "vegref": true
+    },
+    "new_place_hits": 2,
+    "new_place_hits_rotated_probe": 1,
+    "old_place_hits": 0,
+    "original_hits": 2,
+    "removed_hits": 0,
+    "scaled_hit_6m_off": 1,
+    "status": "PASS",
+    "unscaled_hit_6m_off": 0
+  },
+  "c2t": {
+    "added_hits": 1,
+    "new_place_hits": 1,
+    "old_place_hits": 0,
+    "original_hits": 1,
+    "removed_hits": 0,
+    "rotated_new_place_hits": 1,
+    "scaled_lateral_hits": 1,
+    "status": "PASS",
+    "unscaled_lateral_hits": 0,
+    "unscaled_radius": 0.16
+  },
+  "c3": {
+    "bake_after_move": {
+      "area_m": 440.0,
+      "async": true,
+      "async_done_ms": 117.495,
+      "bake_ms": 4.62,
+      "center": [
+        -917.773315429688,
+        -2045.16918945313
+      ],
+      "faces": 101250,
+      "polygons": 4121,
+      "source_ms": 4.589,
+      "structure_obstructions": 0,
+      "tree_obstructions": 265,
+      "vehicle_obstructions": 0
+    },
+    "before": {
+      "length": 61.1,
+      "max_dev": 4.8,
+      "min_cheb": 4.8,
+      "points": 15,
+      "straight": 60.1
+    },
+    "dbg": {
+      "area": 440.0,
+      "bake_count": 15,
+      "connected": true,
+      "nav_center": "(-917.7733, 219.672, -2045.169)",
+      "rebake_in": 0.4,
+      "recenter_to": "(inf, 0.0, inf)"
+    },
+    "new_place_after": {
+      "length": 60.9,
+      "max_dev": 5.2,
+      "min_cheb": 4.6,
+      "points": 12,
+      "straight": 60.0
+    },
+    "old_place_after": {
+      "length": 62.0,
+      "max_dev": 6.5,
+      "min_cheb": 4.8,
+      "points": 11,
+      "straight": 60.1
+    },
+    "rebakes_for_one_move": 1,
+    "removed_after": {
+      "length": 60.7,
+      "max_dev": 4.3,
+      "min_cheb": 3.0,
+      "points": 12,
+      "straight": 60.0
+    },
+    "snap_before": 4.8,
+    "snap_new_place_after_move": 5.0,
+    "snap_new_place_after_remove": 0.0,
+    "snap_old_place_after_move": 0.0,
+    "status": "PASS",
+    "straight_probe": {
+      "length": 61.3,
+      "max_dev": 5.1,
+      "min_cheb": 20.0,
+      "points": 11,
+      "straight": 60.1
+    }
+  },
+  "c4": {
+    "added_blocked": true,
+    "cell_dropped_from_cache": true,
+    "new_place_blocked": true,
+    "old_place_blocked": false,
+    "original_blocked": true,
+    "removed_blocked": false,
+    "shot_new_blocker": "tree",
+    "shot_new_distance": 16.0,
+    "shot_old_blocker": "range",
+    "status": "PASS"
+  },
+  "failures": [],
+  "parity": {
+    "collision_at_all_placed": true,
+    "displayed_sha": "13cfa3394c452dae38d943546d2c810ba9f388888c85a1d54c15f5bf38489fac",
+    "editor_displayed_sha": "13cfa3394c452dae38d943546d2c810ba9f388888c85a1d54c15f5bf38489fac",
+    "editor_effective_sha": "b890bb12ccc28f79042ba8098f711640df22c3df3d5953779651d00e45d030df",
+    "editor_lod": {
+      "-13,-35,16": 0,
+      "-13,-35,3": 0,
+      "-13,-35,4": 0,
+      "-13,-35,5": 0,
+      "-13,-35,9": 0,
+      "-13,-36,16": 0,
+      "-13,-36,3": 0,
+      "-13,-36,4": 0,
+      "-13,-36,5": 0,
+      "-14,-36,16": 0,
+      "-14,-36,3": 0,
+      "-14,-36,9": 0,
+      "-15,-40,3": 1,
+      "-15,-40,4": 1,
+      "-15,-40,5": 1,
+      "-16,-40,4": 1,
+      "-16,-40,5": 1,
+      "-16,-40,9": 1
+    },
+    "editor_override_sha": "d773ea7c55dc3d57d4e1daac9a166045c90f6bdb0c5bb816fe47af7d48d71220",
+    "effective_sha": "b890bb12ccc28f79042ba8098f711640df22c3df3d5953779651d00e45d030df",
+    "houses_checked": [
+      {
+        "collider_hits": 2,
+        "id": "a:bc8887fe6234ad449833a69de96b93a2",
+        "mesh": 3.0,
+        "pos": [
+          -1674.9,
+          267.6,
+          -4482.3
+        ]
+      },
+      {
+        "collider_hits": 2,
+        "id": "a:c3b745a739e232b0b7a90b1190a3798e",
+        "mesh": 9.0,
+        "pos": [
+          -1659.1,
+          268.1,
+          -4477.9
+        ]
+      },
+      {
+        "collider_hits": 2,
+        "id": "a:deb128ecb9bddd2230d83ea8a1301409",
+        "mesh": 3.0,
+        "pos": [
+          -1669.1,
+          268.1,
+          -4483.9
+        ]
+      },
+      {
+        "collider_hits": 2,
+        "id": "a:f88a70b5f2ae61008da77b6a7bc0ba1c",
+        "mesh": 16.0,
+        "pos": [
+          -1649.1,
+          268.1,
+          -4471.9
+        ]
+      },
+      {
+        "collider_hits": 2,
+        "id": "g:-14:-36:16:0",
+        "mesh": 16.0,
+        "pos": [
+          -1649.5,
+          267.4,
+          -4520.7
+        ]
+      },
+      {
+        "collider_hits": 2,
+        "id": "g:-16:-40:5:1",
+        "mesh": 5.0,
+        "pos": [
+          -1942.0,
+          360.4,
+          -5058.5
+        ]
+      }
+    ],
+    "lod": {
+      "-13,-35,16": 0,
+      "-13,-35,3": 0,
+      "-13,-35,4": 0,
+      "-13,-35,5": 0,
+      "-13,-35,9": 0,
+      "-13,-36,16": 0,
+      "-13,-36,3": 0,
+      "-13,-36,4": 0,
+      "-13,-36,5": 0,
+      "-14,-36,16": 0,
+      "-14,-36,3": 0,
+      "-14,-36,9": 0,
+      "-15,-40,3": 1,
+      "-15,-40,4": 1,
+      "-15,-40,5": 1,
+      "-16,-40,4": 1,
+      "-16,-40,5": 1,
+      "-16,-40,9": 1
+    },
+    "lod_same": true,
+    "override_file_sha": "d773ea7c55dc3d57d4e1daac9a166045c90f6bdb0c5bb816fe47af7d48d71220",
+    "records": 7,
+    "status": "PASS",
+    "unresolved": 0
+  },
+  "pass": true
+}

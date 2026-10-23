@@ -1,0 +1,117 @@
+{
+  "layer": "new",
+  "n100": {
+    "after_edit_100_lookups": {
+      "avg_ms": 0.162,
+      "max_ms": 0.371,
+      "n": 100
+    },
+    "cells": 10,
+    "chunks_unloaded": 8,
+    "cold_100_lookups": {
+      "avg_ms": 0.602,
+      "max_ms": 43.629,
+      "n": 100
+    },
+    "cold_first_load_ms": 60.19,
+    "cold_hashes": 1,
+    "edit_hashes": 0,
+    "edit_one_ms": 0.743,
+    "overrides": 100,
+    "reload_100_lookups": {
+      "avg_ms": 0.206,
+      "max_ms": 4.626,
+      "n": 100
+    },
+    "reload_hashes": 1,
+    "reload_total_ms": 21.44,
+    "warm_1000_lookups": {
+      "avg_ms": 0.153,
+      "max_ms": 0.633,
+      "n": 1000
+    },
+    "warm_100_lookups": {
+      "avg_ms": 0.154,
+      "max_ms": 0.271,
+      "n": 100
+    },
+    "warm_hashes": 0,
+    "warm_hashes_1000": 0
+  },
+  "n1000": {
+    "after_edit_100_lookups": {
+      "avg_ms": 0.212,
+      "max_ms": 0.446,
+      "n": 100
+    },
+    "cells": 102,
+    "chunks_unloaded": 8,
+    "cold_100_lookups": {
+      "avg_ms": 1.036,
+      "max_ms": 41.744,
+      "n": 100
+    },
+    "cold_first_load_ms": 103.59,
+    "cold_hashes": 2,
+    "edit_hashes": 0,
+    "edit_one_ms": 7.036,
+    "overrides": 1000,
+    "reload_100_lookups": {
+      "avg_ms": 0.836,
+      "max_ms": 41.07,
+      "n": 100
+    },
+    "reload_hashes": 2,
+    "reload_total_ms": 84.51,
+    "warm_1000_lookups": {
+      "avg_ms": 0.137,
+      "max_ms": 0.426,
+      "n": 1000
+    },
+    "warm_100_lookups": {
+      "avg_ms": 0.134,
+      "max_ms": 0.3,
+      "n": 100
+    },
+    "warm_hashes": 0,
+    "warm_hashes_1000": 0
+  },
+  "n500": {
+    "after_edit_100_lookups": {
+      "avg_ms": 0.169,
+      "max_ms": 0.341,
+      "n": 100
+    },
+    "cells": 51,
+    "chunks_unloaded": 8,
+    "cold_100_lookups": {
+      "avg_ms": 0.611,
+      "max_ms": 43.213,
+      "n": 100
+    },
+    "cold_first_load_ms": 61.13,
+    "cold_hashes": 1,
+    "edit_hashes": 0,
+    "edit_one_ms": 3.451,
+    "overrides": 500,
+    "reload_100_lookups": {
+      "avg_ms": 0.209,
+      "max_ms": 4.179,
+      "n": 100
+    },
+    "reload_hashes": 1,
+    "reload_total_ms": 21.77,
+    "warm_1000_lookups": {
+      "avg_ms": 0.129,
+      "max_ms": 0.457,
+      "n": 1000
+    },
+    "warm_100_lookups": {
+      "avg_ms": 0.128,
+      "max_ms": 0.245,
+      "n": 100
+    },
+    "warm_hashes": 0,
+    "warm_hashes_1000": 0
+  }
+}

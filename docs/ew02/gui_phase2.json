@@ -1,0 +1,184 @@
+{
+  "EW02B-04_undo_reset": {
+    "ok": true
+  },
+  "EW02B-06_remove_after_restart": {
+    "ok": true
+  },
+  "EW02B-06_reset_generated_to_baseline": {
+    "ok": true
+  },
+  "EW02B-06_restore_after_restart": {
+    "info": "Birch A  g:-16:-40:5:1  pos(-1942.0, 360.4, -5058.5) rot(-0, 172, 0) scale(1.21, 1.21, 1.21)",
+    "ok": true
+  },
+  "EW02B-06_select_persisted_tree": {
+    "info": {
+      "id": "g:-16:-40:5:1",
+      "path": "gui"
+    },
+    "ok": true
+  },
+  "EW02B-07_added_objects_persist": {
+    "ok": true
+  },
+  "EW02B-07_house_at_new_place": {
+    "ok": true
+  },
+  "EW02B-07_house_displayed_once": {
+    "ok": true
+  },
+  "EW02B-07_records_reloaded": {
+    "info": {
+      "records": 7,
+      "unresolved": 0
+    },
+    "ok": true
+  },
+  "EW02B-07_removed_persists": {
+    "ok": true
+  },
+  "EW02B-07_tree_at_new_place": {
+    "ok": true
+  },
+  "EW02B-07_tree_displayed_once": {
+    "ok": true
+  },
+  "digest": {
+    "centre": [
+      -13,
+      -36
+    ],
+    "displayed_sha": "13cfa3394c452dae38d943546d2c810ba9f388888c85a1d54c15f5bf38489fac",
+    "effective_sha": "b890bb12ccc28f79042ba8098f711640df22c3df3d5953779651d00e45d030df",
+    "focus_cells": [
+      [
+        -14,
+        -36
+      ],
+      [
+        -13,
+        -35
+      ],
+      [
+        -15,
+        -40
+      ],
+      [
+        -16,
+        -40
+      ],
+      [
+        -13,
+        -36
+      ]
+    ],
+    "focus_meshes": [
+      3,
+      9,
+      16,
+      4,
+      5
+    ],
+    "lod": {
+      "-13,-35,1": 0,
+      "-13,-35,16": 0,
+      "-13,-35,17": 0,
+      "-13,-35,18": 0,
+      "-13,-35,19": 1,
+      "-13,-35,2": 0,
+      "-13,-35,20": 1,
+      "-13,-35,21": 1,
+      "-13,-35,3": 0,
+      "-13,-35,4": 0,
+      "-13,-35,5": 0,
+      "-13,-35,6": 0,
+      "-13,-35,9": 0,
+      "-13,-36,1": 0,
+      "-13,-36,16": 0,
+      "-13,-36,2": 0,
+      "-13,-36,3": 0,
+      "-13,-36,4": 0,
+      "-13,-36,5": 0,
+      "-14,-36,1": 0,
+      "-14,-36,10": 0,
+      "-14,-36,16": 0,
+      "-14,-36,17": 0,
+      "-14,-36,18": 0,
+      "-14,-36,2": 0,
+      "-14,-36,20": 1,
+      "-14,-36,3": 0,
+      "-14,-36,7": 0,
+      "-14,-36,8": 0,
+      "-14,-36,9": 0,
+      "-15,-40,1": 1,
+      "-15,-40,10": 1,
+      "-15,-40,2": 1,
+      "-15,-40,3": 1,
+      "-15,-40,4": 1,
+      "-15,-40,5": 1,
+      "-15,-40,6": 1,
+      "-16,-40,1": 1,
+      "-16,-40,12": 1,
+      "-16,-40,2": 1,
+      "-16,-40,4": 1,
+      "-16,-40,5": 1,
+      "-16,-40,6": 1,
+      "-16,-40,9": 1
+    },
+    "override_sha": "d773ea7c55dc3d57d4e1daac9a166045c90f6bdb0c5bb816fe47af7d48d71220",
+    "radius": 3,
+    "records": 7
+  },
+  "digest_written": {
+    "ok": true
+  },
+  "done": true,
+  "gizmo_scene_action_taken_back": {
+    "info": {
+      "dirty_after": false,
+      "dirty_right_after_action": false,
+      "swallowed": 1
+    },
+    "ok": true
+  },
+  "no_automatic_flatten": {
+    "info": "",
+    "ok": true
+  },
+  "override_file_isolated": {
+    "info": "C:/Users/Hafnor/AppData/Local/Temp/claude/C--Users-Hafnor-Desktop-Game-Dev-fractured-nations/2882c1d8-d66b-4c16-8cae-2d692592582c/scratchpad/gui_overrides.json",
+    "ok": true
+  },
+  "plugin_bound_to_streamer": {
+    "ok": true
+  },
+  "roads_present": {
+    "info": 113,
+    "ok": true
+  },
+  "scene_not_dirty_after_open": {
+    "ok": true
+  },
+  "scene_not_dirty_at_end": {
+    "ok": true
+  },
+  "scene_open": {
+    "ok": true
+  },
+  "terrain_present": {
+    "ok": true
+  },
+  "toolbar_found": {
+    "ok": true
+  },
+  "viewpoint_moves_camera": {
+    "ok": true
+  },
+  "viewpoints_enabled": {
+    "ok": true
+  },
+  "world_edit_enabled": {
+    "ok": true
+  }
+}
