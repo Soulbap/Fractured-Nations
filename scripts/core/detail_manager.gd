@@ -76,6 +76,16 @@ func _ready() -> void:
 	anchor_cam.current = false
 	add_child(anchor_cam)
 	process_physics_priority = -10  # before the bodies' own physics step
+	if navigation and navigation.vegetation and not navigation.vegetation.clearings_changed.is_connected(_on_vegetation_changed):
+		navigation.vegetation.clearings_changed.connect(_on_vegetation_changed)
+
+
+func _on_vegetation_changed(cells: Array) -> void:
+	if navigation == null or navigation.vegetation == null:
+		return
+	var size: float = navigation.vegetation.cell_size_m
+	for cell: Vector2i in cells:
+		structures_changed(Rect2(Vector2(cell) * size, Vector2(size, size)))
 
 
 ## Creates the proxy for every unit that has no body yet (call after spawning records).

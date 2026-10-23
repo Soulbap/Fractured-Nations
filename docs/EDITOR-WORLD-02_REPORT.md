@@ -253,3 +253,28 @@ and discard (do not save), then reopen. The `world_edit` features (selection, mo
 editor/runtime parity, collision/streaming, hash caching) were not advanced in this step; the earlier
 notes above still stand. Other scenes saved with `auto_refresh = true` would now be ignored on load
 until toggled (intended).
+
+## world_edit acceptance in an isolated editor (2026-10-23)
+
+Run in a full project copy with a copy of `ref_20km` (scratchpad; canonical project and world untouched),
+real Godot 4.7.2 editor, `world_edit` enabled, probe in `tools/ew02_acceptance/`:
+- Editor camera moved over a real house near Haugen (`g:-14:-36:16:0`); the **real input path**
+  (`_forward_3d_gui_input` with a left click at the house's screen position) selected the house (distance 0 m).
+- Moved 20 m and rotated 30° through the proxy + `Apply transform`: record present at the destination, gone
+  at the source, MultiMesh buffer of the destination cell contains the moved transform.
+- Editor undo restored the original, redo re-applied; no terrain action appeared (`Flatten terrain under roads`
+  absent) and the world overrides save wrote `worlds/ref_20km.overrides.json` (isolated copy).
+- Runtime parity: a fresh `VegetationStreamer` (runtime code) reading the saved file reports the moved house,
+  no source house, 0 unresolved records, and `InstanceColliderStreamer` places its collision shapes at the
+  new position (2 near the new place; 0 near the old place with the override, 1 without it; a horizontal ray
+  through the new house hits).
+- All vegetation chunk files byte-identical before and after (combined SHA-256 unchanged); canonical manifest OK.
+- Interpretation of "picking": by ray against the mesh AABB of loaded chunks, not by a physical click on
+  mesh triangles.
+
+**Not verified / open:** tree selection and Add/Remove/Restore through the GUI were not driven (only the house
+move path; the synthetic and ref tests cover tree data paths); a navmesh rebake and line-of-fire were verified only
+in the synthetic suite, not on `ref_20km`; the persistent safe chunk-hash cache (item 7) is **not implemented**
+(a cache keyed on mtime/size was rejected as unsafe; a content-safe design needs generator-emitted chunk
+versions); the scene reopen path was checked by reading the saved file in a fresh runtime streamer, not by
+closing/reopening the scene in the editor.

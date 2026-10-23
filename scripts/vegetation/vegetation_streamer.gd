@@ -15,6 +15,8 @@
 class_name VegetationStreamer
 extends Node3D
 
+const WorldOverrides = preload("res://scripts/vegetation/world_overrides.gd")
+
 ## Emitted when construction clearings changed the instances of these cells (colliders
 ## and other caches of get_cell_instances must re-read them).
 signal clearings_changed(cells: Array)
@@ -52,6 +54,7 @@ var active_lod := {}
 var clearings := {}
 ## Vector2i chunk location -> VegetationChunk
 var chunks := {}
+var overrides: RefCounted
 
 var _missing := {}
 var _loading := {}
@@ -65,6 +68,7 @@ var _worst_drain_ms := 0.0
 
 func _ready() -> void:
 	top_level = true
+	_init_overrides()
 	# Instantiate the mesh assets now, not during the first activation.
 	if library:
 		for d in library.meshes:
@@ -88,6 +92,32 @@ func _process(_delta: float) -> void:
 ## Forces a full re-evaluation on the next frame (e.g. after data changed).
 func refresh() -> void:
 	_dirty = true
+
+
+func _init_overrides() -> void:
+	if overrides == null:
+		var world_dir := data_directory.get_base_dir()
+		var override_path := OS.get_environment("FRACTURED_WORLD_OVERRIDES")
+		if override_path.is_empty():
+			override_path = world_dir.get_base_dir().path_join(world_dir.get_file() + ".overrides.json")
+		overrides = WorldOverrides.new(self, override_path)
+		overrides.load_file()
+
+
+func overrides_changed(cells: Array) -> void:
+	for key in active.keys():
+		if cells.has(Vector2i(key.x, key.y)):
+			_deactivate(key)
+	_dirty = true
+	clearings_changed.emit(cells)
+
+
+func _effective_cell(cell: Vector2i) -> Dictionary:
+	_init_overrides()
+	var loc := VegetationChunk.chunk_of(Vector3(cell.x * cell_size_m, 0, cell.y * cell_size_m), chunk_size_m)
+	var ch := get_chunk_sync(loc)
+	var original: Dictionary = ch.cells.get(cell, {}) if ch else {}
+	return overrides.effective(cell, original)
 
 
 func get_stats() -> Dictionary:
@@ -172,11 +202,7 @@ func _filtered(cell: Vector2i, mesh_id: int, buf: PackedFloat32Array) -> PackedF
 ## Used by InstanceColliderStreamer, which needs data immediately around the player.
 func get_cell_instances(cell: Vector2i, mesh_ids: Array) -> Array:
 	var out := []
-	var loc := Vector2i(floori(cell.x * cell_size_m / chunk_size_m), floori(cell.y * cell_size_m / chunk_size_m))
-	var ch := get_chunk_sync(loc)
-	if ch == null or not ch.cells.has(cell):
-		return out
-	var by_mesh: Dictionary = ch.cells[cell]
+	var by_mesh := _effective_cell(cell)
 	for mesh_id in mesh_ids:
 		if not by_mesh.has(mesh_id):
 			continue
@@ -312,6 +338,19 @@ func _update_sets(obs: Array[Vector3]) -> void:
 				if def == null or d > def.max_range + def.fade_m:
 					continue
 				desired[Vector3i(cell.x, cell.y, mesh_id)] = d
+	# Override destinations can be in cells or chunks with no generated records.
+	_init_overrides()
+	for cell in overrides.affected_cells():
+		if _square_distance(obs, Vector2(cell) * cs, cs) > r:
+			continue
+		var by_mesh := _effective_cell(cell)
+		for mesh_id in by_mesh:
+			if by_mesh[mesh_id].is_empty():
+				continue
+			var def := library.get_def(mesh_id)
+			var d := _cell_distance(obs, cell, by_mesh)
+			if def and d <= def.max_range + def.fade_m:
+				desired[Vector3i(cell.x, cell.y, mesh_id)] = d
 
 	for key in active.keys():
 		if not desired.has(key):
@@ -370,12 +409,11 @@ func _drain_queue() -> void:
 
 func _activate(key: Vector3i, dist: float) -> void:
 	var cell := Vector2i(key.x, key.y)
-	var loc := VegetationChunk.chunk_of(Vector3(cell.x * cell_size_m, 0, cell.y * cell_size_m), chunk_size_m)
-	var ch: VegetationChunk = chunks.get(loc)
-	if ch == null or not ch.cells.has(cell) or not ch.cells[cell].has(key.z):
+	var by_mesh := _effective_cell(cell)
+	if not by_mesh.has(key.z):
 		return
 	var def := library.get_def(key.z)
-	var buf := _filtered(cell, key.z, ch.cells[cell][key.z])
+	var buf := _filtered(cell, key.z, by_mesh[key.z])
 	if buf.is_empty():
 		return
 	var lod := 0 if dist < def.near_range else 1

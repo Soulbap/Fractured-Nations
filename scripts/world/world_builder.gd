@@ -56,6 +56,8 @@ const JUNCTION_ARM_M := 16.0
 @export var grass: GrassLayer
 ## Scatter cells on the WorkerThreadPool (reads terrain data concurrently).
 @export var threaded_scatter := true
+## Explicit one-shot consent to replace existing chunks, which can contain painted instances.
+@export var allow_replace_existing_vegetation := false
 
 @warning_ignore_start("unused_private_class_variable")
 @export_tool_button("Regenerate terrain (destructive)", "Warning") var _btn_terrain = regenerate_terrain
@@ -112,6 +114,8 @@ func rebuild_roads() -> void:
 
 
 func rescatter_vegetation() -> void:
+	if not _vegetation_replacement_allowed():
+		return
 	_collect_road_polylines()
 	scatter_vegetation()
 	save_terrain()
@@ -441,7 +445,22 @@ func _collect_road_polylines() -> void:
 ## exclusion mask, removes stored Terrain3D instances (the old storage) and bakes the
 ## forest tint into the color map. Deterministic per cell: the RNG of a cell is seeded
 ## from the world seed and the cell coordinates, so any cell can be regenerated alone.
+func _vegetation_replacement_allowed() -> bool:
+	var dir := ProjectSettings.globalize_path(vegetation_directory())
+	for file in DirAccess.get_files_at(dir):
+		if file.begins_with("veg_") and file.ends_with(".res"):
+			if not allow_replace_existing_vegetation:
+				push_error("Vegetation scatter cancelled: existing chunks may contain painted instances. Back them up and explicitly enable allow_replace_existing_vegetation before replacing them.")
+				return false
+			break
+	return true
+
+
 func scatter_vegetation() -> void:
+	if not _vegetation_replacement_allowed():
+		return
+	# Consent is consumed even if a later step fails.
+	allow_replace_existing_vegetation = false
 	var t0 := Time.get_ticks_msec()
 	if road_polylines.is_empty():
 		_collect_road_polylines()
