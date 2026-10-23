@@ -1558,7 +1558,8 @@ func _draw_operation_label(op: OperationState, font: Font, slots: Dictionary) ->
 
 # --- Vehicles, facilities, roads and bases (LOGISTICS-01) ------------------------------------------
 
-const FACILITY_LETTERS := {&"hq": "H", &"barracks": "B", &"supply": "S", &"vehicle": "V", &"ammo": "A", &"fuel": "F", &"repair": "R", &"storage": "C", &"training": "T"}
+const FACILITY_LETTERS := {&"hq": "H", &"barracks": "B", &"supply": "S", &"vehicle": "V", &"ammo": "A", &"fuel": "F", &"repair": "R", &"storage": "C", &"training": "T",
+	&"parking": "P", &"guard": "G"}
 
 
 ## Vehicles of the player's faction, in id order.
@@ -1616,7 +1617,8 @@ func _draw_logistics_layer(font: Font, level: int) -> void:
 			draw_rect(Rect2(p - Vector2(6, 6), Vector2(12, 12)), col, false, 2.0)
 			_text(font, p + Vector2(10, 5), b.name if kind == "Main base" else "", 12, col)
 		else:
-			var radius_px := BaseSim.JOIN_M * 0.5 * zoom
+			# BASE-01: an established base shows its area; a proximity group half its join distance.
+			var radius_px := (float(b.radius) if float(b.get("radius", 0.0)) > 0.0 else BaseSim.JOIN_M * 0.5) * zoom
 			draw_arc(p, maxf(radius_px, 14.0), 0.0, TAU, 40, Color(col, 0.5), 1.5)
 			_text(font, p + Vector2(-30, -maxf(radius_px, 14.0) - 4.0), "%s (%s)" % [b.name, kind], 12, col)
 	if level >= 1:

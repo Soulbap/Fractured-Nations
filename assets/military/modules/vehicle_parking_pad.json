@@ -124,7 +124,7 @@
   "blocks_navigation": false,
   "max_ground_gap": 0.3,
   "walkable": true,
-  "sink": 0.15
+  "sink": 0.04
  },
  "qa": {
   "pass": true,

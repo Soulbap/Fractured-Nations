@@ -62,13 +62,14 @@ func _on_added(s: StructureState) -> void:
 		return
 	var cs := _cs()
 	if s.base_id < 0 or not cs.bases.has(s.base_id):
+		# BASE-01: a facility inside a base's area belongs to it; a proximity group is joined within JOIN_M.
 		var best := -1
-		var best_d := JOIN_M
+		var best_d := INF
 		for b: Dictionary in cs.bases.values():
 			if b.faction != s.faction:
 				continue
 			var d := Vector2(s.position.x - b.anchor.x, s.position.z - b.anchor.z).length()
-			if d < best_d:
+			if d < reach_of(b) and d < best_d:
 				best_d = d
 				best = b.id
 		if best < 0:
@@ -76,7 +77,17 @@ func _on_added(s: StructureState) -> void:
 			for b: Dictionary in cs.bases.values():
 				if b.faction == s.faction:
 					n += 1
-			best = cs.add_base("%s base %d" % [WorldState.faction_name(s.faction), n + 1], s.faction, s.position).id
+			var founds := FacilityDefs.founds_base(s.type_id)
+			var nb := cs.add_base("%s base %d" % [WorldState.faction_name(s.faction), n + 1], s.faction, s.position,
+				FacilityDefs.area_of(s.type_id) if founds else 0.0, s.id if founds else -1)
+			best = nb.id
+			if founds:
+				lsim._event(s.faction, "%s established (area %d m)" % [nb.name, roundi(nb.radius)])
+		elif FacilityDefs.founds_base(s.type_id) and float(cs.bases[best].get("radius", 0.0)) <= 0.0:
+			# A command post in a proximity group turns it into an established base round the post.
+			cs.bases[best]["radius"] = FacilityDefs.area_of(s.type_id)
+			cs.bases[best]["founder"] = s.id
+			cs.bases[best]["anchor"] = s.position
 		s.base_id = best
 	_update_anchor(s.base_id)
 	var kind := FacilityDefs.kind_of(s.type_id)
@@ -93,6 +104,9 @@ func _on_removed(s: StructureState) -> void:
 	if facilities_of(s.base_id).is_empty():
 		_cs().bases.erase(s.base_id)
 	else:
+		# A base without its command post keeps its area (the anchor stays where it was).
+		if int(_cs().bases[s.base_id].get("founder", -1)) == s.id:
+			_cs().bases[s.base_id]["founder"] = -1
 		_update_anchor(s.base_id)
 
 
@@ -100,6 +114,8 @@ func _update_anchor(bid: int) -> void:
 	var list := facilities_of(bid)
 	if list.is_empty() or not _cs().bases.has(bid):
 		return
+	if float(_cs().bases[bid].get("radius", 0.0)) > 0.0:
+		return  # BASE-01: an established base's area does not move
 	var c := Vector3.ZERO
 	for s in list:
 		c += s.position
@@ -126,6 +142,97 @@ func bases_of(faction: int) -> Array:
 func rename(bid: int, new_name: String) -> void:
 	if _cs().bases.has(bid) and new_name.strip_edges() != "":
 		_cs().bases[bid]["name"] = new_name.strip_edges()
+
+
+## How far from its anchor a base takes in facilities: its area, or JOIN_M for a proximity group.
+static func reach_of(b: Dictionary) -> float:
+	var r := float(b.get("radius", 0.0))
+	return r if r > 0.0 else JOIN_M
+
+
+## BASE-01: the established base (one with an area) of `faction` whose area contains p, or -1.
+func base_area_at(p: Vector3, faction: int) -> int:
+	var best := -1
+	var best_d := INF
+	for b: Dictionary in bases_of(faction):
+		var r := float(b.get("radius", 0.0))
+		var d := Vector2(p.x - b.anchor.x, p.z - b.anchor.z).length()
+		if r > 0.0 and d <= r and d < best_d:
+			best_d = d
+			best = b.id
+	return best
+
+
+## BASE-01 ownership rules for a building `faction` wants to place at p ("" = allowed). A command post
+## founds a base: not inside or overlapping one of the faction's own bases, nor on ground another
+## faction holds (its base areas, the objectives it owns). Every other facility belongs to a base: it
+## must stand inside one of the faction's base areas. Structures that are no facility (walls, fences,
+## roads) are not restricted.
+func placement_rule(type_id: StringName, p: Vector3, faction: int) -> String:
+	if not FacilityDefs.has(type_id):
+		return ""
+	var q := Vector2(p.x, p.z)
+	if FacilityDefs.founds_base(type_id):
+		var area := FacilityDefs.area_of(type_id)
+		for b: Dictionary in _cs().bases.values():
+			var d := q.distance_to(Vector2(b.anchor.x, b.anchor.z))
+			if int(b.faction) == faction and d < reach_of(b) + area * 0.5:
+				return "too close to %s (one command post per base)" % b.name
+			if int(b.faction) != faction and d < reach_of(b) + area:
+				return "too close to %s's %s" % [WorldState.faction_name(int(b.faction)), b.name]
+		for o: ObjectiveState in sim.state.war.objectives.values():
+			if o.owner >= 0 and o.owner != faction and q.distance_to(Vector2(o.position.x, o.position.z)) < o.radius:
+				return "%s is held by %s" % [o.obj_name, WorldState.faction_name(o.owner)]
+		return ""
+	if base_area_at(p, faction) < 0:
+		return "outside the base area" if not bases_of(faction).is_empty() else "no base: place a command post first"
+	return ""
+
+
+## BASE-01 facility properties of a base: soldier capacity (beds), parking bays, guard posts.
+func capacity(bid: int) -> int:
+	var n := 0
+	for s in facilities_of(bid):
+		n += FacilityDefs.beds_of(s.type_id)
+	return n
+
+
+## Every parking bay of the base: [{pos, yaw, structure, slot}] (y = the pad's ground).
+func parking_spots(bid: int) -> Array:
+	var out := []
+	for s in facilities_of(bid):
+		for i in FacilityDefs.slots_of(s.type_id):
+			var sp := FacilityDefs.parking_spot(s, i)
+			var p: Vector3 = sp.pos
+			p.y = s.position.y
+			sp["pos"] = p
+			sp["structure"] = s.id
+			sp["slot"] = i
+			out.append(sp)
+	return out
+
+
+## The first parking bay of the base with no vehicle on it ({} when the base has none free).
+func free_parking_spot(bid: int) -> Dictionary:
+	for sp: Dictionary in parking_spots(bid):
+		var taken := false
+		for id in lsim.vsim.ids:
+			var u: UnitState = sim.state.units.get(id)
+			if u and Vector2(u.position.x - sp.pos.x, u.position.z - sp.pos.z).length() < 2.5:
+				taken = true
+				break
+		if not taken:
+			return sp
+	return {}
+
+
+## Positions of the base's guard posts (for defence orders: SquadTactics DEFEND at a post).
+func guard_posts(bid: int) -> Array[Vector3]:
+	var out: Array[Vector3] = []
+	for s in facilities_of(bid):
+		if FacilityDefs.kind_of(s.type_id) == &"guard":
+			out.append(s.position)
+	return out
 
 
 func base_of_position(p: Vector3, faction: int, radius := JOIN_M) -> int:
@@ -232,7 +339,8 @@ func summary(bid: int) -> Dictionary:
 	for s in facilities_of(bid):
 		for q: Dictionary in s.facility.get("queue", []):
 			activities.append("%s: %s (%d s left)" % [FacilityDefs.display_name(s.type_id), q.get("what", "queued"), maxi(0, roundi(float(q.done) - sim.state.time))])
-	return {"id": bid, "name": b.name, "faction": b.faction, "kind": base_kind(bid), "facilities": counts, "stock": stock, "vehicles": vehicles, "soldiers": soldiers, "activities": activities, "anchor": b.anchor}
+	return {"id": bid, "name": b.name, "faction": b.faction, "kind": base_kind(bid), "facilities": counts, "stock": stock, "vehicles": vehicles, "soldiers": soldiers, "activities": activities, "anchor": b.anchor,
+		"radius": float(b.get("radius", 0.0)), "capacity": capacity(bid), "parking": parking_spots(bid).size(), "guard_posts": guard_posts(bid).size()}
 
 
 func describe(bid: int) -> String:
@@ -244,7 +352,7 @@ func describe(bid: int) -> String:
 		fac.append("%s x%d" % [k, sm.facilities[k]] if sm.facilities[k] > 1 else k)
 	var stock: Dictionary = sm.stock
 	var st := "ammo %d kg, fuel %d l, supplies %d kg" % [roundi(stock.ammo), roundi(stock.fuel), roundi(stock.supplies)]
-	return "%s - %s: %s | stock: %s | %d vehicles, %d soldiers" % [sm.name, sm.kind, ", ".join(fac), st, sm.vehicles.size(), sm.soldiers]
+	return "%s - %s: %s | stock: %s | %d vehicles, %d soldiers (capacity %d), %d parking bays" % [sm.name, sm.kind, ", ".join(fac), st, sm.vehicles.size(), sm.soldiers, sm.capacity, sm.parking]
 
 
 # --- Base stock: one view over the stores of a base ------------------------------------------------

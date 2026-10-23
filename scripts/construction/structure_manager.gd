@@ -1620,6 +1620,31 @@ static func _obb_circle(a: Array, p: Vector2, r: float) -> bool:
 	return closest.distance_to(p) < r
 
 
+## BASE-01: why a building at xform would block a road or a bridge ("" = it keeps clear): its footprint
+## must stay `margin` m off every road surface (the world's and the built ones) and off bridge decks.
+func road_conflict(def: StructureDef, xform: Transform3D, margin := 1.5) -> String:
+	if sim == null:
+		return ""
+	var roads: RoadNetwork = sim.state.roads
+	var obb := _obb(def, xform)
+	var c: Vector2 = obb[0]
+	var reach: float = (obb[3] as Vector2).length()
+	if roads.bridge_at(Vector3(c.x, 0.0, c.y), reach + margin + 2.0) != null:
+		return "too close to a bridge"
+	for r: RoadNetwork.Road in roads.roads_in(Rect2(c, Vector2.ZERO).grow(reach + margin + 12.0)):
+		var half := r.width * 0.5 + margin
+		for i in r.points.size() - 1:
+			var a := Vector2(r.points[i].x, r.points[i].z)
+			var b := Vector2(r.points[i + 1].x, r.points[i + 1].z)
+			if Geometry2D.get_closest_point_to_segment(c, a, b).distance_to(c) > reach + half:
+				continue  # cheap reject: the segment passes outside the footprint's circle
+			var n := maxi(1, ceili(a.distance_to(b) / 1.5))
+			for k in n + 1:
+				if _obb_circle(obb, a.lerp(b, float(k) / n), half):
+					return "too close to a road (%s)" % r.name if r.name != "" else "too close to a road"
+	return ""
+
+
 ## Why a footprint cannot be built here ("" = free): other structures, tree trunks, units.
 func _blocked(def: StructureDef, obb: Array, ignore_id: int, _ignore_index: int, clear_trees := false) -> String:
 	var c: Vector2 = obb[0]

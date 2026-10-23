@@ -22,6 +22,10 @@ var _shot_dir := "res://docs/screenshots"
 func _init(p_demo: CoreDemo) -> void:
 	demo = p_demo
 	tree = demo.get_tree()
+	# BASE-01: the scenarios of earlier milestones build facilities anywhere (no command post first);
+	# Base01SelfTest switches the player's base rules back on.
+	if demo.construction:
+		demo.construction.base_rules = false
 
 
 func run(args: PackedStringArray) -> void:
