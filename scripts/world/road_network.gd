@@ -149,8 +149,12 @@ func load_world(src: String) -> int:
 	_blocking.clear()
 	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(src + "roads.json"))
 	if data is Dictionary:
+		# WORLD-SETTLEMENT-01: a settlement prototype (--settlement-proto) swaps local streets.
+		data = SettlementProto.patch_roads(data)
 		for i in data.roads.size():
 			var r: Dictionary = data.roads[i]
+			if r.points.size() < 2:
+				continue
 			var road := Road.new()
 			road.key = -(i + 1)
 			road.name = r.name

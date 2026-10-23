@@ -1,0 +1,62 @@
+[
+ {
+  "name": "1_top",
+  "pos": [
+   -1560,
+   0,
+   -4480
+  ],
+  "height": 650,
+  "yaw_deg": 0,
+  "pitch_deg": -89.5,
+  "fov": 70
+ },
+ {
+  "name": "2_oblique_se",
+  "pos": [
+   -1250,
+   0,
+   -4150
+  ],
+  "height": 180,
+  "yaw_deg": -47.6,
+  "pitch_deg": -20.8,
+  "fov": 65
+ },
+ {
+  "name": "3_oblique_n",
+  "pos": [
+   -1600,
+   0,
+   -4850
+  ],
+  "height": 150,
+  "yaw_deg": 177.3,
+  "pitch_deg": -19,
+  "fov": 65
+ },
+ {
+  "name": "4_ground_haugvegen",
+  "pos": [
+   -1667,
+   0,
+   -4352
+  ],
+  "height": 1.8,
+  "yaw_deg": 8,
+  "pitch_deg": -3,
+  "fov": 70
+ },
+ {
+  "name": "5_ground_fv_east",
+  "pos": [
+   -1440,
+   0,
+   -4200
+  ],
+  "height": 2.0,
+  "yaw_deg": -41.6,
+  "pitch_deg": -2,
+  "fov": 70
+ }
+]

@@ -361,7 +361,8 @@ func effective(cell: Vector2i, by_mesh: Dictionary) -> Dictionary:
 			target.append_array(updated)
 			result[int(rec.mesh)] = target
 		else:
-			VegetationChunk.append_to(result, int(rec.mesh), xf, Color.WHITE)
+			var c: Array = rec.get("color", [1.0, 1.0, 1.0])
+			VegetationChunk.append_to(result, int(rec.mesh), xf, Color(c[0], c[1], c[2]))
 	# A source change during validation means by_mesh may describe the old chunk: do not cache.
 	if generation == stats.source_changes:
 		_cells_cache[cell] = result

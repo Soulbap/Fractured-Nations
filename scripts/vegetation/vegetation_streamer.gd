@@ -103,6 +103,9 @@ func _init_overrides() -> void:
 		var world_dir := data_directory.get_base_dir()
 		var override_path := OS.get_environment("FRACTURED_WORLD_OVERRIDES")
 		if override_path.is_empty():
+			# WORLD-SETTLEMENT-01: a settlement prototype brings its own overrides file.
+			override_path = SettlementProto.overrides_path()
+		if override_path.is_empty():
 			override_path = world_dir.get_base_dir().path_join(world_dir.get_file() + ".overrides.json")
 		overrides = WorldOverrides.new(self, override_path)
 		overrides.load_file()

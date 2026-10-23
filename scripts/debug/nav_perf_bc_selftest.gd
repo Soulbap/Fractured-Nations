@@ -9,7 +9,7 @@ class_name NavPerfBCSelfTest
 extends NavInf01SelfTest
 
 const IDS_P: Array[String] = ["b_strat", "b_local", "b_burst", "b_op", "b_vehicle", "b_vburst", "b_roads", "a_service", "c_pending", "c_vehicle", "c_ops", "c_loop",
-	"c_bridge", "e_persist", "d_load", "d_load50", "d_long", "d_haugen", "z_visual"]
+	"c_bridge", "e_persist", "d_load", "d_load50", "d_long", "d_haugen", "z_visual", "b_settlement"]
 var _tag := "run"
 ## Named places of ref_20km (sites.json settlements and plateaus), filled by _load_places.
 var places := {}
@@ -1016,6 +1016,55 @@ func _b_roads() -> Dictionary:
 	return {"status": "PASS" if bridges_ok and wrong == 0 and unexplained == 0 and inf_ok == rows.size() else "FAIL", "connectivity": conn,
 		"routes": rows, "trucks_clean": veh_ok, "trucks_physically_wrong": wrong, "trucks_no_road_access": no_access, "trucks_unexplained_failures": unexplained,
 		"terrain_steps_on_truck_routes": steps, "infantry_ok": inf_ok, "of": rows.size()}
+
+
+## WORLD-SETTLEMENT-01 (run with --settlement-proto=haugen --only b_settlement): the prototype's local roads are in the road
+## network, a truck plans in and out of the village from yards that only the new roads reach, and infantry crosses the village.
+func _b_settlement() -> Dictionary:
+	if SettlementProto.active() != "haugen":
+		return {"status": "FAIL", "reason": "needs --settlement-proto=haugen"}
+	await _fresh()
+	var net := demo.sim.state.roads
+	var names := {}
+	for r: RoadNetwork.Road in net.world:
+		names[r.name] = true
+	var gone: bool = not names.has("Haugen gate 1") and not names.has("Haugen gate 2")
+	var added := ["Haugvegen", "Bakkeli", "Nordre Haugen gardsveg", "Austre Haugen gardsveg", "Vestre Haugen gardsveg", "Sagvegen"].filter(
+		func(n: String) -> bool: return names.has(n))
+	var audit := RoadAudit.new(demo.sim)
+	var td := VehicleDefs.get_def(VehicleDefs.TRUCK)
+	var g := func(x: float, z: float) -> Vector3: return Vector3(x, demo.sim.vehicles.ground_at(Vector3(x, 0, z)), z)
+	# Ends of the new roads (upper Haugvegen, Nordre Haugen, Haugen ovre, Vestre Haugen) and places outside the village.
+	var trips := [["upper Haugvegen", g.call(-1682.0, -4578.0), "Fv south-east", g.call(-1193.0, -4012.0)],
+		["Fv south-east", g.call(-1193.0, -4012.0), "Nordre Haugen", g.call(-1732.0, -4796.0)],
+		["Haugen ovre", g.call(-1352.0, -4552.0), "Sentrum", _spot("Sentrum")],
+		["Vestre Haugen", g.call(-1736.0, -4404.0), "Lv haugen south", g.call(-1675.0, -4151.0)]]
+	var rows := []
+	var ok := gone and added.size() == 6
+	for t: Array in trips:
+		var a: Vector3 = t[1]
+		var b: Vector3 = t[3]
+		# The start must be off every canonical road, so only the new roads can serve it.
+		var near: Dictionary = net.nearest(a, 30.0)
+		var vr := demo.sim.vehicles.router.plan(a, b, td)
+		var row := {"trip": "%s -> %s" % [t[0], t[2]], "start_road": String(near.get("road").name) if near.get("road") else "none"}
+		if vr.ok:
+			var chk := audit.vehicle_route_check(vr.points, td)
+			row["truck"] = {"km": snappedf(float(vr.length_m) / 1000.0, 0.01), "road_km": snappedf(float(vr.road_m) / 1000.0, 0.01), "check": chk}
+			ok = ok and int(chk.wet) == 0 and int(chk.in_structure) == 0
+		else:
+			row["truck"] = {"fail": vr.reason}
+			ok = false
+		var ir := ws.routes.route(a, b, demo.sim.terrain)
+		if ir.size() >= 2:
+			var f := _route_feasible(ir)
+			row["infantry"] = {"km": snappedf(ws.routes.route_length(ir) / 1000.0, 0.01), "check": f}
+			ok = ok and f.bad_legs == 0 and f.nan_heights == 0
+		else:
+			row["infantry"] = {"fail": String(ws.routes.last_failure.get("reason", "no route"))}
+			ok = false
+		rows.append(row)
+	return {"status": "PASS" if ok else "FAIL", "old_streets_removed": gone, "new_roads": added, "trips": rows}
 
 
 # --- D: movement in the world ---------------------------------------------------------------------------------------------------
