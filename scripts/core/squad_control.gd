@@ -55,6 +55,9 @@ var route_stall_while_reacting := 0
 ## fresh attempt at the same authoritative slot.
 var member_stall_s := 25.0
 var member_replans := 1
+## NAV-INF-01: distance a member has to cover after a recovery for the next blockage to get a recovery of its own. The budget is
+## per blockage, not per target: the last leg of a long march is one target for hundreds of metres.
+var member_renew_m := 15.0
 var member_stalls := 0
 var member_recoveries := 0
 var member_failures := 0
@@ -517,6 +520,9 @@ func _recover_member_if_needed(sq: SquadState, u: UnitState) -> bool:
 		p = {"target": target, "best": _flat(u.position, target), "at": sim.state.time,
 			"last_pos": u.position, "attempts": 0, "failed": false}
 	var d := _flat(u.position, target)
+	if int(p.attempts) > 0 and p.has("recovered_at") and _flat(u.position, p.recovered_at) >= member_renew_m:
+		p.attempts = 0
+		p.failed = false
 	if _flat(u.position, p.get("last_pos", u.position)) > 1.0:
 		p.last_pos = u.position
 		p.best = minf(float(p.best), d)
@@ -527,6 +533,7 @@ func _recover_member_if_needed(sq: SquadState, u: UnitState) -> bool:
 		member_stalls += 1
 		member_recoveries += 1
 		p.attempts = int(p.attempts) + 1
+		p.recovered_at = u.position
 		p.at = sim.state.time
 		p.best = d
 		p.last_pos = u.position

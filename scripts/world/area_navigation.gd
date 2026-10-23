@@ -151,7 +151,7 @@ func _new_navmesh() -> NavigationMesh:
 	nm.agent_radius = agent_radius
 	nm.agent_height = 1.8
 	nm.agent_max_climb = 0.6
-	nm.agent_max_slope = 45.0
+	nm.agent_max_slope = rad_to_deg(atan(WorldSim.INFANTRY_MAX_GRADE))  # NAV-INF-01: one slope limit for both tiers
 	nm.region_min_size = 4.0
 	nm.edge_max_length = 12.0
 	nm.detail_sample_distance = 6.0

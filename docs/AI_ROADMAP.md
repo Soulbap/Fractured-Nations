@@ -7,6 +7,11 @@ comparison — not repeated here) with the code that actually exists on
 [INTEGRATION-04_REPORT.md](INTEGRATION-04_REPORT.md) §4). Where the research assumed the
 LOGISTICS-01 *plan*, this document uses the *implemented* names.
 
+**Status (NAV-INF-01, 2026-10-23).** Long infantry marches now finish, near and far: the stall after the Centre Bridge was several separate defects
+(spurious terrain heights, retry budgets that never renewed on progress, near bodies stopping at the road lip and on 40+ degree banks). Report:
+[NAV-INF-01_REPORT.md](NAV-INF-01_REPORT.md). Open: near-tier bodies wade rivers (the navmesh has no water); the full NAVINF suite and the visual run were
+only partly repeated after the last world change. The next milestone is still N1-C2 (not started), then NAV-PERF-01.
+
 **Status (NAVIGATION N1-C1, 2026-10-23).** N1-C1 (persistent bridges with open/closed/disabled state, route invalidation for vehicles,
 convoys, infantry and operations, targeted cache invalidation, lower planning spikes) is complete: see
 [NAVIGATION-N1C1_REPORT.md](NAVIGATION-N1C1_REPORT.md). The next milestone is N1-C2 (tracked profiles, pivot turns), waiting for

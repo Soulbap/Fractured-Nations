@@ -27,6 +27,13 @@ extends FPSController
 @export var stuck_s := 3.0
 @export var stuck_progress_m := 0.8
 @export var unstick_s := 1.5
+## NAV-INF-01: distance walked after a stuck episode that counts as real progress. The unstick stage is a budget for one
+## blockage, not for the whole march: a later, unrelated jam gets its own recovery instead of dropping the order.
+@export var stuck_clear_m := 4.0
+## NAV-INF-01: a ledge up to this high is stepped onto. The navmesh is baked from the terrain only, while roads are collision
+## meshes 12-25 cm above it with a sharp edge: a capsule of radius 0.35 m cannot slide up such an edge (contact normal y 0.3-0.6),
+## so every soldier whose path crossed a road verge stood still against it until the stuck logic gave up on the order.
+@export var step_height := 0.35
 
 var unit: UnitState
 var sim: WorldSim
@@ -57,6 +64,8 @@ var _fov_hip := 75.0
 var _progress_ref := Vector3.INF
 var _progress_t := 0.0
 var _stuck_stage := 0
+## Where the first stuck stage was raised: real progress from there (stuck_clear_m) renews the recovery budget.
+var _stuck_at := Vector3.INF
 var _unstick_left := 0.0
 ## Diagnostics (AI-WAR-LOGISTICS-01 movement parity): what the last AI step wanted.
 var dbg_desired := 0.0
@@ -173,7 +182,7 @@ func _ai_step(delta: float) -> void:
 			# No path yet (navigation map not synced, or target off the navmesh): retry.
 			_empty_path_s += delta
 			if _empty_path_s > max_empty_path_s:
-				_finish(remaining, reacting)
+				_finish(remaining, reacting, "no navmesh path to the target")
 			elif Engine.get_physics_frames() % 10 == 0:
 				nav.target_position = goal
 		elif nav.is_navigation_finished():
@@ -185,7 +194,7 @@ func _ai_step(delta: float) -> void:
 				desired = far_dir * walk_speed
 				_face(far_dir, delta)
 			else:
-				_finish(remaining, reacting)
+				_finish(remaining, reacting, "navmesh path ends short of the target")
 		else:
 			var dir := next - global_position
 			dir.y = 0.0
@@ -250,6 +259,7 @@ func _reset_stuck() -> void:
 	_progress_ref = global_position
 	_progress_t = 0.0
 	_stuck_stage = 0
+	_stuck_at = Vector3.INF
 	_unstick_left = 0.0
 
 
@@ -257,6 +267,9 @@ func _check_stuck(delta: float, remaining: float, reacting := false) -> void:
 	if not _progress_ref.is_finite() or global_position.distance_to(_progress_ref) > stuck_progress_m:
 		_progress_ref = global_position
 		_progress_t = 0.0
+		if _stuck_stage > 0 and _stuck_at.is_finite() and global_position.distance_to(_stuck_at) >= stuck_clear_m:
+			_stuck_stage = 0
+			_stuck_at = Vector3.INF
 		return
 	_progress_t += delta
 	if _progress_t < stuck_s:
@@ -264,25 +277,26 @@ func _check_stuck(delta: float, remaining: float, reacting := false) -> void:
 	_progress_t = 0.0
 	if _stuck_stage == 0:
 		_stuck_stage = 1
+		_stuck_at = global_position
 		nav.target_position = unit.react_target if reacting else unit.order_target
 		_unstick_left = unstick_s
 	else:
-		_finish(remaining, reacting)
+		_finish(remaining, reacting, "stuck: no progress after an unstick attempt")
 
 
-func _finish(remaining: float, reacting: bool) -> void:
+func _finish(remaining: float, reacting: bool, why := "") -> void:
 	if reacting:
 		# The order is untouched; the AI decides what the arrival (or failure) means.
 		unit.react_state = UnitState.ReactState.ARRIVED if remaining <= react_arrive_distance + 0.8 else UnitState.ReactState.FAILED
 		_applied_target = Vector3.INF
 		return
-	_finish_order(remaining)
+	_finish_order(remaining, why)
 
 
-func _finish_order(remaining: float) -> void:
+func _finish_order(remaining: float, why := "") -> void:
 	unit.order = UnitState.Order.NONE
 	unit.move_state = UnitState.MoveState.ARRIVED if remaining <= blocked_distance else UnitState.MoveState.BLOCKED
-	unit.nav_reason = "" if unit.move_state == UnitState.MoveState.ARRIVED else "near path ended %.1f m from target" % remaining
+	unit.nav_reason = "" if unit.move_state == UnitState.MoveState.ARRIVED else "%s, %.1f m from the target" % [why if why != "" else "near path ended", remaining]
 	unit.anchor_pos = global_position
 	_applied_target = Vector3.INF
 	sim.state.order_changed.emit(unit)
@@ -293,7 +307,27 @@ func _apply_velocity(v: Vector3, delta: float) -> void:
 		velocity.y -= _gravity * delta
 	velocity.x = v.x
 	velocity.z = v.z
+	if step_height > 0.0 and is_on_floor():
+		_step_up(delta)
 	move_and_slide()
+
+
+## Walks up a ledge the capsule would otherwise stand against: when the next move hits a wall (not a floor) and the same move
+## from step_height higher is free, the body is lifted over the ledge; gravity and the floor snap put it on top.
+func _step_up(delta: float) -> void:
+	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
+	if horizontal.length_squared() < 0.25:
+		return
+	var motion := horizontal.normalized() * maxf(horizontal.length() * delta, 0.1)
+	var hit := KinematicCollision3D.new()
+	if not test_move(global_transform, motion, hit) or hit.get_normal().y >= cos(floor_max_angle):
+		return
+	var raised := global_transform.translated(Vector3.UP * step_height)
+	if test_move(global_transform, Vector3.UP * step_height) or test_move(raised, motion):
+		return
+	global_position += Vector3.UP * step_height + motion
+	velocity.y = 0.0
+	apply_floor_snap()
 
 
 func _face(dir: Vector3, delta: float) -> void:

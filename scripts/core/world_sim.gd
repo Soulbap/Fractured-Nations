@@ -61,13 +61,27 @@ const INFANTRY_LOCAL_CELL := 5.0
 const INFANTRY_LOCAL_MAX_CELLS := 60000
 const INFANTRY_LOCAL_MAX_M := 500.0
 const INFANTRY_CLEARANCE_M := 0.5
-const INFANTRY_MAX_GRADE := 1.0
+## NAV-INF-01: the steepest ground infantry is sent over, in both tiers: tan(38 deg). The near tier's navmesh (AreaNavigation) takes
+## its slope limit from this value. Before, the navmesh and the abstract tier allowed 45 degrees while a SoldierBody (capsule, no
+## foothold) stood still on 40+ degree faces, so near soldiers were routed up banks they could not climb.
+const INFANTRY_MAX_GRADE := 0.78
+const INFANTRY_RETRY_BUDGET := 3
+const INFANTRY_RETRY_RENEW_M := 10.0
+const INFANTRY_FAIL_MEMORY_S := 20.0
 var _local_routes := {}
 var _local_pending := {}
 var _local_attempts := {}
+## NAV-INF-01: where the current run of attempts began. The retry budget is for one blockage: a walker that has covered
+## INFANTRY_RETRY_RENEW_M since then has made progress, and its next obstacle starts a new run.
+var _local_anchor := {}
 var _local_route_cache := {}
+## NAV-INF-01: plans that found no passage, by squad route and 50 m start cell -> time. Members of a squad that stand together do
+## not each repeat a search that cannot succeed (a full-grid failure is the most expensive search there is).
+var _local_fail := {}
 var local_nav_stats := {"searches": 0, "successes": 0, "failures": 0, "cache_hits": 0,
-	"recoveries": 0, "plan_ms_total": 0.0, "plan_ms_max": 0.0}
+	"recoveries": 0, "plan_ms_total": 0.0, "plan_ms_max": 0.0, "repairs": 0}
+## NAV-INF-01: the last local-move blocks (time, unit, place, reason); the answer to "why did it stop" when no one was watching.
+var local_block_log: Array[Dictionary] = []
 ## Length of the last simulation step (s).
 var last_delta := 0.0
 ## Accumulated cost of the simulation parts (microseconds) and ticks counted.
@@ -206,7 +220,9 @@ func _on_restored() -> void:
 	_local_routes.clear()
 	_local_pending.clear()
 	_local_attempts.clear()
+	_local_anchor.clear()
 	_local_route_cache.clear()
+	_local_fail.clear()
 	# LOGISTICS-01: soldiers aboard a vehicle show nothing; the others show something again.
 	for u: UnitState in state.units.values():
 		if u.vehicle_id >= 0:
@@ -282,7 +298,9 @@ func _on_bridge_changed(_b: RoadNetwork.Bridge) -> void:
 	_local_routes.clear()
 	_local_pending.clear()
 	_local_attempts.clear()
+	_local_anchor.clear()
 	_local_route_cache.clear()
+	_local_fail.clear()
 
 
 func _on_order_changed(u: UnitState) -> void:
@@ -295,6 +313,7 @@ func _clear_local_route(id: int) -> void:
 	_local_routes.erase(id)
 	_local_pending.erase(id)
 	_local_attempts.erase(id)
+	_local_anchor.erase(id)
 
 
 func invalidate_local_route(id: int) -> void:
@@ -332,8 +351,13 @@ func _request_local_route(u: UnitState, goal: Vector3, reacting: bool) -> void:
 	if _local_pending.has(u.id):
 		return
 	var attempts: int = _local_attempts.get(u.id, 0)
-	if attempts >= 3:
-		_block_local_move(u, reacting, "local route retry budget exhausted")
+	var anchor: Vector3 = _local_anchor.get(u.id, Vector3.INF)
+	if attempts > 0 and anchor.is_finite() and _flat(u.position, anchor) >= INFANTRY_RETRY_RENEW_M:
+		attempts = 0
+	if attempts == 0:
+		_local_anchor[u.id] = u.position
+	if attempts >= INFANTRY_RETRY_BUDGET:
+		_block_local_move(u, reacting, "no progress: %d local routes in a row failed within %.0f m (ground or an obstacle the plan does not know)" % [attempts, INFANTRY_RETRY_RENEW_M])
 		return
 	if _flat(u.position, goal) > INFANTRY_LOCAL_MAX_M:
 		_block_local_move(u, reacting, "local obstacle beyond refinement range")
@@ -358,22 +382,27 @@ func _process_local_plan_budget() -> void:
 			or (not reacting and (u.order != UnitState.Order.MOVE or _flat(u.order_target, goal) > 0.5)):
 		return
 	if not reacting:
-		var cached: PackedVector3Array = _local_route_cache.get(_squad_route_key(id), PackedVector3Array())
-		if cached.size() >= 2:
-			var adapted := cached.duplicate()
-			adapted.append(goal)
-			var cache_key := _squad_route_key(id)
+		var adapted := _shared_route(u, goal)
+		if not adapted.is_empty():
 			_local_routes[id] = {"goal": goal, "reacting": false, "pts": adapted, "i": 1,
-				"cached": true, "cache_key": cache_key}
+				"cached": true, "cache_key": _squad_route_key(id)}
 			local_nav_stats.cache_hits += 1
 			local_nav_stats.recoveries += 1
 			u.nav_reason = "shared squad local route active"
 			return
+	var fail_key := ""
+	if not reacting and _squad_route_key(id) != "":
+		fail_key = "%s@%d,%d" % [_squad_route_key(id), floori(u.position.x / 50.0), floori(u.position.z / 50.0)]
+		if state.time - float(_local_fail.get(fail_key, -1.0e9)) < INFANTRY_FAIL_MEMORY_S:
+			_block_local_move(u, reacting, "no local passage (a squad mate's search from here failed %.0f s ago)" % (state.time - float(_local_fail[fail_key])))
+			return
 	var result := LocalRoutePlanner.plan(u.position, goal, INFANTRY_LOCAL_CELL,
 		INFANTRY_LOCAL_MAX_CELLS, INFANTRY_MAX_GRADE,
 		func(x: float, z: float) -> float: return _infantry_height(x, z),
-		func(x: float, z: float) -> bool: return _infantry_blocked(x, z), 75.0, 0.55, true, false)
+		func(x: float, z: float) -> bool: return _infantry_blocked(x, z), 75.0, 0.55, true, false,
+		Callable(self, "_step_blocked"), 1.0)
 	local_nav_stats.searches += 1
+	local_nav_stats.repairs += int(result.get("repairs", 0))
 	local_nav_stats.plan_ms_total += float(result.ms)
 	local_nav_stats.plan_ms_max = maxf(float(local_nav_stats.plan_ms_max), float(result.ms))
 	if result.ok:
@@ -387,21 +416,36 @@ func _process_local_plan_budget() -> void:
 				_local_route_cache[cache_key] = result.pts
 		u.nav_reason = "local route active"
 	else:
-		var shared := PackedVector3Array()
-		if not reacting:
-			shared = _local_route_cache.get(_squad_route_key(id), PackedVector3Array())
-		if shared.size() >= 2:
-			var adapted := shared.duplicate()
-			adapted.append(goal)
-			var cache_key := _squad_route_key(id)
+		var adapted := PackedVector3Array() if reacting else _shared_route(u, goal)
+		if not adapted.is_empty():
 			_local_routes[id] = {"goal": goal, "reacting": false, "pts": adapted, "i": 1,
-				"cached": true, "cache_key": cache_key}
+				"cached": true, "cache_key": _squad_route_key(id)}
 			local_nav_stats.cache_hits += 1
 			local_nav_stats.recoveries += 1
 			u.nav_reason = "shared squad local route active"
 		else:
 			local_nav_stats.failures += 1
+			if fail_key != "":
+				_local_fail[fail_key] = state.time
 			_block_local_move(u, reacting, String(result.reason))
+
+
+## The squad's shared local route, adapted to this walker, or empty. NAV-INF-01: the route was planned from another member's
+## position; it is only used when this walker can walk it from where it stands (the same test the plan was verified with),
+## otherwise it is dropped from the cache and the walker plans its own.
+func _shared_route(u: UnitState, goal: Vector3) -> PackedVector3Array:
+	var key := _squad_route_key(u.id)
+	var cached: PackedVector3Array = _local_route_cache.get(key, PackedVector3Array())
+	if cached.size() < 2:
+		return PackedVector3Array()
+	var adapted := cached.duplicate()
+	adapted.append(goal)
+	var walk := PackedVector3Array([u.position])
+	walk.append_array(adapted.slice(1))
+	if LocalRoutePlanner.first_unwalkable(walk, Callable(self, "_step_blocked"), 1.0).is_finite():
+		_local_route_cache.erase(key)
+		return PackedVector3Array()
+	return adapted
 
 
 func _squad_route_key(unit_id: int) -> String:
@@ -412,6 +456,11 @@ func _squad_route_key(unit_id: int) -> String:
 
 
 func _block_local_move(u: UnitState, reacting: bool, reason: String) -> void:
+	local_block_log.append({"t": snappedf(state.time, 0.1), "id": u.id, "pos": [u.position.x, u.position.y, u.position.z],
+		"goal": [u.order_target.x, u.order_target.y, u.order_target.z], "reacting": reacting, "reason": reason,
+		"attempts": _local_attempts.get(u.id, 0)})
+	if local_block_log.size() > 40:
+		local_block_log.pop_front()
 	u.velocity = Vector3.ZERO
 	u.nav_reason = "blocked: " + reason
 	if reacting:
@@ -446,23 +495,41 @@ func _infantry_blocked(x: float, z: float, from_bridge: RoadNetwork.Bridge = nul
 
 
 func _step_blocked(pos: Vector3, dir: Vector3, step: float) -> bool:
+	if not _step_blocked_at(pos, dir, step, false):
+		return false
+	# NAV-INF-01: Terrain3D's height query has bands about 1 cm wide beside some heightmap vertices where it returns a value
+	# 1-1.5 m off (the neighbouring points are fine). A walker that stands in one is "blocked in every direction" for good. A
+	# refusal is therefore confirmed with the median of three nearby samples before it counts; real banks refuse both ways.
+	return _step_blocked_at(pos, dir, step, true)
+
+
+func _step_blocked_at(pos: Vector3, dir: Vector3, step: float, robust: bool) -> bool:
 	var p := Vector2(pos.x, pos.z)
 	var d := Vector2(dir.x, dir.z)
 	var near := maxf(step * 2.0, 0.3)
 	var look := maxf(step, 1.0)
-	var h0 := _infantry_height(pos.x, pos.z)
+	var h0 := _infantry_height_robust(pos.x, pos.z) if robust else _infantry_height(pos.x, pos.z)
 	var on_bridge := state.roads.blocking_bridge_at(pos)
 	for distance: float in [near, look]:
 		var q: Vector2 = p + d * distance
 		if _infantry_blocked(q.x, q.y, on_bridge):
 			return true
-		var h1 := _infantry_height(q.x, q.y)
+		var h1 := _infantry_height_robust(q.x, q.y) if robust else _infantry_height(q.x, q.y)
 		# N1-C1: the step from the bank onto a deck (or off it) is a kerb of 0.2-0.3 m, not a slope: steps between ground and a
 		# deck skip the grade test (the deck itself is flat). With it the lip counted as a 100 % grade and nobody got onto a bridge.
 		var kerb := not is_nan(state.roads.deck_height(Vector3(q.x, 0.0, q.y))) or not is_nan(state.roads.deck_height(pos))
 		if is_nan(h0) or is_nan(h1) or (not kerb and absf(h1 - h0) / maxf(distance, 0.01) > INFANTRY_MAX_GRADE):
 			return true
 	return false
+
+
+func _infantry_height_robust(x: float, z: float) -> float:
+	var a := _infantry_height(x, z)
+	var b := _infantry_height(x + 0.03, z)
+	var c := _infantry_height(x, z + 0.03)
+	if is_nan(a) or is_nan(b) or is_nan(c):
+		return NAN
+	return maxf(minf(a, b), minf(maxf(a, b), c))
 
 
 static func _flat(a: Vector3, b: Vector3) -> float:

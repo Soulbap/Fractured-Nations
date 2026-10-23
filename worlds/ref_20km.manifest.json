@@ -1,10 +1,10 @@
 {
  "manifest_version": 1,
  "world_id": "ref_20km",
- "created_utc": "2026-10-22T14:13:35Z",
- "created_from": "C:/Users/Hafnor/Desktop/Game Dev/fractured-nations-aiwar01",
- "repository_commit": "337c72f47ecbd6926480db81e287d71a123c775a",
- "generator_last_change": "21e846a0d8f2e21e12b49a888943898a1b9980ad feat(integration): WORLD-INTEGRATION-03 unified world, military assets and faction infantry",
+ "created_utc": "2026-10-23T11:42:36Z",
+ "created_from": "C:/Users/Hafnor/Desktop/Game Dev/fractured-nations",
+ "repository_commit": "b70c836c6fa3d4bd1e308b743493e472e4d6febc",
+ "generator_last_change": "ba641417edf063fe9eaa6f8d40a21dc0b3205bab chore(world): ref_20km checksum manifest, manifest tool, design document",
  "dimensions_m": [
   20000.0,
   20000.0
@@ -18,11 +18,11 @@
   "base_height": 150.0,
   "source_directory": "res://worlds/ref_20km/source"
  },
- "provenance": "Canonical copy taken from worktree fractured-nations-aiwar01 (feature/ai-war-logistics-01 @ 337c72f) during PROJECT-CONSOLIDATION-01, 2026-10-22. Byte-identical to fractured-nations-aistrat01; integration04/logistics01 differ only in 5 source/*.import files; playtest01/integration03 hold older editor re-saves of terrain regions and terrain_assets/material; unified holds an older world. Backup: ../fractured-nations-backups/2026-10-22_PROJECT-CONSOLIDATION-01/ref_20km_from_aiwar01. Generated data is not reproducible bit-for-bit from source alone (editor re-saves, rebuild_structures.gd); do not regenerate to restore it.",
+ "provenance": "NAV-INF-01: terrain smoothed beside the paved roads and raised to 3 cm under the road surface (tools/terrain_ref/flush_roads.gd)",
  "roles": {
   "generated": {
    "files": 520,
-   "bytes": 1121176412
+   "bytes": 1121148911
   },
   "source": {
    "files": 10,
@@ -47,7 +47,7 @@
  },
  "totals": {
   "files": 540,
-  "bytes": 2423901122
+  "bytes": 2423873621
  },
  "files": [
   {
@@ -172,26 +172,26 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01-01.res",
-   "size": 5638214,
-   "sha256": "a5bb72c82f51f93e5b7b158a3eaf7b3ce54d027ff05e88452b8156447c69def5",
+   "size": 5637233,
+   "sha256": "cd93a787a767acf399a15d24ace55896b724bdc695e2ae37af8eae72c5cd792c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01-02.res",
-   "size": 6025307,
-   "sha256": "3d658d12637bf7bb01d7af447d931a9a3e959a808c3b09bdf23722b805e310e4",
+   "size": 6025198,
+   "sha256": "1c9fd892c22453d8a8551b22b262abd06363b8c55c21860bc65ac5edff5d649d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01-03.res",
-   "size": 6560226,
-   "sha256": "805835de8594e6749a1ecddb46d0f5c369698ca61130a4bae3b5cd905b2107be",
+   "size": 6559831,
+   "sha256": "3ab6840efba0083cf739e2c92737849a049d65ec74f54144d624c3d459b8cf47",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01-04.res",
-   "size": 6046957,
-   "sha256": "56203b45112fb98037c0e2de3b459a591f344af05346f07690fd4212a3604851",
+   "size": 6045938,
+   "sha256": "e4b3d5fc0257a8fc11f7b76cb4eb30e1e973f22472a9b26cf10f0c9498850dba",
    "role": "generated"
   },
   {
@@ -202,68 +202,68 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01_00.res",
-   "size": 6566897,
-   "sha256": "953728b57afe369c1dc45e110bb83830d3bc442910528b57d20d37b80f3e47ca",
+   "size": 6565831,
+   "sha256": "40561888d5ceb28aa573dc947e0736a3e816f58539308e7bdfafd986ae78b61c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01_01.res",
-   "size": 4695049,
-   "sha256": "34589d2b558bc0221736c2a379b23bdf1cb414d0ffa1d6af9213c0f6dc3bfa4d",
+   "size": 4694446,
+   "sha256": "eb49fc2df93bf0343019f28d6fb1f331d976902f4d73c0875cc0656f992e7d2e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01_02.res",
-   "size": 4135213,
-   "sha256": "d2d289e1f182d13fd08527cc76e047d06bbc157108e62265f6a52e3f4da10341",
+   "size": 4135150,
+   "sha256": "2931e8eed72cd865f33e3651a3ed1dc96ab994689537b6df2f28f301c43b99c7",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01_03.res",
-   "size": 5139431,
-   "sha256": "a2eddfbc183eb8e673b9f53ed777271da9a3f9634c979660ab4c13b0281a9788",
+   "size": 5139412,
+   "sha256": "34b828dff2e040efeea0b11953573cfeca58a9c39a2984d8cfccc07000471925",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01_04.res",
-   "size": 6502903,
-   "sha256": "def09a65dedc3173e226d9dae87eb1372fb61516362a1971a70ec2aada1c6675",
+   "size": 6502669,
+   "sha256": "18dfe4fa8c867b5fd383b9a2278739a36ce332919abd40fde27214f7abfdcf17",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02-01.res",
-   "size": 6548536,
-   "sha256": "40571ddfda94a8c1d6d472d98e54f2f912825cd4e6017035f002d5734c57ef3a",
+   "size": 6547732,
+   "sha256": "334c82a5bfde8ec19c9c2b9907f3bbec62fff758641d13811f82822a7383e7c8",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02-02.res",
-   "size": 6782717,
-   "sha256": "9a5dc6b3b0e0d9c12ef9ecff7ddf24eb0f24d3f888e203a8b3de503b91677b75",
+   "size": 6782663,
+   "sha256": "d3e780150a0dd47b6dd0ce7aaaa6a6c87c85e97aaeb9b28d9a9e88d12025ca53",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02-03.res",
-   "size": 6466827,
-   "sha256": "3904fbf50ad2fa96e249d7d9c4ea356d2599e510d7cb11c974bcfede714d1a5d",
+   "size": 6466309,
+   "sha256": "f4cc145f9b60f6fdaf4deed4621d3927f9f31cb18a1c491d6a19f67f1dbb96b4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02-04.res",
-   "size": 6006229,
-   "sha256": "19155145ab996f3abc657a719bcf81b42416aaf6a52cba8d5e3a13cc0b11b240",
+   "size": 6004639,
+   "sha256": "15be4cc407c0afda778a333cef93e0861376fed67eb44f308a6897592d340400",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02-05.res",
-   "size": 6256513,
-   "sha256": "57909969c38d413518a334e0169e29488a7e2ab8e90b8e8086f555fd96a96b11",
+   "size": 6256132,
+   "sha256": "db601f6e33a7b7a65e230e2095a27206dedd39a320556d4bdb596dc806849e91",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02_00.res",
-   "size": 6401863,
-   "sha256": "2b682ae9f9e76fea4418e6f89a771d9d8e039b8ff640846c1f5d9eaa4cd08797",
+   "size": 6401573,
+   "sha256": "1d1e243335045d7b8c95b024faa914664a99fc140447663b0a07ad1a983fd359",
    "role": "generated"
   },
   {
@@ -274,14 +274,14 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02_02.res",
-   "size": 4998869,
-   "sha256": "22e06d395475a653288bd790abc7df906a0cbf1411ce675a863629f13786ec09",
+   "size": 4998809,
+   "sha256": "f7fe551fd6443c8ab38481d14a6d57b0d3899755801abf38e3d9c79e8b55b36c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02_03.res",
-   "size": 5702663,
-   "sha256": "b052f8682da72ad0b366bdcd32260cfaa7009e5270cee615f6e0954327a582aa",
+   "size": 5702492,
+   "sha256": "0873f60c6b8afaae74eea935ff07a0ddafd0e2347106980dc9d8a88a62a103bb",
    "role": "generated"
   },
   {
@@ -292,14 +292,14 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-03-01.res",
-   "size": 6360599,
-   "sha256": "455eab9d12b8fe4efb433a81454472705e26cec639adc8386e2a80cb1383832a",
+   "size": 6360293,
+   "sha256": "a1e631e74464a90e16fafed3e9ec4f969201308b26840dac906dedb3ad6f304a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-03-02.res",
-   "size": 6715394,
-   "sha256": "02ec1b750c5d2d6088dfd32d10590e76a5cb195eadeffcb2723f2626f65b0be3",
+   "size": 6713530,
+   "sha256": "c3be50f6197eebcb3f5f8c33cf17f73b4905f9b20b756b9cde70a97a4f80ad3a",
    "role": "generated"
   },
   {
@@ -316,26 +316,26 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-03-05.res",
-   "size": 6434195,
-   "sha256": "cc1f21b68d7dbdd9fe5386ca8f31bff1afe3cbac37d5345946819fedc2efbe96",
+   "size": 6433268,
+   "sha256": "4968c9d55f249ce5e835198af90971aecfb40c17587e9a0ce1f76f0d41445163",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-03_00.res",
-   "size": 6321401,
-   "sha256": "b71e9abe1747c9ee349e465b2ccefca7ad82481dc8ad6d3d6f4c107c8c22036b",
+   "size": 6321175,
+   "sha256": "44ecde198603fd41259fd850846c16d3ed8d57c3a4f2f5caa7eb7208c673e3f1",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-03_01.res",
-   "size": 6285255,
-   "sha256": "e2644a694f77f6e9e0d0a7321a87a431710080926875f1d96d1d202a5d5b1955",
+   "size": 6285253,
+   "sha256": "f6dc5a261ba4f454cdf10c967b46d619bd7da87f50e738e92a52d57a32197c7b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-03_02.res",
-   "size": 6637128,
-   "sha256": "e0e8eec9ce439dbdbaf1c292a5346f7758f92a2c4bf86205e5608c98738fa402",
+   "size": 6636956,
+   "sha256": "fc5bb806fcb7ecb51c62f5670193f0a56c7a22ec781981d3349b48c05f665ac1",
    "role": "generated"
   },
   {
@@ -352,20 +352,20 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-04-01.res",
-   "size": 6952744,
-   "sha256": "f780b8e571a92f773aaf8ac88dfce20d5c154a72c36ee19e725630e5d921e739",
+   "size": 6952459,
+   "sha256": "7af441d36fcb1fbef17a75e33ad1fe2d0a71fa9fb25389931b93eed308c43963",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-04-02.res",
-   "size": 6341467,
-   "sha256": "4a31971d44dcba10477a7b30e44b36bab32868c8df24e76c95b4c58bf2840818",
+   "size": 6341314,
+   "sha256": "fe59431255926bd6dd365f2e6b53b9b9af5b0c22f55ca350dcc845ebbd349027",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-04-03.res",
-   "size": 6587155,
-   "sha256": "7ea88ae143ac330f4ad35301bea6d2dc2dfd8ab14f71ce82672872e423311b2d",
+   "size": 6585807,
+   "sha256": "e389061a1075d54bb10bf387a4edb6686e4f706d2628f9f35afc553ed1e8d136",
    "role": "generated"
   },
   {
@@ -382,20 +382,20 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-04_00.res",
-   "size": 6400994,
-   "sha256": "bf3d6413ab87fe3981f3c4249e5fa2ccc0bb3262a4b3feb760d1bf04e6a4d049",
+   "size": 6400841,
+   "sha256": "60c12d5f578dbeb3292ea9c4d57c33c9bd8fde243056106856508262bda96f63",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-04_01.res",
-   "size": 7139899,
-   "sha256": "a47858bbb3315f7c3c04f3f91c49265a9517d046948b3641a25b7834c91d6195",
+   "size": 7139897,
+   "sha256": "90269d4f5d0035de47fcb3573acd3d54835a438c53828a0d33a47d17d6115dce",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-04_02.res",
-   "size": 6337468,
-   "sha256": "86191ee18610eddfb183ce309dd68e6fa9c8e7de8ecc3edb0710359481573744",
+   "size": 6337173,
+   "sha256": "6cc7009613775d9de452f1df7067f8bf515f24744de880e70e4c96943c26f19b",
    "role": "generated"
   },
   {
@@ -412,20 +412,20 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-05-01.res",
-   "size": 7187919,
-   "sha256": "62b2c45e34dcca75ece85c21ed853c8d9ea269f812e347a51248e26c5514a8d4",
+   "size": 7187668,
+   "sha256": "6003a88f10fa0a2c3d86a61844ca71b8baf25a9974780db796b36b5415f77bfb",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-05-02.res",
-   "size": 6421111,
-   "sha256": "9b93908b8a1ae8c48274250f8dafd8f82fa84cd2d55e1e481dcc30005daf4926",
+   "size": 6421096,
+   "sha256": "8be636f35d7858eea2ffb8750d1ffd112fdb5ab32b6f72eecaef33550037b036",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-05-03.res",
-   "size": 6437877,
-   "sha256": "4fe88dfd8febb27d94730cddd01b262d7729f6bec1925936b4ee5d9e2c58e208",
+   "size": 6437386,
+   "sha256": "40f6bea943e3969133d774535f785c40335a85be04c0a1a6ccefacfa139b18b7",
    "role": "generated"
   },
   {
@@ -442,20 +442,20 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-05_00.res",
-   "size": 7135457,
-   "sha256": "1c6e07beca6404eb36ef72d7c4daa2cf7e98fc670ab4d1fa379ed062f74985fb",
+   "size": 7134758,
+   "sha256": "f6ddbca69074d029db39ad1643014ef283cf447d4507a9f64a3718a2f2857c72",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-05_01.res",
-   "size": 7014391,
-   "sha256": "c412e08c776519d89e90489e03ee9d7dc32a08045d994296e198ec4234f99d4a",
+   "size": 7014378,
+   "sha256": "f01c0d98b72e64e267d4a85ec2563749cb5c561d95af5192cb47b8168f17de74",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-05_02.res",
-   "size": 6875894,
-   "sha256": "8446a45db724ccbf6ad16c513fce60b51a012752fb50a3821d851a1905f8b2d3",
+   "size": 6875729,
+   "sha256": "f9d23c1195989c20d3f6af6309c4ba889e04e6faa296b6c9c40edb44001848f5",
    "role": "generated"
   },
   {
@@ -472,8 +472,8 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00-01.res",
-   "size": 6449633,
-   "sha256": "dc9fe860fd3ee4775545a79afdeb3bc5ec41a644d4342b97df3bdd57201f4ef4",
+   "size": 6449858,
+   "sha256": "e32e43014c14109895d1df335cb50351c2d0d01e674183414c7d8c03c5ec9783",
    "role": "generated"
   },
   {
@@ -484,14 +484,14 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00-03.res",
-   "size": 5595718,
-   "sha256": "082cb37fe12765a286920ebe2552858c9c7f7383864ec36c4df523bd89f684f7",
+   "size": 5595683,
+   "sha256": "cc152f57f3008c6dfce4c6c11914c9c74eb3ae6c48601f6e931da0292671d780",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00-04.res",
-   "size": 6195680,
-   "sha256": "24727a072a2e115ece2eab749aa42e627e9fcebce858c490174c70b6d114fa7a",
+   "size": 6195359,
+   "sha256": "64c568df6d7aa643bdea68775aa6540eda1c66c3d22ad2161636cbfdd2d4d8e6",
    "role": "generated"
   },
   {
@@ -502,26 +502,26 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00_00.res",
-   "size": 5972809,
-   "sha256": "5aec870f44f2b0ec17ae825e51beeabee3afb58c13583d21491d8d94832b3698",
+   "size": 5972786,
+   "sha256": "e9cda82def09a341f1a40749d8c8b96fae3d1722d18a1b8ef44a6c8f39c1008c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00_01.res",
-   "size": 6181270,
-   "sha256": "0021697c338b295e532159d028a933afad704e74a17951ec3eeb0c9695f65294",
+   "size": 6180459,
+   "sha256": "70187fa1fea1a6a7a131979d795b1837e68ff45660c9bef599fb9b126f8ce66d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00_02.res",
-   "size": 5705823,
-   "sha256": "76e907039036d76080a455b99ace48947acba5a5b4b7e1a0e0cfb5d8cf7f1104",
+   "size": 5705909,
+   "sha256": "d93c02b078228915ccff2c04c92dd3501e29321d617a90888758039a2d78c744",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00_03.res",
-   "size": 5809712,
-   "sha256": "d75755722eb176f8f661c9c187caf350cffbddb0ad6b217a19216f32f05e7427",
+   "size": 5809499,
+   "sha256": "ee595be4b9a0f6f9d3f0f6f744622ce78a5ff6cb3c0e4dd03c82eb88f340625e",
    "role": "generated"
   },
   {
@@ -532,8 +532,8 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_01-01.res",
-   "size": 4746198,
-   "sha256": "331d42de52a5aa3745a6fb54a977bf549e3e0380091b49bb5e3a6d6903a9f874",
+   "size": 4745884,
+   "sha256": "98ef09e33d5b4aadae29f0ad6ca603f640a0336f58bc3b5bc777107c2cf4b51d",
    "role": "generated"
   },
   {
@@ -544,8 +544,8 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_01-03.res",
-   "size": 6760463,
-   "sha256": "09857cc8f7165d8f2ed3efbacab4a111e290cda922d4ab8b89378ebae2664530",
+   "size": 6760419,
+   "sha256": "07bd83db3ede974fa125f8ea4da1ddc85052306926f84a5b3122074bf6884550",
    "role": "generated"
   },
   {
@@ -562,26 +562,26 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_01_00.res",
-   "size": 6050372,
-   "sha256": "a0d4706ffab6038dbe2429b2da708a5b764c687fd90997c2515ad188ee743491",
+   "size": 6049919,
+   "sha256": "ce77a026ac1854da192eb5f2f86814887ed9b37f789bbe4153f338c6ae87a878",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_01_01.res",
-   "size": 5069032,
-   "sha256": "161846af611dd754999d79c05c912b9bf9411f182ea44706f8212926d31bbda8",
+   "size": 5068989,
+   "sha256": "35353ab309aa4318b217cb8a622554793e9169988dee17fa4cf8e9fed2a5f699",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_01_02.res",
-   "size": 4208549,
-   "sha256": "92a6f63331020be40daabe710cb59b57f440684a9b5544da3a11a4e668b8f2fd",
+   "size": 4208550,
+   "sha256": "ad313c2490d509731c9ca066e247384b2a0ef43e578d1b4c55910cab6f9fbf34",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_01_03.res",
-   "size": 6009305,
-   "sha256": "80628b1e28b49b2ca3e1d62b19b5eab369c7b96d3479b4c2fd8f891596d3f2d3",
+   "size": 6009386,
+   "sha256": "4a5d67dcfe5091058d37c9d8ec0a0b709bb3b8ed9fb45f4c643c001d1979a6f3",
    "role": "generated"
   },
   {
@@ -592,20 +592,20 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_02-01.res",
-   "size": 4133743,
-   "sha256": "f4e7369b8662bf65892325163205f36dc7b09e4ce1233641de84a7f84cf1a7d4",
+   "size": 4132224,
+   "sha256": "2bea5ca31046759dd18afd3c2234376143a48116cc29a96e420edad0ed39ebfc",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_02-02.res",
-   "size": 6312507,
-   "sha256": "070182959493d40da5a4f4ca4d16a1ff7ff4db1528464bb78fe79fc2794cfebd",
+   "size": 6311403,
+   "sha256": "c2cbe0ec1413b67d0b5b9af09fae6960542eb4faa6dbcd3d410f3674c2fbc997",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_02-03.res",
-   "size": 6784702,
-   "sha256": "ab8699c3a611f0eac609f40c8cc91d44e5a5325f4009101680adda952fae092c",
+   "size": 6784409,
+   "sha256": "4a30516f8dcb8f9e0611f7511443c85db5c0c2cd27997bd3c75729849daf0e2e",
    "role": "generated"
   },
   {
@@ -628,20 +628,20 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_02_01.res",
-   "size": 6725375,
-   "sha256": "3daf34c62067aea429549d209e9b0fc1da9cc72eef60b0557070e446e69ef4ca",
+   "size": 6724993,
+   "sha256": "c3096c428b56265d30977a126ccc9c25baa2e6164196c72635d6fa20ad06635f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_02_02.res",
-   "size": 6613540,
-   "sha256": "d1b9ace3d97c01cba4e0254a91386aaf588da97ae86e971b11ebebb3752e1a3e",
+   "size": 6613253,
+   "sha256": "9fc2b1dc59f62e4726e239a86a2247ecdc244a831cb0c7d3689dbab10c43a19d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_02_03.res",
-   "size": 6994046,
-   "sha256": "52be1069f41e30394db42917f690620b60e12f4310fc96c917e56b8a5f0862f6",
+   "size": 6993426,
+   "sha256": "b61b079ea89599a8468763f5e3a7c6ffe56523b7ae3aec90ef3f80c9e5d5ee18",
    "role": "generated"
   },
   {
@@ -652,14 +652,14 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_03-01.res",
-   "size": 6619523,
-   "sha256": "f6e0a884a220c14b604d2b27aa5ba12b7f6be49725bbc19d323c2b3fc086652b",
+   "size": 6618823,
+   "sha256": "79202bf1912d7f5583d190529fd23db6716cd2565dbcdbd7a1c7a88de900cf88",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_03-02.res",
-   "size": 6326391,
-   "sha256": "be6d6337dfed844f23953f02b67f647812b2955f2771aa60b55e35121e5de127",
+   "size": 6326234,
+   "sha256": "29c6efc6b3b8c9d49eddda55f78ff3d6cff96491df63a5e16065835793c60838",
    "role": "generated"
   },
   {
@@ -682,26 +682,26 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_03_00.res",
-   "size": 6511528,
-   "sha256": "f067d4b6a26bab28936a635f4a2ae9792e5cf818b943db7dfb268ec57f6527fd",
+   "size": 6511503,
+   "sha256": "5d986baa721ad42ad1ac0e66f0a1a533dff0488c35a1798d95497790fa8034b7",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_03_01.res",
-   "size": 6975636,
-   "sha256": "7900530ba3705ed8a6b6cff9639a2fb3af4ab7b43ebc0f98c9350cfb207cfc0a",
+   "size": 6975564,
+   "sha256": "e9d83a96c91bcfcce8e890f7cf12f71994444244349ddaef5b69c6e58f741135",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_03_02.res",
-   "size": 6990661,
-   "sha256": "02826611e884c2c656a7d18d5613bca0a70723baed5a72d2d64756bdb9be9ad0",
+   "size": 6990382,
+   "sha256": "c558251a57cd6b5bfb5939621277a82a2b18ae78053d26d6d96e673e419113a1",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_03_03.res",
-   "size": 6652497,
-   "sha256": "2c568f31385b8f473b660b3071834f02bc5c443a68ad3f19934d7a864338e25c",
+   "size": 6652306,
+   "sha256": "30e8127ed19335d6a9c711ece5d4e551472ea944746118e5e279bfd293f7b38c",
    "role": "generated"
   },
   {
@@ -712,8 +712,8 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_04-01.res",
-   "size": 6870237,
-   "sha256": "45de67cdbe9a1a781a839e3c190751d59869847335fc04ff4f898bd5f6af9228",
+   "size": 6867676,
+   "sha256": "6d7666e3aa751af580c10eff095658321bf1e24a2d456b85287906c3be65f80e",
    "role": "generated"
   },
   {
@@ -742,32 +742,32 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_04_00.res",
-   "size": 6295814,
-   "sha256": "56abddb94ac0c8720493df7c688d5e36738fd992cbf8a4678290ab1b0d170e1d",
+   "size": 6295563,
+   "sha256": "9642cd5803e372a6f84caf45457bd9ea229dae899975aa3071cb3a547906b990",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_04_01.res",
-   "size": 6504067,
-   "sha256": "f02f93ff5bf85d3ca0b5c0f57ca10735ace1409a5a1b21e539237e833172e010",
+   "size": 6504001,
+   "sha256": "520ab46386592c4c1e682ec2a51325eb7efcae558af3faabf5172389ef68507e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_04_02.res",
-   "size": 6342191,
-   "sha256": "05b17e27e822743c080673adef6afb20eac318364927b6b38c1b3520f706e6ea",
+   "size": 6341659,
+   "sha256": "6b8e887d76e7d9505527d0f049630d6a02995b052dcc565c38a3840a74b3c199",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_04_03.res",
-   "size": 6471798,
-   "sha256": "49035e3ee4f1707374eb093bdb382c2e588a45ad5ab5b9301a68544e11a7b876",
+   "size": 6471109,
+   "sha256": "78e800a17173763785ed47b71c6f79bed60b70e7d2c4feafade90d2d4ba1b455",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_04_04.res",
-   "size": 7026486,
-   "sha256": "148c8f7395deb2907633e50f13889167fa4abceec4ba6e5d370245746aa1320a",
+   "size": 7026301,
+   "sha256": "e71e75b98b07d7d37998aec958e5c198e85a76c17c02915818017a8b9af2b731",
    "role": "generated"
   },
   {
