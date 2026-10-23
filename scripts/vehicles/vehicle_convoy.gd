@@ -57,10 +57,13 @@ func order_convoy(ids: Array, dest: Vector3, name := "") -> Dictionary:
 	lg.next_convoy_id += 1
 	var cname := name if name != "" else "Convoy %d" % cid
 	# NAV-PERF-01B: the leader's route is asked for first (RouteService); the others are sent when it comes, to their stopping
-	# places in column behind its end (_on_leader_route). Until then the convoy is "forming": its vehicles hold.
+	# places in column behind its end (_on_leader_route). Until then the convoy is "forming": its vehicles hold. As before, a
+	# vehicle joins the convoy (convoy_id) once its order is given, so the members still standing count as parked vehicles for
+	# the routes planned before theirs.
 	lg.convoys[cid] = {"members": members.duplicate(), "dest": dest, "leader": members[0], "name": cname, "odo0": {}, "start": sim.state.time, "forming": true}
-	for id in members:
-		sim.state.get_unit(id).veh.convoy_id = cid
+	# The convoy order replaces what the others were doing (as when all were ordered at once): they stop and wait for their place.
+	for k in range(1, members.size()):
+		vsim.halt_in_place(sim.state.get_unit(members[k]))
 	if not _send_leader(cid):
 		return {"ok": false, "reason": "Convoy not formed: no vehicle can be ordered", "failed": []}
 	return {"ok": true, "pending": true, "reason": "", "convoy": cid, "driving": members.duplicate(), "failed": []}
@@ -74,6 +77,7 @@ func _send_leader(cid: int) -> bool:
 		c.leader = lead
 		var res := vsim.request_drive(lead, c.dest, true, RouteService.Priority.CONVOY, _on_leader_route.bind(cid))
 		if res.ok:
+			sim.state.get_unit(lead).veh.convoy_id = cid
 			return true
 		_drop_member(cid, lead)
 	# One vehicle left: no convoy, it drives alone.
@@ -103,6 +107,11 @@ func _on_leader_route(u: UnitState, res: Dictionary, cid: int) -> bool:
 	c.erase("forming")
 	var lead_route := u.veh.route
 	var odo := {u.id: u.veh.odometer}
+	# A member that got another order while the convoy was forming (the player, a job) is not taken back.
+	for id in c.members.duplicate():
+		var mu := sim.state.get_unit(id)
+		if id != u.id and (mu == null or not mu.alive or mu.veh == null or mu.order != UnitState.Order.NONE):
+			c.members.erase(id)
 	for k in range(1, c.members.size()):
 		var m := sim.state.get_unit(c.members[k])
 		var goal: Vector3 = c.dest
@@ -110,7 +119,8 @@ func _on_leader_route(u: UnitState, res: Dictionary, cid: int) -> bool:
 			var back := mini(roundi(float(k) * SPACING_M / 3.0), lead_route.size() - 2)
 			goal = lead_route[lead_route.size() - 1 - back]
 		odo[m.id] = m.veh.odometer
-		vsim.request_drive(m.id, goal, true, RouteService.Priority.CONVOY, _on_member_route.bind(cid, goal))
+		if vsim.request_drive(m.id, goal, true, RouteService.Priority.CONVOY, _on_member_route.bind(cid, goal)).ok:
+			m.veh.convoy_id = cid
 	c["odo0"] = odo
 	c["start"] = sim.state.time
 	if sim.war:
@@ -244,6 +254,8 @@ func update(dt: float) -> void:
 	var lg := _state()
 	for cid in lg.convoys.keys():
 		var c: Dictionary = lg.convoys[cid]
+		if c.get("forming", false):
+			continue  # members join (convoy_id) as their orders are given
 		var active := 0
 		for id in c.members.duplicate():
 			var u := sim.state.get_unit(id)

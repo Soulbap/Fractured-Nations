@@ -660,7 +660,9 @@ func _step(u: UnitState, dt: float) -> void:
 		else:
 			# Back out on opposite lock, so the nose swings away from what it hit.
 			steer_target = -signf(v.steer if absf(v.steer) > 0.05 else 1.0) * d.max_steer
-	elif u.order == UnitState.Order.MOVE and v.route.size() >= 2:
+	elif u.order == UnitState.Order.MOVE and v.route.size() >= 2 and String(_drive_wait.get(u.id, {}).get("kind", "")) != "stuck":
+		# NAV-PERF-01B: a stuck vehicle waits where it is for the new route (it was planned from here; pushing on along the old route
+		# only wedges it further).
 		following = true
 		var res := _follow(u, v, d, dt)
 		target_speed = res.speed

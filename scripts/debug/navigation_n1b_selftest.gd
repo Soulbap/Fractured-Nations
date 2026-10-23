@@ -826,9 +826,10 @@ func _n1b_08() -> Dictionary:
 	var cr := vs.convoy.order_convoy(ids, trip.objective.position, "N1B obstacle convoy")
 	if not cr.ok:
 		return _classify("n1b_08", "FAIL", {"formed": false, "reason": cr.reason})
-	# NAV-PERF-01B: the leader's route is planned by RouteService; the obstacle goes on it once it is there.
-	for i in 900:
-		if lead.veh.route.size() >= 2:
+	# NAV-PERF-01B: the routes are planned by RouteService (the leader's first, then the others); the obstacle goes on the route once
+	# every member has its own, as when they were all planned in the order call.
+	for i in 1800:
+		if ids.all(func(id: int) -> bool: return _u(id).veh.route.size() >= 2):
 			break
 		await tree.process_frame
 	var route: PackedVector3Array = lead.veh.route
