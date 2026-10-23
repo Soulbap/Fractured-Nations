@@ -2,6 +2,7 @@
   "_comment": "Geographic layout of 'Referansekart 03' (docs/terrain01/reference_map_03.png). Coordinates are kilometres in the reference frame: x east 0..20, y north 0..20, (0,0) = south-west corner. Heights in metres. Regenerate with tools/terrain_ref/generate.py.",
   "name": "ref_20km",
   "seed": 3031,
+  "settlement_layer": true,
   "demo_spawn_plateaus": ["Nordvest-moen", "Sørmoen", "Østmoen"],
   "size_m": 20000.0,
   "full_res": 10240,

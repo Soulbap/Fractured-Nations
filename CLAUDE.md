@@ -134,6 +134,12 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   must never be accepted on the bare footprint radius. Solid vegetation (`StructureManager.blocks_trunk`) is a hard obstacle
   for cross-country legs; roads are not checked against it. A short link between road components is a *soft link* planned per
   vehicle (`VehicleRouter._soft`), never a graph edge. Vehicle navigation tests: `--navigation-n1b-test`.
+- **Settlements (WORLD-SETTLEMENT-02).** `SettlementLayer` (`scripts/world/settlement_layer.gd`, data in `worlds/settlements/`) is
+  the only settlement source of ref_20km: it removes the generated streets in `RoadNetwork.load_world` (their slots stay, so road keys and
+  bridge ids do not move) and adds its local roads; writes its heights and ground paint into Terrain3DData in memory at game start
+  (`CoreDemo._start_sandbox`, never saved); its buildings and removals are a read-only `WorldOverrides` layer under the user's own
+  overrides file (user records win; only the user's records are saved). Edit the places in `tools/settlement_proto/design_settlements.py`
+  (Haugen: `design_haugen.py`), then run `paint_settlements.py` and `build_overrides.gd`. `--no-settlements` switches it off.
 - **Bridges (NAVIGATION N1-C1).** A bridge is `RoadNetwork.Bridge` (stable id `bridge_r<road>_s<span>` from roads.json, state OPEN /
   CLOSED / DISABLED, saved in `WorldState.snapshot()["bridges"]`); `RoadNetwork.set_bridge_state` is the only writer and emits
   `bridge_changed`. Navigation owners keep derived data only (`VehicleRouter` switches graph vertices off, `StrategicRoutes` closes the

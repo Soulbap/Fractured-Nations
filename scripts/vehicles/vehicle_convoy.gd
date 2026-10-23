@@ -220,6 +220,10 @@ func speed_limit(u: UnitState, v: VehicleState) -> float:
 		var worst_id := -1
 		for j in range(1, members.size()):
 			var m := sim.state.get_unit(members[j])
+			# A member the player drives, or one just handed back and waiting for its new route, is not falling behind:
+			# the column does not wait for it (nor give it up); it catches up once it drives again (NAV-FINAL-01).
+			if m and m.veh and (m.player_controlled or (m.order == UnitState.Order.MOVE and m.veh.route.size() < 2)):
+				continue
 			if m and m.alive:
 				var d := _flat(m.position, u.position)
 				if d > worst:

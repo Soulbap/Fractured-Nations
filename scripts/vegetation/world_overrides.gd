@@ -5,6 +5,10 @@
 ## chunk file still has that hash; otherwise it is "unresolved" and never touches another object.
 ## Added objects carry a random id and need no baseline.
 ##
+## Settlement layer (WORLD-SETTLEMENT-02): `layer_path` names a read-only file of records (the generated
+## settlements' removals and buildings) loaded under the user's file. User records win on the same id; only
+## records that differ from the layer are saved, and erasing a layer record saves it as removed.
+##
 ## Revision model (EDITOR-WORLD-02C). Hashing a 1-2 MB chunk costs several ms, so the digest is
 ## kept as the *revision* of the chunk file: {hash, mtime, size, checked_at}.
 ##  - The hash is computed when a revision is first needed and whenever the streamer (re)loads the
@@ -28,6 +32,9 @@ const GUARD_INTERVAL_MS := 1000
 
 var streamer: Node
 var path: String
+## Read-only record layer under the user's file ("" = none).
+var layer_path := ""
+var _layer: Dictionary = {}
 ## id -> record. Mutate with put()/erase_record() (or call reindex() after replacing the dictionary).
 var records: Dictionary = {}
 var unresolved: Dictionary = {}
@@ -52,16 +59,25 @@ func _init(owner: Node, file_path: String) -> void:
 
 func load_file() -> bool:
 	records = {}
+	_layer = {}
 	unresolved.clear()
 	_forget_state()
+	if not layer_path.is_empty() and FileAccess.file_exists(layer_path):
+		var lj: Variant = JSON.parse_string(FileAccess.get_file_as_string(layer_path))
+		if lj is Dictionary and lj.get("version") == 1 and lj.get("records") is Dictionary:
+			_layer = lj.records
+			records = _layer.duplicate(true)
+		else:
+			push_error("World overrides: invalid layer file " + layer_path)
 	if not FileAccess.file_exists(path):
+		affected_cells()
 		return true
 	var json := JSON.new()
 	var err := json.parse(FileAccess.get_file_as_string(path))
 	if err != OK or not json.data is Dictionary or json.data.get("version") != 1 or not json.data.get("records") is Dictionary:
 		push_error("World overrides: invalid file " + path)
 		return false
-	records = json.data.records
+	records.merge(json.data.records, true)
 	affected_cells() # Report all unresolved records immediately after loading.
 	return true
 
@@ -71,7 +87,11 @@ func save_file() -> bool:
 	if file == null:
 		push_error("World overrides: cannot write " + path)
 		return false
-	file.store_string(JSON.stringify({"version": 1, "records": records}, "  "))
+	var own := {}
+	for id in records:
+		if not _layer.has(id) or records[id] != _layer[id]:
+			own[id] = records[id]
+	file.store_string(JSON.stringify({"version": 1, "records": own}, "  "))
 	return true
 
 
@@ -238,6 +258,12 @@ func put_many(new_records: Dictionary) -> void:
 func erase_record(id: String) -> void:
 	if not records.has(id):
 		return
+	if _layer.has(id):
+		# A layer record cannot be erased (the layer would bring it back): keep it, removed.
+		var rec: Dictionary = (records[id] as Dictionary).duplicate(true)
+		rec["removed"] = true
+		put(id, rec)
+		return
 	var before := affected_cells()
 	records.erase(id)
 	unresolved.erase(id)
@@ -361,7 +387,8 @@ func effective(cell: Vector2i, by_mesh: Dictionary) -> Dictionary:
 			target.append_array(updated)
 			result[int(rec.mesh)] = target
 		else:
-			VegetationChunk.append_to(result, int(rec.mesh), xf, Color.WHITE)
+			var c: Array = rec.get("color", [1.0, 1.0, 1.0])
+			VegetationChunk.append_to(result, int(rec.mesh), xf, Color(c[0], c[1], c[2]))
 	# A source change during validation means by_mesh may describe the old chunk: do not cache.
 	if generation == stats.source_changes:
 		_cells_cache[cell] = result

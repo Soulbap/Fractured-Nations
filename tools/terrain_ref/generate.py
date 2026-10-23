@@ -632,7 +632,9 @@ class Generator:
         self.roads = roads_out
         self.road_fixed = fixed
         self.road_moved = moved
-        self._settlement_streets()
+        # WORLD-SETTLEMENT-02: with a settlement layer (worlds/settlements/) the generated street grids are off.
+        if not self.L.get("settlement_layer", False):
+            self._settlement_streets()
 
     def _cut_spurs(self, pts, keep):
         """Removes dead-end spurs from an A* polyline (WORLD-PLAYTEST-01): where the route
@@ -1482,7 +1484,7 @@ class Generator:
                           "lane_m": cls["lane_m"], "lanes": cls["lanes"], "shoulder_m": cls["shoulder_m"],
                           "points": pts, "bridges": rd["bridges"], "culverts": [int(k) for k in rd["culverts"]],
                           "length_m": rd["length_m"]})
-        sites = {"settlements": [], "plateaus": []}
+        sites = {"settlements": [], "plateaus": [], "settlement_layer": bool(self.L.get("settlement_layer", False))}
         for st in self.L["settlements"]:
             x, y = st["center_km"]
             fx, fy = x / self.pitch_km, (self.size_km - y) / self.pitch_km
