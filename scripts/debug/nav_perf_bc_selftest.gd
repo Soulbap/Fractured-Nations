@@ -9,7 +9,7 @@ class_name NavPerfBCSelfTest
 extends NavInf01SelfTest
 
 const IDS_P: Array[String] = ["b_strat", "b_local", "b_burst", "b_op", "b_vehicle", "b_vburst", "b_roads", "a_service", "c_pending", "c_vehicle", "c_ops", "c_loop",
-	"c_bridge", "e_persist", "d_load", "d_load50", "d_long", "d_haugen", "z_visual", "b_settlement"]
+	"c_bridge", "e_persist", "d_load", "d_load50", "d_long", "d_haugen", "z_visual", "b_settlement", "b_settlement_move"]
 var _tag := "run"
 ## Named places of ref_20km (sites.json settlements and plateaus), filled by _load_places.
 var places := {}
@@ -1018,53 +1018,165 @@ func _b_roads() -> Dictionary:
 		"terrain_steps_on_truck_routes": steps, "infantry_ok": inf_ok, "of": rows.size()}
 
 
-## WORLD-SETTLEMENT-01 (run with --settlement-proto=haugen --only b_settlement): the prototype's local roads are in the road
-## network, a truck plans in and out of the village from yards that only the new roads reach, and infantry crosses the village.
+## WORLD-SETTLEMENT-02 (--only b_settlement): the settlement layer in the normal game. The generated streets are gone, every
+## new road starts on another road (VehicleRouter links vertices within LINK_M), no new road is steeper than a vehicle can use,
+## the bridges are open and traversable, the strategic places still exist, and from every settlement (the end of one of its new
+## roads, which only that road serves, else its centre) a truck plans a clean route to Sentrum and infantry gets a feasible route.
 func _b_settlement() -> Dictionary:
-	if SettlementProto.active() != "haugen":
-		return {"status": "FAIL", "reason": "needs --settlement-proto=haugen"}
+	var world := demo.config.world_name
+	if not SettlementLayer.enabled(world):
+		return {"status": "FAIL", "reason": "settlement layer not active"}
 	await _fresh()
 	var net := demo.sim.state.roads
-	var names := {}
+	var layer := SettlementLayer.data(world)
+	var streets := net.world.filter(func(r: RoadNetwork.Road) -> bool: return r.cls == &"street").size()
+	var by_name := {}
 	for r: RoadNetwork.Road in net.world:
-		names[r.name] = true
-	var gone: bool = not names.has("Haugen gate 1") and not names.has("Haugen gate 2")
-	var added := ["Haugvegen", "Bakkeli", "Nordre Haugen gardsveg", "Austre Haugen gardsveg", "Vestre Haugen gardsveg", "Sagvegen"].filter(
-		func(n: String) -> bool: return names.has(n))
+		by_name[r.name] = r
+	# Connection and grade of every new road.
+	var unlinked := []
+	var steep := []
+	for rd: Dictionary in layer.roads:
+		var r: RoadNetwork.Road = by_name.get(rd.name)
+		if r == null:
+			unlinked.append(rd.name + " (missing)")
+			continue
+		var near: Dictionary = net.nearest(r.points[0], VehicleRouter.LINK_M, r.key)
+		if near.is_empty():
+			unlinked.append(rd.name)
+		var worst := 0.0
+		for i in range(4, r.points.size()):
+			var d := Vector2(r.points[i].x - r.points[i - 4].x, r.points[i].z - r.points[i - 4].z).length()
+			worst = maxf(worst, absf(r.points[i].y - r.points[i - 4].y) / maxf(d, 1.0))
+		if worst > 0.16:
+			steep.append([rd.name, snappedf(worst, 0.01)])
 	var audit := RoadAudit.new(demo.sim)
 	var td := VehicleDefs.get_def(VehicleDefs.TRUCK)
-	var g := func(x: float, z: float) -> Vector3: return Vector3(x, demo.sim.vehicles.ground_at(Vector3(x, 0, z)), z)
-	# Ends of the new roads (upper Haugvegen, Nordre Haugen, Haugen ovre, Vestre Haugen) and places outside the village.
-	var trips := [["upper Haugvegen", g.call(-1682.0, -4578.0), "Fv south-east", g.call(-1193.0, -4012.0)],
-		["Fv south-east", g.call(-1193.0, -4012.0), "Nordre Haugen", g.call(-1732.0, -4796.0)],
-		["Haugen ovre", g.call(-1352.0, -4552.0), "Sentrum", _spot("Sentrum")],
-		["Vestre Haugen", g.call(-1736.0, -4404.0), "Lv haugen south", g.call(-1675.0, -4151.0)]]
+	var hub := _spot("Sentrum")
+	hub.y = demo.sim.vehicles.ground_at(hub)
 	var rows := []
-	var ok := gone and added.size() == 6
-	for t: Array in trips:
-		var a: Vector3 = t[1]
-		var b: Vector3 = t[3]
-		# The start must be off every canonical road, so only the new roads can serve it.
-		var near: Dictionary = net.nearest(a, 30.0)
-		var vr := demo.sim.vehicles.router.plan(a, b, td)
-		var row := {"trip": "%s -> %s" % [t[0], t[2]], "start_road": String(near.get("road").name) if near.get("road") else "none"}
-		if vr.ok:
-			var chk := audit.vehicle_route_check(vr.points, td)
-			row["truck"] = {"km": snappedf(float(vr.length_m) / 1000.0, 0.01), "road_km": snappedf(float(vr.road_m) / 1000.0, 0.01), "check": chk}
-			ok = ok and int(chk.wet) == 0 and int(chk.in_structure) == 0
-		else:
-			row["truck"] = {"fail": vr.reason}
-			ok = false
-		var ir := ws.routes.route(a, b, demo.sim.terrain)
+	var truck_fail := []
+	var inf_fail := []
+	for st: Dictionary in layer.sites:
+		var a := Vector3(st.center[0], 0.0, st.center[1])
+		for rd: Dictionary in layer.roads:
+			if String(rd.name).begins_with(String(st.name) + ":") or String(rd.name).begins_with(String(st.name) + " ") or (st.name == "Haugen" and rd.name == "Haugvegen"):
+				var last: Array = rd.points[rd.points.size() - 1]
+				a = Vector3(last[0], 0.0, last[2])
+				break
+		a.y = demo.sim.vehicles.ground_at(a)
+		var row := {"site": st.name}
+		if st.name != "Sentrum":
+			var vr := demo.sim.vehicles.router.plan(a, hub, td)
+			if vr.ok:
+				var chk := audit.vehicle_route_check(vr.points, td)
+				row["truck_km"] = snappedf(float(vr.length_m) / 1000.0, 0.01)
+				if int(chk.wet) > 0 or int(chk.in_structure) > 0 or int(chk.closed_deck) > 0:
+					truck_fail.append([st.name, chk])
+			else:
+				truck_fail.append([st.name, vr.reason])
+		var ir := ws.routes.route(a, hub if st.name != "Sentrum" else _spot("Haugen"), demo.sim.terrain)
 		if ir.size() >= 2:
 			var f := _route_feasible(ir)
-			row["infantry"] = {"km": snappedf(ws.routes.route_length(ir) / 1000.0, 0.01), "check": f}
-			ok = ok and f.bad_legs == 0 and f.nan_heights == 0
+			row["infantry_km"] = snappedf(ws.routes.route_length(ir) / 1000.0, 0.01)
+			if f.bad_legs > 0 or f.nan_heights > 0:
+				inf_fail.append([st.name, f])
 		else:
-			row["infantry"] = {"fail": String(ws.routes.last_failure.get("reason", "no route"))}
-			ok = false
+			inf_fail.append([st.name, String(ws.routes.last_failure.get("reason", "no route"))])
 		rows.append(row)
-	return {"status": "PASS" if ok else "FAIL", "old_streets_removed": gone, "new_roads": added, "trips": rows}
+	# Flyslette øst: the new access road reaches the plateau.
+	var fly: RoadNetwork.Road = by_name.get("Flyslette øst tilkomstveg")
+	var fly_ok := false
+	if fly:
+		var end := fly.points[fly.points.size() - 1]
+		var vr2 := demo.sim.vehicles.router.plan(Vector3(end.x, demo.sim.vehicles.ground_at(end), end.z), hub, td)
+		fly_ok = vr2.ok
+		rows.append({"site": "Flyslette øst (access road end)", "truck_km": snappedf(float(vr2.get("length_m", 0.0)) / 1000.0, 0.01), "ok": vr2.ok})
+	var conn := audit.connectivity({})
+	var bridges_ok: bool = (conn.bridges as Array).all(func(r: Dictionary) -> bool: return r.traversable)
+	var missing_obj := []
+	for n in ["Sentrum", "Østby", "Verket", "Elvetun", "Haugen", "Ødegård"]:
+		if _obj(n) == null:
+			missing_obj.append(n)
+	var ok := streets == 0 and unlinked.is_empty() and steep.is_empty() and truck_fail.is_empty() and inf_fail.is_empty() and fly_ok 		and bridges_ok and missing_obj.is_empty()
+	return {"status": "PASS" if ok else "FAIL", "generated_streets_left": streets, "new_roads": layer.roads.size(), "unlinked": unlinked,
+		"steep_roads": steep, "truck_failures": truck_fail, "infantry_failures": inf_fail, "flyslette_ok": fly_ok,
+		"bridges": (conn.bridges as Array).size(), "bridges_ok": bridges_ok, "missing_objectives": missing_obj, "sites": rows}
+
+
+## WORLD-SETTLEMENT-02 / NAV-FINAL-01 (--only b_settlement_move [--shots]): movement through the new settlements in the running game.
+## A squad of six marches across Sentrum with the camera on it (bodies, navmesh, round the new buildings); a squad marches Østby ->
+## Sentrum in the abstract tier; a truck drives from the main road into Østby to the end of a new local road, out again and over the
+## river bridge to the end of a new road in Sentrum (real VehicleSim movement, traced: stops, jumps, bridges, building footprints).
+func _b_settlement_move() -> Dictionary:
+	var world := demo.config.world_name
+	if not SettlementLayer.enabled(world):
+		return {"status": "FAIL", "reason": "settlement layer not active"}
+	var layer := SettlementLayer.data(world)
+	var site := {}
+	for st: Dictionary in layer.sites:
+		site[st.name] = Vector3(st.center[0], 0.0, st.center[1])
+	var road_end := func(prefix: String) -> Vector3:
+		for rd: Dictionary in layer.roads:
+			if String(rd.name).begins_with(prefix):
+				var q: Array = rd.points[rd.points.size() - 1]
+				return Vector3(q[0], 0.0, q[2])
+		return Vector3.INF
+	var out := {}
+	# 1. Near: across Sentrum, west to east through the centre.
+	var c: Vector3 = site["Sentrum"]
+	var a := _ground(c + Vector3(-330, 0, 40))
+	var b := _ground(c + Vector3(330, 0, 60))
+	var m1 := await _nmarch(a, b, "near", 600.0, {"scale": 3.0, "shot_tag": "ws02_sentrum", "shot_every_s": 20.0, "shot_first_s": 6.0})
+	m1.erase("members")
+	m1["pass"] = _nmarch_pass(m1)
+	out["near_across_sentrum"] = m1
+	# 2. Far: Østby -> Sentrum.
+	var m2 := await _nmarch(_spot("Østby"), _spot("Sentrum"), "far", 5400.0, {"n": 6, "scale": 16.0})
+	m2.erase("members")
+	m2["pass"] = _nmarch_pass(m2)
+	out["far_ostby_sentrum"] = m2
+	# 3. Truck: main road -> Østby local road end -> Sentrum local road end (over the river).
+	await _fresh()
+	_open_all_bridges()
+	var trucks: Array = await _trucks(1)
+	var t: UnitState = trucks[0]
+	var east: Vector3 = site["Østby"] + Vector3(650, 0, 120)
+	var near: Dictionary = _net().nearest(east, 400.0)
+	var start: Vector3 = near.get("pos", east) if not near.is_empty() else east
+	_stand_truck(t, _ground(start), 0.0)
+	await _physics(3)
+	var legs := [["into Østby", road_end.call("Østby: Bakkevegen")], ["Østby -> Sentrum", road_end.call("Sentrum: Storgata")]]
+	var blds: Array = layer.buildings
+	var trips := []
+	for leg: Array in legs:
+		var dest: Vector3 = _ground(leg[1])
+		demo.sim.vehicles.request_drive(t.id, dest)
+		var routed := await _frames_until(func() -> bool: return t.veh.route.size() >= 2, 900)
+		var tr := Trace.new(t, _net())
+		var inside := [0]
+		var shot_done := [not shots]
+		var r := await _warp(1800.0, 4.0, 400.0, func() -> bool:
+			tr.step(demo.sim.state.time)
+			_camera_on(t.position, 70.0)
+			for bd: Dictionary in blds:
+				if absf(bd.x - t.position.x) < 12.0 and absf(bd.z - t.position.z) < 12.0 and Vector2(bd.x - t.position.x, bd.z - t.position.z).length() < (6.0 if int(bd.mesh) == 16 else 8.0):
+					inside[0] += 1
+			if not shot_done[0] and _flat(t.position, dest) < 250.0:
+				shot_done[0] = true
+				_shot_p("ws02_truck_%d" % trips.size())
+			return t.order == UnitState.Order.NONE or t.move_state == UnitState.MoveState.ARRIVED)
+		var row := {"leg": leg[0], "routed_frames": routed, "arrived": _flat(t.position, dest) < 25.0, "dist_to_dest_m": snappedf(_flat(t.position, dest), 1.0),
+			"status": t.veh.status_name(), "reason": t.veh.reason, "recoveries": t.veh.recoveries, "replans": t.veh.replans, "inside_building_samples": inside[0],
+			"sim_s": snappedf(float(r.get("sim_s", 0.0)), 1.0)}
+		row.merge(tr.summary())
+		row["pass"] = row.arrived and inside[0] == 0 and float(row.max_jump_m) < 6.0
+		trips.append(row)
+	out["truck"] = trips
+	out["truck_crossed_bridge"] = trips.any(func(r: Dictionary) -> bool: return not (r.bridges_seen as Array).is_empty())
+	var ok: bool = m1.pass and m2.pass and trips.all(func(r: Dictionary) -> bool: return r.pass) and out.truck_crossed_bridge
+	out["status"] = "PASS" if ok else "FAIL"
+	return out
 
 
 # --- D: movement in the world ---------------------------------------------------------------------------------------------------
