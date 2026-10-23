@@ -73,6 +73,7 @@ var _navigation_n1c1_perf: NavigationN1C1PerfTest
 var _navigation_n1c1_selftest: NavigationN1C1SelfTest
 var _ew02_selftest: EW02SelfTest
 var _nav_inf01_selftest: NavInf01SelfTest
+var _nav_perf_bc_selftest: NavPerfBCSelfTest
 ## NAVIGATION N1-C1: red barrier bars and a label on bridges that are closed or disabled (debug indicator only).
 var bridge_markers: BridgeMarkers
 var _road_audit: RoadAuditRunner
@@ -347,6 +348,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--ai-war-test" in args:
 		_ai_war_selftest = AIWarSelfTest.new(self)
 		_ai_war_selftest.run.call_deferred(args)
+	elif "--nav-perf-bc-test" in args:
+		_nav_perf_bc_selftest = NavPerfBCSelfTest.new(self)
+		_nav_perf_bc_selftest.run.call_deferred(args)
 	elif "--nav-inf-test" in args:
 		_nav_inf01_selftest = NavInf01SelfTest.new(self)
 		_nav_inf01_selftest.run.call_deferred(args)

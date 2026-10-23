@@ -1139,6 +1139,12 @@ func _g_delivery(do_save := true) -> Dictionary:
 	var income_before := _income_kg(1)
 	var all_rounds_before := _faction_rounds(1)
 	var res := ws.supply.request_supply(f, [sq.id], ws.squad_center(sq), "scenario G")
+	# NAV-PERF-01B: the truck route check is a RouteService job; the request is asked again until it is answered (as the economy does).
+	var tries := 0
+	while res.get("pending", false) and tries < 900:
+		await tree.process_frame
+		tries += 1
+		res = ws.supply.request_supply(f, [sq.id], ws.squad_center(sq), "scenario G")
 	out["request"] = res.reason if not res.ok else "ok"
 	_expect(res.ok, "G: the supply mission was refused: %s" % res.reason)
 	if not res.ok:
