@@ -41,10 +41,17 @@ const UNDO_RESTORED_WINDOW_MSEC:int = 1000
 		configure_road_update_signal()
 		if is_node_ready():
 			_skip_scene_load = false
-## If enabled, auto refresh the terrain while manipulating roads.
-@export var auto_refresh:bool = true:
+## If enabled, auto refresh the terrain while manipulating roads.[br][br]
+##
+## Off by default: flattening rewrites the terrain height maps, so it must be an explicit
+## user action (the Refresh button, or switching this on in the editor). A value stored in a
+## scene is deliberately ignored while the scene loads (EDITOR-WORLD-02): only switching it
+## on after the node is ready arms it, so opening a world never modifies the terrain.
+@export var auto_refresh:bool = false:
 	set(value):
 		auto_refresh = value
+		if is_node_ready():
+			_auto_refresh_armed = value
 		configure_road_update_signal()
 ## Vertical offset to help avoid z-fighting, negative values will sink the terrain underneath the road
 @export var offset:float = -0.25
@@ -79,6 +86,7 @@ var _next_refresh_parents:Array = [] # Array[Mesh]
 var _container_unset_geo: Array[RoadContainer] = []
 var _timer:SceneTreeTimer
 var _mutex:Mutex = Mutex.new()
+var _auto_refresh_armed: bool = false # Set only by a user toggle after the scene is loaded
 var _skip_scene_load: bool = true # Also directly referecned by plugin to ensure top-level refresh works
 var _undoredo_full_refresh_pending: bool = false # Next refresh gets its own undo action, not merged
 var _undoredo_restored_version: int = -1 # History version of the last undo/redo restore
@@ -166,16 +174,18 @@ func configure_road_update_signal() -> void:
 	if not is_instance_valid(road_manager):
 		return
 
+	var live := auto_refresh and _auto_refresh_armed
+
 	# Handle signals from each RoadContainer when there are updated segments
-	if auto_refresh and not road_manager.on_road_updated.is_connected(_on_manager_road_updated):
+	if live and not road_manager.on_road_updated.is_connected(_on_manager_road_updated):
 		road_manager.on_road_updated.connect(_on_manager_road_updated)
-	elif not auto_refresh and road_manager.on_road_updated.is_connected(_on_manager_road_updated):
+	elif not live and road_manager.on_road_updated.is_connected(_on_manager_road_updated):
 		road_manager.on_road_updated.disconnect(_on_manager_road_updated)
 		
 	# Handle transforms on containers themelves
-	if auto_refresh and not road_manager.on_container_transformed.is_connected(_on_container_transform):
+	if live and not road_manager.on_container_transformed.is_connected(_on_container_transform):
 		road_manager.on_container_transformed.connect(_on_container_transform)
-	elif not auto_refresh and road_manager.on_container_transformed.is_connected(_on_container_transform):
+	elif not live and road_manager.on_container_transformed.is_connected(_on_container_transform):
 		road_manager.on_container_transformed.disconnect(_on_container_transform)
 
 
@@ -227,7 +237,7 @@ func bake_holes() -> void:
 ## Workaround helper to transform geo for intersection scenes or other
 ## scenarios where "create_geo" is turned off, by temporairly turning it on.
 func _on_container_transform(container:RoadContainer) -> void:
-	if not auto_refresh:
+	if not (auto_refresh and _auto_refresh_armed):
 		return
 	var did_set_geo := false
 	if not container.create_geo:
