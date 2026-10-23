@@ -69,6 +69,10 @@ var _ai_strat_selftest: AIStratSelfTest
 var _ai_war_selftest: AIWarSelfTest
 var _navigation_n1_selftest: NavigationN1SelfTest
 var _navigation_n1b_selftest: NavigationN1BSelfTest
+var _navigation_n1c1_perf: NavigationN1C1PerfTest
+var _navigation_n1c1_selftest: NavigationN1C1SelfTest
+## NAVIGATION N1-C1: red barrier bars and a label on bridges that are closed or disabled (debug indicator only).
+var bridge_markers: BridgeMarkers
 var _road_audit: RoadAuditRunner
 var _playtest_selftest: PlaytestSelfTest
 var _integration03_selftest: Integration03SelfTest
@@ -338,6 +342,12 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--ai-war-test" in args:
 		_ai_war_selftest = AIWarSelfTest.new(self)
 		_ai_war_selftest.run.call_deferred(args)
+	elif "--navigation-n1c1-test" in args:
+		_navigation_n1c1_selftest = NavigationN1C1SelfTest.new(self)
+		_navigation_n1c1_selftest.run.call_deferred(args)
+	elif "--navigation-n1c1-perf" in args:
+		_navigation_n1c1_perf = NavigationN1C1PerfTest.new(self)
+		_navigation_n1c1_perf.run.call_deferred(args)
 	elif "--navigation-n1b-test" in args:
 		_navigation_n1b_selftest = NavigationN1BSelfTest.new(self)
 		_navigation_n1b_selftest.run.call_deferred(args)
@@ -366,6 +376,10 @@ func _start_sandbox() -> void:
 	routes.setup(terrain, config.half_size(), src, "user://strategic/%s_grid.bin" % config.world_name, sim.state.roads)
 	sim.war.setup(routes)
 	sim.vehicles.setup(routes)
+	bridge_markers = BridgeMarkers.new()
+	bridge_markers.name = "BridgeMarkers"
+	add_child(bridge_markers)
+	bridge_markers.bind(sim.state.roads)
 	# WORLD-SANDBOX-01B: normal play starts without the frame-time overlay (F3).
 	if game.diagnostics:
 		game.diagnostics.set_overlay_visible(false)

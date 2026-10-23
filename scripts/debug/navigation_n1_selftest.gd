@@ -90,7 +90,7 @@ func _run_case(id: String) -> void:
 		"n1_03": data = await _n1_03()
 		"n1_04": data = await _n1_04()
 		"n1_05": data = await _n1_05()
-		"n1_06": data = _n1_06()
+		"n1_06": data = await _n1_06()
 		"n1_07": data = await _n1_07()
 		"n1_08": data = await _n1_08()
 		"n1_09": data = await _n1_09()
@@ -669,11 +669,41 @@ func _n1_05() -> Dictionary:
 
 
 func _n1_06() -> Dictionary:
-	return _classify("n1_06", "UNSUPPORTED", {
-		"expected_unsupported": true,
-		"observed": "Bridges are inferred from road/deck geometry and have no persistent enabled/disabled route entity.",
-		"diagnostic": "No supported API can invalidate one bridge without changing road or structure data.",
-	}, "Do not implement bridge destruction in N1.")
+	# NAVIGATION N1-C1: bridges are persistent entities with a state, so this case is supported. A truck on a bridge trip loses
+	# the bridge while it drives: it never enters the closed deck and either arrives by another crossing or reports the blockage.
+	await _fresh()
+	await _ensure_vehicles(1, 1)
+	var truck := _free_vehicle(1, VehicleDefs.TRUCK)
+	if truck == null:
+		return _classify("n1_06", "ERROR", {"reason": "no free truck"})
+	var trip := _candidate_trip(truck, 800.0, 12000.0, true)
+	if trip.is_empty():
+		return _classify("n1_06", "ERROR", {"reason": "no bridge trip found"})
+	var roads: RoadNetwork = demo.sim.state.roads
+	var bid: String = trip.plan.bridge_ids[0]
+	var vs := demo.sim.vehicles
+	var res := vs.order_drive(truck.id, trip.objective.position)
+	if not res.ok:
+		return _classify("n1_06", "ERROR", {"reason": res.reason})
+	await _warp(20.0, 8.0, 60.0)
+	roads.set_bridge_state(bid, RoadNetwork.BridgeState.CLOSED, "N1-06")
+	var entered := false
+	var other := false
+	await _warp(2400.0, 24.0, 400.0, func() -> bool:
+		var on := roads.bridge_at(truck.position)
+		if on != null and on.strip_contains(Vector2(truck.position.x, truck.position.z)):
+			if on.id == bid and not on.is_open() and absf(truck.veh.speed) > 0.1:
+				entered = true
+			elif on.id != bid:
+				other = true
+		return truck.order == UnitState.Order.NONE and absf(truck.veh.speed) < 0.5)
+	var arrived := _flat(truck.position, trip.objective.position) < 16.0 and truck.veh.status != VehicleState.Status.BLOCKED
+	var blocked := truck.veh.status == VehicleState.Status.BLOCKED and String(truck.veh.reason).to_lower().contains("bridge")
+	roads.set_bridge_state(bid, RoadNetwork.BridgeState.OPEN)
+	var passed := not entered and ((arrived and other) or blocked)
+	return _classify("n1_06", "PASS" if passed else "FAIL", {"bridge": bid, "entered_closed_deck": entered, "arrived": arrived, "used_other_bridge": other,
+		"blocked_with_bridge_reason": blocked, "status_name": truck.veh.status_name(), "reason": truck.veh.reason},
+		"A bridge closed while a truck is en route is avoided; it arrives by another crossing or reports the blockage (see N1C1 for the full set).")
 
 
 func _n1_07() -> Dictionary:

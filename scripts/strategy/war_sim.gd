@@ -75,6 +75,12 @@ var ai_usec_max := 0
 var ops_usec := 0
 var updates := 0
 var stuck_reroutes := 0
+## NAVIGATION N1-C1: a squad whose route could not be planned is tried again after this many seconds, and an operation that has
+## had no route for this long fails with the reason (a closed bridge on the only way, for example).
+const ROUTE_RETRY_S := 20.0
+const ROUTE_BLOCKED_TIMEOUT_S := 300.0
+var _route_retry := {}
+var blocked_routes := 0
 var threatened := {}
 ## op id -> march progress (see _track_march; not saved).
 var march := {}
@@ -561,9 +567,26 @@ func _update_operation(op: OperationState) -> void:
 		if not sq.route.is_empty():
 			marching = true
 		elif op.type != OperationState.Type.COUNTER and op.phase == OperationState.Phase.MOVING and sq.order != SquadState.Order.MOVE and _far_from_goal(op, sq):
-			# Lost its route (blocked, a reaction ended it): plan again from where it is.
-			stuck_reroutes += 1
-			_send(op, sq)
+			# Lost its route (blocked, a reaction ended it): plan again from where it is. A failed plan is not repeated every
+			# second: it waits ROUTE_RETRY_S, says why in the operation, and ends the operation after ROUTE_BLOCKED_TIMEOUT_S.
+			if now >= float(_route_retry.get(sq.id, 0.0)):
+				stuck_reroutes += 1
+				if _send(op, sq):
+					_route_retry.erase(sq.id)
+					op.blocked_since = -1.0
+				else:
+					blocked_routes += 1
+					_route_retry[sq.id] = now + ROUTE_RETRY_S
+					var why := String(sim.squads.route_block_reason.get(sq.id, ""))
+					if why == "":
+						why = "no route (%s)" % String(routes.last_failure.get("reason", "unreachable"))
+					op.wait_reason = "route blocked: " + why
+					if op.blocked_since < 0.0:
+						op.blocked_since = now
+						log_event(op.faction, "navigation", "Operation %d: %s" % [op.id, op.wait_reason], squad_center(sq))
+					elif now - op.blocked_since > ROUTE_BLOCKED_TIMEOUT_S:
+						_end(op, OperationState.Phase.FAILED, op.wait_reason)
+						return
 			marching = true
 	match op.type:
 		OperationState.Type.ATTACK:

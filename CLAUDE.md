@@ -134,6 +134,14 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   must never be accepted on the bare footprint radius. Solid vegetation (`StructureManager.blocks_trunk`) is a hard obstacle
   for cross-country legs; roads are not checked against it. A short link between road components is a *soft link* planned per
   vehicle (`VehicleRouter._soft`), never a graph edge. Vehicle navigation tests: `--navigation-n1b-test`.
+- **Bridges (NAVIGATION N1-C1).** A bridge is `RoadNetwork.Bridge` (stable id `bridge_r<road>_s<span>` from roads.json, state OPEN /
+  CLOSED / DISABLED, saved in `WorldState.snapshot()["bridges"]`); `RoadNetwork.set_bridge_state` is the only writer and emits
+  `bridge_changed`. Navigation owners keep derived data only (`VehicleRouter` switches graph vertices off, `StrategicRoutes` closes the
+  cells under the span, `WorldSim._infantry_blocked` refuses the deck) and never a second copy of the state. `deck_height` stays the
+  *physical* deck; refuse a deck with `blocking_bridge_at` / `deck_open`. Closed means: nothing new enters, what is on the deck finishes
+  (never teleport or delete). `VehicleSim` brakes short of a closed deck and re-plans one vehicle per tick; `SquadControl` re-routes or
+  stops the march with a reason; operations report `route blocked` and fail after 300 s. `BridgeMarkers` is a debug indicator only.
+  Tests: `--navigation-n1c1-test`.
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are

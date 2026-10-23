@@ -7,9 +7,13 @@ comparison — not repeated here) with the code that actually exists on
 [INTEGRATION-04_REPORT.md](INTEGRATION-04_REPORT.md) §4). Where the research assumed the
 LOGISTICS-01 *plan*, this document uses the *implemented* names.
 
-**Status (NAVIGATION N1-B, 2026-10-23).** N1-B (vehicle routing, base access, off-road clearance, soft links, plan caches) is
-complete: see [NAVIGATION-N1B_REPORT.md](NAVIGATION-N1B_REPORT.md) and §8. The next milestone is N1-C (bridges, tracked
-profiles), waiting for product-owner approval.
+**Status (NAVIGATION N1-C1, 2026-10-23).** N1-C1 (persistent bridges with open/closed/disabled state, route invalidation for vehicles,
+convoys, infantry and operations, targeted cache invalidation, lower planning spikes) is complete: see
+[NAVIGATION-N1C1_REPORT.md](NAVIGATION-N1C1_REPORT.md). The next milestone is N1-C2 (tracked profiles, pivot turns), waiting for
+product-owner approval.
+
+**Earlier status (NAVIGATION N1-B, 2026-10-23).** N1-B (vehicle routing, base access, off-road clearance, soft links, plan caches) is
+complete: see [NAVIGATION-N1B_REPORT.md](NAVIGATION-N1B_REPORT.md) and §8.
 
 **Earlier status (NAVIGATION N1 baseline, 2026-10-22).** All AI milestones up to AI-WAR-LOGISTICS-01 are on the single
 development branch `develop` in the one project folder. NAVIGATION N1 measurement, diagnostics and acceptance
@@ -361,3 +365,16 @@ in the research: one route per element, `AStarGrid2D.jumping_enabled` test, HPA*
 * **Performance.** Plans avg 127 -> 57 ms, p99 326 -> 162 ms; yard bursts 427 -> 61 ms. Open: village starts in dense woods
   (~290-430 ms) and the one-off vegetation cache rebuild after a structure change.
 * **Tests.** `--navigation-n1b-test` (N1B-01..10). Evidence and the order-dependent suites: [NAVIGATION-N1B_REPORT.md](NAVIGATION-N1B_REPORT.md).
+
+### N1-C1 implementation (2026-10-23)
+
+* **Bridges.** `RoadNetwork.Bridge` (stable id, state OPEN/CLOSED/DISABLED, saved with the world state); readers are derived data only
+  (`VehicleRouter` graph vertices, `StrategicRoutes` cells, `WorldSim` deck test). N1-06 is now supported and passes.
+* **Reaction.** Vehicles brake short of a closed deck and re-plan one per tick (or report `Path blocked`, no retry); vehicles on the deck
+  finish; squads re-route or stop with a reason; operations report `route blocked` and fail after 300 s.
+* **Found on the way.** Infantry could not cross any bridge since N1-A (waypoints beside the deck, kerb counted as a 100 % grade): fixed.
+* **Cost.** Vegetation caches per changed cell, router caches per touched 64 m cell, local planner skips impossible tests: burst
+  frame max 781 -> 365 ms, woods plan 265 -> 121 ms, plan after a placement 316 ms -> cache hit.
+* **Tests.** `--navigation-n1c1-test` (N1C1-01..12, 07n), `--navigation-n1c1-perf`. Open: no physical barrier for the player's
+  soldier, single plans up to ~240 ms. Evidence: [NAVIGATION-N1C1_REPORT.md](NAVIGATION-N1C1_REPORT.md).
+

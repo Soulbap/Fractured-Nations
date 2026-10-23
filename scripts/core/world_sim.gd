@@ -129,6 +129,7 @@ func _ready() -> void:
 	state.unit_removed.connect(_on_unit_removed)
 	state.unit_died.connect(_on_unit_died)
 	state.order_changed.connect(_on_order_changed)
+	state.roads.bridge_changed.connect(_on_bridge_changed)
 	brain.connect_signals()
 	tactics.connect_signals()
 	# COMBAT-02: shots find nearby soldiers through the brain's grid.
@@ -273,6 +274,15 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 	u.yaw = atan2(-dir.x, -dir.z)
 	u.move_state = UnitState.MoveState.MOVING
 	_settle_height(u)
+
+
+## NAVIGATION N1-C1: a bridge changed state. Local refinements of abstract infantry were planned with the old deck rule: they are
+## dropped (and the retry budgets renewed); every walker re-checks the deck at its next step, and squads re-plan their routes.
+func _on_bridge_changed(_b: RoadNetwork.Bridge) -> void:
+	_local_routes.clear()
+	_local_pending.clear()
+	_local_attempts.clear()
+	_local_route_cache.clear()
 
 
 func _on_order_changed(u: UnitState) -> void:
@@ -422,13 +432,16 @@ func _infantry_height(x: float, z: float) -> float:
 	return h
 
 
-func _infantry_blocked(x: float, z: float) -> bool:
+## from_bridge: the closed bridge the walker already stands on (it finishes its crossing; nothing new enters a closed deck).
+func _infantry_blocked(x: float, z: float, from_bridge: RoadNetwork.Bridge = null) -> bool:
 	var p := Vector3(x, 0.0, z)
 	# A bridge deck makes water passable, not structures placed on the deck.
 	if structures.blocks_point(Vector2(x, z), INFANTRY_CLEARANCE_M):
 		return true
 	if not is_nan(state.roads.deck_height(p)):
-		return false
+		# NAVIGATION N1-C1: the deck of a closed or disabled bridge is not passable to anyone who is not already on it.
+		var closed := state.roads.blocking_bridge_at(p)
+		return closed != null and closed != from_bridge
 	return structures.is_wet(x, z)
 
 
@@ -438,12 +451,16 @@ func _step_blocked(pos: Vector3, dir: Vector3, step: float) -> bool:
 	var near := maxf(step * 2.0, 0.3)
 	var look := maxf(step, 1.0)
 	var h0 := _infantry_height(pos.x, pos.z)
+	var on_bridge := state.roads.blocking_bridge_at(pos)
 	for distance: float in [near, look]:
 		var q: Vector2 = p + d * distance
-		if _infantry_blocked(q.x, q.y):
+		if _infantry_blocked(q.x, q.y, on_bridge):
 			return true
 		var h1 := _infantry_height(q.x, q.y)
-		if is_nan(h0) or is_nan(h1) or absf(h1 - h0) / maxf(distance, 0.01) > INFANTRY_MAX_GRADE:
+		# N1-C1: the step from the bank onto a deck (or off it) is a kerb of 0.2-0.3 m, not a slope: steps between ground and a
+		# deck skip the grade test (the deck itself is flat). With it the lip counted as a 100 % grade and nobody got onto a bridge.
+		var kerb := not is_nan(state.roads.deck_height(Vector3(q.x, 0.0, q.y))) or not is_nan(state.roads.deck_height(pos))
+		if is_nan(h0) or is_nan(h1) or (not kerb and absf(h1 - h0) / maxf(distance, 0.01) > INFANTRY_MAX_GRADE):
 			return true
 	return false
 

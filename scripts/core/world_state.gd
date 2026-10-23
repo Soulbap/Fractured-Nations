@@ -333,7 +333,8 @@ func snapshot() -> Dictionary:
 	for sq in all_squads():
 		sq_list.append(sq.to_dict())
 	return {"time": time, "next_id": _next_id, "units": list, "construction": construction.to_dict(),
-		"squads": sq_list, "next_squad_id": _next_squad_id, "war": war.to_dict(), "logistics": logistics.to_dict()}
+		"squads": sq_list, "next_squad_id": _next_squad_id, "war": war.to_dict(), "logistics": logistics.to_dict(),
+		"bridges": roads.bridge_states()}
 
 
 func restore(snap: Dictionary) -> void:
@@ -346,6 +347,9 @@ func restore(snap: Dictionary) -> void:
 		unit_added.emit(u)
 	if snap.has("construction"):
 		construction.from_dict(snap.construction)
+	# NAVIGATION N1-C1: bridge states (a snapshot without the key leaves them as they are).
+	if snap.has("bridges"):
+		roads.load_bridge_states(snap.bridges)
 	_restore_squads(snap)
 	if snap.has("war"):
 		war.from_dict(snap.war)
@@ -399,6 +403,8 @@ func apply_snapshot(snap: Dictionary) -> Dictionary:
 		if not seen.has(id):
 			remove_unit(id)
 			removed += 1
+	if snap.has("bridges"):
+		roads.load_bridge_states(snap.bridges)
 	time = snap.get("time", time)
 	_next_id = maxi(_next_id, snap.get("next_id", 1))
 	_restore_squads(snap)

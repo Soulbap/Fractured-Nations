@@ -68,6 +68,8 @@ var fallback_pos := Vector3.INF
 var reassess_at := 0.0
 var assault_pos := Vector3.INF
 var reason := ""
+## NAVIGATION N1-C1: since when (sim time) no squad of the operation could be given a route to its goal; -1 = not blocked.
+var blocked_since := -1.0
 ## AI-WAR-LOGISTICS-01: vehicles assigned to the operation (VehicleState.assign_* says the same from the other side),
 ## the transport plan (assembly point, unloading point, drivers' task per vehicle, why foot / why mounted) and the
 ## supply side (readiness decision, missions requested). Plain data, saved.
@@ -106,7 +108,8 @@ func to_dict() -> Dictionary:
 		"losses": losses, "player": player_ordered, "route": Array(route_preview), "contact": contact_id, "reason": reason,
 		"stage": stage, "stage_since": stage_since, "roles": roles.duplicate(), "wait": wait_reason, "stage_why": stage_why,
 		"withdraw_why": withdraw_why, "fallback": fallback_pos, "reassess_at": reassess_at, "assault_pos": assault_pos,
-		"vehicles": Array(vehicles), "transport": transport.duplicate(true), "readiness": readiness.duplicate(true), "supply_why": supply_why}
+		"vehicles": Array(vehicles), "transport": transport.duplicate(true), "readiness": readiness.duplicate(true), "supply_why": supply_why,
+		"blocked_since": blocked_since}
 
 
 static func from_dict(d: Dictionary) -> OperationState:
@@ -138,6 +141,7 @@ static func from_dict(d: Dictionary) -> OperationState:
 	o.withdraw_why = d.get("withdraw_why", "")
 	o.fallback_pos = d.get("fallback", Vector3.INF)
 	o.reassess_at = d.get("reassess_at", 0.0)
+	o.blocked_since = d.get("blocked_since", -1.0)
 	o.assault_pos = d.get("assault_pos", Vector3.INF)
 	o.vehicles = PackedInt32Array(d.get("vehicles", []))
 	o.transport = d.get("transport", {}).duplicate(true)

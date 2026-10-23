@@ -53,6 +53,11 @@ var routes_failed := 0
 var failure_reasons := {}
 var last_failure := {}
 var bridges: Array[Vector3] = []
+## NAVIGATION N1-C1: bridge id -> PackedInt32Array of the grid cells under the bridge span. A closed or disabled bridge makes
+## them impassable again (the river under the deck is water); the state itself lives in RoadNetwork.Bridge only.
+var _bridge_cells := {}
+## Grid cell index -> id of the bridge whose span lies in it (route() lays the deck itself as waypoints there).
+var _cell_bridge := {}
 ## WORLD-PLAYTEST-01: the road network the grid follows, and the grid as built from the
 ## world alone (terrain, water, world roads), so built roads can be added and removed.
 var network: RoadNetwork
@@ -86,8 +91,13 @@ func setup(terrain: Terrain3D, half: float, src: String, cache_path: String, p_n
 	_base_road = road.duplicate()
 	_setup_astar()
 	_mark_built(Rect2(origin, Vector2(size) * CELL))
+	_index_bridges()
 	if not network.changed.is_connected(_on_roads_changed):
 		network.changed.connect(_on_roads_changed)
+	if not network.bridge_changed.is_connected(_on_bridge_changed):
+		network.bridge_changed.connect(_on_bridge_changed)
+	for b: RoadNetwork.Bridge in network.blocked_bridges():
+		_on_bridge_changed(b)
 	build_ms = (Time.get_ticks_usec() - t0) / 1000.0
 	ready = true
 
@@ -121,6 +131,10 @@ func _on_roads_changed(rect: Rect2) -> void:
 			weight[i] = _base_weight[i]
 			road[i] = _base_road[i]
 	_mark_built(rect.grow(CELL))
+	# N1-C1: closed bridges stay closed when the cells under them were reset to the world grid.
+	for b: RoadNetwork.Bridge in network.blocked_bridges():
+		for i: int in _bridge_cells.get(b.id, PackedInt32Array()):
+			solid[i] = 1
 	for z in range(maxi(c0.y, 0), mini(c1.y, size.y - 1) + 1):
 		for x in range(maxi(c0.x, 0), mini(c1.x, size.x - 1) + 1):
 			_sync_point(Vector2i(x, z))
@@ -133,6 +147,39 @@ func _mark_built(rect: Rect2) -> int:
 		if r.built:
 			n += _mark_line(r.points, r.travel_cost, [], true)
 	return n
+
+
+## The grid cells under every bridge span, sampled like _mark_line samples the road (at least every quarter cell).
+func _index_bridges() -> void:
+	_bridge_cells.clear()
+	_cell_bridge.clear()
+	for b: RoadNetwork.Bridge in network.bridges:
+		var idx := -b.road_key - 1
+		if idx < 0 or idx >= network.world.size():
+			continue
+		var pts: PackedVector3Array = network.world[idx].points
+		var seen := {}
+		for k in range(b.first, mini(b.last, pts.size() - 1) + 1):
+			var a := pts[k]
+			var seg := 0.0 if k + 1 >= pts.size() else Vector2(pts[k + 1].x - a.x, pts[k + 1].z - a.z).length()
+			var n := maxi(1, ceili(seg / (CELL * 0.25)))
+			for j in n:
+				var p := a if k + 1 >= pts.size() else a.lerp(pts[k + 1], float(j) / n)
+				var c := world_to_cell(p)
+				if _in(c):
+					seen[c.y * size.x + c.x] = true
+		_bridge_cells[b.id] = PackedInt32Array(seen.keys())
+		for i: int in seen:
+			_cell_bridge[i] = b.id
+
+
+## A bridge was opened, closed or disabled: its cells are impassable (closed) or back to the world grid (open).
+func _on_bridge_changed(b: RoadNetwork.Bridge) -> void:
+	if not ready:
+		return
+	for i: int in _bridge_cells.get(b.id, PackedInt32Array()):
+		solid[i] = _base_solid[i] if b.is_open() else 1
+		_sync_point(Vector2i(i % size.x, i / size.x))
 
 
 func _sync_point(c: Vector2i) -> void:
@@ -388,32 +435,98 @@ func route(from: Vector3, to: Vector3, terrain: Terrain3D) -> PackedVector3Array
 	if cells.is_empty():
 		_fail_count(t0, from, to, "disconnected passable cells")
 		return out
-	# Keep corners and every 4th cell, then re-check each straight leg on the grid; a
-	# leg that crosses an impassable cell gets the cell path's midpoint inserted.
-	var keep: Array[int] = [0]
-	for i in range(1, cells.size() - 1):
-		var d0 := cells[i] - cells[i - 1]
-		var d1 := cells[i + 1] - cells[i]
-		if d0 != d1 or i - keep[-1] >= 4:
-			keep.append(i)
-	if cells.size() > 1:
-		keep.append(cells.size() - 1)
-	var fixed: Array[int] = [keep[0]]
-	for k in range(1, keep.size()):
-		_refine(cells, fixed[-1], keep[k], fixed)
-	for i in fixed:
-		var p := cell_center(cells[i])
-		out.append(p)
+	# NAVIGATION N1-C1: where the cell path crosses a bridge, the waypoints are the deck itself (its road points), not the centres
+	# of the 50 m cells under it - those lie up to 25 m beside the deck, in the river, where a walker cannot go. Everything
+	# else is reduced as before: corners and every 4th cell, then each straight leg is re-checked against the grid and a leg
+	# that crosses an impassable cell gets the cell path's midpoint inserted.
+	var deck_flags := PackedByteArray()
+	var i := 0
+	var piece_start := 0
+	while i < cells.size():
+		var bid: String = _cell_bridge.get(cells[i].y * size.x + cells[i].x, "")
+		if bid == "":
+			i += 1
+			continue
+		var j := i
+		while j + 1 < cells.size() and _cell_bridge.get(cells[j + 1].y * size.x + cells[j + 1].x, "") == bid:
+			j += 1
+		var deck := _deck_waypoints(bid, cells, i, j, from, to)
+		if deck.is_empty():
+			i = j + 1
+			continue
+		_simplify_cells(cells, piece_start, i - 1, out)
+		deck_flags.resize(out.size())
+		for p in deck:
+			out.append(p)
+		deck_flags.resize(out.size())
+		for k in range(out.size() - deck.size(), out.size()):
+			deck_flags[k] = 1
+		piece_start = j + 1
+		i = j + 1
+	_simplify_cells(cells, piece_start, cells.size() - 1, out)
+	deck_flags.resize(out.size())
 	# Exact end points instead of cell centres where they are passable.
 	if passable(from):
 		out[0] = from
 	if passable(to):
 		out[out.size() - 1] = to
-	for i in out.size():
-		var q := out[i]
+	for k in out.size():
+		var q := out[k]
 		var hh: float = terrain.data.get_height(q) if terrain else NAN
-		out[i] = Vector3(q.x, q.y if is_nan(hh) else hh, q.z)
+		out[k] = Vector3(q.x, q.y if is_nan(hh) else (maxf(hh, q.y) if deck_flags[k] == 1 else hh), q.z)
 	_count(t0)
+	return out
+
+
+## Waypoints of a cell path piece cells[i0..i1] (inclusive) appended to out: corners and every 4th cell, refined where a straight
+## leg would cross an impassable cell.
+func _simplify_cells(cells: Array[Vector2i], i0: int, i1: int, out: PackedVector3Array) -> void:
+	if i1 < i0:
+		return
+	var keep: Array[int] = [i0]
+	for i in range(i0 + 1, i1):
+		var d0 := cells[i] - cells[i - 1]
+		var d1 := cells[i + 1] - cells[i]
+		if d0 != d1 or i - keep[-1] >= 4:
+			keep.append(i)
+	if i1 > i0:
+		keep.append(i1)
+	var fixed: Array[int] = [keep[0]]
+	for k in range(1, keep.size()):
+		_refine(cells, fixed[-1], keep[k], fixed)
+	for i in fixed:
+		out.append(cell_center(cells[i]))
+
+
+## The deck of bridge `bid` as waypoints in travel order when the cell run cells[i..j] crosses it (the path enters at one end
+## and leaves at the other); an empty array when the path only touches the bridge's cells.
+func _deck_waypoints(bid: String, cells: Array[Vector2i], i: int, j: int, from: Vector3, to: Vector3) -> PackedVector3Array:
+	var b := network.get_bridge(bid)
+	var out := PackedVector3Array()
+	if b == null or network.world.size() < -b.road_key:
+		return out
+	var pts: PackedVector3Array = network.world[-b.road_key - 1].points
+	var prev := from if i == 0 else cell_center(cells[i - 1])
+	var nxt := to if j == cells.size() - 1 else cell_center(cells[j + 1])
+	var first := pts[b.first]
+	var last := pts[b.last]
+	var enter_first := Vector2(prev.x - first.x, prev.z - first.z).length() < Vector2(prev.x - last.x, prev.z - last.z).length()
+	var leave_first := Vector2(nxt.x - first.x, nxt.z - first.z).length() < Vector2(nxt.x - last.x, nxt.z - last.z).length()
+	if enter_first == leave_first:
+		return out
+	var idx: Array[int] = []
+	if enter_first:
+		for k in range(b.first, b.last + 1):
+			idx.append(k)
+	else:
+		for k in range(b.last, b.first - 1, -1):
+			idx.append(k)
+	var last_kept := Vector3.INF
+	for n in idx.size():
+		var p := pts[idx[n]]
+		if n == 0 or n == idx.size() - 1 or Vector2(p.x - last_kept.x, p.z - last_kept.z).length() >= 25.0:
+			out.append(p)
+			last_kept = p
 	return out
 
 
@@ -458,6 +571,7 @@ func _fail_count(t0: int, from: Vector3, to: Vector3, reason: String) -> void:
 		"from": [snappedf(from.x, 0.1), snappedf(from.z, 0.1)],
 		"to": [snappedf(to.x, 0.1), snappedf(to.z, 0.1)],
 		"ms": snappedf(last_route_ms, 0.01),
+		"closed_bridges": network.blocked_bridges().map(func(b: RoadNetwork.Bridge) -> String: return b.id),
 	}
 
 

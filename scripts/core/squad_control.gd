@@ -77,6 +77,78 @@ var _follow_slot := {}
 
 func _init(p_sim: WorldSim) -> void:
 	sim = p_sim
+	sim.state.roads.bridge_changed.connect(_on_bridge_changed)
+
+
+## NAVIGATION N1-C1 counters and the last reason a squad's march was stopped by a bridge (squad id -> text).
+var bridge_reroutes := 0
+var bridge_blocked := 0
+var route_block_reason := {}
+
+
+## A bridge was closed or disabled: squads on a route over its deck plan again from where they stand, or stop with a reason when
+## no other way exists. A squad whose centroid is already on the deck finishes the crossing (nothing is teleported or cancelled).
+## Opening a bridge changes nothing for a march in progress (a route that is valid stays valid).
+func _on_bridge_changed(b: RoadNetwork.Bridge) -> void:
+	# Deferred: the strategic grid listens to the same signal (connected later than this) and must have closed the bridge's
+	# cells before a squad plans its way round.
+	if not b.is_open():
+		call_deferred("_reroute_for_bridge", b)
+
+
+func _reroute_for_bridge(b: RoadNetwork.Bridge) -> void:
+	if b.is_open():
+		return
+	for sq: SquadState in sim.state.all_squads():
+		if sq.route.is_empty() or sq.route_i >= sq.route.size():
+			continue
+		if sim.state.roads.blocking_bridge_at(_centroid(sq), 8.0) == b:
+			continue
+		if not _route_crosses(sq, b):
+			continue
+		_reroute_around(sq, b)
+
+
+## True when a remaining leg of the squad's route (from its centroid on) runs over the deck of b.
+func _route_crosses(sq: SquadState, b: RoadNetwork.Bridge) -> bool:
+	var prev := _centroid(sq)
+	var reach: float = (b.segs[0][2] as float) + 4.0
+	for i in range(sq.route_i, sq.route.size()):
+		var to := sq.route[i]
+		var d := _flat(prev, to)
+		var n := maxi(1, ceili(d / 10.0))
+		for k in n + 1:
+			var q := prev.lerp(to, float(k) / n)
+			if b.bounds.grow(4.0).has_point(Vector2(q.x, q.z)) and b.distance_to(Vector2(q.x, q.z)) <= reach:
+				return true
+		prev = to
+	return false
+
+
+func _reroute_around(sq: SquadState, b: RoadNetwork.Bridge) -> void:
+	var routes: StrategicRoutes = sim.war.routes if sim.war else null
+	var goal := sq.route[sq.route.size() - 1]
+	if routes != null and routes.ready:
+		var r := routes.route(_centroid(sq), goal, sim.terrain)
+		if r.size() >= 2:
+			r[r.size() - 1] = goal
+			bridge_reroutes += 1
+			route_block_reason.erase(sq.id)
+			follow_route(sq, r, sq.formation)
+			return
+	# No other way: the march stops where the squad stands, with the reason kept for whoever asked for it (an operation reads
+	# `route_block_reason` through WarSim; a player squad shows it in the log).
+	bridge_blocked += 1
+	route_block_reason[sq.id] = "%s is %s and no other crossing is reachable" % [b.name, b.state_name()]
+	clear_route(sq)
+	sq.order = SquadState.Order.HOLD
+	sq.order_target = Vector3.INF
+	for id in sq.members:
+		sim.state.halt(id)
+	sq.status = SquadState.Status.DONE
+	sim.state.squad_changed.emit(sq)
+	if sim.war:
+		sim.war.log_event(sq.faction, "navigation", "%s: march stopped, %s" % [sq.squad_name, route_block_reason[sq.id]], _centroid(sq))
 
 
 # --- Orders -----------------------------------------------------------------------
@@ -193,7 +265,9 @@ func _update_route(sq: SquadState) -> void:
 		return
 	var target := sq.route[sq.route_i]
 	var last := sq.route_i >= sq.route.size() - 1
-	var reach := 6.0 if last else route_reach_m
+	# N1-C1: the waypoints on a bridge deck are the deck itself (StrategicRoutes lays them): a walker has to reach each one, it
+	# may not cut the corner to a waypoint on the far bank across the river.
+	var reach := 6.0 if last or sim.state.roads.bridge_at(target, 3.0) != null else route_reach_m
 	var close := _flat(leader.position, target) <= reach
 	# Done with the leg: close enough, or the squad's move finished / got stuck there, or
 	# the leader made no progress for route_stall_s (an obstacle the abstract tier does not

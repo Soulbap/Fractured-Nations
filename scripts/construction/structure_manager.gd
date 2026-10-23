@@ -119,6 +119,10 @@ var _surfaces := {}
 const BLOCK_CELL := 8.0
 var _block_grid := {}
 var _block_dirty := true
+## NAVIGATION N1-C1: structure id -> [[obb, [Vector2i cells]], ...] for what the structure put into _block_grid. A placement, change
+## or removal updates the fine grid for that structure only; the full rebuild (every module of every base, 100-200 ms) is left to
+## the first use and to _on_cleared.
+var _block_of := {}
 ## Original control-map value of every vertex a surface painted (Vector2i -> int).
 var _orig_control := {}
 
@@ -139,7 +143,7 @@ func bind_state(p_state: ConstructionState) -> void:
 	_on_cleared()
 	for s in state.all():
 		_on_added(s)
-	_apply_clearings()
+	_apply_clearings(true)
 
 
 func _process(delta: float) -> void:
@@ -447,11 +451,12 @@ func _resolve(s: StructureState) -> void:
 
 
 func _on_added(s: StructureState) -> void:
-	_block_dirty = true
 	if _is_surface(s):
+		_block_dirty = true
 		_surface_changed(s, true)
 		return
 	_resolve(s)
+	_block_update(s)
 	for i in s.instances.size():
 		var c := _cell_of(s.instances[i].origin)
 		if not _index.has(c):
@@ -465,10 +470,11 @@ func _on_added(s: StructureState) -> void:
 
 
 func _on_removed(s: StructureState) -> void:
-	_block_dirty = true
 	if _surfaces.has(s.id):
+		_block_dirty = true
 		_surface_changed(s, false)
 		return
+	_block_forget(s.id)
 	for i in s.instances.size():
 		var c := _cell_of(s.instances[i].origin)
 		var list: Array = _index.get(c, [])
@@ -483,7 +489,7 @@ func _on_removed(s: StructureState) -> void:
 
 
 func _on_changed(s: StructureState) -> void:
-	_block_dirty = true
+	_block_update(s)
 	for i in s.instances.size():
 		_dirty_cells[_cell_of(s.instances[i].origin)] = true
 	_grass_dirty(_rect_of(s))
@@ -492,6 +498,7 @@ func _on_changed(s: StructureState) -> void:
 
 func _on_cleared() -> void:
 	_block_dirty = true
+	_block_of.clear()
 	for c in _visual.keys():
 		_free_visual(c)
 	for c in _bodies.keys():
@@ -980,7 +987,7 @@ func _refit_lines(rect: Rect2) -> void:
 		var before := s.instances.duplicate()
 		_resolve(s)
 		if s.instances != before:
-			_block_dirty = true
+			_block_update(s)
 			for xf in s.instances:
 				_dirty_cells[_cell_of(xf.origin)] = true
 
@@ -1777,12 +1784,17 @@ func clearings_for(s: StructureState, trees: bool) -> Array:
 
 
 ## Pushes the state's clearings to the vegetation streamer (which filters rendering,
-## colliders and navigation obstructions) and drops the cached trunks.
-func _apply_clearings() -> void:
-	_tree_cache.clear()
-	_trunk_sub.clear()
+## colliders and navigation obstructions) and drops the cached trunks. NAVIGATION N1-C1: only the vegetation cells whose clearings
+## changed lose their cached trunks (the streamer reports them), not the whole world - the first route after a placement used to
+## rebuild every cell it touched (50-300 ms). `full`: the state was bound or replaced, everything goes.
+func _apply_clearings(full := false) -> void:
+	if full or vegetation == null or state == null:
+		_tree_cache.clear()
+		_trunk_sub.clear()
 	if vegetation == null or state == null:
 		return
+	if not vegetation.clearings_changed.is_connected(_on_vegetation_cells_changed):
+		vegetation.clearings_changed.connect(_on_vegetation_cells_changed)
 	var all_ids := {}
 	for id in clearable_ids:
 		all_ids[id] = true
@@ -1796,6 +1808,13 @@ func _apply_clearings() -> void:
 		list.append([Vector2(r.c[0], r.c[1]), ax, Vector2(-ax.y, ax.x), Vector2(r.h[0], r.h[1]),
 			all_ids if r.get("trees", true) else under])
 	vegetation.set_clearings(list)
+
+
+## The streamer changed the clearings of these vegetation cells: their cached solid instances are stale, all others stay valid.
+func _on_vegetation_cells_changed(cells: Array) -> void:
+	for c in cells:
+		_tree_cache.erase(c)
+		_trunk_sub.erase(c)
 
 
 # --- Abstract tier ----------------------------------------------------------------
@@ -1834,31 +1853,87 @@ func blocking_boxes(p: Vector2, radius := 0.4) -> Array:
 func _rebuild_block_grid() -> void:
 	_block_dirty = false
 	_block_grid.clear()
+	_block_of.clear()
 	if state == null:
 		return
 	for s: StructureState in state.structures.values():
-		var def := StructureCatalog.get_def(s.type_id)
-		if def == null or not def.blocks_navigation or def.is_surface():
+		_block_add(s)
+
+
+## The structure's footprints put into the fine grid (and remembered in _block_of).
+func _block_add(s: StructureState) -> void:
+	var def := StructureCatalog.get_def(s.type_id)
+	if def == null or not def.blocks_navigation or def.is_surface():
+		return
+	var entries := []
+	for i in s.instances.size():
+		if s.is_line() and s.is_removed(i):
 			continue
-		for i in s.instances.size():
-			if s.is_line() and s.is_removed(i):
+		var xf := s.instances[i]
+		var ax := Vector2(xf.basis.x.x, xf.basis.x.z).normalized()
+		var az := Vector2(xf.basis.z.x, xf.basis.z.z).normalized()
+		for box in def.get_collision_boxes():
+			if box.position.y > 1.0:
 				continue
-			var xf := s.instances[i]
-			var ax := Vector2(xf.basis.x.x, xf.basis.x.z).normalized()
-			var az := Vector2(xf.basis.z.x, xf.basis.z.z).normalized()
-			for box in def.get_collision_boxes():
-				if box.position.y > 1.0:
-					continue
-				var bc := box.get_center()
-				var w := xf * Vector3(bc.x, 0.0, bc.z)
-				var half := Vector2(box.size.x, box.size.z) * 0.5
-				if def.linear:
-					half.x = def.module_length * 0.5
-				var obb := [Vector2(w.x, w.z), ax, az, half]
-				var r := half.length()
-				for gx in range(floori((w.x - r) / BLOCK_CELL), floori((w.x + r) / BLOCK_CELL) + 1):
-					for gz in range(floori((w.z - r) / BLOCK_CELL), floori((w.z + r) / BLOCK_CELL) + 1):
-						var k := Vector2i(gx, gz)
-						if not _block_grid.has(k):
-							_block_grid[k] = []
-						_block_grid[k].append(obb)
+			var bc := box.get_center()
+			var w := xf * Vector3(bc.x, 0.0, bc.z)
+			var half := Vector2(box.size.x, box.size.z) * 0.5
+			if def.linear:
+				half.x = def.module_length * 0.5
+			var obb := [Vector2(w.x, w.z), ax, az, half]
+			var r := half.length()
+			var cells: Array[Vector2i] = []
+			for gx in range(floori((w.x - r) / BLOCK_CELL), floori((w.x + r) / BLOCK_CELL) + 1):
+				for gz in range(floori((w.z - r) / BLOCK_CELL), floori((w.z + r) / BLOCK_CELL) + 1):
+					var k := Vector2i(gx, gz)
+					if not _block_grid.has(k):
+						_block_grid[k] = []
+					_block_grid[k].append(obb)
+					cells.append(k)
+			entries.append([obb, cells])
+	if not entries.is_empty():
+		_block_of[s.id] = entries
+
+
+## Takes a structure's footprints out of the fine grid.
+func _block_forget(sid: int) -> void:
+	if _block_dirty:
+		return
+	for e: Array in _block_of.get(sid, []):
+		for k: Vector2i in e[1]:
+			var list: Array = _block_grid.get(k, [])
+			list.erase(e[0])
+			if list.is_empty():
+				_block_grid.erase(k)
+	_block_of.erase(sid)
+
+
+## The structure was added or changed: its footprints are replaced in the fine grid (nothing to do while the grid is still
+## to be built in full).
+func _block_update(s: StructureState) -> void:
+	if _block_dirty:
+		return
+	_block_forget(s.id)
+	_block_add(s)
+
+
+## True when any blocking footprint touches rect (XZ): a route planner then skips the per-cell footprint tests of its whole grid.
+func blocks_in_rect(rect: Rect2) -> bool:
+	if _block_dirty:
+		_rebuild_block_grid()
+	for gx in range(floori(rect.position.x / BLOCK_CELL), floori(rect.end.x / BLOCK_CELL) + 1):
+		for gz in range(floori(rect.position.y / BLOCK_CELL), floori(rect.end.y / BLOCK_CELL) + 1):
+			if _block_grid.has(Vector2i(gx, gz)):
+				return true
+	return false
+
+
+## The highest water surface that can lie in rect (XZ): water_level or the top of the water triangles of the cells it touches.
+## Ground more than a metre above it is dry, which is all a planner needs to skip the exact test.
+func water_top_in_rect(rect: Rect2) -> float:
+	var top := water_level
+	for gx in range(floori(rect.position.x / WATER_CELL), floori(rect.end.x / WATER_CELL) + 1):
+		for gz in range(floori(rect.position.y / WATER_CELL), floori(rect.end.y / WATER_CELL) + 1):
+			for tri: Array in _water.get(Vector2i(gx, gz), []):
+				top = maxf(top, maxf(tri[0].y, maxf(tri[1].y, tri[2].y)))
+	return top

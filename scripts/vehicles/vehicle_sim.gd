@@ -36,7 +36,7 @@ var ticks := 0
 var tick_usec := 0
 ## Orders given / failed / arrived (statistics for tests and the report).
 var stats := {"ordered": 0, "arrived": 0, "failed": 0, "recovered": 0, "replanned": 0,
-	"bypass_attempted": 0, "bypassed": 0}
+	"bypass_attempted": 0, "bypassed": 0, "bridge_holds": 0, "bridge_replans": 0, "bridge_blocked": 0, "bridge_stops": 0}
 ## Last obstacle-scan result per vehicle id: free distance ahead along the route (m).
 var _gap := {}
 ## What the last gap came from per vehicle id: "structure" or "vehicle" (a convoy member goes round a structure, never round the
@@ -47,6 +47,11 @@ var _bypass_retry := {}
 ## Vehicles currently following their route in reverse (see _follow).
 var _rev_mode := {}
 var _on_road := {}
+## NAVIGATION N1-C1: vehicles whose route runs over the deck of a closed or disabled bridge they have not entered:
+## unit id -> {k: route index of the first point on the deck, bridge: its id}. They brake to a stop before the deck while
+## `_replan_queue` (one search per tick) finds another way; a vehicle that is on the deck finishes its crossing instead.
+var _closed_stop := {}
+var _replan_queue: Array[int] = []
 
 
 func _init(p_sim: WorldSim) -> void:
@@ -56,6 +61,7 @@ func _init(p_sim: WorldSim) -> void:
 	sim.state.unit_added.connect(_on_added)
 	sim.state.unit_removed.connect(_on_removed)
 	sim.state.restored.connect(refresh)
+	sim.state.roads.bridge_changed.connect(_on_bridge_changed)
 
 
 func setup(routes: StrategicRoutes) -> void:
@@ -68,9 +74,12 @@ func refresh() -> void:
 		if u.kind == UnitState.Kind.VEHICLE and u.veh:
 			ids.append(u.id)
 	ids.sort()
+	_closed_stop.clear()
+	_replan_queue.clear()
 	for u: UnitState in sim.state.units.values():
 		if u.kind == UnitState.Kind.VEHICLE and u.veh:
 			prepare_route(u.veh)
+			_scan_closed(u)
 
 
 func _on_added(u: UnitState) -> void:
@@ -85,6 +94,8 @@ func _on_removed(id: int) -> void:
 	_gap_kind.erase(id)
 	_bypass_retry.erase(id)
 	_rev_mode.erase(id)
+	_closed_stop.erase(id)
+	_replan_queue.erase(id)
 
 
 # --- Orders ---------------------------------------------------------------------------------
@@ -229,6 +240,8 @@ func _apply_route(u: UnitState, res: Dictionary) -> void:
 	prepare_route(v)
 	v._progress_ref = u.position
 	v._progress_t = 0.0
+	_closed_stop.erase(u.id)
+	_scan_closed(u)
 
 
 ## Stops the vehicle and forgets its order and route.
@@ -323,6 +336,77 @@ func release_control(id: int, resume := true) -> void:
 		_clear_order(u, VehicleState.Status.PARKED)
 
 
+# --- Bridges (NAVIGATION N1-C1) --------------------------------------------------------------
+
+## A bridge changed state. Closing: every driving vehicle whose route runs over its deck, and which is not on it, is told to stop
+## short of the deck and queued for a new route. Opening: vehicles that were holding go on when their route is clean again.
+func _on_bridge_changed(b: RoadNetwork.Bridge) -> void:
+	if b.is_open():
+		for id in _closed_stop.keys():
+			var u: UnitState = sim.state.units.get(id)
+			if u == null or u.veh == null or not _scan_closed(u, false):
+				_closed_stop.erase(id)
+				_replan_queue.erase(id)
+		return
+	for id in ids:
+		var u: UnitState = sim.state.units.get(id)
+		if u != null and u.alive and u.veh != null and u.veh.route.size() >= 2 and u.order == UnitState.Order.MOVE and not u.player_controlled:
+			_scan_closed(u)
+
+
+## True (and the stop recorded) when the rest of u's route runs over a closed or disabled deck the vehicle is not on.
+func _scan_closed(u: UnitState, queue := true) -> bool:
+	_closed_stop.erase(u.id)
+	var net := sim.state.roads
+	var v := u.veh
+	if v == null or net.blocked_bridge_count() == 0 or v.route.size() < 2:
+		return false
+	var d := v.def()
+	var on := net.blocking_bridge_at(u.position, d.length * 0.5 + 1.0)
+	var hit := net.blocked_on_route(v.route, maxi(v.route_i - 1, 0), on)
+	if hit.is_empty():
+		return false
+	var hb: RoadNetwork.Bridge = hit.bridge
+	_closed_stop[u.id] = {"k": int(hit.index), "bridge": hb.id}
+	if queue and not _replan_queue.has(u.id):
+		_replan_queue.append(u.id)
+		stats.bridge_holds += 1
+		_event(u, "stops before %s (%s)" % [hb.name, hb.state_name()])
+	return true
+
+
+## One new route per tick for the vehicles that stopped short of a closed bridge (a search can cost 100 ms or more; the queue keeps
+## a burst of them from landing in one frame). A vehicle whose order, route or bridge changed meanwhile is simply skipped.
+func _process_replans() -> void:
+	while not _replan_queue.is_empty():
+		var id: int = _replan_queue.pop_front()
+		var u: UnitState = sim.state.units.get(id)
+		if u == null or not u.alive or u.veh == null or u.order != UnitState.Order.MOVE or u.player_controlled:
+			_closed_stop.erase(id)
+			continue
+		if not _closed_stop.has(id) or not _scan_closed(u, false):
+			continue  # reopened, or already past the deck
+		var v := u.veh
+		var d := v.def()
+		_collect_parked(u)
+		var res := router.plan(u.position, u.order_target, d)
+		if res.ok:
+			var need: float = res.length_m / 1000.0 * d.fuel_per_km * 1.05
+			if v.fuel >= need:
+				_apply_route(u, res)
+				v.reason = ""
+				v.replans = 0
+				stats.bridge_replans += 1
+				_event(u, "new route round the closed bridge (%.1f km)" % (float(res.length_m) / 1000.0))
+				return
+			res = {"ok": false, "reason": "Insufficient fuel: the other route needs %d l, the tank has %d l" % [ceili(need), roundi(v.fuel)]}
+		_closed_stop.erase(id)
+		stats.bridge_blocked += 1
+		leave_convoy_of(u)
+		_fail(u, "Path blocked: " + String(res.reason), true)
+		return
+
+
 # --- Route preparation ------------------------------------------------------------------------
 
 ## Cumulative length and the speed profile of the route: ceilings per point, the speed a
@@ -373,6 +457,7 @@ func update(dt: float) -> void:
 	var t0 := Time.get_ticks_usec()
 	ticks += 1
 	convoy.update(dt)
+	_process_replans()
 	for id in ids:
 		var u: UnitState = sim.state.units.get(id)
 		if u and u.veh:
@@ -520,6 +605,17 @@ func _follow(u: UnitState, v: VehicleState, d: VehicleDefs.Def, dt: float) -> Di
 		_rev_mode.erase(u.id)
 	# Obstacles ahead along the route and the lead vehicle.
 	var gap := _gap_ahead(u, v, d, i)
+	var bridge_hold := false
+	if not _closed_stop.is_empty() and _closed_stop.has(u.id):
+		var cs: Dictionary = _closed_stop[u.id]
+		var k: int = cs.k
+		if k >= n or sim.state.roads.blocking_bridge_at(u.position, d.length * 0.5 + 0.5) != null:
+			_closed_stop.erase(u.id)  # already on the deck: it finishes the crossing
+		else:
+			# Stop short of the deck: the front bumper ends 4 m from its first point.
+			var gap_b: float = v.route_s[k] - v.route_s[i] - (d.length * 0.5 + 4.0)
+			gap = minf(gap, gap_b + 2.5)
+			bridge_hold = true
 	if v.convoy_id >= 0:
 		speed = minf(speed, convoy.speed_limit(u, v))
 	if gap < INF:
@@ -531,7 +627,7 @@ func _follow(u: UnitState, v: VehicleState, d: VehicleDefs.Def, dt: float) -> Di
 		speed = minf(speed, pa)
 	if speed < 0.3 and (gap < 12.0 or v.probe_ahead < 12.0):
 		v.status = VehicleState.Status.WAITING
-		v.reason = "Waiting: obstacle ahead"
+		v.reason = "Waiting: obstacle ahead" if not bridge_hold else "Waiting: bridge closed, finding another route"
 	else:
 		v.status = VehicleState.Status.DRIVING
 		v.reason = ""
@@ -634,6 +730,19 @@ func _integrate(u: UnitState, v: VehicleState, d: VehicleDefs.Def, dt: float) ->
 	if not blocked and (u.player_controlled or v.speed < 0.0) and absf(v.speed) > 0.01 and ids.size() > 1:
 		if not _hits_vehicle(u, d, u.position, u.yaw) and _hits_vehicle(u, d, np, new_yaw):
 			blocked = true
+	# NAVIGATION N1-C1: nothing new enters the deck of a closed or disabled bridge, whoever drives (the route guard stops AI
+	# vehicles earlier; this is the hard limit for the player's vehicle and for any route that was missed).
+	if not blocked and absf(v.speed) > 0.01 and sim.state.roads.blocked_bridge_count() > 0:
+		var sgn := 1.0 if moving_fwd else -1.0
+		var cur_end := u.position + Vector3(-sin(u.yaw), 0.0, -cos(u.yaw)) * (d.length * 0.5 * sgn)
+		var new_end := np + fwd * (d.length * 0.5 * sgn)
+		var nb := sim.state.roads.blocking_bridge_at(new_end)
+		if nb != null and sim.state.roads.blocking_bridge_at(cur_end) != nb:
+			blocked = true
+			_block_cause[u.id] = "bridge"
+			stats.bridge_stops += 1
+			if u.player_controlled:
+				v.reason = "%s is %s" % [nb.name, nb.state_name()]
 	if not blocked and sim.structures:
 		var front := np + fwd * (d.length * 0.5 * (1.0 if moving_fwd else -1.0))
 		if is_nan(sim.state.roads.deck_height(front)) and sim.structures.is_wet(front.x, front.z):
@@ -642,7 +751,7 @@ func _integrate(u: UnitState, v: VehicleState, d: VehicleDefs.Def, dt: float) ->
 	if blocked:
 		v.speed = 0.0
 		u.velocity = Vector3.ZERO
-		if u.player_controlled:
+		if u.player_controlled and _block_cause.get(u.id, "") != "bridge":
 			v.reason = "Blocked"
 		return
 	var moved := step.length()
@@ -768,6 +877,11 @@ func _gap_ahead(u: UnitState, v: VehicleState, d: VehicleDefs.Def, i: int) -> fl
 
 
 func _check_stuck(u: UnitState, v: VehicleState, d: VehicleDefs.Def, target_speed: float, dt: float) -> void:
+	# N1-C1: holding short of a closed bridge while another route is found is not a stuck vehicle.
+	if _closed_stop.has(u.id):
+		v._progress_t = 0.0
+		v._progress_ref = u.position
+		return
 	# Only counts while the vehicle is supposed to be moving and nothing legitimate holds it
 	# (a vehicle waiting behind another is not stuck; a long wait still ends in a report).
 	if absf(target_speed) < 0.8 and v.status != VehicleState.Status.WAITING:
@@ -896,12 +1010,14 @@ func _resample(pts: PackedVector3Array, step: float) -> PackedVector3Array:
 	return out
 
 
-func _fail(u: UnitState, reason: String) -> void:
+## keep_speed: the vehicle brakes to a stop instead of halting on the spot (a vehicle at 60 km/h told that its way is closed).
+func _fail(u: UnitState, reason: String, keep_speed := false) -> void:
 	var v := u.veh
 	_clear_order(u, VehicleState.Status.BLOCKED)
 	u.move_state = UnitState.MoveState.BLOCKED
 	v.reason = reason
-	v.speed = 0.0
+	if not keep_speed:
+		v.speed = 0.0
 	stats.failed += 1
 	_event(u, reason)
 	sim.state.order_changed.emit(u)

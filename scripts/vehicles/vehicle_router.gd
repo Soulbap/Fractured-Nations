@@ -104,6 +104,14 @@ var _soft := {}
 ## Whole plans by 1 m start / end, vehicle type and the parked vehicles; cross-country legs by 0.5 m ends (not near parked vehicles).
 var _plan_cache := {}
 var _leg_cache := {}
+## NAVIGATION N1-C1: the 64 m cells every cached plan / leg touches (key -> {Vector2i: true}), so a structure change drops only
+## the entries near it and a cached route that is still valid stays cached.
+var _plan_cells := {}
+var _leg_cells := {}
+const CACHE_CELL_M := 64.0
+## Margin round a changed structure inside which cached routes are dropped (vehicle footprint, clearance tiers, bypass margins).
+const CACHE_PAD_M := 24.0
+var cache_stats := {"structure_events": 0, "plans_dropped": 0, "plans_kept": 0, "legs_dropped": 0, "legs_kept": 0}
 var cache_hits := 0
 var leg_cache_hits := 0
 var leg_cache_misses := 0
@@ -123,6 +131,17 @@ var _extra := 0.0
 var _piece_limit := 99
 var debug_legs := false
 var last_leg_debug := ""
+## NAVIGATION N1-C1: graph vertex id -> RoadNetwork.Bridge for the interior vertices of a bridge span, and bridge id -> those
+## vertices. A closed or disabled bridge has them switched off in `astar` (the only copy of the state is RoadNetwork.Bridge.state).
+var _node_bridge := {}
+var _bridge_nodes := {}
+## Counters of what bridge events dropped from the caches (tests and the report).
+var bridge_stats := {"events": 0, "plans_dropped": 0, "legs_dropped": 0}
+## Set by line_ok when the line it accepted ran over a bridge deck (such legs are dropped when a bridge closes).
+var _deck_hit := false
+## The closed bridge the vehicle being planned stands on (null: none). Its deck stays usable for the plan, so a vehicle on a
+## closed bridge can leave it; no other closed deck is.
+var _start_bridge: RoadNetwork.Bridge = null
 
 
 func setup(p_net: RoadNetwork, p_routes: StrategicRoutes, p_terrain: Terrain3D, p_structures: StructureManager) -> void:
@@ -132,6 +151,8 @@ func setup(p_net: RoadNetwork, p_routes: StrategicRoutes, p_terrain: Terrain3D, 
 	structures = p_structures
 	if not net.changed.is_connected(_on_changed):
 		net.changed.connect(_on_changed)
+	if not net.bridge_changed.is_connected(_on_bridge_changed):
+		net.bridge_changed.connect(_on_bridge_changed)
 	if structures and not structures.area_changed.is_connected(_on_structures_changed):
 		structures.area_changed.connect(_on_structures_changed)
 
@@ -140,17 +161,170 @@ func _on_changed(_rect: Rect2) -> void:
 	_dirty = true
 	last_rebuild_reason = "road network changed"
 	_fail_cache.clear()
+	_clear_route_caches()
+
+
+func _clear_route_caches() -> void:
 	_plan_cache.clear()
 	_leg_cache.clear()
+	_plan_cells.clear()
+	_leg_cells.clear()
+
+
+## Removes the entries of `cache` whose cells touch `area` (and entries with no recorded cells); returns how many went.
+func _drop_in(cache: Dictionary, cells_of: Dictionary, area: Rect2) -> int:
+	var covered := {}
+	for gx in range(floori(area.position.x / CACHE_CELL_M), floori(area.end.x / CACHE_CELL_M) + 1):
+		for gz in range(floori(area.position.y / CACHE_CELL_M), floori(area.end.y / CACHE_CELL_M) + 1):
+			covered[Vector2i(gx, gz)] = true
+	var dropped := 0
+	for key in cache.keys():
+		var cs: Dictionary = cells_of.get(key, {})
+		var hit := cs.is_empty()
+		if not hit:
+			for c: Vector2i in covered:
+				if cs.has(c):
+					hit = true
+					break
+		if hit:
+			cache.erase(key)
+			cells_of.erase(key)
+			dropped += 1
+	return dropped
+
+
+## The 64 m cells a polyline passes through (segments sampled every half cell).
+static func _cells_of_points(pts: PackedVector3Array) -> Dictionary:
+	var out := {}
+	for i in pts.size():
+		var p := pts[i]
+		out[Vector2i(floori(p.x / CACHE_CELL_M), floori(p.z / CACHE_CELL_M))] = true
+		if i > 0:
+			var a := pts[i - 1]
+			var d := Vector2(p.x - a.x, p.z - a.z).length()
+			var n := ceili(d / (CACHE_CELL_M * 0.5))
+			for k in range(1, n):
+				var q := a.lerp(p, float(k) / n)
+				out[Vector2i(floori(q.x / CACHE_CELL_M), floori(q.z / CACHE_CELL_M))] = true
+	return out
+
+
+## The cells of the area a failed leg a -> b searched (its local grid: the box of both ends and the search margin).
+static func _cells_of_search(a: Vector3, b: Vector3) -> Dictionary:
+	var margin := maxf(45.0, Vector2(b.x - a.x, b.z - a.z).length() * 0.35) + CACHE_CELL_M
+	var lo := Vector2(minf(a.x, b.x), minf(a.z, b.z)) - Vector2.ONE * margin
+	var hi := Vector2(maxf(a.x, b.x), maxf(a.z, b.z)) + Vector2.ONE * margin
+	var out := {}
+	for gx in range(floori(lo.x / CACHE_CELL_M), floori(hi.x / CACHE_CELL_M) + 1):
+		for gz in range(floori(lo.y / CACHE_CELL_M), floori(hi.y / CACHE_CELL_M) + 1):
+			out[Vector2i(gx, gz)] = true
+	return out
+
+
+## NAVIGATION N1-C1: a bridge was opened, closed or disabled. The vertices of its span are switched off or on in the road graph (no
+## rebuild). Closing can only invalidate what used the bridge: cached plans that crossed its deck and cross-country legs that ran
+## over it; failed plans stay failed. Opening can make shorter routes possible, so cached plans and failures are dropped.
+func _on_bridge_changed(b: RoadNetwork.Bridge) -> void:
+	bridge_stats.events += 1
+	last_rebuild_reason = "bridge %s %s" % [b.id, b.state_name()]
+	if built:
+		_apply_bridge_nodes(b)
+	if b.is_open():
+		_fail_cache.clear()
+		_clear_route_caches()
+		return
+	for key in _plan_cache.keys():
+		if (_plan_cache[key].get("bridge_ids", []) as Array).has(b.id):
+			_plan_cache.erase(key)
+			_plan_cells.erase(key)
+			bridge_stats.plans_dropped += 1
+	for key in _leg_cache.keys():
+		if bool(_leg_cache[key].get("deck", false)):
+			_leg_cache.erase(key)
+			_leg_cells.erase(key)
+			bridge_stats.legs_dropped += 1
+
+
+func _apply_bridge_nodes(b: RoadNetwork.Bridge) -> void:
+	for id: int in _bridge_nodes.get(b.id, PackedInt32Array()):
+		if astar.has_point(id):
+			astar.set_point_disabled(id, not b.is_open())
+
+
+## Maps the interior vertices of every bridge span and applies the bridges' current states (called after the graph was built).
+func _map_bridges() -> void:
+	_node_bridge.clear()
+	_bridge_nodes.clear()
+	for b: RoadNetwork.Bridge in net.bridges:
+		var ids: PackedInt32Array = _ids_of.get(b.road_key, PackedInt32Array())
+		if ids.size() <= b.last:
+			continue
+		var lo := b.first + 1 if b.last - b.first >= 2 else b.first
+		var hi := b.last - 1 if b.last - b.first >= 2 else b.last
+		var nodes := PackedInt32Array()
+		for k in range(lo, hi + 1):
+			nodes.append(ids[k])
+			_node_bridge[ids[k]] = b
+		_bridge_nodes[b.id] = nodes
+		_apply_bridge_nodes(b)
+
+
+## The first bridge on a road path that a vehicle of this width does not fit on, null when it fits all.
+func _bridge_unfit(ids: PackedInt64Array, def: VehicleDefs.Def) -> RoadNetwork.Bridge:
+	for id in ids:
+		var b: RoadNetwork.Bridge = _node_bridge.get(id)
+		if b != null and not b.admits(def.width):
+			return b
+	return null
+
+
+## Why a road route fails when the cause is a closed bridge: the road graph is searched once more with the blocked bridges
+## switched on between the nearest road vertices of both ends. {} when the closed bridges are not the reason.
+func _bridge_cause(a_list: Array, b_list: Array) -> Dictionary:
+	if net.blocked_bridge_count() == 0:
+		return {}
+	for b: RoadNetwork.Bridge in net.blocked_bridges():
+		for id: int in _bridge_nodes.get(b.id, PackedInt32Array()):
+			astar.set_point_disabled(id, false)
+	var found := {}
+	for a: Dictionary in a_list.slice(0, 3):
+		for b: Dictionary in b_list.slice(0, 3):
+			var ids := astar.get_id_path(a.id, b.id)
+			if ids.is_empty():
+				continue
+			var names: Array = []
+			var bridge_ids: Array = []
+			for id in ids:
+				var br: RoadNetwork.Bridge = _node_bridge.get(id)
+				if br != null and not br.is_open() and not bridge_ids.has(br.id):
+					bridge_ids.append(br.id)
+					names.append("%s (%s)" % [br.name, br.state_name()])
+			if not bridge_ids.is_empty():
+				found = {"names": names, "ids": bridge_ids}
+				break
+		if not found.is_empty():
+			break
+	for b: RoadNetwork.Bridge in net.blocked_bridges():
+		for id: int in _bridge_nodes.get(b.id, PackedInt32Array()):
+			astar.set_point_disabled(id, true)
+	return found
 
 
 ## Structures were built or removed: road vertices disabled because a structure stood on them
 ## are tried again.
-func _on_structures_changed(_rect: Rect2) -> void:
+func _on_structures_changed(rect: Rect2) -> void:
 	last_rebuild_reason = "structure area changed"
+	# Failed plans may succeed now (a removed wall): they all go. Plans and legs are dropped only where they pass the changed
+	# area - a route elsewhere is exactly as valid as before. (N1-B dropped every cache, and the next plan paid for all of it.)
 	_fail_cache.clear()
-	_plan_cache.clear()
-	_leg_cache.clear()
+	var area := rect.grow(CACHE_PAD_M)
+	var dp := _drop_in(_plan_cache, _plan_cells, area)
+	var dl := _drop_in(_leg_cache, _leg_cells, area)
+	cache_stats.structure_events += 1
+	cache_stats.plans_dropped += dp
+	cache_stats.plans_kept += _plan_cache.size()
+	cache_stats.legs_dropped += dl
+	cache_stats.legs_kept += _leg_cache.size()
 	for id in _disabled:
 		if astar.has_point(id):
 			astar.set_point_disabled(id, false)
@@ -178,6 +352,7 @@ func ensure_built() -> void:
 			_repair_gap_ends(r)
 		_compute_components()
 		_find_soft_links()
+		_map_bridges()
 		built = true
 		_dirty = false
 		build_ms = (Time.get_ticks_usec() - t0) / 1000.0
@@ -496,8 +671,15 @@ func main_network_distance(p: Vector3, max_m: float) -> float:
 ## {ok, dist, node, pos} or {ok: false, reason}.
 func access_to_road(p: Vector3, def: VehicleDefs.Def) -> Dictionary:
 	ensure_built()
-	var free := func(_id: int, pos: Vector3) -> bool:
-		return structures == null or not structures.blocks_point(Vector2(pos.x, pos.z), road_clear_r(def))
+	_start_bridge = net.blocking_bridge_at(p, 3.0)
+	var res := _access_to_road(p, def)
+	_start_bridge = null
+	return res
+
+
+func _access_to_road(p: Vector3, def: VehicleDefs.Def) -> Dictionary:
+	var free := func(id: int, pos: Vector3) -> bool:
+		return not astar.is_point_disabled(id) and (structures == null or not structures.blocks_point(Vector2(pos.x, pos.z), road_clear_r(def)))
 	var cands := _with_main(_enter_candidates(p, free), p, free)
 	if cands.is_empty():
 		return {"ok": false, "reason": "no road within %d m" % roundi(SNAP_RADIUS)}
@@ -535,12 +717,15 @@ func plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 		_count_plan(hit, from, to, def)
 		return hit
 	var res := _plan(from, to, def)
+	_start_bridge = null
 	if not res.ok:
 		_fail_cache[key] = {"t": now_ms, "res": res}
 	else:
 		if _plan_cache.size() >= CACHE_MAX:
 			_plan_cache.clear()
+			_plan_cells.clear()
 		_plan_cache[ckey] = res.duplicate()
+		_plan_cells[ckey] = _cells_of_points(res.points)
 	res["ms"] = (Time.get_ticks_usec() - t0) / 1000.0
 	_count_plan(res, from, to, def)
 	return res
@@ -565,6 +750,10 @@ func _count_plan(res: Dictionary, from: Vector3, to: Vector3, def: VehicleDefs.D
 
 
 func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
+	_start_bridge = net.blocking_bridge_at(from, 3.0)
+	var dest_bridge := net.blocking_bridge_at(to)
+	if dest_bridge != null and dest_bridge != _start_bridge:
+		return _fail("The destination is on %s (%s)" % [dest_bridge.name, dest_bridge.state_name()])
 	if structures and structures.blocks_point(Vector2(to.x, to.z), def.circle_r):
 		return _fail("The destination is inside a structure")
 	if _wet(to):
@@ -576,8 +765,8 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 	# Road vertices inside a structure (a base's perimeter or buildings stand on the road that leads into it) cannot be entered
 	# from, or left to: the nearest *free* vertices are the candidates, the cross-country leg (which knows the footprints and
 	# finds a gate) does the rest.
-	var free := func(_id: int, pos: Vector3) -> bool:
-		return structures == null or not structures.blocks_point(Vector2(pos.x, pos.z), road_clear_r(def))
+	var free := func(id: int, pos: Vector3) -> bool:
+		return not astar.is_point_disabled(id) and (structures == null or not structures.blocks_point(Vector2(pos.x, pos.z), road_clear_r(def)))
 	var tc := Time.get_ticks_usec()
 	var a_list := _with_main(_enter_candidates(from, free), from, free)
 	var b_list := _with_main(_enter_candidates(to, free), to, free)
@@ -587,6 +776,11 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 	var bad_a := {}  # vertices whose cross-country leg already failed: the other combos using them are skipped
 	var bad_b := {}
 	var legs_tried := 0
+	var narrow_bridges := false
+	for br: RoadNetwork.Bridge in net.bridges:
+		if not br.admits(def.width):
+			narrow_bridges = true
+			break
 	# NAVIGATION N1-B: the pure road searches come first and cheap (one A* per end pair, the nearest candidates of each end;
 	# the rest only when those found no usable route), and the expensive part - which stretches a structure blocks and the
 	# cross-country legs to the road - is only evaluated for the cheapest few combinations, not for all of them.
@@ -611,6 +805,10 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 						continue
 					ids = sp.ids
 					soft_k = sp.k
+				# N1-C1: a bridge deck narrower than the vehicle (plus DECK_CLEARANCE_M) cannot be used; the combo is dropped.
+				if narrow_bridges and _bridge_unfit(ids, def) != null:
+					why.append("bridge too narrow for %s" % def.id)
+					continue
 				combos.append({"cost": _path_cost(ids) + (a.dist + b.dist) * def.offroad_factor, "ids": ids, "a": a, "b": b, "soft_k": soft_k})
 		combos.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return x.cost < y.cost)
 		why.append("stage %d combos %d" % [stage, combos.size()])
@@ -666,6 +864,11 @@ func _plan(from: Vector3, to: Vector3, def: VehicleDefs.Def) -> Dictionary:
 	why.append("direct %s" % direct.ok)
 	if cands.is_empty():
 		var f := _fail("No drivable route (water, cliffs or structures in the way)")
+		# N1-C1: a closed bridge is named when the road graph connects both ends through it.
+		var cause := _bridge_cause(a_list, b_list)
+		if not cause.is_empty():
+			f["reason"] = "No drivable route: %s" % ", ".join(cause.names)
+			f["blocked_by_bridges"] = cause.ids
 		f["why"] = why
 		return f
 	cands.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return x.cost < y.cost)
@@ -730,9 +933,11 @@ func _road_gaps(ids: PackedInt64Array, def: VehicleDefs.Def, soft_k := -1) -> Di
 
 ## A cross-country leg a -> b for a vehicle that has to get round something on its way (VehicleSim bypass): {ok, pts}.
 func bypass_leg(a: Vector3, b: Vector3, def: VehicleDefs.Def, clearance := BYPASS_CLEARANCE_M) -> Dictionary:
+	_start_bridge = net.blocking_bridge_at(a, 3.0)
 	_extra = clearance
 	var r := _leg(a, b, def)
 	_extra = 0.0
+	_start_bridge = null
 	return r
 
 
@@ -840,6 +1045,7 @@ func _assemble(cand: Dictionary, from: Vector3, to: Vector3, def: VehicleDefs.De
 	pts[pts.size() - 1] = to
 	var bridges := 0
 	var on_deck := false
+	var bridge_ids: Array = []
 	for i in pts.size():
 		var h: float = terrain.data.get_height(pts[i]) if terrain else pts[i].y
 		var deck := net.deck_height(pts[i])
@@ -848,12 +1054,15 @@ func _assemble(cand: Dictionary, from: Vector3, to: Vector3, def: VehicleDefs.De
 			if not on_deck:
 				bridges += 1
 			on_deck = true
+			var br := net.bridge_at(pts[i])
+			if br != null and not bridge_ids.has(br.id):
+				bridge_ids.append(br.id)
 		else:
 			on_deck = false
 		if not is_nan(h):
 			pts[i].y = h
 	return {"ok": true, "reason": "", "points": pts, "caps": caps, "length_m": _length(pts), "road_m": road_m,
-		"offroad_m": off_m, "bridges": bridges, "roads": cand.names, "cost": cand.cost}
+		"offroad_m": off_m, "bridges": bridges, "bridge_ids": bridge_ids, "roads": cand.names, "cost": cand.cost}
 
 
 ## Cross-country control points; a long straight piece gets a point every LEG_DENSIFY_M, so the Catmull-Rom spline of the whole
@@ -884,7 +1093,7 @@ func _height(x: float, z: float) -> float:
 
 
 ## True when a vehicle can drive the straight line a -> b: slopes within the vehicle's grade,
-## no water, no structure within its footprint. Bridge decks count as ground.
+## no water, no structure within its footprint. Bridge decks count as ground (open bridges only).
 func line_ok(a: Vector3, b: Vector3, def: VehicleDefs.Def, margin := 0.0, trunks := true) -> bool:
 	var d := Vector2(b.x - a.x, b.z - a.z).length()
 	# Samples 1.25 m apart (was 2.5): a wall corner passed at 1.9 m was missed between two samples.
@@ -898,6 +1107,10 @@ func line_ok(a: Vector3, b: Vector3, def: VehicleDefs.Def, margin := 0.0, trunks
 			return false
 		if not is_nan(net.deck_height(p)):
 			prev_h = NAN
+			_deck_hit = true
+			# N1-C1: the deck of a closed or disabled bridge is not ground for a new route.
+			if not net.deck_open(p) and net.blocking_bridge_at(p) != _start_bridge:
+				return false
 			# A bridge deck is ground (no slope or water test) but a structure standing on it still blocks the way.
 			if structures and structures.blocks_point(Vector2(p.x, p.z), def.circle_r + _extra + margin):
 				return false
@@ -932,17 +1145,24 @@ func _leg(a: Vector3, b: Vector3, def: VehicleDefs.Def) -> Dictionary:
 	var t0 := Time.get_ticks_usec()
 	prof.leg_calls += 1
 	var lk := ""
-	if not _parked_near(a, b):
+	# A leg planned from a closed deck is not cached: its ends are special and the same ends elsewhere are not.
+	if _start_bridge == null and not _parked_near(a, b):
 		lk = "%d,%d>%d,%d:%s:%d" % [roundi(a.x * 2.0), roundi(a.z * 2.0), roundi(b.x * 2.0), roundi(b.z * 2.0), def.id, roundi(_extra * 10.0)]
 		if _leg_cache.has(lk):
 			leg_cache_hits += 1
 			return _leg_cache[lk]
 		leg_cache_misses += 1
+	_deck_hit = false
 	var res := _leg_inner(a, b, def, d)
+	if _deck_hit:
+		res = res.duplicate()
+		res["deck"] = true
 	if lk != "":
 		if _leg_cache.size() >= CACHE_MAX * 4:
 			_leg_cache.clear()
+			_leg_cells.clear()
 		_leg_cache[lk] = res
+		_leg_cells[lk] = _cells_of_points(res.pts) if res.ok else _cells_of_search(a, b)
 	prof.leg_ms += (Time.get_ticks_usec() - t0) / 1000.0
 	return res
 
@@ -1048,6 +1268,11 @@ func _local_plan_inner(a: Vector3, b: Vector3, def: VehicleDefs.Def, margin_m :=
 	# the planned line leaves room for the pure-pursuit tracking error (a route 0.3 m past the footprint clipped a corner in
 	# r_exit). The wide grid is searched first and the tight one only when it has no path (a narrow gate).
 	var margin_r := LEG_MARGIN if _extra == 0.0 else 0.0
+	# N1-C1: the per-cell footprint and water tests are skipped for whole grids and cells that cannot be affected: no blocking
+	# footprint within the grid, ground well above any water surface. Same answers, a fraction of the calls.
+	var search_rect := Rect2(lo, hi - lo).grow(8.0)
+	var any_block := structures != null and structures.blocks_in_rect(search_rect)
+	var wet_top: float = (structures.water_top_in_rect(search_rect) + 1.0) if structures != null else -INF
 	for z in nz:
 		for x in nx:
 			var h00 := heights[z * (nx + 1) + x]
@@ -1062,7 +1287,8 @@ func _local_plan_inner(a: Vector3, b: Vector3, def: VehicleDefs.Def, margin_m :=
 				continue
 			var c2 := Vector2(cx, cz)
 			if structures:
-				if structures.is_wet(cx, cz) or structures.blocks_point(c2, r0):
+				var hmin := minf(minf(h00, h10), minf(h01, heights[(z + 1) * (nx + 1) + x + 1]))
+				if ((is_nan(hmin) or hmin <= wet_top) and structures.is_wet(cx, cz)) or (any_block and structures.blocks_point(c2, r0)):
 					tight[i] = 1
 					wide[i] = 1
 					continue
@@ -1070,7 +1296,7 @@ func _local_plan_inner(a: Vector3, b: Vector3, def: VehicleDefs.Def, margin_m :=
 				tight[i] = 1
 				wide[i] = 1
 				continue
-			if margin_r > 0.0 and structures:
+			if margin_r > 0.0 and any_block:
 				if structures.blocks_point(c2, r0 + margin_r):
 					wide[i] = 1
 	# Trunks, rocks and settlement colliders are stamped into the grids: every instance blocks the cells whose centre lies within

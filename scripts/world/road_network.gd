@@ -18,9 +18,19 @@ extends RefCounted
 
 ## Roads were added or removed inside rect (XZ, metres).
 signal changed(rect: Rect2)
+## NAVIGATION N1-C1: the state of a bridge changed (set_bridge_state / load_bridge_states). Navigation owners drop what they derived
+## from it; nothing reads a second copy of the state.
+signal bridge_changed(bridge: Bridge)
 
 ## Spatial index cell (m).
 const GRID := 64.0
+## NAVIGATION N1-C1 bridge states. OPEN: usable. CLOSED: temporarily shut (traffic stops, the bridge can be opened again).
+## DISABLED: out of service. Both are logical states only: the deck stays standing and visible, and a vehicle already on the
+## deck finishes its crossing; nothing new enters (see Bridge.is_open and blocking_bridge_at).
+enum BridgeState { OPEN, CLOSED, DISABLED }
+const BRIDGE_STATE_NAMES: Array[String] = ["open", "closed", "disabled"]
+## A vehicle needs this much deck width beyond its own body (m) to use a bridge.
+const DECK_CLEARANCE_M := 1.0
 ## Travel cost per metre on the strategic grid for the generator's road classes.
 const WORLD_COST := {&"primary": 0.4, &"secondary": 0.42, &"local": 0.45, &"street": 0.45, &"track": 0.5}
 
@@ -49,7 +59,72 @@ class Road:
 		bounds = Rect2(lo, hi - lo).grow(width * 0.5)
 
 
+## One bridge of the world roads: a span of a road.json road ("bridges": [first, last] point indices). Identity is the road's
+## index in roads.json plus the span's index, so it survives save/load, restarts and near/far tiers (the generated world is
+## never regenerated; a regenerated world with other roads is detected on load by the saved bridge centre).
+class Bridge:
+	var id := ""
+	var name := ""
+	var road_key := 0
+	var first := 0
+	var last := 0
+	## Deck width (m): the road's full surface width. No load rating exists in the data, so none is modelled.
+	var width := 0.0
+	var length_m := 0.0
+	var center := Vector3.ZERO
+	## Deck area (XZ), grown by the deck's half width.
+	var bounds := Rect2()
+	var state := RoadNetwork.BridgeState.OPEN
+	var reason := ""
+	## Deck segments [a2: Vector2, b2: Vector2, half width] for the exact membership test.
+	var segs: Array = []
+
+	func is_open() -> bool:
+		return state == RoadNetwork.BridgeState.OPEN
+
+	func state_name() -> String:
+		return RoadNetwork.BRIDGE_STATE_NAMES[state]
+
+	## True when a vehicle of this width fits on the deck.
+	func admits(vehicle_width: float) -> bool:
+		return vehicle_width + RoadNetwork.DECK_CLEARANCE_M <= width
+
+	## True when q (XZ) lies on the deck strip: between the first and last deck point along the road and within half the deck
+	## width (plus pad) of the centre line. Unlike the physical deck test (a capsule that reaches 4.5 m onto the bank at each
+	## end) this has square ends, so a walker at the lip is not yet "on" the deck.
+	func strip_contains(q: Vector2, pad := 0.0) -> bool:
+		var n := segs.size()
+		for i in n:
+			var s: Array = segs[i]
+			var a: Vector2 = s[0]
+			var ab: Vector2 = (s[1] as Vector2) - a
+			var l2 := maxf(ab.length_squared(), 1e-6)
+			var t := (q - a).dot(ab) / l2
+			var lo := -pad / sqrt(l2) if i == 0 else 0.0
+			var hi := 1.0 + pad / sqrt(l2) if i == n - 1 else 1.0
+			if (i == 0 and t < lo) or (i == n - 1 and t > hi):
+				continue
+			t = clampf(t, 0.0, 1.0)
+			if q.distance_to(a + ab * t) <= (s[2] as float) + pad:
+				return true
+		return false
+
+	## Distance (m) from p (XZ) to the deck centre line.
+	func distance_to(q: Vector2) -> float:
+		var best := INF
+		for s: Array in segs:
+			var a: Vector2 = s[0]
+			var ab: Vector2 = (s[1] as Vector2) - a
+			var t := clampf((q - a).dot(ab) / maxf(ab.length_squared(), 1e-6), 0.0, 1.0)
+			best = minf(best, q.distance_to(a + ab * t))
+		return best
+
+
 var world: Array[Road] = []
+## NAVIGATION N1-C1: every bridge of the world roads, id -> Bridge, and the ones that are not open.
+var bridges: Array[Bridge] = []
+var _bridge_by_id := {}
+var _blocking: Array[Bridge] = []
 ## structure id -> Road
 var built := {}
 var construction: ConstructionState
@@ -69,6 +144,9 @@ func load_world(src: String) -> int:
 	_grid.clear()
 	_decks.clear()
 	_deck_grid.clear()
+	bridges.clear()
+	_bridge_by_id.clear()
+	_blocking.clear()
 	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(src + "roads.json"))
 	if data is Dictionary:
 		for i in data.roads.size():
@@ -85,14 +163,28 @@ func load_world(src: String) -> int:
 			road.update_bounds()
 			world.append(road)
 			_index(road)
-			for sp: Array in road.bridges:
+			for si in road.bridges.size():
+				var sp: Array = road.bridges[si]
+				var br := Bridge.new()
+				br.id = "bridge_r%d_s%d" % [i, si]
+				br.name = ("%s bridge" % road.name) if road.bridges.size() == 1 else ("%s bridge %d" % [road.name, si + 1])
+				br.road_key = road.key
+				br.first = int(sp[0])
+				br.last = int(sp[1])
+				br.width = road.width
+				br.center = (road.points[br.first] + road.points[br.last]) * 0.5
+				bridges.append(br)
+				_bridge_by_id[br.id] = br
 				for k in range(int(sp[0]), int(sp[1])):
 					# Road Generator surface 0.2 m above the profile (paved), deck flush else.
 					var lift := 0.2 if r.mesh else 0.05
 					var a := road.points[k] + Vector3.UP * lift
 					var b := road.points[k + 1] + Vector3.UP * lift
 					var bb := Rect2(Vector2(a.x, a.z), Vector2.ZERO).expand(Vector2(b.x, b.z)).grow(road.width * 0.5 + 0.5)
-					var entry := [a, b, road.width * 0.5 + 0.5, bb]
+					var entry := [a, b, road.width * 0.5 + 0.5, bb, br]
+					br.length_m += Vector2(b.x - a.x, b.z - a.z).length()
+					br.segs.append([Vector2(a.x, a.z), Vector2(b.x, b.z), road.width * 0.5 + 0.5])
+					br.bounds = bb if br.segs.size() == 1 else br.bounds.merge(bb)
 					_decks.append(entry)
 					for gx in range(floori(bb.position.x / GRID), floori(bb.end.x / GRID) + 1):
 						for gz in range(floori(bb.position.y / GRID), floori(bb.end.y / GRID) + 1):
@@ -260,6 +352,126 @@ func deck_height(p: Vector3) -> float:
 	return NAN
 
 
+## The bridge whose deck lies under p (XZ), within `pad` metres of the deck edge; null when none. Open or not.
+func bridge_at(p: Vector3, pad := 0.0) -> Bridge:
+	var q := Vector2(p.x, p.z)
+	var gx := floori(p.x / GRID)
+	var gz := floori(p.z / GRID)
+	var reach := 0 if pad <= 0.0 else ceili(pad / GRID)
+	for dx in range(-reach, reach + 1):
+		for dz in range(-reach, reach + 1):
+			for d: Array in _deck_grid.get(Vector2i(gx + dx, gz + dz), []):
+				if pad <= 0.0 and not (d[3] as Rect2).has_point(q):
+					continue
+				var a: Vector3 = d[0]
+				var b: Vector3 = d[1]
+				var a2 := Vector2(a.x, a.z)
+				var ab := Vector2(b.x, b.z) - a2
+				var t := clampf((q - a2).dot(ab) / maxf(ab.length_squared(), 1e-6), 0.0, 1.0)
+				if q.distance_to(a2 + ab * t) <= d[2] + pad:
+					return d[4]
+	return null
+
+
+## The closed or disabled bridge whose deck lies under p (within pad); null when p is on no blocked deck. This is the one test
+## navigation uses to refuse a deck; `deck_height` keeps answering for the physical deck (a vehicle on it still has ground).
+func blocking_bridge_at(p: Vector3, pad := 0.0) -> Bridge:
+	if _blocking.is_empty():
+		return null
+	var q := Vector2(p.x, p.z)
+	for b: Bridge in _blocking:
+		if not b.bounds.grow(pad).has_point(q):
+			continue
+		if b.strip_contains(q, pad):
+			return b
+	return null
+
+
+## False when p lies on the deck of a closed or disabled bridge.
+func deck_open(p: Vector3) -> bool:
+	return _blocking.is_empty() or blocking_bridge_at(p) == null
+
+
+func blocked_bridge_count() -> int:
+	return _blocking.size()
+
+
+func blocked_bridges() -> Array[Bridge]:
+	return _blocking
+
+
+func get_bridge(id: String) -> Bridge:
+	return _bridge_by_id.get(id)
+
+
+## Bridges whose deck area touches rect.
+func bridges_in(rect: Rect2) -> Array[Bridge]:
+	var out: Array[Bridge] = []
+	for b: Bridge in bridges:
+		if b.bounds.intersects(rect):
+			out.append(b)
+	return out
+
+
+## The one writer of a bridge's state. Returns false for an unknown bridge or no change. `why` is shown with the state.
+func set_bridge_state(id: String, state: BridgeState, why := "") -> bool:
+	var b: Bridge = _bridge_by_id.get(id)
+	if b == null or (b.state == state and b.reason == why):
+		return false
+	var was_open := b.is_open()
+	b.state = state
+	b.reason = why if state != BridgeState.OPEN else ""
+	if b.is_open():
+		_blocking.erase(b)
+	elif was_open:
+		_blocking.append(b)
+	bridge_changed.emit(b)
+	return true
+
+
+## Saved form: only the bridges that are not open ({id: {"state", "why", "name", "c": [x, z]}}). The centre guards against a
+## regenerated world whose roads (and so bridge ids) differ.
+func bridge_states() -> Dictionary:
+	var out := {}
+	for b: Bridge in _blocking:
+		out[b.id] = {"state": int(b.state), "why": b.reason, "name": b.name, "c": [snappedf(b.center.x, 0.1), snappedf(b.center.z, 0.1)]}
+	return out
+
+
+## Applies saved states: the bridges in `d` take their state, all others are open. Returns the number of bridges whose state
+## changed. A saved entry whose id is unknown or whose centre moved more than 5 m is ignored with a warning.
+func load_bridge_states(d: Dictionary) -> int:
+	var changed_n := 0
+	var wanted := {}
+	for id in d:
+		var b: Bridge = _bridge_by_id.get(String(id))
+		var e: Dictionary = d[id]
+		var c: Array = e.get("c", [])
+		if b == null or (c.size() == 2 and Vector2(b.center.x - float(c[0]), b.center.z - float(c[1])).length() > 5.0):
+			push_warning("RoadNetwork: saved state of unknown bridge %s ignored" % id)
+			continue
+		wanted[b.id] = e
+	for b: Bridge in bridges:
+		var e: Dictionary = wanted.get(b.id, {})
+		var s: int = int(e.get("state", BridgeState.OPEN))
+		if set_bridge_state(b.id, s, String(e.get("why", ""))):
+			changed_n += 1
+	return changed_n
+
+
+## First point (index >= from_i) of a polyline that lies on a closed or disabled deck, skipping the deck `except` (the one the
+## traveller stands on). {index, bridge} or {}. Points are tested against the blocked decks only, so it costs nothing while all
+## bridges are open.
+func blocked_on_route(pts: PackedVector3Array, from_i := 0, except: Bridge = null, pad := 0.0) -> Dictionary:
+	if _blocking.is_empty():
+		return {}
+	for k in range(maxi(from_i, 0), pts.size()):
+		var b := blocking_bridge_at(pts[k], pad)
+		if b != null and b != except:
+			return {"index": k, "bridge": b}
+	return {}
+
+
 ## A point beside a bridge (within reach of a deck, off it) moved sideways onto the deck,
 ## y = deck surface; INF when no deck is in reach. A column marching over a bridge keeps
 ## its file offsets on land; over the river the soldiers close up onto the deck.
@@ -270,6 +482,9 @@ func onto_deck(p: Vector3, reach := 25.0) -> Vector3:
 	for gx in range(floori((p.x - reach) / GRID), floori((p.x + reach) / GRID) + 1):
 		for gz in range(floori((p.z - reach) / GRID), floori((p.z + reach) / GRID) + 1):
 			for d: Array in _deck_grid.get(Vector2i(gx, gz), []):
+				# N1-C1: nobody is moved onto the deck of a closed or disabled bridge.
+				if not (d[4] as Bridge).is_open():
+					continue
 				var a: Vector3 = d[0]
 				var b: Vector3 = d[1]
 				var a2 := Vector2(a.x, a.z)

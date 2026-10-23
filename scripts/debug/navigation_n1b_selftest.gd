@@ -62,38 +62,6 @@ func run(args: PackedStringArray) -> void:
 	_finish_b()
 
 
-## Vehicles keep the place they had when the test first saw them: every case starts from the same fleet, wherever an earlier case
-## left a vehicle (a truck wedged in an alley made the next case plan from an isolated spot).
-var _fleet_home := {}
-
-
-func _fresh() -> void:
-	await super._fresh()
-	var vs := demo.sim.vehicles
-	for id in vs.ids:
-		var u: UnitState = demo.sim.state.units.get(id)
-		if u == null or not u.alive or u.veh == null:
-			continue
-		if not _fleet_home.has(id):
-			if u.order == UnitState.Order.NONE and u.veh.job.is_empty():
-				_fleet_home[id] = [u.position, u.yaw]
-			continue
-		if not u.veh.job.is_empty():
-			demo.sim.logistics.cancel_job(id, "test reset")
-		if u.veh.convoy_id >= 0:
-			vs.convoy.leave(id)
-		vs.halt(id)
-		var home: Array = _fleet_home[id]
-		u.position = home[0]
-		u.yaw = home[1]
-		u.veh.speed = 0.0
-		u.veh.fuel = u.veh.def().fuel_capacity
-		u.veh.reverse_left = 0.0
-		u.veh.recoveries = 0
-		u.veh.bypasses = 0
-	await _physics(2)
-
-
 ## Screenshots only where a viewport image exists (a headless run has none).
 func _shot(shot_name: String) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_shot_dir))
