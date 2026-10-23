@@ -11,7 +11,13 @@ branches are contained in `develop` and stay as history. Next milestone: **NAVIG
 obstacle navigation). See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest gameplay: **AI-WAR-LOGISTICS-01** (merged into `develop`) — AI factions have bases and income, recruit, take
+Newest gameplay: **BASE-01** (branch `feature/base-01`) — the player establishes their own base anywhere suitable: in
+construction mode (**B**, RTS) a **Command Post** opens a base with a 150 m area, and **Barracks**, **Supply Depot**,
+**Vehicle Parking** and **Guard Post** are built inside it; refused spots say why (too steep, water, road or bridge, outside
+the base area, overlap). The base is a real, saved `ConstructionState` base that the logistics and war systems read; see
+[docs/BASE-01_REPORT.md](docs/BASE-01_REPORT.md).
+
+Before that, **AI-WAR-LOGISTICS-01** (merged into `develop`) — AI factions have bases and income, recruit, take
 vehicles, move squads in convoys over a road network that was audited and repaired (`--road-audit`, overlay **F8**), supply
 and counterattack; see [docs/AI-WAR-LOGISTICS-01_REPORT.md](docs/AI-WAR-LOGISTICS-01_REPORT.md).
 
@@ -273,6 +279,15 @@ construction file).
 | Yards | Gravel / asphalt yard: click the corners, click the first one or press Enter to close; graded to one plane, paved, no route shortcut |
 | Esc | Cancel line → tool → leave |
 | F5 / F9 | Save / load construction (`user://saves/<world>/construction.json`) |
+
+**Your base (BASE-01).** The panel's **BASE** section lists the five base buildings; until you have a base only the
+**Command Post** can be chosen. Place it on open, level ground (not on a road, not in or next to another base, not on
+ground another faction holds): it establishes "North base N" with a 150 m area, drawn as a dashed ring on the ground
+while construction mode is open. Barracks (+32 soldier capacity), Supply Depot (base stores; the first one receives the
+starting stockpile), Vehicle Parking (six bays) and Guard Post must stand inside that area. The HUD and the panel show
+the base's buildings, beds, bays and guard posts; the strategic map (**M**) shows the area and the facilities (H, B, S,
+P, G). Everything is saved with F5 and loaded with F9. Scripted check: `--base01-test [--shots] [--only
+collision,infantry,vehicle,persist,far,views]` (results in `benchmarks/raw/base01_test.json`, screenshots in `docs/base_01/`).
 
 Assets are generated in Blender by `tools/blender/structures/*.py` (sources in
 `assets/structures/blender/`). Scripted checks on the reference world (from the repository

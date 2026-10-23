@@ -370,8 +370,10 @@ def vehicle_parking_pad(A):
     a.lod_ranges = [[0, 60], [60, 250], [250, 1500]]
     a.structure = _st("Vehicle training", 3.0, 0.3, nav=False)
     # WORLD-INTEGRATION-03: a walkable slab, sunk so its top sits a few cm above the pad.
+    # BASE-01: the groundwork levels the terrain to origin + sink, so the 0.08 m top needs a sink below
+    # 0.08 (0.15 buried the slab 7 cm under the levelled ground).
     a.structure["walkable"] = True
-    a.structure["sink"] = 0.15
+    a.structure["sink"] = 0.04
     return a
 
 

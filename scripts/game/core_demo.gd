@@ -56,6 +56,7 @@ var sites: Array[Dictionary] = []
 var _selftest: CoreSelfTest
 var _large_selftest: LargeWorldSelfTest
 var _base_selftest: BaseSelfTest
+var _base01_selftest: Base01SelfTest
 var _integration_selftest: IntegrationSelfTest
 var _squad_selftest: SquadSelfTest
 var _combat_selftest: CombatSelfTest
@@ -323,6 +324,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--integration-test" in args:
 		_integration_selftest = IntegrationSelfTest.new(self)
 		_integration_selftest.run.call_deferred(args)
+	elif "--base01-test" in args:
+		_base01_selftest = Base01SelfTest.new(self)
+		_base01_selftest.run.call_deferred(args)
 	elif "--base-test" in args:
 		_base_selftest = BaseSelfTest.new(self)
 		_base_selftest.run.call_deferred(args)

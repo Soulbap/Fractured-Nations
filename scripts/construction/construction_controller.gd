@@ -44,6 +44,12 @@ var world_state: WorldState
 @export var max_line_modules := 800
 ## Clear trees and undergrowth inside new footprints (C toggles).
 @export var clear_trees := true
+## BASE-01 player rules (BaseSim.placement_rule, StructureManager.road_conflict): a command post founds
+## a base, every other facility must stand inside one of the player's base areas, and base buildings
+## keep off roads and bridges.
+@export var base_rules := true
+## BASE-01: the short base menu at the top of the panel, in build order.
+const BASE_TYPES: Array[StringName] = [&"command_post", &"barracks_block", &"supply_depot", &"vehicle_parking_pad", &"guard_tower_steel"]
 
 var active := false
 var tool := Tool.NONE
@@ -83,6 +89,9 @@ var _snap_ring: MeshInstance3D
 var _ghost_mat: StandardMaterial3D
 var _bad_mat: StandardMaterial3D
 var _line_mat: StandardMaterial3D
+## BASE-01: base areas drawn on the ground while the mode is open (and the area a command post would open).
+var _area_ring: MeshInstance3D
+var _area_key := []
 var panel: ConstructionPanel
 
 
@@ -132,6 +141,15 @@ func _ready() -> void:
 	_surface_ghost.material_override = _surface_mat
 	_surface_ghost.visible = false
 	root.add_child(_surface_ghost)
+	_area_ring = MeshInstance3D.new()
+	_area_ring.mesh = ImmediateMesh.new()
+	_area_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var ring_mat := _make_ghost_material(Color(1, 1, 1, 0.6))
+	ring_mat.vertex_color_use_as_albedo = true
+	ring_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_area_ring.material_override = ring_mat
+	_area_ring.visible = false
+	root.add_child(_area_ring)
 	panel = ConstructionPanel.new()
 	panel.controller = self
 	panel.visible = false
@@ -363,11 +381,41 @@ func place_building() -> StructureState:
 		_say("Cannot build here: %s" % check.get("reason", "no ground"))
 		return null
 	var xf: Transform3D = check.xform
-	var s := structures.state.add_building(def.id, xf.origin, yaw)
+	var s := structures.state.add_building(def.id, xf.origin, yaw, player_faction())
 	structures.state.add_clearings(structures.clearings_for(s, clear_trees))
-	_say("Built %s" % def.display_name)
+	var b: Dictionary = structures.state.bases.get(s.base_id, {})
+	if FacilityDefs.founds_base(def.id) and int(b.get("founder", -1)) == s.id:
+		_say("%s established: build inside its %d m area" % [b.name, roundi(b.radius)])
+	elif not b.is_empty():
+		_say("Built %s (%s)" % [def.display_name, b.name])
+	else:
+		_say("Built %s" % def.display_name)
+	_area_key = []
 	built.emit(s)
 	return s
+
+
+## The faction the player builds for (the war's player faction, North without a war).
+func player_faction() -> int:
+	if world_state and world_state.war.active:
+		return world_state.war.player_faction
+	return 0
+
+
+func _bases() -> BaseSim:
+	return structures.sim.logistics.bases if structures and structures.sim else null
+
+
+## BASE-01 rules on top of the terrain / overlap check of a building at xform ("" = allowed).
+func _base_reason(xf: Transform3D) -> String:
+	if not base_rules or not FacilityDefs.has(def.id):
+		return ""
+	var bs := _bases()
+	if bs:
+		var r := bs.placement_rule(def.id, xf.origin, player_faction())
+		if r != "":
+			return r
+	return structures.road_conflict(def, xf)
 
 
 func add_line_point() -> void:
@@ -741,6 +789,11 @@ func _refresh_check() -> void:
 		return
 	if not def.linear:
 		check = structures.check_building(def, cursor, yaw, -1, clear_trees)
+		if check.ok:
+			var why := _base_reason(check.xform)
+			if why != "":
+				check.ok = false
+				check.reason = why
 		return
 	if line_points.is_empty():
 		var p: Vector3 = snap.point if not snap.is_empty() else cursor
@@ -786,6 +839,7 @@ func _update_preview() -> void:
 	_markers.visible = false
 	_snap_ring.visible = false
 	_surface_ghost.visible = false
+	_draw_areas()
 	if not active:
 		return
 	if tool == Tool.DELETE and not hover.is_empty() and hover.get("surface", false):
@@ -846,6 +900,78 @@ func _update_preview() -> void:
 	_markers.visible = markers.size() > 0
 
 
+## BASE-01: the player's base areas as rings on the ground (the base the cursor is in brighter), and the
+## area a command post at the cursor would open (green / red with the placement check).
+func _draw_areas() -> void:
+	var bs := _bases()
+	if not active or bs == null or terrain == null:
+		_area_ring.visible = false
+		return
+	var rings := []
+	var fac := player_faction()
+	var inside := bs.base_area_at(cursor, fac) if cursor.is_finite() else -1
+	for b: Dictionary in bs.bases_of(fac):
+		if float(b.get("radius", 0.0)) > 0.0:
+			var col := WorldState.faction_color(fac).lightened(0.35)
+			rings.append([b.anchor, float(b.radius), Color(col, 0.85 if b.id == inside else 0.45)])
+	if tool == Tool.PLACE and def and FacilityDefs.founds_base(def.id) and check.has("xform"):
+		var ok: bool = check.get("ok", false)
+		rings.append([(check.xform as Transform3D).origin, FacilityDefs.area_of(def.id), Color(0.3, 1.0, 0.4, 0.75) if ok else Color(1.0, 0.25, 0.15, 0.75)])
+	var width := clampf(rig.zoom * 0.012, 1.0, 4.0)
+	var key := [rings, snappedf(width, 0.1)]
+	if key == _area_key:
+		_area_ring.visible = not rings.is_empty()
+		return
+	_area_key = key
+	var im := _area_ring.mesh as ImmediateMesh
+	im.clear_surfaces()
+	if rings.is_empty():
+		_area_ring.visible = false
+		return
+	im.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+	for r: Array in rings:
+		var c: Vector3 = r[0]
+		var rad: float = r[1]
+		var col: Color = r[2]
+		var n := 128
+		for i in n:
+			# Dashes: every fourth segment is left out, so the ring reads as a boundary, not a road.
+			if i % 4 == 3:
+				continue
+			var verts := []
+			for k: int in [i, i + 1]:
+				var a := TAU * k / n
+				var dir := Vector3(cos(a), 0.0, sin(a))
+				for off: float in [-width * 0.5, width * 0.5]:
+					var p := c + dir * (rad + off)
+					var h: float = terrain.data.get_height(p)
+					p.y = (h if not is_nan(h) else c.y) + 0.5
+					verts.append(p)
+			for v in [verts[0], verts[2], verts[3], verts[0], verts[3], verts[1]]:
+				im.surface_set_color(col)
+				im.surface_add_vertex(v)
+	im.surface_end()
+	_area_ring.visible = true
+
+
+## BASE-01: one line about the player's bases for the HUD.
+func _base_line() -> String:
+	var bs := _bases()
+	if bs == null or not base_rules:
+		return ""
+	var list := bs.bases_of(player_faction())
+	if list.is_empty():
+		return "NO BASE  choose Command Post and place it on open, level ground to establish a base"
+	var parts: Array[String] = []
+	for b: Dictionary in list:
+		var sm := bs.summary(b.id)
+		var n := 0
+		for k in sm.facilities:
+			n += int(sm.facilities[k])
+		parts.append("%s: %d buildings, %d beds, %d parking bays, %d guard posts" % [b.name, n, sm.capacity, sm.parking, sm.guard_posts])
+	return "BASE  " + " | ".join(parts)
+
+
 ## One or two lines for the HUD.
 func status_lines() -> Array[String]:
 	var out: Array[String] = []
@@ -853,7 +979,10 @@ func status_lines() -> Array[String]:
 		return out
 	match tool:
 		Tool.NONE:
-			out.append("CONSTRUCTION  choose a type on the left | X delete | C clearing %s | F5 save, F9 load | B or Esc leave" % ("ON" if clear_trees else "OFF"))
+			out.append("CONSTRUCTION  choose a building in the menu | X delete | C clearing %s | F5 save, F9 load | B or Esc leave" % ("ON" if clear_trees else "OFF"))
+			var bl := _base_line()
+			if bl != "":
+				out.append(bl)
 		Tool.DELETE:
 			var what := "nothing under the cursor"
 			if not hover.is_empty():
