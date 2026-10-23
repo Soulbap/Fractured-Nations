@@ -93,7 +93,7 @@ func _ready() -> void:
 func _build_summary() -> Control:
 	var v := VBoxContainer.new()
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.custom_minimum_size = Vector2(196, 0)
+	v.custom_minimum_size = Vector2(184, 0)
 	v.add_theme_constant_override("separation", FNUI.S3 - 1)
 	var head := HBoxContainer.new()
 	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -236,13 +236,15 @@ func _refresh_summary(squads: Array[SquadState]) -> void:
 					capacity += def.magazine_size + def.reserve_start
 	var h := hp / hp_max if hp_max > 0.0 else 0.0
 	_health.set_value(h, "%d%%" % roundi(h * 100.0), FNUI.OK if h >= 0.6 else (FNUI.WARN if h >= 0.3 else FNUI.DANGER))
+	_health.critical = h < 0.3
 	if capacity > 0:
 		var a := clampf(float(rounds) / capacity, 0.0, 1.0)
 		_ammo.set_value(a, "%d%%" % roundi(a * 100.0), FNUI.INFO if a >= 0.3 else FNUI.WARN)
 	else:
 		_ammo.set_value(-1.0, "—")
 	var s := supp / maxi(n, 1)
-	_supp.set_value(s, "%d%%" % roundi(s * 100.0))
+	_supp.set_value(s, "%d%%" % roundi(s * 100.0), FNUI.DANGER if s >= 0.6 else FNUI.ALERT)
+	_supp.critical = s >= 0.6
 	var form := "Auto" if first.formation_auto else first.formation_name()
 	_settings.text = "Formation %s  ·  %s  ·  spacing %.1f m%s" % [form, first.roe_name(), first.spacing,
 		"  ·  in operation" if first.op_id >= 0 else ""]

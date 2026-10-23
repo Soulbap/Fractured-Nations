@@ -1,31 +1,39 @@
-## The logistics panel of the tactical view (LOGISTICS-01 / BASE-02): what the player sees and
-## does with a selected vehicle or facility. Not a management screen: one panel, shown only
+## The logistics panel of the tactical view (LOGISTICS-01 / BASE-02, UI-01C kit): what the player sees and
+## does with a selected vehicle or facility. Not a management screen: one panel, top right, shown only
 ## while a vehicle or a facility (click a building) is selected.
 ##
-##   vehicle   status, fuel, health, passengers, cargo, current job; buttons: take the wheel,
-##             stop, unload passengers, load / unload / deliver / refuel / repair at depots,
-##             repeat a delivery, cancel the job
-##   facility  base, inventory, queue; barracks: recruit a squad; vehicle depot: acquire a
-##             truck or APC; stores: load a selected vehicle, resupply a selected squad
+##   vehicle   type, status, fuel / condition / cargo meters, passengers, current job, convoy, nearest
+##             depot; actions: take the wheel, stop, unload passengers, cancel the job, load / refuel at
+##             the nearest depot, deliver / unload / repair at a chosen depot, repeat a delivery
+##   facility  base (stock, facilities, vehicles, soldiers), this store, queue; barracks: recruit a squad;
+##             vehicle depot: acquire a truck or APC; stores: load / unload / refuel a selected vehicle,
+##             resupply selected squads
 ##
-## Every button calls the same functions the tests and the automation use (LogisticsSim,
-## BaseSim, VehicleSim); the panel keeps no state of its own besides which item / quantity /
-## destination is chosen for the next order.
+## Every button calls the same functions the tests and the automation use (LogisticsSim, BaseSim,
+## VehicleSim); the panel keeps no state of its own besides which item / quantity / destination is
+## chosen for the next order.
 class_name LogisticsPanel
-extends PanelContainer
+extends FNPanel
 
 const FRACTIONS := [0.25, 0.5, 1.0]
+const ITEM_ICONS := {Inventory.AMMO: &"ammo", Inventory.FUEL: &"fuel", Inventory.SUPPLIES: &"cargo"}
+const WIDTH := 262.0
 
 var rts: RTSController
 var sim: WorldSim
 var game: GameController
 var enabled := true
 
+var _icon: TextureRect
 var _title: Label
-var _body: RichTextLabel
+var _subtitle: Label
+var _state: FNStatusIndicator
+var _meters: VBoxContainer
+var _fields: VBoxContainer
 var _actions: VBoxContainer
 var _status: Label
 var _sig := ""
+var _data_sig := ""
 var _timer := 0.0
 var _item := Inventory.AMMO
 var _frac := 2
@@ -35,30 +43,61 @@ var _status_until := 0.0
 var _dest_box: OptionButton
 
 
+func _init() -> void:
+	super(FNUI.INFO, FNUI.S4)
+
+
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_STOP
-	custom_minimum_size = Vector2(330, 0)
-	add_theme_stylebox_override("panel", FieldManual.panel(FieldManual.BLUE, 0.91, 8))
+	custom_minimum_size = Vector2(WIDTH, 0)
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 4)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_theme_constant_override("separation", FNUI.S3)
 	add_child(box)
-	_title = Label.new()
-	FieldManual.style_label(_title, 14, FieldManual.BLUE)
-	box.add_child(_title)
-	_body = RichTextLabel.new()
-	_body.bbcode_enabled = true
-	_body.fit_content = true
-	_body.scroll_active = false
-	_body.add_theme_font_size_override("normal_font_size", 12)
-	_body.add_theme_color_override("default_color", FieldManual.INK)
-	_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(_body)
+	var head := HBoxContainer.new()
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_theme_constant_override("separation", FNUI.S3)
+	box.add_child(head)
+	var frame := PanelContainer.new()
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.custom_minimum_size = Vector2(32, 28)
+	frame.add_theme_stylebox_override("panel", FNUI.box(Color(FNUI.INFO, 0.14), Color(FNUI.INFO, 0.7), 1, 2, 0))
+	head.add_child(frame)
+	_icon = FNIcons.rect(&"vehicle", FNUI.ICON_L, FNUI.INFO.lightened(0.3))
+	frame.add_child(_icon)
+	var names := VBoxContainer.new()
+	names.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	names.add_theme_constant_override("separation", -1)
+	head.add_child(names)
+	_title = FNUI.label("", FNUI.TITLE, FNUI.INK, "title")
+	_title.clip_text = true
+	_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	names.add_child(_title)
+	_subtitle = FNUI.label("", FNUI.CAPTION, FNUI.INK_2, "caps")
+	_subtitle.clip_text = true
+	_subtitle.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	names.add_child(_subtitle)
+	_state = FNStatusIndicator.new(FNUI.ICON_S, FNUI.LABEL)
+	box.add_child(_state)
+	_meters = VBoxContainer.new()
+	_meters.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_meters.add_theme_constant_override("separation", 1)
+	box.add_child(_meters)
+	_fields = VBoxContainer.new()
+	_fields.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fields.add_theme_constant_override("separation", 1)
+	box.add_child(_fields)
+	var rule := ColorRect.new()
+	rule.color = Color(FNUI.LINE, 0.9)
+	rule.custom_minimum_size = Vector2(0, 1)
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(rule)
 	_actions = VBoxContainer.new()
-	_actions.add_theme_constant_override("separation", 3)
+	_actions.add_theme_constant_override("separation", FNUI.S2)
 	box.add_child(_actions)
-	_status = Label.new()
-	FieldManual.style_label(_status, 12, FieldManual.AMBER)
+	_status = FNUI.label("", FNUI.CAPTION + 1, FNUI.ARMED, "caps")
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_status.custom_minimum_size = Vector2(WIDTH - 2 * FNUI.S4, 0)
 	box.add_child(_status)
 	visible = false
 
@@ -72,19 +111,40 @@ func _process(delta: float) -> void:
 	visible = vid > 0 or (sid > 0 and sim.logistics.structure(sid) != null)
 	if not visible:
 		return
-	position = Vector2(get_viewport().get_visible_rect().size.x - size.x - 12.0, 84.0)
+	position = Vector2(get_viewport_rect().size.x - size.x - FNUI.EDGE, FNUI.EDGE)
 	_timer -= delta
 	if _timer > 0.0:
 		return
 	_timer = 0.3
 	_refresh(vid, sid)
-	_status.text = _status.text if Time.get_ticks_msec() / 1000.0 < _status_until else ""
+	_status.visible = Time.get_ticks_msec() / 1000.0 < _status_until and _status.text != ""
+	size = Vector2.ZERO
 
 
 func _say(text: String) -> void:
 	_status.text = text
 	_status_until = Time.get_ticks_msec() / 1000.0 + 6.0
 	_sig = ""
+
+
+func _meter(caption: String, v: float, text: String, col: Color) -> void:
+	var m := FNMeter.new(caption, col)
+	m.custom_minimum_size = Vector2(WIDTH - 2 * FNUI.S4, 11)
+	m.value_w = 52.0
+	m.set_value(v, text, col)
+	_meters.add_child(m)
+
+
+func _field(caption: String, value: String, icon_name := &"", col := FNUI.INK) -> void:
+	var f := FNField.new(caption, value, icon_name, 58.0)
+	f.set_value(value, col)
+	_fields.add_child(f)
+
+
+func _clear(box: Container) -> void:
+	for c in box.get_children():
+		box.remove_child(c)
+		c.queue_free()
 
 
 func _refresh(vid: int, sid: int) -> void:
@@ -94,28 +154,41 @@ func _refresh(vid: int, sid: int) -> void:
 		var u := sim.state.get_unit(vid)
 		if u == null or u.veh == null:
 			return
-		_title.text = "VEHICLE  %s" % u.unit_name
 		var v := u.veh
 		var d := v.def()
-		var lines: Array[String] = []
-		lines.append("[b]%s[/b] · %s%s" % [d.display_name, v.status_name(), (" - " + v.reason) if v.reason != "" else ""])
-		lines.append("Fuel %d / %d l · condition %d / %d" % [roundi(v.fuel), roundi(d.fuel_capacity), roundi(u.health), roundi(u.max_health)])
-		lines.append("Cargo: %s (%d / %d)" % [v.cargo.summary(), roundi(v.cargo.total()), roundi(v.cargo.capacity)])
-		if not v.occupants.is_empty() or v.phase != VehicleState.Phase.NONE:
-			lines.append("Passengers: " + sim.vehicles.transport.describe(u))
-		if not v.job.is_empty():
-			lines.append("[color=#ffe070]Job: %s[/color]" % lg.describe_job(u))
-		elif u.order == UnitState.Order.MOVE:
-			lines.append("Driving %.1f km to go" % (v.route_remaining_m() / 1000.0))
-		if v.convoy_id >= 0:
-			lines.append(sim.vehicles.convoy.describe(v.convoy_id))
+		accent = FNUI.INFO
+		_icon.texture = FNIcons.texture(&"vehicle", FNUI.ICON_L)
+		_title.text = u.unit_name
+		_subtitle.text = d.display_name
+		var col := FNUI.OK if v.reason == "" else FNUI.ALERT
+		_state.set_status(&"moving" if u.order == UnitState.Order.MOVE else &"idle", v.status_name() + ((" · " + v.reason) if v.reason != "" else ""), col)
 		var near := lg.nearest_store(u.position, u.faction)
-		var near_txt := ""
-		if near and Vector2(near.position.x - u.position.x, near.position.z - u.position.z).length() < 400.0:
-			near_txt = "Nearest depot: %s (%s)" % [lg.store_name(near), near.inventory.summary()]
-			lines.append(near_txt)
-		_body.text = "\n".join(lines)
-		var sig := "v%d|%s|%s|%d|%d|%s|%d|%s" % [vid, str(v.job.get("stage", "")), v.status_name(), _frac, _item.hash(), str(_repeat), _dest, str(near.id if near else -1)]
+		if near and Vector2(near.position.x - u.position.x, near.position.z - u.position.z).length() >= 400.0:
+			near = null
+		var dsig := "%d|%d|%d|%s|%s|%s|%s" % [roundi(v.fuel), roundi(u.health), roundi(v.cargo.total()), v.status_name(), str(v.job.get("stage", "")),
+			str(v.occupants.size()), str(near.id if near else -1)]
+		if dsig != _data_sig:
+			_data_sig = dsig
+			_clear(_meters)
+			_clear(_fields)
+			var ff := v.fuel / maxf(d.fuel_capacity, 1.0)
+			_meter("Fuel", ff, "%d l" % roundi(v.fuel), FNUI.INFO if ff >= 0.25 else FNUI.WARN)
+			var hf := u.health / maxf(u.max_health, 1.0)
+			_meter("Condition", hf, "%d %%" % roundi(hf * 100.0), FNUI.OK if hf >= 0.5 else FNUI.DANGER)
+			_meter("Cargo", v.cargo.total() / maxf(v.cargo.capacity, 1.0), "%d / %d" % [roundi(v.cargo.total()), roundi(v.cargo.capacity)], FNUI.NEUTRAL)
+			if v.cargo.total() > 0.0:
+				_field("Carrying", v.cargo.summary(), &"cargo")
+			if not v.occupants.is_empty() or v.phase != VehicleState.Phase.NONE:
+				_field("Aboard", sim.vehicles.transport.describe(u), &"soldiers")
+			if not v.job.is_empty():
+				_field("Job", lg.describe_job(u), &"route", FNUI.ARMED)
+			elif u.order == UnitState.Order.MOVE:
+				_field("Route", "%.1f km to go" % (v.route_remaining_m() / 1000.0), &"route")
+			if v.convoy_id >= 0:
+				_field("Convoy", sim.vehicles.convoy.describe(v.convoy_id), &"vehicle")
+			if near:
+				_field("Depot", "%s · %s" % [lg.store_name(near), near.inventory.summary()], &"logistics")
+		var sig := "v%d|%s|%s|%d|%s|%s|%d|%s" % [vid, str(v.job.get("stage", "")), v.status_name(), _frac, _item, str(_repeat), _dest, str(near.id if near else -1)]
 		if sig != _sig:
 			_sig = sig
 			_build_vehicle_actions(u, near)
@@ -123,167 +196,195 @@ func _refresh(vid: int, sid: int) -> void:
 	var s := lg.structure(sid)
 	if s == null:
 		return
-	_title.text = "%s  #%d" % [FacilityDefs.display_name(s.type_id).to_upper(), s.id]
+	accent = FNUI.OK
+	var kind := FacilityDefs.kind_of(s.type_id)
+	_icon.texture = FNIcons.texture({&"barracks": &"building", &"vehicle": &"vehicle", &"hq": &"base", &"fuel": &"fuel", &"ammo": &"ammo"}.get(kind, &"logistics"), FNUI.ICON_L)
+	_title.text = FacilityDefs.display_name(s.type_id)
 	var b := lg.bases.summary(s.base_id) if s.base_id >= 0 else {}
-	var lines2: Array[String] = []
-	if not b.is_empty():
-		lines2.append("[b]%s[/b] (%s)" % [b.name, b.kind])
-		lines2.append("Base stock: ammo %d kg · fuel %d l · supplies %d kg" % [roundi(b.stock.ammo), roundi(b.stock.fuel), roundi(b.stock.supplies)])
-		lines2.append("%d facilities · %d vehicles · %d soldiers near" % [b.facilities.size(), b.vehicles.size(), b.soldiers])
-	if s.inventory:
-		lines2.append("This store: %s (%d / %d)" % [s.inventory.summary(), roundi(s.inventory.total()), roundi(s.inventory.capacity)])
-	for q: Dictionary in s.facility.get("queue", []):
-		lines2.append("[color=#ffe070]%s - %d s left[/color]" % [q.get("what", "queued"), maxi(0, roundi(float(q.done) - sim.state.time))])
-	if FacilityDefs.kind_of(s.type_id) == &"vehicle":
-		var st: Dictionary = s.facility.get("stock", {})
-		var parts := []
-		for t in st:
-			parts.append("%s x%d" % [VehicleDefs.get_def(StringName(t)).short_name, int(st[t])])
-		lines2.append("Vehicles available: %s" % ", ".join(parts))
-	_body.text = "\n".join(lines2)
-	var sig2 := "s%d|%d|%d|%s|%s|%d" % [sid, s.facility.get("queue", []).size(), rts.selected.size(), str(rts.first_selected_vehicle()), _item, _frac]
+	_subtitle.text = ("%s · %s" % [b.name, b.kind]) if not b.is_empty() else "Facility #%d" % s.id
+	var queue: Array = s.facility.get("queue", [])
+	if queue.is_empty():
+		_state.set_status(&"check", "Operational", FNUI.OK)
+	else:
+		_state.set_status(&"clock", "%s · %d s left" % [queue[0].get("what", "queued"), maxi(0, roundi(float(queue[0].done) - sim.state.time))], FNUI.ARMED)
+	var dsig2 := "%d|%s|%s|%d" % [sid, str(b.get("stock", {})), str(s.inventory.total() if s.inventory else -1), queue.size()]
+	if dsig2 != _data_sig:
+		_data_sig = dsig2
+		_clear(_meters)
+		_clear(_fields)
+		if s.inventory:
+			_meter("This store", s.inventory.total() / maxf(s.inventory.capacity, 1.0), "%d / %d" % [roundi(s.inventory.total()), roundi(s.inventory.capacity)], FNUI.NEUTRAL)
+		if not b.is_empty():
+			_field("Ammo", "%d kg" % roundi(b.stock.ammo), &"ammo")
+			_field("Fuel", "%d l" % roundi(b.stock.fuel), &"fuel")
+			_field("Supplies", "%d kg" % roundi(b.stock.supplies), &"cargo")
+			_field("Base", "%d facilities · %d vehicles · %d soldiers near" % [b.facilities.size(), b.vehicles.size(), b.soldiers], &"base")
+		for q: Dictionary in queue.slice(1):
+			_field("Queued", "%s · %d s" % [q.get("what", "queued"), maxi(0, roundi(float(q.done) - sim.state.time))], &"clock", FNUI.ARMED)
+		if kind == &"vehicle":
+			var st: Dictionary = s.facility.get("stock", {})
+			var parts := []
+			for t in st:
+				parts.append("%s x%d" % [VehicleDefs.get_def(StringName(t)).short_name, int(st[t])])
+			_field("Available", ", ".join(parts), &"vehicle")
+	var sig2 := "s%d|%d|%d|%s|%s|%d" % [sid, queue.size(), rts.selected.size(), str(rts.first_selected_vehicle()), _item, _frac]
 	if sig2 != _sig:
 		_sig = sig2
 		_build_facility_actions(s)
 
 
-func _clear_actions() -> void:
-	for c in _actions.get_children():
-		_actions.remove_child(c)
-		c.queue_free()
-	_dest_box = null
-
-
-func _button(text: String, fn: Callable, tip := "") -> Button:
-	var bt := Button.new()
-	bt.text = text
-	bt.tooltip_text = tip
-	FieldManual.style_button(bt, FieldManual.BLUE)
+func _button(icon_name: StringName, text: String, fn: Callable, tip := "") -> Button:
+	var bt := FNUI.action_button(icon_name, text, tip)
 	bt.pressed.connect(fn)
 	return bt
 
 
 func _row(buttons: Array) -> void:
 	var h := HBoxContainer.new()
-	h.add_theme_constant_override("separation", 3)
+	h.add_theme_constant_override("separation", FNUI.S2)
 	for b in buttons:
+		if b is Button:
+			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		h.add_child(b)
 	_actions.add_child(h)
 
 
+func _caption(text: String) -> void:
+	_actions.add_child(FNUI.label(text, FNUI.CAPTION - 1, FNUI.INK_3, "caps"))
+
+
+## Ammo / fuel / supplies and the share of the capacity, as a segmented choice.
 func _item_buttons() -> Array:
 	var out := []
 	for it in Inventory.ITEMS:
-		var bt := _button(("[%s]" if it == _item else "%s") % Inventory.NAMES[it], func() -> void:
+		var bt := FNUI.action_button(ITEM_ICONS.get(it, &"cargo"), Inventory.NAMES[it], "Cargo to move", true)
+		bt.set_pressed_no_signal(it == _item)
+		bt.pressed.connect(func() -> void:
 			_item = it
 			_sig = "")
 		out.append(bt)
-	var fr := _button("%d %%" % roundi(FRACTIONS[_frac] * 100.0), func() -> void:
+	var fr := FNUI.action_button(&"", "%d %%" % roundi(FRACTIONS[_frac] * 100.0), "Click to change how much of the cargo capacity to move")
+	fr.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	fr.pressed.connect(func() -> void:
 		_frac = (_frac + 1) % FRACTIONS.size()
-		_sig = "", "Click to change how much of the cargo capacity to move")
+		_sig = "")
 	out.append(fr)
 	return out
 
 
 func _build_vehicle_actions(u: UnitState, near: StructureState) -> void:
-	_clear_actions()
+	_clear(_actions)
+	_dest_box = null
 	var lg := sim.logistics
 	var v := u.veh
-	_row([_button("Take the wheel (P)", func() -> void: rts.drive_requested.emit(u.id)),
-		_button("Stop (H)", func() -> void:
-			sim.vehicles.halt(u.id)
-			sim.logistics.cancel_job(u.id)
-			_say("Stopped")),
-		_button("Passengers out (U)", func() -> void: sim.vehicles.transport.unload(u.id))])
+	var cmd := HBoxContainer.new()
+	cmd.add_theme_constant_override("separation", FNUI.S2)
+	for e: Array in [[&"drive", "Drive", "P", "Take the wheel", func() -> void: rts.drive_requested.emit(u.id)],
+			[&"stop", "Stop", "H", "Stop and cancel the job", func() -> void:
+				sim.vehicles.halt(u.id)
+				sim.logistics.cancel_job(u.id)
+				_say("Stopped")],
+			[&"unload", "Unload", "U", "Passengers out", func() -> void: sim.vehicles.transport.unload(u.id)]]:
+		var b := FNCommandButton.new(e[0], e[1], e[2], e[3])
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.pressed.connect(e[4])
+		cmd.add_child(b)
+	_actions.add_child(cmd)
 	if not v.job.is_empty():
-		_row([_button("Cancel job", func() -> void:
+		_row([_button(&"blocked", "Cancel job", func() -> void:
 			lg.cancel_job(u.id)
 			_say("Job cancelled; cargo stays aboard"))])
+	_caption("Cargo order")
 	_row(_item_buttons())
 	var stores := lg.stores(u.faction)
+	var qty: float = v.cargo.capacity * float(FRACTIONS[_frac])
+	if near:
+		_row([_button(&"cargo", "Load here", func() -> void:
+				var r := lg.order_load(u.id, near.id, _item, qty)
+				_say("Loading %s at %s" % [Inventory.NAMES[_item], lg.store_name(near)] if r.ok else r.reason),
+			"Load at the nearest depot (%s)" % lg.store_name(near)),
+			_button(&"fuel", "Refuel here", func() -> void:
+				var r := lg.order_refuel(u.id, near.id)
+				_say("Refuelling" if r.ok else r.reason))])
 	if not stores.is_empty():
 		_dest_box = OptionButton.new()
-		_dest_box.add_theme_font_size_override("font_size", 12)
-		var idx := 0
+		_dest_box.focus_mode = Control.FOCUS_NONE
+		_dest_box.add_theme_font_size_override("font_size", FNUI.CAPTION + 1)
+		for st in ["normal", "hover", "pressed"]:
+			_dest_box.add_theme_stylebox_override(st, FNUI.state_style(StringName(st), FNUI.S2))
 		var chosen := 0
 		for i in stores.size():
 			_dest_box.add_item(lg.store_name(stores[i]), stores[i].id)
 			if stores[i].id == _dest:
 				chosen = i
-			idx += 1
 		_dest_box.select(chosen)
 		_dest = _dest_box.get_item_id(chosen)
 		_dest_box.item_selected.connect(func(i: int) -> void:
 			_dest = _dest_box.get_item_id(i)
 			_sig = "")
-		_row([Label.new(), _dest_box])
-		(_actions.get_child(_actions.get_child_count() - 1).get_child(0) as Label).text = "Depot:"
+		_dest_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var dl := FNUI.label("Depot", FNUI.CAPTION, FNUI.INK_3, "caps")
+		dl.custom_minimum_size = Vector2(40, 0)
+		_row([dl, _dest_box])
 	var dest_id := _dest
-	var qty: float = v.cargo.capacity * float(FRACTIONS[_frac])
-	if near:
-		_row([_button("Load %s here" % Inventory.NAMES[_item], func() -> void:
-				var r := lg.order_load(u.id, near.id, _item, qty)
-				_say("Loading %s at %s" % [Inventory.NAMES[_item], lg.store_name(near)] if r.ok else r.reason),
-			"Load at the nearest depot (%s)" % lg.store_name(near)),
-			_button("Refuel here", func() -> void:
-				var r := lg.order_refuel(u.id, near.id)
-				_say("Refuelling" if r.ok else r.reason))])
 	if dest_id > 0:
-		_row([_button("Deliver there", func() -> void:
+		_row([_button(&"route", "Deliver", func() -> void:
 				var src := near.id if near else -1
 				var r := lg.order_delivery(u.id, src, dest_id, _item, qty, _repeat) if src > 0 else {"ok": false, "reason": "No depot nearby to load from"}
 				_say("Delivering %s" % Inventory.NAMES[_item] if r.ok else r.reason),
 				"Load at the nearest depot, drive to the chosen depot and unload"),
-			_button("Unload there", func() -> void:
+			_button(&"unload", "Unload", func() -> void:
 				var r := lg.order_unload(u.id, dest_id)
-				_say("Unloading at the chosen depot" if r.ok else r.reason)),
-			_button("Repair there", func() -> void:
+				_say("Unloading at the chosen depot" if r.ok else r.reason), "Unload at the chosen depot"),
+			_button(&"repair", "Repair", func() -> void:
 				var r := lg.order_repair(u.id, dest_id)
-				_say("Repairing" if r.ok else r.reason))])
-		var cb := CheckButton.new()
-		cb.text = "Repeat the delivery"
-		cb.button_pressed = _repeat
-		cb.add_theme_font_size_override("font_size", 12)
+				_say("Repairing" if r.ok else r.reason), "Repair at the chosen depot")])
+		var cb := FNUI.action_button(&"rotate", "Repeat the delivery", "Keep running the delivery", true)
+		cb.set_pressed_no_signal(_repeat)
 		cb.toggled.connect(func(on: bool) -> void: _repeat = on)
 		_actions.add_child(cb)
 
 
 func _build_facility_actions(s: StructureState) -> void:
-	_clear_actions()
+	_clear(_actions)
+	_dest_box = null
 	var lg := sim.logistics
 	var kind := FacilityDefs.kind_of(s.type_id)
 	if kind == &"barracks":
-		_row([_button("Recruit a squad (%s)" % lg.bases.cost_text(BaseSim.RECRUIT_COST), func() -> void:
+		_row([_button(&"recruit", "Recruit a squad (%s)" % lg.bases.cost_text(BaseSim.RECRUIT_COST), func() -> void:
 			var r := lg.bases.recruit(s.id)
 			_say("Training a squad" if r.ok else r.reason))])
 	if kind == &"vehicle":
 		for t in BaseSim.VEHICLES:
 			var tid: StringName = t
 			var dn := VehicleDefs.get_def(tid).display_name
-			_row([_button("Acquire %s (%s)" % [dn, lg.bases.cost_text(BaseSim.VEHICLES[tid].cost)], func() -> void:
+			_row([_button(&"vehicle", "Acquire %s (%s)" % [dn, lg.bases.cost_text(BaseSim.VEHICLES[tid].cost)], func() -> void:
 				var r := lg.bases.acquire_vehicle(s.id, tid)
 				_say("Preparing a %s" % dn if r.ok else r.reason))])
 	if not s.facility.get("queue", []).is_empty():
-		_row([_button("Cancel the first in the queue (refund)", func() -> void:
+		_row([_button(&"blocked", "Cancel first in queue (refund)", func() -> void:
 			lg.bases.cancel_queue(s.id, 0)
 			_say("Cancelled"))])
 	if s.inventory:
 		var vid := rts.first_selected_vehicle()
 		if vid > 0:
 			var u := sim.state.get_unit(vid)
+			_caption("Selected vehicle: %s" % u.unit_name)
 			_row(_item_buttons())
 			var qty: float = u.veh.cargo.capacity * float(FRACTIONS[_frac])
-			_row([_button("Load the vehicle here", func() -> void:
+			_row([_button(&"cargo", "Load", func() -> void:
 					var r := lg.order_load(vid, s.id, _item, qty)
-					_say("%s drives here to load %s" % [u.unit_name, Inventory.NAMES[_item]] if r.ok else r.reason)),
-				_button("Unload it here", func() -> void:
+					_say("%s drives here to load %s" % [u.unit_name, Inventory.NAMES[_item]] if r.ok else r.reason), "Load the vehicle here"),
+				_button(&"unload", "Unload", func() -> void:
 					var r := lg.order_unload(vid, s.id)
-					_say("%s drives here to unload" % u.unit_name if r.ok else r.reason)),
-				_button("Refuel it here", func() -> void:
+					_say("%s drives here to unload" % u.unit_name if r.ok else r.reason), "Unload it here"),
+				_button(&"fuel", "Refuel", func() -> void:
 					var r := lg.order_refuel(vid, s.id)
-					_say("Refuelling" if r.ok else r.reason))])
+					_say("Refuelling" if r.ok else r.reason), "Refuel it here")])
 		var squads := rts.selected_squads()
 		if not squads.is_empty():
-			_row([_button("Resupply the selected squads here", func() -> void:
+			_row([_button(&"ammo", "Resupply the selected squads", func() -> void:
 				var r := lg.order_resupply(squads, "s%d" % s.id)
 				_say("The squads go to resupply" if r.ok else r.reason))])
+	if _actions.get_child_count() == 0:
+		_caption("No orders for this facility")

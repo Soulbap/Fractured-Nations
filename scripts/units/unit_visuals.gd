@@ -56,25 +56,57 @@ static func make_ring_material() -> StandardMaterial3D:
 	return m
 
 
-static func style_ring(ring: MeshInstance3D, faction: int, selected: bool) -> void:
+## UI-01C: unit markers are a tactical-view aid; the HUD switches them off in first person and while
+## driving (GameHUD sets this every frame).
+static var markers_visible := true
+static var _dot: CylinderMesh
+
+
+## soldier (UI-01C): a soldier's marker is a small flat dot, not a ring - many rings around a squad
+## overlapped into a blur; the squad itself is marked by the HUD (brackets and its tag). Vehicles keep
+## their footprint ring.
+static func style_ring(ring: MeshInstance3D, faction: int, selected: bool, soldier := false) -> void:
 	var mat := ring.material_override as StandardMaterial3D
 	if mat == null:
 		mat = make_ring_material()
 		ring.material_override = mat
 	var c := WorldState.faction_color(faction)
-	mat.albedo_color = c.lightened(0.45) if selected else Color(c, 0.55)
-	ring.scale = Vector3.ONE * (1.2 if selected else 0.85)
+	if soldier:
+		ring.mesh = _dot_mesh()
+		mat.albedo_color = Color(c.lightened(0.6), 0.95) if selected else Color(c.lightened(0.1), 0.5)
+		mat.no_depth_test = false
+		ring.scale = Vector3(0.34 if selected else 0.24, 1.0, 0.34 if selected else 0.24)
+	else:
+		mat.albedo_color = c.lightened(0.45) if selected else Color(c, 0.55)
+		ring.scale = Vector3.ONE * (1.2 if selected else 0.85)
 	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
-## Grows the ring with the distance to the active camera (constant on-screen size
-## beyond 40 m) so factions and selection stay readable from the tactical view.
-static func scale_ring_for_camera(ring: MeshInstance3D, selected: bool) -> void:
+static func _dot_mesh() -> CylinderMesh:
+	if _dot == null:
+		_dot = CylinderMesh.new()
+		_dot.top_radius = 1.0
+		_dot.bottom_radius = 1.0
+		_dot.height = 0.03
+		_dot.radial_segments = 20
+		_dot.rings = 1
+	return _dot
+
+
+## Grows the marker with the distance to the active camera (constant on-screen size beyond 40 m) so
+## factions and selection stay readable from the tactical view; a soldier's dot stops growing sooner
+## (7x) so a squad's dots stay apart. Hidden while markers_visible is off.
+static func scale_ring_for_camera(ring: MeshInstance3D, selected: bool, soldier := false) -> void:
+	ring.transparency = 0.0 if markers_visible else 1.0
 	var cam := ring.get_viewport().get_camera_3d() if ring.is_inside_tree() else null
 	if cam == null:
 		return
 	var d := cam.global_position.distance_to(ring.global_position)
-	ring.scale = Vector3.ONE * ((1.2 if selected else 0.85) * clampf(d / 40.0, 1.0, 12.0))
+	if soldier:
+		var r := (0.34 if selected else 0.24) * clampf(d / 40.0, 1.0, 7.0)
+		ring.scale = Vector3(r, 1.0, r)
+	else:
+		ring.scale = Vector3.ONE * ((1.2 if selected else 0.85) * clampf(d / 40.0, 1.0, 12.0))
 
 
 static func mesh_instances(root: Node) -> Array:

@@ -13,7 +13,7 @@ var selected := false:
 	set(v):
 		selected = v
 		if ring:
-			UnitVisuals.style_ring(ring, unit.faction if unit else 0, selected)
+			UnitVisuals.style_ring(ring, unit.faction if unit else 0, selected, unit != null and not unit.is_vehicle())
 
 var ring: MeshInstance3D
 var _marker: MeshInstance3D
@@ -62,7 +62,7 @@ func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
 	ring.mesh = torus
 	ring.position.y = 0.1
 	add_child(ring)
-	UnitVisuals.style_ring(ring, unit.faction, selected)
+	UnitVisuals.style_ring(ring, unit.faction, selected, not unit.is_vehicle())
 	_follow()
 	if not unit.alive:
 		_show_dead()
@@ -79,7 +79,7 @@ func _process(_delta: float) -> void:
 	if not unit.alive and not _shows_dead:
 		_show_dead()
 	if ring.visible:
-		UnitVisuals.scale_ring_for_camera(ring, selected)
+		UnitVisuals.scale_ring_for_camera(ring, selected, not unit.is_vehicle())
 
 
 ## Casualty marker: the capsule lies on the ground in a darkened uniform colour.

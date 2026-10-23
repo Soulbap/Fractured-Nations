@@ -98,19 +98,14 @@ var _groups: Array = []
 var _op_rects := {}
 ## Screen rectangles already taken by labels and markers in this draw (label placement).
 var _taken: Array[Rect2] = []
-var _header: RichTextLabel
-var _factions: RichTextLabel
-var _info: RichTextLabel
-var _hint: RichTextLabel
 var _ops_box: VBoxContainer
-var _log: RichTextLabel
 var _buttons := {}
 var _panel_bg: PanelContainer
 
 const COL_ATTACK := Color(1.0, 0.45, 0.35)
 const COL_REINFORCE := Color(0.55, 0.95, 0.55)
 const COL_MOVE := Color(0.85, 0.9, 1.0)
-const COL_SELECT := Color(1.0, 0.92, 0.35)
+const COL_SELECT := Color(0.92, 0.95, 0.90)
 const COL_THREAT := Color(1.0, 0.3, 0.25)
 const COL_CONTESTED := Color(1.0, 0.82, 0.2)
 
@@ -145,8 +140,10 @@ func _panel_active() -> bool:
 	return not selected_squads.is_empty() or selected_objective >= 0 or selected_op >= 0 or not selected_vehicles.is_empty() or selected_structure >= 0
 
 
+## UI-01C: the panels lie over the map's empty sides (the map is square, the window wide), so the map
+## keeps its place and scale when the inspector opens.
 func _panel_width() -> float:
-	return PANEL_W if _panel_active() else 0.0
+	return 0.0
 
 
 func fit_all() -> void:
@@ -183,86 +180,6 @@ func detail_level() -> int:
 func zoom_by(factor: float, anchor: Vector2) -> void:
 	_zoom_target = clampf(_zoom_target * factor, _zoom_min, ZOOM_MAX)
 	_zoom_anchor = anchor
-
-
-# --- Panel ------------------------------------------------------------------------------
-
-func _build_panel() -> void:
-	_panel_bg = PanelContainer.new()
-	_panel_bg.add_theme_stylebox_override("panel", FieldManual.panel(FieldManual.OLIVE, 0.94, 10))
-	_panel_bg.anchor_left = 1.0
-	_panel_bg.anchor_right = 1.0
-	_panel_bg.anchor_bottom = 1.0
-	_panel_bg.offset_left = -PANEL_W
-	add_child(_panel_bg)
-	var panel := VBoxContainer.new()
-	panel.add_theme_constant_override("separation", 6)
-	_panel_bg.add_child(panel)
-	_header = _label(16)
-	panel.add_child(_header)
-	_factions = _label(12)
-	panel.add_child(_factions)
-	panel.add_child(_separator())
-	_info = _label(13)
-	_info.custom_minimum_size = Vector2(PANEL_W - 24, 120)
-	panel.add_child(_info)
-	var row := HFlowContainer.new()
-	row.add_theme_constant_override("h_separation", 4)
-	row.add_theme_constant_override("v_separation", 4)
-	panel.add_child(row)
-	for b: Array in [["attack", "Attack"], ["defend", "Defend"], ["reinforce", "Reinforce"], ["move", "Move"], ["cancel", "Cancel op"], ["view", "View (G)"]]:
-		var btn := Button.new()
-		btn.text = b[1]
-		FieldManual.style_button(btn, FieldManual.AMBER)
-		var key: String = b[0]
-		btn.pressed.connect(func() -> void: _button(key))
-		row.add_child(btn)
-		_buttons[key] = btn
-	_hint = _label(12)
-	_hint.custom_minimum_size = Vector2(0, 30)
-	panel.add_child(_hint)
-	panel.add_child(_separator())
-	var h1 := _label(14)
-	h1.text = "[b]Operations[/b]  [color=#889](click one for details)[/color]"
-	panel.add_child(h1)
-	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(PANEL_W - 24, 150)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	panel.add_child(scroll)
-	_ops_box = VBoxContainer.new()
-	_ops_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_ops_box.add_theme_constant_override("separation", 2)
-	scroll.add_child(_ops_box)
-	panel.add_child(_separator())
-	var h2 := _label(14)
-	h2.text = "[b]War log[/b]"
-	panel.add_child(h2)
-	_log = _label(12)
-	_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_child(_log)
-
-
-## RichTextLabel parses and lays out again on every assignment: only when it changed.
-func _set_text(l: RichTextLabel, t: String) -> void:
-	if l.text != t:
-		l.text = t
-
-
-func _separator() -> HSeparator:
-	var s := HSeparator.new()
-	s.add_theme_constant_override("separation", 4)
-	return s
-
-
-func _label(fs: int) -> RichTextLabel:
-	var l := RichTextLabel.new()
-	l.bbcode_enabled = true
-	l.fit_content = true
-	l.scroll_active = false
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	l.add_theme_font_size_override("normal_font_size", fs)
-	l.add_theme_font_size_override("bold_font_size", fs)
-	return l
 
 
 func _process(_delta: float) -> void:
@@ -308,56 +225,6 @@ func _process(_delta: float) -> void:
 		moved = true
 	if moved or _box:
 		queue_redraw()
-
-
-func _refresh_panel() -> void:
-	var panel_was_visible := _panel_bg.visible if _panel_bg else false
-	if _panel_bg:
-		_panel_bg.visible = _panel_active()
-		if panel_was_visible != _panel_bg.visible:
-			queue_redraw()
-	var war := sim.state.war
-	var t := sim.state.time
-	var me := war.faction(faction)
-	_set_text(_header, "[b]You command [color=#%s]%s[/color][/b]" % [WorldState.faction_color(faction).lightened(0.2).to_html(false), WorldState.faction_name(faction).to_upper()])
-	var fl: Array[String] = ["[color=#aab]War time %d:%02d · speed %s (, and . change it)[/color]" % [int(t / 3600.0), int(t / 60.0) % 60, TimeCompression.label()]]
-	for f: FactionState in war.factions.values():
-		var objs := war.owned_by(f.id).size()
-		var soldiers := 0
-		if f.id == faction:
-			for sq: SquadState in sim.war.squads_of(f.id):
-				soldiers += sq.members.size()
-			fl.append("%s  %d objectives · %d soldiers · %d in reserve · %d fallen" % [_fac(f.id), objs, soldiers, f.reserves, f.casualties])
-		else:
-			fl.append("%s  %d objectives · AI, %s" % [_fac(f.id), objs, sim.war.profile(f).display_name.to_lower()])
-	if me == null:
-		fl.append("")
-	_set_text(_factions, "\n".join(fl))
-	_set_text(_info, _selection_text())
-	_set_text(_hint, _hint_text())
-	_refresh_ops()
-	var log_lines: Array[String] = []
-	for e: Dictionary in sim.war.events_for(faction, 8):
-		var col := "#ddd"
-		match e.kind:
-			"captured":
-				col = "#ffd060"
-			"contested", "threat", "attack":
-				col = "#ff8a70"
-			"op_done", "reinforcements":
-				col = "#90e090"
-			"op_failed":
-				col = "#ff6060"
-		log_lines.append("[color=#889]%02d:%02d[/color] [color=%s]%s[/color]" % [int(e.t / 3600.0) % 24, int(e.t / 60.0) % 60, col, e.text])
-	_set_text(_log, "\n".join(log_lines))
-	var has_sel := not selected_squads.is_empty()
-	for k in ["attack", "defend", "reinforce", "move"]:
-		_buttons[k].disabled = not has_sel
-	var op := war.operation(selected_op)
-	_buttons["cancel"].disabled = not ((op and op.is_active()) or selected_squads.any(func(s: int) -> bool:
-		var sq := sim.state.get_squad(s)
-		return sq != null and sq.op_id >= 0))
-	_buttons["view"].disabled = not has_sel and selected_objective < 0 and op == null and selected_vehicles.is_empty() and selected_structure < 0
 
 
 func _selection_text() -> String:
@@ -417,16 +284,16 @@ func _selection_text() -> String:
 func _hint_text() -> String:
 	if pending_order >= 0:
 		var what := "a point on the map" if pending_order == OperationState.Type.MOVE else "an objective"
-		return "[color=#ffe070][b]%s:[/b] click %s.  RMB or Esc cancels.[/color]" % [OperationState.TYPE_NAMES[pending_order], what]
+		return "%s: click %s. RMB or Esc cancels." % [OperationState.TYPE_NAMES[pending_order], what]
 	if not selected_squads.is_empty():
 		if selected_objective >= 0:
-			return "[color=#aab]Choose Attack, Defend or Reinforce for the target, or RMB anywhere for the default order.[/color]"
-		return "[color=#aab]RMB: enemy/neutral objective = attack, own = reinforce, ground = move. Click an objective to pick it as target.[/color]"
+			return "Choose Attack, Defend or Reinforce for the target, or RMB anywhere for the default order."
+		return "RMB: enemy or neutral objective = attack, own = reinforce, ground = move. Click an objective to make it the target."
 	if selected_op >= 0:
-		return "[color=#aab]View (G) jumps to its squads. Cancel op releases them.[/color]"
+		return "View (G) jumps to its squads. Cancel releases them."
 	if not selected_vehicles.is_empty():
-		return "[color=#aab]RMB: drive there (by road where possible). With squads selected too: they board and are driven. G: show it in the tactical view.[/color]"
-	return "[color=#aab]Click a squad, vehicle or facility, or drag a box around several. Click an objective or an operation for details. H: map controls.[/color]"
+		return "RMB: drive there (by road where possible). With squads selected too: they board and are driven. G: show it in the tactical view."
+	return "Click a squad, vehicle or facility, or drag a box around several. Click an objective or an operation for details."
 
 
 func _squad_status(sq: SquadState) -> String:
@@ -507,6 +374,475 @@ static func _dur(s: float) -> String:
 	return "%d h %02d min" % [int(s / 3600.0), int(s / 60.0) % 60]
 
 
+# --- Panels (UI-01C kit) --------------------------------------------------------------------------
+#
+# Left column: the command panel (side, war time and speed, every faction's objectives), the map
+# layers, and the operations with the last few events. Right: the inspector, only while something is
+# selected - a header, the facts as fields and meters, the orders as buttons and a one-line hint.
+# Bottom centre: the map keys. The map itself fills the window behind them and keeps its proportions.
+
+const COLUMN_W := 214.0
+const INSPECTOR_W := 252.0
+## Map layers the player can switch (each one is drawn by its own pass in _draw).
+const LAYERS := [
+	["territory", &"territory", "Territory"], ["objectives", &"objective", "Objectives"], ["friendly", &"soldiers", "Friendly forces"],
+	["contacts", &"contact", "Enemy contacts"], ["operations", &"operation", "Operations"], ["logistics", &"vehicle", "Logistics & bases"],
+	["camera", &"drive", "Tactical camera"], ["grid", &"layers", "Grid"],
+]
+var layers := {"territory": true, "objectives": true, "friendly": true, "contacts": true, "operations": true, "logistics": true, "camera": true, "grid": true}
+
+var _cmd_panel: FNPanel
+var _cmd_rows: VBoxContainer
+var _clock: FNStatusIndicator
+var _layer_buttons := {}
+var _ops_panel: FNPanel
+var _ops_head: FNSectionHeader
+var _events: VBoxContainer
+var _insp: FNPanel
+var _insp_box: VBoxContainer
+var _insp_sig := ""
+var _insp_cmds: GridContainer
+var _insp_hint: Label
+var _keys: FNPanel
+
+
+func _build_panel() -> void:
+	theme = FNUI.theme()
+	# Command panel.
+	_cmd_panel = FNPanel.new(WorldState.faction_color(faction), FNUI.S4)
+	_cmd_panel.custom_minimum_size = Vector2(COLUMN_W, 0)
+	add_child(_cmd_panel)
+	var cv := VBoxContainer.new()
+	cv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cv.add_theme_constant_override("separation", FNUI.S3)
+	_cmd_panel.add_child(cv)
+	var head := FNSectionHeader.new("Command", "you", FNUI.INK)
+	head.add_chip(WorldState.faction_name(faction), WorldState.faction_color(faction))
+	cv.add_child(head)
+	_clock = FNStatusIndicator.new(FNUI.ICON_S, FNUI.LABEL)
+	cv.add_child(_clock)
+	_cmd_rows = VBoxContainer.new()
+	_cmd_rows.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cmd_rows.add_theme_constant_override("separation", FNUI.S2)
+	cv.add_child(_cmd_rows)
+	# Layers.
+	_header_panel_layers()
+	# Operations and recent events.
+	_ops_panel = FNPanel.new(Color.TRANSPARENT, FNUI.S4)
+	_ops_panel.custom_minimum_size = Vector2(COLUMN_W, 0)
+	add_child(_ops_panel)
+	var ov := VBoxContainer.new()
+	ov.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ov.add_theme_constant_override("separation", FNUI.S3)
+	_ops_panel.add_child(ov)
+	_ops_head = FNSectionHeader.new("Operations", "", FNUI.INK)
+	ov.add_child(_ops_head)
+	_ops_box = VBoxContainer.new()
+	_ops_box.add_theme_constant_override("separation", FNUI.S2)
+	ov.add_child(_ops_box)
+	ov.add_child(FNSectionHeader.new("Recent", "", FNUI.INK_3))
+	_events = VBoxContainer.new()
+	_events.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_events.add_theme_constant_override("separation", 1)
+	ov.add_child(_events)
+	# Inspector.
+	_insp = FNPanel.new(Color.TRANSPARENT, FNUI.S4)
+	_insp.custom_minimum_size = Vector2(INSPECTOR_W, 0)
+	_panel_bg = _insp
+	add_child(_insp)
+	var iv := VBoxContainer.new()
+	iv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	iv.add_theme_constant_override("separation", FNUI.S3)
+	_insp.add_child(iv)
+	_insp_box = VBoxContainer.new()
+	_insp_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_insp_box.add_theme_constant_override("separation", FNUI.S2)
+	iv.add_child(_insp_box)
+	_insp_cmds = GridContainer.new()
+	_insp_cmds.columns = 3
+	_insp_cmds.add_theme_constant_override("h_separation", FNUI.S2)
+	_insp_cmds.add_theme_constant_override("v_separation", FNUI.S2)
+	iv.add_child(_insp_cmds)
+	for b: Array in [["attack", &"assault", "Attack", "", "Attack an objective: click it (or select it first)"],
+			["defend", &"defend", "Defend", "", "Defend an objective"],
+			["reinforce", &"recruit", "Reinforce", "", "Reinforce an own objective"],
+			["move", &"move", "Move", "RMB", "Move to a point on the map"],
+			["cancel", &"blocked", "Cancel", "", "Cancel the operation and release its squads"],
+			["view", &"drive", "View", "G", "Show the selection in the tactical view"]]:
+		var btn := FNCommandButton.new(b[1], b[2], b[3], b[4])
+		btn.custom_minimum_size = Vector2(0, 42)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var key: String = b[0]
+		btn.pressed.connect(func() -> void: _button(key))
+		_insp_cmds.add_child(btn)
+		_buttons[key] = btn
+	_insp_hint = FNUI.label("", FNUI.CAPTION, FNUI.INK_2, "body")
+	_insp_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_insp_hint.custom_minimum_size = Vector2(INSPECTOR_W - 2 * FNUI.S4, 0)
+	iv.add_child(_insp_hint)
+	# Keys, bottom centre.
+	_keys = FNPanel.new(Color.TRANSPARENT, FNUI.S3)
+	_keys.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var kh := HBoxContainer.new()
+	kh.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	kh.add_theme_constant_override("separation", FNUI.S5)
+	for k: Array in [["LMB", "Select"], ["RMB", "Order"], ["Wheel", "Zoom"], ["MMB", "Pan / camera"], ["Home", "Whole map"], ["H", "Controls"], ["M", "Close"]]:
+		kh.add_child(FNKeyHint.new(k[0], k[1]))
+	_keys.add_child(kh)
+	add_child(_keys)
+
+
+func _header_panel_layers() -> void:
+	var lp := FNPanel.new(Color.TRANSPARENT, FNUI.S4)
+	lp.custom_minimum_size = Vector2(COLUMN_W, 0)
+	lp.name = "Layers"
+	add_child(lp)
+	var lv := VBoxContainer.new()
+	lv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lv.add_theme_constant_override("separation", FNUI.S2)
+	lp.add_child(lv)
+	lv.add_child(FNSectionHeader.new("Map layers", "", FNUI.INK))
+	for l: Array in LAYERS:
+		var key: String = l[0]
+		var b := FNCategoryTile.new(l[1], l[2], "")
+		b.custom_minimum_size = Vector2(0, 19)
+		b.selected = layers[key]
+		b.count_label.text = "ON" if layers[key] else "OFF"
+		b.pressed.connect(func() -> void: set_layer(key, not layers[key]))
+		lv.add_child(b)
+		_layer_buttons[key] = b
+
+
+## Switches a map layer (presentation only; nothing in the simulation depends on it).
+func set_layer(key: String, on: bool) -> void:
+	layers[key] = on
+	var b: FNCategoryTile = _layer_buttons.get(key)
+	if b:
+		b.selected = on
+		b.count_label.text = "ON" if on else "OFF"
+	queue_redraw()
+
+
+func _layout_panels() -> void:
+	var vs := size
+	var y := float(FNUI.EDGE)
+	_cmd_panel.size = Vector2.ZERO
+	_cmd_panel.position = Vector2(FNUI.EDGE, y)
+	y += _cmd_panel.size.y + FNUI.S3
+	var lp: Control = get_node("Layers")
+	lp.size = Vector2.ZERO
+	lp.position = Vector2(FNUI.EDGE, y)
+	y += lp.size.y + FNUI.S3
+	_ops_panel.size = Vector2.ZERO
+	_ops_panel.position = Vector2(FNUI.EDGE, maxf(y, vs.y - _ops_panel.size.y - FNUI.EDGE))
+	_insp.size = Vector2.ZERO
+	_insp.position = Vector2(vs.x - _insp.size.x - FNUI.EDGE, FNUI.EDGE)
+	_keys.size = Vector2.ZERO
+	_keys.position = Vector2(roundf((vs.x - _keys.size.x) * 0.5), vs.y - _keys.size.y - FNUI.EDGE)
+	_keys.visible = not show_help
+
+
+func _refresh_panel() -> void:
+	_layout_panels()
+	var panel_was_visible := _insp.visible
+	_insp.visible = _panel_active()
+	if panel_was_visible != _insp.visible:
+		queue_redraw()
+	var war := sim.state.war
+	var t := sim.state.time
+	_clock.set_status(&"clock", "War time %d:%02d  ·  speed %s" % [int(t / 3600.0), int(t / 60.0) % 60, TimeCompression.label()], FNUI.INK_2)
+	_clock.text_label.uppercase = false
+	var rows := []
+	for f: FactionState in war.factions.values():
+		var objs := war.owned_by(f.id).size()
+		if f.id == faction:
+			var soldiers := 0
+			for sq: SquadState in sim.war.squads_of(f.id):
+				soldiers += sq.members.size()
+			rows.append([f.id, f.faction_name, "%d obj" % objs, "%d soldiers · %d reserve · %d fallen" % [soldiers, f.reserves, f.casualties]])
+		else:
+			rows.append([f.id, f.faction_name, "%d obj" % objs, "AI · %s" % sim.war.profile(f).display_name.to_lower()])
+	var key := str(rows)
+	if _cmd_rows.get_meta("key", "") != key:
+		_cmd_rows.set_meta("key", key)
+		for c in _cmd_rows.get_children():
+			c.queue_free()
+		for r: Array in rows:
+			var h := HBoxContainer.new()
+			h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			h.add_theme_constant_override("separation", FNUI.S3)
+			var e := FNUnitEmblem.new(Vector2(14, 9))
+			e.kind = &"none"
+			e.color = WorldState.faction_color(r[0])
+			h.add_child(e)
+			var v := VBoxContainer.new()
+			v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			v.add_theme_constant_override("separation", -2)
+			v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var top := HBoxContainer.new()
+			top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var n := FNUI.label(r[1], FNUI.LABEL, WorldState.faction_color(r[0]).lightened(0.35), "caps")
+			n.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			top.add_child(n)
+			top.add_child(FNUI.label(r[2], FNUI.LABEL, FNUI.INK, "number"))
+			v.add_child(top)
+			v.add_child(FNUI.label(r[3], FNUI.CAPTION, FNUI.INK_3, "body"))
+			h.add_child(v)
+			_cmd_rows.add_child(h)
+	_refresh_inspector()
+	_refresh_ops()
+	_refresh_events()
+	var has_sel := not selected_squads.is_empty()
+	for k in ["attack", "defend", "reinforce", "move"]:
+		(_buttons[k] as FNCommandButton).visible = has_sel
+		(_buttons[k] as FNCommandButton).set_enabled(has_sel)
+		(_buttons[k] as FNCommandButton).armed = pending_order == {"attack": OperationState.Type.ATTACK, "defend": OperationState.Type.DEFEND,
+			"reinforce": OperationState.Type.REINFORCE, "move": OperationState.Type.MOVE}[k]
+	var op := war.operation(selected_op)
+	var can_cancel: bool = (op and op.is_active()) or selected_squads.any(func(s: int) -> bool:
+		var sq := sim.state.get_squad(s)
+		return sq != null and sq.op_id >= 0)
+	(_buttons["cancel"] as FNCommandButton).set_enabled(can_cancel)
+	(_buttons["cancel"] as FNCommandButton).visible = has_sel or op != null
+	(_buttons["view"] as FNCommandButton).set_enabled(has_sel or selected_objective >= 0 or op != null or not selected_vehicles.is_empty() or selected_structure >= 0)
+	_insp_hint.text = _hint_text()
+
+
+## The inspector's content as a list of specs; rebuilt only when it changes.
+func _refresh_inspector() -> void:
+	if not _insp.visible:
+		return
+	var spec := _inspector_spec()
+	var sig := str(spec)
+	if sig == _insp_sig:
+		return
+	_insp_sig = sig
+	# Out of the box at once (a freed-later child would still count towards the panel's height).
+	for c in _insp_box.get_children():
+		_insp_box.remove_child(c)
+		c.queue_free()
+	for it: Array in spec:
+		match it[0]:
+			"head":
+				var h := HBoxContainer.new()
+				h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				h.add_theme_constant_override("separation", FNUI.S3)
+				var frame := PanelContainer.new()
+				frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				frame.custom_minimum_size = Vector2(30, 26)
+				frame.add_theme_stylebox_override("panel", FNUI.box(Color(it[4], 0.16), Color(it[4], 0.8), 1, 2, 0))
+				frame.add_child(FNIcons.rect(it[1], FNUI.ICON_M, Color(it[4]).lightened(0.4)))
+				h.add_child(frame)
+				var v := VBoxContainer.new()
+				v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				v.add_theme_constant_override("separation", -1)
+				v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				var tl := FNUI.label(it[2], FNUI.TITLE, FNUI.INK, "title")
+				tl.clip_text = true
+				tl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+				v.add_child(tl)
+				var sl := FNUI.label(it[3], FNUI.CAPTION, FNUI.INK_2, "caps")
+				sl.clip_text = true
+				sl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+				v.add_child(sl)
+				h.add_child(v)
+				_insp_box.add_child(h)
+			"status":
+				var s := FNStatusIndicator.new(FNUI.ICON_S, FNUI.LABEL)
+				s.set_status(it[1], it[2], it[3])
+				_insp_box.add_child(s)
+			"field":
+				var f := FNField.new(it[1], "", it[3], 64.0)
+				f.set_value(it[2], it[4])
+				_insp_box.add_child(f)
+			"meter":
+				var m := FNMeter.new(it[1], it[4])
+				m.custom_minimum_size = Vector2(INSPECTOR_W - 2 * FNUI.S4, 11)
+				m.value_w = 44.0
+				m.set_value(it[2], it[3], it[4])
+				_insp_box.add_child(m)
+			"section":
+				_insp_box.add_child(FNSectionHeader.new(it[1], it[2] if it.size() > 2 else "", FNUI.INK_3))
+			"text":
+				var l := FNUI.label(it[1], FNUI.CAPTION, it[2], "body")
+				l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				l.custom_minimum_size = Vector2(INSPECTOR_W - 2 * FNUI.S4, 0)
+				_insp_box.add_child(l)
+	_insp.size = Vector2.ZERO
+
+
+## What the inspector shows for the selection: an operation, vehicles / a facility (with its base),
+## squads, or an objective. Only data the records hold.
+func _inspector_spec() -> Array:
+	var war := sim.state.war
+	var out := []
+	var op := war.operation(selected_op)
+	if op:
+		var obj := war.objective(op.target_objective)
+		var target := obj.obj_name if obj else "point %.1f, %.1f km" % [op.target_pos.x / 1000.0, op.target_pos.z / 1000.0]
+		out.append(["head", &"operation", "%s → %s" % [op.type_name(), target], "Operation #%d%s" % [op.id, "" if op.player_ordered else " · AI"], _op_color(op)])
+		if not op.is_active():
+			var col := FNUI.OK if op.phase == OperationState.Phase.COMPLETED else (FNUI.DANGER if op.phase == OperationState.Phase.FAILED else FNUI.INK_2)
+			out.append(["status", &"check" if op.phase == OperationState.Phase.COMPLETED else &"blocked", op.phase_name(), col])
+			out.append(["text", op.outcome, FNUI.INK_2])
+			out.append(["field", "Lasted", _dur(op.ended_at - op.started_at), &"clock", FNUI.INK])
+			out.append(["field", "Losses", "%d of %d soldiers" % [op.losses, op.start_strength], &"soldiers", FNUI.INK])
+			return out
+		var now := sim.state.time
+		out.append(["status", &"tactic", "%s · %s" % [op.phase_name(), _dur(now - op.phase_since)], FNUI.INFO])
+		out.append(["text", _phase_meaning(op).capitalize() if _phase_meaning(op) != "" else "", FNUI.INK_2])
+		var soldiers := 0
+		var names: Array[String] = []
+		for sid in op.squads:
+			var sq := sim.state.get_squad(sid)
+			if sq:
+				soldiers += sq.members.size()
+				names.append("%s %d" % [sq.squad_name, sq.members.size()])
+		out.append(["field", "Squads", ", ".join(names), &"soldiers", FNUI.INK])
+		out.append(["meter", "Strength", float(soldiers) / maxf(op.start_strength, 1.0), "%d / %d" % [soldiers, op.start_strength],
+			FNUI.OK if op.losses == 0 else FNUI.WARN])
+		var mi := sim.war.march_info(op)
+		if op.phase == OperationState.Phase.MOVING and mi.rem >= 0.0:
+			var done: float = 1.0 - mi.rem / maxf(mi.total, 1.0)
+			out.append(["meter", "March", done, "%.1f km left" % (mi.rem / 1000.0), FNUI.INFO])
+			var eta := "estimating …"
+			if mi.eta >= 0.0:
+				eta = "about %s" % _dur(ceilf(mi.eta / 60.0) * 60.0)
+			elif now - op.started_at >= 20.0:
+				eta = "unknown (%s)" % ("in contact" if Array(op.squads).any(func(s: int) -> bool: return _fighting(sim.state.get_squad(s))) else "halted or slowed")
+			out.append(["field", "Arrival", eta, &"clock", FNUI.INK])
+		if obj:
+			out.append(["field", "Target", _owner_plain(obj) + ("  ·  contested" if obj.contested else ""), &"objective", FNUI.WARN if obj.contested else FNUI.INK])
+			if obj.capture_faction >= 0:
+				out.append(["meter", "Capture", obj.capture_progress, "%d %%" % int(obj.capture_progress * 100), WorldState.faction_color(obj.capture_faction)])
+		return out
+	if not selected_vehicles.is_empty() or selected_structure >= 0:
+		for vid in selected_vehicles.slice(0, 3):
+			var vu := sim.state.get_unit(vid)
+			if vu == null or vu.veh == null:
+				continue
+			var d := vu.veh.def()
+			out.append(["head", &"vehicle", vu.unit_name, d.display_name, FNUI.INFO])
+			out.append(["status", &"moving" if vu.order == UnitState.Order.MOVE else &"idle", vu.veh.status_name() + ((" · " + vu.veh.reason) if vu.veh.reason != "" else ""),
+				FNUI.OK if vu.veh.reason == "" else FNUI.ALERT])
+			out.append(["meter", "Fuel", vu.veh.fuel / maxf(d.fuel_capacity, 1.0), "%d l" % roundi(vu.veh.fuel), FNUI.INFO])
+			out.append(["meter", "Cargo", vu.veh.cargo.total() / maxf(vu.veh.cargo.capacity, 1.0), "%d / %d" % [roundi(vu.veh.cargo.total()), roundi(vu.veh.cargo.capacity)], FNUI.NEUTRAL])
+			if not vu.veh.job.is_empty():
+				out.append(["field", "Job", sim.logistics.describe_job(vu), &"route", FNUI.ARMED])
+		if selected_vehicles.size() > 3:
+			out.append(["text", "… and %d more vehicles" % (selected_vehicles.size() - 3), FNUI.INK_2])
+		var st := sim.logistics.structure(selected_structure)
+		if st:
+			var b := sim.logistics.bases.summary(st.base_id) if st.base_id >= 0 else {}
+			out.append(["head", &"base" if not b.is_empty() else &"logistics", sim.logistics.store_name(st), ("%s · %s" % [b.name, b.kind]) if not b.is_empty() else "Facility",
+				WorldState.faction_color(st.faction)])
+			if st.inventory:
+				out.append(["meter", "Store", st.inventory.total() / maxf(st.inventory.capacity, 1.0), "%d / %d" % [roundi(st.inventory.total()), roundi(st.inventory.capacity)], FNUI.NEUTRAL])
+			if not b.is_empty():
+				out.append(["section", "Base", b.name])
+				var n := 0
+				for k in b.facilities:
+					n += int(b.facilities[k])
+				out.append(["field", "Buildings", "%d · %d beds · %d bays" % [n, b.capacity, b.parking], &"building", FNUI.INK])
+				out.append(["field", "Garrison", "%d soldiers · %d vehicles" % [b.soldiers, b.vehicles.size()], &"soldiers", FNUI.INK])
+				out.append(["field", "Stock", "ammo %d kg · fuel %d l · supplies %d kg" % [roundi(b.stock.ammo), roundi(b.stock.fuel), roundi(b.stock.supplies)], &"cargo", FNUI.INK])
+				for a: String in b.activities.slice(0, 3):
+					out.append(["text", a, FNUI.ARMED])
+		if not selected_squads.is_empty():
+			out.append(["text", "%d squad(s) selected too: RMB = transport them there" % selected_squads.size(), FNUI.INFO])
+		return out
+	if not selected_squads.is_empty():
+		var n := 0
+		var alive := 0
+		for sid in selected_squads:
+			var sq := sim.state.get_squad(sid)
+			if sq:
+				n += sq.members.size() + sq.fallen.size()
+				alive += sq.members.size()
+		var first := sim.state.get_squad(selected_squads[0])
+		var title := first.squad_name if selected_squads.size() == 1 and first else "%d squads" % selected_squads.size()
+		out.append(["head", &"infantry", title, "Infantry · %d soldiers" % alive, WorldState.faction_color(faction)])
+		if selected_squads.size() == 1 and first:
+			var st := SquadPanel.squad_status(sim, first)
+			out.append(["status", st.icon, st.text, st.color])
+			out.append(["field", "Task", _squad_plain(first), &"operation", FNUI.INK])
+			out.append(["meter", "Strength", float(alive) / maxf(n, 1.0), "%d / %d" % [alive, n], FNUI.OK if alive == n else FNUI.WARN])
+		else:
+			for sid in selected_squads.slice(0, 5):
+				var sq := sim.state.get_squad(sid)
+				if sq:
+					out.append(["field", sq.squad_name, "%d · %s" % [sq.members.size(), _squad_plain(sq)], &"", FNUI.INK])
+			if selected_squads.size() > 5:
+				out.append(["text", "… and %d more" % (selected_squads.size() - 5), FNUI.INK_2])
+		var o := war.objective(selected_objective)
+		if o:
+			out.append(["field", "Target", "%s (%s)" % [o.obj_name, _owner_plain(o)], &"objective", FNUI.ARMED])
+		return out
+	var obj2 := war.objective(selected_objective)
+	if obj2:
+		var col := WorldState.faction_color(obj2.owner) if obj2.owner >= 0 else FNUI.NEUTRAL
+		out.append(["head", &"hq" if obj2.kind == &"hq" else (&"bridge" if obj2.kind == &"bridge" else &"objective"), obj2.obj_name,
+			"%s · value %d" % [String(obj2.kind), obj2.value], col])
+		out.append(["field", "Owner", _owner_plain(obj2), &"territory", col.lightened(0.3)])
+		if obj2.contested:
+			out.append(["status", &"engaged", "Contested · capture paused", FNUI.WARN])
+		elif _threatened(obj2):
+			out.append(["status", &"under_fire", "Threatened · enemy reported nearby", FNUI.ALERT])
+		else:
+			out.append(["status", &"check", "Quiet", FNUI.OK])
+		if obj2.capture_faction >= 0:
+			out.append(["meter", "Capture", obj2.capture_progress, "%d %%" % int(obj2.capture_progress * 100), WorldState.faction_color(obj2.capture_faction)])
+		out.append(["field", "Your troops", "%d soldiers there" % int(obj2.presence.get(faction, 0)), &"soldiers", FNUI.INK])
+		out.append(["field", "Enemy", "%d reported near" % sim.war.threat_near(faction, obj2.position, obj2.radius + 400.0), &"contact", FNUI.INK])
+	return out
+
+
+func _owner_plain(o: ObjectiveState) -> String:
+	return (WorldState.faction_name(o.owner) + (" (you)" if o.owner == faction else "")) if o.owner >= 0 else "neutral"
+
+
+func _squad_plain(sq: SquadState) -> String:
+	var op := sim.state.war.operation(sq.op_id)
+	if op:
+		return "%s #%d · %s" % [op.type_name(), op.id, op.phase_name()]
+	if sq.station_objective >= 0 and sim.state.war.objective(sq.station_objective):
+		return "Garrison %s" % sim.state.war.objective(sq.station_objective).obj_name
+	return sq.order_name() if sq.order != SquadState.Order.NONE else "Idle"
+
+
+func _refresh_events() -> void:
+	var evs := sim.war.events_for(faction, 3)
+	var key := str(evs.map(func(e: Dictionary) -> String: return "%s%s" % [e.t, e.text]))
+	if _events.get_meta("key", "") == key:
+		return
+	_events.set_meta("key", key)
+	for c in _events.get_children():
+		c.queue_free()
+	for e: Dictionary in evs:
+		var col := FNUI.INK_2
+		match e.kind:
+			"captured":
+				col = FNUI.WARN
+			"contested", "threat", "attack":
+				col = FNUI.ALERT
+			"op_done", "reinforcements":
+				col = FNUI.OK
+			"op_failed":
+				col = FNUI.DANGER
+		var h := HBoxContainer.new()
+		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		h.add_theme_constant_override("separation", FNUI.S3)
+		var tl := FNUI.label("%02d:%02d" % [int(e.t / 3600.0) % 24, int(e.t / 60.0) % 60], FNUI.CAPTION, FNUI.INK_3, "number")
+		tl.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		h.add_child(tl)
+		var l := FNUI.label(e.text, FNUI.CAPTION, col, "body")
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		l.custom_minimum_size = Vector2(COLUMN_W - 60, 0)
+		h.add_child(l)
+		_events.add_child(h)
+
+
 func _refresh_ops() -> void:
 	var war := sim.state.war
 	var ops := war.active_operations(faction)
@@ -517,6 +853,7 @@ func _refresh_ops() -> void:
 			ended.append(o)
 	ended.sort_custom(func(a: OperationState, b: OperationState) -> bool: return a.ended_at > b.ended_at)
 	ended = ended.slice(0, 3)
+	_ops_head.aside.text = "%d active" % ops.size()
 	var key := str((ops + ended).map(func(o: OperationState) -> String: return "%d.%d.%d.%d" % [o.id, o.phase, o.squads.size(), o.losses])) + str(selected_op)
 	if _ops_box.get_meta("key", "") == key:
 		return
@@ -524,18 +861,11 @@ func _refresh_ops() -> void:
 	for c in _ops_box.get_children():
 		c.queue_free()
 	if ops.is_empty() and ended.is_empty():
-		var l := _label(12)
-		l.text = "[color=#889]No operations. Select squads, then RMB on a target.[/color]"
+		var l := FNUI.label("No operations. Select squads, then RMB on a target.", FNUI.CAPTION, FNUI.INK_3, "body")
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size = Vector2(COLUMN_W - 2 * FNUI.S4, 0)
 		_ops_box.add_child(l)
 	for op: OperationState in ops + ended:
-		var row := HBoxContainer.new()
-		var b := Button.new()
-		b.flat = true
-		b.focus_mode = Control.FOCUS_NONE
-		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.add_theme_font_size_override("font_size", 12)
-		b.clip_text = true
 		var obj := war.objective(op.target_objective)
 		var soldiers := 0
 		for sid in op.squads:
@@ -543,24 +873,24 @@ func _refresh_ops() -> void:
 			if sq:
 				soldiers += sq.members.size()
 		var oid := op.id
-		if op.is_active():
-			b.text = "#%d %s %s · %s · %d sq, %d sold." % [op.id, op.type_name(), obj.obj_name if obj else "point", op.phase_name(), op.squads.size(), soldiers]
-			b.add_theme_color_override("font_color", _op_color(op).lightened(0.3))
-		else:
-			b.text = "#%d %s %s · %s" % [op.id, op.type_name(), obj.obj_name if obj else "point", op.phase_name()]
-			b.add_theme_color_override("font_color", Color(0.6, 0.62, 0.65))
-		if op.id == selected_op:
-			b.add_theme_color_override("font_color", COL_SELECT)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", FNUI.S2)
+		var b := FNCategoryTile.new(&"operation", "#%d %s %s" % [op.id, op.type_name(), obj.obj_name if obj else "point"],
+			("%s · %d sq" % [op.phase_name(), op.squads.size()]) if op.is_active() else op.phase_name())
+		b.icon_rect.modulate = _op_color(op)
+		b.selected = op.id == selected_op
+		b.tooltip_text = "%s #%d · %s · %d squads, %d soldiers" % [op.type_name(), op.id, op.phase_name(), op.squads.size(), soldiers]
+		if not op.is_active():
+			b.modulate.a = 0.55
 		b.pressed.connect(func() -> void: select_operation(oid))
 		row.add_child(b)
 		if op.is_active():
-			for bb: Array in [["Go", func() -> void: go_to(op.target_pos)], ["✕", func() -> void: sim.war.cancel(oid, "cancelled by the player")]]:
-				var btn := Button.new()
-				btn.text = bb[0]
-				btn.focus_mode = Control.FOCUS_NONE
-				btn.add_theme_font_size_override("font_size", 12)
-				btn.pressed.connect(bb[1])
-				row.add_child(btn)
+			var go := FNUI.action_button(&"route", "", "Show the target")
+			go.pressed.connect(func() -> void: go_to(op.target_pos))
+			row.add_child(go)
+			var x := FNUI.action_button(&"blocked", "", "Cancel the operation")
+			x.pressed.connect(func() -> void: sim.war.cancel(oid, "cancelled by the player"))
+			row.add_child(x)
 		_ops_box.add_child(row)
 
 
@@ -995,31 +1325,35 @@ func _draw() -> void:
 	if _bg:
 		draw_texture_rect(_bg, map_area, false, Color(0.86, 0.89, 0.86))
 	_update_territory()
-	if _territory:
+	if _territory and layers.territory:
 		# Territory is strongest on the overview and fades when zoomed in, where the
 		# terrain itself matters more.
 		var a := clampf(remap(log(zoom), log(0.05), log(1.0), 0.75, 0.3), 0.3, 0.75)
 		draw_texture_rect(_territory, map_area, false, Color(1, 1, 1, a))
-	_draw_grid(map_area)
-	var font := ThemeDB.fallback_font
+	if layers.grid:
+		_draw_grid(map_area)
+	draw_rect(map_area, Color(FNUI.LINE_STRONG, 0.8), false, 1.0)
+	var font := FNUI.font("semibold")
 	var war := sim.state.war
 	var level := detail_level()
 	_taken.clear()
 	# Objectives below everything that moves.
-	for o: ObjectiveState in war.all_objectives():
-		_draw_objective(o, font, level)
+	if layers.objectives:
+		for o: ObjectiveState in war.all_objectives():
+			_draw_objective(o, font, level)
 	# Operations of the player's faction: routes, then their labels.
 	_op_rects.clear()
 	var label_slots := {}
-	var ops := war.active_operations(faction)
+	var ops := war.active_operations(faction) if layers.operations else []
 	for op: OperationState in ops:
 		_draw_operation_route(op)
 	for op: OperationState in ops:
 		_draw_operation_label(op, font, label_slots)
-	_draw_known_enemies(font)
+	if layers.contacts:
+		_draw_known_enemies(font)
 	if dbg_truth:
 		_draw_truth(font)
-	_groups = squad_groups()
+	_groups = squad_groups() if layers.friendly else []
 	# Markers first, then their labels where there is room.
 	# Close in, each soldier as a dot under its squad's marker (from 1 px/m the
 	# formation is wider than the symbol).
@@ -1033,8 +1367,10 @@ func _draw() -> void:
 		return a.selected * 100 + a.ids.size() > b.selected * 100 + b.ids.size())
 	for g: Dictionary in order:
 		_draw_group_label(g, font)
-	_draw_logistics_layer(font, level)
-	_draw_camera()
+	if layers.logistics:
+		_draw_logistics_layer(font, level)
+	if layers.camera:
+		_draw_camera()
 	if _box and _drag_from.is_finite():
 		var m := get_local_mouse_position()
 		var br2 := Rect2(_drag_from, m - _drag_from).abs()
@@ -1098,7 +1434,10 @@ func _draw_scale(font: Font) -> void:
 			m_per_bar = s
 			break
 	var px := m_per_bar * zoom
-	var at := Vector2(20, size.y - 28)
+	# Inside the map's lower left corner (the left column covers the window edge).
+	var br := to_screen(Vector3(half, 0, half))
+	var tl := to_screen(Vector3(-half, 0, -half))
+	var at := Vector2(clampf(tl.x, COLUMN_W + 2.0 * FNUI.EDGE, size.x) + 12.0, minf(br.y, size.y) - 14.0)
 	draw_line(at, at + Vector2(px, 0), Color.WHITE, 2.0)
 	draw_line(at + Vector2(0, -4), at + Vector2(0, 4), Color.WHITE, 2.0)
 	draw_line(at + Vector2(px, -4), at + Vector2(px, 4), Color.WHITE, 2.0)
@@ -1107,7 +1446,6 @@ func _draw_scale(font: Font) -> void:
 
 func _draw_help(font: Font, r: Rect2) -> void:
 	if not show_help:
-		_text(font, Vector2(20, 26), "H  map controls", 13, Color(0.9, 0.92, 0.85, 0.85))
 		return
 	var rows := [
 		["Wheel", "zoom towards the cursor"],
@@ -1125,14 +1463,16 @@ func _draw_help(font: Font, r: Rect2) -> void:
 		["F5 / F9", "save / load the whole war"],
 		["M / Esc", "close the map     H: hide this"],
 	]
-	var box := Rect2(Vector2(16, 12), Vector2(minf(520.0, r.size.x - 32.0), 22.0 + rows.size() * 18.0))
-	draw_rect(box, Color(0.04, 0.05, 0.06, 0.88), true)
-	draw_rect(box, Color(0.3, 0.34, 0.36), false, 1.0)
-	var y := box.position.y + 18.0
+	var box := Rect2(Vector2.ZERO, Vector2(minf(470.0, r.size.x - 32.0), 30.0 + rows.size() * 15.0))
+	box.position = ((size - box.size) * 0.5).round()
+	draw_style_box(FNUI.panel_style(), box)
+	var body := FNUI.font("regular", false)
+	_text(FNUI.caps_font(), box.position + Vector2(12, 18), "MAP CONTROLS", FNUI.LABEL, FNUI.INK, 0)
+	var y := box.position.y + 36.0
 	for row: Array in rows:
-		draw_string(font, Vector2(box.position.x + 10, y), row[0], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1.0, 0.9, 0.55))
-		draw_string(font, Vector2(box.position.x + 150, y), row[1], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.9, 0.92, 0.9))
-		y += 18.0
+		draw_string(FNUI.caps_font(), Vector2(box.position.x + 12, y), String(row[0]).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, FNUI.CAPTION, FNUI.ARMED)
+		draw_string(body, Vector2(box.position.x + 130, y), row[1], HORIZONTAL_ALIGNMENT_LEFT, -1, FNUI.CAPTION + 1, FNUI.INK)
+		y += 15.0
 
 
 ## Text with a dark outline (readable on any terrain).
