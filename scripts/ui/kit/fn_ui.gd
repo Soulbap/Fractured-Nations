@@ -198,6 +198,32 @@ static func label(text := "", size := LABEL, color := INK, kind := "body") -> La
 	return l
 
 
+## A compact action button: icon + uppercase text on the kit surfaces (secondary actions in inspectors,
+## where a large FNCommandButton would be too much). toggle: shows the selected surface while pressed.
+static func action_button(icon_name: StringName, text: String, tip := "", toggle := false) -> Button:
+	var b := Button.new()
+	b.text = text.to_upper()
+	b.tooltip_text = tip
+	b.focus_mode = Control.FOCUS_NONE
+	b.toggle_mode = toggle
+	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	b.custom_minimum_size = Vector2(0, 20)
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.add_theme_font_size_override("font_size", CAPTION)
+	b.add_theme_constant_override("icon_max_width", ICON_S)
+	b.add_theme_constant_override("h_separation", S3 - 1)
+	for st in ["normal", "hover", "pressed", "disabled", "hover_pressed"]:
+		var sb := state_style(&"selected" if st in ["pressed", "hover_pressed"] and toggle else StringName(st), 0)
+		sb.content_margin_left = 6
+		sb.content_margin_right = 7
+		sb.content_margin_top = 2
+		sb.content_margin_bottom = 2
+		b.add_theme_stylebox_override(st, sb)
+	if icon_name != &"":
+		b.icon = FNIcons.texture(icon_name, ICON_S)
+	return b
+
+
 ## A keycap hint ("Z", "RMB", "F1").
 static func keycap(key: String, size := CAPTION) -> Label:
 	var l := label(key, size, INK_2, "caps")
