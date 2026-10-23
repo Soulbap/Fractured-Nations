@@ -76,6 +76,12 @@ func _ready() -> void:
 	anchor_cam.current = false
 	add_child(anchor_cam)
 	process_physics_priority = -10  # before the bodies' own physics step
+	connect_vegetation()
+
+
+## Rebakes the navmesh when instances in the area change (construction clearings, world object overrides).
+## Idempotent; core_demo calls it again after it assigned navigation.vegetation (after this node's _ready).
+func connect_vegetation() -> void:
 	if navigation and navigation.vegetation and not navigation.vegetation.clearings_changed.is_connected(_on_vegetation_changed):
 		navigation.vegetation.clearings_changed.connect(_on_vegetation_changed)
 

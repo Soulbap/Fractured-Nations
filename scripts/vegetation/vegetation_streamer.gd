@@ -58,6 +58,8 @@ var overrides: RefCounted
 
 var _missing := {}
 var _loading := {}
+## Chunks that must be read from disk again (their file changed): bypass the resource cache.
+var _fresh := {}
 var _queue: Array = []
 var _queue_pos := 0
 var _last_obs: Array[Vector3] = []
@@ -79,6 +81,8 @@ func _process(_delta: float) -> void:
 	if not enabled or library == null:
 		return
 	_poll_loading()
+	if overrides:
+		overrides.poll()
 	var obs := _observer_positions()
 	if obs.is_empty():
 		return
@@ -102,6 +106,26 @@ func _init_overrides() -> void:
 			override_path = world_dir.get_base_dir().path_join(world_dir.get_file() + ".overrides.json")
 		overrides = WorldOverrides.new(self, override_path)
 		overrides.load_file()
+
+
+## Unloads one chunk (and its active cells). It is read again, and its override baseline
+## rehashed, the next time it is needed.
+func unload_chunk(loc: Vector2i) -> void:
+	for key in active.keys():
+		if VegetationChunk.chunk_of(Vector3(key.x * cell_size_m, 0, key.y * cell_size_m), chunk_size_m) == loc:
+			_deactivate(key)
+	if chunks.erase(loc) and overrides:
+		overrides.on_chunk_unloaded(loc)
+
+
+## The chunk file changed on disk: drop the loaded copy and bypass the resource cache on the next read.
+func reload_chunk(loc: Vector2i) -> void:
+	_fresh[loc] = true
+	if _loading.has(loc):
+		ResourceLoader.load_threaded_get(_loading[loc])
+		_loading.erase(loc)
+	unload_chunk(loc)
+	_dirty = true
 
 
 func overrides_changed(cells: Array) -> void:
@@ -219,13 +243,14 @@ func get_chunk_sync(loc: Vector2i) -> VegetationChunk:
 		return null
 	var path := _chunk_path(loc)
 	if _loading.has(loc):
-		_store_chunk(loc, ResourceLoader.load_threaded_get(path))
 		_loading.erase(loc)
+		_store_chunk(loc, ResourceLoader.load_threaded_get(path))
 		return chunks.get(loc)
 	if not ResourceLoader.exists(path):
 		_missing[loc] = true
 		return null
-	_store_chunk(loc, ResourceLoader.load(path))
+	var mode := ResourceLoader.CACHE_MODE_REPLACE if _fresh.erase(loc) else ResourceLoader.CACHE_MODE_REUSE
+	_store_chunk(loc, ResourceLoader.load(path, "", mode))
 	return chunks.get(loc)
 
 
@@ -275,6 +300,8 @@ func _store_chunk(loc: Vector2i, res: Resource) -> void:
 		cell_size_m = ch.cell_size_m
 		chunk_size_m = ch.chunk_size_m
 	chunks[loc] = ch
+	if overrides:
+		overrides.on_chunk_loaded(loc)
 	_dirty = true
 
 
@@ -285,7 +312,8 @@ func _request_chunk(loc: Vector2i) -> void:
 	if not ResourceLoader.exists(path):
 		_missing[loc] = true
 		return
-	if ResourceLoader.load_threaded_request(path) != OK:
+	var mode := ResourceLoader.CACHE_MODE_REPLACE if _fresh.erase(loc) else ResourceLoader.CACHE_MODE_REUSE
+	if ResourceLoader.load_threaded_request(path, "", false, mode) != OK:
 		_missing[loc] = true
 		return
 	_loading[loc] = path
@@ -319,10 +347,7 @@ func _update_sets(obs: Array[Vector3]) -> void:
 		_request_chunk(loc)
 	for loc in chunks.keys():
 		if not wanted.has(loc) and _square_distance(obs, Vector2(loc) * chunk_size_m, chunk_size_m) > r + chunk_keep_margin_m:
-			for key in active.keys():
-				if VegetationChunk.chunk_of(Vector3(key.x * cs, 0, key.y * cs), chunk_size_m) == loc:
-					_deactivate(key)
-			chunks.erase(loc)
+			unload_chunk(loc)
 
 	# Desired (cell, mesh) set with distances.
 	var desired := {}

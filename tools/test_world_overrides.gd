@@ -162,6 +162,48 @@ func run() -> void:
 	assert(mismatch.unresolved.has(tree))
 	assert(mismatch.records.has(tree))
 	assert(s.get_cell_instances(Vector2i(14, 0), [13]).size() == 1)
+	# Live source change (EW02C): a validated, loaded chunk is rewritten behind the layer's back. poll() detects it
+	# after the guard interval, the record becomes unresolved and the streamer re-reads the chunk.
+	ch = VegetationChunk.new()
+	ch.add_instance(1, Transform3D(Basis.IDENTITY, Vector3(5, 0, 5)), Color(0.4, 0.5, 0.6, 1.0))
+	ch.add_instance(13, Transform3D(Basis.IDENTITY, Vector3(10, 0, 10)), Color.WHITE)
+	assert(ResourceSaver.save(ch, DIR.path_join("veg_0_0.res")) == OK)
+	var live = OverrideLayer.new(s, DIR.path_join("live.json"))
+	s.overrides = live
+	s.chunks.clear()
+	var live_id: String = live.set_generated(Vector2i.ZERO, 1, 0, Transform3D(Basis.IDENTITY, Vector3(300, 0, 300)))
+	assert(not live_id.is_empty() and live.unresolved.is_empty())
+	var hashes_before: int = live.stats.hashes
+	for i in 50:
+		s.get_cell_instances(Vector2i(2, 2), [1])
+	assert(live.stats.hashes == hashes_before) # normal lookups never hash
+	ch.add_instance(1, Transform3D(Basis.IDENTITY, Vector3(20, 0, 20)), Color.WHITE)
+	assert(ResourceSaver.save(ch, DIR.path_join("veg_0_0.res")) == OK)
+	OS.delay_msec(OverrideLayer.GUARD_INTERVAL_MS + 100)
+	live.poll()
+	assert(live.stats.source_changes == 1)
+	live.affected_cells() # revalidates against the new revision and reports
+	assert(live.unresolved.has(live_id))
+	assert(s.get_cell_instances(Vector2i(2, 2), [1]).is_empty()) # the stale override is not applied
+	assert(s.get_cell_instances(Vector2i.ZERO, [1]).size() == 2) # the new source content is what is loaded
+	# Missing baseline file: generated records are unusable, manual additions still load.
+	var manual: String = live.add_instance(1, Transform3D(Basis.IDENTITY, Vector3(700, 0, 700)))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(DIR.path_join("veg_0_0.res")))
+	live.invalidate_all()
+	assert(live.chunk_hash(Vector2i.ZERO).is_empty())
+	assert(live.affected_cells().has(Vector2i(5, 5)) and not live.is_valid(live_id) and live.is_valid(manual))
+	# Scatter protection leaves the directory and the override files untouched.
+	assert(ResourceSaver.save(ch, DIR.path_join("veg_0_0.res")) == OK)
+	var before := {}
+	for f in DirAccess.get_files_at(ProjectSettings.globalize_path(DIR)):
+		before[f] = FileAccess.get_sha256(DIR.path_join(f))
+	var blocked := TestBuilder.new()
+	blocked.scatter_vegetation()
+	assert(not blocked.allow_replace_existing_vegetation)
+	for f in DirAccess.get_files_at(ProjectSettings.globalize_path(DIR)):
+		assert(before.get(f) == FileAccess.get_sha256(DIR.path_join(f)))
+	assert(DirAccess.get_files_at(ProjectSettings.globalize_path(DIR)).size() == before.size())
+	blocked.free()
 	print("EW02 synthetic effective-cell checks passed")
 	s.queue_free()
 	quit()
