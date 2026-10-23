@@ -317,11 +317,11 @@ func _process(_delta: float) -> void:
 	var squads_selected: bool = rts != null and not rts.selected_squads().is_empty()
 	tactical_panel.visible = squads_selected and game != null and game.mode == GameController.Mode.RTS and not (construction and construction.active)
 	if tactical_panel.visible:
-		# Bottom right, above the text; the squad list gives way when they would overlap.
+		# The deck is a temporary, centred action surface; it never becomes a permanent right-hand wall.
 		var vp := get_viewport().get_visible_rect().size
-		tactical_panel.position = Vector2(maxf(vp.x - tactical_panel.size.x - 12.0, 8.0), _label.position.y - tactical_panel.size.y - 8.0)
-		if tactical_panel.position.x < squad_panel.position.x + squad_panel.size.x + 8.0:
-			squad_panel.max_bottom = minf(squad_panel.max_bottom, tactical_panel.position.y - 8.0)
+		tactical_panel.position = Vector2(maxf((vp.x - tactical_panel.size.x) * 0.5, 8.0), _label.position.y - tactical_panel.size.y - 12.0)
+		if tactical_panel.position.x < squad_panel.position.x + squad_panel.size.x + 12.0:
+			squad_panel.max_bottom = minf(squad_panel.max_bottom, tactical_panel.position.y - 12.0)
 	_update_ammo()
 	_badge.visible = war_sim != null and war_sim.enabled
 	if _badge.visible and _badge.text == "":
@@ -406,7 +406,7 @@ func _war_text() -> String:
 		lines.append("DRIVING  %s" % (sim.vehicles.describe(du) if du else "-"))
 		lines.append("W/S DRIVE  ·  A/D STEER  ·  SPACE BRAKE  ·  TAB TACTICAL")
 	elif construction and construction.active:
-		lines.append_array(construction.status_lines())
+		lines.append("CONSTRUCTION  ·  B CLOSE  ·  F1 HELP")
 	else:
 		var back := sim.state.get_unit(game.possessed_id)
 		for vid in rts.selected_vehicles():
@@ -460,7 +460,7 @@ func _text() -> String:
 			lines.append("Squad %s (%d%s) order: %s - the others keep their orders" % [sq.squad_name, sq.members.size(), ", you lead" if sq.leader_id == u.id else "", sq.order_name()])
 		lines.append("LMB FIRE  ·  R RELOAD  ·  V FIRE MODE  ·  F1 MORE CONTROLS")
 	elif construction and construction.active:
-		lines.append_array(construction.status_lines())
+		lines.append("CONSTRUCTION  ·  B CLOSE  ·  F1 HELP")
 	else:
 		var back := sim.state.get_unit(game.possessed_id)
 		lines.append("TACTICAL COMMAND")

@@ -81,3 +81,54 @@ live UI-01B captures from the Godot game:
    person and M strategic map.
 3. Confirm F1 expands controls, F3 exposes diagnostics, and tactical orders,
    construction validity and strategic-map selection remain functional.
+
+## UI-01B.1 — Visual Polish & Completion
+
+### Design pass
+
+The second pass used the supplied Arma, Regiments, WARNO and map-interface
+references as a compositional check: information is anchored to the edge,
+the active order surface is temporary, and the battlefield stays central.
+No reference artwork or third-party assets were copied into the game.
+
+* **Task Force:** removed the repeated ROE column, tightened rows, replaced
+  `NONE` with `IDLE`, and added a restrained state marker.  A selected row now
+  reads as one item in an operational roster rather than a debug line.
+* **Command Deck:** moved from a floating right-side block to a centred,
+  lower contextual deck.  It uses a stable width, equal-height buttons and
+  reports squad readiness/order rather than AI effectiveness counters.
+* **Construction:** category headers now use the shared control treatment;
+  base entries have a common 32 px rhythm; the permanent construction footer
+  is reduced to one quiet exit/help line because the panel owns the detail.
+
+### Live capture register
+
+The following are captured from the running UI-01B Godot project, not from
+mockups or baseline images:
+
+| File | Result |
+| --- | --- |
+| `final/01_rts_idle.png` | Captured — RTS idle |
+| `final/02_rts_squad_selected.png` | Captured — selected squad / Command Deck |
+| `final/03_rts_multi_selected.png` | Captured — multi-selection |
+| `final/04_rts_vehicle_selected.png` | Blocked — the supplied scenario has no player-controlled vehicle instance |
+| `final/05_construction_menu.png` | Captured — catalogue and category palette |
+| `final/06_construction_valid.png` | Captured — valid Command Post placement |
+| `final/07_construction_invalid.png` | Captured — Barracks correctly reports that a Command Post is required |
+| `final/08_construction_base.png` | Blocked — creating a base solely for a screenshot would modify live construction state |
+| `final/09_fps_normal.png` | Captured — first-person HUD |
+| `final/10_fps_interaction.png` | Blocked — the reference spawn has no interaction prompt in reach |
+| `final/11_map_default.png` | Captured — default operational map |
+| `final/12_map_squad_selected.png` | Captured — selected squad map inspector |
+| `final/13_map_base_selected.png` | Captured — selected friendly objective/base context |
+| `final/14_map_logistics.png` | Blocked — no player logistics/vehicle item is present in this scenario |
+
+### Visual review
+
+The first live RTS review showed an overly wide roster, repeated `FREE` labels,
+and an isolated right-side command slab.  The changes above are the resulting
+second visual revision.  The construction capture also exposed a duplicated
+instruction manual across panel and footer; normal construction HUD is now
+intentionally quiet.  The remaining limitation is scenario coverage, not a
+UI failure: player vehicles, an established base and an interaction target are
+not spawned in the supplied reference state and were not fabricated.

@@ -32,7 +32,7 @@ const ENTRIES := [
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	custom_minimum_size = Vector2(0, 0)
+	custom_minimum_size = Vector2(320, 0)
 	add_theme_stylebox_override("panel", FieldManual.panel(FieldManual.OLIVE, 0.91, 8))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 5)
@@ -88,13 +88,11 @@ func _process(delta: float) -> void:
 		var sq := sim.state.get_squad(sid)
 		if sq == null:
 			continue
-		var a := sim.tactics.assessment(sq)
-		var eff := ("  eff %.2f" % a.eff) if not a.is_empty() and int(a.n) > 0 else ""
-		var supp := ("  supp %.2f" % a.supp) if not a.is_empty() and float(a.supp) > 0.05 else ""
 		var what := sim.tactics.short_text(sq)
 		if what == "":
 			what = sq.order_name()
-		lines.append("%s  ·  %s%s%s" % [sq.squad_name.to_upper(), what, eff, supp])
+		var ready := maxi(0, sq.members.size() - sq.fallen.size())
+		lines.append("%s  ·  %d READY  ·  %s" % [sq.squad_name.to_upper(), ready, what.to_upper()])
 	if sqs.size() > 3:
 		lines.append("+%d more" % (sqs.size() - 3))
 	_status.text = "\n".join(lines)

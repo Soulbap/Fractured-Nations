@@ -30,10 +30,10 @@ static func button_style(fill: Color, border: Color, text := INK) -> StyleBoxFla
 	s.border_color = border
 	s.set_border_width_all(1)
 	s.set_corner_radius_all(2)
-	s.content_margin_left = 9
-	s.content_margin_right = 9
-	s.content_margin_top = 5
-	s.content_margin_bottom = 5
+	s.content_margin_left = 10
+	s.content_margin_right = 10
+	s.content_margin_top = 6
+	s.content_margin_bottom = 6
 	return s
 
 
@@ -45,9 +45,12 @@ static func style_button(button: Button, accent := OLIVE) -> void:
 	button.add_theme_color_override("font_hover_color", INK)
 	button.add_theme_color_override("font_pressed_color", INK)
 	button.add_theme_color_override("font_disabled_color", Color(SECONDARY, 0.45))
+	button.add_theme_color_override("font_outline_color", Color(0.02, 0.03, 0.02, 0.8))
+	button.add_theme_constant_override("outline_size", 1)
 	button.add_theme_stylebox_override("normal", button_style(Color(0.10, 0.13, 0.095, 0.96), Color(DIM, 0.9)))
 	button.add_theme_stylebox_override("hover", button_style(Color(accent, 0.24), accent))
 	button.add_theme_stylebox_override("pressed", button_style(Color(accent, 0.42), accent.lightened(0.12)))
+	button.add_theme_stylebox_override("hover_pressed", button_style(Color(accent, 0.48), accent.lightened(0.18)))
 	button.add_theme_stylebox_override("disabled", button_style(Color(0.08, 0.09, 0.075, 0.7), Color(DIM, 0.35)))
 
 

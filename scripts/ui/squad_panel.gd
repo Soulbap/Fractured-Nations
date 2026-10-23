@@ -16,20 +16,19 @@ var _scroll: ScrollContainer
 ## Lowest screen y the panel may reach (set by the HUD each frame).
 var max_bottom := INF
 var _buttons := {}
-var _roe_buttons := {}
 var _rows := {}
 var _timer := 0.0
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	custom_minimum_size = Vector2(292, 0)
+	custom_minimum_size = Vector2(242, 0)
 	add_theme_stylebox_override("panel", FieldManual.panel(FieldManual.OLIVE, 0.88, 8))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
 	add_child(box)
 	var title := Label.new()
-	title.text = "TASK FORCE"
+	title.text = "TASK FORCE  /  READY STATE"
 	FieldManual.style_label(title, 13, FieldManual.OLIVE)
 	title.tooltip_text = "Click to select. Shift-click adds a squad. ROE is available in the command deck (Y)."
 	box.add_child(title)
@@ -58,7 +57,6 @@ func _process(delta: float) -> void:
 			_rows[id].queue_free()
 			_rows.erase(id)
 			_buttons.erase(id)
-			_roe_buttons.erase(id)
 	var selected := rts.selected_squads()
 	# Height: all rows when they fit above max_bottom, else scroll.
 	var rows_h := _list.get_combined_minimum_size().y
@@ -69,38 +67,21 @@ func _process(delta: float) -> void:
 		var b: Button = _buttons[sq.id]
 		b.text = row_text(sq)
 		b.modulate = Color(1.0, 1.0, 0.55) if selected.has(sq.id) else Color.WHITE
-		var r: Button = _roe_buttons[sq.id]
-		var hold := sq.roe == SquadState.Roe.HOLD_FIRE
-		r.text = "HOLD" if hold else "FREE"
-		r.modulate = Color(1.0, 0.7, 0.25) if hold else Color(0.55, 1.0, 0.55)
 
 
 func _add_row(sq: SquadState) -> void:
 	var b := Button.new()
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	FieldManual.style_button(b, FieldManual.BLUE)
-	b.custom_minimum_size = Vector2(222, 30)
+	b.custom_minimum_size = Vector2(226, 32)
 	var sid := sq.id
 	b.gui_input.connect(func(ev: InputEvent) -> void:
 		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
 			rts.select_squads([sid], ev.shift_pressed)
 			accept_event())
-	var roe := Button.new()
-	FieldManual.style_button(roe, FieldManual.AMBER)
-	roe.custom_minimum_size = Vector2(54, 30)
-	roe.tooltip_text = "Rules of engagement: FREE = weapons free, HOLD = hold fire (Y)"
-	roe.pressed.connect(func() -> void:
-		var s := sim.state.get_squad(sid)
-		if s:
-			rts.set_roe([sid], SquadState.Roe.HOLD_FIRE if s.roe == SquadState.Roe.WEAPONS_FREE else SquadState.Roe.WEAPONS_FREE))
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
-	row.add_child(b)
-	row.add_child(roe)
-	_list.add_child(row)
-	_rows[sq.id] = row
+	_list.add_child(b)
+	_rows[sq.id] = b
 	_buttons[sq.id] = b
-	_roe_buttons[sq.id] = roe
 
 
 func row_text(sq: SquadState) -> String:
@@ -119,8 +100,11 @@ func row_text(sq: SquadState) -> String:
 			fighting += 1
 		if u.under_fire_until >= sim.state.time:
 			under_fire += 1
+	if order == "NONE":
+		order = "IDLE"
 	var state := "ENGAGED" if fighting > 0 else ("UNDER FIRE" if under_fire > 0 else order)
 	if sq.status == SquadState.Status.PARTIAL:
 		state = "BLOCKED"
 	var effective := maxi(0, sq.members.size() - sq.fallen.size())
-	return "%s   %d/%d   %s" % [sq.squad_name.to_upper(), effective, sq.members.size(), state]
+	var mark := "◆" if fighting > 0 or under_fire > 0 else "●"
+	return "%s  %d/%d   %s %s" % [sq.squad_name.to_upper(), effective, sq.members.size(), mark, state]

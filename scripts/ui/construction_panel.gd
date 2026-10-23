@@ -56,14 +56,13 @@ func _ready() -> void:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
 		var e: Array = BASE_ENTRIES.get(id, [d.display_name, ""])
-		var b := _button(e[0], func() -> void: controller.select_type(id), true)
-		b.custom_minimum_size = Vector2(128, 0)
+		var b := _button(e[0].to_upper(), func() -> void: controller.select_type(id), true)
+		b.custom_minimum_size = Vector2(138, 32)
 		b.tooltip_text = d.description
 		row.add_child(b)
 		var fn := Label.new()
 		fn.text = e[1]
-		fn.add_theme_font_size_override("font_size", 11)
-		fn.add_theme_color_override("font_color", COL_DIM)
+		FieldManual.style_label(fn, 11, FieldManual.SECONDARY)
 		row.add_child(fn)
 		box.add_child(row)
 		_base_buttons[id] = b
@@ -97,12 +96,9 @@ func _ready() -> void:
 			continue
 		var head := Button.new()
 		head.toggle_mode = true
-		head.focus_mode = Control.FOCUS_NONE
 		head.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		head.add_theme_font_size_override("font_size", 12)
-		head.add_theme_color_override("font_color", Color(0.65, 0.68, 0.58))
-		head.add_theme_color_override("font_pressed_color", Color(0.85, 0.9, 0.7))
-		head.add_theme_color_override("font_hover_color", Color(0.85, 0.9, 0.7))
+		FieldManual.style_button(head, FieldManual.BLUE)
+		head.custom_minimum_size = Vector2(230, 30)
 		head.pressed.connect(func() -> void:
 			_open_category = cat
 			refresh())
