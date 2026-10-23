@@ -39,9 +39,9 @@ Measured with `--nav-perf-bc-test --only b_strat,b_local,b_burst,b_op,b_vehicle`
 
 **One service.** `RouteService` (`scripts/navigation/route_service.gd`, owned by `WorldSim` as `sim.routing`) is the only place a
 route search of normal play runs. It is stepped once per rendered frame from `WorldSim._process` with a work budget
-(`frame_budget_ms`, default 2.0 ms). Under time compression a frame carries several simulation steps; the budget is per step
-(`max_steps` = 64), so a route takes the same *simulated* time to arrive at 1x and at 8x and `TimeCompression` keeps the frame
-within its own budget by running fewer steps. No threads: every search runs on the main thread between checkpoints, which keeps
+(`frame_budget_ms`, default 2.0 ms). Under time compression the budget is multiplied by the steps of the frame, at most the
+compression factor (4x -> 8 ms), so a route takes about the same *simulated* time at 1x and at 8x; steps a slow frame had to catch
+up do not raise it (that was a measured 20-60 ms slice after a hitch before it was capped). No threads: every search runs on the main thread between checkpoints, which keeps
 the world data (Terrain3D, structure caches, the router's graph) single-threaded and the results identical to the synchronous ones.
 
 **Runners keep the search state.** A job owns a runner with `step(deadline_us) -> bool`, `result` and `reset()`:
