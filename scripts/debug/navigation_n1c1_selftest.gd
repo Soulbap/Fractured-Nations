@@ -729,6 +729,9 @@ func _n1c1_06() -> Dictionary:
 		return true
 	var max_s := float(trip.alt.alt_len) / 5.0 + 900.0
 	var w := await _run_until(max_s, 24.0, each, stop, trigger)
+	# NAV-PERF-01B: VehicleConvoy dissolves a finished convoy on its 2 s update; the stop above fires in the frame the last member
+	# stops, so the convoy check below waits one update.
+	await _seconds(2.5)
 	var rows := []
 	var arrived := 0
 	var other_bridge := 0

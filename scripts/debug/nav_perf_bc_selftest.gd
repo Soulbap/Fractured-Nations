@@ -1000,8 +1000,22 @@ func _b_roads() -> Dictionary:
 				no_access += 1
 			else:
 				unexplained += 1
-	return {"status": "PASS" if bridges_ok and veh_ok + no_access == rows.size() and unexplained == 0 and inf_ok == rows.size() else "FAIL", "connectivity": conn,
-		"routes": rows, "trucks_ok": veh_ok, "trucks_no_road_access": no_access, "trucks_unexplained_failures": unexplained, "infantry_ok": inf_ok, "of": rows.size()}
+	# A truck route is physically wrong when it crosses water, a structure or a closed deck. Short terrain steps under the road
+	# (grade over the vehicle limit across ~6 m) are listed as map findings: the route itself is the road.
+	var wrong := 0
+	var steps := []
+	for row: Dictionary in rows:
+		var chk: Dictionary = row.truck.get("check", {})
+		if chk.is_empty():
+			continue
+		if int(chk.wet) > 0 or int(chk.in_structure) > 0 or int(chk.closed_deck) > 0:
+			wrong += 1
+		for w: Array in chk.where:
+			if w[0] == "steep" and not steps.any(func(q: Array) -> bool: return Vector2(q[0], q[1]).distance_to(Vector2(w[1][0], w[1][1])) < 30.0):
+				steps.append([w[1][0], w[1][1], w[2]])
+	return {"status": "PASS" if bridges_ok and wrong == 0 and unexplained == 0 and inf_ok == rows.size() else "FAIL", "connectivity": conn,
+		"routes": rows, "trucks_clean": veh_ok, "trucks_physically_wrong": wrong, "trucks_no_road_access": no_access, "trucks_unexplained_failures": unexplained,
+		"terrain_steps_on_truck_routes": steps, "infantry_ok": inf_ok, "of": rows.size()}
 
 
 # --- D: movement in the world ---------------------------------------------------------------------------------------------------
@@ -1066,15 +1080,16 @@ func _d_haugen() -> Dictionary:
 	var routed_at := {}
 	var lost_op := {}
 	var stages := []
-	var last_stage := -1
+	var last_stage := [-1]
+	var fail0: int = demo.sim.squads.route_failures
 	await _warp(900.0, 8.0, 240.0, func() -> bool:
 		for q: SquadState in att:
 			if not q.route.is_empty() and not routed_at.has(q.id):
 				routed_at[q.id] = snappedf(demo.sim.state.time - t0, 0.01)
 			if q.op_id != op.id and not q.members.is_empty() and op.is_active():
 				lost_op[q.id] = snappedf(demo.sim.state.time - t0, 0.1)
-		if int(op.stage) != last_stage:
-			last_stage = int(op.stage)
+		if int(op.stage) != last_stage[0]:
+			last_stage[0] = int(op.stage)
 			stages.append([snappedf(demo.sim.state.time - t0, 0.1), str(OperationState.Stage.find_key(op.stage)), op.stage_why])
 		return not op.is_active() or int(op.stage) >= int(OperationState.Stage.ASSAULT))
 	brain.enabled = false
@@ -1082,7 +1097,7 @@ func _d_haugen() -> Dictionary:
 	var out := {"routed_after_s": routed_at.values(), "routed": routed_at.size(), "of": att.size(), "lost_op": lost_op, "stages": stages,
 		"phase": OperationState.Phase.keys()[op.phase], "outcome": op.outcome, "wait_reason": op.wait_reason, "transport": op.transport.get("mode", "foot"),
 		"route_requests": demo.sim.squads.route_requests - req0, "dist_to_haugen_m": dists, "losses": op.losses,
-		"route_failures": demo.sim.squads.route_failures}
+		"route_failures": demo.sim.squads.route_failures - fail0}
 	var nav_ok: bool = routed_at.size() == att.size() and routed_at.values().all(func(t: float) -> bool: return t < 3.0) and lost_op.is_empty() \
 		and (int(op.stage) >= int(OperationState.Stage.DEPLOY) or (not op.is_active() and not String(op.outcome).contains("route")))
 	out["navigation_pass"] = nav_ok

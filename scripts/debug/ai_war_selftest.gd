@@ -833,6 +833,11 @@ func _mech_scene(n_squads: int, obj: ObjectiveState) -> Dictionary:
 	await _physics(10)
 	var ids := sqs.map(func(s: SquadState) -> int: return s.id)
 	var op := ws.start_operation(1, OperationState.Type.ATTACK, ids, obj.id, Vector3.INF, false)
+	# NAV-PERF-01B: the operation begins (transport plan, the march) when its first route arrives from RouteService.
+	for i in 600:
+		if op == null or not op.starting:
+			break
+		await tree.process_frame
 	return {"op": op, "squads": sqs, "obj": obj}
 
 
@@ -1871,6 +1876,11 @@ func _r_convoy() -> Dictionary:
 		if cr.ok:
 			formed += 1
 			await _physics(30)
+			# NAV-PERF-01B: the members' routes come from RouteService (the leader's first, then the others).
+			for i in 900:
+				if ids.all(func(id: int) -> bool: return demo.sim.state.get_unit(id).veh.route.size() >= 2):
+					break
+				await tree.process_frame
 			for id in ids:
 				_expect(demo.sim.state.get_unit(id).veh.route.size() >= 2, "R convoy: a member has no route")
 			demo.sim.vehicles.convoy.stop(int(cr.convoy))
