@@ -80,6 +80,9 @@ var stuck_reroutes := 0
 const ROUTE_RETRY_S := 20.0
 const ROUTE_BLOCKED_TIMEOUT_S := 300.0
 var _route_retry := {}
+## NAV-PERF-01B: routes of a starting operation's squads that came before the others (operation id -> squad id -> route); runtime only.
+var _start_routes := {}
+var _sending_op := -1
 var blocked_routes := 0
 var threatened := {}
 ## op id -> march progress (see _track_march; not saved).
@@ -471,15 +474,18 @@ func start_operation(f: int, type: OperationState.Type, squad_ids: Array, object
 	# leaves the operation as before; when none gets one the operation is cancelled ("no route").
 	op.starting = true
 	op.wait_reason = "planning routes"
+	# A reused route can answer at once; the operation begins only after every squad has asked (and been answered).
+	_sending_op = op.id
 	for sid in op.squads.duplicate():
-		# A reused route can answer at once and begin the operation; squads the vehicles took do not ask for a foot route.
-		if op.is_active() and op.squads.has(sid) and not _carried(op, sid):
+		if op.is_active() and op.squads.has(sid):
 			_send(op, sim.state.get_squad(sid))
+	_sending_op = -1
+	if op.is_active() and op.starting and not _starting_wait(op):
+		if (_start_routes.get(op.id, {}) as Dictionary).is_empty():
+			_end(op, OperationState.Phase.CANCELLED, "no route")
+		else:
+			_begin(op)
 	return op
-
-
-func _carried(op: OperationState, sid: int) -> bool:
-	return op.transport.get("mode", "foot") == "mech" and (op.transport.get("carried", []) as Array).has(sid)
 
 
 ## Asks for the march of one squad for op (the answer comes to on_route_ready). ATTACK stops at a staging point short of the
@@ -504,10 +510,11 @@ func on_route_ready(sq: SquadState, r: PackedVector3Array, why: String) -> void:
 	if r.size() < 2:
 		if op.starting:
 			release_squads([sq.id], "no route")
-			if op.is_active() and op.squads.is_empty():
-				_end(op, OperationState.Phase.CANCELLED, "no route (%s)" % why)
-			elif op.is_active() and not _starting_wait(op):
-				_end(op, OperationState.Phase.CANCELLED, "no route (%s)" % why)
+			if op.is_active() and _sending_op != op.id and not _starting_wait(op):
+				if (_start_routes.get(op.id, {}) as Dictionary).is_empty():
+					_end(op, OperationState.Phase.CANCELLED, "no route (%s)" % why)
+				else:
+					_begin(op)
 			return
 		blocked_routes += 1
 		_route_retry[sq.id] = now + ROUTE_RETRY_S
@@ -521,9 +528,14 @@ func on_route_ready(sq: SquadState, r: PackedVector3Array, why: String) -> void:
 		return
 	r = _shape_route(op, sq, r)
 	if op.starting:
-		_begin(op)
-		if _carried(op, sq.id):
-			return  # the vehicles take it
+		# The operation begins when every squad has its answer, as when they were all planned in start_operation: the transport
+		# plan reads the staging point of the last route.
+		if not _start_routes.has(op.id):
+			_start_routes[op.id] = {}
+		_start_routes[op.id][sq.id] = r
+		if _sending_op != op.id and not _starting_wait(op):
+			_begin(op)
+		return
 	_route_retry.erase(sq.id)
 	op.blocked_since = -1.0
 	if op.wait_reason.begins_with("route blocked") or op.wait_reason == "planning routes":
@@ -540,17 +552,20 @@ func _starting_wait(op: OperationState) -> bool:
 	return false
 
 
-## The operation begins with its first route (the staging point is known): AI-WAR-LOGISTICS-01 - a long march of an AI operation
-## is made by vehicle when transport is free (OpTransport); squads the vehicles carry stop waiting for their foot route.
+## The operation begins once every squad has its route (the staging point is known): AI-WAR-LOGISTICS-01 - a long march of an AI
+## operation is made by vehicle when transport is free (OpTransport); the squads it does not carry walk their routes now.
 func _begin(op: OperationState) -> void:
 	op.starting = false
 	if op.wait_reason == "planning routes":
 		op.wait_reason = ""
+	var planned: Dictionary = _start_routes.get(op.id, {})
+	_start_routes.erase(op.id)
 	var carried: Array = mech.plan(op) if (not op.player_ordered and op.type != OperationState.Type.MOVE) else []
-	for sid in carried:
+	for sid in op.squads:
 		var sq := sim.state.get_squad(sid)
-		if sq:
-			sim.squads.drop_route_wait(sq)
+		if sq == null or carried.has(sid) or not planned.has(sid):
+			continue
+		sim.squads.follow_route(sq, planned[sid])
 
 
 ## The route of a squad for op, shaped for the operation: ATTACK ends at the staging point (set on the first route), the others at
@@ -621,6 +636,17 @@ func _update_operation(op: OperationState) -> void:
 		mech.update(op)
 		if op.is_transport_stage():
 			return
+	if op.starting and not _starting_wait(op):
+		# The answers of a starting operation were lost (a save loaded while its routes were being planned): asked again.
+		var got: Dictionary = _start_routes.get(op.id, {})
+		var asked := false
+		for sid in op.squads:
+			if not got.has(sid):
+				_send(op, sim.state.get_squad(sid))
+				asked = true
+		if not asked:
+			_begin(op)
+		return
 	_track_march(op)
 	var obj := war.objective(op.target_objective)
 	var marching := false
@@ -886,6 +912,7 @@ func end_operation(op: OperationState, phase: OperationState.Phase, why: String)
 func _end(op: OperationState, phase: OperationState.Phase, why: String) -> void:
 	if not op.is_active():
 		return
+	_start_routes.erase(op.id)
 	op.stage = OperationState.Stage.DONE
 	for sid in op.squads:
 		var sq0 := sim.state.get_squad(sid)
