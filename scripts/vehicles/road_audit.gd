@@ -526,3 +526,195 @@ func describe(rep: Dictionary) -> Array[String]:
 	if rep.has("locations"):
 		out.append("Locations: %d, without a way onto a road: %d; routes %d/%d planned, failures %d (%d unexplained)" % [rep.locations, rep.locations_without_road_entry.size(), rep.routes_ok, rep.routes_planned, rep.route_failure_count, rep.route_failures_unexplained])
 	return out
+
+
+# --- NAV-PERF-01C: connectivity of what the running game navigates on ------------------------------------------------------------
+
+## The router graph after its gap repairs and soft links, every bridge, and the strategic (infantry) grid:
+##   * graph: components, the repaired gaps and soft links that join roads the data leaves apart, places off the main network;
+##   * bridges: span vertices present and switched on, a path across the span through them, the deck known along its length,
+##     the strategic cells open under it, an infantry route across laid on the deck, the walker's own test along the deck, the
+##     vehicle types that fit;
+##   * strategic grid: passable areas (4-connected), the places that lie outside the largest one.
+## `places`: name -> position. Read-only: nothing in the world is changed.
+func connectivity(places: Dictionary) -> Dictionary:
+	router.ensure_built()
+	var out := {}
+	var comps := components()
+	out["graph"] = {"nodes": router.astar.get_point_count(), "components": comps.size(), "main_nodes": comps[0].nodes if not comps.is_empty() else 0,
+		"repaired_gaps": router.repaired_gaps.size(), "soft_links": router._soft.size(),
+		"small_components": comps.slice(1, 12).map(func(c: Dictionary) -> Dictionary: return {"nodes": c.nodes, "roads": (c.roads as Array).slice(0, 4), "center": _xz(c.center)})}
+	var off_main := []
+	for n: String in places:
+		var p: Vector3 = places[n]
+		var d := router.main_network_distance(p, 12000.0)
+		if d < 0.0 or d > 400.0:
+			off_main.append({"place": n, "main_network_m": snappedf(d, 1.0)})
+	out["places_far_from_main_network"] = off_main
+	out["bridges"] = bridges_check()
+	out["strategic_grid"] = strategic_components(places)
+	return out
+
+
+func bridges_check() -> Array:
+	var rows := []
+	var routes: StrategicRoutes = sim.war.routes if sim.war else null
+	for b: RoadNetwork.Bridge in net.bridges:
+		var rd: RoadNetwork.Road = net.world[-b.road_key - 1]
+		var pts := rd.points
+		var row := {"id": b.id, "name": b.name, "state": b.state_name(), "width_m": snappedf(b.width, 0.1), "length_m": snappedf(b.length_m, 0.1)}
+		# Router: the span's vertices exist and are on; a path across goes through them.
+		var ids: PackedInt32Array = router._ids_of.get(b.road_key, PackedInt32Array())
+		var span_ok := ids.size() == pts.size()
+		var off := 0
+		for k in range(b.first, b.last + 1):
+			if span_ok and router.astar.is_point_disabled(ids[k]):
+				off += 1
+		row["graph_vertices"] = span_ok
+		row["graph_vertices_off"] = off
+		var k0 := maxi(b.first - 12, 0)
+		var k1 := mini(b.last + 12, pts.size() - 1)
+		var across := PackedInt64Array()
+		if span_ok:
+			across = router.astar.get_id_path(ids[k0], ids[k1])
+		var through := 0
+		for id in across:
+			if router._node_bridge.get(id) == b:
+				through += 1
+		row["graph_path_across"] = not across.is_empty() and through > 0
+		# The deck along its centre line (every 2 m).
+		var gaps := 0
+		var samples := 0
+		for k in range(b.first, b.last):
+			var a := pts[k]
+			var c := pts[k + 1]
+			var n := maxi(1, ceili(Vector2(c.x - a.x, c.z - a.z).length() / 2.0))
+			for j in n:
+				samples += 1
+				if is_nan(net.deck_height(a.lerp(c, float(j) / n))):
+					gaps += 1
+		row["deck_samples"] = samples
+		row["deck_gaps"] = gaps
+		# Infantry: the strategic cells under the span are open, a route across is laid on the deck, the walker can walk the deck.
+		if routes:
+			var closed_cells := 0
+			for i: int in routes._bridge_cells.get(b.id, PackedInt32Array()):
+				if routes.solid[i] == 1:
+					closed_cells += 1
+			row["strategic_cells_closed"] = closed_cells
+			var a2 := pts[k0]
+			var b2 := pts[k1]
+			var r := routes.route(a2, b2, sim.terrain)
+			var on_deck := 0
+			for p in r:
+				if net.bridge_at(p, 2.0) == b:
+					on_deck += 1
+			row["infantry_route_waypoints_on_deck"] = on_deck
+			row["infantry_route_m"] = snappedf(routes.route_length(r), 1.0)
+		var blocked_steps := 0
+		for k in range(b.first, b.last):
+			var a3 := pts[k]
+			var c3 := pts[k + 1]
+			var dir := Vector3(c3.x - a3.x, 0.0, c3.z - a3.z)
+			var l3 := dir.length()
+			if l3 < 0.01:
+				continue
+			dir /= l3
+			for j in ceili(l3):
+				var p3 := a3 + dir * float(j)
+				p3.y = net.deck_height(p3) if not is_nan(net.deck_height(p3)) else p3.y
+				if sim._step_blocked(p3, dir, 0.1):
+					blocked_steps += 1
+		row["walker_blocked_steps"] = blocked_steps
+		row["fits"] = [VehicleDefs.TRUCK, VehicleDefs.APC].filter(func(t: StringName) -> bool: return b.admits(VehicleDefs.get_def(t).width))
+		row["traversable"] = span_ok and off == 0 and row.graph_path_across and gaps == 0 and int(row.get("strategic_cells_closed", 0)) == 0 \
+			and int(row.get("infantry_route_waypoints_on_deck", 1)) > 0 and blocked_steps == 0 and not (row.fits as Array).is_empty()
+		rows.append(row)
+	return rows
+
+
+## Passable areas of the strategic grid (4-connected flood fill over `solid`), the places in each.
+func strategic_components(places: Dictionary) -> Dictionary:
+	var routes: StrategicRoutes = sim.war.routes if sim.war else null
+	if routes == null or not routes.ready:
+		return {}
+	var nx := routes.size.x
+	var nz := routes.size.y
+	var comp := PackedInt32Array()
+	comp.resize(nx * nz)
+	comp.fill(-1)
+	var sizes: Array[int] = []
+	for start in nx * nz:
+		if routes.solid[start] == 1 or comp[start] >= 0:
+			continue
+		var cid := sizes.size()
+		var n := 0
+		var stack := PackedInt32Array([start])
+		comp[start] = cid
+		while not stack.is_empty():
+			var i := stack[stack.size() - 1]
+			stack.resize(stack.size() - 1)
+			n += 1
+			var x := i % nx
+			var z := i / nx
+			for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var q := Vector2i(x, z) + d
+				if q.x < 0 or q.y < 0 or q.x >= nx or q.y >= nz:
+					continue
+				var j := q.y * nx + q.x
+				if routes.solid[j] == 0 and comp[j] < 0:
+					comp[j] = cid
+					stack.append(j)
+		sizes.append(n)
+	var main := 0
+	for c in sizes.size():
+		if sizes[c] > sizes[main]:
+			main = c
+	var outside := []
+	for nm: String in places:
+		var cell := routes.nearest_passable(places[nm])
+		var c2 := comp[cell.y * nx + cell.x] if cell.x >= 0 else -1
+		if c2 != main:
+			outside.append({"place": nm, "component_cells": sizes[c2] if c2 >= 0 else 0})
+	var big := sizes.duplicate()
+	big.sort()
+	big.reverse()
+	return {"passable_cells": sizes.reduce(func(a: int, b: int) -> int: return a + b, 0), "areas": sizes.size(), "largest": big.slice(0, 6),
+		"main_share": snappedf(float(sizes[main]) / maxf(float(sizes.reduce(func(a: int, b: int) -> int: return a + b, 0)), 1.0), 0.001), "places_outside_main": outside}
+
+
+## A vehicle route checked point by point (every route point, ~3 m): water off an open deck, structure footprints, grades over
+## the vehicle's limit off decks, a closed deck. Returns counts and the first few places.
+func vehicle_route_check(pts: PackedVector3Array, def: VehicleDefs.Def) -> Dictionary:
+	var wet := 0
+	var inside := 0
+	var steep := 0
+	var closed := 0
+	var where := []
+	var st := sim.structures
+	for i in pts.size():
+		var p := pts[i]
+		var deck := not is_nan(net.deck_height(p))
+		if deck and not net.deck_open(p):
+			closed += 1
+		if not deck and st and st.is_wet(p.x, p.z):
+			wet += 1
+			if where.size() < 5:
+				where.append(["wet", _xz(p)])
+		if st and st.blocks_point(Vector2(p.x, p.z), def.circle_r * 0.75):
+			inside += 1
+			if where.size() < 5:
+				where.append(["structure", _xz(p)])
+		# Grade over ~6 m (two route steps) with the median of three nearby height reads: Terrain3D's height query has 1 cm bands
+		# 1-1.5 m off beside some vertices (NAV-INF-01), which a single 3 m step turns into a 50 % "slope".
+		if i > 1 and not deck and is_nan(net.deck_height(pts[i - 2])):
+			var q := pts[i - 2]
+			var l := Vector2(p.x - q.x, p.z - q.z).length()
+			var h1 := sim._infantry_height_robust(p.x, p.z)
+			var h0 := sim._infantry_height_robust(q.x, q.z)
+			if l > 1.0 and not is_nan(h0) and not is_nan(h1) and absf(h1 - h0) / l > def.max_grade * 1.15:
+				steep += 1
+				if where.size() < 5:
+					where.append(["steep", _xz(p), snappedf(absf(h1 - h0) / l, 0.01)])
+	return {"points": pts.size(), "wet": wet, "in_structure": inside, "steep": steep, "closed_deck": closed, "where": where,
+		"ok": wet == 0 and inside == 0 and steep == 0 and closed == 0}
