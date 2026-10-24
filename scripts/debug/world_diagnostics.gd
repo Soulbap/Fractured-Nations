@@ -52,6 +52,11 @@ func set_overlay_visible(v: bool) -> void:
 	_label.visible = v
 
 
+## Lowest screen y of the overlay text (0 when hidden), so the HUD can stay clear of it.
+func overlay_bottom() -> float:
+	return _label.get_rect().end.y if _label.visible else 0.0
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.physical_keycode == KEY_F3:
 		_label.visible = not _label.visible

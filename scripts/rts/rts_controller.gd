@@ -161,11 +161,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("halt"):
 		order_hold()
 	elif event.is_action_pressed("squad_follow"):
-		if selected_squads().is_empty():
-			_say("Follow: select a squad first")
-		else:
-			follow_pick = true
-			_say("Follow: click the soldier or squad to follow (Esc cancels)")
+		arm_follow()
 	elif event.is_action_pressed("squad_regroup"):
 		var at := ground_point(get_viewport().get_mouse_position()) if Input.is_key_pressed(KEY_SHIFT) else Vector3.INF
 		order_regroup(at)
@@ -390,6 +386,7 @@ func arm_tactic(tactic: int) -> void:
 	if selected_squads().is_empty():
 		_say("%s: select a squad first" % SquadState.TACTIC_NAMES[tactic])
 		return
+	follow_pick = false
 	armed_tactic = tactic
 	_say("%s: click the target (Esc cancels)" % SquadState.TACTIC_NAMES[tactic].to_upper())
 
@@ -439,6 +436,16 @@ func order_hold() -> void:
 		sim.state.detach(id)
 		sim.state.halt(id)
 	_say("Hold" if not selected.is_empty() else "Nothing selected")
+
+
+## F (or the command panel): wait for the click on the soldier or squad to follow.
+func arm_follow() -> void:
+	if selected_squads().is_empty():
+		_say("Follow: select a squad first")
+		return
+	armed_tactic = -1
+	follow_pick = true
+	_say("Follow: click the soldier or squad to follow (Esc cancels)")
 
 
 ## F + click: the selected squads follow the clicked soldier (its squad if it has one).

@@ -1,47 +1,47 @@
-## Compact squad list for the tactical view (UNIT-01A): one row per squad with its
-## size, order and progress. Click selects the squad, Shift+click adds it. Reads
-## WorldState only; the rows are rebuilt when squads change and refreshed a few times
-## per second. COMBAT-01b: living / fallen, how many are fighting, and a button per row
-## for the rules of engagement (FREE = weapons free, HOLD = hold fire; Y in the
-## tactical view does the same for the selected squads).
+## The tactical view's TASK FORCE roster (UNIT-01A, UI-01C): one FNUnitRow per squad the player
+## may command - emblem, callsign, strength, status and a hold-fire flag. Click selects the
+## squad, Shift+click adds it; selected rows are marked (several at once). Reads WorldState only;
+## rows are added / removed when squads change and refreshed a few times per second. The header
+## carries the player's side, so the faction is part of the roster instead of a separate badge.
 class_name SquadPanel
-extends PanelContainer
+extends FNPanel
 
 var rts: RTSController
 var sim: WorldSim
 
-var _list: VBoxContainer
-## COMBAT-02: the rows scroll when they would grow into the HUD text below.
+## COMBAT-02: the rows scroll when they would grow into the HUD below.
 var _scroll: ScrollContainer
+var _list: VBoxContainer
+var _header: FNSectionHeader
+var _chip: Label
 ## Lowest screen y the panel may reach (set by the HUD each frame).
 var max_bottom := INF
-var _buttons := {}
-var _roe_buttons := {}
 var _rows := {}
 var _timer := 0.0
 
+const WIDTH := 214.0
+
+
+func _init() -> void:
+	super(Color.TRANSPARENT, FNUI.S4)
+
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_STOP
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0, 0, 0, 0.55)
-	sb.content_margin_left = 8
-	sb.content_margin_right = 8
-	sb.content_margin_top = 6
-	sb.content_margin_bottom = 6
-	add_theme_stylebox_override("panel", sb)
+	custom_minimum_size = Vector2(WIDTH, 0)
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 2)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_theme_constant_override("separation", FNUI.S3)
 	add_child(box)
-	var title := Label.new()
-	title.text = "SQUADS  (click select, Shift add, FREE / HOLD = fire)"
-	title.add_theme_font_size_override("font_size", 13)
-	title.modulate = Color(0.8, 0.85, 0.7)
-	box.add_child(title)
+	_header = FNSectionHeader.new("Task Force", "", FNUI.INK)
+	_header.tooltip_text = "Click a squad to select it, Shift+click to add it. Ctrl+click a soldier in the field selects his squad."
+	_header.mouse_filter = Control.MOUSE_FILTER_PASS
+	box.add_child(_header)
 	_scroll = ScrollContainer.new()
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	box.add_child(_scroll)
 	_list = VBoxContainer.new()
+	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_list.add_theme_constant_override("separation", 2)
 	_scroll.add_child(_list)
 
@@ -51,86 +51,111 @@ func _process(delta: float) -> void:
 	if _timer > 0.0 or sim == null or rts == null:
 		return
 	_timer = 0.25
+	if _chip == null:
+		var pf := rts.player_faction
+		accent = WorldState.faction_color(pf)
+		_chip = _header.add_chip(WorldState.faction_name(pf), WorldState.faction_color(pf))
 	# Only the squads the player may command (all of them in the old test layouts).
 	var squads := sim.state.all_squads().filter(func(sq: SquadState) -> bool: return rts._can_command(sq.leader_id))
 	var ids := {}
+	var soldiers := 0
 	for sq: SquadState in squads:
 		ids[sq.id] = true
-		if not _buttons.has(sq.id):
+		soldiers += maxi(0, sq.members.size() - sq.fallen.size())
+		if not _rows.has(sq.id):
 			_add_row(sq)
-	for id in _buttons.keys():
+	for id in _rows.keys():
 		if not ids.has(id):
 			_rows[id].queue_free()
 			_rows.erase(id)
-			_buttons.erase(id)
-			_roe_buttons.erase(id)
+	_header.aside.text = "%d SQUAD%s · %d" % [squads.size(), "" if squads.size() == 1 else "S", soldiers]
 	var selected := rts.selected_squads()
-	# Height: all rows when they fit above max_bottom, else scroll.
-	var rows_h := _list.get_combined_minimum_size().y
-	var room := max_bottom - global_position.y - 40.0
-	_scroll.custom_minimum_size = Vector2(_list.get_combined_minimum_size().x + 12.0, clampf(rows_h, 24.0, maxf(room, 60.0)))
-	size = Vector2.ZERO
 	for sq: SquadState in squads:
-		var b: Button = _buttons[sq.id]
-		b.text = row_text(sq)
-		b.modulate = Color(1.0, 1.0, 0.55) if selected.has(sq.id) else Color.WHITE
-		var r: Button = _roe_buttons[sq.id]
-		var hold := sq.roe == SquadState.Roe.HOLD_FIRE
-		r.text = "HOLD" if hold else "FREE"
-		r.modulate = Color(1.0, 0.7, 0.25) if hold else Color(0.55, 1.0, 0.55)
+		_refresh_row(_rows[sq.id], sq, selected.has(sq.id))
+	# Height: all rows when they fit above max_bottom, else scroll (the scroll bar gets its own gutter).
+	var rows_h := _list.get_combined_minimum_size().y
+	var room := max_bottom - global_position.y - 36.0
+	var h := clampf(rows_h, 24.0, maxf(room, 50.0))
+	_scroll.custom_minimum_size = Vector2(WIDTH - 2.0 * FNUI.S4, h)
+	_list.custom_minimum_size.x = WIDTH - 2.0 * FNUI.S4 - (5.0 if rows_h > h else 0.0)
+	size = Vector2.ZERO
 
 
 func _add_row(sq: SquadState) -> void:
-	var b := Button.new()
-	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_size_override("font_size", 13)
-	b.custom_minimum_size = Vector2(360, 0)
+	var row := FNUnitRow.new()
+	row.emblem.color = WorldState.faction_color(sq.faction)
 	var sid := sq.id
-	b.gui_input.connect(func(ev: InputEvent) -> void:
-		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
-			rts.select_squads([sid], ev.shift_pressed)
-			accept_event())
-	var roe := Button.new()
-	roe.focus_mode = Control.FOCUS_NONE
-	roe.add_theme_font_size_override("font_size", 13)
-	roe.custom_minimum_size = Vector2(54, 0)
-	roe.tooltip_text = "Rules of engagement: FREE = weapons free, HOLD = hold fire (Y)"
-	roe.pressed.connect(func() -> void:
-		var s := sim.state.get_squad(sid)
-		if s:
-			rts.set_roe([sid], SquadState.Roe.HOLD_FIRE if s.roe == SquadState.Roe.WEAPONS_FREE else SquadState.Roe.WEAPONS_FREE))
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
-	row.add_child(b)
-	row.add_child(roe)
+	row.activated.connect(func(shift: bool) -> void: rts.select_squads([sid], shift))
 	_list.add_child(row)
 	_rows[sq.id] = row
-	_buttons[sq.id] = b
-	_roe_buttons[sq.id] = roe
 
 
-func row_text(sq: SquadState) -> String:
-	var progress := ""
-	match sq.status:
-		SquadState.Status.MOVING:
-			progress = "moving"
-		SquadState.Status.DONE:
-			progress = "in position" if sq.order != SquadState.Order.HOLD else "holding"
-		SquadState.Status.PARTIAL:
-			progress = "%d blocked" % sq.blocked.size()
-	var order := sq.order_name()
-	if sq.tactic != SquadState.Tactic.NONE:
-		order = sim.tactics.short_text(sq).to_upper()
-	if sq.order == SquadState.Order.FOLLOW:
-		var t := sim.squads.follow_target(sq)
-		var other := sim.state.get_squad(sq.follow_squad_id)
-		order = "Follow %s" % (other.squad_name if other else (t.unit_name if t else "?"))
-	var detached := "  %d detached" % sq.detached.size() if not sq.detached.is_empty() else ""
-	var fallen := " +%d fallen" % sq.fallen.size() if not sq.fallen.is_empty() else ""
+func _refresh_row(row: FNUnitRow, sq: SquadState, is_selected: bool) -> void:
+	var st := squad_status(sim, sq, true)
+	row.selected = is_selected
+	row.callsign.text = sq.squad_name.to_upper()
+	row.set_strength(maxi(0, sq.members.size() - sq.fallen.size()), sq.members.size())
+	row.status.set_status(st.icon, st.text, st.color)
+	row.emblem.frame_color = st.color if st.engaged else Color.TRANSPARENT
+	row.flag.visible = sq.roe == SquadState.Roe.HOLD_FIRE
+	row.tooltip_text = "%s · %s · %s · %s formation%s" % [sq.squad_name, st.text.capitalize(), sq.roe_name(), sq.formation_name(),
+		" · in an operation" if sq.op_id >= 0 else ""]
+
+
+## What a squad is doing, for every RTS surface (roster, command panel, field tag): an icon, one
+## short uppercase word or two, the status colour, and whether it is in contact. Combat state
+## (engaged, under fire) wins over the order, a blocked route over the order. brief: a tactic
+## without its phase (the roster's narrow column).
+static func squad_status(p_sim: WorldSim, sq: SquadState, brief := false) -> Dictionary:
 	var fighting := 0
 	var under_fire := 0
-	var cover := 0
+	for id in sq.members:
+		var u := p_sim.state.get_unit(id)
+		if u == null:
+			continue
+		if u.ai_state == UnitState.AiState.ENGAGING:
+			fighting += 1
+		if u.under_fire_until >= p_sim.state.time:
+			under_fire += 1
+	if fighting > 0:
+		return {"icon": &"engaged", "text": "ENGAGED", "color": FNUI.DANGER, "engaged": true}
+	if under_fire > 0:
+		return {"icon": &"under_fire", "text": "UNDER FIRE", "color": FNUI.ALERT, "engaged": true}
+	if sq.status == SquadState.Status.PARTIAL:
+		return {"icon": &"blocked", "text": "BLOCKED", "color": FNUI.ALERT, "engaged": false}
+	if sq.tactic != SquadState.Tactic.NONE:
+		var what := sq.tactic_name() if brief else p_sim.tactics.short_text(sq)
+		return {"icon": TACTIC_ICONS.get(sq.tactic, &"tactic"), "text": what.to_upper(), "color": FNUI.INFO, "engaged": false}
+	match sq.order:
+		SquadState.Order.MOVE:
+			if sq.status == SquadState.Status.MOVING:
+				return {"icon": &"moving", "text": "MOVING", "color": FNUI.OK, "engaged": false}
+			return {"icon": &"move", "text": "ARRIVED", "color": FNUI.NEUTRAL, "engaged": false}
+		SquadState.Order.HOLD:
+			return {"icon": &"hold", "text": "HOLD", "color": FNUI.NEUTRAL, "engaged": false}
+		SquadState.Order.FOLLOW:
+			return {"icon": &"follow", "text": "FOLLOW", "color": FNUI.INFO, "engaged": false}
+		SquadState.Order.REGROUP:
+			return {"icon": &"regroup", "text": "REGROUP", "color": FNUI.INFO, "engaged": false}
+	return {"icon": &"idle", "text": "IDLE", "color": FNUI.WARN, "engaged": false}
+
+
+const TACTIC_ICONS := {
+	SquadState.Tactic.DEFEND: &"defend", SquadState.Tactic.SUPPRESS: &"suppress", SquadState.Tactic.ASSAULT: &"assault",
+	SquadState.Tactic.FLANK: &"flank", SquadState.Tactic.BOUND: &"bound", SquadState.Tactic.REPOSITION: &"move",
+	SquadState.Tactic.WITHDRAW: &"withdraw", SquadState.Tactic.REGROUP: &"regroup",
+}
+
+
+## One line per squad as plain text (tests and logs read it).
+func row_text(sq: SquadState) -> String:
+	var order := sq.order_name().to_upper()
+	if sq.tactic != SquadState.Tactic.NONE:
+		order = sim.tactics.short_text(sq).to_upper()
+	elif sq.order == SquadState.Order.FOLLOW:
+		order = "FOLLOW"
+	var fighting := 0
+	var under_fire := 0
 	for id in sq.members:
 		var u := sim.state.get_unit(id)
 		if u == null:
@@ -139,15 +164,11 @@ func row_text(sq: SquadState) -> String:
 			fighting += 1
 		if u.under_fire_until >= sim.state.time:
 			under_fire += 1
-		if u.tactic == UnitState.Tactic.IN_COVER or u.tactic == UnitState.Tactic.SEEK_COVER:
-			cover += 1
-	var parts: Array[String] = []
-	if fighting > 0:
-		parts.append("%d engaging" % fighting)
-	if under_fire > 0:
-		parts.append("%d under fire" % under_fire)
-	if cover > 0:
-		parts.append("%d to / in cover" % cover)
-	var combat := ("  | " + ", ".join(parts)) if not parts.is_empty() else ""
-	return "%s  [%s]  %d%s  %s  %s %s%s%s" % [sq.squad_name, WorldState.faction_name(sq.faction).left(1), sq.members.size(), fallen,
-		sq.formation_name(), order, ("· " + progress) if progress != "" else "", detached, combat]
+	if order == "NONE":
+		order = "IDLE"
+	var state := "ENGAGED" if fighting > 0 else ("UNDER FIRE" if under_fire > 0 else order)
+	if sq.status == SquadState.Status.PARTIAL:
+		state = "BLOCKED"
+	var effective := maxi(0, sq.members.size() - sq.fallen.size())
+	var mark := "◆" if fighting > 0 or under_fire > 0 else "●"
+	return "%s  %d/%d   %s %s" % [sq.squad_name.to_upper(), effective, sq.members.size(), mark, state]

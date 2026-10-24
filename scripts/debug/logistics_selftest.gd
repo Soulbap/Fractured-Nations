@@ -1511,8 +1511,10 @@ func _persist_logistics() -> Dictionary:
 
 # --- The acceptance scenario (brief section 24), through the real controls -----------------------
 
+## UI-01C: panel buttons carry short uppercase labels with the full wording as tooltip; match either.
 func _find_button(root: Node, part: String) -> Button:
-	if root is Button and (root as Button).text.contains(part) and not (root as Button).disabled:
+	if root is Button and not (root as Button).disabled and ((root as Button).text.to_lower().contains(part.to_lower())
+			or (root as Button).tooltip_text.to_lower().contains(part.to_lower())):
 		return root as Button
 	for c in root.get_children():
 		var b := _find_button(c, part)
@@ -1577,15 +1579,17 @@ func _scenario() -> Dictionary:
 	await _seconds(0.6)
 	_shot("21_vehicle_depot_panel")
 	var p1 := _panel_press("Acquire Cargo truck")
-	await _warp(35.0, 4.0, 40.0, func() -> bool: return vs.ids.size() > veh0.size())
+	# Only the depot's own deliveries count: the AI factions acquire vehicles of their own meanwhile.
+	var mine_new := func() -> int: return vs.ids.filter(func(id: int) -> bool: return not veh0.has(id) and _u(id) and _u(id).faction == vdepot.faction).size()
+	await _warp(35.0, 4.0, 40.0, func() -> bool: return mine_new.call() >= 1)
 	_click_world(vdepot.position)
 	await _seconds(0.6)
 	var p2 := _panel_press("Acquire Wheeled APC")
-	await _warp(60.0, 4.0, 60.0, func() -> bool: return vs.ids.size() > veh0.size() + 1)
+	await _warp(60.0, 4.0, 60.0, func() -> bool: return mine_new.call() >= 2)
 	var truck: UnitState = null
 	var apc: UnitState = null
 	for id in vs.ids:
-		if not veh0.has(id):
+		if not veh0.has(id) and _u(id).faction == vdepot.faction:
 			if _u(id).veh.type_id == VehicleDefs.TRUCK:
 				truck = _u(id)
 			else:

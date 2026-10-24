@@ -41,7 +41,7 @@ var selected := false:
 	set(v):
 		selected = v
 		if is_node_ready():
-			UnitVisuals.style_ring(ring, unit.faction if unit else 0, selected)
+			UnitVisuals.style_ring(ring, unit.faction if unit else 0, selected, true)
 
 @onready var nav: NavigationAgent3D = $NavigationAgent3D
 @onready var visual: Node3D = $Visual
@@ -94,7 +94,7 @@ func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
 		_use_infantry_character()
 	else:
 		UnitVisuals.apply_faction(visual, unit.faction)
-	UnitVisuals.style_ring(ring, unit.faction, selected)
+	UnitVisuals.style_ring(ring, unit.faction, selected, true)
 	sim.register_body(unit.id, self)
 	_sync_state()
 
@@ -129,7 +129,7 @@ func _exit_tree() -> void:
 
 func _process(_delta: float) -> void:
 	if ring.visible:
-		UnitVisuals.scale_ring_for_camera(ring, selected)
+		UnitVisuals.scale_ring_for_camera(ring, selected, true)
 
 
 func _physics_process(delta: float) -> void:

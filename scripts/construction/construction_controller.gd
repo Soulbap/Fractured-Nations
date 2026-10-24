@@ -197,6 +197,13 @@ func select_type(id: StringName) -> void:
 	panel.refresh()
 
 
+## C (or the menu's clearing button): cut trees inside new footprints, or let them block.
+func toggle_clearing() -> void:
+	clear_trees = not clear_trees
+	_check_key = []
+	_say("Vegetation clearing %s" % ("ON: trees inside new footprints are cut" if clear_trees else "OFF: trees block placement"))
+
+
 func select_delete() -> void:
 	cancel()
 	def = null
@@ -301,8 +308,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_:
 				handled = false
 	elif event.is_action_pressed("construction_clear"):
-		clear_trees = not clear_trees
-		_say("Vegetation clearing %s" % ("ON: trees inside new footprints are cut" if clear_trees else "OFF: trees block placement"))
+		toggle_clearing()
 	elif event.is_action_pressed("construction_rotate"):
 		rotate_by(-rotate_step_deg if Input.is_key_pressed(KEY_SHIFT) else rotate_step_deg)
 	elif event.is_action_pressed("construction_finish"):
