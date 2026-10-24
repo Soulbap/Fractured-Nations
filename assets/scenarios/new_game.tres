@@ -1,0 +1,118 @@
+[gd_resource type="Resource" script_class="ScenarioDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/scenario_def.gd" id="1_sc"]
+
+[resource]
+script = ExtResource("1_sc")
+id = &"new_game"
+title = "New Game"
+description = "One North squad of eight in the south. South holds the north, East the east bank."
+player_faction = 0
+objective_overrides = {
+"Elvetun": {
+"owner": 1
+},
+"North Bridge": {
+"owner": 1
+},
+"North HQ": {
+"name": "Nordmoen HQ",
+"owner": 1
+},
+"South HQ": {
+"kind": "village",
+"name": "Sørmoen",
+"owner": -1,
+"value": 2
+},
+"Verket": {
+"owner": -1
+}
+}
+factions = Array[Dictionary]([{
+"hq": "",
+"profile": &"",
+"reserves": 24,
+"squads": {}
+}, {
+"hq": "Nordmoen HQ",
+"profile": &"aggressive",
+"reserves": 40,
+"squads": {
+"Nordmoen HQ": 3,
+"Elvetun": 1,
+"North Bridge": 1
+}
+}, {
+"hq": "East HQ",
+"profile": &"defensive",
+"reserves": 40,
+"squads": {
+"East HQ": 3,
+"Østby": 1,
+"Ødegård": 1
+}
+}])
+start_squads = Array[Dictionary]([{
+"faction": 0,
+"size": 8,
+"x": -1350.0,
+"yaw": -0.6,
+"z": 6950.0
+}])
+squad_size = 8
+fortify = PackedStringArray("Nordmoen HQ", "East HQ")
+ai_bases = true
+start_pool = {
+"ammo": 120.0,
+"supplies": 500.0
+}
+caches = Array[Dictionary]([{
+"ammo": 150.0,
+"known": true,
+"name": "Moen farm cache",
+"radius": 30.0,
+"supplies": 900.0,
+"x": -1350.0,
+"z": 7380.0
+}, {
+"ammo": 200.0,
+"known": false,
+"name": "Verket yard cache",
+"radius": 30.0,
+"supplies": 700.0,
+"x": -450.0,
+"z": 5820.0
+}, {
+"ammo": 300.0,
+"known": false,
+"name": "Sørmoen cache",
+"radius": 30.0,
+"supplies": 1200.0,
+"x": -2650.0,
+"z": 3570.0
+}, {
+"ammo": 250.0,
+"fuel": 300.0,
+"known": false,
+"name": "South Bridge cache",
+"radius": 30.0,
+"supplies": 1000.0,
+"x": 850.0,
+"z": 3570.0
+}])
+camera = "squad"
+rules = {
+"bed_limit": true,
+"build_costs": true,
+"build_sites": true,
+"free_reserves": false,
+"guide": true,
+"income_ammo": 12.0,
+"income_fuel": 8.0,
+"income_supplies": 30.0,
+"player_income": true,
+"recovery_delay_s": 120.0,
+"recovery_size": 4,
+"start_stock_gift": false
+}

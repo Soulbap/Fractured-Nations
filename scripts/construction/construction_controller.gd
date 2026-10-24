@@ -244,14 +244,38 @@ func save() -> bool:
 
 
 func load_saved() -> bool:
+	return bool(load_game().ok)
+
+
+## F9 / Continue: units, squads and the war (world.json), then the structures (construction.json). GAMEPLAY-01B: both
+## files are checked before anything is replaced, so a damaged save is refused with its reason instead of leaving
+## half a world loaded. Returns {ok, reason, structures, units, squads}.
+func load_game() -> Dictionary:
 	cancel()
-	var units := ""
-	if world_state and FileAccess.file_exists(world_save_path()):
-		var r: Variant = world_state.load_file(world_save_path())
-		units = (", %d units, %d squads" % [world_state.units.size(), world_state.squads.size()]) if r is Dictionary else ", units: load failed"
-	var err := structures.state.load_json(save_path)
-	_say(("Loaded %d structures%s" % [structures.state.count(), units]) if err == OK else "Load failed (%s)" % error_string(err))
-	return err == OK
+	var res := {"ok": false, "reason": "", "structures": 0, "units": 0, "squads": 0}
+	var cons: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_path)) if FileAccess.file_exists(save_path) else null
+	if not cons is Dictionary:
+		res.reason = "no construction save" if not FileAccess.file_exists(save_path) else "construction.json is damaged"
+	var snap: Variant = null
+	if world_state and res.reason == "":
+		if not FileAccess.file_exists(world_save_path()):
+			res.reason = "no world save (units, squads, war)"
+		else:
+			snap = str_to_var(FileAccess.get_file_as_string(world_save_path()))
+			if not snap is Dictionary or not (snap as Dictionary).has("units"):
+				res.reason = "world.json is damaged or from an incompatible version"
+	if res.reason != "":
+		_say("Load failed: %s" % res.reason)
+		return res
+	if world_state:
+		world_state.apply_snapshot(snap)
+	structures.state.from_dict(cons)
+	res.ok = true
+	res.structures = structures.state.count()
+	res.units = world_state.units.size() if world_state else 0
+	res.squads = world_state.squads.size() if world_state else 0
+	_say("Loaded %d structures%s" % [res.structures, (", %d units, %d squads" % [res.units, res.squads]) if world_state else ""])
+	return res
 
 
 ## UNIT-01A: units and squads are saved next to the construction file.

@@ -393,7 +393,7 @@ func _veh_persist() -> Dictionary:
 	demo.sim.vehicles.order_drive(u.id, far.target)
 	await _warp(40.0, 4.0, 60.0)
 	var before := _veh_sig(u)
-	var path := "user://saves/logistics_test_world.sav"
+	var path := "user://test_saves/logistics_test_world.sav"
 	demo.sim.state.save_file(path)
 	# Wreck the live state, then load.
 	u.veh.route = PackedVector3Array()
@@ -741,7 +741,7 @@ func _transport() -> Dictionary:
 	demo.rts_camera.frame(Vector3(9000, 0, 9000), 0.0, 120.0)
 	await _seconds(2.0)
 	await _warp(60.0, 4.0, 60.0)
-	var path := "user://saves/logistics_transport_test.sav"
+	var path := "user://test_saves/logistics_transport_test.sav"
 	demo.sim.state.save_file(path)
 	var sig_before := _soldier_sig([sa, sb])
 	var occ_before := [Array(truck.veh.occupants), Array(apc.veh.occupants)]

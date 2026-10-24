@@ -29,6 +29,20 @@ var next_mission_id := 1
 var builds: Array = []
 ## AI-WAR-LOGISTICS-01: objective id -> time before which no new counterattack is launched there (after one ended).
 var counter_cool := {}
+## GAMEPLAY-01B: the scenario this war was created from (ScenarioDef id; Continue restarts it before loading) and its
+## economy / progression rules (a copy of ScenarioDef.rules, saved, so a loaded game keeps the rules it began with).
+var scenario_id := "dev"
+var rules := {}
+## GAMEPLAY-01B supply caches: {id, name, pos, radius, supplies, ammo, state ("intact" / "securing" / "depleted"),
+## faction (who is securing it), progress 0..1, known (faction ids that know where it is), taken_by, taken_at}.
+var caches: Array = []
+## GAMEPLAY-01B: early-game hints already completed or dismissed by the player (hint id -> true).
+var guide := {}
+
+
+## A rule of the scenario (WarState.rules), or `fallback` when the war has none (old saves, test layouts).
+func rule(key: String, fallback: Variant = false) -> Variant:
+	return rules.get(key, fallback)
 
 
 func faction(id: int) -> FactionState:
@@ -78,7 +92,8 @@ func to_dict() -> Dictionary:
 			cl.append(c.to_dict())
 	return {"active": active, "player_faction": player_faction, "factions": f, "objectives": o, "operations": p,
 		"next_op_id": next_op_id, "log": events.duplicate(true), "contacts": cl, "next_contact": next_contact_id,
-		"intel_pending": intel_pending.duplicate(true), "missions": missions.duplicate(true), "next_mission": next_mission_id, "builds": builds.duplicate(true), "counter_cool": counter_cool.duplicate()}
+		"intel_pending": intel_pending.duplicate(true), "missions": missions.duplicate(true), "next_mission": next_mission_id, "builds": builds.duplicate(true), "counter_cool": counter_cool.duplicate(),
+		"scenario": scenario_id, "rules": rules.duplicate(true), "caches": caches.duplicate(true), "guide": guide.duplicate()}
 
 
 func from_dict(d: Dictionary) -> void:
@@ -110,3 +125,7 @@ func from_dict(d: Dictionary) -> void:
 	next_mission_id = d.get("next_mission", 1)
 	builds = d.get("builds", []).duplicate(true)
 	counter_cool = d.get("counter_cool", {}).duplicate()
+	scenario_id = String(d.get("scenario", "dev"))
+	rules = d.get("rules", {}).duplicate(true)
+	caches = d.get("caches", []).duplicate(true)
+	guide = d.get("guide", {}).duplicate()

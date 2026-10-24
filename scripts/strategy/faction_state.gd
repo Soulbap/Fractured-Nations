@@ -49,6 +49,16 @@ var econ_note := ""
 var econ_next_at := 0.0
 var supply_next_at := 0.0
 var econ_actions: Array = []
+## GAMEPLAY-01B: the faction's stock that has no building yet (New Game before the first supply depot): an
+## Inventory without capacity limit. Filled only by explicit sources (scenario start, caches, income while there
+## is no depot) and refunds; paid from by BaseSim.faction_pay; emptied into the first supply depot with
+## Inventory.transfer (BaseSim._settle_pool), so nothing is created or lost on the way.
+var pool := Inventory.make(INF)
+## GAMEPLAY-01B recovery after the loss of every soldier: when the replacement section arrives (-1: none due), how
+## many came so far, and where the faction's soldiers started (the arrival point while it has no base).
+var recovery_at := -1.0
+var recoveries := 0
+var home := Vector3.INF
 
 
 func to_dict() -> Dictionary:
@@ -58,7 +68,8 @@ func to_dict() -> Dictionary:
 		"casualties": casualties, "kills": kills, "captured": objectives_captured, "lost": objectives_lost,
 		"ops_started": ops_started, "ops_succeeded": ops_succeeded, "ops_failed": ops_failed, "last_decision": last_decision,
 		"focus": [focus_kind, focus_objective, focus_since, focus_until, focus_utility, focus_why],
-		"ledger": ledger.duplicate(true), "econ_next": econ_next_at, "supply_next": supply_next_at}
+		"ledger": ledger.duplicate(true), "econ_next": econ_next_at, "supply_next": supply_next_at,
+		"pool": pool.to_dict(), "recovery_at": recovery_at, "recoveries": recoveries, "home": home}
 
 
 static func from_dict(d: Dictionary) -> FactionState:
@@ -93,4 +104,9 @@ static func from_dict(d: Dictionary) -> FactionState:
 		f.ledger = d.ledger.duplicate(true)
 	f.econ_next_at = d.get("econ_next", 0.0)
 	f.supply_next_at = d.get("supply_next", 0.0)
+	if d.get("pool") is Dictionary:
+		f.pool = Inventory.from_dict(d.pool)
+	f.recovery_at = d.get("recovery_at", -1.0)
+	f.recoveries = d.get("recoveries", 0)
+	f.home = d.get("home", Vector3.INF)
 	return f

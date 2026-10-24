@@ -18,7 +18,10 @@ extends Node3D
 var sim: WorldSim
 var rts: RTSController
 var terrain: Terrain3D
-var player_faction := 0
+## GAMEPLAY-01B: the war's player faction (North without a war); never a separate copy that could disagree.
+var player_faction: int:
+	get:
+		return sim.state.war.player_faction if sim and sim.state.war.active else 0
 ## F7: all squads of all factions with teams, posts, missions.
 var debug := false:
 	set(v):
@@ -35,6 +38,7 @@ const COLORS := {
 	SquadState.Tactic.REPOSITION: Color(0.6, 0.7, 1.0),
 	SquadState.Tactic.WITHDRAW: Color(1.0, 0.95, 0.3),
 	SquadState.Tactic.REGROUP: Color(0.9, 0.9, 0.9),
+	SquadState.Tactic.BUILD: Color(0.95, 0.8, 0.45),
 }
 const TEAM_COLORS: Array[Color] = [Color(0.35, 0.65, 1.0), Color(1.0, 0.65, 0.2)]
 

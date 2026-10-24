@@ -26,8 +26,9 @@ const FORMATION_NAMES: Array[String] = ["Line", "Column", "Wedge", "Staggered", 
 
 ## AI-SQUAD-01 squad tactics. One tactic at a time; the squad record owns the intent, the
 ## soldiers execute it with ordinary move orders and the CombatBrain reactions.
-enum Tactic { NONE, DEFEND, SUPPRESS, ASSAULT, FLANK, BOUND, REPOSITION, WITHDRAW, REGROUP }
-const TACTIC_NAMES: Array[String] = ["-", "Defend", "Suppress", "Assault", "Flank", "Bound", "Reposition", "Withdraw", "Regroup"]
+## GAMEPLAY-01B: BUILD - the soldiers work at posts round a construction site (StructureState.site).
+enum Tactic { NONE, DEFEND, SUPPRESS, ASSAULT, FLANK, BOUND, REPOSITION, WITHDRAW, REGROUP, BUILD }
+const TACTIC_NAMES: Array[String] = ["-", "Defend", "Suppress", "Assault", "Flank", "Bound", "Reposition", "Withdraw", "Regroup", "Build"]
 ## Who commands the current tactic: the player (an RTS order), an operation (the tactic
 ## serves its task) or the squad itself (chosen by SquadTactics from what it knows).
 enum Owner { NONE, PLAYER, OPERATION, SQUAD }
@@ -97,6 +98,8 @@ var tactic_phase_since := 0.0
 ## of the expected threat. Never the true position of a hidden enemy.
 var tactic_target := Vector3.INF
 var tactic_contact := -1
+## GAMEPLAY-01B: BUILD - the construction site (StructureState id) the squad works on (-1: none).
+var tactic_site := -1
 var tactic_dir := Vector3.ZERO
 ## The destination of the current maneuver leg (bound / flank / withdraw).
 var tactic_dest := Vector3.INF
@@ -192,7 +195,7 @@ func to_dict() -> Dictionary:
 		"op": op_id, "route": Array(route), "route_i": route_i, "route_wait": [route_wait_goal, route_wait_kind, route_wait_form], "station": station_objective,
 		"teams": teams.map(func(t: PackedInt32Array) -> Array: return Array(t)), "team_leaders": Array(team_leaders), "team_roles": Array(team_roles),
 		"tactic": tactic, "tactic_owner": tactic_owner, "tactic_phase": tactic_phase, "tactic_since": tactic_since,
-		"tactic_phase_since": tactic_phase_since, "tactic_target": tactic_target, "tactic_contact": tactic_contact,
+		"tactic_phase_since": tactic_phase_since, "tactic_target": tactic_target, "tactic_contact": tactic_contact, "tactic_site": tactic_site,
 		"tactic_dir": tactic_dir, "tactic_dest": tactic_dest, "tactic_route": Array(tactic_route), "tactic_route_i": tactic_route_i,
 		"tactic_replans": tactic_replans, "tactic_leg": tactic_leg, "op_role": op_role, "defence_role": defence_role, "tactic_ext": tactic_ext, "recover_until": recover_until, "tactic_op": tactic_op, "tactic_leg_since": tactic_leg_since, "formation_auto": formation_auto, "tactic_cooldown_until": tactic_cooldown_until, "tactic_commit_until": tactic_commit_until,
 		"prev_order": prev_order, "prev_target": prev_target, "prev_yaw": prev_yaw, "tactic_why": tactic_why, "tactic_rejected": tactic_rejected,
@@ -238,6 +241,7 @@ static func from_dict(d: Dictionary) -> SquadState:
 	s.tactic_phase_since = d.get("tactic_phase_since", 0.0)
 	s.tactic_target = d.get("tactic_target", Vector3.INF)
 	s.tactic_contact = d.get("tactic_contact", -1)
+	s.tactic_site = d.get("tactic_site", -1)
 	s.tactic_dir = d.get("tactic_dir", Vector3.ZERO)
 	s.tactic_dest = d.get("tactic_dest", Vector3.INF)
 	s.tactic_route = PackedVector3Array(d.get("tactic_route", []))
