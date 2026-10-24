@@ -187,6 +187,7 @@ func events_for(faction: int, n := 8) -> Array:
 
 func _update_capture(dt: float) -> void:
 	sim.brain._ensure_grid()
+	_update_caches(dt)
 	for o: ObjectiveState in war.objectives.values():
 		var count := {}
 		for u: UnitState in sim.brain._near(o.position, o.radius):
@@ -226,6 +227,74 @@ func _update_capture(dt: float) -> void:
 			o.capture_progress = maxf(o.capture_progress - dt / decay_empty_s, 0.0)
 			if o.capture_progress <= 0.0:
 				o.capture_faction = -1
+
+
+## GAMEPLAY-01B supply caches (WarState.caches), with the presence rule of the objectives: a faction's soldiers come within
+## SPOT_M and the faction knows the cache; a faction alone in its radius (no other faction's soldier within the radius plus
+## CACHE_SECURE_GAP_M) secures it in about CACHE_SECURE_S (one soldier takes half again as long); the content goes once to
+## that faction (BaseSim.faction_deposit) and the cache is depleted for good. Unattended progress fades. A secured cache
+## points the faction to the next one it does not know yet.
+const CACHE_SECURE_S := 30.0
+const CACHE_SECURE_GAP_M := 80.0
+
+
+func _update_caches(dt: float) -> void:
+	for c: Dictionary in war.caches:
+		if c.state == "depleted":
+			continue
+		var p: Vector3 = c.pos
+		var r := float(c.radius)
+		var count := {}
+		var near := {}
+		for u: UnitState in sim.brain._near(p, SandboxSetup.CACHE_SPOT_M):
+			var d := Vector2(u.position.x - p.x, u.position.z - p.z).length()
+			if not (c.known as Array).has(u.faction):
+				(c.known as Array).append(u.faction)
+				log_event(u.faction, "cache", "Supply cache spotted: %s" % c.name, p)
+			if d <= r + CACHE_SECURE_GAP_M:
+				near[u.faction] = true
+			if d <= r:
+				count[u.faction] = int(count.get(u.faction, 0)) + 1
+		if count.size() == 1 and near.size() == 1:
+			var f: int = count.keys()[0]
+			if int(c.faction) != f:
+				c.faction = f
+				c.progress = 0.0
+				log_event(f, "cache", "Securing %s" % c.name, p)
+			c.state = "securing"
+			c.progress = minf(float(c.progress) + dt * (1.0 if int(count[f]) >= 2 else 0.67) / CACHE_SECURE_S, 1.0)
+			if float(c.progress) >= 1.0:
+				_collect_cache(c, f)
+		elif count.is_empty():
+			c.progress = maxf(float(c.progress) - dt / 60.0, 0.0)
+			if float(c.progress) <= 0.0:
+				c.state = "intact"
+				c.faction = -1
+
+
+func _collect_cache(c: Dictionary, f: int) -> void:
+	var items := {}
+	for k in ["supplies", "ammo", "fuel"]:
+		if float(c.get(k, 0.0)) > 0.0:
+			items[StringName(k)] = float(c[k])
+	sim.logistics.bases.faction_deposit(f, items)
+	var fs := war.faction(f)
+	if fs:
+		for k in ["supplies", "ammo", "fuel"]:
+			fs.ledger["in"][k] = float(fs.ledger["in"][k]) + float(c.get(k, 0.0))
+	c.state = "depleted"
+	c.progress = 1.0
+	c.taken_by = f
+	c.taken_at = snappedf(sim.state.time, 0.1)
+	var parts: Array[String] = []
+	for k: StringName in items:
+		parts.append("+%d %s" % [roundi(items[k]), Inventory.NAMES[k]])
+	log_event(f, "cache_taken", "%s secured: %s" % [c.name, ", ".join(parts)], c.pos)
+	for other: Dictionary in war.caches:
+		if other.state != "depleted" and not (other.known as Array).has(f):
+			(other.known as Array).append(f)
+			log_event(f, "cache", "Papers at %s point to another cache: %s" % [c.name, other.name], other.pos)
+			break
 
 
 func _transfer(o: ObjectiveState, f: int) -> void:
@@ -956,6 +1025,11 @@ func _update_reserves(f: FactionState) -> void:
 	# personnel are paid); the free arrival below remains for the player's faction and for worlds without bases.
 	if not f.player and sim.logistics.bases.facility_of_kind(f.id, &"barracks") != null:
 		return
+	# GAMEPLAY-01B: in New Game the player's reserves come only through a barracks; the one free help is recovery after
+	# the loss of every soldier.
+	if f.player and not war.rule("free_reserves", true):
+		_update_recovery(f)
+		return
 	var now := sim.state.time
 	if f.reserves < 4 or now < f.next_reinforcement_at or squads_of(f.id).size() >= max_squads:
 		return
@@ -973,6 +1047,47 @@ func _update_reserves(f: FactionState) -> void:
 	var sq := spawn_squad(f, at.position + Vector3(at.radius * 0.3, 0, at.radius * 0.3), n)
 	sq.station_objective = at.id
 	log_event(f.id, "reinforcements", "A new squad (%d) arrived at %s; %d in reserve" % [n, at.obj_name, f.reserves], at.position)
+
+
+## GAMEPLAY-01B recovery: when the player has no soldier left and cannot recruit (no barracks, no personnel or not enough
+## to pay a squad), a small section (rules recovery_size) arrives after recovery_delay_s at his command post (else where
+## his soldiers started). Never while he has a soldier, so it is no source of free squads; it repeats if he is wiped out
+## again. The arrival time is saved (FactionState.recovery_at).
+func _update_recovery(f: FactionState) -> void:
+	var delay := float(war.rule("recovery_delay_s", 0.0))
+	var size := int(war.rule("recovery_size", 0))
+	if delay <= 0.0 or size <= 0:
+		return
+	var bs := sim.logistics.bases
+	if bs.soldiers_of(f.id) > 0 or bs.queued_recruits(f.id) > 0:
+		if f.recovery_at >= 0.0:
+			f.recovery_at = -1.0
+		return
+	var now := sim.state.time
+	if f.recovery_at < 0.0:
+		var barracks := bs.facility_of_kind(f.id, &"barracks")
+		if barracks != null and f.reserves >= BaseSim.SQUAD_SIZE and bs.faction_can_pay(f.id, BaseSim.RECRUIT_COST):
+			return  # the barracks can train a squad: that is the normal way back
+		f.recovery_at = now + delay
+		log_event(f.id, "threat", "Every soldier is lost. A section of %d is on its way and arrives in %d s" % [size, roundi(delay)], _recovery_point(f))
+		return
+	if now < f.recovery_at:
+		return
+	f.recovery_at = -1.0
+	f.recoveries += 1
+	var at := _recovery_point(f)
+	var sq := spawn_squad(f, at, size)
+	sq.origin = "recovery"
+	log_event(f.id, "reinforcements", "Squad %s (%d soldiers) has arrived to carry on" % [sq.squad_name, size], at)
+
+
+func _recovery_point(f: FactionState) -> Vector3:
+	var bs := sim.logistics.bases
+	var mb := bs.main_base(f.id)
+	if mb >= 0:
+		var a: Vector3 = sim.state.construction.bases[mb].anchor
+		return _ground(a + Vector3(12.0, 0.0, 12.0))
+	return _ground(f.home) if f.home.is_finite() else _ground(Vector3.ZERO)
 
 
 ## New squad of n soldiers of faction f in a line around p (rifles equipped).

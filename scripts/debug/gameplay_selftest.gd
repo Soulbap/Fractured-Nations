@@ -33,6 +33,10 @@ func run(args: PackedStringArray) -> void:
 		_log("a_save", await _a_save())
 	if _want("a_continue"):
 		_log("a_continue", _a_continue())
+	if _want("b_economy"):
+		_log("b_economy", await _b_economy())
+	if _want("b_recovery"):
+		_log("b_recovery", await _b_recovery())
 	_finish()
 
 
@@ -223,6 +227,222 @@ func _a_continue() -> Dictionary:
 	_expect(bool(demo.continue_result.get("ok", false)), "a_continue: the game did not continue from the save: %s" % str(demo.continue_result))
 	_expect(war.scenario_id == "new_game" and int(out.squads) == 1, "a_continue: wrong scenario / squads after Continue: %s" % str(out))
 	return out
+
+
+# --- Stage B ------------------------------------------------------------------------------------------------------
+
+func _stock() -> Dictionary:
+	return demo.sim.logistics.bases.faction_stock(_war().player_faction)
+
+
+func _cache(i: int) -> Dictionary:
+	return _war().caches[i] if i < _war().caches.size() else {}
+
+
+## Waits (simulated time compressed) until cond is true or `limit` simulated seconds passed. Returns the seconds waited.
+func _until(cond: Callable, limit: float, speed := 4.0) -> float:
+	var t0 := demo.sim.state.time
+	CoreDemo.apply_time_scale(speed)
+	while not cond.call() and demo.sim.state.time - t0 < limit:
+		await _physics(20)
+	CoreDemo.apply_time_scale(1.0)
+	return demo.sim.state.time - t0
+
+
+## New Game economy in order: starting pool; no free squads; the first cache walked to and secured once (30 s rule,
+## content added once, the next cache revealed); a building refused when short and paid exactly once otherwise; the
+## depot takes over the pool without loss; income from an owned objective; recruiting costs and time, cancel refunds
+## exactly; the recruit is a commandable squad; pool, caches and queue survive save / load.
+func _b_economy() -> Dictionary:
+	var war := _war()
+	var pf := war.player_faction
+	var f := war.faction(pf)
+	var bs := demo.sim.logistics.bases
+	var con := demo.construction
+	var out := {}
+	var s0 := _stock()
+	out["start"] = s0
+	_expect(roundi(s0.supplies) == 500 and roundi(s0.ammo) == 120, "b: starting stock %s (want 500 supplies, 120 ammunition)" % str(s0))
+	# No free squads: the reinforcement timer is due, nothing arrives.
+	var squads0 := _player_squads().size()
+	f.next_reinforcement_at = 0.0
+	demo.sim.war._update_reserves(f)
+	out["free_squads"] = _player_squads().size() - squads0
+	_expect(_player_squads().size() == squads0, "b: a free squad arrived in New Game")
+	# The first cache, by an ordinary move order.
+	var c: Dictionary = _cache(0)
+	var sq: SquadState = _player_squads()[0]
+	_expect((c.known as Array).has(pf), "b: the first cache is not reported to the player")
+	demo.rts.select_squads([sq.id])
+	demo.rts.order_move(c.pos)
+	var walk := await _until(func() -> bool: return c.state == "securing", 300.0)
+	var t_sec := demo.sim.state.time
+	var secured := await _until(func() -> bool: return c.state == "depleted", 120.0)
+	var s1 := _stock()
+	out["cache"] = {"walk_s": roundi(walk), "secure_s": roundi(secured), "state": c.state, "stock_after": s1, "revealed": (_cache(1).known as Array).has(pf)}
+	_expect(c.state == "depleted" and roundi(s1.supplies - s0.supplies) == 900 and roundi(s1.ammo - s0.ammo) == 150,
+		"b: cache not collected as expected: %s" % str(out.cache))
+	_expect(secured >= 25.0 and secured <= 50.0, "b: securing took %.0f s (want ~30)" % secured)
+	_expect((_cache(1).known as Array).has(pf), "b: the next cache was not revealed")
+	await _until(func() -> bool: return false, 20.0)
+	_expect(roundi(_stock().supplies) == roundi(s1.supplies), "b: a depleted cache paid again")
+	_png("b_cache_secured")
+	# Construction cost: refused when short, paid once otherwise (instant placement in this stage).
+	var near: Vector3 = demo.sim.war.squad_center(sq)
+	var spot := _cp_spot(near)
+	_expect(spot.is_finite(), "b: no command post site near the squad")
+	if not spot.is_finite():
+		return out
+	f.pool.take(Inventory.SUPPLIES, f.pool.get_qty(Inventory.SUPPLIES) - 100.0)
+	var refused := _place(&"command_post", spot)
+	out["short"] = {"placed": refused != null, "message": con.message, "reason": con.check.get("reason", "")}
+	_expect(refused == null and String(out.short.message).contains("not enough supplies"), "b: an unaffordable command post was placed or refused without the reason")
+	f.pool.add(Inventory.SUPPLIES, 1300.0 - 100.0)
+	var before: float = _stock().supplies
+	var cp := _place(&"command_post", spot)
+	await _physics(5)
+	out["cp"] = {"placed": cp != null, "paid": roundi(before - _stock().supplies)}
+	_expect(cp != null and roundi(before - _stock().supplies) == 400, "b: the command post was not paid exactly once: %s" % str(out.cp))
+	if cp == null:
+		return out
+	await _until(func() -> bool: return not cp.is_site(), 300.0)
+	# The depot takes over the pool (Inventory.transfer: totals unchanged).
+	var bid := cp.base_id
+	var total_before := _stock()
+	var depot := _place(&"supply_depot", _site_in_base(&"supply_depot", cp.position))
+	_expect(depot != null, "b: no supply depot placed")
+	if depot == null:
+		return out
+	await _until(func() -> bool: return not depot.is_site(), 300.0)
+	await _physics(90)
+	var total_after := _stock()
+	out["depot"] = {"pool_after": f.pool.get_qty(Inventory.SUPPLIES), "depot": depot.inventory.summary() if depot.inventory else "-", "before": total_before, "after": total_after,
+		"start_stock_gift": demo.sim.state.logistics.starter_given.get(pf, false)}
+	_expect(f.pool.is_empty() and depot.inventory != null and absf(float(total_after.supplies) - (float(total_before.supplies) - 450.0)) < 0.5,
+		"b: the pool did not move into the depot without loss: %s" % str(out.depot))
+	_expect(not demo.sim.state.logistics.starter_given.get(pf, false), "b: the free starting stockpile was given in New Game")
+	# Income: an owned objective pays every minute into the depot.
+	var verket: ObjectiveState = null
+	for o: ObjectiveState in war.all_objectives():
+		if o.obj_name == "Verket":
+			verket = o
+	demo.sim.war._transfer(verket, pf)
+	var s2 := _stock()
+	demo.sim.war.econ.player_income(f, 1.0)
+	var s3 := _stock()
+	out["income"] = {"per_min": demo.sim.war.econ.rate_per_min(f), "got": roundi(s3.supplies - s2.supplies), "depot": depot.inventory.get_qty(Inventory.SUPPLIES)}
+	_expect(roundi(s3.supplies - s2.supplies) == 60, "b: Verket (value 2) did not pay 60 supplies per minute: %s" % str(out.income))
+	# Recruitment: barracks, cost, time, refund on cancel, a commandable squad.
+	f.pool.add(Inventory.SUPPLIES, 600.0)
+	var barracks := _place(&"barracks_block", _site_in_base(&"barracks_block", cp.position))
+	_expect(barracks != null, "b: no barracks placed")
+	if barracks == null:
+		return out
+	await _until(func() -> bool: return not barracks.is_site(), 300.0)
+	var s4 := _stock()
+	var r1 := bs.recruit(barracks.id)
+	var s5 := _stock()
+	bs.cancel_queue(barracks.id, 0)
+	var s6 := _stock()
+	out["recruit_cancel"] = {"ok": r1.ok, "paid": [roundi(s4.supplies - s5.supplies), roundi(s4.ammo - s5.ammo)], "refunded_exact": absf(s6.supplies - s4.supplies) < 0.01 and absf(s6.ammo - s4.ammo) < 0.01}
+	_expect(r1.ok and roundi(s4.supplies - s5.supplies) == 320 and roundi(s4.ammo - s5.ammo) == 192 and out.recruit_cancel.refunded_exact,
+		"b: recruit cost / refund wrong: %s (%s)" % [str(out.recruit_cancel), r1.reason])
+	var n_before := _player_squads().size()
+	var r2 := bs.recruit(barracks.id)
+	var waited := await _until(func() -> bool: return _player_squads().size() > n_before, 120.0)
+	var recruit: SquadState = _player_squads().back()
+	out["recruit"] = {"ok": r2.ok, "reason": r2.reason, "seconds": roundi(waited), "squads": _player_squads().size(), "commandable": demo.rts._can_command(recruit.leader_id), "members": recruit.members.size()}
+	_expect(r2.ok and _player_squads().size() == n_before + 1 and waited >= 55.0 and recruit.members.size() == 8, "b: recruitment did not produce a squad after ~60 s: %s" % str(out.recruit))
+	demo.rts.select_squads([recruit.id])
+	var moved := demo.rts.order_move(demo.sim.war.squad_center(recruit) + Vector3(20, 0, 20))
+	_expect(moved == 8, "b: the recruited squad does not take orders")
+	# Save / load: pool, caches, ownership and stock come back as they were.
+	var snap := {"stock": _stock(), "caches": war.caches.map(func(x: Dictionary) -> String: return "%s:%s" % [x.name, x.state])}
+	con.save()
+	f.pool.add(Inventory.SUPPLIES, 999.0)
+	war.caches[0].state = "intact"
+	var res := con.load_game()
+	await _physics(10)
+	var snap2 := {"stock": _stock(), "caches": _war().caches.map(func(x: Dictionary) -> String: return "%s:%s" % [x.name, x.state])}
+	out["persist"] = {"before": snap, "after": snap2, "load": res.ok}
+	_expect(res.ok and str(snap.caches) == str(snap2.caches) and absf(float(snap.stock.supplies) - float(snap2.stock.supplies)) < 0.5,
+		"b: economy state not restored by save / load: %s" % str(out.persist))
+	return out
+
+
+## Every player soldier dies before a barracks exists: a small section arrives after the delay, once; the pending
+## arrival survives save / load.
+func _b_recovery() -> Dictionary:
+	var war := _war()
+	var pf := war.player_faction
+	var f := war.faction(pf)
+	var out := {}
+	for sq: SquadState in _player_squads():
+		for id in sq.members.duplicate():
+			demo.sim.combat.kill(demo.sim.state.get_unit(id))
+	await _physics(10)
+	_expect(_player_squads().is_empty(), "b_recovery: soldiers left after killing all")
+	await _until(func() -> bool: return f.recovery_at >= 0.0, 20.0)
+	out["due_in"] = roundi(f.recovery_at - demo.sim.state.time)
+	_expect(f.recovery_at >= 0.0, "b_recovery: no recovery scheduled")
+	demo.construction.save()
+	f.recovery_at = -1.0
+	demo.construction.load_game()
+	await _physics(10)
+	f = _war().faction(pf)
+	out["after_load_due_in"] = roundi(f.recovery_at - demo.sim.state.time)
+	_expect(f.recovery_at >= 0.0, "b_recovery: the pending recovery was lost by save / load")
+	var waited := await _until(func() -> bool: return not _player_squads().is_empty(), 200.0, 8.0)
+	out["waited"] = roundi(waited)
+	out["squads"] = _player_squads().size()
+	out["soldiers"] = demo.sim.logistics.bases.soldiers_of(pf)
+	out["recoveries"] = f.recoveries
+	_expect(_player_squads().size() == 1 and demo.sim.logistics.bases.soldiers_of(pf) == int(war.rule("recovery_size", 0)), "b_recovery: no replacement section: %s" % str(out))
+	await _until(func() -> bool: return false, 60.0, 8.0)
+	_expect(_player_squads().size() == 1, "b_recovery: more free squads arrived while the player had soldiers")
+	return out
+
+
+## A command post spot within 150 m of p (check_building + base rules), or INF.
+func _cp_spot(p: Vector3) -> Vector3:
+	var sm := demo.structures
+	var def := StructureCatalog.get_def(&"command_post")
+	for r: float in [30.0, 50.0, 70.0, 90.0, 120.0, 150.0]:
+		for k in 12:
+			var a := TAU * k / 12.0
+			var g := demo.on_ground(p.x + cos(a) * r, p.z + sin(a) * r, 0.0)
+			if sm.check_building(def, g, 0.0, -1, true).ok and demo.sim.logistics.bases.placement_rule(&"command_post", g, _war().player_faction) == "" \
+					and sm.road_conflict(def, Transform3D(Basis.IDENTITY, g)) == "":
+				return g
+	return Vector3.INF
+
+
+func _site_in_base(type_id: StringName, anchor: Vector3) -> Vector3:
+	var sm := demo.structures
+	var def := StructureCatalog.get_def(type_id)
+	for r: float in [35.0, 50.0, 65.0, 80.0, 95.0, 110.0]:
+		for k in 16:
+			var a := TAU * k / 16.0 + r * 0.01
+			var g := demo.on_ground(anchor.x + cos(a) * r, anchor.z + sin(a) * r, 0.0)
+			if sm.check_building(def, g, 0.0, -1, true).ok and sm.road_conflict(def, Transform3D(Basis.IDENTITY, g)) == "" \
+					and demo.sim.logistics.bases.placement_rule(type_id, g, _war().player_faction) == "":
+				return g
+	return Vector3.INF
+
+
+## Places a building through the construction controller (its checks, costs and placement path); returns it or null.
+func _place(type_id: StringName, at: Vector3) -> StructureState:
+	if not at.is_finite():
+		return null
+	var con := demo.construction
+	con.set_active(true)
+	con.select_type(type_id)
+	con.yaw = 0.0
+	con.cursor = at
+	con._refresh_check()
+	var s := con.place_building()
+	con.set_active(false)
+	return s
 
 
 func _owners() -> Dictionary:

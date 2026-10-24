@@ -413,6 +413,144 @@ func refund(bid: int, cost: Dictionary, first: StructureState = null) -> void:
 			Inventory.audit.refunded[StringName(k)] = float(Inventory.audit.refunded.get(StringName(k), 0.0)) + put
 
 
+## GAMEPLAY-01B: everything faction f can spend - its pool (FactionState.pool, the stock without a building) plus the
+## stores of all its bases.
+func faction_stock(faction: int) -> Dictionary:
+	var t := {"ammo": 0.0, "fuel": 0.0, "supplies": 0.0}
+	var f := sim.state.war.faction(faction)
+	if f:
+		for k in t:
+			t[k] += f.pool.get_qty(StringName(k))
+	for b: Dictionary in bases_of(faction):
+		var st := base_stock(b.id)
+		for k in t:
+			t[k] += st[k]
+	return t
+
+
+func faction_can_pay(faction: int, cost: Dictionary) -> bool:
+	var stock := faction_stock(faction)
+	for k in cost:
+		if stock.get(String(k), 0.0) < float(cost[k]) - 0.001:
+			return false
+	return true
+
+
+## Pays a cost for faction f, atomically: the pool first, then the stores of base `bid` (the base the order is for, -1
+## none), then the other bases. Returns what came from where ({"pool": {item: qty}, "bases": {base id: {item: qty}}}) so a
+## refund puts it back exactly there, or {} when the faction cannot pay.
+func faction_pay(faction: int, cost: Dictionary, bid := -1) -> Dictionary:
+	if not faction_can_pay(faction, cost):
+		return {}
+	var f := sim.state.war.faction(faction)
+	var paid := {"pool": {}, "bases": {}}
+	var order: Array = []
+	if bid >= 0 and _cs().bases.has(bid):
+		order.append(bid)
+	for b: Dictionary in bases_of(faction):
+		if not order.has(b.id):
+			order.append(b.id)
+	for k in cost:
+		var left := float(cost[k])
+		if f:
+			var got := f.pool.take(StringName(k), left)
+			if got > 0.0:
+				paid.pool[String(k)] = got
+				left -= got
+		for b in order:
+			if left <= 0.001:
+				break
+			for s in base_stores(b):
+				if left <= 0.001:
+					break
+				var got := s.inventory.take(StringName(k), left)
+				if got > 0.0:
+					left -= got
+					if not paid.bases.has(b):
+						paid.bases[b] = {}
+					paid.bases[b][String(k)] = float(paid.bases[b].get(String(k), 0.0)) + got
+	return paid
+
+
+## Puts a faction_pay record back where it came from (a base that no longer exists, or is full: into the pool).
+func faction_refund(faction: int, paid: Dictionary) -> void:
+	var f := sim.state.war.faction(faction)
+	for k: String in paid.get("pool", {}):
+		if f:
+			var q := float(paid.pool[k])
+			f.pool.add(StringName(k), q)
+			Inventory.audit.refunded[StringName(k)] = float(Inventory.audit.refunded.get(StringName(k), 0.0)) + q
+	var bl: Dictionary = paid.get("bases", {})
+	for b in bl:
+		var bid := int(b)
+		for k: String in bl[b]:
+			var left := float(bl[b][k])
+			if _cs().bases.has(bid) and int(_cs().bases[bid].faction) == faction:
+				for s in base_stores(bid):
+					if left <= 0.001:
+						break
+					var put := s.inventory.add(StringName(k), left)
+					left -= put
+					Inventory.audit.refunded[StringName(k)] = float(Inventory.audit.refunded.get(StringName(k), 0.0)) + put
+			if left > 0.001 and f:
+				f.pool.add(StringName(k), left)
+				Inventory.audit.refunded[StringName(k)] = float(Inventory.audit.refunded.get(StringName(k), 0.0)) + left
+
+
+## Supplies that arrive for faction f from an explicit source (a cache, income): into its supply stores when it has one
+## with room, the rest into its pool. Returns {item: qty} that went into stores.
+func faction_deposit(faction: int, items: Dictionary) -> Dictionary:
+	var f := sim.state.war.faction(faction)
+	var stored := {}
+	for k in items:
+		var left := float(items[k])
+		for s in _supply_stores(faction, StringName(k)):
+			if left <= 0.001:
+				break
+			var put := s.inventory.add(StringName(k), left)
+			left -= put
+			stored[String(k)] = float(stored.get(String(k), 0.0)) + put
+		if left > 0.001 and f:
+			f.pool.add(StringName(k), left)
+	return stored
+
+
+## The faction's operational supply-type stores that accept `item` (supply depots and storage), main base first.
+func _supply_stores(faction: int, item: StringName) -> Array[StructureState]:
+	var out: Array[StructureState] = []
+	var mb := main_base(faction)
+	for b: Dictionary in bases_of(faction):
+		for s in base_stores(b.id):
+			if FacilityDefs.kind_of(s.type_id) == &"supply" and s.inventory.accepts(item):
+				if b.id == mb:
+					out.push_front(s)
+				else:
+					out.append(s)
+	return out
+
+
+## GAMEPLAY-01B: the pool moves into the faction's first supply depot once one is operational (Inventory.transfer: nothing
+## is created or lost). Returns the quantities moved.
+func _settle_pool(f: FactionState) -> Dictionary:
+	if f.pool.is_empty():
+		return {}
+	var moved := {}
+	var into: StructureState = null
+	for item in Inventory.ITEMS:
+		for s in _supply_stores(f.id, item):
+			var q := Inventory.transfer(f.pool, s.inventory, item, f.pool.get_qty(item))
+			if q > 0.0:
+				moved[String(item)] = float(moved.get(String(item), 0.0)) + q
+				into = s
+	if moved.is_empty():
+		return {}
+	var parts: Array[String] = []
+	for k: String in moved:
+		parts.append("%d %s %s" % [roundi(moved[k]), Inventory.UNITS[StringName(k)], Inventory.NAMES[StringName(k)]])
+	lsim._event(f.id, "%s now holds the supplies carried so far: %s" % [lsim.store_name(into), ", ".join(parts)])
+	return moved
+
+
 func cost_text(cost: Dictionary) -> String:
 	var parts: Array[String] = []
 	for k in cost:
@@ -436,10 +574,26 @@ func recruit(barracks_id: int) -> Dictionary:
 		return {"ok": false, "reason": "The barracks is training %d squads already" % q.size()}
 	if f.reserves < SQUAD_SIZE:
 		return {"ok": false, "reason": "No personnel left in reserve (%d)" % f.reserves}
-	if not pay(s.base_id, RECRUIT_COST, s):
+	# GAMEPLAY-01B: a New Game player trains no more soldiers than his bases have beds for.
+	if f.player and war.rule("bed_limit", false):
+		var beds := 0
+		for b: Dictionary in bases_of(f.id):
+			beds += capacity(b.id)
+		var have := soldiers_of(f.id) + queued_recruits(f.id)
+		if have + SQUAD_SIZE > beds:
+			return {"ok": false, "reason": "Not enough beds: %d soldiers and recruits, %d beds (a barracks adds 32)" % [have, beds]}
+	var entry := {"kind": "squad", "what": "training a squad", "done": sim.state.time + RECRUIT_TIME_S, "n": SQUAD_SIZE}
+	if f.player and war.rule("build_costs", false):
+		# The player pays from everything the faction holds (pool and bases), the barracks' base first.
+		var paid := faction_pay(f.id, RECRUIT_COST, s.base_id)
+		if paid.is_empty():
+			var st := faction_stock(f.id)
+			return {"ok": false, "reason": "Not enough: a squad needs %s (you have %d kg supplies, %d kg ammunition)" % [cost_text(RECRUIT_COST), roundi(st.supplies), roundi(st.ammo)]}
+		entry["paid"] = paid
+	elif not pay(s.base_id, RECRUIT_COST, s):
 		return {"ok": false, "reason": "Not enough supplies at the base: a squad needs %s" % cost_text(RECRUIT_COST)}
 	f.reserves -= SQUAD_SIZE
-	q.append({"kind": "squad", "what": "training a squad", "done": sim.state.time + RECRUIT_TIME_S, "n": SQUAD_SIZE})
+	q.append(entry)
 	s.facility["queue"] = q
 	lsim._event(s.faction, "%s: training a squad of %d (%d s)" % [lsim.store_name(s), SQUAD_SIZE, roundi(RECRUIT_TIME_S)])
 	return {"ok": true, "reason": ""}
@@ -455,7 +609,10 @@ func cancel_queue(structure_id: int, index := 0) -> bool:
 	var e: Dictionary = q[index]
 	q.remove_at(index)
 	if e.kind == "squad":
-		refund(s.base_id, RECRUIT_COST, s)
+		if e.has("paid"):
+			faction_refund(s.faction, e.paid)
+		else:
+			refund(s.base_id, RECRUIT_COST, s)
 		var f := sim.state.war.faction(s.faction)
 		if f:
 			f.reserves += int(e.n)
@@ -494,11 +651,32 @@ func acquire_vehicle(depot_id: int, type_id: StringName) -> Dictionary:
 
 # --- Per tick -----------------------------------------------------------------------------------------
 
+## Living soldiers of a faction (squad members) and the recruits its barracks are training.
+func soldiers_of(faction: int) -> int:
+	var n := 0
+	for sq: SquadState in sim.state.squads.values():
+		if sq.faction == faction:
+			n += sq.members.size()
+	return n
+
+
+func queued_recruits(faction: int) -> int:
+	var n := 0
+	for b: Dictionary in bases_of(faction):
+		for s in facilities_of(b.id):
+			for e: Dictionary in s.facility.get("queue", []):
+				if e.kind == "squad":
+					n += int(e.n)
+	return n
+
+
 func update(dt: float) -> void:
 	_tick -= dt
 	if _tick <= 0.0:
 		_tick = 1.0
 		_process_queues()
+		for f: FactionState in sim.state.war.factions.values():
+			_settle_pool(f)
 	_rule_timer -= dt
 	if _rule_timer <= 0.0:
 		_rule_timer = RULE_TICK_S

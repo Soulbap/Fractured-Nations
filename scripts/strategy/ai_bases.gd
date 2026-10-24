@@ -14,11 +14,9 @@
 class_name AiBases
 extends RefCounted
 
-## Supplies (kg) a building costs the AI faction, paid from its base stores when the order is given.
-const BUILD_COST := {
-	&"supply_depot": 450.0, &"supply_storage": 200.0, &"barracks_block": 550.0, &"vehicle_depot": 750.0,
-	&"ammo_magazine": 320.0, &"fuel_point": 160.0, &"repair_bay": 260.0, &"sandbag_fighting_position": 45.0,
-}
+## Supplies (kg) a building costs the AI faction, paid from its base stores when the order is given. GAMEPLAY-01B: the one
+## cost table of player and AI construction (BuildCosts).
+const BUILD_COST := BuildCosts.COST
 const BUILD_TIME_S := {
 	&"supply_depot": 150.0, &"supply_storage": 90.0, &"barracks_block": 180.0, &"vehicle_depot": 210.0, &"ammo_magazine": 120.0,
 	&"fuel_point": 70.0, &"repair_bay": 100.0, &"sandbag_fighting_position": 30.0,

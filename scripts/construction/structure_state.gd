@@ -31,6 +31,11 @@ var inventory: Inventory
 var base_id := -1
 var label := ""
 var facility := {}
+## GAMEPLAY-01B construction site: empty for a finished structure. While it is being built: {work, need (soldier-seconds,
+## BuildCosts), paid (the payment record, refunded if the site is cancelled), crew (AI: abstract workers per second),
+## since, workers / why (last BUILD step: soldiers at work, or why nobody works)}. A site blocks its footprint and is drawn
+## as a site, but is no facility (no inventory, no base, no queue) until ConstructionState.add_work completes it.
+var site := {}
 
 ## Runtime cache, rebuilt from the data above (not saved): one transform per instance
 ## (index = module index for lines; -1 entries never appear, removed modules are skipped
@@ -44,6 +49,27 @@ func is_line() -> bool:
 
 func is_removed(index: int) -> bool:
 	return removed.has(index)
+
+
+func is_site() -> bool:
+	return not site.is_empty()
+
+
+## 0..1 (1 for a finished structure).
+func site_progress() -> float:
+	if site.is_empty():
+		return 1.0
+	return clampf(float(site.get("work", 0.0)) / maxf(float(site.get("need", 1.0)), 0.001), 0.0, 1.0)
+
+
+## Middle of the structure on the ground (a building's position, the middle of a line's corners).
+func site_center() -> Vector3:
+	if not is_line():
+		return position
+	var c := Vector3.ZERO
+	for p in points:
+		c += p
+	return c / maxi(points.size(), 1)
 
 
 func built_count() -> int:
@@ -75,6 +101,8 @@ func to_dict() -> Dictionary:
 		d["label"] = label
 	if not facility.is_empty():
 		d["facility"] = facility
+	if not site.is_empty():
+		d["site"] = site
 	return d
 
 
@@ -100,4 +128,5 @@ static func from_dict(d: Dictionary) -> StructureState:
 	s.base_id = int(d.get("base", -1))
 	s.label = String(d.get("label", ""))
 	s.facility = d.get("facility", {})
+	s.site = d.get("site", {})
 	return s

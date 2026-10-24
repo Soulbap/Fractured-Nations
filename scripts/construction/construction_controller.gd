@@ -411,6 +411,9 @@ func place_building() -> StructureState:
 		_say("Cannot build here: %s" % check.get("reason", "no ground"))
 		return null
 	var xf: Transform3D = check.xform
+	var paid: Variant = _pay(BuildCosts.cost_of(def), xf.origin)
+	if paid == null:
+		return null
 	var s := structures.state.add_building(def.id, xf.origin, yaw, player_faction())
 	structures.state.add_clearings(structures.clearings_for(s, clear_trees))
 	var b: Dictionary = structures.state.bases.get(s.base_id, {})
@@ -423,6 +426,43 @@ func place_building() -> StructureState:
 	_area_key = []
 	built.emit(s)
 	return s
+
+
+## GAMEPLAY-01B: player construction is paid in the scenarios that say so (rule build_costs).
+func costs_on() -> bool:
+	return world_state != null and world_state.war.active and bool(world_state.war.rule("build_costs", false))
+
+
+## Supplies the player can spend (pool and every base); INF when construction is free.
+func supplies_available() -> float:
+	if not costs_on() or _bases() == null:
+		return INF
+	return float(_bases().faction_stock(player_faction()).supplies)
+
+
+## What the current tool would cost: a building, or the modules of the line being drawn (0 when free).
+func current_cost() -> float:
+	if not costs_on() or def == null:
+		return 0.0
+	if def.linear:
+		var n := 1
+		if check.has("modules"):
+			n = maxi(1, int(check.get("ok_count", 1)))
+		return BuildCosts.cost_of(def, n)
+	return BuildCosts.cost_of(def)
+
+
+## Pays `supplies` for something placed at p (the base there pays after the pool). Returns the payment record ({} when
+## construction is free) or null when the player cannot afford it (with the reason in the message).
+func _pay(supplies: float, p: Vector3) -> Variant:
+	if not costs_on() or supplies <= 0.0:
+		return {}
+	var bs := _bases()
+	var paid := bs.faction_pay(player_faction(), BuildCosts.supplies(supplies), bs.base_area_at(p, player_faction()))
+	if paid.is_empty():
+		_say("Not enough supplies: %s needs %d kg, you have %d kg" % [def.display_name, roundi(supplies), roundi(supplies_available())])
+		return null
+	return paid
 
 
 ## The faction the player builds for (the war's player faction, North without a war).
@@ -486,7 +526,10 @@ func finish_line() -> StructureState:
 		_say("Cannot build: every module is blocked (%s)" % (mods[0].reason if not mods.is_empty() else "too short"))
 		cancel()
 		return null
-	var s := structures.state.add_line(def.id, pts, removed)
+	var paid: Variant = _pay(BuildCosts.cost_of(def, mods.size() - removed.size()), pts[0])
+	if paid == null:
+		return null
+	var s := structures.state.add_line(def.id, pts, removed, player_faction())
 	structures.state.add_clearings(structures.clearings_for(s, clear_trees))
 	var blocked := 0
 	for m in mods:
@@ -821,6 +864,8 @@ func _refresh_check() -> void:
 		check = structures.check_building(def, cursor, yaw, -1, clear_trees)
 		if check.ok:
 			var why := _base_reason(check.xform)
+			if why == "" and costs_on() and BuildCosts.cost_of(def) > supplies_available() + 0.001:
+				why = "not enough supplies: needs %d kg, you have %d kg" % [roundi(BuildCosts.cost_of(def)), roundi(supplies_available())]
 			if why != "":
 				check.ok = false
 				check.reason = why

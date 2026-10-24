@@ -1342,6 +1342,7 @@ func _draw() -> void:
 	if layers.objectives:
 		for o: ObjectiveState in war.all_objectives():
 			_draw_objective(o, font, level)
+		_draw_caches(font)
 	# Operations of the player's faction: routes, then their labels.
 	_op_rects.clear()
 	var label_slots := {}
@@ -1387,6 +1388,33 @@ func _draw() -> void:
 	if dbg_faction >= 0:
 		_draw_inspector(font, r)
 	_draw_help(font, r)
+
+
+## GAMEPLAY-01B: the supply caches the faction knows - an amber diamond with name and content (securing: progress), a
+## hollow grey one once taken.
+func _draw_caches(font: Font) -> void:
+	for c: Dictionary in sim.state.war.caches:
+		if not (c.known as Array).has(faction):
+			continue
+		var s := to_screen(c.pos)
+		var depleted: bool = c.state == "depleted"
+		var col := Color(FNUI.INK_3, 0.8) if depleted else FNUI.ARMED
+		var d := 6.0
+		var pts := PackedVector2Array([s + Vector2(0, -d), s + Vector2(d, 0), s + Vector2(0, d), s + Vector2(-d, 0)])
+		if depleted:
+			pts.append(pts[0])
+			draw_polyline(pts, col, 1.5)
+		else:
+			draw_colored_polygon(PackedVector2Array([s + Vector2(0, -d - 1.5), s + Vector2(d + 1.5, 0), s + Vector2(0, d + 1.5), s + Vector2(-d - 1.5, 0)]), Color(0, 0, 0, 0.7))
+			draw_colored_polygon(pts, col)
+		var txt := String(c.name)
+		if depleted:
+			txt += " (taken)"
+		elif c.state == "securing":
+			txt += " · securing %d%%" % roundi(float(c.progress) * 100.0)
+		else:
+			txt += " · %d kg" % roundi(float(c.supplies))
+		_text(font, s + Vector2(10, 4), txt, 11, col)
 
 
 ## The tactical camera: its position, a faint wedge of its horizontal field of view

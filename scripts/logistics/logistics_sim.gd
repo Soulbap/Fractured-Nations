@@ -55,7 +55,8 @@ func _on_structure_added(s: StructureState) -> void:
 		# The scenario's initial stockpile: the first supply depot of the player's faction.
 		var war := sim.state.war
 		var lg := sim.state.logistics
-		if kind == &"supply" and war.active and s.faction == war.player_faction and not lg.starter_given.get(s.faction, false):
+		# GAMEPLAY-01B: not in New Game (rule start_stock_gift): there the player's stock is what he carried and found.
+		if kind == &"supply" and war.active and s.faction == war.player_faction and not lg.starter_given.get(s.faction, false) and war.rule("start_stock_gift", true):
 			lg.starter_given[s.faction] = true
 			for item in FacilityDefs.START_STOCK:
 				s.inventory.add(item, FacilityDefs.START_STOCK[item])
