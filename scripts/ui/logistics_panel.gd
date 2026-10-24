@@ -408,6 +408,28 @@ func _build_facility_actions(s: StructureState) -> void:
 		_row([_button(&"recruit", "Recruit a squad (%s)" % lg.bases.cost_text(BaseSim.RECRUIT_COST), func() -> void:
 			var r := lg.bases.recruit(s.id)
 			_say("Training a squad" if r.ok else r.reason))])
+		# GAMEPLAY-01E: depleted squads of the player at this base (the selected ones first) get replacements.
+		var shown := 0
+		var cands: Array = rts.selected_squads()
+		for sq: SquadState in sim.state.all_squads():
+			if sq.faction == s.faction and not cands.has(sq.id):
+				cands.append(sq.id)
+		for sid in cands:
+			var sq := sim.state.get_squad(sid)
+			if sq == null or shown >= 3:
+				continue
+			var missing := BaseSim.SQUAD_SIZE - sq.members.size() - lg.bases.queued_for_squad(sq.id)
+			var d := Vector2(sim.war.squad_center(sq).x - s.position.x, sim.war.squad_center(sq).z - s.position.z).length()
+			if missing <= 0 or (d > BaseSim.JOIN_M and not rts.selected_squads().has(sid)):
+				continue
+			shown += 1
+			var cost := {}
+			for k in BaseSim.RECRUIT_COST:
+				cost[k] = roundf(float(BaseSim.RECRUIT_COST[k]) * missing / BaseSim.SQUAD_SIZE)
+			var bsid := s.id
+			_row([_button(&"soldiers", "Replenish %s +%d (%s)" % [sq.squad_name, missing, lg.bases.cost_text(cost)], func() -> void:
+				var r := lg.bases.replenish(bsid, sid)
+				_say(("%d replacements for %s" % [r.n, sq.squad_name]) if r.ok else r.reason))])
 	if kind == &"vehicle":
 		for t in BaseSim.VEHICLES:
 			var tid: StringName = t

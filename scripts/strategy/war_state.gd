@@ -38,6 +38,10 @@ var rules := {}
 var caches: Array = []
 ## GAMEPLAY-01B: early-game hints already completed or dismissed by the player (hint id -> true).
 var guide := {}
+## GAMEPLAY-01E: AI base expansions (AiBases): {id, faction, template, objective, pos, site, base, next, state ("building",
+## "garrison", "done", "failed"), why, started, ended}. The structures themselves are ordinary sites / structures.
+var expansions: Array = []
+var next_expansion_id := 1
 
 
 ## A rule of the scenario (WarState.rules), or `fallback` when the war has none (old saves, test layouts).
@@ -93,7 +97,8 @@ func to_dict() -> Dictionary:
 	return {"active": active, "player_faction": player_faction, "factions": f, "objectives": o, "operations": p,
 		"next_op_id": next_op_id, "log": events.duplicate(true), "contacts": cl, "next_contact": next_contact_id,
 		"intel_pending": intel_pending.duplicate(true), "missions": missions.duplicate(true), "next_mission": next_mission_id, "builds": builds.duplicate(true), "counter_cool": counter_cool.duplicate(),
-		"scenario": scenario_id, "rules": rules.duplicate(true), "caches": caches.duplicate(true), "guide": guide.duplicate()}
+		"scenario": scenario_id, "rules": rules.duplicate(true), "caches": caches.duplicate(true), "guide": guide.duplicate(),
+		"expansions": expansions.duplicate(true), "next_expansion": next_expansion_id}
 
 
 func from_dict(d: Dictionary) -> void:
@@ -129,3 +134,5 @@ func from_dict(d: Dictionary) -> void:
 	rules = d.get("rules", {}).duplicate(true)
 	caches = d.get("caches", []).duplicate(true)
 	guide = d.get("guide", {}).duplicate()
+	expansions = d.get("expansions", []).duplicate(true)
+	next_expansion_id = d.get("next_expansion", 1)

@@ -21,7 +21,20 @@ const BUILD_COST := BuildCosts.COST
 const BUILD_TIME_S := {
 	&"supply_depot": 150.0, &"supply_storage": 90.0, &"barracks_block": 180.0, &"vehicle_depot": 210.0, &"ammo_magazine": 120.0,
 	&"fuel_point": 70.0, &"repair_bay": 100.0, &"sandbag_fighting_position": 30.0,
+	&"command_post": 150.0, &"fighting_position": 45.0, &"mg_emplacement": 60.0, &"guard_tower_steel": 90.0,
 }
+## GAMEPLAY-01E: the three base templates an AI faction may build (existing buildings only, built one after the other
+## through request(): the same paid sites as every AI order). `reserve`: supplies the faction keeps beyond the template.
+const TEMPLATES := {
+	"outpost": {"name": "Forward Outpost", "items": [&"command_post", &"fighting_position", &"guard_tower_steel", &"fighting_position"], "reserve": 1200.0},
+	"defensive": {"name": "Defensive Base", "items": [&"command_post", &"supply_storage", &"fighting_position", &"mg_emplacement", &"guard_tower_steel", &"fighting_position"], "reserve": 1800.0},
+	"main": {"name": "Main Base", "items": [&"command_post", &"barracks_block", &"supply_depot", &"fighting_position", &"guard_tower_steel"], "reserve": 1500.0},
+}
+## Expansion limits: at most `ai_base_limit` bases beyond the first (scenario rule, default 2), one expansion at a time per
+## faction, EXPAND_COOLDOWN_S between starts, none before EXPAND_FIRST_S, never closer than EXPAND_GAP_M to an own base.
+const EXPAND_COOLDOWN_S := 900.0
+const EXPAND_FIRST_S := 300.0
+const EXPAND_GAP_M := 1500.0
 ## Free ground kept between a new building's centre and any other structure's footprint edge (m).
 const MIN_GAP_M := 7.0
 ## The starting compound: [type, local x, local z] in a frame whose -Z is the front of the buildings.
@@ -180,7 +193,7 @@ func _walled(center: Vector3, basis: Basis) -> bool:
 ## Orders a building for faction f near `near`: finds a site (ring search 25-140 m, never within MIN_GAP_M of
 ## another structure or a pending order), pays BUILD_COST from the faction's bases (nearest store with the
 ## supplies first) and queues it. Returns {ok, reason, pos}.
-func request(f: FactionState, type_id: StringName, near: Vector3, why: String, need_road := false) -> Dictionary:
+func request(f: FactionState, type_id: StringName, near: Vector3, why: String, need_road := false, face := Vector3.ZERO) -> Dictionary:
 	if _sm() == null:
 		return {"ok": false, "reason": "no construction system"}
 	var def := StructureCatalog.get_def(type_id)
@@ -191,7 +204,7 @@ func request(f: FactionState, type_id: StringName, near: Vector3, why: String, n
 	if bid < 0:
 		stats.refused += 1
 		return {"ok": false, "reason": "not enough supplies (%d kg needed)" % roundi(BUILD_COST[type_id])}
-	var site := find_site(def, near, 25.0, 140.0, need_road)
+	var site := find_site(def, near, 25.0, 140.0, need_road, face)
 	if not site.ok:
 		stats.refused += 1
 		return {"ok": false, "reason": "no buildable site near (%.0f, %.0f): %s" % [near.x, near.z, site.reason]}
@@ -231,7 +244,7 @@ const MAX_CHECKS := 10
 var _phase := 0.0
 
 
-func find_site(def: StructureDef, near: Vector3, min_r: float, max_r: float, need_road := false) -> Dictionary:
+func find_site(def: StructureDef, near: Vector3, min_r: float, max_r: float, need_road := false, face := Vector3.ZERO) -> Dictionary:
 	var reason := "ground"
 	var checks := 0
 	_phase += 0.61
@@ -253,6 +266,8 @@ func find_site(def: StructureDef, near: Vector3, min_r: float, max_r: float, nee
 				return {"ok": false, "reason": "no site found in %d placement checks (%s)" % [MAX_CHECKS, reason]}
 			checks += 1
 			var yaw := fposmod(a + PI * 0.5, TAU) - PI
+			if face != Vector3.ZERO:
+				yaw = atan2(-face.x, -face.z)  # GAMEPLAY-01E: a fortification faces the threat
 			if need_road:
 				# The front of the building (its dock) faces the nearest road point, so trucks drive straight in.
 				var rd := sim.state.roads.nearest(c, 70.0, 0, 0.0)
@@ -282,10 +297,205 @@ func _crowded(c: Vector3, def: StructureDef) -> bool:
 	return false
 
 
+# --- Expansion (GAMEPLAY-01E) ----------------------------------------------------------------------------------------------
+# A limited, conservative extension of the construction above: a faction that can afford it, has squads to spare and is not
+# at its base limit chooses one held objective far from its bases and not under threat, and builds a template there one
+# paid site after the other; when the command post stands, the base exists (BaseSim) and becomes a target (WarSim.sync_bases);
+# when the template is complete one squad garrisons it. Every step is a record in WarState.expansions (saved).
+
+func template_cost(t: String) -> float:
+	var c := 0.0
+	for it: StringName in TEMPLATES[t].items:
+		c += BuildCosts.cost_of(StructureCatalog.get_def(it))
+	return c
+
+
+func active_expansion(f: int) -> Dictionary:
+	for e: Dictionary in ws.war.expansions:
+		if int(e.faction) == f and (e.state == "building" or e.state == "garrison"):
+			return e
+	return {}
+
+
+## Whether faction f should expand now and where: {ok, why, template, objective, pos, cost}. Reads its own stock, squads and
+## the threat it believes (IntelSim / threatened objectives), never the enemy's real positions.
+func plan_expansion(f: FactionState, supplies: float, squads: int) -> Dictionary:
+	var now := sim.state.time
+	if not bool(ws.war.rule("ai_expansion", false)):
+		return {"ok": false, "why": "expansion off in this scenario"}
+	if not active_expansion(f.id).is_empty():
+		return {"ok": false, "why": "an expansion is under way"}
+	if now < maxf(f.expand_next_at, EXPAND_FIRST_S):
+		return {"ok": false, "why": "cooldown (%d s)" % roundi(maxf(f.expand_next_at, EXPAND_FIRST_S) - now)}
+	var bs := sim.logistics.bases
+	# Established bases (founded by a command post, with an area) count; a forward supply store is no base of this kind.
+	var nbases := 0
+	for b: Dictionary in bs.bases_of(f.id):
+		if float(b.get("radius", 0.0)) > 0.0 or bs.base_kind(int(b.id)) == "Main base":
+			nbases += 1
+	var limit := int(ws.war.rule("ai_base_limit", 2))
+	if nbases >= 1 + limit:
+		return {"ok": false, "why": "base limit (%d bases)" % nbases}
+	if squads < 3:
+		return {"ok": false, "why": "too few squads to hold another base (%d)" % squads}
+	var barracks := bs.facility_of_kind(f.id, &"barracks")
+	var t := "outpost"
+	if barracks == null or not barracks.is_operational():
+		t = "main"  # the faction lost its barracks: rebuild where it can recruit again
+	elif supplies >= template_cost("defensive") + float(TEMPLATES.defensive.reserve) + 1500.0:
+		t = "defensive"
+	var cost := template_cost(t)
+	if supplies < cost + float(TEMPLATES[t].reserve):
+		return {"ok": false, "why": "%s needs %d kg + a reserve of %d (have %d)" % [TEMPLATES[t].name, roundi(cost), roundi(TEMPLATES[t].reserve), roundi(supplies)]}
+	var best: ObjectiveState = null
+	var best_sc := -INF
+	var main_bid := bs.main_base(f.id)
+	var main_at: Vector3 = sim.state.construction.bases[main_bid].anchor if main_bid >= 0 else Vector3.INF
+	for o: ObjectiveState in ws.war.owned_by(f.id):
+		if o.is_base() or o.is_hq() or ws.threatened.get(o.id, false):
+			continue
+		if ws.intel.threat_near(f.id, o.position, o.radius + 600.0) > 0:
+			continue
+		var gap := INF
+		for b: Dictionary in bs.bases_of(f.id):
+			if float(b.get("radius", 0.0)) > 0.0 or bs.base_kind(int(b.id)) == "Main base":
+				gap = minf(gap, WarSim._flat(b.anchor, o.position))
+		for e: Dictionary in ws.war.expansions:
+			if int(e.faction) == f.id and e.state != "failed":
+				gap = minf(gap, WarSim._flat(e.pos, o.position))
+		if gap < EXPAND_GAP_M:
+			continue
+		var front := INF
+		for x: ObjectiveState in ws.war.all_objectives():
+			if x.owner != f.id and not x.is_base():
+				front = minf(front, WarSim._flat(x.position, o.position))
+		var sc := 2.0 * o.value + clampf(3000.0 / maxf(front, 500.0), 0.0, 3.0) - (WarSim._flat(main_at, o.position) / 6000.0 if main_at.is_finite() else 0.0)
+		if sc > best_sc:
+			best_sc = sc
+			best = o
+	if best == null:
+		return {"ok": false, "why": "no held objective far enough from the bases and free of reported enemy"}
+	# The base stands at the edge of the objective, on the side of the faction's main base.
+	var dir := (main_at - best.position) if main_at.is_finite() else Vector3(1, 0, 0)
+	dir.y = 0.0
+	dir = dir.normalized() if dir.length() > 1.0 else Vector3(1, 0, 0)
+	var pos := ws._ground(best.position + dir * (best.radius * 0.6 + 40.0))
+	return {"ok": true, "why": "%s near %s (value %d, score %.1f)" % [TEMPLATES[t].name, best.obj_name, best.value, best_sc], "template": t,
+		"objective": best.id, "pos": pos, "cost": cost}
+
+
+## Starts a planned expansion: the command post site first (paid, crewed like every AI order). {ok, reason}.
+func start_expansion(f: FactionState, plan: Dictionary) -> Dictionary:
+	var o := ws.war.objective(int(plan.objective))
+	var why := "%s at %s" % [TEMPLATES[plan.template].name, o.obj_name if o else "?"]
+	var res := request(f, &"command_post", plan.pos, why, true)
+	if not res.ok:
+		res = request(f, &"command_post", plan.pos, why, false)
+	f.expand_next_at = sim.state.time + (EXPAND_COOLDOWN_S if res.ok else 240.0)
+	if not res.ok:
+		return res
+	var site := -1
+	for s: StructureState in sim.state.construction.all():
+		if s.is_site() and s.faction == f.id and s.type_id == &"command_post" and WarSim._flat(s.position, res.pos) < 1.0:
+			site = s.id
+	var e := {"id": ws.war.next_expansion_id, "faction": f.id, "template": plan.template, "objective": int(plan.objective), "pos": res.pos, "site": site,
+		"base": -1, "next": 1, "state": "building", "why": why, "started": snappedf(sim.state.time, 0.1), "ended": -1.0, "retry": 0.0}
+	ws.war.next_expansion_id += 1
+	ws.war.expansions.append(e)
+	ws.log_event(f.id, "build", "Expansion: %s begins (%d kg)" % [why, roundi(float(plan.cost))], res.pos)
+	return {"ok": true, "reason": ""}
+
+
+## Once a second: expansions advance from what their structures do - the command post finished (the base exists), the next
+## template building ordered when the last one stands and the stores can pay, a garrison when the template is complete; a
+## command post destroyed or cancelled before it stood ends the expansion.
+func update_expansions() -> void:
+	var now := sim.state.time
+	var cs := sim.state.construction
+	var bs := sim.logistics.bases
+	for e: Dictionary in ws.war.expansions:
+		if e.state != "building" and e.state != "garrison":
+			continue
+		var f := ws.war.faction(int(e.faction))
+		var cp := cs.get_structure(int(e.site))
+		if f == null or cp == null or cp.faction != int(e.faction):
+			e.state = "failed"
+			e.ended = snappedf(now, 0.1)
+			e.why = str(e.why) + ": the command post was lost before the base stood"
+			ws.log_event(int(e.faction), "build", "Expansion failed: %s" % e.why, e.pos)
+			continue
+		if cp.is_site():
+			continue
+		e.base = cp.base_id
+		var b: Dictionary = cs.bases.get(cp.base_id, {})
+		if b.is_empty():
+			continue
+		var items: Array = TEMPLATES[e.template].items
+		if e.state == "building":
+			if not pending_of(int(e.faction), &"", b.anchor, BaseSim.reach_of(b) + 40.0).is_empty() or now < float(e.get("retry", 0.0)):
+				continue
+			if int(e.next) >= items.size():
+				e.state = "garrison"
+				continue
+			var item: StringName = items[int(e.next)]
+			var face := Vector3.ZERO
+			var threat := _threat_dir(int(e.faction), b.anchor)
+			var fdef := StructureCatalog.get_def(item)
+			if DefenceDefs.has(item):
+				face = threat
+			var near: Vector3 = b.anchor + (threat * 45.0 if face != Vector3.ZERO else Vector3.ZERO)
+			var res := request(f, item, near, "%s: %s" % [e.why, fdef.display_name if fdef else String(item)], FacilityDefs.is_store(item), face)
+			if res.ok:
+				e.next = int(e.next) + 1
+			else:
+				e.retry = now + 30.0
+		elif e.state == "garrison":
+			var sq := _garrison_squad(f, b.anchor)
+			if sq != null:
+				ws.release_squads([sq.id], "garrison of a new base")
+				sim.tactics.assign_garrison(sq, int(b.id), SquadState.Owner.SQUAD)
+				e.state = "done"
+				e.ended = snappedf(now, 0.1)
+				ws.log_event(int(e.faction), "build", "%s established: %s garrisons it" % [e.why, sq.squad_name], b.anchor)
+			elif now - float(e.get("retry", 0.0)) > 60.0:
+				e.retry = now
+
+
+## A squad to garrison a new base: a free squad of the faction (no operation, no garrison, not recovering), the nearest.
+func _garrison_squad(f: FactionState, at: Vector3) -> SquadState:
+	var best: SquadState = null
+	var best_d := INF
+	var p := ws.profile(f)
+	for sid in ws._free_squads(f, p):
+		var sq := sim.state.get_squad(sid)
+		if sq == null or sq.garrison_base >= 0:
+			continue
+		var d := WarSim._flat(ws.squad_center(sq), at)
+		if d < best_d:
+			best_d = d
+			best = sq
+	return best
+
+
+## Direction from p to the nearest objective the faction does not hold (where an attack would come from); ZERO without one.
+func _threat_dir(f: int, p: Vector3) -> Vector3:
+	var best := INF
+	var dir := Vector3.ZERO
+	for o: ObjectiveState in ws.war.all_objectives():
+		if o.owner == f or o.owner < 0:
+			continue
+		var d := WarSim._flat(o.position, p)
+		if d < best:
+			best = d
+			dir = Vector3(o.position.x - p.x, 0.0, o.position.z - p.z).normalized()
+	return dir
+
+
 ## Once a second: the AI factions' construction sites get their crew's work (GAMEPLAY-01B), and orders of the old
 ## pending-record kind (saves from before GAMEPLAY-01B) whose time has come are placed (re-checked; a site that went bad
 ## refunds its cost).
 func update() -> void:
+	update_expansions()
 	var cs := sim.state.construction
 	for s: StructureState in cs.all():
 		if s.is_site() and float(s.site.get("crew", 0.0)) > 0.0:

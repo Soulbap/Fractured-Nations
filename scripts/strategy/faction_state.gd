@@ -57,6 +57,8 @@ var pool := Inventory.make(INF)
 ## GAMEPLAY-01B recovery after the loss of every soldier: when the replacement section arrives (-1: none due), how
 ## many came so far, and where the faction's soldiers started (the arrival point while it has no base).
 var recovery_at := -1.0
+## GAMEPLAY-01E: no new AI base expansion before this time (cooldown after one began).
+var expand_next_at := 0.0
 var recoveries := 0
 var home := Vector3.INF
 
@@ -69,7 +71,7 @@ func to_dict() -> Dictionary:
 		"ops_started": ops_started, "ops_succeeded": ops_succeeded, "ops_failed": ops_failed, "last_decision": last_decision,
 		"focus": [focus_kind, focus_objective, focus_since, focus_until, focus_utility, focus_why],
 		"ledger": ledger.duplicate(true), "econ_next": econ_next_at, "supply_next": supply_next_at,
-		"pool": pool.to_dict(), "recovery_at": recovery_at, "recoveries": recoveries, "home": home}
+		"pool": pool.to_dict(), "recovery_at": recovery_at, "expand_next": expand_next_at, "recoveries": recoveries, "home": home}
 
 
 static func from_dict(d: Dictionary) -> FactionState:
@@ -107,6 +109,7 @@ static func from_dict(d: Dictionary) -> FactionState:
 	if d.get("pool") is Dictionary:
 		f.pool = Inventory.from_dict(d.pool)
 	f.recovery_at = d.get("recovery_at", -1.0)
+	f.expand_next_at = d.get("expand_next", 0.0)
 	f.recoveries = d.get("recoveries", 0)
 	f.home = d.get("home", Vector3.INF)
 	return f

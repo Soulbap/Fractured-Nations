@@ -583,6 +583,8 @@ func recruit(barracks_id: int) -> Dictionary:
 	var s := lsim.structure(barracks_id)
 	if s == null or FacilityDefs.kind_of(s.type_id) != &"barracks":
 		return {"ok": false, "reason": "That is not a barracks"}
+	if not s.is_operational():
+		return {"ok": false, "reason": "The barracks is not operational (%s)" % s.condition_text()}
 	var war := sim.state.war
 	var f := war.faction(s.faction)
 	if f == null or sim.war == null:
@@ -617,6 +619,75 @@ func recruit(barracks_id: int) -> Dictionary:
 	return {"ok": true, "reason": ""}
 
 
+## GAMEPLAY-01E: replacements for a depleted squad at a barracks - the squad keeps its identity, the new soldiers join it.
+## The same rules as recruiting a squad, per soldier: an operational barracks, personnel from the faction's reserves, the
+## recruiting cost (RECRUIT_COST per SQUAD_SIZE soldiers) paid like a recruit (the player from everything he holds, an AI
+## faction from the base), the bed limit, and time (RECRUIT_TIME_S per SQUAD_SIZE, at least REPLENISH_MIN_S). The squad
+## must stand at the base (within JOIN_M of the barracks) and is never filled above SQUAD_SIZE. Cancel refunds it like a
+## recruit. Returns {ok, reason, n}.
+const REPLENISH_MIN_S := 20.0
+
+
+func replenish(barracks_id: int, squad_id: int) -> Dictionary:
+	var s := lsim.structure(barracks_id)
+	if s == null or FacilityDefs.kind_of(s.type_id) != &"barracks":
+		return {"ok": false, "reason": "That is not a barracks"}
+	if not s.is_operational():
+		return {"ok": false, "reason": "The barracks is not operational (%s)" % s.condition_text()}
+	var war := sim.state.war
+	var f := war.faction(s.faction)
+	var sq := sim.state.get_squad(squad_id)
+	if f == null or sim.war == null:
+		return {"ok": false, "reason": "No war: nobody to recruit"}
+	if sq == null or sq.members.is_empty() or sq.faction != s.faction:
+		return {"ok": false, "reason": "No such squad of yours"}
+	var n := SQUAD_SIZE - sq.members.size() - queued_for_squad(sq.id)
+	if n <= 0:
+		return {"ok": false, "reason": "%s is at full strength (%d)" % [sq.squad_name, SQUAD_SIZE] if queued_for_squad(sq.id) == 0 else "%s already has replacements on the way" % sq.squad_name}
+	var c := sim.war.squad_center(sq)
+	if Vector2(c.x - s.position.x, c.z - s.position.z).length() > JOIN_M:
+		return {"ok": false, "reason": "%s must come to the base first (%.0f m from the barracks)" % [sq.squad_name, Vector2(c.x - s.position.x, c.z - s.position.z).length()]}
+	var q: Array = s.facility.get("queue", [])
+	if q.size() >= RECRUIT_QUEUE_MAX:
+		return {"ok": false, "reason": "The barracks is busy (%d in training)" % q.size()}
+	if f.reserves < n:
+		return {"ok": false, "reason": "Not enough personnel in reserve (%d, %d needed)" % [f.reserves, n]}
+	if f.player and war.rule("bed_limit", false):
+		var beds := 0
+		for b: Dictionary in bases_of(f.id):
+			beds += capacity(b.id)
+		var have := soldiers_of(f.id) + queued_recruits(f.id)
+		if have + n > beds:
+			return {"ok": false, "reason": "Not enough beds: %d soldiers and recruits, %d beds" % [have, beds]}
+	var cost := {}
+	for k in RECRUIT_COST:
+		cost[k] = roundf(float(RECRUIT_COST[k]) * n / SQUAD_SIZE)
+	var entry := {"kind": "replenish", "what": "replacements for %s (%d)" % [sq.squad_name, n], "n": n, "squad": sq.id,
+		"done": sim.state.time + maxf(REPLENISH_MIN_S, RECRUIT_TIME_S * n / SQUAD_SIZE), "cost": {"supplies": cost[&"supplies"], "ammo": cost[&"ammo"]}}
+	if f.player and war.rule("build_costs", false):
+		var paid := faction_pay(f.id, cost, s.base_id)
+		if paid.is_empty():
+			return {"ok": false, "reason": "Not enough: %d replacements need %s" % [n, cost_text(cost)]}
+		entry["paid"] = paid
+	elif not pay(s.base_id, cost, s):
+		return {"ok": false, "reason": "Not enough supplies at the base: %d replacements need %s" % [n, cost_text(cost)]}
+	f.reserves -= n
+	q.append(entry)
+	s.facility["queue"] = q
+	lsim._event(s.faction, "%s: %d replacements for %s (%d s)" % [lsim.store_name(s), n, sq.squad_name, roundi(float(entry.done) - sim.state.time)])
+	return {"ok": true, "reason": "", "n": n}
+
+
+## Replacements queued for a squad at all barracks.
+func queued_for_squad(squad_id: int) -> int:
+	var n := 0
+	for s in _cs().all():
+		for e: Dictionary in s.facility.get("queue", []):
+			if e.kind == "replenish" and int(e.get("squad", -1)) == squad_id:
+				n += int(e.n)
+	return n
+
+
 func cancel_queue(structure_id: int, index := 0) -> bool:
 	var s := lsim.structure(structure_id)
 	if s == null:
@@ -626,9 +697,11 @@ func cancel_queue(structure_id: int, index := 0) -> bool:
 		return false
 	var e: Dictionary = q[index]
 	q.remove_at(index)
-	if e.kind == "squad":
+	if e.kind == "squad" or e.kind == "replenish":
 		if e.has("paid"):
 			faction_refund(s.faction, e.paid)
+		elif e.kind == "replenish":
+			refund(s.base_id, {&"supplies": float(e.cost.supplies), &"ammo": float(e.cost.ammo)}, s)
 		else:
 			refund(s.base_id, RECRUIT_COST, s)
 		var f := sim.state.war.faction(s.faction)
@@ -683,7 +756,7 @@ func queued_recruits(faction: int) -> int:
 	for b: Dictionary in bases_of(faction):
 		for s in facilities_of(b.id):
 			for e: Dictionary in s.facility.get("queue", []):
-				if e.kind == "squad":
+				if e.kind == "squad" or e.kind == "replenish":
 					n += int(e.n)
 	return n
 
@@ -714,6 +787,10 @@ func _process_queues() -> void:
 				continue
 			if e.kind == "squad":
 				_finish_squad(s)
+			elif e.kind == "replenish":
+				if not _finish_replenish(s, e):
+					e["done"] = now + 10.0
+					keep.append(e)
 			else:
 				if not _finish_vehicle(s, StringName(e.type)):
 					# No free spot at the depot: try again in a few seconds.
@@ -746,6 +823,38 @@ func _finish_squad(s: StructureState) -> void:
 	f.ledger.squads_recruited = int(f.ledger.squads_recruited) + 1
 	stats.squads_recruited += 1
 	lsim._event(s.faction, "Squad %s is ready at %s" % [sq.squad_name, lsim.store_name(s)])
+
+
+## GAMEPLAY-01E: replacements are ready - they join their squad when it stands at the base (else the entry waits, saying
+## why); a squad that no longer exists gets a new squad instead (they are paid for). Returns false to wait.
+func _finish_replenish(s: StructureState, e: Dictionary) -> bool:
+	var f := sim.state.war.faction(s.faction)
+	if f == null:
+		return true
+	var def := StructureCatalog.get_def(s.type_id)
+	var front := def.bounds().position.z if def else -4.0
+	var at := s.position + Basis(Vector3.UP, s.yaw) * Vector3(0.0, 0.0, front - 5.0)
+	at.y = lsim.vsim.ground_at(at)
+	var n := int(e.n)
+	var sq := sim.state.get_squad(int(e.get("squad", -1)))
+	if sq == null or sq.members.is_empty():
+		var nsq := sim.war.spawn_squad(f, at, n)
+		nsq.origin = "recruit"
+		lsim._event(s.faction, "%d replacements form squad %s at %s (their squad was lost)" % [n, nsq.squad_name, lsim.store_name(s)])
+		return true
+	var c := sim.war.squad_center(sq)
+	if Vector2(c.x - s.position.x, c.z - s.position.z).length() > JOIN_M + 80.0:
+		e["what"] = "replacements for %s waiting: the squad is away from the base" % sq.squad_name
+		return false
+	n = mini(n, SQUAD_SIZE - sq.members.size())
+	var ids := sim.war.spawn_recruits(f, at, n, sq.squad_name)
+	var joined := sim.state.add_to_squad(sq.id, ids)
+	sim.tactics.validate(sq)
+	sim.squads._reapply(sq)
+	stats.soldiers_replaced = int(stats.get("soldiers_replaced", 0)) + joined
+	f.ledger["replenished"] = int(f.ledger.get("replenished", 0)) + joined
+	lsim._event(s.faction, "%d replacements joined %s at %s (%d soldiers)" % [joined, sq.squad_name, lsim.store_name(s), sq.members.size()])
+	return true
 
 
 ## Recruits (n) join depleted squads of faction f that stand within the base: the most depleted first, up to

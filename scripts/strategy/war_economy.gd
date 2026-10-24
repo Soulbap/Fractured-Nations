@@ -32,6 +32,8 @@ var _income_acc := {}
 var _income_note := {}
 ## objective id -> time before which no new building is ordered there (after a failed search / a field-defence order).
 var _build_cool := {}
+## GAMEPLAY-01E: why the faction did not expand at its last decision (inspector).
+var _expand_why := {}
 
 
 func _init(p_ws: WarSim) -> void:
@@ -313,6 +315,12 @@ func _collect_builds(f: FactionState, p: FactionProfile, s: Dictionary, actions:
 				best = o
 		if best != null:
 			actions.append({"kind": "build_forward", "utility": 1.1 + 0.25 * best.value, "objective": best.id, "note": "%s is %d m from the nearest base and %d m from the enemy" % [best.obj_name, 2200, roundi(best_front)]})
+	# GAMEPLAY-01E: a new base (template) where the faction holds ground far from its bases.
+	var plan := ws.bases.plan_expansion(f, supplies, s.squads)
+	if plan.ok:
+		actions.append({"kind": "expand", "utility": 1.3 + 0.2 * float(ws.war.objective(int(plan.objective)).value), "plan": plan, "note": plan.why})
+	elif ws.war.rule("ai_expansion", false):
+		_expand_why[f.id] = plan.why
 	# 2. Second barracks.
 	var barracks := 0
 	for st in bs.facilities_of(main_bid):
@@ -342,6 +350,11 @@ func _built_near(faction: int, type_id: StringName, p: Vector3, r: float) -> int
 func _execute(f: FactionState, p: FactionProfile, s: Dictionary, a: Dictionary) -> Dictionary:
 	var bs := _bases()
 	match a.kind:
+		"expand":
+			var res := ws.bases.start_expansion(f, a.plan)
+			if res.ok:
+				stats["expansions"] = int(stats.get("expansions", 0)) + 1
+			return res
 		"build_forward":
 			var o := ws.war.objective(a.objective)
 			var res := ws.bases.request(f, &"supply_storage", o.position, "forward supply store at %s" % o.obj_name, true)

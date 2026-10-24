@@ -60,6 +60,11 @@ func is_operational() -> bool:
 	return site.is_empty()
 
 
+## Why the structure does or does not work, in words.
+func condition_text() -> String:
+	return "under construction" if is_site() else "operational"
+
+
 ## 0..1 (1 for a finished structure).
 func site_progress() -> float:
 	if site.is_empty():

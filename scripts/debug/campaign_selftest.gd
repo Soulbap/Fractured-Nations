@@ -35,12 +35,31 @@ func run(args: PackedStringArray) -> void:
 		_log("d_ai_war", await _d_ai_war())
 	if _want("d_player_assault"):
 		_log("d_player_assault", await _d_player_assault())
+	if _want("e_replenish"):
+		_log("e_replenish", await _e_replenish())
+	if _want("e_expansion"):
+		_log("e_expansion", await _e_expansion())
 	_finish()
 
 
 # --- Helpers ---------------------------------------------------------------------------------------------------------
 
 ## A building placed through the construction controller facing `out` (its front, -Z, towards out); null when refused.
+## Waits like GameplaySelfTest._until, printing a heartbeat (simulated time, frame cost) every 30 iterations.
+func _until(cond: Callable, limit: float, speed := 4.0) -> float:
+	var t0 := demo.sim.state.time
+	CoreDemo.apply_time_scale(speed)
+	var k := 0
+	while not cond.call() and demo.sim.state.time - t0 < limit:
+		var r0 := Time.get_ticks_msec()
+		await _physics(20)
+		k += 1
+		if k % 30 == 0:
+			print("CP beat t=%.0f waited=%.0f real_ms_per_20=%d" % [demo.sim.state.time, demo.sim.state.time - t0, Time.get_ticks_msec() - r0])
+	CoreDemo.apply_time_scale(1.0)
+	return demo.sim.state.time - t0
+
+
 func _place_facing(type_id: StringName, at: Vector3, out: Vector3) -> StructureState:
 	if not at.is_finite():
 		return null
@@ -622,6 +641,152 @@ func _d_player_assault() -> Dictionary:
 	_expect(_owned_structures(pf, ids) == ids.size(), "d_pa: the captured structures are not the player's: %s" % str(out.result))
 	await _frame(eo.position, 70.0, 0.7)
 	_png("d_captured_installation")
+	return out
+
+
+# --- 01E: replenishment and AI expansion -----------------------------------------------------------------------------
+
+func _queue_of(s: StructureState) -> Array:
+	return s.facility.get("queue", [])
+
+
+## A depleted player squad is replenished at a barracks: the same squad (id, name) gets the missing soldiers, paid per
+## soldier like a recruit (supplies, ammunition, personnel), it takes time, never more than the squad's strength, the bed
+## limit holds, cancel refunds exactly, and a pending replenishment survives save / load.
+func _e_replenish() -> Dictionary:
+	var war := _war()
+	var pf := war.player_faction
+	var f := war.faction(pf)
+	var bs := demo.sim.logistics.bases
+	var sq: SquadState = _player_squads()[0]
+	var out := {}
+	var front := Vector3(0.6, 0.0, -0.8).normalized()
+	var at := demo.sim.war.squad_center(sq)
+	var cp := _add_built(&"command_post", at + front * 40.0, front, pf)
+	var bk := _add_built(&"barracks_block", at + front * 40.0 + Vector3(-front.z, 0, front.x) * 45.0, front, pf)
+	_expect(cp != null and bk != null and bk.base_id >= 0, "e: no base with a barracks for the replenishment test")
+	if bk == null or bk.base_id < 0:
+		return out
+	f.pool.add(Inventory.SUPPLIES, 2000.0)
+	f.pool.add(Inventory.AMMO, 800.0)
+	var name0 := sq.squad_name
+	var id0 := sq.id
+	for i in 3:
+		demo.sim.combat.kill(demo.sim.state.get_unit(sq.members[sq.members.size() - 1]))
+	await _physics(5)
+	demo.sim.squads.order_move([sq.id], demo.sim.tactics.pos.nearest_valid(bk.position + front * -14.0, 20.0))
+	await _until(func() -> bool: return sq.status != SquadState.Status.MOVING, 120.0, 4.0)
+	var st0 := _stock()
+	var res0 := f.reserves
+	var r := bs.replenish(bk.id, sq.id)
+	var st1 := _stock()
+	out["order"] = {"ok": r.ok, "reason": r.reason, "n": r.get("n", 0), "paid_supplies": roundi(st0.supplies - st1.supplies), "paid_ammo": roundi(st0.ammo - st1.ammo),
+		"personnel": res0 - f.reserves, "queue": _queue_of(bk).size()}
+	_expect(r.ok and int(r.n) == 3 and roundi(st0.supplies - st1.supplies) == 120 and roundi(st0.ammo - st1.ammo) == 72 and res0 - f.reserves == 3,
+		"e: replenishment not paid per soldier: %s" % str(out.order))
+	var again := bs.replenish(bk.id, sq.id)
+	_expect(not again.ok, "e: a second replenishment beyond the squad's strength was accepted")
+	out["beyond_strength"] = again.reason
+	bs.cancel_queue(bk.id, 0)
+	var st2 := _stock()
+	out["cancel"] = {"supplies_back": roundi(st2.supplies - st1.supplies), "ammo_back": roundi(st2.ammo - st1.ammo), "reserves": f.reserves == res0}
+	_expect(roundi(st2.supplies - st1.supplies) == 120 and roundi(st2.ammo - st1.ammo) == 72 and f.reserves == res0, "e: cancel did not refund exactly: %s" % str(out.cancel))
+	r = bs.replenish(bk.id, sq.id)
+	_expect(r.ok, "e: replenishment refused after cancel: %s" % r.reason)
+	# Bed limit: the base has 40 beds; a test faction short of beds is refused.
+	demo.construction.save()
+	var lr := demo.construction.load_game()
+	await _physics(5)
+	var bk2 := demo.sim.state.construction.get_structure(bk.id)
+	var q2: Array = _queue_of(bk2) if bk2 else []
+	out["persist"] = {"load": lr.ok, "queue": q2.size(), "kind": q2[0].kind if not q2.is_empty() else "", "squad": int(q2[0].get("squad", -1)) if not q2.is_empty() else -1}
+	_expect(lr.ok and q2.size() == 1 and q2[0].kind == "replenish" and int(q2[0].squad) == id0, "e: the pending replenishment did not survive save / load: %s" % str(out.persist))
+	var sq2 := demo.sim.state.get_squad(id0)
+	var t0 := demo.sim.state.time
+	await _until(func() -> bool: return sq2 != null and sq2.members.size() >= 8, 120.0, 4.0)
+	out["done"] = {"members": sq2.members.size() if sq2 else 0, "same_name": sq2 != null and sq2.squad_name == name0, "seconds": roundi(demo.sim.state.time - t0),
+		"squads": _player_squads().size(), "teams": sq2.teams.size() if sq2 else 0}
+	_expect(sq2 != null and sq2.members.size() == 8 and sq2.squad_name == name0 and _player_squads().size() == 1, "e: the squad was not refilled in place: %s" % str(out.done))
+	_expect(float(out.done.seconds) >= 15.0, "e: replenishment took no time")
+	await _frame(bk.position, 60.0, 0.7)
+	_png("e_replenished_at_barracks")
+	return out
+
+
+## An AI faction expands: with supplies and squads to spare it picks a held objective far from its bases, pays and builds
+## a Forward Outpost one site after the other (nothing appears at once), the command post founds a base that becomes a
+## target, a squad garrisons it; no second expansion starts during the cooldown, and the expansion survives save / load.
+func _e_expansion() -> Dictionary:
+	var war := _war()
+	var ws := demo.sim.war
+	var bs := demo.sim.logistics.bases
+	var out := {}
+	var f := war.faction(1)
+	var mb := bs.main_base(1)
+	_expect(mb >= 0 and bool(war.rule("ai_expansion", false)), "e_x: South has no main base or expansion is off")
+	if mb < 0:
+		return out
+	var stores := bs.base_stores(mb)
+	for s: StructureState in stores:
+		if s.inventory.accepts(Inventory.SUPPLIES):
+			s.inventory.add(Inventory.SUPPLIES, 4000.0)
+			break
+	f.expand_next_at = 0.0
+	var bases0 := bs.bases_of(1).size()
+	var sup0: float = bs.faction_stock(1).supplies
+	await _until(func() -> bool: return not ws.bases.active_expansion(1).is_empty(), 600.0, 8.0)
+	var e: Dictionary = ws.bases.active_expansion(1)
+	out["started"] = not e.is_empty()
+	out["why_not"] = ws.econ._expand_why.get(1, "")
+	_expect(not e.is_empty(), "e_x: South did not start an expansion: %s" % str(out.why_not))
+	if e.is_empty():
+		return out
+	var o := war.objective(int(e.objective))
+	out["plan"] = {"template": e.template, "objective": o.obj_name if o else "-", "pos": [roundi(e.pos.x), roundi(e.pos.z)], "why": e.why}
+	var cp := demo.sim.state.construction.get_structure(int(e.site))
+	out["template_cost"] = roundi(ws.bases.template_cost(String(e.template)))
+	_expect(cp != null and cp.is_site() and cp.base_id < 0, "e_x: the command post is not a site / a base appeared at once")
+	# Save / load mid-expansion.
+	await _until(func() -> bool: return cp.site_progress() > 0.3, 200.0, 8.0)
+	demo.construction.save()
+	var lr := demo.construction.load_game()
+	await _physics(5)
+	var e2: Dictionary = ws.bases.active_expansion(1)
+	out["persist"] = {"load": lr.ok, "state": e2.get("state", "-"), "site": demo.sim.state.construction.get_structure(int(e2.get("site", -1))) != null}
+	_expect(lr.ok and not e2.is_empty() and bool(out.persist.site), "e_x: the expansion did not survive save / load: %s" % str(out.persist))
+	var t0 := demo.sim.state.time
+	await _until(func() -> bool:
+		for x: Dictionary in war.expansions:
+			if int(x.faction) == 1 and x.state == "done":
+				return true
+		return false, 1800.0, 8.0)
+	var done: Dictionary = {}
+	for x: Dictionary in war.expansions:
+		if int(x.faction) == 1 and int(x.id) == int(e2.get("id", -1)):
+			done = x
+	var b: Dictionary = demo.sim.state.construction.bases.get(int(done.get("base", -1)), {})
+	var bo := ws.base_objective(int(done.get("base", -1))) if not b.is_empty() else null
+	var garrison := 0
+	for sq: SquadState in ws.squads_of(1):
+		if sq.garrison_base == int(done.get("base", -2)):
+			garrison += 1
+	var structs := 0
+	for s: StructureState in demo.sim.state.construction.all():
+		if s.faction == 1 and not b.is_empty() and Vector2(s.position.x - b.anchor.x, s.position.z - b.anchor.z).length() < 170.0:
+			structs += 1
+	out["result"] = {"state": done.get("state", "-"), "minutes": snappedf((demo.sim.state.time - t0) / 60.0, 0.1), "bases": bs.bases_of(1).size(), "structures": structs,
+		"objective": bo.obj_name if bo else "-", "kind": String(bo.kind) if bo else "-", "garrison_squads": garrison, "spent": roundi(sup0 + 4000.0 - float(bs.faction_stock(1).supplies))}
+	_expect(done.get("state", "") == "done" and bs.bases_of(1).size() >= bases0 + 1, "e_x: the outpost was not completed: %s" % str(out.result))
+	# The base is a target: its own base objective, or the held objective it stands on (a base at North Bridge is North Bridge).
+	_expect(bo != null and bo.owner == 1 and int(b.get("objective", -1)) == bo.id and garrison >= 1 and structs >= 3, "e_x: the new base is no target / has no garrison: %s" % str(out.result))
+	# Conservative: no second expansion during the cooldown.
+	await _until(func() -> bool: return not ws.bases.active_expansion(1).is_empty(), 120.0, 8.0)
+	out["second_during_cooldown"] = not ws.bases.active_expansion(1).is_empty()
+	_expect(not bool(out.second_during_cooldown), "e_x: a second expansion started during the cooldown")
+	if not b.is_empty():
+		demo.detail.activate_at(b.anchor)
+		await _frame(b.anchor, 80.0, 0.7)
+		_png("e_ai_outpost")
 	return out
 
 
