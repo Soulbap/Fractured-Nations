@@ -146,8 +146,8 @@ func update(delta: float) -> void:
 	# Workers per site for the HUD (several squads may work on one site).
 	for sid in counted + _site_workers.keys():
 		var s := sim.state.construction.get_structure(sid)
-		if s and s.is_site():
-			s.site["workers"] = int(_site_workers.get(sid, 0))
+		if s and s.needs_work():
+			s.work_record()["workers"] = int(_site_workers.get(sid, 0))
 	var dt := Time.get_ticks_usec() - t0
 	step_usec += dt
 	step_usec_max = maxi(step_usec_max, dt)
@@ -714,8 +714,8 @@ func _plan(sq: SquadState, a: Dictionary, tactic: int, target: Vector3, _owner: 
 			return {"ok": true, "tactic": tactic, "target": c, "dir": Vector3.ZERO, "commit": 4.0, "why": "reassemble"}
 		SquadState.Tactic.BUILD:
 			var site := sim.state.construction.get_structure(int(extra.get("site", -1)))
-			if site == null or not site.is_site():
-				return {"ok": false, "reason": "there is no construction site to build"}
+			if site == null or not site.needs_work():
+				return {"ok": false, "reason": "there is no construction site to build or structure to repair"}
 			if site.faction != sq.faction:
 				return {"ok": false, "reason": "that site belongs to another faction"}
 			var posts := _work_posts(site, count, c)
@@ -724,7 +724,7 @@ func _plan(sq: SquadState, a: Dictionary, tactic: int, target: Vector3, _owner: 
 			var def := StructureCatalog.get_def(site.type_id)
 			var centre := site.site_center()
 			return {"ok": true, "tactic": tactic, "target": centre, "dir": _dir_to(c, centre), "posts": posts, "commit": 4.0, "site": site.id,
-				"why": "build %s (%d%% done) from %d work posts" % [def.display_name if def else String(site.type_id), roundi(site.site_progress() * 100.0), posts.size()]}
+				"why": "%s %s (%d%% done) from %d work posts" % ["build" if site.is_site() else "repair", def.display_name if def else String(site.type_id), roundi(site.work_progress() * 100.0), posts.size()]}
 	return {"ok": false, "reason": "unknown tactic"}
 
 
@@ -832,8 +832,8 @@ func on_order(sq: SquadState) -> void:
 		# GAMEPLAY-01B: the player took the squad away from the site - it is not called back on its own for a while.
 		_set_meta(sq, "no_build_until", sim.state.time + build_respect_s)
 		var s := sim.state.construction.get_structure(sq.tactic_site)
-		if s and s.is_site():
-			s.site["why"] = "%s was given another order" % sq.squad_name
+		if s and s.needs_work():
+			s.work_record()["why"] = "%s was given another order" % sq.squad_name
 		sq.tactic_site = -1
 		for u: UnitState in _units(sq):
 			u.work_until = -1.0
@@ -990,7 +990,7 @@ func send_to_build(sq: SquadState, site: StructureState, owner: int) -> Dictiona
 		sim.squads.order_move([sq.id], goal if goal.is_finite() else centre)
 		_set_meta(sq, "build_goal", [site.id, owner])
 		_log(sq, "%s marches %.0f m to build site #%d" % [sq.squad_name, _flat(c, centre), site.id])
-		site.site["why"] = "%s on the way (%.0f m)" % [sq.squad_name, _flat(c, centre)]
+		site.work_record()["why"] = "%s on the way (%.0f m)" % [sq.squad_name, _flat(c, centre)]
 		return {"ok": true, "reason": "", "marching": true}
 	var res := start(sq, SquadState.Tactic.BUILD, owner, centre, -1, "", {"site": site.id})
 	res["marching"] = false
@@ -1006,15 +1006,15 @@ func _auto_build(sq: SquadState, from: Vector3, radius: float) -> bool:
 	if goal is Array:
 		_set_meta(sq, "build_goal", null)
 		var gs := sim.state.construction.get_structure(int(goal[0]))
-		if gs and gs.is_site():
+		if gs and gs.needs_work():
 			if _flat(from, gs.site_center()) <= radius:
 				return bool(start(sq, SquadState.Tactic.BUILD, int(goal[1]), gs.site_center(), -1, "", {"site": gs.id}).ok)
-			gs.site["why"] = "%s could not get there" % sq.squad_name
+			gs.work_record()["why"] = "%s could not get there" % sq.squad_name
 	var best: StructureState = null
 	var best_d := radius
 	var now := sim.state.time
 	for s: StructureState in sim.state.construction.all():
-		if not s.is_site() or s.faction != sq.faction or float(s.site.get("crew", 0.0)) > 0.0 or float(_site_block.get(s.id, 0.0)) > now:
+		if not s.needs_work() or s.faction != sq.faction or float(s.work_record().get("crew", 0.0)) > 0.0 or float(_site_block.get(s.id, 0.0)) > now:
 			continue
 		var d := _flat(from, s.site_center())
 		if d < best_d:
@@ -1049,8 +1049,8 @@ func order_build(squad_ids: Array, site_id: int) -> Dictionary:
 			continue
 		sim.war.release_squads([sq.id], "player build order")
 		var site := sim.state.construction.get_structure(site_id)
-		if site == null or not site.is_site():
-			parts.append("%s: cannot - there is no construction site there" % sq.squad_name)
+		if site == null or not site.needs_work():
+			parts.append("%s: cannot - there is no construction site or repair there" % sq.squad_name)
 			continue
 		var res := send_to_build(sq, site, SquadState.Owner.PLAYER)
 		parts.append("%s: %s" % [sq.squad_name, ("marching to the site, then BUILD" if res.marching else "BUILD accepted") if res.ok else "cannot - " + str(res.reason)])
@@ -1062,11 +1062,11 @@ func order_build(squad_ids: Array, site_id: int) -> Dictionary:
 func _run_build(sq: SquadState, a: Dictionary, now: float) -> void:
 	var cs := sim.state.construction
 	var s := cs.get_structure(sq.tactic_site)
-	if s == null or not s.is_site():
-		_end_build(sq, "the construction is finished" if s != null else "the site is gone")
+	if s == null or not s.needs_work():
+		_end_build(sq, "the work is finished" if s != null else "the site is gone")
 		return
 	if a.in_contact or int(a.under_fire) > 0:
-		s.site["why"] = "work stopped: enemy contact"
+		s.work_record()["why"] = "work stopped: enemy contact"
 		for u: UnitState in _units(sq):
 			u.work_until = -1.0
 		if sq.tactic_owner != SquadState.Owner.PLAYER:
@@ -1094,22 +1094,23 @@ func _run_build(sq: SquadState, a: Dictionary, now: float) -> void:
 			u.post_pos = post
 	if working > 0:
 		_site_workers[s.id] = int(_site_workers.get(s.id, 0)) + working
-		s.site["why"] = ""
+		s.work_record()["why"] = ""
 		sq.tactic_phase = PH_HOLD
 		var def := StructureCatalog.get_def(s.type_id)
 		var what := def.display_name if def else String(s.type_id)
+		var repairing := not s.is_site()
 		if cs.add_work(s, working * _dt):
 			_log(sq, "%s finished %s" % [sq.squad_name, what])
 			if sim.war:
-				sim.war.log_event(sq.faction, "build_done", "%s completed by %s" % [what, sq.squad_name], centre)
-			_end_build(sq, "%s finished" % what)
+				sim.war.log_event(sq.faction, "build_done", "%s %s by %s" % [what, "repaired" if repairing else "completed", sq.squad_name], centre)
+			_end_build(sq, "%s %s" % [what, "repaired" if repairing else "finished"])
 		return
 	if arrived == 0 and now - sq.tactic_since > 90.0:
-		s.site["why"] = "the workers cannot reach the site"
+		s.work_record()["why"] = "the workers cannot reach the site"
 		_site_block[s.id] = now + 60.0
 		_end_build(sq, "could not reach the site")
 	elif arrived == 0:
-		s.site["why"] = "%s on the way" % sq.squad_name
+		s.work_record()["why"] = "%s on the way" % sq.squad_name
 
 
 ## BUILD is over: the soldiers stand where they are, the squad is idle (no order) and may take up the next site.

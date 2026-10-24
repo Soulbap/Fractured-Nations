@@ -222,6 +222,29 @@ func request(f: FactionState, type_id: StringName, near: Vector3, why: String, n
 	return {"ok": true, "reason": "", "pos": site.pos}
 
 
+## GAMEPLAY-01F: an AI faction repairs a damaged structure of its own: paid from its bases (the repair cost), worked by an
+## abstract crew that takes REPAIR_TIME_S like its construction. {ok, reason}.
+const REPAIR_TIME_S := 90.0
+
+
+func request_repair(f: FactionState, s: StructureState, why: String) -> Dictionary:
+	if s == null or s.faction != f.id or s.is_site() or not s.repair.is_empty():
+		return {"ok": false, "reason": "nothing to repair"}
+	var cost := StructureHealth.repair_cost(s)
+	var need := StructureHealth.repair_work(s)
+	if need <= 0.0:
+		return {"ok": false, "reason": "undamaged"}
+	var bid := _payer_base(f, s.position, cost)
+	if bid < 0 or not sim.logistics.bases.pay(bid, {&"supplies": cost}):
+		return {"ok": false, "reason": "not enough supplies (%d kg)" % roundi(cost)}
+	sim.state.construction.start_repair(s, need, {"bases": {bid: {"supplies": cost}}}, need / REPAIR_TIME_S)
+	s.repair["why"] = why
+	stats["repairs"] = int(stats.get("repairs", 0)) + 1
+	var what := FacilityDefs.display_name(s.type_id) if FacilityDefs.has(s.type_id) else String(s.type_id)
+	ws.log_event(f.id, "build", "Repair of %s ordered (%d kg): %s" % [what, roundi(cost), why], s.position)
+	return {"ok": true, "reason": ""}
+
+
 ## A base of f that can pay `supplies` (the one nearest `near`); -1 when none can.
 func _payer_base(f: FactionState, near: Vector3, supplies: float) -> int:
 	var best := -1
@@ -498,11 +521,16 @@ func update() -> void:
 	update_expansions()
 	var cs := sim.state.construction
 	for s: StructureState in cs.all():
-		if s.is_site() and float(s.site.get("crew", 0.0)) > 0.0:
+		if s.needs_work() and float(s.work_record().get("crew", 0.0)) > 0.0:
 			var what := FacilityDefs.display_name(s.type_id) if FacilityDefs.has(s.type_id) else String(s.type_id)
-			if cs.add_work(s, float(s.site.crew)):
+			var repairing := not s.is_site()
+			# GAMEPLAY-01F: an AI repair crew stops while the faction believes enemies are close (work resumes later).
+			if repairing and ws.intel.threat_near(s.faction, s.position, 250.0) > 0:
+				s.repair["why"] = "work stopped: enemy reported near"
+				continue
+			if cs.add_work(s, float(s.work_record().crew)):
 				stats.finished += 1
-				ws.log_event(s.faction, "build", "%s finished at (%.0f, %.0f)" % [what, s.position.x, s.position.z], s.position)
+				ws.log_event(s.faction, "build", "%s %s at (%.0f, %.0f)" % [what, "repaired" if repairing else "finished", s.position.x, s.position.z], s.position)
 	if ws.war.builds.is_empty():
 		return
 	var now := sim.state.time

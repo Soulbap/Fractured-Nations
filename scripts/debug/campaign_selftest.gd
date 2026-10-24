@@ -39,6 +39,10 @@ func run(args: PackedStringArray) -> void:
 		_log("e_replenish", await _e_replenish())
 	if _want("e_expansion"):
 		_log("e_expansion", await _e_expansion())
+	if _want("f_damage"):
+		_log("f_damage", await _f_damage())
+	if _want("f_ai_repair"):
+		_log("f_ai_repair", await _f_ai_repair())
 	_finish()
 
 
@@ -787,6 +791,150 @@ func _e_expansion() -> Dictionary:
 		demo.detail.activate_at(b.anchor)
 		await _frame(b.anchor, 80.0, 0.7)
 		_png("e_ai_outpost")
+	return out
+
+
+# --- 01F: damage and repair --------------------------------------------------------------------------------------------
+
+## Rifle fire scratches a fortification (it does not destroy it quickly); heavy damage (applied through the damage API
+## as an explosive would: no heavy weapon exists yet) disables a barracks - no recruiting, no replenishment, fewer beds -
+## and a guard tower (its slots are given up); the player repairs the barracks for supplies, the squad does the work, fire
+## interrupts it, it resumes and restores the barracks; health and an unfinished repair survive save / load; a captured
+## structure keeps its damage.
+func _f_damage() -> Dictionary:
+	var war := _war()
+	var pf := war.player_faction
+	var f := war.faction(pf)
+	var cs := demo.sim.state.construction
+	var bs := demo.sim.logistics.bases
+	var sq: SquadState = _player_squads()[0]
+	var out := {}
+	var front := Vector3(0.6, 0.0, -0.8).normalized()
+	var side := Vector3(-front.z, 0.0, front.x)
+	var at := demo.sim.war.squad_center(sq)
+	var cp := _add_built(&"command_post", at + front * 40.0, front, pf)
+	var bk := _add_built(&"barracks_block", cp.position + side * 45.0, front, pf) if cp else null
+	var tw := _add_built(&"guard_tower_steel", cp.position + front * 30.0 - side * 20.0, front, pf) if cp else null
+	_expect(cp != null and bk != null and tw != null, "f: the test base could not be built")
+	if bk == null or tw == null:
+		return out
+	f.pool.add(Inventory.SUPPLIES, 3000.0)
+	f.pool.add(Inventory.AMMO, 800.0)
+	# Rifle fire at the tower: 300 rounds from 60 m.
+	var shooter := demo.sim.war.spawn_squad(war.faction(1), demo.sim.tactics.pos.nearest_valid(tw.position + front * 60.0, 20.0), 1)
+	var su := demo.sim.state.get_unit(shooter.members[0])
+	var hits := 0
+	for i in 300:
+		su.mag = 30
+		su.next_shot_at = 0.0
+		su.reload_until = -1.0
+		var eye := CombatSim.eye_of(su)
+		var aim := tw.position + Vector3.UP * 2.5
+		var shot := demo.sim.combat.request_fire(su.id, eye, (aim - eye).normalized())
+		if float(shot.get("structure_damage", 0.0)) > 0.0:
+			hits += 1
+	demo.sim.combat.kill(su)
+	out["rifle"] = {"hits": hits, "tower_health": snappedf(tw.health_frac(), 0.001)}
+	_expect(hits >= 100 and tw.health_frac() > 0.85 and tw.health_frac() < 1.0, "f: rifle fire does not scratch / destroys the tower: %s" % str(out.rifle))
+	# The garrison takes the tower; heavy damage disables it and they give it up.
+	demo.sim.tactics.assign_garrison(sq, cp.base_id, SquadState.Owner.PLAYER)
+	await _until(func() -> bool: return _fort_units(pf).size() >= 2, 120.0, 4.0)
+	var on_tower := func() -> int:
+		var n := 0
+		for u: UnitState in _fort_units(pf):
+			if u.fort_slot.begins_with("%d:" % tw.id):
+				n += 1
+		return n
+	var before_tower: int = on_tower.call()
+	cs.damage(tw, tw.health() - tw.max_hp() * 0.2)
+	await _until(func() -> bool: return on_tower.call() == 0, 20.0, 2.0)
+	out["tower"] = {"manned_before": before_tower, "manned_after": on_tower.call(), "condition": tw.condition_text(), "operational": tw.is_operational()}
+	_expect(not tw.is_operational() and on_tower.call() == 0, "f: the disabled tower is still manned / operational: %s" % str(out.tower))
+	# Barracks disabled.
+	var beds0 := bs.capacity(bk.base_id)
+	cs.damage(bk, bk.max_hp() * 0.8)
+	var rec := bs.recruit(bk.id)
+	out["barracks"] = {"condition": bk.condition_text(), "recruit": rec.reason, "beds_before": beds0, "beds_after": bs.capacity(bk.base_id), "band": bk.damage_band()}
+	_expect(not rec.ok and bs.capacity(bk.base_id) < beds0, "f: the disabled barracks still works: %s" % str(out.barracks))
+	await _frame(bk.position, 45.0, 0.7)
+	_png("f_damaged_barracks")
+	# Repair: paid, worked by the squad.
+	demo.rts.select_squads([])
+	var st0 := _stock()
+	var cost := StructureHealth.repair_cost(bk)
+	var rr := demo.construction.order_repair(bk.id)
+	out["repair_order"] = {"ok": rr.ok, "cost": roundi(cost), "paid": roundi(st0.supplies - _stock().supplies), "message": demo.construction.message}
+	_expect(rr.ok and absf(st0.supplies - _stock().supplies - cost) < 1.0, "f: the repair was not paid: %s" % str(out.repair_order))
+	if not rr.ok:
+		return out
+	if sq.tactic != SquadState.Tactic.BUILD:
+		demo.sim.tactics.order_build([sq.id], bk.id)
+	await _until(func() -> bool: return int(bk.repair.get("workers", 0)) >= 3, 120.0, 4.0)
+	await _frame(bk.position, 40.0, 0.7)
+	_png("f_repair_in_progress")
+	# Fire interrupts the work (player-ordered: it pauses), then it resumes.
+	for id in sq.members:
+		demo.sim.state.get_unit(id).under_fire_until = demo.sim.state.time + 6.0
+	await _physics(30)
+	var w0 := float(bk.repair.get("work", 0.0))
+	await _until(func() -> bool: return false, 4.0, 1.0)
+	var w1 := float(bk.repair.get("work", 0.0))
+	# Save mid-repair.
+	demo.construction.save()
+	var lr := demo.construction.load_game()
+	await _physics(10)
+	var bk2 := cs.get_structure(bk.id)
+	out["persist"] = {"load": lr.ok, "hp": snappedf(bk2.health_frac(), 0.01) if bk2 else -1.0, "repair_work": roundi(float(bk2.repair.get("work", -1.0))) if bk2 else -1, "saved_work": roundi(w1)}
+	_expect(lr.ok and bk2 != null and not bk2.repair.is_empty() and absf(float(bk2.repair.work) - w1) < 1.0 and bk2.health_frac() < 0.5, "f: damage / repair not restored: %s" % str(out.persist))
+	sq = demo.sim.state.get_squad(sq.id)
+	if sq.tactic != SquadState.Tactic.BUILD:
+		demo.sim.tactics.order_build([sq.id], bk.id)
+	var t0 := demo.sim.state.time
+	await _until(func() -> bool: return bk2.repair.is_empty(), 300.0, 4.0)
+	out["repair"] = {"paused_work": snappedf(w1 - w0, 0.1), "seconds": roundi(demo.sim.state.time - t0), "health": snappedf(bk2.health_frac(), 0.01), "operational": bk2.is_operational()}
+	_expect(w1 - w0 < 1.0, "f: work went on under fire: %s" % str(out.repair))
+	_expect(bk2.repair.is_empty() and bk2.health_frac() >= 0.999 and bk2.is_operational(), "f: the repair did not restore the barracks: %s" % str(out.repair))
+	var rec2 := bs.recruit(bk2.id)
+	out["recruit_after"] = rec2.ok
+	_expect(rec2.ok, "f: the repaired barracks cannot recruit: %s" % rec2.reason)
+	# Capture keeps damage: a South outpost with a damaged tower changes hands.
+	var ob := _outpost(1, demo.sim.tactics.pos.nearest_valid(at - front * 600.0, 60.0), front, 2)
+	if not ob.is_empty():
+		var t2: StructureState = ob.structures[ob.structures.size() - 1]
+		cs.damage(t2, t2.max_hp() * 0.5)
+		var hp_before := t2.health()
+		var obj: ObjectiveState = ob.objective
+		demo.sim.war._transfer(obj, pf)
+		out["capture"] = {"faction": t2.faction, "hp_before": roundi(hp_before), "hp_after": roundi(t2.health())}
+		_expect(t2.faction == pf and absf(t2.health() - hp_before) < 0.5, "f: capture repaired / did not take the structure: %s" % str(out.capture))
+	return out
+
+
+## An AI faction repairs an important damaged structure when it is safe and it can pay: South's supply depot at half
+## strength is repaired by the economy's decision, paid from the base, by its crew.
+func _f_ai_repair() -> Dictionary:
+	var war := _war()
+	var bs := demo.sim.logistics.bases
+	var cs := demo.sim.state.construction
+	var out := {}
+	var mb := bs.main_base(1)
+	var depot: StructureState = null
+	for s: StructureState in bs.facilities_of(mb):
+		if FacilityDefs.kind_of(s.type_id) == &"barracks":
+			depot = s
+	_expect(depot != null, "f_ai: South has no barracks")
+	if depot == null:
+		return out
+	cs.damage(depot, depot.max_hp() * 0.7)
+	var sup0: float = bs.faction_stock(1).supplies
+	out["damaged"] = {"what": FacilityDefs.display_name(depot.type_id), "health": snappedf(depot.health_frac(), 0.01), "operational": depot.is_operational()}
+	await _until(func() -> bool: return not depot.repair.is_empty(), 120.0, 8.0)
+	out["ordered"] = not depot.repair.is_empty()
+	out["econ"] = war.faction(1).econ_actions.map(func(a: Dictionary) -> String: return "%s %s" % [a.kind, a.status])
+	_expect(not depot.repair.is_empty(), "f_ai: South did not order the repair: %s" % str(out.econ))
+	await _until(func() -> bool: return depot.repair.is_empty(), 300.0, 8.0)
+	out["result"] = {"health": snappedf(depot.health_frac(), 0.01), "operational": depot.is_operational(), "paid_about": roundi(sup0 - float(bs.faction_stock(1).supplies))}
+	_expect(depot.health_frac() >= 0.999 and depot.is_operational(), "f_ai: the repair did not finish: %s" % str(out.result))
 	return out
 
 

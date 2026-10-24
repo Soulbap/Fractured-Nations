@@ -315,6 +315,23 @@ func _collect_builds(f: FactionState, p: FactionProfile, s: Dictionary, actions:
 				best = o
 		if best != null:
 			actions.append({"kind": "build_forward", "utility": 1.1 + 0.25 * best.value, "objective": best.id, "note": "%s is %d m from the nearest base and %d m from the enemy" % [best.obj_name, 2200, roundi(best_front)]})
+	# GAMEPLAY-01F: repair the most important damaged structure of the faction (facilities before fortifications), when the
+	# stores can pay and no enemy is reported near it.
+	var worst: StructureState = null
+	var worst_sc := 0.0
+	for st: StructureState in sim.state.construction.all():
+		if st.faction != f.id or st.is_site() or not st.repair.is_empty() or st.health_frac() > 0.7:
+			continue
+		if ws.intel.threat_near(f.id, st.position, 400.0) > 0:
+			continue
+		var imp := 3.0 if FacilityDefs.kind_of(st.type_id) in [&"barracks", &"hq", &"supply"] else (2.0 if FacilityDefs.has(st.type_id) else 1.0)
+		var sc := imp * (1.0 - st.health_frac()) + (1.0 if st.is_disabled() else 0.0)
+		if sc > worst_sc and supplies >= StructureHealth.repair_cost(st) + 800.0:
+			worst_sc = sc
+			worst = st
+	if worst != null:
+		actions.append({"kind": "repair_structure", "utility": 1.2 + worst_sc * 0.4, "structure": worst.id,
+			"note": "%s at %d %%" % [FacilityDefs.display_name(worst.type_id) if FacilityDefs.has(worst.type_id) else String(worst.type_id), roundi(worst.health_frac() * 100.0)]})
 	# GAMEPLAY-01E: a new base (template) where the faction holds ground far from its bases.
 	var plan := ws.bases.plan_expansion(f, supplies, s.squads)
 	if plan.ok:
@@ -350,6 +367,8 @@ func _built_near(faction: int, type_id: StringName, p: Vector3, r: float) -> int
 func _execute(f: FactionState, p: FactionProfile, s: Dictionary, a: Dictionary) -> Dictionary:
 	var bs := _bases()
 	match a.kind:
+		"repair_structure":
+			return ws.bases.request_repair(f, sim.state.construction.get_structure(int(a.structure)), str(a.note))
 		"expand":
 			var res := ws.bases.start_expansion(f, a.plan)
 			if res.ok:

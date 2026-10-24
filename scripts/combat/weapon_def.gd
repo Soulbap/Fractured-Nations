@@ -28,6 +28,9 @@ enum Delivery { HITSCAN, PROJECTILE }
 @export_group("Damage")
 ## Damage of a body hit at short range (health is 100).
 @export var damage := 34.0
+## GAMEPLAY-01F: damage to structures per hit = damage x structure_mult x StructureHealth.resist (small arms barely scratch
+## fortifications; heavier weapons will raise this).
+@export var structure_mult := 1.0
 @export var head_multiplier := 2.5
 @export var body_multiplier := 1.0
 ## Full damage up to falloff_start, then linear down to min_damage_fraction at falloff_end.

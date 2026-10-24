@@ -36,6 +36,11 @@ var facility := {}
 ## since, workers / why (last BUILD step: soldiers at work, or why nobody works)}. A site blocks its footprint and is drawn
 ## as a site, but is no facility (no inventory, no base, no queue) until ConstructionState.add_work completes it.
 var site := {}
+## GAMEPLAY-01F condition: points left (-1: undamaged, StructureHealth.max_hp) and a repair in progress ({} none; the same
+## fields as a site: work, need, paid, crew, workers, why, step - built by the BUILD tactic / an AI crew through
+## ConstructionState.add_work). Saved; capture keeps both.
+var hp := -1.0
+var repair := {}
 
 ## Runtime cache, rebuilt from the data above (not saved): one transform per instance
 ## (index = module index for lines; -1 entries never appear, removed modules are skipped
@@ -55,14 +60,73 @@ func is_site() -> bool:
 	return not site.is_empty()
 
 
-## GAMEPLAY-01C: the structure does its job (a finished structure; GAMEPLAY-01F adds its condition).
+## GAMEPLAY-01C / 01F: the structure does its job - finished and not disabled by damage.
 func is_operational() -> bool:
-	return site.is_empty()
+	return site.is_empty() and not is_disabled()
+
+
+func max_hp() -> float:
+	return StructureHealth.max_hp(self)
+
+
+func health() -> float:
+	return max_hp() if hp < 0.0 else hp
+
+
+## 0..1 (1: undamaged).
+func health_frac() -> float:
+	var m := max_hp()
+	return 1.0 if hp < 0.0 or m <= 0.0 else clampf(hp / m, 0.0, 1.0)
+
+
+## GAMEPLAY-01F: below StructureHealth.DISABLE_FRAC of its points the structure stands but does not work.
+func is_disabled() -> bool:
+	return hp >= 0.0 and health_frac() < StructureHealth.DISABLE_FRAC
+
+
+func is_destroyed() -> bool:
+	return hp >= 0.0 and hp <= 0.0
+
+
+## 0 undamaged, 1 damaged (below 70 %), 2 disabled, 3 destroyed - what the structure looks like.
+func damage_band() -> int:
+	if hp < 0.0:
+		return 0
+	if is_destroyed():
+		return 3
+	if is_disabled():
+		return 2
+	return 1 if health_frac() < 0.7 else 0
+
+
+## A site to build or a repair to finish: the BUILD tactic works on it.
+func needs_work() -> bool:
+	return not site.is_empty() or not repair.is_empty()
+
+
+## The record the BUILD tactic works on (the site, else the repair; {} none).
+func work_record() -> Dictionary:
+	return site if not site.is_empty() else repair
+
+
+func work_progress() -> float:
+	var r := work_record()
+	if r.is_empty():
+		return 1.0
+	return clampf(float(r.get("work", 0.0)) / maxf(float(r.get("need", 1.0)), 0.001), 0.0, 1.0)
 
 
 ## Why the structure does or does not work, in words.
 func condition_text() -> String:
-	return "under construction" if is_site() else "operational"
+	if is_site():
+		return "under construction"
+	if is_destroyed():
+		return "destroyed"
+	if is_disabled():
+		return "disabled (%d %%)" % roundi(health_frac() * 100.0)
+	if hp >= 0.0:
+		return "damaged (%d %%)" % roundi(health_frac() * 100.0)
+	return "operational"
 
 
 ## 0..1 (1 for a finished structure).
@@ -113,6 +177,10 @@ func to_dict() -> Dictionary:
 		d["facility"] = facility
 	if not site.is_empty():
 		d["site"] = site
+	if hp >= 0.0:
+		d["hp"] = snappedf(hp, 0.1)
+	if not repair.is_empty():
+		d["repair"] = repair
 	return d
 
 
@@ -139,4 +207,6 @@ static func from_dict(d: Dictionary) -> StructureState:
 	s.label = String(d.get("label", ""))
 	s.facility = d.get("facility", {})
 	s.site = d.get("site", {})
+	s.hp = float(d.get("hp", -1.0))
+	s.repair = d.get("repair", {})
 	return s

@@ -18,6 +18,10 @@ signal clearings_changed
 ## progress passed another tenth (its look changes).
 signal structure_completed(s: StructureState)
 signal site_progressed(s: StructureState)
+## GAMEPLAY-01F: a structure's look changed with its condition (StructureState.damage_band), it became disabled / working
+## again, or a repair finished.
+signal structure_damaged(s: StructureState, band_before: int)
+signal structure_repaired(s: StructureState)
 
 ## 2: adds "clearings" (version 1 files load with none).
 const FORMAT_VERSION := 3
@@ -114,7 +118,18 @@ func _site_record(need: float, paid: Dictionary, crew: float) -> Dictionary:
 
 ## Adds soldier-seconds of work to a site. Returns true when this call finished it: the site record goes, the structure
 ## is complete and structure_completed is emitted - exactly once (a finished structure takes no more work).
+## GAMEPLAY-01F: the same for a repair - when its work is done the structure is at full condition (structure_repaired).
 func add_work(s: StructureState, amount: float) -> bool:
+	if s != null and not s.is_site() and not s.repair.is_empty() and structures.has(s.id) and amount > 0.0:
+		s.repair["work"] = float(s.repair.work) + amount
+		if float(s.repair.work) >= float(s.repair.need):
+			var band := s.damage_band()
+			s.repair = {}
+			s.hp = -1.0
+			structure_repaired.emit(s)
+			structure_damaged.emit(s, band)
+			return true
+		return false
 	if s == null or not s.is_site() or not structures.has(s.id) or amount <= 0.0:
 		return false
 	s.site["work"] = float(s.site.work) + amount
@@ -128,6 +143,32 @@ func add_work(s: StructureState, amount: float) -> bool:
 		s.site["step"] = step
 		site_progressed.emit(s)
 	return false
+
+
+## GAMEPLAY-01F: damage to a finished structure (a hit, an explosion); `amount` already weighed by StructureHealth.resist.
+## Points never go below 0 and the structure is never removed. Emits structure_damaged when its band changes (the look and
+## whether it works); a repair in progress keeps its work. Returns the points taken.
+func damage(s: StructureState, amount: float) -> float:
+	if s == null or s.is_site() or amount <= 0.0 or not structures.has(s.id):
+		return 0.0
+	var m := s.max_hp()
+	if m <= 0.0:
+		return 0.0
+	var band := s.damage_band()
+	var before := s.health()
+	s.hp = maxf(before - amount, 0.0)
+	if s.damage_band() != band:
+		structure_damaged.emit(s, band)
+	return before - s.hp
+
+
+## GAMEPLAY-01F: starts a repair of a damaged structure: need soldier-seconds of work, paid (refund record), crew (AI: work
+## per second without soldiers). False when it needs none or one runs already.
+func start_repair(s: StructureState, need: float, paid: Dictionary, crew := 0.0) -> bool:
+	if s == null or s.is_site() or not s.repair.is_empty() or s.health_frac() >= 0.999:
+		return false
+	s.repair = _site_record(need, paid, crew)
+	return true
 
 
 ## Removes a site that is not finished; returns its payment record (the caller refunds it), {} when it was no site.

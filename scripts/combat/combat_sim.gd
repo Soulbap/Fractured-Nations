@@ -106,6 +106,11 @@ func resolve(u: UnitState, def: WeaponDef, origin: Vector3, dir: Vector3) -> Dic
 	var shot := {"shooter": u.id, "origin": origin, "dir": dir, "end": r.point, "distance": r.distance,
 		"blocker": r.blocker, "hit_unit": r.hit_unit, "zone": r.zone, "structure_id": r.structure_id,
 		"damage": 0.0, "killed": false, "counter": u.shot_counter, "usec": last_shot_usec}
+	if r.blocker == "structure" and int(r.structure_id) >= 0:
+		# GAMEPLAY-01F: the structure in the way takes the hit (weighed by what it is made of).
+		var st := sim.state.construction.get_structure(int(r.structure_id))
+		if st:
+			shot["structure_damage"] = sim.state.construction.damage(st, def.damage * def.structure_mult * StructureHealth.resist(st.type_id))
 	if r.hit_unit > 0:
 		var amount: float = def.damage * def.zone_multiplier(r.zone) * def.falloff(r.distance)
 		shot.damage = apply_damage(r.hit_unit, amount, r.zone, u.id)

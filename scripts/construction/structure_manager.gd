@@ -137,11 +137,13 @@ func bind_state(p_state: ConstructionState) -> void:
 		state.cleared.disconnect(_on_cleared)
 		state.clearings_changed.disconnect(_apply_clearings)
 		state.site_progressed.disconnect(_on_site_progressed)
+		state.structure_damaged.disconnect(_on_damaged)
 	state = p_state
 	state.structure_added.connect(_on_added)
 	state.structure_removed.connect(_on_removed)
 	state.structure_changed.connect(_on_changed)
 	state.site_progressed.connect(_on_site_progressed)
+	state.structure_damaged.connect(_on_damaged)
 	state.cleared.connect(_on_cleared)
 	state.clearings_changed.connect(_apply_clearings)
 	_on_cleared()
@@ -500,6 +502,49 @@ func _on_changed(s: StructureState) -> void:
 	area_changed.emit(_rect_of(s))
 
 
+## GAMEPLAY-01F: a structure's condition band changed - only its look changes (no navmesh rebake, collision stays).
+func _on_damaged(s: StructureState, _band_before: int) -> void:
+	for i in s.instances.size():
+		_dirty_cells[_cell_of(s.instances[i].origin)] = true
+
+
+static var _damage_mats := {}
+
+
+## The overlay of a damaged structure: soot and scorch blotches over its own materials (a world-space noise, so every
+## building gets its own pattern), covering more the worse it is (band 1 damaged, 2 disabled, 3 destroyed).
+static func damage_material(band: int) -> StandardMaterial3D:
+	if not _damage_mats.has(band):
+		var noise := FastNoiseLite.new()
+		noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		noise.frequency = 0.035
+		noise.fractal_octaves = 4
+		var ramp := Gradient.new()
+		var start: float = [0.9, 0.62, 0.42, 0.22][band]
+		ramp.set_offset(0, 0.0)
+		ramp.set_color(0, Color(1, 1, 1, 0))
+		ramp.set_offset(1, 1.0)
+		ramp.set_color(1, Color(1, 1, 1, [0.0, 0.75, 0.88, 0.95][band]))
+		ramp.add_point(start, Color(1, 1, 1, 0))
+		ramp.add_point(minf(start + 0.12, 0.99), Color(1, 1, 1, [0.0, 0.55, 0.75, 0.88][band]))
+		var tex := NoiseTexture2D.new()
+		tex.width = 256
+		tex.height = 256
+		tex.seamless = true
+		tex.noise = noise
+		tex.color_ramp = ramp
+		var m := StandardMaterial3D.new()
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.albedo_color = Color(0.05, 0.04, 0.035)
+		m.albedo_texture = tex
+		m.roughness = 1.0
+		m.uv1_triplanar = true
+		m.uv1_world_triplanar = true
+		m.uv1_scale = Vector3(0.12, 0.12, 0.12)
+		_damage_mats[band] = m
+	return _damage_mats[band]
+
+
 ## GAMEPLAY-01B: a site's progress passed a tenth - only its look changes (no navmesh rebake).
 func _on_site_progressed(s: StructureState) -> void:
 	for i in s.instances.size():
@@ -718,10 +763,22 @@ func _build_visual(c: Vector2i) -> void:
 		var s: StructureState = state.get_structure(e.x)
 		if s and s.is_site() and by_type.has(s.type_id) and e.y < s.instances.size():
 			(by_type[s.type_id] as Array).erase(s.instances[e.y])
-	for key in by_type.keys() + sites.keys().map(func(t: StringName) -> String: return "site:" + String(t)):
+		elif s and s.damage_band() > 0 and by_type.has(s.type_id) and e.y < s.instances.size():
+			# GAMEPLAY-01F: drawn apart with a damage overlay; a destroyed one also slumps a little.
+			var band := s.damage_band()
+			var key := "dmg%d:%s" % [band, String(s.type_id)]
+			var xf: Transform3D = s.instances[e.y]
+			(by_type[s.type_id] as Array).erase(xf)
+			if band == 3:
+				xf = Transform3D(xf.basis * Basis(Vector3(1, 0, 0), 0.05) * Basis.from_scale(Vector3(1.0, 0.82, 1.0)), xf.origin)
+			if not sites.has(key):
+				sites[key] = []
+			(sites[key] as Array).append(xf)
+	for key in by_type.keys() + sites.keys().map(func(t: Variant) -> String: return String(t) if String(t).begins_with("dmg") else "site:" + String(t)):
+		var dmg := key is String and (key as String).begins_with("dmg")
 		var site := key is String and (key as String).begins_with("site:")
-		var t: StringName = StringName((key as String).substr(5)) if site else key
-		var xforms: Array = sites[t] if site else by_type[t]
+		var t: StringName = StringName((key as String).substr(5)) if (site or dmg) else key
+		var xforms: Array = sites[t] if site else (sites[key] if dmg else by_type[t])
 		if xforms.is_empty():
 			continue
 		var def := StructureCatalog.get_def(t)
@@ -736,6 +793,8 @@ func _build_visual(c: Vector2i) -> void:
 		if site:
 			mmi.material_override = site_material()
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		elif dmg:
+			mmi.material_overlay = damage_material(int((key as String).substr(3, 1)))
 		mmi.multimesh = mm
 		mmi.visibility_range_end = def.visible_range
 		mmi.visibility_range_end_margin = 80.0

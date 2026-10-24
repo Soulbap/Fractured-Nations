@@ -1240,7 +1240,7 @@ func _update_recovery(f: FactionState) -> void:
 	var now := sim.state.time
 	if f.recovery_at < 0.0:
 		var barracks := bs.facility_of_kind(f.id, &"barracks")
-		if barracks != null and f.reserves >= BaseSim.SQUAD_SIZE and bs.faction_can_pay(f.id, BaseSim.RECRUIT_COST):
+		if barracks != null and barracks.is_operational() and f.reserves >= BaseSim.SQUAD_SIZE and bs.faction_can_pay(f.id, BaseSim.RECRUIT_COST):
 			return  # the barracks can train a squad: that is the normal way back
 		f.recovery_at = now + delay
 		log_event(f.id, "threat", "Every soldier is lost. A section of %d is on its way and arrives in %d s" % [size, roundi(delay)], _recovery_point(f))

@@ -199,7 +199,8 @@ func placement_rule(type_id: StringName, p: Vector3, faction: int) -> String:
 func capacity(bid: int) -> int:
 	var n := 0
 	for s in facilities_of(bid):
-		n += FacilityDefs.beds_of(s.type_id)
+		if s.is_operational():
+			n += FacilityDefs.beds_of(s.type_id)
 	return n
 
 
@@ -236,7 +237,7 @@ func free_parking_spot(bid: int) -> Dictionary:
 func guard_posts(bid: int) -> Array[Vector3]:
 	var out: Array[Vector3] = []
 	for s in facilities_of(bid):
-		if FacilityDefs.kind_of(s.type_id) == &"guard":
+		if FacilityDefs.kind_of(s.type_id) == &"guard" and s.is_operational():
 			out.append(s.position)
 	return out
 
@@ -378,7 +379,8 @@ func describe(bid: int) -> String:
 func base_stores(bid: int) -> Array[StructureState]:
 	var out: Array[StructureState] = []
 	for s in facilities_of(bid):
-		if s.inventory != null:
+		# GAMEPLAY-01F: a disabled store keeps what it holds but gives nothing out and takes nothing in until repaired.
+		if s.inventory != null and s.is_operational():
 			out.append(s)
 	return out
 
@@ -723,6 +725,8 @@ func acquire_vehicle(depot_id: int, type_id: StringName) -> Dictionary:
 		return {"ok": false, "reason": "That is not a vehicle depot"}
 	if not VEHICLES.has(type_id):
 		return {"ok": false, "reason": "Unknown vehicle"}
+	if not s.is_operational():
+		return {"ok": false, "reason": "The depot is not operational (%s)" % s.condition_text()}
 	var q: Array = s.facility.get("queue", [])
 	if q.size() >= 2:
 		return {"ok": false, "reason": "The depot is busy (%d vehicles being prepared)" % q.size()}
@@ -782,6 +786,11 @@ func _process_queues() -> void:
 			continue
 		var keep: Array = []
 		for e: Dictionary in q:
+			if not s.is_operational():
+				# GAMEPLAY-01F: a disabled facility's queue waits (it resumes when the building is repaired).
+				e["done"] = float(e.done) + 1.0
+				keep.append(e)
+				continue
 			if now < float(e.done):
 				keep.append(e)
 				continue

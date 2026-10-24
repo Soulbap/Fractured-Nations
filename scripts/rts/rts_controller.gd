@@ -337,7 +337,7 @@ func site_at(screen_pos: Vector2) -> int:
 	if hit.is_empty():
 		return -1
 	var s := structures.state.get_structure(hit.id)
-	return s.id if s != null and s.is_site() and s.faction == player_faction else -1
+	return s.id if s != null and s.needs_work() and s.faction == player_faction else -1  # GAMEPLAY-01F: a repair too
 
 
 ## The selected squads build a site (SquadTactics BUILD, owned by the player). Returns the soldiers sent.

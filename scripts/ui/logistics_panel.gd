@@ -201,22 +201,31 @@ func _refresh(vid: int, sid: int) -> void:
 	if s.is_site():
 		_refresh_site(s)
 		return
-	accent = FNUI.OK
+	accent = FNUI.OK if s.is_operational() else FNUI.DANGER
 	var kind := FacilityDefs.kind_of(s.type_id)
 	_icon.texture = FNIcons.texture({&"barracks": &"building", &"vehicle": &"vehicle", &"hq": &"base", &"fuel": &"fuel", &"ammo": &"ammo"}.get(kind, &"logistics"), FNUI.ICON_L)
-	_title.text = FacilityDefs.display_name(s.type_id)
+	var sdef := StructureCatalog.get_def(s.type_id)
+	_title.text = FacilityDefs.display_name(s.type_id) if FacilityDefs.has(s.type_id) else (sdef.display_name if sdef else String(s.type_id))
 	var b := lg.bases.summary(s.base_id) if s.base_id >= 0 else {}
 	_subtitle.text = ("%s · %s" % [b.name, b.kind]) if not b.is_empty() else "Facility #%d" % s.id
 	var queue: Array = s.facility.get("queue", [])
-	if queue.is_empty():
-		_state.set_status(&"check", "Operational", FNUI.OK)
+	if not s.is_operational():
+		_state.set_status(&"blocked", s.condition_text().capitalize() + (" · repair %d %%" % roundi(s.work_progress() * 100.0) if not s.repair.is_empty() else ""), FNUI.DANGER)
+	elif queue.is_empty():
+		_state.set_status(&"check", s.condition_text().capitalize() if s.hp >= 0.0 else "Operational", FNUI.WARN if s.hp >= 0.0 else FNUI.OK)
 	else:
 		_state.set_status(&"clock", "%s · %d s left" % [queue[0].get("what", "queued"), maxi(0, roundi(float(queue[0].done) - sim.state.time))], FNUI.ARMED)
-	var dsig2 := "%d|%s|%s|%d" % [sid, str(b.get("stock", {})), str(s.inventory.total() if s.inventory else -1), queue.size()]
+	var dsig2 := "%d|%s|%s|%d|%d|%d" % [sid, str(b.get("stock", {})), str(s.inventory.total() if s.inventory else -1), queue.size(), roundi(s.health_frac() * 100.0), roundi(s.work_progress() * 100.0)]
 	if dsig2 != _data_sig:
 		_data_sig = dsig2
 		_clear(_meters)
 		_clear(_fields)
+		# GAMEPLAY-01F: the condition, and a repair in progress.
+		var hf := s.health_frac()
+		_meter("Condition", hf, "%d %%" % roundi(hf * 100.0), FNUI.OK if hf >= 0.7 else (FNUI.WARN if s.is_operational() else FNUI.DANGER))
+		if not s.repair.is_empty():
+			_meter("Repair", s.work_progress(), "%d %%" % roundi(s.work_progress() * 100.0), FNUI.ARMED)
+			_field("Repair", String(s.repair.get("why", "")) if String(s.repair.get("why", "")) != "" else "%d soldiers working" % int(s.repair.get("workers", 0)), &"build", FNUI.ARMED)
 		if s.inventory:
 			_meter("This store", s.inventory.total() / maxf(s.inventory.capacity, 1.0), "%d / %d" % [roundi(s.inventory.total()), roundi(s.inventory.capacity)], FNUI.NEUTRAL)
 		if not b.is_empty():
@@ -232,7 +241,7 @@ func _refresh(vid: int, sid: int) -> void:
 			for t in st:
 				parts.append("%s x%d" % [VehicleDefs.get_def(StringName(t)).short_name, int(st[t])])
 			_field("Available", ", ".join(parts), &"vehicle")
-	var sig2 := "s%d|%d|%d|%s|%s|%d" % [sid, queue.size(), rts.selected.size(), str(rts.first_selected_vehicle()), _item, _frac]
+	var sig2 := "s%d|%d|%d|%s|%s|%d|%d|%s" % [sid, queue.size(), rts.selected.size(), str(rts.first_selected_vehicle()), _item, _frac, s.damage_band(), str(s.repair.is_empty())]
 	if sig2 != _sig:
 		_sig = sig2
 		_build_facility_actions(s)
@@ -404,6 +413,17 @@ func _build_facility_actions(s: StructureState) -> void:
 	_dest_box = null
 	var lg := sim.logistics
 	var kind := FacilityDefs.kind_of(s.type_id)
+	# GAMEPLAY-01F: repair a damaged structure of the player (paid; built by squads like a site).
+	if s.faction == rts.player_faction and s.health_frac() < 0.999:
+		var rsid := s.id
+		if s.repair.is_empty() and construction:
+			_row([_button(&"build", "Repair (%d kg supplies)" % roundi(StructureHealth.repair_cost(s)), func() -> void:
+				var r := construction.order_repair(rsid)
+				_say(construction.message if r.ok else r.reason))])
+		elif not s.repair.is_empty() and not rts.selected_squads().is_empty():
+			_row([_button(&"build", "Repair with selected squads", func() -> void:
+				var r := sim.tactics.order_build(rts.selected_squads(), rsid)
+				_say(r.text))])
 	if kind == &"barracks":
 		_row([_button(&"recruit", "Recruit a squad (%s)" % lg.bases.cost_text(BaseSim.RECRUIT_COST), func() -> void:
 			var r := lg.bases.recruit(s.id)

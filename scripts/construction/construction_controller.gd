@@ -476,6 +476,46 @@ func cancel_site(id: int) -> float:
 	return back
 
 
+## GAMEPLAY-01F: the player has a damaged structure repaired. Paid like construction (StructureHealth.repair_cost, from the
+## pool and the base); with build sites on it becomes work for the BUILD tactic (the nearest idle squad is called, or the
+## player right-clicks it with squads selected), else it is repaired at once (the Development Scenario's free construction).
+## {ok, reason, cost}.
+func order_repair(id: int) -> Dictionary:
+	var s := structures.state.get_structure(id)
+	if s == null or s.faction != player_faction():
+		return {"ok": false, "reason": "That is not one of your structures"}
+	if s.is_site():
+		return {"ok": false, "reason": "It is still under construction"}
+	if not s.repair.is_empty():
+		return {"ok": false, "reason": "It is being repaired already"}
+	var need := StructureHealth.repair_work(s)
+	if need <= 0.0:
+		return {"ok": false, "reason": "It is not damaged"}
+	var cost := StructureHealth.repair_cost(s)
+	var paid := {}
+	if costs_on():
+		var bs := _bases()
+		paid = bs.faction_pay(player_faction(), BuildCosts.supplies(cost), s.base_id)
+		if paid.is_empty():
+			return {"ok": false, "reason": "Not enough supplies: the repair needs %d kg, you have %d kg" % [roundi(cost), roundi(supplies_available())]}
+	var d := StructureCatalog.get_def(s.type_id)
+	var what := d.display_name if d else String(s.type_id)
+	if not sites_on():
+		var band := s.damage_band()
+		s.hp = -1.0
+		structures.state.structure_repaired.emit(s)
+		structures.state.structure_damaged.emit(s, band)
+		_say("%s repaired" % what)
+		return {"ok": true, "reason": "", "cost": 0.0}
+	structures.state.start_repair(s, need, paid)
+	var sim := structures.sim
+	var sq: SquadState = sim.tactics.assign_builders(s) if sim else null
+	_say("%s: repair ordered for %d kg - %s" % [what, roundi(cost), ("%s is on the way" % sq.squad_name) if sq else "select a squad and right-click it to repair"])
+	if sim and sim.war:
+		sim.war.log_event(s.faction, "build", "Repair of %s ordered (%d kg)" % [what, roundi(cost)], s.site_center())
+	return {"ok": true, "reason": "", "cost": cost}
+
+
 ## GAMEPLAY-01B: player construction is paid in the scenarios that say so (rule build_costs).
 func costs_on() -> bool:
 	return world_state != null and world_state.war.active and bool(world_state.war.rule("build_costs", false))
