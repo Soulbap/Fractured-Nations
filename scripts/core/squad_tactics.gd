@@ -68,6 +68,10 @@ var build_auto_m := 150.0
 var build_assign_m := 900.0
 var build_check_s := 3.0
 var build_respect_s := 120.0
+## GAMEPLAY-01C: a defence uses the fortification slots within fort_radius_m of its spot; a garrison re-mans its base every
+## garrison_check_s when it is not fighting from it.
+var fort_radius_m := 35.0
+var garrison_check_s := 2.0
 
 # --- Measurements ---------------------------------------------------------------------------
 var steps := 0
@@ -109,6 +113,8 @@ var _dt := 0.5
 var _site_workers := {}
 var _next_build := {}
 var _site_block := {}
+## GAMEPLAY-01C: next garrison check per squad (runtime).
+var _next_garrison := {}
 
 
 func _init(p_sim: WorldSim) -> void:
@@ -166,6 +172,8 @@ func _step(sq: SquadState) -> void:
 		_formation_for_contact(sq, a, now)
 	if sq.tactic != SquadState.Tactic.NONE:
 		_run(sq, a)
+	elif sq.garrison_base >= 0 and sq.order != SquadState.Order.REGROUP:
+		_garrison_step(sq, a, now)
 	elif autonomous and a.in_contact and now >= float(_next_eval.get(sq.id, 0.0)) and now >= sq.tactic_cooldown_until and _autonomy_ok(sq):
 		_next_eval[sq.id] = now + eval_s
 		_consider(sq, a)
@@ -609,18 +617,26 @@ func _plan(sq: SquadState, a: Dictionary, tactic: int, target: Vector3, _owner: 
 	match tactic:
 		SquadState.Tactic.DEFEND:
 			var centre := target if target.is_finite() else c
+			# GAMEPLAY-01C: a garrison defends its base (its whole area: the base's fortifications); a defence elsewhere uses
+			# the fortifications within fort_radius_m of the spot.
+			var gb: Dictionary = sim.state.construction.bases.get(int(extra.get("garrison", -1)), {})
+			if not gb.is_empty():
+				var ga := pos.nearest_valid(gb.anchor, 30.0)
+				centre = ga if ga.is_finite() else c
 			var dir := _dir_to(centre, threat) if threat.is_finite() else _dir_from_yaw(sq.order_yaw)
 			var look: Vector3 = threat if threat.is_finite() and _flat(centre, threat) < 300.0 else Vector3.INF
-			var posts := pos.find_posts(count, centre, 16.0, centre + dir * 90.0, {"mode": "fire", "los": look, "reserved": _reserved(sq, centre), "avoid": _avoid_list(sq), "unit_id": uid})
-			if posts.size() < count:
-				posts = pos.find_posts(count, centre, 16.0, centre + dir * 90.0, {"mode": "cover", "reserved": _reserved(sq, centre), "avoid": _avoid_list(sq), "unit_id": uid})
-			posts = pos.fill_open(posts, count, centre, dir)
+			var slot_r := minf(BaseSim.reach_of(gb), 170.0) if not gb.is_empty() else fort_radius_m
+			var posts := _defend_posts(sq, units, centre, dir, look, slot_r, gb.get("anchor", Vector3.INF))
 			var covered := 0
+			var forts := 0
 			for p: Dictionary in posts:
 				if p.protected:
 					covered += 1
+				if p.has("slot"):
+					forts += 1
+			var what := ("garrison %s" % gb.name) if not gb.is_empty() else "defend %s" % _xz(centre)
 			return {"ok": true, "tactic": tactic, "target": centre, "dir": dir, "posts": posts, "commit": 10.0,
-				"why": "defend %s: %d posts, %d with cover%s" % [_xz(centre), posts.size(), covered, "" if not threat.is_finite() else ", threat %s %.0f m" % [a.threat_src, _flat(centre, threat)]]}
+				"why": "%s: %d posts, %d in fortifications, %d with cover%s" % [what, posts.size(), forts, covered, "" if not threat.is_finite() else ", threat %s %.0f m" % [a.threat_src, _flat(centre, threat)]]}
 		SquadState.Tactic.SUPPRESS:
 			if not target.is_finite():
 				return {"ok": false, "reason": "suppress needs a target position"}
@@ -806,6 +822,12 @@ func on_order(sq: SquadState) -> void:
 		return
 	# GAMEPLAY-01B: a new order replaces a march to a construction site.
 	_set_meta(sq, "build_goal", null)
+	# GAMEPLAY-01C: any other order ends a garrison assignment (the player's or an operation's: the squad is reassigned).
+	if sq.garrison_base >= 0:
+		var gb: Dictionary = sim.state.construction.bases.get(sq.garrison_base, {})
+		if int(gb.get("objective", -2)) == sq.station_objective:
+			sq.station_objective = -1
+		sq.garrison_base = -1
 	if sq.tactic == SquadState.Tactic.BUILD:
 		# GAMEPLAY-01B: the player took the squad away from the site - it is not called back on its own for a while.
 		_set_meta(sq, "no_build_until", sim.state.time + build_respect_s)
@@ -836,6 +858,7 @@ func _clear_units(sq: SquadState) -> void:
 			u.fire_at = Vector3.INF
 			u.fire_until = -1.0
 			u.post_pos = Vector3.INF
+			sim.state.leave_fort(u)
 
 
 # --- Public orders (player and operations) ----------------------------------------------------------
@@ -906,6 +929,7 @@ func _run(sq: SquadState, a: Dictionary) -> void:
 	if int(a.n) == 0:
 		return
 	_face_all(sq, a)
+	_tend_forts(sq, a, now)
 	match sq.tactic:
 		SquadState.Tactic.DEFEND:
 			_run_defend(sq, a, now)
@@ -941,7 +965,7 @@ func build_eligible(sq: SquadState, ignore_cooldown := false) -> bool:
 	var war := sim.state.war
 	if not war.active or sq.faction != war.player_faction or not bool(war.rule("build_sites", false)):
 		return false
-	if sq.members.is_empty() or sq.op_id >= 0 or sq.station_objective >= 0 or sq.tactic != SquadState.Tactic.NONE or _aboard(sq):
+	if sq.members.is_empty() or sq.op_id >= 0 or sq.station_objective >= 0 or sq.garrison_base >= 0 or sq.tactic != SquadState.Tactic.NONE or _aboard(sq):
 		return false
 	if sim.squads.marching(sq):
 		return false
@@ -1166,6 +1190,199 @@ func _work_posts(site: StructureState, count: int, from: Vector3) -> Array:
 	return out
 
 
+# --- Fortifications and GARRISON_BASE (GAMEPLAY-01C) ---------------------------------------------------------------------
+# A defence first fills the free fortification slots near its spot (SquadPositions.fort_slots: towers, fighting positions,
+# MG emplacements, walls), the rest of the squad takes natural cover there as before. A soldier walks to his slot's
+# access point and then takes the slot (UnitState.fort_pos): both tiers hold him exactly there, a tower platform included.
+# A garrison is the squad-level order GARRISON_BASE (SquadState.garrison_base): march to a friendly base and defend it from
+# its fortifications until given another order; re-manned after every fight, cleared when the base is lost.
+
+## Posts for a defence at `centre`: free fortification slots within slot_r (spread round the base when no threat is known),
+## then firing / cover posts within nat_r for the soldiers left over.
+func _defend_posts(sq: SquadState, units: Array, centre: Vector3, dir: Vector3, look: Vector3, slot_r: float, base_anchor := Vector3.INF, nat_r := 16.0) -> Array:
+	var count := units.size()
+	var mine := {}
+	for u: UnitState in units:
+		mine[u.id] = true
+	var threat := centre + dir * 90.0 if look.is_finite() else Vector3.INF
+	var slots := pos.fort_slots(centre, slot_r, sq.faction, threat, mine, base_anchor, 0.008 if base_anchor.is_finite() else 0.06)
+	var posts: Array = []
+	if not look.is_finite() and slots.size() > count:
+		# No threat known: the slots that cover the most different directions round the centre.
+		var left := slots.duplicate()
+		while posts.size() < count and not left.is_empty():
+			var best := 0
+			var best_sc := -INF
+			for i in left.size():
+				var e: Dictionary = left[i]
+				var sep := PI
+				for q: Dictionary in posts:
+					sep = minf(sep, absf(angle_difference(_bearing(centre, e.p), _bearing(centre, q.p))))
+				var sc := sep + float(e.score) * 0.2 + (0.15 if bool(e.elevated) else 0.0)
+				if sc > best_sc:
+					best_sc = sc
+					best = i
+			posts.append(left[best])
+			left.remove_at(best)
+	else:
+		posts = slots.slice(0, count)
+	var need := count - posts.size()
+	if need > 0:
+		var uid: int = units[0].id
+		var nat := pos.find_posts(need, centre, nat_r, centre + dir * 90.0, {"mode": "fire", "los": look, "reserved": _reserved(sq, centre) + posts.map(func(e: Dictionary) -> Vector3: return e.p), "avoid": _avoid_list(sq), "unit_id": uid})
+		if nat.size() < need:
+			nat = pos.find_posts(need, centre, nat_r, centre + dir * 90.0, {"mode": "cover", "reserved": _reserved(sq, centre), "avoid": _avoid_list(sq), "unit_id": uid})
+		posts.append_array(nat.slice(0, need))
+		posts = pos.fill_open(posts, count, centre, dir)
+	return posts
+
+
+static func _bearing(from: Vector3, to: Vector3) -> float:
+	return atan2(to.z - from.z, to.x - from.x)
+
+
+## The MG slot goes to an MG-armed soldier when the squad has one (no MG weapon exists yet: then any soldier keeps it).
+func _mg_first(units: Array, posts: Array, idx: Array) -> void:
+	for i in units.size():
+		var post: Dictionary = posts[idx[i]]
+		if String(post.get("role", "")) != "mg" or String((units[i] as UnitState).weapon_id).contains("mg"):
+			continue
+		for j in units.size():
+			if j != i and String((units[j] as UnitState).weapon_id).contains("mg"):
+				var t: int = idx[i]
+				idx[i] = idx[j]
+				idx[j] = t
+				break
+
+
+## Every tactic step: soldiers sent to a fortification slot take it once they stand at its access point (and are not walking
+## or reacting); a soldier pushed away walks back; a slot that can no longer be used (structure destroyed, disabled,
+## captured) is given up, and a defence then looks for posts again.
+func _tend_forts(sq: SquadState, a: Dictionary, now: float) -> void:
+	var lost := false
+	for u: UnitState in _units(sq):
+		if u.fort_slot == "":
+			continue
+		var e := pos.slot_by_key(u.fort_slot, sq.faction)
+		if e.is_empty():
+			_log(sq, "%s leaves %s: the position can no longer be used" % [u.unit_name, u.fort_slot])
+			sim.state.leave_fort(u)
+			u.post_pos = Vector3.INF
+			lost = true
+			continue
+		if u.fort_pos.is_finite() or u.order == UnitState.Order.MOVE or u.is_reacting():
+			continue
+		var acc: Vector3 = e.access
+		if _flat(u.position, acc) <= 2.5 or _flat(u.position, e.p) <= 1.5:
+			u.fort_exit = acc
+			u.fort_pos = e.p
+			u.position = e.p
+			u.anchor_pos = e.p
+			u.velocity = Vector3.ZERO
+			sim.brain._watch(u, e.p + (e.facing as Vector3) * 30.0, 3.0)
+		elif now - float(_meta(sq, "fort_resend_%d" % u.id, -100.0)) > 8.0:
+			_set_meta(sq, "fort_resend_%d" % u.id, now)
+			var key := u.fort_slot
+			var post := u.post_pos
+			sim.state.issue_move(u.id, acc, false)
+			u.fort_slot = key
+			u.post_pos = post
+	if lost and (sq.tactic == SquadState.Tactic.DEFEND or sq.tactic == SquadState.Tactic.REPOSITION):
+		_reposition(sq, a, "a fortification was lost", now)
+
+
+## The player assigns squads to a friendly base (RTS command, map, facility panel). Releases them from operations;
+## {ok, n, text} like order_tactic.
+func order_garrison(squad_ids: Array, base_id: int) -> Dictionary:
+	var parts: Array[String] = []
+	var n := 0
+	var b: Dictionary = sim.state.construction.bases.get(base_id, {})
+	for id in squad_ids:
+		var sq := sim.state.get_squad(id)
+		if sq == null:
+			continue
+		if b.is_empty() or int(b.faction) != sq.faction:
+			parts.append("%s: cannot - that is not one of your bases" % sq.squad_name)
+			continue
+		sim.war.release_squads([sq.id], "player garrison order")
+		var res := assign_garrison(sq, base_id, SquadState.Owner.PLAYER)
+		parts.append("%s: %s" % [sq.squad_name, ("garrisons %s" % b.name) if res.ok else "cannot - " + str(res.reason)])
+		if res.ok:
+			n += 1
+	return {"ok": n > 0, "n": n, "text": " | ".join(parts)}
+
+
+## Assigns one squad to hold a base (player or faction AI). The squad leaves what it did (an ordinary order), then
+## _garrison_step marches it there and mans the fortifications. {ok, reason}.
+func assign_garrison(sq: SquadState, base_id: int, owner: int) -> Dictionary:
+	var b: Dictionary = sim.state.construction.bases.get(base_id, {})
+	if b.is_empty() or int(b.faction) != sq.faction:
+		return {"ok": false, "reason": "no friendly base"}
+	if _aboard(sq):
+		return {"ok": false, "reason": "the squad is aboard a vehicle"}
+	if owner == SquadState.Owner.PLAYER:
+		on_order(sq)
+		_clear_units(sq)
+		sq.tactic = SquadState.Tactic.NONE
+		sq.tactic_owner = SquadState.Owner.NONE
+	sq.garrison_base = base_id
+	var obj: int = int(b.get("objective", -1))
+	if obj >= 0:
+		sq.station_objective = obj
+	sq.tactic_cooldown_until = 0.0
+	_next_garrison[sq.id] = 0.0
+	_log(sq, "%s assigned to garrison %s" % [sq.squad_name, b.name])
+	if sim.war and sim.war.enabled:
+		sim.war.log_event(sq.faction, "garrison", "%s garrisons %s" % [sq.squad_name, b.name], b.anchor)
+	sim.state.squad_changed.emit(sq)
+	return {"ok": true, "reason": ""}
+
+
+## Ends a squad's garrison assignment (the player's cancel, a lost base). The squad stays where it is.
+func clear_garrison(sq: SquadState, why: String) -> void:
+	if sq.garrison_base < 0:
+		return
+	var b: Dictionary = sim.state.construction.bases.get(sq.garrison_base, {})
+	if int(b.get("objective", -2)) == sq.station_objective:
+		sq.station_objective = -1
+	sq.garrison_base = -1
+	_log(sq, "%s garrison ended: %s" % [sq.squad_name, why])
+	if sq.tactic == SquadState.Tactic.DEFEND or sq.tactic == SquadState.Tactic.REPOSITION:
+		_finish(sq, "garrison ended: " + why, SquadState.Tactic.NONE)
+	sim.state.squad_changed.emit(sq)
+
+
+## A garrisoned squad that is not defending its base goes back to it: march when it is away, else DEFEND at the base
+## (the player's squads under the player's authority, an AI faction's under the squad's own).
+func _garrison_step(sq: SquadState, a: Dictionary, now: float) -> void:
+	if now < float(_next_garrison.get(sq.id, 0.0)):
+		return
+	_next_garrison[sq.id] = now + garrison_check_s
+	var b: Dictionary = sim.state.construction.bases.get(sq.garrison_base, {})
+	if b.is_empty() or int(b.faction) != sq.faction:
+		clear_garrison(sq, "the base was lost" if not b.is_empty() else "the base no longer exists")
+		return
+	if sq.op_id >= 0:
+		return
+	if sim.squads.marching(sq) or (sq.order == SquadState.Order.MOVE and sq.status == SquadState.Status.MOVING):
+		return
+	if now < sq.tactic_cooldown_until and not a.in_contact:
+		return
+	var anchor: Vector3 = b.anchor
+	var reach := minf(BaseSim.reach_of(b), 170.0)
+	var owner := SquadState.Owner.PLAYER if sq.faction == sim.state.war.player_faction else SquadState.Owner.SQUAD
+	if _flat(a.center, anchor) > reach + 30.0:
+		var goal := pos.nearest_valid(anchor, 30.0)
+		_internal = true
+		sim.squads.order_move([sq.id], goal if goal.is_finite() else anchor)
+		_internal = false
+		_log(sq, "%s marches %.0f m to garrison %s" % [sq.squad_name, _flat(a.center, anchor), b.name])
+		return
+	var res := start(sq, SquadState.Tactic.DEFEND, owner, anchor, -1, "", {"garrison": sq.garrison_base})
+	if not res.ok:
+		sq.tactic_rejected = "garrison: " + str(res.reason)
+
+
 # --- DEFEND / REPOSITION -------------------------------------------------------------------------------
 
 func _run_defend(sq: SquadState, a: Dictionary, now: float) -> void:
@@ -1192,7 +1409,7 @@ func _run_defend(sq: SquadState, a: Dictionary, now: float) -> void:
 		if why != "":
 			_reposition(sq, a, why, now)
 			return
-	if sq.tactic_owner == SquadState.Owner.SQUAD and not a.in_contact and now - float(_seen_at.get(sq.id, sq.tactic_since)) > calm_end_s and now - sq.tactic_since > calm_end_s:
+	if sq.tactic_owner == SquadState.Owner.SQUAD and sq.garrison_base < 0 and not a.in_contact and now - float(_seen_at.get(sq.id, sq.tactic_since)) > calm_end_s and now - sq.tactic_since > calm_end_s:
 		_finish(sq, "no contact for %.0f s" % calm_end_s, SquadState.Tactic.REGROUP)
 
 
@@ -1216,7 +1433,12 @@ func _bad_posts(sq: SquadState, a: Dictionary, now: float) -> String:
 			var units := _units(sq)
 			for u: UnitState in units:
 				var p := u.post_pos if u.post_pos.is_finite() else u.position
-				if not sim.brain._evaluate_spot(null, p, threat).protected:
+				if u.fort_slot != "":
+					# GAMEPLAY-01C: a fortification slot protects within its sector.
+					var e := pos.slot_by_key(u.fort_slot, sq.faction)
+					if e.is_empty() or (e.facing as Vector3).dot(_dir_to(p, threat)) < cos(deg_to_rad(float(e.arc) * 0.5)):
+						bad += 1
+				elif not sim.brain._evaluate_spot(null, p, threat).protected:
 					bad += 1
 			if bad * 2 >= units.size():
 				return "the threat moved to a bearing %.0f degrees off and %d of %d posts no longer give cover" % [rad_to_deg(acos(clampf(dot, -1.0, 1.0))), bad, units.size()]
@@ -1240,8 +1462,9 @@ func _reposition(sq: SquadState, a: Dictionary, why: String, now: float) -> void
 		if u.post_pos.is_finite():
 			_remember_post(sq, u.post_pos)
 	var look: Vector3 = threat if threat.is_finite() else Vector3.INF
-	var posts := pos.find_posts(units.size(), centre, 24.0, centre + dir * 90.0, {"mode": "fire", "los": look, "reserved": _reserved(sq, centre), "avoid": _avoid_list(sq), "unit_id": units[0].id})
-	posts = pos.fill_open(posts, units.size(), centre, dir)
+	var gb: Dictionary = sim.state.construction.bases.get(sq.garrison_base, {})
+	var slot_r := minf(BaseSim.reach_of(gb), 170.0) if not gb.is_empty() else fort_radius_m
+	var posts := _defend_posts(sq, units, centre, dir, look, slot_r, gb.get("anchor", Vector3.INF), 24.0)
 	sq.tactic = SquadState.Tactic.REPOSITION
 	sq.tactic_dir = dir
 	sq.tactic_phase = PH_SETUP
@@ -1836,14 +2059,23 @@ func _send_posts(sq: SquadState, units: Array, posts: Array, dir: Vector3) -> vo
 	for u: UnitState in units:
 		ups.append(u.position)
 	var idx := pos.assign(ups, posts, axis)
+	_mg_first(units, posts, idx)
 	for i in units.size():
 		var u: UnitState = units[i]
-		var p: Vector3 = posts[idx[i]].p
-		if _flat(u.position, p) > 1.2:
-			sim.state.issue_move(u.id, p, true)
+		var post: Dictionary = posts[idx[i]]
+		var p: Vector3 = post.p
+		var key := String(post.get("slot", ""))
+		if key != "" and u.fort_slot == key and u.fort_pos.is_finite():
+			u.post_pos = p
+			continue  # GAMEPLAY-01C: already standing in this slot
+		# GAMEPLAY-01C: a fortification slot is entered from its access point (a tower's stair foot, a position's rear).
+		var goal: Vector3 = post.get("access", p) if key != "" else p
+		if _flat(u.position, goal) > 1.2:
+			sim.state.issue_move(u.id, goal, true)
 		else:
 			sim.state.halt(u.id)
 		u.post_pos = p
+		u.fort_slot = key
 		if _flat(u.position, p) <= 1.2:
 			u.anchor_pos = p
 
@@ -1949,6 +2181,10 @@ func _on_unit_died(u: UnitState) -> void:
 	u.fire_at = Vector3.INF
 	u.fire_until = -1.0
 	u.post_pos = Vector3.INF
+	# GAMEPLAY-01C: the slot is free at once (the body stays where it fell).
+	u.fort_slot = ""
+	u.fort_pos = Vector3.INF
+	u.fort_exit = Vector3.INF
 	for sq: SquadState in sim.state.squads.values():
 		if sq.fallen.has(u.id):
 			validate(sq)
@@ -1969,6 +2205,7 @@ func _on_restored() -> void:
 	_site_workers.clear()
 	_next_build.clear()
 	_site_block.clear()
+	_next_garrison.clear()
 	for sq: SquadState in sim.state.squads.values():
 		validate(sq)
 		if sq.tactic != SquadState.Tactic.NONE and sq.order != SquadState.Order.TACTIC:

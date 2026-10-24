@@ -55,6 +55,11 @@ func is_site() -> bool:
 	return not site.is_empty()
 
 
+## GAMEPLAY-01C: the structure does its job (a finished structure; GAMEPLAY-01F adds its condition).
+func is_operational() -> bool:
+	return site.is_empty()
+
+
 ## 0..1 (1 for a finished structure).
 func site_progress() -> float:
 	if site.is_empty():

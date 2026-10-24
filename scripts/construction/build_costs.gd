@@ -14,6 +14,7 @@ const COST := {
 	&"training_facility": 300.0, &"vehicle_parking_pad": 120.0, &"guard_tower_steel": 150.0, &"guard_tower": 120.0,
 	&"sandbag_fighting_position": 45.0, &"dfp_sandbag_ring": 60.0, &"mg_nest": 80.0, &"bunker_fighting": 220.0,
 	&"medical_station": 200.0, &"comms_station": 180.0, &"checkpoint_station": 120.0,
+	&"fighting_position": 50.0, &"mg_emplacement": 90.0,
 }
 const WORK := {
 	&"command_post": 480.0, &"hq_building": 960.0, &"barracks_block": 640.0, &"barracks": 320.0,
@@ -22,6 +23,7 @@ const WORK := {
 	&"training_facility": 400.0, &"vehicle_parking_pad": 200.0, &"guard_tower_steel": 280.0, &"guard_tower": 240.0,
 	&"sandbag_fighting_position": 96.0, &"dfp_sandbag_ring": 120.0, &"mg_nest": 140.0, &"bunker_fighting": 360.0,
 	&"medical_station": 320.0, &"comms_station": 280.0, &"checkpoint_station": 200.0,
+	&"fighting_position": 110.0, &"mg_emplacement": 170.0,
 }
 ## Lines: per module.
 const MODULE_COST := {&"hesco": 12.0, &"hesco_tall": 18.0, &"sandbag_wall_2m": 6.0, &"sandbag_wall_low_2m": 4.0, &"t_wall": 20.0}

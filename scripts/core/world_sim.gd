@@ -264,6 +264,13 @@ func _on_restored() -> void:
 
 
 func _abstract_step(u: UnitState, delta: float) -> void:
+	# GAMEPLAY-01C: a soldier in a fortification slot stands exactly there (a tower platform: above the terrain).
+	if u.fort_pos.is_finite():
+		u.position = u.fort_pos
+		u.velocity = Vector3.ZERO
+		if not is_nan(u.watch_yaw) and not u.player_controlled:
+			u.yaw = lerp_angle(u.yaw, u.watch_yaw, clampf(8.0 * delta, 0.0, 1.0))
+		return
 	# COMBAT-02: a tactical reaction pauses the order (see SoldierBody._ai_step).
 	var reacting := u.is_reacting()
 	if (reacting and u.react_state != UnitState.ReactState.MOVING) or (not reacting and u.order != UnitState.Order.MOVE):

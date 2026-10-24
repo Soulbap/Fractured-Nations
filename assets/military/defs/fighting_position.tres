@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"fighting_position"
+display_name = "Fighting position"
+category = "Defences"
+description = "Two-man sandbag fighting position: 1.08 m parapet in front and on the sides (riflemen fire standing), dug floor, timber revetment, open rear. 4.3 x 2.9 m."
+mesh_path = "res://assets/military/modules/fighting_position.glb"
+size = Vector3(4.374, 1.085, 2.429)
+max_slope_deg = 12
+max_ground_gap = 0.35
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-2.17, 0, -1.42, 4.34, 1.08, 0.34), AABB(-2.17, 0, -1.08, 0.34, 1.08, 2.08), AABB(1.83, 0, -1.08, 0.34, 1.08, 2.08)])
+ramps = Array[AABB]([])

@@ -106,7 +106,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			if event.pressed:
 				var t := armed_tactic
 				armed_tactic = -1
-				order_tactic(t, tactic_target_at(event.position))
+				if t == GARRISON:
+					order_garrison_at(ground_point(event.position))
+				else:
+					order_tactic(t, tactic_target_at(event.position))
 			return
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
@@ -158,6 +161,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		tactic_hotkey(SquadState.Tactic.DEFEND)
 	elif event.is_action_pressed("squad_withdraw"):
 		tactic_hotkey(SquadState.Tactic.WITHDRAW)
+	elif event.is_action_pressed("squad_garrison"):
+		order_garrison_at(ground_point(get_viewport().get_mouse_position()))
 	elif event.is_action_pressed("halt"):
 		order_hold()
 	elif event.is_action_pressed("squad_follow"):
@@ -413,14 +418,51 @@ func tactic_hotkey(tactic: int) -> void:
 	order_tactic(tactic, tactic_target_at(get_viewport().get_mouse_position()))
 
 
+## GAMEPLAY-01C: armed_tactic value of the GARRISON_BASE order (not a squad tactic: it is held by DEFEND at the base).
+const GARRISON := 100
+
+
+## O / the panel's Garrison button: the selected squads garrison the friendly base at the point (its area, or the nearest
+## of the player's bases within 400 m). The order stays until another order is given.
+func order_garrison_at(at: Vector3) -> Dictionary:
+	var sqs := selected_squads()
+	if sqs.is_empty():
+		_say("Garrison: select a squad first")
+		return {"ok": false, "n": 0, "text": "no squad selected"}
+	var bs := sim.logistics.bases
+	var bid := -1
+	if at.is_finite():
+		bid = bs.base_area_at(at, player_faction)
+		if bid < 0:
+			bid = bs.base_of_position(at, player_faction, 400.0)
+	if bid < 0:
+		var msg := "Garrison: point at one of your bases"
+		tactic_feedback = msg
+		tactic_feedback_ok = false
+		_say(msg)
+		return {"ok": false, "n": 0, "text": msg}
+	return order_garrison(bid)
+
+
+func order_garrison(base_id: int) -> Dictionary:
+	var sqs := selected_squads()
+	_player_takes(sqs)
+	var res := sim.tactics.order_garrison(sqs, base_id)
+	tactic_feedback = res.text
+	tactic_feedback_ok = res.ok
+	_say(res.text)
+	tactical_order.emit(res)
+	return res
+
+
 ## Panel button: wait for the click that gives the target (Esc / right click cancels).
 func arm_tactic(tactic: int) -> void:
 	if selected_squads().is_empty():
-		_say("%s: select a squad first" % SquadState.TACTIC_NAMES[tactic])
+		_say("%s: select a squad first" % ("Garrison" if tactic == GARRISON else SquadState.TACTIC_NAMES[tactic]))
 		return
 	follow_pick = false
 	armed_tactic = tactic
-	_say("%s: click the target (Esc cancels)" % SquadState.TACTIC_NAMES[tactic].to_upper())
+	_say("%s: click the target (Esc cancels)" % ("GARRISON: click one of your bases" if tactic == GARRISON else SquadState.TACTIC_NAMES[tactic].to_upper()))
 
 
 ## A tactical order for the selected squads: {ok, n, results, text}. The result text says what was
@@ -648,7 +690,7 @@ func current_message() -> String:
 static func _ensure_squad_actions() -> void:
 	var binds := {"vehicle_board": KEY_T, "vehicle_unload": KEY_U, "squad_follow": KEY_F, "squad_regroup": KEY_G, "squad_formation": KEY_V,
 		"squad_spacing_down": KEY_BRACKETLEFT, "squad_spacing_up": KEY_BRACKETRIGHT, "squad_roe": KEY_Y,
-		"squad_assault": KEY_Z, "squad_suppress": KEY_K, "squad_flank": KEY_L, "squad_defend": KEY_J, "squad_withdraw": KEY_BACKSPACE}
+		"squad_assault": KEY_Z, "squad_suppress": KEY_K, "squad_flank": KEY_L, "squad_defend": KEY_J, "squad_withdraw": KEY_BACKSPACE, "squad_garrison": KEY_O}
 	for action in binds:
 		if InputMap.has_action(action):
 			continue

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StructureDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/construction/structure_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"mg_emplacement"
+display_name = "MG emplacement"
+category = "Defences"
+description = "Machine-gun emplacement: 1.2 m sandbag parapet front and sides, timber frame with a sandbagged roof at 2.2 m (1 m open firing band forward), gun sill, open rear. 4.1 x 3.4 m."
+mesh_path = "res://assets/military/modules/mg_emplacement.glb"
+size = Vector3(4.18, 2.52, 2.962)
+max_slope_deg = 10
+max_ground_gap = 0.3
+sink = 0.05
+blocks_navigation = true
+collision_boxes = Array[AABB]([AABB(-1.92, 0, -1.67, 3.84, 1.2, 0.34), AABB(-2.07, 0, -1.33, 0.34, 1.2, 2.53), AABB(1.73, 0, -1.33, 0.34, 1.2, 2.53), AABB(-1.975, 2.22, -1.475, 3.95, 0.33, 2.75), AABB(-1.69, 1.2, -1.29, 0.14, 1, 0.14), AABB(1.55, 1.2, -1.29, 0.14, 1, 0.14)])
+ramps = Array[AABB]([])

@@ -68,6 +68,8 @@ var _stuck_stage := 0
 var _stuck_at := Vector3.INF
 var _unstick_left := 0.0
 ## Diagnostics (AI-WAR-LOGISTICS-01 movement parity): what the last AI step wanted.
+## GAMEPLAY-01C: the body was standing in a fortification slot last tick.
+var _in_fort := false
 var dbg_desired := 0.0
 var dbg_next_dist := -1.0
 
@@ -141,13 +143,33 @@ func _physics_process(delta: float) -> void:
 		if nav.avoidance_enabled:
 			nav.velocity = Vector3(velocity.x, 0.0, velocity.z)
 		_player_weapon(delta)
+	elif unit.fort_pos.is_finite():
+		_hold_fort(delta)
 	else:
+		if _in_fort:
+			# GAMEPLAY-01C: the record left its slot (WorldState.leave_fort put it on the exit point): the body follows.
+			_in_fort = false
+			teleport(unit.position, rotation.y)
+			reset_order_tracking()
 		_ai_step(delta)
 	_sync_state()
 	if character:
 		# Soldiers holding cover crouch behind it (COMBAT-02 tactic -> CHARACTER-01 pose).
 		# GAMEPLAY-01B: soldiers at work on a construction site kneel at it (the work pose).
 		character.crouched = not player_controlled and (unit.tactic == UnitState.Tactic.IN_COVER or unit.work_until > sim.state.time)
+
+
+## GAMEPLAY-01C: in a fortification slot the body stands exactly where the record says (on a tower platform too), without
+## navigation or gravity, and turns to what its AI watches.
+func _hold_fort(delta: float) -> void:
+	_in_fort = true
+	global_position = unit.fort_pos
+	velocity = Vector3.ZERO
+	_applied_target = Vector3.INF
+	if not is_nan(unit.watch_yaw):
+		rotation.y = lerp_angle(rotation.y, unit.watch_yaw, clampf(turn_speed * delta, 0.0, 1.0))
+	if nav.avoidance_enabled:
+		nav.velocity = Vector3.ZERO
 
 
 func _ai_step(delta: float) -> void:
@@ -357,6 +379,12 @@ func _on_possession_changed(controlled: bool) -> void:
 		_set_viewmodel(controlled)
 	if unit:
 		unit.player_controlled = controlled
+		if controlled and unit.fort_pos.is_finite():
+			# GAMEPLAY-01C: the player takes over where the soldier stands (in the slot); the slot is his to leave.
+			unit.fort_pos = Vector3.INF
+			unit.fort_exit = Vector3.INF
+			unit.fort_slot = ""
+			_in_fort = false
 
 
 # --- First-person weapon (COMBAT-01a) ------------------------------------------------

@@ -303,3 +303,127 @@ func _near_any(p: Vector3, list: Array, r: float) -> bool:
 
 static func _flat(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x - b.x, a.z - b.z).length()
+
+
+# --- Fortification slots (GAMEPLAY-01C) ---------------------------------------------------
+
+var slot_searches := 0
+var slot_usec := 0
+var slot_usec_max := 0
+
+
+## Free fortification slots (DefenceDefs) of faction's operational structures within radius of center, best first: each
+## {p, kind "slot", protected, can_fire, los, slot, access, facing, elevated, role, score}. A slot is taken when a living
+## soldier of the faction holds it in his record (UnitState.fort_slot), except soldiers in `mine` (unit id -> true: the
+## squad that is planning may keep its own slots). With a threat direction, slots whose sector does not face it are left
+## out; without one, slots are spread round center. `base_anchor` decides which side of a wall is "behind" it; dist_w how much
+## nearer slots are preferred (score per metre: a defence of a spot wants the nearest, a garrison the whole base).
+func fort_slots(center: Vector3, radius: float, faction: int, threat: Vector3, mine := {}, base_anchor := Vector3.INF, dist_w := 0.01) -> Array:
+	var t0 := Time.get_ticks_usec()
+	slot_searches += 1
+	var taken := {}
+	sim.brain._ensure_grid()
+	for u: UnitState in sim.brain._near(center, radius + 12.0):
+		if u.faction == faction and u.fort_slot != "" and not mine.has(u.id):
+			taken[u.fort_slot] = true
+	var tdir := Vector3.ZERO
+	if threat.is_finite():
+		tdir = Vector3(threat.x - center.x, 0.0, threat.z - center.z)
+		tdir = tdir.normalized() if tdir.length() > 1.0 else Vector3.ZERO
+	var out: Array = []
+	for s: StructureState in sim.state.construction.structures.values():
+		if s.faction != faction or not DefenceDefs.has(s.type_id) or not s.is_operational() or s.instances.is_empty():
+			continue
+		var c := s.site_center()
+		if _flat(c, center) > radius + (60.0 if s.is_line() else 8.0):
+			continue
+		for e: Dictionary in slots_of_structure(s, base_anchor):
+			if taken.has(e.slot) or _flat(e.p, center) > radius:
+				continue
+			var score := -dist_w * _flat(e.p, center)
+			if tdir != Vector3.ZERO:
+				var dot: float = (e.facing as Vector3).dot(tdir)
+				if dot < cos(deg_to_rad(minf(float(e.arc) * 0.5 + 25.0, 179.0))):
+					continue
+				score += 2.0 * dot
+			if bool(e.elevated):
+				score += 0.6
+			e["score"] = score
+			out.append(e)
+	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.score > b.score)
+	var dt := Time.get_ticks_usec() - t0
+	slot_usec += dt
+	slot_usec_max = maxi(slot_usec_max, dt)
+	return out
+
+
+## Every slot of one structure in world space (taken or not), as fort_slots returns them (without a score). Lines: behind
+## every n-th module, on the side towards base_anchor (both sides when there is none).
+func slots_of_structure(s: StructureState, base_anchor := Vector3.INF) -> Array:
+	var out: Array = []
+	if DefenceDefs.is_line(s.type_id):
+		var rule := DefenceDefs.line_rule(s.type_id)
+		var every := int(rule.every)
+		for i in s.instances.size():
+			if s.is_removed(i) or i % every != every / 2:
+				continue
+			var xf: Transform3D = s.instances[i]
+			for side in 2:
+				var sgn := 1.0 if side == 0 else -1.0
+				var p: Vector3 = xf * Vector3(0.0, 0.0, sgn * float(rule.back))
+				var facing := (xf.origin - p)
+				facing.y = 0.0
+				facing = facing.normalized()
+				if base_anchor.is_finite():
+					var other: Vector3 = xf * Vector3(0.0, 0.0, -sgn * float(rule.back))
+					if _flat(p, base_anchor) > _flat(other, base_anchor):
+						continue
+				var g := ground(p)
+				if not _slot_ground(g):
+					continue
+				out.append({"p": g, "kind": "slot", "protected": true, "can_fire": true, "los": true, "slot": "%d:%d:%d" % [s.id, i, side],
+					"access": g, "facing": facing, "arc": float(rule.arc), "elevated": false, "role": "", "structure": s.id})
+		return out
+	var xf0: Transform3D = s.instances[0]
+	var slots := DefenceDefs.slots_of(s.type_id)
+	for k in slots.size():
+		var d: Dictionary = slots[k]
+		var lp: Vector3 = d.p
+		var elevated := lp.y > 0.5
+		var p: Vector3 = xf0 * lp
+		if not elevated:
+			p = ground(p)
+		var acc: Vector3 = xf0 * (d.get("access", lp) as Vector3)
+		acc = ground(acc)
+		if not valid_ground(acc):
+			acc = nearest_valid(acc, 6.0)
+			if not acc.is_finite():
+				continue
+		var facing := xf0.basis * DefenceDefs.yaw_dir(float(d.yaw))
+		facing.y = 0.0
+		out.append({"p": p, "kind": "slot", "protected": true, "can_fire": true, "los": true, "slot": "%d:%d" % [s.id, k], "access": acc,
+			"facing": facing.normalized(), "arc": float(d.get("arc", 120.0)), "elevated": elevated, "role": String(d.get("role", "")), "structure": s.id})
+	return out
+
+
+## The world slot a key names, or {} when it no longer exists or cannot be used by `faction` (structure gone, not
+## operational, captured, module removed).
+func slot_by_key(key: String, faction: int) -> Dictionary:
+	var parts := key.split(":")
+	if parts.size() < 2:
+		return {}
+	var s := sim.state.construction.get_structure(int(parts[0]))
+	if s == null or s.faction != faction or not s.is_operational() or s.instances.is_empty():
+		return {}
+	for e: Dictionary in slots_of_structure(s):
+		if e.slot == key:
+			return e
+	return {}
+
+
+## A slot behind a wall: dry, not inside a footprint (a soldier's own radius only: slots stand close to their wall).
+func _slot_ground(p: Vector3) -> bool:
+	var st := sim.structures
+	if st != null and (st._wet(p.x, p.z, p.y - 0.25) or st.blocks_point(Vector2(p.x, p.z), 0.3)):
+		return false
+	return true

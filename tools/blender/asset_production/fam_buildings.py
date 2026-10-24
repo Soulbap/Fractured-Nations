@@ -438,7 +438,7 @@ def guard_tower_steel(A):
     """Prefabricated steel guard tower: armoured 2.6 x 2.6 m cabin with slit windows on
     a 4.5 m braced frame, external stair with landing, searchlight, sandbagged base."""
     a = A.Asset("guard_tower_steel", "building", "Guard Tower", "Defences",
-                "Steel watchtower: 2.6 x 2.6 m armoured cabin, floor at 4.5 m, 360 deg observation slits, "
+                "Steel watchtower: 2.6 x 2.6 m armoured cabin, floor at 4.5 m, 360 deg open firing band above a breastwork, "
                 "searchlight, external stair, sandbag ring at the base.")
     c, fl = 2.6, 4.5
     for sx in (-1, 1):
@@ -452,13 +452,20 @@ def guard_tower_steel(A):
         a.box((2.4, 0.08, 0.08), (0, 1.1, z1), "Paint_OD", L01)
         a.box((2.4, 0.08, 0.08), (0, -1.1, z1), "Paint_OD", L01)
     a.box((c + 0.4, c + 0.4, 0.15), (0, 0, fl), "Steel_Dark", ALL)
-    a.box_between((-c / 2, -c / 2, fl + 0.07), (c / 2, c / 2, fl + 1.05), "Paint_OD")
-    a.box_between((-c / 2, -c / 2, fl + 1.55), (c / 2, c / 2, fl + 2.35), "Paint_OD")
+    # GAMEPLAY-01C: armoured breastwork to 1.05 m, an open firing band to 1.85 m (a standing sentry's eye is at 1.6 m),
+    # the upper wall and roof above; corner posts and mullions frame the band.
+    tw = 0.08
     for k in range(4):
-        F = Frame(Frame((0, 0, 0), 90 * k).p(0, c / 2, fl), 90 * k)
-        F.box(a, (c - 0.3, 0.04, 0.5), 0, -0.02, 1.30, "Glass", ALL)
-        for x in (-0.65, 0.0, 0.65):
-            F.box(a, (0.10, 0.12, 0.5), x, 0.0, 1.30, "Paint_OD", L01)
+        F = Frame(Frame((0, 0, 0), 90 * k).p(0, c / 2 - tw / 2, fl), 90 * k)
+        F.box(a, (c - tw, tw, 0.98), -tw / 2, 0.0, 0.56, "Paint_OD", ALL)     # pinwheel: the walls meet without overlap
+        F.box(a, (c - tw, tw, 0.50), -tw / 2, 0.0, 2.10, "Paint_OD", ALL)
+        F.box(a, (c + 0.06, 0.16, 0.06), 0, 0.03, 1.07, "Steel_Dark", L01)   # firing sill
+        for x in (-0.65, 0.65):
+            F.box(a, (0.10, 0.12, 0.8), x, 0.0, 1.45, "Paint_OD", L01)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            a.box((0.12, 0.12, 0.8), (sx * (c / 2 - 0.06), sy * (c / 2 - 0.06), fl + 1.45), "Paint_OD", ALL)
+    a.box_between((-c / 2, -c / 2, fl + 0.02), (c / 2, c / 2, fl + 0.08), "Steel_Dark", L01)
     a.box_between((-c / 2 - 0.35, -c / 2 - 0.35, fl + 2.35), (c / 2 + 0.35, c / 2 + 0.35, fl + 2.50), "Paint_OD")
     a.cyl(0.18, 0.15, 0.25, (0.9, 0.9, fl + 2.7), "Paint_Black", L01, axis=(0, 1, 0.3), segs=12)
     a.cyl(0.16, 0.16, 0.01, (0.9, 1.03, fl + 2.74), "Lamp", L0, axis=(0, 1, 0.3), segs=12)
@@ -483,9 +490,17 @@ def guard_tower_steel(A):
                   rot=A.rot_z(math.degrees(ang) + 90 + rnd.uniform(-4, 4)), bevel=0.03, segs=1)
     a.cyl(2.3, 2.3, 0.5, (0, 0, 0.25), "Sandbag", (1, 2), segs=10, cap=True)
     a.col_between((-1.2, -1.2, -0.3), (1.2, 1.2, fl))
-    a.col_between((-c / 2 - 0.2, -c / 2 - 0.2, fl), (c / 2 + 0.2, c / 2 + 0.2, fl + 2.5))
+    # GAMEPLAY-01C: floor, four breastwork walls (to fl + 1.05), roof and upper wall (from fl + 1.85).
+    a.col_between((-c / 2 - 0.2, -c / 2 - 0.2, fl - 0.08), (c / 2 + 0.2, c / 2 + 0.2, fl + 0.07))
+    a.col_between((-c / 2, c / 2 - tw, fl + 0.07), (c / 2, c / 2, fl + 1.05))
+    a.col_between((-c / 2, -c / 2, fl + 0.07), (c / 2, -c / 2 + tw, fl + 1.05))
+    a.col_between((-c / 2, -c / 2 + tw, fl + 0.07), (-c / 2 + tw, c / 2 - tw, fl + 1.05))
+    a.col_between((c / 2 - tw, -c / 2 + tw, fl + 0.07), (c / 2, c / 2 - tw, fl + 1.05))
+    a.col_between((-c / 2 - 0.2, -c / 2 - 0.2, fl + 1.85), (c / 2 + 0.2, c / 2 + 0.2, fl + 2.5))
     a.marker("IP_Stair", (-c / 2 - 0.55, 2.4, 0), 180, "foot of the stair")
     a.marker("IP_Observer", (0, 0.4, fl + 0.07), 0, "sentry position in the cabin")
+    a.marker("DEF_Sentry_1", (-0.55, 0.55, fl + 0.07), 45.8, "slot 0 (DefenceDefs guard_tower_steel), faces front-left")
+    a.marker("DEF_Sentry_2", (0.55, -0.55, fl + 0.07), -134.6, "slot 1, faces back-right")
     a.marker("ATT_Searchlight", (0.9, 0.9, fl + 2.7), 0)
     a.foundation = 0.3
     a.ao_height, a.ao_strength = 0.6, 0.30

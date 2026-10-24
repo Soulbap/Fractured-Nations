@@ -142,6 +142,8 @@ func issue_move(id: int, target: Vector3, cancel_reaction := true) -> bool:
 	var u := get_unit(id)
 	if u == null or u.kind != UnitState.Kind.SOLDIER or not u.alive:
 		return false
+	# GAMEPLAY-01C: a soldier in a fortification slot steps out of it first (the tactics set a new slot after this call).
+	leave_fort(u)
 	u.order = UnitState.Order.MOVE
 	u.order_target = target
 	u.move_state = UnitState.MoveState.MOVING
@@ -306,9 +308,23 @@ func halt(id: int) -> void:
 	u.move_state = UnitState.MoveState.IDLE
 	# COMBAT-02: stopping is a command too; the soldier holds where it stands.
 	_cancel_reaction(u)
+	leave_fort(u)
 	u.post_pos = Vector3.INF
 	u.anchor_pos = u.position
 	order_changed.emit(u)
+
+
+## GAMEPLAY-01C: the soldier gives up his fortification slot; standing in it, he steps out to its exit point on the ground
+## (a body follows the record: SoldierBody teleports when the record leaves the slot).
+func leave_fort(u: UnitState) -> void:
+	if u.fort_pos.is_finite():
+		if u.fort_exit.is_finite():
+			u.position = u.fort_exit
+		u.velocity = Vector3.ZERO
+		u.anchor_pos = u.position
+	u.fort_pos = Vector3.INF
+	u.fort_exit = Vector3.INF
+	u.fort_slot = ""
 
 
 static func faction_name(faction: int) -> String:

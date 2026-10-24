@@ -18,6 +18,7 @@ Options:
                      recorded report (benchmarks/asset01/qa_baseline.json = the known backlog)
     --qa-sheets DIR  also render a random-colour review sheet per asset into DIR
     --qa-report P    where the run's QA summary is written
+    --save-blend     keep the built scene of each asset as assets/military/blender/<id>.blend (editable source)
     --list           print the registered asset ids and exit
 """
 import importlib
@@ -54,7 +55,7 @@ def parse_args():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     o = {"family": None, "only": None, "textures": False, "export": False, "previews": None, "lods": False, "list": False,
          "qa": False, "qa-strict": False, "qa-sheets": None, "qa-report": os.path.join(REPO, "benchmarks", "asset01", "qa_report.json"),
-         "qa-baseline": None}
+         "qa-baseline": None, "save-blend": False}
     i = 0
     while i < len(argv):
         a = argv[i]
@@ -137,6 +138,9 @@ def main():
         asset = fn(A)
         asset.build(coll, TEX_DIR)
         entry = {"tris": [L.tri_count(x) if x else 0 for x in asset.objs]}
+        if o["save-blend"]:
+            os.makedirs(BLEND_DIR, exist_ok=True)
+            bpy.ops.wm.save_as_mainfile(filepath=os.path.join(BLEND_DIR, aid + ".blend"), copy=True, compress=True)
         qa = None
         if o["qa"]:
             qa = Q.check_asset(asset, o["qa-sheets"])

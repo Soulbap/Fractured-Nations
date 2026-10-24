@@ -3,7 +3,7 @@
  "family": "building",
  "display_name": "Guard Tower",
  "category": "Defences",
- "description": "Steel watchtower: 2.6 x 2.6 m armoured cabin, floor at 4.5 m, 360 deg observation slits, searchlight, external stair, sandbag ring at the base.",
+ "description": "Steel watchtower: 2.6 x 2.6 m armoured cabin, floor at 4.5 m, 360 deg open firing band above a breastwork, searchlight, external stair, sandbag ring at the base.",
  "bounds_min": [
   -2.474,
   -2.477,
@@ -27,9 +27,9 @@
  ],
  "foundation_depth": 0.3,
  "tris": [
-  2788,
-  824,
-  212
+  2872,
+  908,
+  284
  ],
  "surfaces": [
   4,
@@ -67,10 +67,50 @@
   ],
   [
    -1.5,
-   4.5,
+   4.42,
    -1.5,
    3.0,
-   2.5,
+   0.15,
+   3.0
+  ],
+  [
+   -1.3,
+   4.57,
+   -1.3,
+   2.6,
+   0.98,
+   0.08
+  ],
+  [
+   -1.3,
+   4.57,
+   1.22,
+   2.6,
+   0.98,
+   0.08
+  ],
+  [
+   -1.3,
+   4.57,
+   -1.22,
+   0.08,
+   0.98,
+   2.44
+  ],
+  [
+   1.22,
+   4.57,
+   -1.22,
+   0.08,
+   0.98,
+   2.44
+  ],
+  [
+   -1.5,
+   6.35,
+   -1.5,
+   3.0,
+   0.65,
    3.0
   ]
  ],
@@ -96,6 +136,26 @@
    "note": "sentry position in the cabin"
   },
   {
+   "name": "DEF_Sentry_1",
+   "pos": [
+    -0.55,
+    0.55,
+    4.57
+   ],
+   "yaw": 45.8,
+   "note": "slot 0 (DefenceDefs guard_tower_steel), faces front-left"
+  },
+  {
+   "name": "DEF_Sentry_2",
+   "pos": [
+    0.55,
+    -0.55,
+    4.57
+   ],
+   "yaw": -134.6,
+   "note": "slot 1, faces back-right"
+  },
+  {
    "name": "ATT_Searchlight",
    "pos": [
     0.9,
@@ -115,7 +175,7 @@
  "qa": {
   "pass": false,
   "errors": [
-   "z-fighting: guard_tower_steel_LOD0 (56 overlapping coplanar tri pairs)",
+   "z-fighting: guard_tower_steel_LOD0 (12 overlapping coplanar tri pairs)",
    "floating/detached part in guard_tower_steel_LOD0 (12 verts at [-2.3, 0.0, 3.25])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.3, 0.0, 0.07])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.861, 1.352, 0.07])",
@@ -123,6 +183,8 @@
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-0.711, 2.187, 0.07])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-1.861, 1.352, 0.07])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-2.3, 0.0, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-1.861, -1.352, 0.07])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-0.711, -2.187, 0.07])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.711, -2.187, 0.07])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.861, -1.352, 0.07])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.187, 0.711, 0.19])",
@@ -130,6 +192,8 @@
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.0, 2.3, 0.19])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-1.352, 1.861, 0.19])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-2.187, 0.711, 0.19])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-1.352, -1.861, 0.19])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.0, -2.3, 0.19])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.352, -1.861, 0.19])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.187, -0.711, 0.19])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.3, 0.0, 0.31])",
@@ -137,21 +201,26 @@
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.711, 2.187, 0.31])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-0.711, 2.187, 0.31])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-2.3, 0.0, 0.31])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-1.861, -1.352, 0.31])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-0.711, -2.187, 0.31])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.711, -2.187, 0.31])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.861, -1.352, 0.31])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.187, 0.711, 0.43])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.352, 1.861, 0.43])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.0, 2.3, 0.43])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-2.187, 0.711, 0.43])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [-1.352, -1.861, 0.43])",
+   "floating/detached part in guard_tower_steel_LOD0 (24 verts at [0.0, -2.3, 0.43])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [1.352, -1.861, 0.43])",
    "floating/detached part in guard_tower_steel_LOD0 (24 verts at [2.187, -0.711, 0.43])"
   ],
   "warnings": [
+   "guard_tower_steel_LOD0: duplicate verts=24 loose verts=0",
    "guard_tower_steel_LOD0: 32 n-gons",
-   "10 parts fully enclosed, not touching (eyes/internals?): ['guard_tower_steel_LOD0', 'guard_tower_steel_LOD0', 'guard_tower_steel_LOD0', 'guard_tower_steel_LOD0', 'guard_tower_steel_LOD0']"
+   "2 parts fully enclosed, not touching (eyes/internals?): ['guard_tower_steel_LOD0', 'guard_tower_steel_LOD0']"
   ],
   "accepted": [
-   "hidden back-to-back faces: guard_tower_steel_LOD0 (87 pairs) - delete to save tris"
+   "hidden back-to-back faces: guard_tower_steel_LOD0 (131 pairs) - delete to save tris"
   ],
   "eps": 0.002,
   "tol": 0.03,

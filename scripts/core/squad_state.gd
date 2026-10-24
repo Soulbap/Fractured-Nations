@@ -80,6 +80,10 @@ var route_wait_kind := ""
 var route_wait_form := 0
 var route_job := -1
 var station_objective := -1
+## GAMEPLAY-01C GARRISON_BASE: the friendly base (ConstructionState.bases id) the squad is assigned to hold (-1: none). The
+## squad marches there, mans its fortifications (DEFEND, SquadTactics) and stays until it is given another order or the
+## base is lost; saved, so the assignment survives a load.
+var garrison_base := -1
 
 # --- Fire teams and tactics (AI-SQUAD-01). Persisted with the squad. ---
 ## Fire teams: member ids per team (one team for small squads, two otherwise), the team
@@ -192,7 +196,7 @@ func to_dict() -> Dictionary:
 		"follow_unit": follow_unit_id, "follow_squad": follow_squad_id,
 		"formation": formation, "spacing": spacing, "detached": Array(detached),
 		"status": status, "blocked": Array(blocked), "fallen": Array(fallen), "roe": roe,
-		"op": op_id, "route": Array(route), "route_i": route_i, "route_wait": [route_wait_goal, route_wait_kind, route_wait_form], "station": station_objective,
+		"op": op_id, "route": Array(route), "route_i": route_i, "route_wait": [route_wait_goal, route_wait_kind, route_wait_form], "station": station_objective, "garrison_base": garrison_base,
 		"teams": teams.map(func(t: PackedInt32Array) -> Array: return Array(t)), "team_leaders": Array(team_leaders), "team_roles": Array(team_roles),
 		"tactic": tactic, "tactic_owner": tactic_owner, "tactic_phase": tactic_phase, "tactic_since": tactic_since,
 		"tactic_phase_since": tactic_phase_since, "tactic_target": tactic_target, "tactic_contact": tactic_contact, "tactic_site": tactic_site,
@@ -230,6 +234,7 @@ static func from_dict(d: Dictionary) -> SquadState:
 	s.route_wait_kind = rw[1]
 	s.route_wait_form = rw[2]
 	s.station_objective = d.get("station", -1)
+	s.garrison_base = d.get("garrison_base", -1)
 	for t in d.get("teams", []):
 		s.teams.append(PackedInt32Array(t))
 	s.team_leaders = PackedInt32Array(d.get("team_leaders", []))

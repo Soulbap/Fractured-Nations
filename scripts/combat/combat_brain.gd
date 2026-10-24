@@ -804,6 +804,9 @@ func _warm_step() -> void:
 func order_mode(u: UnitState) -> String:
 	if u.player_controlled:
 		return "player"
+	# GAMEPLAY-01C: a soldier standing in a fortification slot fights from it: the structure is his cover.
+	if u.fort_pos.is_finite():
+		return "fort"
 	var sq := sim.state.squad_of(u.id)
 	if sq and not sq.is_detached(u.id):
 		# AI-SQUAD-01: inside a squad tactic a soldier either dashes to its assigned post
@@ -829,7 +832,7 @@ func _tactics(u: UnitState) -> void:
 		return
 	var now := sim.state.time
 	var mode := order_mode(u)
-	if mode == "player":
+	if mode == "player" or mode == "fort":
 		if u.tactic != UnitState.Tactic.NONE or u.is_reacting():
 			u.clear_reaction()
 		_searches.erase(u.id)

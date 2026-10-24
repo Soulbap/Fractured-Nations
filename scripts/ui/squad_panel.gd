@@ -123,6 +123,10 @@ static func squad_status(p_sim: WorldSim, sq: SquadState, brief := false) -> Dic
 		return {"icon": &"under_fire", "text": "UNDER FIRE", "color": FNUI.ALERT, "engaged": true}
 	if sq.status == SquadState.Status.PARTIAL:
 		return {"icon": &"blocked", "text": "BLOCKED", "color": FNUI.ALERT, "engaged": false}
+	if sq.garrison_base >= 0 and (sq.tactic == SquadState.Tactic.DEFEND or sq.tactic == SquadState.Tactic.REPOSITION or sq.tactic == SquadState.Tactic.NONE):
+		# GAMEPLAY-01C: a squad assigned to hold a base.
+		var bname: String = p_sim.state.construction.bases.get(sq.garrison_base, {}).get("name", "base")
+		return {"icon": &"base", "text": ("GARRISON" if brief else "GARRISON · %s" % bname).to_upper(), "color": FNUI.INFO, "engaged": false}
 	if sq.tactic != SquadState.Tactic.NONE:
 		var what := sq.tactic_name() if brief else p_sim.tactics.short_text(sq)
 		return {"icon": TACTIC_ICONS.get(sq.tactic, &"tactic"), "text": what.to_upper(), "color": FNUI.INFO, "engaged": false}

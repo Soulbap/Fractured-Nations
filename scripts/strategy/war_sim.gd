@@ -144,6 +144,7 @@ func update(delta: float) -> void:
 		_t_reserves = 0.0
 		for f: FactionState in war.factions.values():
 			_update_reserves(f)
+			_update_garrisons(f)
 	econ.update(delta)
 	var now := sim.state.time
 	for f: FactionState in war.factions.values():
@@ -906,7 +907,42 @@ func _garrison(op: OperationState, obj: ObjectiveState) -> void:
 	for other: SquadState in squads_of(op.faction):
 		if other.station_objective == obj.id and other.op_id < 0 and not sqs.has(other) and other.tactic_owner != SquadState.Owner.PLAYER and other.order != SquadState.Order.MOVE:
 			sqs.append(other)
+	# GAMEPLAY-01C: at an objective with a base of the faction the garrison mans the base's fortifications (GARRISON_BASE).
+	var bid := base_at_objective(op.faction, obj)
+	if bid >= 0:
+		for sq: SquadState in sqs:
+			if sq.garrison_base != bid:
+				sim.tactics.assign_garrison(sq, bid, SquadState.Owner.SQUAD)
+		return
 	_defence_posture(obj, sqs, op.faction)
+
+
+## GAMEPLAY-01C: the faction's base that stands on objective obj (its anchor within the objective's radius + 60 m, the
+## rule by which bases change hands with their objective), or -1.
+func base_at_objective(f: int, obj: ObjectiveState) -> int:
+	if obj == null:
+		return -1
+	var best := -1
+	var best_d := INF
+	for b: Dictionary in sim.logistics.bases.bases_of(f):
+		var d := _flat(b.anchor, obj.position)
+		if d <= obj.radius + 60.0 and d < best_d:
+			best_d = d
+			best = b.id
+	return best
+
+
+## GAMEPLAY-01C: AI squads stationed at an objective that holds one of their bases and doing nothing else take up the
+## garrison of that base (every 5 s; the player's squads are garrisoned only by the player).
+func _update_garrisons(f: FactionState) -> void:
+	if f.player:
+		return
+	for sq: SquadState in squads_of(f.id):
+		if sq.station_objective < 0 or sq.garrison_base >= 0 or sq.op_id >= 0 or sq.tactic != SquadState.Tactic.NONE or sim.squads.marching(sq):
+			continue
+		var bid := base_at_objective(f.id, war.objective(sq.station_objective))
+		if bid >= 0:
+			sim.tactics.assign_garrison(sq, bid, SquadState.Owner.SQUAD)
 
 
 ## AI-COMBAT-STRAT-01: several squads at one objective do not stack in the centre. With a believed threat

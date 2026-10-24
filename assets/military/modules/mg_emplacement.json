@@ -1,0 +1,159 @@
+{
+ "id": "mg_emplacement",
+ "family": "module",
+ "display_name": "MG emplacement",
+ "category": "Defences",
+ "description": "Machine-gun emplacement: 1.2 m sandbag parapet front and sides, timber frame with a sandbagged roof at 2.2 m (1 m open firing band forward), gun sill, open rear. 4.1 x 3.4 m.",
+ "bounds_min": [
+  -2.093,
+  -1.275,
+  -0.02
+ ],
+ "bounds_max": [
+  2.087,
+  1.687,
+  2.52
+ ],
+ "size_above_ground": [
+  4.18,
+  2.962,
+  2.52
+ ],
+ "footprint_xy": [
+  -2.093,
+  -1.275,
+  2.087,
+  1.687
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  11576,
+  168,
+  72
+ ],
+ "surfaces": [
+  5,
+  4,
+  3
+ ],
+ "materials": [
+  "Dirt",
+  "Paint_OD",
+  "Plywood",
+  "Sandbag",
+  "Timber"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   45
+  ],
+  [
+   45,
+   170
+  ],
+  [
+   170,
+   900
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.92,
+   0.0,
+   -1.67,
+   3.84,
+   1.2,
+   0.34
+  ],
+  [
+   -2.07,
+   0.0,
+   -1.33,
+   0.34,
+   1.2,
+   2.53
+  ],
+  [
+   1.73,
+   0.0,
+   -1.33,
+   0.34,
+   1.2,
+   2.53
+  ],
+  [
+   -1.975,
+   2.22,
+   -1.475,
+   3.95,
+   0.33,
+   2.75
+  ],
+  [
+   -1.69,
+   1.2,
+   -1.29,
+   0.14,
+   1.0,
+   0.14
+  ],
+  [
+   1.55,
+   1.2,
+   -1.29,
+   0.14,
+   1.0,
+   0.14
+  ]
+ ],
+ "markers": [
+  {
+   "name": "DEF_Gunner",
+   "pos": [
+    0,
+    0.75,
+    0
+   ],
+   "yaw": 0,
+   "note": "MG gunner slot (DefenceDefs mg_emplacement 0, role mg), faces +Y"
+  },
+  {
+   "name": "DEF_Assistant",
+   "pos": [
+    -0.95,
+    0.45,
+    0
+   ],
+   "yaw": 20.0,
+   "note": "assistant / rifleman slot 1"
+  },
+  {
+   "name": "IP_Entrance",
+   "pos": [
+    0,
+    -2.6,
+    0
+   ],
+   "yaw": 0,
+   "note": "access point (rear)"
+  }
+ ],
+ "structure": {
+  "category": "Defences",
+  "max_slope_deg": 10.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.3
+ },
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [],
+  "accepted": [
+   "hidden back-to-back faces: mg_emplacement_LOD0 (4 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
+}

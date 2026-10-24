@@ -735,6 +735,40 @@
   "glb_bytes": 35400,
   "glb": "res://assets/military/props/field_toilet.glb"
  },
+ "fighting_position": {
+  "family": "module",
+  "display_name": "Fighting position",
+  "category": "Defences",
+  "size_above_ground": [
+   4.374,
+   2.429,
+   1.085
+  ],
+  "footprint_xy": [
+   -2.187,
+   -0.985,
+   2.187,
+   1.444
+  ],
+  "tris": [
+   6444,
+   96,
+   48
+  ],
+  "surfaces": [
+   4,
+   3,
+   2
+  ],
+  "materials": [
+   "Dirt",
+   "Paint_OD",
+   "Sandbag",
+   "Timber"
+  ],
+  "glb_bytes": 854928,
+  "glb": "res://assets/military/modules/fighting_position.glb"
+ },
  "fuel_bladder_berm": {
   "family": "module",
   "display_name": "Fuel bladder in bund",
@@ -1013,9 +1047,9 @@
    2.463
   ],
   "tris": [
-   2788,
-   824,
-   212
+   2872,
+   908,
+   284
   ],
   "surfaces": [
    4,
@@ -1028,7 +1062,7 @@
    "Paint_OD",
    "Sandbag"
   ],
-  "glb_bytes": 347100,
+  "glb_bytes": 373296,
   "glb": "res://assets/military/buildings/guard_tower_steel.glb"
  },
  "guardrail_4m": {
@@ -1693,6 +1727,41 @@
   ],
   "glb_bytes": 40772,
   "glb": "res://assets/military/props/mesh_fence_temporary.glb"
+ },
+ "mg_emplacement": {
+  "family": "module",
+  "display_name": "MG emplacement",
+  "category": "Defences",
+  "size_above_ground": [
+   4.18,
+   2.962,
+   2.52
+  ],
+  "footprint_xy": [
+   -2.093,
+   -1.275,
+   2.087,
+   1.687
+  ],
+  "tris": [
+   11576,
+   168,
+   72
+  ],
+  "surfaces": [
+   5,
+   4,
+   3
+  ],
+  "materials": [
+   "Dirt",
+   "Paint_OD",
+   "Plywood",
+   "Sandbag",
+   "Timber"
+  ],
+  "glb_bytes": 1529260,
+  "glb": "res://assets/military/modules/mg_emplacement.glb"
  },
  "mg_nest": {
   "family": "module",

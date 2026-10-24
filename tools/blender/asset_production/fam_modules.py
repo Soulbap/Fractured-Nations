@@ -696,6 +696,130 @@ def mg_nest(A):
     return a
 
 
+# =============================================================================== GAMEPLAY-01C fortifications
+# Positions soldiers fight from in the game (DefenceDefs slots): the simulation's eye is 1.6 m above the floor, so
+# parapets stay below ~1.25 m and a roof above ~2.1 m - a standing rifleman fires over the wall or through the band.
+# DEF_* markers are the slots (DefenceDefs in Godot uses the same numbers), IP_Entrance the access point.
+
+
+def _roof_bags(a, x0, x1, y0, y1, z, layers=2, seed=1):
+    """Sandbags laid flat on a roof between (x0, y0) and (x1, y1), LOD0 only (LOD1/2 get a slab)."""
+    rnd = random.Random(seed)
+    nx = max(1, int((x1 - x0) / 0.62))
+    ny = max(1, int((y1 - y0) / 0.36))
+    for k in range(layers):
+        for i in range(nx):
+            for j in range(ny):
+                off = 0.1 if (j + k) % 2 else -0.1    # rows offset against each other, every bag the same way
+                x = x0 + (i + 0.5) * (x1 - x0) / nx + off
+                y = y0 + (j + 0.5) * (y1 - y0) / ny
+                a.box((0.56, 0.33, 0.125), (x + rnd.uniform(-0.02, 0.02), y + rnd.uniform(-0.02, 0.02), z + 0.068 + k * 0.12), "Sandbag", L0,
+                      rot=A_rot(rnd.uniform(-1.5, 1.5)), bevel=0.035, segs=1)
+    a.box_between((x0, y0, z), (x1, y1, z + layers * 0.12), "Sandbag", L12)
+
+
+def _bag_wall(a, x0, x1, y, courses, seed=1, along="x", thick=0.34):
+    """GAMEPLAY-01C sandbag wall: pillow-shaped bags (bevelled boxes, slightly irregular) in running bond over a solid earth
+    core, so no light shows between the bags; one block on LOD1/2. Along X at y (or along Y at x = y)."""
+    rnd = random.Random(seed)
+    length = abs(x1 - x0)
+    lo_, hi_ = min(x0, x1), max(x0, x1)
+    h = 0.12
+    for k in range(courses):
+        off = 0.27 if k % 2 else 0.0
+        c = lo_ - off + 0.28
+        while c < hi_ + 0.01:
+            l0 = max(c - 0.28, lo_ + rnd.uniform(0.0, 0.025))     # ragged ends: no coplanar end faces
+            l1 = min(c + 0.28, hi_ - rnd.uniform(0.0, 0.025))
+            if l1 - l0 > 0.12:
+                cx = (l0 + l1) / 2 + rnd.uniform(-0.01, 0.01)
+                size = (l1 - l0 - 0.035, thick + rnd.uniform(-0.02, 0.01), h + 0.008)
+                z = 0.06 + k * h + rnd.uniform(-0.0015, 0.0015)
+                rz = rnd.uniform(-1.5, 1.5)
+                if along == "x":
+                    a.box(size, (cx, y + rnd.uniform(-0.015, 0.015), z), "Sandbag", L0, rot=A_rot(rz), bevel=0.035, segs=1)
+                else:
+                    a.box(size, (y + rnd.uniform(-0.015, 0.015), cx, z), "Sandbag", L0, rot=A_rot(rz + 90.0), bevel=0.035, segs=1)
+            c += 0.56
+    top = courses * h
+    if along == "x":
+        a.box_between((lo_ + 0.1, y - thick / 2 + 0.06, 0.0), (hi_ - 0.1, y + thick / 2 - 0.06, top - 0.03), "Dirt", L0)
+        a.box_between((lo_, y - thick / 2, 0), (hi_, y + thick / 2, top), "Sandbag", L12)
+    else:
+        a.box_between((y - thick / 2 + 0.06, lo_ + 0.1, 0.0), (y + thick / 2 - 0.06, hi_ - 0.1, top - 0.03), "Dirt", L0)
+        a.box_between((y - thick / 2, lo_, 0), (y + thick / 2, hi_, top), "Sandbag", L12)
+
+
+def A_rot(deg):
+    from mathutils import Matrix
+    return Matrix.Rotation(math.radians(deg), 3, "Z")
+
+
+def fighting_position(A):
+    """Two-man fighting position for riflemen who stand to fire: a sandbag parapet 1.08 m high in front and on both
+    sides, a dug floor, timber revetment posts, an ammunition box; open to the rear (the way in)."""
+    a = A.Asset("fighting_position", "module", "Fighting position", "Defences",
+                "Two-man sandbag fighting position: 1.08 m parapet in front and on the sides (riflemen fire standing), "
+                "dug floor, timber revetment, open rear. 4.3 x 2.9 m.")
+    H = 9                                                     # courses of 0.12 m
+    _bag_wall(a, -2.17, 2.17, 1.25, H, seed=21)                # front parapet
+    _bag_wall(a, -1.0, 1.08, -2.0, H, seed=22, along="y")      # left side
+    _bag_wall(a, -1.0, 1.08, 2.0, H, seed=23, along="y")       # right side
+    a.box((3.5, 2.05, 0.03), (0, 0.05, -0.005), "Dirt", ALL)   # trodden floor, just proud of the ground
+    for sx in (-1.72, 1.72):                                  # revetment posts in the front corners
+        a.box((0.1, 0.1, 1.06), (sx, 1.0, 0.53), "Timber", L01)
+    a.box((3.3, 0.05, 0.12), (0, 1.03, 0.98), "Timber", L01)   # top rail of the revetment
+    a.box((0.32, 0.17, 0.2), (1.35, 0.55, 0.112), "Paint_OD", L01)  # ammunition boxes on the floor
+    a.box((0.32, 0.17, 0.2), (1.35, 0.2, 0.112), "Paint_OD", L0)
+    a.col_box((4.34, 0.34, 1.08), (0, 1.25, 0.54))
+    a.col_box((0.34, 2.08, 1.08), (-2.0, 0.04, 0.54))
+    a.col_box((0.34, 2.08, 1.08), (2.0, 0.04, 0.54))
+    a.marker("DEF_Rifle_1", (-0.6, 0.35, 0), 8.6, "rifleman slot (DefenceDefs fighting_position 0), faces +Y")
+    a.marker("DEF_Rifle_2", (0.6, 0.35, 0), -8.6, "rifleman slot 1")
+    a.marker("IP_Entrance", (0, -2.3, 0), 0, "access point (rear)")
+    a.lod_ranges = [[0, 45], [45, 170], [170, 900]]
+    a.ao_height, a.ao_strength = 0.7, 0.32
+    a.structure = _st("Defences", 12.0, 0.35)
+    return a
+
+
+def mg_emplacement(A):
+    """Machine-gun emplacement for a gunner and an assistant: 1.2 m sandbag parapet in front and on the sides, a timber
+    frame carrying a sandbagged plywood roof at 2.2 m, so a 1 m firing band stays open over the forward arc; a timber
+    sill on the parapet for the gun, ammunition boxes; open rear."""
+    a = A.Asset("mg_emplacement", "module", "MG emplacement", "Defences",
+                "Machine-gun emplacement: 1.2 m sandbag parapet front and sides, timber frame with a sandbagged roof at "
+                "2.2 m (1 m open firing band forward), gun sill, open rear. 4.1 x 3.4 m.")
+    H = 10
+    _bag_wall(a, -2.07, 2.07, 1.5, H, seed=31)
+    _bag_wall(a, -1.2, 1.33, -1.9, H, seed=32, along="y")
+    _bag_wall(a, -1.2, 1.33, 1.9, H, seed=33, along="y")
+    a.box((1.3, 0.32, 0.07), (0, 1.47, 1.235), "Timber", L01)   # gun sill
+    for sx in (-1.62, 1.62):
+        for sy in (-1.05, 1.22):
+            a.box((0.14, 0.14, 2.2), (sx, sy, 1.1), "Timber", L01)
+    for sy in (-1.05, 1.22):
+        a.box((3.5, 0.16, 0.16), (0, sy, 2.14), "Timber", L01)
+    a.box((3.95, 2.75, 0.05), (0, 0.1, 2.245), "Plywood", ALL)
+    _roof_bags(a, -1.9, 1.9, -1.2, 1.4, 2.27, 2, seed=34)
+    a.box((3.2, 2.5, 0.03), (0, 0.12, -0.005), "Dirt", ALL)
+    for k, (x, y) in enumerate(((1.25, 0.6), (1.25, 0.25), (-1.3, 0.9))):
+        a.box((0.32, 0.17, 0.2), (x, y, 0.112), "Paint_OD", L0 if k else L01)
+    a.col_box((3.84, 0.34, 1.2), (0, 1.5, 0.6))
+    a.col_box((0.34, 2.53, 1.2), (-1.9, 0.065, 0.6))
+    a.col_box((0.34, 2.53, 1.2), (1.9, 0.065, 0.6))
+    a.col_box((3.95, 2.75, 0.33), (0, 0.1, 2.385))
+    for sx in (-1.62, 1.62):
+        a.col_box((0.14, 0.14, 1.0), (sx, 1.22, 1.7))
+    a.marker("DEF_Gunner", (0, 0.75, 0), 0, "MG gunner slot (DefenceDefs mg_emplacement 0, role mg), faces +Y")
+    a.marker("DEF_Assistant", (-0.95, 0.45, 0), 20.0, "assistant / rifleman slot 1")
+    a.marker("IP_Entrance", (0, -2.6, 0), 0, "access point (rear)")
+    a.lod_ranges = [[0, 45], [45, 170], [170, 900]]
+    a.ao_height, a.ao_strength = 0.8, 0.34
+    a.structure = _st("Defences", 10.0, 0.3)
+    return a
+
+
 BUILDERS = {
     "range_firing_point": range_firing_point,
     "range_target_line": range_target_line,
@@ -721,4 +845,6 @@ BUILDERS = {
     "checkpoint_station": checkpoint_station,
     "dfp_sandbag_ring": dfp_sandbag_ring,
     "mg_nest": mg_nest,
+    "fighting_position": fighting_position,
+    "mg_emplacement": mg_emplacement,
 }

@@ -139,9 +139,21 @@ var fire_until := -1.0
 ## The firing position a squad tactic assigned (INF = none); cover reactions stay within a
 ## few metres of it.
 var post_pos := Vector3.INF
+## GAMEPLAY-01C: the fortification slot the soldier was assigned ("<structure id>:<slot>", "" none; DefenceDefs) and, once
+## he has taken it, the position he holds there (INF: not in it yet) and the ground point he leaves it by. A soldier in a
+## slot is held exactly at fort_pos by both tiers (a tower platform included) and makes no cover moves; any move order
+## takes him out first (WorldState.issue_move). Saved, so who holds which slot survives a load.
+var fort_slot := ""
+var fort_pos := Vector3.INF
+var fort_exit := Vector3.INF
 ## GAMEPLAY-01B: the soldier counted as working at a construction site until this time (set every BUILD step; runtime,
 ## not saved - only the body's work pose reads it, the work itself is on the site record).
 var work_until := -1.0
+
+
+## GAMEPLAY-01C: holding a fortification slot (standing in it).
+func in_fort() -> bool:
+	return fort_pos.is_finite()
 
 
 func is_aboard() -> bool:
@@ -179,7 +191,7 @@ func to_dict() -> Dictionary:
 		"cover_checked_at": cover_checked_at, "threat_pos": threat_pos, "threat_at": threat_at,
 		"under_fire_until": under_fire_until, "anchor_pos": anchor_pos,
 		"suppression": suppression, "suppression_t": suppression_t, "hit_at": hit_at, "fire_at": fire_at,
-		"fire_until": fire_until, "post_pos": post_pos,
+		"fire_until": fire_until, "post_pos": post_pos, "fort_slot": fort_slot, "fort_pos": fort_pos, "fort_exit": fort_exit,
 	}
 
 
@@ -255,6 +267,9 @@ func copy_combat_from(d: Dictionary) -> void:
 	fire_at = d.get("fire_at", Vector3.INF)
 	fire_until = d.get("fire_until", -1.0)
 	post_pos = d.get("post_pos", Vector3.INF)
+	fort_slot = String(d.get("fort_slot", ""))
+	fort_pos = d.get("fort_pos", Vector3.INF)
+	fort_exit = d.get("fort_exit", Vector3.INF)
 
 
 func is_reloading() -> bool:

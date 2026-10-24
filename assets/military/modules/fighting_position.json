@@ -1,0 +1,134 @@
+{
+ "id": "fighting_position",
+ "family": "module",
+ "display_name": "Fighting position",
+ "category": "Defences",
+ "description": "Two-man sandbag fighting position: 1.08 m parapet in front and on the sides (riflemen fire standing), dug floor, timber revetment, open rear. 4.3 x 2.9 m.",
+ "bounds_min": [
+  -2.187,
+  -0.985,
+  -0.02
+ ],
+ "bounds_max": [
+  2.187,
+  1.444,
+  1.085
+ ],
+ "size_above_ground": [
+  4.374,
+  2.429,
+  1.085
+ ],
+ "footprint_xy": [
+  -2.187,
+  -0.985,
+  2.187,
+  1.444
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  6444,
+  96,
+  48
+ ],
+ "surfaces": [
+  4,
+  3,
+  2
+ ],
+ "materials": [
+  "Dirt",
+  "Paint_OD",
+  "Sandbag",
+  "Timber"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   45
+  ],
+  [
+   45,
+   170
+  ],
+  [
+   170,
+   900
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -2.17,
+   0.0,
+   -1.42,
+   4.34,
+   1.08,
+   0.34
+  ],
+  [
+   -2.17,
+   0.0,
+   -1.08,
+   0.34,
+   1.08,
+   2.08
+  ],
+  [
+   1.83,
+   0.0,
+   -1.08,
+   0.34,
+   1.08,
+   2.08
+  ]
+ ],
+ "markers": [
+  {
+   "name": "DEF_Rifle_1",
+   "pos": [
+    -0.6,
+    0.35,
+    0
+   ],
+   "yaw": 8.6,
+   "note": "rifleman slot (DefenceDefs fighting_position 0), faces +Y"
+  },
+  {
+   "name": "DEF_Rifle_2",
+   "pos": [
+    0.6,
+    0.35,
+    0
+   ],
+   "yaw": -8.6,
+   "note": "rifleman slot 1"
+  },
+  {
+   "name": "IP_Entrance",
+   "pos": [
+    0,
+    -2.3,
+    0
+   ],
+   "yaw": 0,
+   "note": "access point (rear)"
+  }
+ ],
+ "structure": {
+  "category": "Defences",
+  "max_slope_deg": 12.0,
+  "blocks_navigation": true,
+  "max_ground_gap": 0.35
+ },
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [],
+  "accepted": [
+   "hidden back-to-back faces: fighting_position_LOD0 (1 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
+}

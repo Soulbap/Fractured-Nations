@@ -440,5 +440,12 @@ func _build_facility_actions(s: StructureState) -> void:
 			_row([_button(&"ammo", "Resupply the selected squads", func() -> void:
 				var r := lg.order_resupply(squads, "s%d" % s.id)
 				_say("The squads go to resupply" if r.ok else r.reason))])
+	# GAMEPLAY-01C: the selected squads garrison this base (the same order as O in the tactical view).
+	var gsq := rts.selected_squads()
+	if s.base_id >= 0 and not gsq.is_empty() and s.faction == rts.player_faction:
+		var bid := s.base_id
+		_row([_button(&"base", "Garrison this base with the selected squads", func() -> void:
+			var r := rts.order_garrison(bid)
+			_say(r.text))])
 	if _actions.get_child_count() == 0:
 		_caption("No orders for this facility")

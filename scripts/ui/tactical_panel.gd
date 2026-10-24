@@ -46,6 +46,7 @@ const ENTRIES := [
 	["COMBAT", SquadState.Tactic.FLANK, &"flank", "Flank", "L", "Round the position by a covered route while the other team keeps it pinned"],
 	["DEFENCE", SquadState.Tactic.DEFEND, &"defend", "Defend", "J", "Move to the spot (or stay) and hold it from firing posts"],
 	["DEFENCE", SquadState.Tactic.WITHDRAW, &"withdraw", "Withdraw", "Bksp", "Break contact towards the spot (or a safe place), one team covering the other (Backspace)"],
+	["DEFENCE", RTSController.GARRISON, &"base", "Garrison", "O", "Garrison one of your bases: click it. The squad mans its towers, positions and walls and stays until given another order"],
 	["SQUAD", FORMATION, &"formation", "Line", "V", "V: line / column. Shift+V cycles line, column, wedge, staggered, dispersed and auto. [ ] change the spacing"],
 	["SQUAD", ROE, &"roe_free", "Fire free", "Y", "Rules of engagement: weapons free / hold fire (a soldier that is hit still defends himself)"],
 ]
@@ -247,7 +248,7 @@ func _refresh_summary(squads: Array[SquadState]) -> void:
 	_supp.critical = s >= 0.6
 	var form := "Auto" if first.formation_auto else first.formation_name()
 	_settings.text = "Formation %s  ·  %s  ·  spacing %.1f m%s" % [form, first.roe_name(), first.spacing,
-		"  ·  in operation" if first.op_id >= 0 else ""]
+		"  ·  in operation" if first.op_id >= 0 else ("  ·  garrison %s" % sim.state.construction.bases[first.garrison_base].name if sim.state.construction.bases.has(first.garrison_base) else "")]
 
 
 func _refresh_buttons(squads: Array[SquadState]) -> void:
@@ -267,7 +268,7 @@ func _refresh_buttons(squads: Array[SquadState]) -> void:
 		var is_tactic := TACTICS.has(key)
 		if is_tactic:
 			b.set_enabled(can_tactic)
-		b.armed = (is_tactic and key == rts.armed_tactic) or (key == FOLLOW and rts.follow_pick)
+		b.armed = (is_tactic and key == rts.armed_tactic) or (key == FOLLOW and rts.follow_pick) or (key == RTSController.GARRISON and rts.armed_tactic == key)
 		var now := false
 		for sq in squads:
 			match key:
@@ -279,6 +280,8 @@ func _refresh_buttons(squads: Array[SquadState]) -> void:
 					now = now or sq.order == SquadState.Order.REGROUP or sq.tactic == SquadState.Tactic.REGROUP
 				FORMATION, ROE:
 					pass
+				RTSController.GARRISON:
+					now = now or sq.garrison_base >= 0
 				_:
 					now = now or sq.tactic == key
 		b.current = now
@@ -299,7 +302,8 @@ func _refresh_feedback() -> void:
 		_fb_text = rts.tactic_feedback
 		_fb_until = now + 8.0
 	if rts.armed_tactic >= 0:
-		_feedback.set_status(&"tactic", "%s armed — click the target  ·  Esc or right click cancels" % SquadState.TACTIC_NAMES[rts.armed_tactic], FNUI.ARMED)
+		var tname := "Garrison" if rts.armed_tactic == RTSController.GARRISON else SquadState.TACTIC_NAMES[rts.armed_tactic]
+		_feedback.set_status(&"tactic", "%s armed — click the target  ·  Esc or right click cancels" % tname, FNUI.ARMED)
 	elif rts.follow_pick:
 		_feedback.set_status(&"follow", "Follow armed — click the soldier or squad to follow  ·  Esc cancels", FNUI.ARMED)
 	elif now < _fb_until and _fb_text != "":
