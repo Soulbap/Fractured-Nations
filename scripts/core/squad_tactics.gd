@@ -61,6 +61,13 @@ var reposition_cooldown_s := 25.0
 var reposition_limit := 3
 ## Fire missions are refreshed for this long each time (s).
 var mission_s := 3.0
+## GAMEPLAY-01B BUILD: an idle squad of the player takes up a construction site within build_auto_m on its own (checked
+## every build_check_s); a newly placed site calls the nearest idle squad within build_assign_m. A squad whose BUILD the
+## player cancelled with an order is left alone for build_respect_s.
+var build_auto_m := 150.0
+var build_assign_m := 900.0
+var build_check_s := 3.0
+var build_respect_s := 120.0
 
 # --- Measurements ---------------------------------------------------------------------------
 var steps := 0
@@ -96,6 +103,12 @@ var _seen_at := {}
 var _meta_store := {}
 ## True while the tactics call squad orders themselves (they must not cancel themselves).
 var _internal := false
+## GAMEPLAY-01B: simulated seconds of the current step, soldiers at work per site in this step, next auto-build check
+## per squad, sites nobody could reach (site id -> time) - runtime only.
+var _dt := 0.5
+var _site_workers := {}
+var _next_build := {}
+var _site_block := {}
 
 
 func _init(p_sim: WorldSim) -> void:
@@ -116,11 +129,19 @@ func update(delta: float) -> void:
 	_t += delta
 	if _t < tick_s:
 		return
+	_dt = _t
 	_t = 0.0
 	ticks += 1
 	var t0 := Time.get_ticks_usec()
+	var counted := _site_workers.keys()
+	_site_workers.clear()
 	for sq: SquadState in sim.state.squads.values():
 		_step(sq)
+	# Workers per site for the HUD (several squads may work on one site).
+	for sid in counted + _site_workers.keys():
+		var s := sim.state.construction.get_structure(sid)
+		if s and s.is_site():
+			s.site["workers"] = int(_site_workers.get(sid, 0))
 	var dt := Time.get_ticks_usec() - t0
 	step_usec += dt
 	step_usec_max = maxi(step_usec_max, dt)
@@ -148,6 +169,9 @@ func _step(sq: SquadState) -> void:
 	elif autonomous and a.in_contact and now >= float(_next_eval.get(sq.id, 0.0)) and now >= sq.tactic_cooldown_until and _autonomy_ok(sq):
 		_next_eval[sq.id] = now + eval_s
 		_consider(sq, a)
+	elif not a.in_contact and now >= float(_next_build.get(sq.id, 0.0)):
+		_next_build[sq.id] = now + build_check_s
+		_auto_build(sq, a.center, build_auto_m)
 
 
 ## A squad on the move that picks its own formation spreads out when it comes into contact and
@@ -546,6 +570,7 @@ func start(sq: SquadState, tactic: int, owner: int, target := Vector3.INF, conta
 	sq.tactic_leg_since = now
 	sq.tactic_target = plan.get("target", target)
 	sq.tactic_contact = contact_id
+	sq.tactic_site = int(plan.get("site", -1))
 	sq.tactic_dir = plan.get("dir", Vector3.ZERO)
 	sq.tactic_dest = Vector3.INF
 	sq.tactic_route = plan.get("route", PackedVector3Array())
@@ -671,6 +696,19 @@ func _plan(sq: SquadState, a: Dictionary, tactic: int, target: Vector3, _owner: 
 				"why": report if report != "" else "assault %s, %.0f m" % [_xz(target), d]}
 		SquadState.Tactic.REGROUP:
 			return {"ok": true, "tactic": tactic, "target": c, "dir": Vector3.ZERO, "commit": 4.0, "why": "reassemble"}
+		SquadState.Tactic.BUILD:
+			var site := sim.state.construction.get_structure(int(extra.get("site", -1)))
+			if site == null or not site.is_site():
+				return {"ok": false, "reason": "there is no construction site to build"}
+			if site.faction != sq.faction:
+				return {"ok": false, "reason": "that site belongs to another faction"}
+			var posts := _work_posts(site, count, c)
+			if posts.is_empty():
+				return {"ok": false, "reason": "no free ground to work from round the site"}
+			var def := StructureCatalog.get_def(site.type_id)
+			var centre := site.site_center()
+			return {"ok": true, "tactic": tactic, "target": centre, "dir": _dir_to(c, centre), "posts": posts, "commit": 4.0, "site": site.id,
+				"why": "build %s (%d%% done) from %d work posts" % [def.display_name if def else String(site.type_id), roundi(site.site_progress() * 100.0), posts.size()]}
 	return {"ok": false, "reason": "unknown tactic"}
 
 
@@ -689,6 +727,9 @@ func _enter(sq: SquadState, a: Dictionary, plan: Dictionary) -> void:
 			_set_roles(sq, SquadState.TeamRole.SUPPORT, SquadState.TeamRole.ASSAULT)
 		SquadState.Tactic.REGROUP:
 			_set_roles(sq, SquadState.TeamRole.SECURITY, SquadState.TeamRole.SECURITY)
+		SquadState.Tactic.BUILD:
+			_set_roles(sq, SquadState.TeamRole.SECURITY, SquadState.TeamRole.SECURITY)
+			_send_posts(sq, _units(sq), plan.posts, sq.tactic_dir)
 	if sq.tactic == SquadState.Tactic.FLANK:
 		# The support team sets up first; the maneuver team waits in cover where it is.
 		_assault_support(sq, a, sq.tactic_target)
@@ -697,6 +738,9 @@ func _enter(sq: SquadState, a: Dictionary, plan: Dictionary) -> void:
 ## A tactic is over. next: REGROUP to reassemble first, NONE to go straight back to the
 ## previous order.
 func _finish(sq: SquadState, why: String, next: int) -> void:
+	if sq.tactic == SquadState.Tactic.BUILD:
+		_end_build(sq, why)
+		return
 	var old := sq.tactic
 	finished[old] = int(finished.get(old, 0)) + 1
 	_log(sq, "%s %s ended: %s" % [sq.squad_name, SquadState.TACTIC_NAMES[old].to_upper(), why])
@@ -760,6 +804,15 @@ func cancel(sq: SquadState, why: String) -> void:
 func on_order(sq: SquadState) -> void:
 	if _internal:
 		return
+	if sq.tactic == SquadState.Tactic.BUILD:
+		# GAMEPLAY-01B: the player took the squad away from the site - it is not called back on its own for a while.
+		_set_meta(sq, "no_build_until", sim.state.time + build_respect_s)
+		var s := sim.state.construction.get_structure(sq.tactic_site)
+		if s and s.is_site():
+			s.site["why"] = "%s was given another order" % sq.squad_name
+		sq.tactic_site = -1
+		for u: UnitState in _units(sq):
+			u.work_until = -1.0
 	if sq.tactic != SquadState.Tactic.NONE:
 		_log(sq, "%s %s cancelled by a new order" % [sq.squad_name, SquadState.TACTIC_NAMES[sq.tactic].to_upper()])
 		finished[sq.tactic] = int(finished.get(sq.tactic, 0)) + 1
@@ -868,6 +921,218 @@ func _run(sq: SquadState, a: Dictionary) -> void:
 			_run_flank(sq, a, now)
 		SquadState.Tactic.REGROUP:
 			_run_regroup(sq, a, now)
+		SquadState.Tactic.BUILD:
+			_run_build(sq, a, now)
+
+
+# --- BUILD (GAMEPLAY-01B) ----------------------------------------------------------------------------------------------
+# The soldiers walk to work posts round a construction site (ordinary move orders to UnitState.post_pos) and every soldier
+# standing at his post, not under fire and not reacting adds tick seconds of work to the site record
+# (ConstructionState.add_work). The same step runs for bodies and the abstract tier, so a site is built in the same
+# time wherever the camera is. Contact ends a squad-owned BUILD (the squad defends itself, the progress stays); a player
+# ordered BUILD pauses until it is quiet again. Any player order ends it (on_order).
+
+## Player squads only, in the scenarios with build sites, when nobody commands them: no operation, no garrison, no other
+## tactic, not marching, idle (no order or an arrived move; never HOLD, a deliberate instruction) and not just taken off
+## a site by the player.
+func build_eligible(sq: SquadState, ignore_cooldown := false) -> bool:
+	var war := sim.state.war
+	if not war.active or sq.faction != war.player_faction or not bool(war.rule("build_sites", false)):
+		return false
+	if sq.members.is_empty() or sq.op_id >= 0 or sq.station_objective >= 0 or sq.tactic != SquadState.Tactic.NONE or _aboard(sq):
+		return false
+	if sim.squads.marching(sq):
+		return false
+	var now := sim.state.time
+	if (now < sq.tactic_cooldown_until and not ignore_cooldown) or now < float(_meta(sq, "no_build_until", 0.0)):
+		return false
+	match sq.order:
+		SquadState.Order.NONE:
+			return true
+		SquadState.Order.MOVE:
+			return sq.status != SquadState.Status.MOVING
+	return false
+
+
+## An idle squad takes up the nearest site of its faction within radius that needs work and was not found unreachable.
+func _auto_build(sq: SquadState, from: Vector3, radius: float) -> bool:
+	if not build_eligible(sq):
+		return false
+	var best: StructureState = null
+	var best_d := radius
+	var now := sim.state.time
+	for s: StructureState in sim.state.construction.all():
+		if not s.is_site() or s.faction != sq.faction or float(s.site.get("crew", 0.0)) > 0.0 or float(_site_block.get(s.id, 0.0)) > now:
+			continue
+		var d := _flat(from, s.site_center())
+		if d < best_d:
+			best_d = d
+			best = s
+	if best == null:
+		return false
+	return bool(start(sq, SquadState.Tactic.BUILD, SquadState.Owner.SQUAD, best.site_center(), -1, "", {"site": best.id}).ok)
+
+
+## A site was placed: the nearest idle squad of its faction within build_assign_m goes to build it. Returns the squad or null.
+func assign_builders(site: StructureState) -> SquadState:
+	var c := site.site_center()
+	var sqs := sim.state.all_squads().filter(func(s: SquadState) -> bool: return s.faction == site.faction and build_eligible(s, true))
+	sqs.sort_custom(func(a: SquadState, b: SquadState) -> bool: return _flat(_centroid(_units(a)), c) < _flat(_centroid(_units(b)), c))
+	for sq: SquadState in sqs:
+		if _flat(_centroid(_units(sq)), c) > build_assign_m:
+			break
+		if start(sq, SquadState.Tactic.BUILD, SquadState.Owner.SQUAD, c, -1, "", {"site": site.id}).ok:
+			return sq
+	return null
+
+
+## The player orders squads to build a site (right-click on it, or the site panel). Releases them from operations;
+## {ok, n, text} like order_tactic.
+func order_build(squad_ids: Array, site_id: int) -> Dictionary:
+	var parts: Array[String] = []
+	var n := 0
+	for id in squad_ids:
+		var sq := sim.state.get_squad(id)
+		if sq == null:
+			continue
+		sim.war.release_squads([sq.id], "player build order")
+		var site := sim.state.construction.get_structure(site_id)
+		var res := start(sq, SquadState.Tactic.BUILD, SquadState.Owner.PLAYER, site.site_center() if site else Vector3.INF, -1, "", {"site": site_id})
+		parts.append("%s: %s" % [sq.squad_name, "BUILD accepted" if res.ok else "cannot - " + str(res.reason)])
+		if res.ok:
+			n += 1
+	return {"ok": n > 0, "n": n, "text": " | ".join(parts)}
+
+
+func _run_build(sq: SquadState, a: Dictionary, now: float) -> void:
+	var cs := sim.state.construction
+	var s := cs.get_structure(sq.tactic_site)
+	if s == null or not s.is_site():
+		_end_build(sq, "the construction is finished" if s != null else "the site is gone")
+		return
+	if a.in_contact or int(a.under_fire) > 0:
+		s.site["why"] = "work stopped: enemy contact"
+		for u: UnitState in _units(sq):
+			u.work_until = -1.0
+		if sq.tactic_owner != SquadState.Owner.PLAYER:
+			_set_meta(sq, "no_build_until", now + 30.0)
+			_end_build(sq, "enemy contact: work stopped, progress kept")
+		return
+	var centre := s.site_center()
+	var working := 0
+	var arrived := 0
+	for u: UnitState in _units(sq):
+		if not u.post_pos.is_finite():
+			continue
+		if _flat(u.position, u.post_pos) <= 3.0:
+			arrived += 1
+			if u.suppression_at(now) < 0.3 and u.under_fire_until < now and not u.is_reacting():
+				working += 1
+				u.work_until = now + tick_s * 2.5
+				if u.order != UnitState.Order.MOVE:
+					sim.brain._watch(u, centre, 1.5)
+		elif u.order != UnitState.Order.MOVE and not u.is_reacting() and now - float(_meta(sq, "resend_%d" % u.id, -100.0)) > 8.0:
+			# Pushed off the post (a reaction, a crowd): back to it, the post stays.
+			_set_meta(sq, "resend_%d" % u.id, now)
+			var post := u.post_pos
+			sim.state.issue_move(u.id, post, false)
+			u.post_pos = post
+	if working > 0:
+		_site_workers[s.id] = int(_site_workers.get(s.id, 0)) + working
+		s.site["why"] = ""
+		sq.tactic_phase = PH_HOLD
+		var def := StructureCatalog.get_def(s.type_id)
+		var what := def.display_name if def else String(s.type_id)
+		if cs.add_work(s, working * _dt):
+			_log(sq, "%s finished %s" % [sq.squad_name, what])
+			if sim.war:
+				sim.war.log_event(sq.faction, "build_done", "%s completed by %s" % [what, sq.squad_name], centre)
+			_end_build(sq, "%s finished" % what)
+		return
+	if arrived == 0 and now - sq.tactic_since > 90.0:
+		s.site["why"] = "the workers cannot reach the site"
+		_site_block[s.id] = now + 60.0
+		_end_build(sq, "could not reach the site")
+	elif arrived == 0:
+		s.site["why"] = "%s on the way" % sq.squad_name
+
+
+## BUILD is over: the soldiers stand where they are, the squad is idle (no order) and may take up the next site.
+func _end_build(sq: SquadState, why: String) -> void:
+	finished[SquadState.Tactic.BUILD] = int(finished.get(SquadState.Tactic.BUILD, 0)) + 1
+	_log(sq, "%s BUILD ended: %s" % [sq.squad_name, why])
+	_clear_units(sq)
+	sq.tactic_why = "Build ended: %s" % why
+	sq.tactic = SquadState.Tactic.NONE
+	sq.tactic_owner = SquadState.Owner.NONE
+	sq.tactic_site = -1
+	sq.prev_order = SquadState.Order.NONE
+	sq.tactic_cooldown_until = sim.state.time + 2.0
+	_next_build[sq.id] = sim.state.time + 2.0
+	if sq.order == SquadState.Order.TACTIC:
+		sq.order = SquadState.Order.NONE
+		sq.status = SquadState.Status.IDLE
+	for u: UnitState in _units(sq):
+		u.work_until = -1.0
+		if u.order == UnitState.Order.MOVE:
+			sim.state.halt(u.id)
+	sim.state.squad_changed.emit(sq)
+
+
+## Work posts round a site: points on a ring 1.4 m outside each building footprint (every 2.2 m) or both sides of each
+## line module, plus a second ring further out; only valid ground (dry, walkable, not inside a structure, on the route
+## grid), at least 1.8 m apart, nearest to the squad first. Exactly `count` posts (the last ones doubled up close by when
+## the ground offers fewer), or [] when there is no valid ground at all.
+func _work_posts(site: StructureState, count: int, from: Vector3) -> Array:
+	var def := StructureCatalog.get_def(site.type_id)
+	if def == null or count <= 0:
+		return []
+	var b := def.bounds()
+	var cands: Array[Vector3] = []
+	for i in site.instances.size():
+		if site.is_line() and site.is_removed(i):
+			continue
+		var xf: Transform3D = site.instances[i]
+		for ring: float in [1.4, 3.9]:
+			if site.is_line():
+				var cx := b.get_center().x
+				for z: float in [b.position.z - ring, b.end.z + ring]:
+					cands.append(xf * Vector3(cx, 0.0, z))
+				continue
+			var x0 := b.position.x - ring
+			var x1 := b.end.x + ring
+			var z0 := b.position.z - ring
+			var z1 := b.end.z + ring
+			for edge: Array in [[Vector3(x0, 0, z0), Vector3(x1, 0, z0)], [Vector3(x1, 0, z0), Vector3(x1, 0, z1)],
+					[Vector3(x1, 0, z1), Vector3(x0, 0, z1)], [Vector3(x0, 0, z1), Vector3(x0, 0, z0)]]:
+				var p0: Vector3 = edge[0]
+				var p1: Vector3 = edge[1]
+				var n := maxi(1, floori(p0.distance_to(p1) / 2.2))
+				for k in n:
+					cands.append(xf * p0.lerp(p1, (k + 0.5) / n))
+	cands.sort_custom(func(p: Vector3, q: Vector3) -> bool: return _flat(p, from) < _flat(q, from))
+	var out: Array = []
+	for p in cands:
+		if out.size() >= count:
+			break
+		var g := pos.ground(p)
+		if not pos.valid_ground(g):
+			continue
+		var crowded := false
+		for o: Dictionary in out:
+			if _flat(o.p, g) < 1.8:
+				crowded = true
+				break
+		if not crowded:
+			out.append({"p": g, "protected": false})
+	if out.is_empty():
+		return []
+	var k := 0
+	while out.size() < count:
+		var q: Vector3 = out[k % out.size()].p + Vector3(0.9 * (1 + k / out.size()), 0.0, 0.6)
+		out.append({"p": pos.ground(q), "protected": false})
+		k += 1
+	return out
 
 
 # --- DEFEND / REPOSITION -------------------------------------------------------------------------------
@@ -1670,6 +1935,9 @@ func _on_restored() -> void:
 	_repos.clear()
 	_seen_at.clear()
 	_meta_store.clear()
+	_site_workers.clear()
+	_next_build.clear()
+	_site_block.clear()
 	for sq: SquadState in sim.state.squads.values():
 		validate(sq)
 		if sq.tactic != SquadState.Tactic.NONE and sq.order != SquadState.Order.TACTIC:
@@ -1748,6 +2016,8 @@ func _phase_name(sq: SquadState) -> String:
 			return "leg %d" % (sq.tactic_leg + 1)
 		SquadState.Tactic.REGROUP:
 			return "waiting for calm"
+		SquadState.Tactic.BUILD:
+			return "moving to the site" if sq.tactic_phase == PH_SETUP else "working"
 	return str(sq.tactic_phase)
 
 

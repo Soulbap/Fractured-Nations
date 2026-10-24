@@ -139,6 +139,9 @@ var fire_until := -1.0
 ## The firing position a squad tactic assigned (INF = none); cover reactions stay within a
 ## few metres of it.
 var post_pos := Vector3.INF
+## GAMEPLAY-01B: the soldier counted as working at a construction site until this time (set every BUILD step; runtime,
+## not saved - only the body's work pose reads it, the work itself is on the site record).
+var work_until := -1.0
 
 
 func is_aboard() -> bool:

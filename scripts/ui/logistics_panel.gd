@@ -22,6 +22,8 @@ const WIDTH := 262.0
 var rts: RTSController
 var sim: WorldSim
 var game: GameController
+## GAMEPLAY-01B: cancelling a construction site goes through the construction controller (refund rule).
+var construction: ConstructionController
 var enabled := true
 
 var _icon: TextureRect
@@ -196,6 +198,9 @@ func _refresh(vid: int, sid: int) -> void:
 	var s := lg.structure(sid)
 	if s == null:
 		return
+	if s.is_site():
+		_refresh_site(s)
+		return
 	accent = FNUI.OK
 	var kind := FacilityDefs.kind_of(s.type_id)
 	_icon.texture = FNIcons.texture({&"barracks": &"building", &"vehicle": &"vehicle", &"hq": &"base", &"fuel": &"fuel", &"ammo": &"ammo"}.get(kind, &"logistics"), FNUI.ICON_L)
@@ -231,6 +236,55 @@ func _refresh(vid: int, sid: int) -> void:
 	if sig2 != _sig:
 		_sig = sig2
 		_build_facility_actions(s)
+
+
+## GAMEPLAY-01B: a construction site - progress, who works on it or why nobody does, what it cost; actions: the selected
+## squads build it, cancel it (full refund).
+func _refresh_site(s: StructureState) -> void:
+	accent = FNUI.ARMED
+	var def := StructureCatalog.get_def(s.type_id)
+	var what := def.display_name if def else String(s.type_id)
+	_icon.texture = FNIcons.texture(&"build", FNUI.ICON_L)
+	_title.text = what
+	_subtitle.text = "Construction site"
+	var workers := int(s.site.get("workers", 0))
+	var why := String(s.site.get("why", ""))
+	if workers > 0:
+		_state.set_status(&"build", "%d soldiers working" % workers, FNUI.OK)
+	else:
+		_state.set_status(&"clock", why if why != "" else "Waiting for workers", FNUI.WARN)
+	var builders: Array[String] = []
+	for sq: SquadState in sim.state.all_squads():
+		if sq.tactic == SquadState.Tactic.BUILD and sq.tactic_site == s.id:
+			builders.append(sq.squad_name)
+	var left := (float(s.site.need) - float(s.site.work)) / maxf(float(workers), 1.0)
+	var dsig := "site%d|%d|%d|%s|%s" % [s.id, roundi(s.site_progress() * 100.0), workers, why, str(builders)]
+	if dsig != _data_sig:
+		_data_sig = dsig
+		_clear(_meters)
+		_clear(_fields)
+		_meter("Progress", s.site_progress(), "%d %%" % roundi(s.site_progress() * 100.0), FNUI.OK if workers > 0 else FNUI.WARN)
+		_field("Builders", ", ".join(builders) if not builders.is_empty() else "none", &"soldiers")
+		_field("Time left", ("about %d s with %d soldiers" % [roundi(left), workers]) if workers > 0 else "%d soldier-seconds of work" % roundi(float(s.site.need) - float(s.site.work)), &"clock")
+		var cost := BuildCosts.cost_of(def, s.built_count() if s.is_line() else 1)
+		if not (s.site.get("paid", {}) as Dictionary).is_empty():
+			_field("Paid", "%d kg supplies (refunded if cancelled)" % roundi(cost), &"cargo")
+	var sig := "site%d|%d" % [s.id, rts.selected_squads().size()]
+	if sig != _sig:
+		_sig = sig
+		_clear(_actions)
+		var sid := s.id
+		if not rts.selected_squads().is_empty():
+			_row([_button(&"build", "Build with selected squads", func() -> void:
+				var r := sim.tactics.order_build(rts.selected_squads(), sid)
+				_say(r.text))])
+		else:
+			_caption("Select a squad and right-click the site to build it")
+		if construction:
+			_row([_button(&"demolish", "Cancel construction (refund)", func() -> void:
+				var back := construction.cancel_site(sid)
+				_say(construction.message if back >= 0.0 else "Cannot cancel")
+				rts.selected_structure = -1)])
 
 
 func _button(icon_name: StringName, text: String, fn: Callable, tip := "") -> Button:

@@ -50,6 +50,7 @@ func _cs() -> ConstructionState:
 
 func bind() -> void:
 	_cs().structure_added.connect(_on_added)
+	_cs().structure_completed.connect(_on_added)
 	_cs().structure_removed.connect(_on_removed)
 	for s in _cs().all():
 		_on_added(s)
@@ -58,7 +59,8 @@ func bind() -> void:
 # --- Bases -------------------------------------------------------------------------------------
 
 func _on_added(s: StructureState) -> void:
-	if not FacilityDefs.has(s.type_id):
+	# GAMEPLAY-01B: a construction site is no facility yet - no base is founded or joined before it is finished.
+	if not FacilityDefs.has(s.type_id) or s.is_site():
 		return
 	var cs := _cs()
 	if s.base_id < 0 or not cs.bases.has(s.base_id):
@@ -125,7 +127,7 @@ func _update_anchor(bid: int) -> void:
 func facilities_of(bid: int) -> Array[StructureState]:
 	var out: Array[StructureState] = []
 	for s in _cs().all():
-		if s.base_id == bid and FacilityDefs.has(s.type_id):
+		if s.base_id == bid and FacilityDefs.has(s.type_id) and not s.is_site():
 			out.append(s)
 	return out
 
@@ -183,6 +185,10 @@ func placement_rule(type_id: StringName, p: Vector3, faction: int) -> String:
 		for o: ObjectiveState in sim.state.war.objectives.values():
 			if o.owner >= 0 and o.owner != faction and q.distance_to(Vector2(o.position.x, o.position.z)) < o.radius:
 				return "%s is held by %s" % [o.obj_name, WorldState.faction_name(o.owner)]
+		# GAMEPLAY-01B: a command post still being built claims its area too.
+		for s: StructureState in _cs().all():
+			if s.is_site() and FacilityDefs.founds_base(s.type_id) and s.faction == faction and q.distance_to(Vector2(s.position.x, s.position.z)) < FacilityDefs.area_of(s.type_id) + area * 0.5:
+				return "too close to the command post under construction (one command post per base)"
 		return ""
 	if base_area_at(p, faction) < 0:
 		return "outside the base area" if not bases_of(faction).is_empty() else "no base: place a command post first"

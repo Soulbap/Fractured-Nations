@@ -9,8 +9,9 @@
 ## * Later construction (forward depot, second barracks, field defences) is *paid* from the main base's supplies
 ##   (BUILD_COST, a data table; the player's construction is free in the sandbox, the table is shared so it can be
 ##   switched on for him), takes BUILD_TIME_S, is placed on ground check_building accepts, never within
-##   MIN_GAP_M of another structure, and is a pending record (WarState.builds) until finished, so the same
-##   building is not ordered twice and a save in the middle of construction restores it.
+##   MIN_GAP_M of another structure, and is a construction site (StructureState.site, GAMEPLAY-01B: the same record the
+##   player's construction uses) until finished, so the same building is not ordered twice and a save in the middle of
+##   construction restores it.
 class_name AiBases
 extends RefCounted
 
@@ -196,10 +197,13 @@ func request(f: FactionState, type_id: StringName, near: Vector3, why: String, n
 		return {"ok": false, "reason": "no buildable site near (%.0f, %.0f): %s" % [near.x, near.z, site.reason]}
 	if not bs.pay(bid, {&"supplies": BUILD_COST[type_id]}):
 		return {"ok": false, "reason": "payment failed"}
-	var rec := {"faction": f.id, "type": String(type_id), "pos": site.pos, "yaw": site.yaw, "done": sim.state.time + BUILD_TIME_S[type_id],
-		"cost": BUILD_COST[type_id], "paid_base": bid, "why": why, "id": ws.war.next_mission_id}
-	ws.war.next_mission_id += 1
-	ws.war.builds.append(rec)
+	# GAMEPLAY-01B: the order is a construction site like the player's (the same record, footprint and look); the AI's
+	# builders are an abstract crew that finishes it in BUILD_TIME_S (update()).
+	var need := BuildCosts.work_of(def)
+	var s := sim.state.construction.add_site(type_id, site.pos, site.yaw, f.id, need, {"bases": {bid: {"supplies": BUILD_COST[type_id]}}},
+		need / float(BUILD_TIME_S.get(type_id, 120.0)))
+	sim.state.construction.add_clearings(_sm().clearings_for(s, true))
+	s.site["why"] = why
 	stats.started += 1
 	ws.log_event(f.id, "build", "%s ordered near (%.0f, %.0f): %s" % [FacilityDefs.display_name(type_id) if FacilityDefs.has(type_id) else String(type_id), site.pos.x, site.pos.z, why], site.pos)
 	return {"ok": true, "reason": "", "pos": site.pos}
@@ -278,8 +282,17 @@ func _crowded(c: Vector3, def: StructureDef) -> bool:
 	return false
 
 
-## Once a second: orders whose time has come are placed (re-checked; a site that went bad refunds its cost).
+## Once a second: the AI factions' construction sites get their crew's work (GAMEPLAY-01B), and orders of the old
+## pending-record kind (saves from before GAMEPLAY-01B) whose time has come are placed (re-checked; a site that went bad
+## refunds its cost).
 func update() -> void:
+	var cs := sim.state.construction
+	for s: StructureState in cs.all():
+		if s.is_site() and float(s.site.get("crew", 0.0)) > 0.0:
+			var what := FacilityDefs.display_name(s.type_id) if FacilityDefs.has(s.type_id) else String(s.type_id)
+			if cs.add_work(s, float(s.site.crew)):
+				stats.finished += 1
+				ws.log_event(s.faction, "build", "%s finished at (%.0f, %.0f)" % [what, s.position.x, s.position.z], s.position)
 	if ws.war.builds.is_empty():
 		return
 	var now := sim.state.time
@@ -305,9 +318,16 @@ func update() -> void:
 	ws.war.builds = keep
 
 
-## Pending orders of faction f of a type (all types: &"") near p (r = INF: anywhere).
+## Pending orders of faction f of a type (all types: &"") near p (r = INF: anywhere): its construction sites and old
+## pending records, each as {faction, type, pos}.
 func pending_of(f: int, type_id := &"", p := Vector3.INF, r := INF) -> Array:
 	var out := []
+	for s: StructureState in sim.state.construction.all():
+		if not s.is_site() or s.faction != f or (type_id != &"" and s.type_id != type_id):
+			continue
+		if p.is_finite() and Vector2(s.position.x - p.x, s.position.z - p.z).length() > r:
+			continue
+		out.append({"faction": f, "type": String(s.type_id), "pos": s.position, "id": s.id})
 	for b: Dictionary in ws.war.builds:
 		if int(b.faction) != f or (type_id != &"" and StringName(b.type) != type_id):
 			continue

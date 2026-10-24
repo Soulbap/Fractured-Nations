@@ -411,6 +411,7 @@ func _process(_delta: float) -> void:
 		logistics_panel.rts = rts
 		logistics_panel.sim = sim
 		logistics_panel.game = game
+		logistics_panel.construction = construction
 	logistics_panel.enabled = not (construction and construction.active)
 	if squad_panel.rts == null and rts:
 		squad_panel.rts = rts

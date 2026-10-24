@@ -414,6 +414,14 @@ func place_building() -> StructureState:
 	var paid: Variant = _pay(BuildCosts.cost_of(def), xf.origin)
 	if paid == null:
 		return null
+	if sites_on():
+		# GAMEPLAY-01B: a construction site; soldiers build it (SquadTactics BUILD) and it works when it is finished.
+		var site := structures.state.add_site(def.id, xf.origin, yaw, player_faction(), BuildCosts.work_of(def), paid)
+		structures.state.add_clearings(structures.clearings_for(site, clear_trees))
+		_area_key = []
+		_site_placed(site)
+		built.emit(site)
+		return site
 	var s := structures.state.add_building(def.id, xf.origin, yaw, player_faction())
 	structures.state.add_clearings(structures.clearings_for(s, clear_trees))
 	var b: Dictionary = structures.state.bases.get(s.base_id, {})
@@ -426,6 +434,46 @@ func place_building() -> StructureState:
 	_area_key = []
 	built.emit(s)
 	return s
+
+
+## GAMEPLAY-01B: placing makes a construction site that soldiers build (rule build_sites), instead of a finished structure.
+func sites_on() -> bool:
+	return world_state != null and world_state.war.active and bool(world_state.war.rule("build_sites", false))
+
+
+## A site was placed: the nearest idle squad is called to build it, and the player hears what happens.
+func _site_placed(site: StructureState) -> void:
+	var sim := structures.sim
+	var sq: SquadState = sim.tactics.assign_builders(site) if sim else null
+	var cost := BuildCosts.cost_of(StructureCatalog.get_def(site.type_id), site.built_count() if site.is_line() else 1)
+	var paid_txt := (" for %d kg" % roundi(cost)) if costs_on() and cost > 0.0 else ""
+	if sq:
+		_say("%s site placed%s: %s is on the way to build it" % [def.display_name, paid_txt, sq.squad_name])
+	else:
+		_say("%s site placed%s: no idle squad near - select a squad and right-click the site to build it" % [def.display_name, paid_txt])
+	if sim and sim.war:
+		sim.war.log_event(site.faction, "build", "%s site placed%s" % [def.display_name, paid_txt], site.site_center())
+
+
+## Cancels a construction site of the player: it disappears and its full cost is refunded (the rule for every site,
+## however far it got; a finished building is never refunded). Returns the refunded supplies (-1: no such site).
+func cancel_site(id: int) -> float:
+	var s := structures.state.get_structure(id)
+	if s == null or not s.is_site() or s.faction != player_faction():
+		return -1.0
+	var r := structures.state.cancel_site(id)
+	var paid: Dictionary = r.get("paid", {})
+	var back := 0.0
+	for k: String in paid.get("pool", {}):
+		if k == "supplies":
+			back += float(paid.pool[k])
+	for b in paid.get("bases", {}):
+		back += float(paid.bases[b].get("supplies", 0.0))
+	if not paid.is_empty() and _bases():
+		_bases().faction_refund(s.faction, paid)
+	var d := StructureCatalog.get_def(s.type_id)
+	_say("%s site cancelled (%d%% built): %d kg refunded" % [d.display_name if d else String(s.type_id), roundi(float(r.get("progress", 0.0)) * 100.0), roundi(back)])
+	return back
 
 
 ## GAMEPLAY-01B: player construction is paid in the scenarios that say so (rule build_costs).
@@ -529,6 +577,13 @@ func finish_line() -> StructureState:
 	var paid: Variant = _pay(BuildCosts.cost_of(def, mods.size() - removed.size()), pts[0])
 	if paid == null:
 		return null
+	if sites_on():
+		var site := structures.state.add_line_site(def.id, pts, removed, player_faction(), BuildCosts.work_of(def, mods.size() - removed.size()), paid)
+		structures.state.add_clearings(structures.clearings_for(site, clear_trees))
+		_site_placed(site)
+		cancel()
+		built.emit(site)
+		return site
 	var s := structures.state.add_line(def.id, pts, removed, player_faction())
 	structures.state.add_clearings(structures.clearings_for(s, clear_trees))
 	var blocked := 0
@@ -549,6 +604,10 @@ func delete_hovered(whole_line := false) -> bool:
 	if s == null:
 		return false
 	var d := StructureCatalog.get_def(s.type_id)
+	if s.is_site() and s.faction == player_faction():
+		cancel_site(s.id)
+		hover = {}
+		return true
 	if d.is_surface():
 		structures.state.remove(s.id)
 		_say("Removed %s" % d.display_name)

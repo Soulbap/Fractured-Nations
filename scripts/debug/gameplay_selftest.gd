@@ -37,6 +37,10 @@ func run(args: PackedStringArray) -> void:
 		_log("b_economy", await _b_economy())
 	if _want("b_recovery"):
 		_log("b_recovery", await _b_recovery())
+	if _want("c_build"):
+		_log("c_build", await _c_build())
+	if _want("c_ai"):
+		_log("c_ai", await _c_ai())
 	_finish()
 
 
@@ -400,6 +404,192 @@ func _b_recovery() -> Dictionary:
 	_expect(_player_squads().size() == 1 and demo.sim.logistics.bases.soldiers_of(pf) == int(war.rule("recovery_size", 0)), "b_recovery: no replacement section: %s" % str(out))
 	await _until(func() -> bool: return false, 60.0, 8.0)
 	_expect(_player_squads().size() == 1, "b_recovery: more free squads arrived while the player had soldiers")
+	return out
+
+
+# --- Stage C ------------------------------------------------------------------------------------------------------
+
+func _site_by_squad(sq: SquadState) -> StructureState:
+	return demo.sim.state.construction.get_structure(sq.tactic_site)
+
+
+## Soldier-seconds of work done on a site (the finished structure: its need).
+func _work(s: StructureState) -> float:
+	return float(s.site.get("work", 0.0)) if s.is_site() else INF
+
+
+## The squad builds the command post: assigned on placement, no base before it is finished, done in 30-90 s by eight;
+## a player order takes the squad off (progress kept, no automatic return for a while), a right-click sends it back;
+## fire pauses a player-ordered build; a cancelled site refunds in full; a save mid-build loads with the same progress
+## and no second charge; a site far from the camera (abstract tier) takes the same time.
+func _c_build() -> Dictionary:
+	var war := _war()
+	var pf := war.player_faction
+	var bs := demo.sim.logistics.bases
+	var tac := demo.sim.tactics
+	var out := {}
+	var sq: SquadState = _player_squads()[0]
+	var f := war.faction(pf)
+	f.pool.add(Inventory.SUPPLIES, 3000.0)
+	var spot := _cp_spot(demo.sim.war.squad_center(sq))
+	var s0 := _stock()
+	var cp := _place(&"command_post", spot)
+	_expect(cp != null and cp.is_site(), "c: the command post was not placed as a site")
+	if cp == null:
+		return out
+	out["placed"] = {"paid": roundi(s0.supplies - _stock().supplies), "message": demo.construction.message, "builder": sq.tactic_name(), "site": sq.tactic_site == cp.id}
+	_expect(sq.tactic == SquadState.Tactic.BUILD and sq.tactic_site == cp.id, "c: the idle squad was not called to the site (%s)" % demo.construction.message)
+	_expect(bs.bases_of(pf).is_empty(), "c: a base exists while the command post is only a site")
+	demo.rts_camera.frame(cp.position + Vector3(0, 0, 25), 0.5, 55.0)
+	var t0 := demo.sim.state.time
+	var half := await _until(func() -> bool: return cp.site_progress() >= 0.4, 200.0, 2.0)
+	_expect(bs.bases_of(pf).is_empty(), "c: a base exists at 40 % progress")
+	_png("c_cp_under_construction")
+	var working := 0
+	for id in sq.members:
+		if demo.sim.state.get_unit(id).work_until > demo.sim.state.time:
+			working += 1
+	out["working_at_40pct"] = working
+	_expect(working >= 6, "c: only %d soldiers were working" % working)
+	await _until(func() -> bool: return not cp.is_site(), 200.0, 2.0)
+	var cp_s := demo.sim.state.time - t0
+	out["cp_seconds"] = roundi(cp_s)
+	out["bases_after"] = bs.bases_of(pf).size()
+	_expect(cp_s >= 30.0 and cp_s <= 90.0, "c: the command post took %.0f s (want 30-90)" % cp_s)
+	_expect(bs.bases_of(pf).size() == 1 and cp.base_id >= 0, "c: the base was not established exactly once on completion")
+	_expect(sq.tactic == SquadState.Tactic.NONE and sq.order == SquadState.Order.NONE, "c: the squad did not become idle after building")
+	await _seconds(1.0)
+	_png("c_cp_completed")
+	# Interruption: a player order takes the squad off the depot site; progress is kept; no automatic return.
+	var depot := _place(&"supply_depot", _site_in_base(&"supply_depot", cp.position))
+	_expect(depot != null and sq.tactic_site == depot.id, "c: the depot site got no builder")
+	if depot == null:
+		return out
+	await _until(func() -> bool: return depot.site_progress() >= 0.25, 120.0, 2.0)
+	demo.rts.select_squads([sq.id])
+	demo.rts.order_move(demo.sim.war.squad_center(sq) + Vector3(45, 0, 30))
+	var w1 := _work(depot)
+	await _until(func() -> bool: return false, 25.0, 2.0)
+	var w2 := _work(depot)
+	out["interrupt"] = {"work_at_order": roundi(w1), "work_25s_later": roundi(w2), "tactic": sq.tactic_name(), "why": depot.site.get("why", "")}
+	_expect(sq.tactic != SquadState.Tactic.BUILD and absf(w2 - w1) < 5.0 and w1 > 0.0, "c: the player order did not stop the work (or progress was lost): %s" % str(out.interrupt))
+	await _until(func() -> bool: return false, 30.0, 2.0)
+	_expect(sq.tactic != SquadState.Tactic.BUILD, "c: automatic construction took the squad back right after the player's order")
+	# Right-click on the site: an explicit build order.
+	demo.rts.select_squads([sq.id])
+	var n := demo.rts.order_build(depot.id)
+	_expect(n == 8 and sq.tactic == SquadState.Tactic.BUILD and sq.tactic_owner == SquadState.Owner.PLAYER, "c: the build order was not taken (%s)" % demo.rts.current_message())
+	await _until(func() -> bool: return int(depot.site.get("workers", 0)) >= 4, 60.0, 2.0)
+	# Fire pauses a player-ordered build, it resumes when quiet.
+	for id in sq.members:
+		demo.sim.state.get_unit(id).under_fire_until = demo.sim.state.time + 6.0
+	await _physics(30)
+	var wf0 := _work(depot)
+	await _until(func() -> bool: return false, 4.0, 1.0)
+	var wf1 := _work(depot)
+	await _until(func() -> bool: return _work(depot) > wf1 + 10.0 or not depot.is_site(), 40.0, 2.0)
+	out["fire"] = {"during": roundi(wf1 - wf0), "resumed": _work(depot) > wf1 + 10.0 or not depot.is_site(), "tactic": sq.tactic_name()}
+	_expect(wf1 - wf0 < 1.0 and bool(out.fire.resumed) and (sq.tactic == SquadState.Tactic.BUILD or not depot.is_site()), "c: fire did not pause / resume the work: %s" % str(out.fire))
+	# Save in the middle of construction: same progress, no second charge, finishes once.
+	var stock_before := _stock()
+	var work_saved := _work(depot)
+	demo.construction.save()
+	await _until(func() -> bool: return false, 6.0, 2.0)
+	var res := demo.construction.load_game()
+	var depot2 := demo.sim.state.construction.get_structure(depot.id)
+	var work_loaded := _work(depot2) if depot2 else -1.0
+	var stock_loaded := _stock()
+	await _physics(10)
+	var sq2 := demo.sim.state.get_squad(sq.id)
+	out["persist"] = {"load": res.ok, "work_saved": roundi(work_saved), "work_loaded": roundi(work_loaded), "stock_same": absf(float(stock_loaded.supplies) - float(stock_before.supplies)) < 0.5,
+		"tactic": sq2.tactic_name() if sq2 else "-", "site": sq2.tactic_site if sq2 else -1}
+	_expect(res.ok and depot2 != null and depot2.is_site() and absf(work_loaded - work_saved) < 0.5 and bool(out.persist.stock_same), "c: construction not restored: %s" % str(out.persist))
+	_expect(sq2 != null and sq2.tactic == SquadState.Tactic.BUILD and sq2.tactic_site == depot.id, "c: the squad does not resume building after load")
+	await _until(func() -> bool: return not depot2.is_site(), 120.0, 2.0)
+	var depots := 0
+	for st: StructureState in demo.sim.state.construction.all():
+		if st.faction == pf and st.type_id == &"supply_depot" and not st.is_site():
+			depots += 1
+	_expect(depots == 1 and depot2.inventory != null and depot2.base_id >= 0, "c: the depot did not become one operational store")
+	sq = sq2
+	# Cancel: full refund, the squad stops.
+	var s1 := _stock()
+	var bag := _place(&"guard_tower_steel", _site_in_base(&"guard_tower_steel", cp.position))
+	await _until(func() -> bool: return bag != null and bag.site_progress() > 0.1, 60.0, 2.0)
+	var back := demo.construction.cancel_site(bag.id) if bag else -1.0
+	await _physics(30)
+	out["cancel"] = {"refund": roundi(back), "stock_diff": roundi(_stock().supplies - s1.supplies), "gone": demo.sim.state.construction.get_structure(bag.id) == null if bag else false, "tactic": sq.tactic_name()}
+	_expect(bag != null and roundi(back) == 150 and absf(float(_stock().supplies) - float(s1.supplies)) < 0.5 and out.cancel.gone and sq.tactic != SquadState.Tactic.BUILD,
+		"c: cancel did not refund exactly / stop the work: %s" % str(out.cancel))
+	# Near and far: a guard post built under the camera, and another with the camera 4 km away (no bodies).
+	var near_s := await _timed_build(sq, cp.position, true)
+	var far_s := await _timed_build(sq, cp.position, false)
+	out["near_far"] = {"near_s": roundi(near_s.t), "far_s": roundi(far_s.t), "bodies_far": far_s.bodies}
+	_expect(near_s.t > 0.0 and far_s.t > 0.0 and absf(near_s.t - far_s.t) <= 0.2 * near_s.t and far_s.bodies == 0,
+		"c: near / far construction times differ: %s" % str(out.near_far))
+	return out
+
+
+## Places a guard post in the base and times it with the squad building; camera near the site or 4 km away.
+func _timed_build(sq: SquadState, anchor: Vector3, near: bool) -> Dictionary:
+	var at := _site_in_base(&"guard_tower_steel", anchor)
+	if near:
+		demo.rts_camera.frame(at, 0.5, 60.0)
+		demo.detail.activate_at(at)
+	else:
+		var away := demo.on_ground(anchor.x + 4000.0, anchor.z - 2500.0, 0.0)
+		demo.rts_camera.frame(away, 0.5, 60.0)
+		demo.detail.activate_at(away)
+	await _seconds(2.0)
+	var s := _place(&"guard_tower_steel", at)
+	if s == null or sq.tactic_site != s.id:
+		if s:
+			demo.sim.tactics.order_build([sq.id], s.id)
+		else:
+			return {"t": -1.0, "bodies": -1}
+	var t0 := demo.sim.state.time
+	var bodies := 0
+	await _until(func() -> bool: return not s.is_site(), 240.0, 2.0)
+	for id in sq.members:
+		if demo.sim.state.get_unit(id).has_body:
+			bodies += 1
+	var t := demo.sim.state.time - t0
+	demo.rts_camera.frame(anchor, 0.5, 80.0)
+	demo.detail.activate_at(anchor)
+	await _seconds(1.0)
+	return {"t": t, "bodies": bodies}
+
+
+## AI construction through the shared site record: a South order becomes a site with a crew, takes its BUILD_TIME_S,
+## and a store becomes an operational facility of the AI base.
+func _c_ai() -> Dictionary:
+	var ws := demo.sim.war
+	var f := _war().faction(1)
+	var bs := demo.sim.logistics.bases
+	var mb := bs.main_base(1)
+	_expect(mb >= 0, "c_ai: South has no main base")
+	if mb < 0:
+		return {}
+	var anchor: Vector3 = demo.sim.state.construction.bases[mb].anchor
+	var r := ws.bases.request(f, &"supply_storage", anchor, "test order")
+	var site: StructureState = null
+	for s: StructureState in demo.sim.state.construction.all():
+		if s.is_site() and s.faction == 1 and s.type_id == &"supply_storage":
+			site = s
+	var out := {"request": r, "site": site != null}
+	_expect(r.ok and site != null and float(site.site.crew) > 0.0, "c_ai: the AI order did not become a crewed site: %s" % str(r))
+	if site == null:
+		return out
+	var pend := ws.bases.pending_of(1, &"supply_storage").size()
+	var t0 := demo.sim.state.time
+	await _until(func() -> bool: return not site.is_site(), 200.0, 8.0)
+	var t := demo.sim.state.time - t0
+	out["seconds"] = roundi(t)
+	out["pending_seen"] = pend
+	out["store"] = site.inventory != null
+	out["base"] = site.base_id
+	_expect(not site.is_site() and absf(t - AiBases.BUILD_TIME_S[&"supply_storage"]) <= 6.0, "c_ai: the AI site took %.0f s (want %.0f)" % [t, AiBases.BUILD_TIME_S[&"supply_storage"]])
+	_expect(pend == 1 and site.inventory != null and site.base_id == mb, "c_ai: the finished AI store is not a facility of its base")
 	return out
 
 

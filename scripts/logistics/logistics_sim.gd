@@ -41,13 +41,15 @@ func _init(p_sim: WorldSim, p_vsim: VehicleSim) -> void:
 func bind() -> void:
 	var cs := sim.state.construction
 	cs.structure_added.connect(_on_structure_added)
+	cs.structure_completed.connect(_on_structure_added)
 	for s in cs.all():
 		_on_structure_added(s)
 	bases.bind()
 
 
 func _on_structure_added(s: StructureState) -> void:
-	if not FacilityDefs.is_store(s.type_id):
+	# GAMEPLAY-01B: a construction site stores nothing until it is finished (structure_completed).
+	if not FacilityDefs.is_store(s.type_id) or s.is_site():
 		return
 	if s.inventory == null:
 		s.inventory = FacilityDefs.make_inventory(s.type_id)

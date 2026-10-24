@@ -266,6 +266,10 @@ func order_move_at(screen_pos: Vector2) -> int:
 		var ou := sim.state.get_unit(over)
 		if ou and ou.kind == UnitState.Kind.VEHICLE and _can_command(over) and not selected_squads().is_empty():
 			return order_board_vehicle(over)
+	# GAMEPLAY-01B: right-click on one of the player's construction sites with squads selected = build it.
+	var site := site_at(screen_pos)
+	if site >= 0 and not selected_squads().is_empty():
+		return order_build(site)
 	var hit := ground_point(screen_pos)
 	if not hit.is_finite():
 		return 0
@@ -317,6 +321,34 @@ func order_board() -> int:
 		_say("Board: select a squad and a vehicle (T)")
 		return 0
 	return order_transport_group(Vector3.INF)
+
+
+## The player's construction site under a screen point (-1: none).
+func site_at(screen_pos: Vector2) -> int:
+	if structures == null or rig == null:
+		return -1
+	var cam := rig.camera
+	var hit := structures.pick(cam.project_ray_origin(screen_pos), cam.project_ray_normal(screen_pos), 6000.0)
+	if hit.is_empty():
+		return -1
+	var s := structures.state.get_structure(hit.id)
+	return s.id if s != null and s.is_site() and s.faction == player_faction else -1
+
+
+## The selected squads build a site (SquadTactics BUILD, owned by the player). Returns the soldiers sent.
+func order_build(site_id: int) -> int:
+	var sqs := selected_squads()
+	var r := sim.tactics.order_build(sqs, site_id)
+	_say(r.text)
+	var n := 0
+	for sid in sqs:
+		var sq := sim.state.get_squad(sid)
+		if sq and sq.tactic == SquadState.Tactic.BUILD:
+			n += sq.members.size()
+	if n > 0:
+		var s := structures.state.get_structure(site_id)
+		order_issued.emit(n, s.site_center() if s else Vector3.ZERO)
+	return n
 
 
 ## Right-click on a vehicle: the selected squads board it.
@@ -706,9 +738,10 @@ func _pick_structure(screen_pos: Vector2) -> bool:
 	if hit.is_empty():
 		return false
 	var s := structures.state.get_structure(hit.id)
-	if s != null and FacilityDefs.has(s.type_id) and s.faction == player_faction:
+	if s != null and (FacilityDefs.has(s.type_id) or s.is_site()) and s.faction == player_faction:
 		selected_structure = s.id
-		_say("%s selected" % FacilityDefs.display_name(s.type_id))
+		var d := StructureCatalog.get_def(s.type_id)
+		_say("%s%s selected" % [FacilityDefs.display_name(s.type_id) if FacilityDefs.has(s.type_id) else (d.display_name if d else String(s.type_id)), " site" if s.is_site() else ""])
 		selection_changed.emit(selected)
 		return true
 	return false
