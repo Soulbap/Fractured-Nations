@@ -1200,6 +1200,19 @@ func _work_posts(site: StructureState, count: int, from: Vector3) -> Array:
 
 ## Posts for a defence at `centre`: free fortification slots within slot_r (spread round the base when no threat is known),
 ## then firing / cover posts within nat_r for the soldiers left over.
+## GAMEPLAY-03A: posts of a defence, fortification slots and natural cover judged on one scale against the believed
+## threat (`look`): protection (it stops bullets from there), a line of fire, concealment (SquadPositions.exposure: seen from
+## fewer of the believed viewpoints is better), sector (a slot facing the threat), a prepared position's value, distance
+## from the defended spot. A poor slot - facing away, or a tower in plain view of the whole approach - can lose to a hedge
+## nearby. Without a believed threat the slots are spread round the centre as before (nothing to hide from yet).
+var post_w := {"protect": 3.0, "fire": 2.0, "conceal": 2.5, "prepared": 1.0, "sector": 1.0, "elevated": 0.4, "dist_slot": 0.008, "dist_nat": 0.04, "mg_slot": 2.0}
+## Candidates whose exposure is measured, per post needed (the rest are judged without it: bounded sight checks).
+var post_exposure_per := 2
+## Weapon modifiers when posts are handed out (configurable): the machine gunner values a wide arc and low exposure, the
+## grenadier moves to a more concealed post only when it is clearly better.
+var role_post_w := {"mg_arc": 1.0, "mg_exposure": 2.0, "grenadier_margin": 0.2}
+
+
 func _defend_posts(sq: SquadState, units: Array, centre: Vector3, dir: Vector3, look: Vector3, slot_r: float, base_anchor := Vector3.INF, nat_r := 16.0) -> Array:
 	var count := units.size()
 	var mine := {}
@@ -1207,6 +1220,10 @@ func _defend_posts(sq: SquadState, units: Array, centre: Vector3, dir: Vector3, 
 		mine[u.id] = true
 	var threat := centre + dir * 90.0 if look.is_finite() else Vector3.INF
 	var slots := pos.fort_slots(centre, slot_r, sq.faction, threat, mine, base_anchor, 0.008 if base_anchor.is_finite() else 0.06)
+	if look.is_finite():
+		_set_meta(sq, "planned_blind", false)
+		return _judged_posts(sq, units, centre, dir, look, slots, base_anchor, nat_r)
+	_set_meta(sq, "planned_blind", true)
 	var posts: Array = []
 	if not look.is_finite() and slots.size() > count:
 		# No threat known: the slots that cover the most different directions round the centre.
@@ -1235,6 +1252,56 @@ func _defend_posts(sq: SquadState, units: Array, centre: Vector3, dir: Vector3, 
 			nat = pos.find_posts(need, centre, nat_r, centre + dir * 90.0, {"mode": "cover", "reserved": _reserved(sq, centre), "avoid": _avoid_list(sq), "unit_id": uid})
 		posts.append_array(nat.slice(0, need))
 		posts = pos.fill_open(posts, count, centre, dir)
+	return posts
+
+
+func _judged_posts(sq: SquadState, units: Array, centre: Vector3, dir: Vector3, look: Vector3, slots: Array, base_anchor: Vector3, nat_r: float) -> Array:
+	var count := units.size()
+	var w := post_w
+	var uid: int = units[0].id
+	# Posts other soldiers of the squad keep (a partial reposition) are not offered again.
+	var reserved: Array = _reserved(sq, centre) + (_meta(sq, "keep_posts", []) as Array)
+	var nat := pos.find_posts(count + 4, centre, nat_r, centre + dir * 90.0, {"mode": "fire", "los": look, "reserved": reserved, "avoid": _avoid_list(sq), "unit_id": uid})
+	if nat.size() < count:
+		nat.append_array(pos.find_posts(count, centre, nat_r, centre + dir * 90.0, {"mode": "cover", "reserved": reserved, "avoid": _avoid_list(sq), "unit_id": uid}))
+	var cands: Array = []
+	var has_mg := units.any(func(u: UnitState) -> bool: return _is_mg(u))
+	for e: Dictionary in slots:
+		var sector := maxf((e.facing as Vector3).dot(_dir_to(e.p, look)), 0.0)
+		e["pre"] = w.protect + w.fire + w.prepared + w.sector * sector + (w.elevated if bool(e.elevated) else 0.0) - w.dist_slot * _flat(e.p, centre)
+		# A machine-gun slot is worth most to a squad that has the gun for it.
+		if has_mg and String(e.get("role", "")) == "mg":
+			e["pre"] = float(e.pre) + w.mg_slot
+		cands.append(e)
+	for e: Dictionary in nat:
+		e["pre"] = (w.protect if bool(e.get("protected", false)) else 0.0) + (w.fire if bool(e.get("can_fire", false)) and bool(e.get("los", true)) else 0.0) \
+				- w.dist_nat * _flat(e.p, centre)
+		cands.append(e)
+	cands.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return float(x.pre) > float(y.pre))
+	var top := cands.slice(0, count * post_exposure_per)
+	for e: Dictionary in top:
+		var ex := pos.exposure(e.p, look)
+		e["exposure"] = ex
+		e["score"] = float(e.pre) + w.conceal * (1.0 - ex)
+	top.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return float(x.score) > float(y.score))
+	var posts: Array = []
+	for e: Dictionary in top:
+		if posts.size() >= count:
+			break
+		var clash := false
+		if not e.has("slot"):
+			for o: Dictionary in posts:
+				if _flat(o.p, e.p) < pos.post_spacing_m:
+					clash = true
+					break
+		if not clash:
+			posts.append(e)
+	if posts.size() < count:
+		posts = pos.fill_open(posts, count, centre, dir)
+	_set_meta(sq, "posts_judged", {"n": posts.size(), "slots": posts.filter(func(e: Dictionary) -> bool: return e.has("slot")).size(),
+		"exposure": snappedf(posts.reduce(func(acc: float, e: Dictionary) -> float: return acc + float(e.get("exposure", 1.0)), 0.0) / maxf(posts.size(), 1), 0.01),
+		"candidates": top.size(), "cand_slots": top.filter(func(e: Dictionary) -> bool: return e.has("slot")).size(),
+		"cand_exposure": snappedf(top.reduce(func(acc: float, e: Dictionary) -> float: return acc + float(e.get("exposure", 1.0)), 0.0) / maxf(top.size(), 1), 0.01)})
 	return posts
 
 
@@ -1281,6 +1348,8 @@ func _mg_best_post(units: Array, posts: Array, idx: Array, dir: Vector3) -> void
 	for i in units.size():
 		var p: Dictionary = posts[idx[i]]
 		var sc := float(p.get("score", 0.0)) + (0.5 if bool(p.get("elevated", false)) else 0.0)
+		# GAMEPLAY-03A: the gun wants a wide arc and not to be seen first (posts judged against a threat carry exposure).
+		sc += role_post_w.mg_arc * float(p.get("arc", 150.0)) / 180.0 - role_post_w.mg_exposure * float(p.get("exposure", 0.5))
 		if dir.length() > 0.1:
 			sc += 0.03 * (p.p as Vector3 - c).dot(dir)
 		if sc > best_sc:
@@ -1289,6 +1358,31 @@ func _mg_best_post(units: Array, posts: Array, idx: Array, dir: Vector3) -> void
 	if best_i != gunner:
 		var t: int = idx[gunner]
 		idx[gunner] = idx[best_i]
+		idx[best_i] = t
+	_grenadier_post(units, posts, idx, gunner)
+
+
+## GAMEPLAY-03A: the grenadier (launcher, grenades: a few precious shots) takes the most concealed of the other posts.
+func _grenadier_post(units: Array, posts: Array, idx: Array, gunner: int) -> void:
+	var g := -1
+	for i in units.size():
+		if i != gunner and (units[i] as UnitState).sec_id != &"":
+			g = i
+			break
+	if g < 0:
+		return
+	var best_i := g
+	var best_ex: float = float((posts[idx[g]] as Dictionary).get("exposure", 0.5)) - float(role_post_w.grenadier_margin)
+	for i in units.size():
+		if i == gunner or i == g:
+			continue
+		var ex := float((posts[idx[i]] as Dictionary).get("exposure", 0.5))
+		if ex < best_ex:
+			best_ex = ex
+			best_i = i
+	if best_i != g:
+		var t: int = idx[g]
+		idx[g] = idx[best_i]
 		idx[best_i] = t
 
 
@@ -1469,6 +1563,10 @@ func _bad_posts(sq: SquadState, a: Dictionary, now: float) -> String:
 	else:
 		_blind.erase(sq.id)
 	var threat: Vector3 = a.threat_pos
+	# GAMEPLAY-03A: posts chosen before any threat was believed are judged again once one is (concealment needs a viewpoint).
+	if bool(_meta(sq, "planned_blind", false)) and threat.is_finite() and float(a.threat_conf) >= 0.4:
+		_set_meta(sq, "planned_blind", false)
+		return "a threat is believed %s (%s, %.0f m): posts judged against it" % [_xz(threat), a.threat_src, _flat(sq.tactic_target, threat)]
 	if threat.is_finite() and float(a.threat_conf) >= 0.6 and sq.tactic_dir.length() > 0.1:
 		var nd := _dir_to(sq.tactic_target, threat)
 		var dot := nd.dot(sq.tactic_dir.normalized())
@@ -1508,7 +1606,23 @@ func _reposition(sq: SquadState, a: Dictionary, why: String, now: float) -> void
 	var look: Vector3 = threat if threat.is_finite() else Vector3.INF
 	var gb: Dictionary = sim.state.construction.bases.get(sq.garrison_base, {})
 	var slot_r := minf(BaseSim.reach_of(gb), 170.0) if not gb.is_empty() else fort_radius_m
+	# GAMEPLAY-03A: soldiers whose post still covers them against the threat (a slot whose sector faces it, natural cover that
+	# protects from it) stay; only the others get new posts - a garrison does not run round its base for a few degrees.
+	var keep: Array = []
+	var move: Array = []
+	for u: UnitState in units:
+		if threat.is_finite() and u.post_pos.is_finite() and _post_still_good(sq, u, threat):
+			keep.append(u)
+		else:
+			move.append(u)
+	if move.is_empty():
+		move = units
+		keep = []
+	_set_meta(sq, "keep_posts", keep.map(func(u: UnitState) -> Vector3: return u.post_pos))
+	units = move
 	var posts := _defend_posts(sq, units, centre, dir, look, slot_r, gb.get("anchor", Vector3.INF), 24.0)
+	_set_meta(sq, "keep_posts", [])
+	sq.tactic_rejected = "reposition: %d of %d soldiers move, %d keep their posts" % [move.size(), move.size() + keep.size(), keep.size()]
 	sq.tactic = SquadState.Tactic.REPOSITION
 	sq.tactic_dir = dir
 	sq.tactic_phase = PH_SETUP
@@ -1517,6 +1631,15 @@ func _reposition(sq: SquadState, a: Dictionary, why: String, now: float) -> void
 	_log(sq, "%s REPOSITION: %s" % [sq.squad_name, why])
 	started[SquadState.Tactic.REPOSITION] = int(started.get(SquadState.Tactic.REPOSITION, 0)) + 1
 	_send_posts(sq, units, posts, dir)
+
+
+## The soldier's post still serves against `threat`: a fortification slot whose sector faces it, or natural cover that
+## protects from it.
+func _post_still_good(sq: SquadState, u: UnitState, threat: Vector3) -> bool:
+	if u.fort_slot != "":
+		var e := pos.slot_by_key(u.fort_slot, sq.faction)
+		return not e.is_empty() and (e.facing as Vector3).dot(_dir_to(u.post_pos, threat)) >= cos(deg_to_rad(float(e.arc) * 0.5))
+	return sim.brain._evaluate_spot(null, u.post_pos, threat).protected
 
 
 func _run_reposition(sq: SquadState, _a: Dictionary, now: float) -> void:

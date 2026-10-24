@@ -294,6 +294,45 @@ func assign(unit_positions: Array, posts: Array, axis: Vector3) -> Array:
 	return result
 
 
+## GAMEPLAY-03A: how much of a post the enemy can see from where it is believed to be - the share of three viewpoints
+## (the believed threat's bearing and 25 degrees either side, 60-300 m out, at eye height) from which a soldier at the post
+## is visible at the chest or the head, by the same sight rule soldiers use (terrain, structures, trunks, foliage layers).
+## 0 = hidden from all, 1 = seen from all. Cover (what stops bullets) is measured separately (CombatBrain._evaluate_spot).
+## One sight per viewpoint at 1.35 m (between chest and head); cached per 2 m post cell and 25 m threat cell for a minute
+## (the ground and the trees do not move; a new structure clears the cache).
+func exposure(p: Vector3, threat: Vector3) -> float:
+	if not threat.is_finite():
+		return 0.5
+	var key := Vector4i(roundi(p.x / 2.0), roundi(p.z / 2.0), roundi(threat.x / 25.0), roundi(threat.z / 25.0))
+	var now := sim.state.time
+	var hit: Array = _exposure_cache.get(key, [])
+	if not hit.is_empty() and now - float(hit[1]) < 60.0 and int(hit[2]) == sim.state.construction.count():
+		exposure_cached += 1
+		return float(hit[0])
+	exposure_evals += 1
+	var t0 := Time.get_ticks_usec()
+	var line := sim.combat.line
+	var d := clampf(_flat(p, threat), 60.0, 300.0)
+	var dir := Vector3(threat.x - p.x, 0.0, threat.z - p.z)
+	dir = dir.normalized() if dir.length() > 0.1 else Vector3.FORWARD
+	var seen := 0
+	for ang: float in [0.0, 25.0, -25.0]:
+		var v := ground(p + dir.rotated(Vector3.UP, deg_to_rad(ang)) * d) + Vector3.UP * 1.6
+		if line.sight(v, p + Vector3.UP * 1.35).visible:
+			seen += 1
+	exposure_usec += Time.get_ticks_usec() - t0
+	if _exposure_cache.size() > 4000:
+		_exposure_cache.clear()
+	_exposure_cache[key] = [seen / 3.0, now, sim.state.construction.count()]
+	return seen / 3.0
+
+
+var exposure_evals := 0
+var exposure_cached := 0
+var exposure_usec := 0
+var _exposure_cache := {}
+
+
 func _near_any(p: Vector3, list: Array, r: float) -> bool:
 	for q: Vector3 in list:
 		if _flat(p, q) < r:

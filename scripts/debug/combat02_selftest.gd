@@ -885,8 +885,10 @@ func _c_persist() -> Dictionary:
 
 # --- 02D: weapon-aware squad behaviour, reactions, readability ---------------------------------------------------------------
 
-## A standard squad told to defend with a reported enemy in front: the machine gunner takes one of the most forward posts
-## (the best field of fire), not whatever post the formation order gave it.
+## A standard squad told to defend with a reported enemy in front: the machine gunner takes one of the posts with the best
+## field of fire. GAMEPLAY-03A changed what that means: posts are judged on cover, line of fire and how visible they are
+## from the believed enemy (a forward post in plain view is no longer the best), so the check is that the gun sits on one of
+## the least exposed posts of the squad (the old check, "one of the three most forward", ranked posts 1.5 m apart).
 func _d_mg_post() -> Dictionary:
 	await _fresh_c()
 	war.rules["squad_composition"] = "standard"
@@ -907,9 +909,22 @@ func _d_mg_post() -> Dictionary:
 	for i in fwd.size():
 		if fwd[i][1] == mg.id:
 			rank = i
-	var out := {"posts": fwd.size(), "mg_rank_forward": rank, "mg_forward_m": snappedf(float(fwd[rank][0]) if rank >= 0 else 0.0, 0.1),
-		"spread_m": snappedf(float(fwd[0][0]) - float(fwd[-1][0]), 0.1) if fwd.size() > 1 else 0.0}
-	_expect(fwd.size() >= 6 and rank >= 0 and rank <= 2, "d_mg_post: the machine gunner is not on a forward post %s" % str(out))
+	var threat: Vector3 = f.at + f.dir * 160.0
+	var ex := []
+	for id in sq.members:
+		var u := _u(id)
+		if u.post_pos.is_finite():
+			ex.append([demo.sim.tactics.pos.exposure(u.post_pos, threat), id])
+	ex.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	var ex_rank := -1
+	for i in ex.size():
+		if ex[i][1] == mg.id:
+			ex_rank = i
+	var mg_ex := float(ex[ex_rank][0]) if ex_rank >= 0 else 1.0
+	var better := ex.filter(func(e: Array) -> bool: return float(e[0]) < mg_ex).size()
+	var out := {"posts": fwd.size(), "mg_rank_forward": rank, "mg_exposure": snappedf(mg_ex, 0.01), "posts_less_exposed": better,
+		"exposures": ex.map(func(e: Array) -> float: return snappedf(float(e[0]), 0.01)), "spread_m": snappedf(float(fwd[0][0]) - float(fwd[-1][0]), 0.1) if fwd.size() > 1 else 0.0}
+	_expect(fwd.size() >= 6 and ex_rank >= 0 and better <= 2, "d_mg_post: the machine gunner is not on one of the least exposed posts %s" % str(out))
 	war.rules.erase("squad_composition")
 	return out
 

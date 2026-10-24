@@ -26,9 +26,22 @@ var first_contact := -1.0
 var first_kill := {}
 var _last_stage := -99
 var _last_t := -1.0
+## GAMEPLAY-03A: the defenders' side - the capture radius, first sightings each way (time, distance), first hits,
+## defender soldier-seconds seen by an attacker / inside the capture radius, post changes, fortification slots given up.
+var obj_r := 0.0
+var seen := {}
+var first_hit := {}
+var def_exposed_s := 0.0
+var def_inside_s := 0.0
+var def_post_changes := 0
+var def_slots_left := 0
+var def_slot_s := 0.0
+var _posts := {}
+var _slots := {}
 
 
-func start(p_sim: WorldSim, p_op: OperationState, attackers: Array, defenders: Array, objective_pos: Vector3) -> void:
+func start(p_sim: WorldSim, p_op: OperationState, attackers: Array, defenders: Array, objective_pos: Vector3, objective_r := 0.0) -> void:
+	obj_r = objective_r
 	sim = p_sim
 	op = p_op
 	att = attackers
@@ -83,6 +96,8 @@ func _on_damaged(t: UnitState, _amount: float, _zone: int, source: int) -> void:
 	var side := _side(s.faction)
 	if side != "" and t.faction != s.faction:
 		totals[side + "_hits"] += 1
+		if not first_hit.has(side):
+			first_hit[side] = snappedf(sim.state.time - t0, 0.1)
 
 
 func _on_died(u: UnitState) -> void:
@@ -148,6 +163,7 @@ func sample() -> void:
 		d.tactics[tn] = float(d.tactics.get(tn, 0.0)) + dt
 	totals.att_supp_given += side_supp.def
 	totals.def_supp_given += side_supp.att
+	_sample_defence(now, dt)
 	if now >= _next:
 		_next = now + interval
 		var parts: Array = []
@@ -163,6 +179,48 @@ func sample() -> void:
 			"att_supp_avg": snappedf(side_supp.att / maxi(side_n.att, 1), 0.01), "def_supp_avg": snappedf(side_supp.def / maxi(side_n.def, 1), 0.01)})
 
 
+func _sample_defence(now: float, dt: float) -> void:
+	var def_ids := {}
+	for sq: SquadState in defs:
+		if sim.state.get_squad(sq.id) == null:
+			continue
+		for id in sq.members:
+			var u := sim.state.get_unit(id)
+			if u == null or not u.alive:
+				continue
+			def_ids[id] = u
+			if obj_r > 0.0 and Vector2(u.position.x - obj_pos.x, u.position.z - obj_pos.z).length() <= obj_r:
+				def_inside_s += dt
+			if u.post_pos.is_finite():
+				var last: Vector3 = _posts.get(id, Vector3.INF)
+				if last.is_finite() and Vector2(last.x - u.post_pos.x, last.z - u.post_pos.z).length() > 3.0:
+					def_post_changes += 1
+				_posts[id] = u.post_pos
+			if u.fort_slot != "":
+				def_slot_s += dt
+			elif _slots.get(id, "") != "":
+				def_slots_left += 1
+			_slots[id] = u.fort_slot
+			# The defender's sightings of the attackers.
+			if not seen.has("def") and u.target_visible and u.target_id >= 0:
+				var t := sim.state.get_unit(u.target_id)
+				if t and t.faction == att_f:
+					seen["def"] = {"t": snappedf(now - t0, 0.1), "d": roundi(Vector2(t.position.x - u.position.x, t.position.z - u.position.z).length())}
+	var exposed := {}
+	for sq: SquadState in att:
+		if sim.state.get_squad(sq.id) == null:
+			continue
+		for id in sq.members:
+			var u := sim.state.get_unit(id)
+			if u == null or not u.alive or not u.target_visible or not def_ids.has(u.target_id):
+				continue
+			exposed[u.target_id] = true
+			if not seen.has("att"):
+				var t: UnitState = def_ids[u.target_id]
+				seen["att"] = {"t": snappedf(now - t0, 0.1), "d": roundi(Vector2(t.position.x - u.position.x, t.position.z - u.position.z).length())}
+	def_exposed_s += dt * exposed.size()
+
+
 func result() -> Dictionary:
 	var dur := maxf(sim.state.time - t0, 1.0)
 	var per := {}
@@ -176,7 +234,9 @@ func result() -> Dictionary:
 		"def_supp_avg": snappedf(float(totals.att_supp_given) / dur / maxf(_count(defs, true), 1.0), 0.01),
 		"att_supp_avg": snappedf(float(totals.def_supp_given) / dur / maxf(_count(att, true), 1.0), 0.01),
 		"att_accuracy": snappedf(float(totals.att_hits) / maxf(float(totals.att_shots), 1.0), 0.003), "def_accuracy": snappedf(float(totals.def_hits) / maxf(float(totals.def_shots), 1.0), 0.003),
-		"squads": per, "stages": stages, "withdraw_why": op.withdraw_why if op else "", "outcome": op.outcome if op else "", "rows": rows}
+		"squads": per, "stages": stages, "withdraw_why": op.withdraw_why if op else "", "outcome": op.outcome if op else "", "rows": rows,
+		"defence": {"first_seen": seen, "first_hit": first_hit, "def_exposed_s": roundi(def_exposed_s), "def_inside_s": roundi(def_inside_s),
+			"def_slot_s": roundi(def_slot_s), "def_post_changes": def_post_changes, "def_slots_left": def_slots_left}}
 
 
 ## Soldiers the squads started with (start = true) or have now.
