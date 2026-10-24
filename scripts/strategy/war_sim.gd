@@ -111,6 +111,7 @@ func setup(p_routes: StrategicRoutes) -> void:
 		war = sim.state.war
 		enabled = war.active
 		march.clear()
+		_alerts.clear()
 		intel.rebuild())
 
 
@@ -142,9 +143,11 @@ func update(delta: float) -> void:
 		supply.update()
 	if _t_reserves >= 5.0:
 		_t_reserves = 0.0
+		sync_bases()
 		for f: FactionState in war.factions.values():
 			_update_reserves(f)
 			_update_garrisons(f)
+			_update_base_alerts(f)
 	econ.update(delta)
 	var now := sim.state.time
 	for f: FactionState in war.factions.values():
@@ -315,9 +318,12 @@ func _transfer(o: ObjectiveState, f: int) -> void:
 		of.objectives_lost += 1
 	# AI-WAR-LOGISTICS-01: the bases that stand on the objective change hands with it (their facilities serve
 	# the new owner and stop serving the old one).
+	# GAMEPLAY-01D: a base goes with the objective it is linked to (its own base objective, or the headquarters it stands
+	# on) - never with a neighbouring objective it merely overlaps.
 	if old >= 0:
 		for b: Dictionary in sim.logistics.bases.bases_of(old):
-			if _flat(b.anchor, o.position) <= o.radius + 60.0:
+			var link := int(b.get("objective", -1))
+			if link == o.id or (link < 0 and _flat(b.anchor, o.position) <= o.radius + 60.0):
 				sim.logistics.bases.capture_base(b.id, f)
 	log_event(-1, "captured", "%s captured %s%s" % [WorldState.faction_name(f), o.obj_name,
 		(" from " + WorldState.faction_name(old)) if old >= 0 else ""], o.position)
@@ -485,6 +491,9 @@ func release_squads(squad_ids: Array, why: String) -> void:
 			var i := op.squads.find(sq.id)
 			if i >= 0:
 				op.squads.remove_at(i)
+				# GAMEPLAY-01G: a squad taken out (a player order, a reassignment) is no loss of the operation: its soldiers
+				# leave its strength (before, a released squad counted as casualties and a coordinated attack withdrew).
+				op.start_strength = maxi(op.start_strength - strength(sq), 0)
 			if op.squads.is_empty() and op.is_active():
 				_end(op, OperationState.Phase.CANCELLED, why)
 
@@ -917,11 +926,140 @@ func _garrison(op: OperationState, obj: ObjectiveState) -> void:
 	_defence_posture(obj, sqs, op.faction)
 
 
+# --- Bases as strategic targets (GAMEPLAY-01D) -------------------------------------------------------------------------
+# One base is one target: every base has one objective (ConstructionState.bases[].objective). A base standing on an objective
+# its faction holds (a headquarters) uses that one; any other base gets its own objective of kind "base" at its anchor, so
+# the strategic AI, the map, operations and capture treat it like every other objective (no second ownership: the
+# objective's owner is the base's, BaseSim.capture_base follows it). Base objectives give no income (the facilities are the
+# base's value) and disappear with the base's last facility.
+const BASE_OBJ_MIN_R := 90.0
+const BASE_OBJ_MAX_R := 160.0
+
+
+## Keeps every base linked to its objective (new bases, loaded saves, bases that lost their last facility). Every 5 s and
+## after a load; cheap (a few bases).
+func sync_bases() -> void:
+	var cs := sim.state.construction
+	var bs := sim.logistics.bases
+	var alive := {}
+	for b: Dictionary in cs.bases.values():
+		var o := war.objective(int(b.get("objective", -1)))
+		if o != null and o.is_base() and o.base_id != int(b.id):
+			o = null
+		if o == null:
+			for x: ObjectiveState in war.all_objectives():
+				if not x.is_base() and x.owner == int(b.faction) and _flat(x.position, b.anchor) <= x.radius + 60.0:
+					o = x
+					break
+		if o == null:
+			o = _add_base_objective(b)
+			log_event(int(b.faction), "base", "%s is a strategic objective now" % b.name, b.anchor)
+		b["objective"] = o.id
+		if o.is_base():
+			alive[o.id] = true
+			o.obj_name = String(b.name)
+			o.position = _ground(b.anchor)
+			o.radius = clampf(float(b.get("radius", 0.0)) if float(b.get("radius", 0.0)) > 0.0 else 100.0, BASE_OBJ_MIN_R, BASE_OBJ_MAX_R)
+			# Value: 1 for any base, +1 with stores, +1 with a barracks or a headquarters building (a command post alone is an
+			# outpost).
+			var stores := false
+			var main := false
+			for st: StructureState in bs.facilities_of(int(b.id)):
+				var k := FacilityDefs.kind_of(st.type_id)
+				stores = stores or k in [&"supply", &"storage", &"ammo", &"fuel", &"vehicle"]
+				main = main or k == &"barracks" or st.type_id == &"hq_building"
+			o.value = 1 + (1 if stores else 0) + (1 if main else 0)
+			if o.owner != int(b.faction) and o.capture_faction < 0:
+				# Ownership is the objective's; a base that disagrees (a save from before GAMEPLAY-01D) follows it.
+				if o.owner >= 0:
+					bs.capture_base(int(b.id), o.owner)
+				else:
+					o.owner = int(b.faction)
+	for o: ObjectiveState in war.all_objectives():
+		if o.is_base() and not alive.has(o.id):
+			for op: OperationState in war.active_operations():
+				if op.target_objective == o.id:
+					_end(op, OperationState.Phase.CANCELLED, "%s no longer exists" % o.obj_name)
+			for sq: SquadState in sim.state.squads.values():
+				if sq.station_objective == o.id:
+					sq.station_objective = -1
+			war.objectives.erase(o.id)
+			threatened.erase(o.id)
+			log_event(o.owner, "base", "%s no longer exists" % o.obj_name, o.position)
+
+
+func _add_base_objective(b: Dictionary) -> ObjectiveState:
+	var o := ObjectiveState.new()
+	var next := 1
+	for id in war.objectives:
+		next = maxi(next, int(id) + 1)
+	o.id = next
+	o.kind = &"base"
+	o.base_id = int(b.id)
+	o.obj_name = String(b.name)
+	o.position = _ground(b.anchor)
+	o.owner = int(b.faction)
+	o.last_change_at = sim.state.time
+	o.history.append([snappedf(sim.state.time, 0.1), o.owner])
+	war.objectives[o.id] = o
+	return o
+
+
+## The objective a base is linked to (null before sync_bases ran).
+func base_objective(base_id: int) -> ObjectiveState:
+	var b: Dictionary = sim.state.construction.bases.get(base_id, {})
+	return war.objective(int(b.get("objective", -1))) if not b.is_empty() else null
+
+
+## Warnings about a faction's bases, from what it has been told (IntelSim) and the capture state - never from enemy
+## positions it does not know: enemy activity near, a possible attack (enemy close to the base), the base under attack
+## (contested or being captured). Each kind once per base until it has been quiet for ALERT_QUIET_S.
+const ALERT_QUIET_S := 180.0
+var _alerts := {}
+
+
+func _update_base_alerts(f: FactionState) -> void:
+	if not f.player:
+		return  # the AI factions' own threat picture is StrategicDecision._collect_defence
+	var now := sim.state.time
+	for o: ObjectiveState in war.owned_by(f.id):
+		if not o.is_base() and o.base_id < 0 and sim.logistics.bases.base_area_at(o.position, f.id) < 0:
+			continue
+		var key := "%d:%d" % [f.id, o.id]
+		var st: Dictionary = _alerts.get(key, {"level": 0, "since": -1e9})
+		var level := 0
+		var near := intel.threat_near(f.id, o.position, o.radius + 700.0)
+		var close := intel.threat_near(f.id, o.position, o.radius + 220.0)
+		if near > 0:
+			level = 1
+		if close > 0:
+			level = 2
+		if o.contested or (o.capture_faction >= 0 and o.capture_faction != f.id and o.capture_progress > 0.0):
+			level = 3
+		if level > int(st.level):
+			match level:
+				1:
+					log_event(f.id, "threat", "Enemy activity reported near %s (about %d)" % [o.obj_name, near], o.position)
+				2:
+					log_event(f.id, "threat", "Possible attack on %s: about %d enemy within %d m" % [o.obj_name, close, roundi(o.radius + 220.0)], o.position)
+				3:
+					log_event(f.id, "attack", "%s is under attack" % o.obj_name, o.position)
+			st = {"level": level, "since": now}
+		elif level > 0:
+			st.since = now
+		elif int(st.level) > 0 and now - float(st.since) > ALERT_QUIET_S:
+			st = {"level": 0, "since": now}
+		_alerts[key] = st
+
+
 ## GAMEPLAY-01C: the faction's base that stands on objective obj (its anchor within the objective's radius + 60 m, the
 ## rule by which bases change hands with their objective), or -1.
 func base_at_objective(f: int, obj: ObjectiveState) -> int:
 	if obj == null:
 		return -1
+	if obj.is_base():
+		var bb: Dictionary = sim.state.construction.bases.get(obj.base_id, {})
+		return obj.base_id if not bb.is_empty() and int(bb.faction) == f else -1
 	var best := -1
 	var best_d := INF
 	for b: Dictionary in sim.logistics.bases.bases_of(f):

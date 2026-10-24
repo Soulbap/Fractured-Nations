@@ -26,6 +26,9 @@ const FORMAT_VERSION := 3
 var structures := {}
 ## LOGISTICS-01 bases: id -> {id, name, faction, anchor (Vector3), radius, founder}. A base is only a
 ## named group of facilities (StructureState.base_id); it owns nothing and no structure needs one.
+## GAMEPLAY-01D: `objective` - the strategic objective of the base (WarSim.sync_bases): an objective it stands on that its
+## faction holds (a headquarters), else its own objective of kind "base". The objective's owner is the ownership; `faction`
+## here follows it (BaseSim.capture_base is the only writer after founding).
 ## BASE-01: a base established by a command post has a fixed area (anchor = the command post, `radius`
 ## m) and `founder` = that structure's id; radius 0 is a LOGISTICS-01 proximity group whose anchor
 ## follows its facilities. founder -1: none (or the command post was removed).
@@ -198,7 +201,7 @@ func to_dict() -> Dictionary:
 	for id in bases:
 		var b: Dictionary = bases[id]
 		bl.append({"id": id, "name": b.name, "faction": b.faction, "anchor": [snappedf(b.anchor.x, 0.1), snappedf(b.anchor.y, 0.1), snappedf(b.anchor.z, 0.1)],
-			"radius": b.get("radius", 0.0), "founder": b.get("founder", -1)})
+			"radius": b.get("radius", 0.0), "founder": b.get("founder", -1), "objective": b.get("objective", -1)})
 	return {"format": FORMAT_VERSION, "next_id": _next_id, "structures": list, "clearings": clearings.duplicate(true), "bases": bl, "next_base": _next_base_id}
 
 
@@ -211,7 +214,7 @@ func from_dict(d: Dictionary) -> void:
 	for bd: Dictionary in d.get("bases", []):
 		var a: Array = bd.anchor
 		bases[int(bd.id)] = {"id": int(bd.id), "name": String(bd.name), "faction": int(bd.faction), "anchor": Vector3(a[0], a[1], a[2]),
-			"radius": float(bd.get("radius", 0.0)), "founder": int(bd.get("founder", -1))}
+			"radius": float(bd.get("radius", 0.0)), "founder": int(bd.get("founder", -1)), "objective": int(bd.get("objective", -1))}
 	_next_base_id = int(d.get("next_base", 1))
 	for sd in d.get("structures", []):
 		var s := StructureState.from_dict(sd)

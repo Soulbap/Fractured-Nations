@@ -832,6 +832,15 @@ func _refresh_events() -> void:
 		var h := HBoxContainer.new()
 		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		h.add_theme_constant_override("separation", FNUI.S3)
+		var epos: Vector3 = e.get("pos", Vector3.INF)
+		if epos.is_finite():
+			# GAMEPLAY-01D: a warning with a place - a click centres the map on it.
+			h.mouse_filter = Control.MOUSE_FILTER_STOP
+			h.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			h.tooltip_text = "Click: show on the map"
+			h.gui_input.connect(func(ev: InputEvent) -> void:
+				if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+					focus_on(epos))
 		var tl := FNUI.label("%02d:%02d" % [int(e.t / 3600.0) % 24, int(e.t / 60.0) % 60], FNUI.CAPTION, FNUI.INK_3, "number")
 		tl.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		h.add_child(tl)
@@ -966,6 +975,14 @@ func _order_at(sp: Vector2) -> void:
 		order(OperationState.Type.REINFORCE if o.owner == faction else OperationState.Type.ATTACK, oid)
 	else:
 		order(OperationState.Type.MOVE, -1, to_world(sp))
+
+
+## Centres the map on p (zoomed in to at least the objective level).
+func focus_on(p: Vector3) -> void:
+	if not p.is_finite():
+		return
+	view_center = Vector2(p.x, p.z)
+	queue_redraw()
 
 
 func go_to(p: Vector3) -> void:
@@ -1585,6 +1602,14 @@ func _draw_objective(o: ObjectiveState, font: Font, level: int) -> void:
 			draw_rect(Rect2(p - Vector2(s, s * 0.45), Vector2(s * 2.0, s * 0.9)), Color(0.08, 0.08, 0.08, 0.9), true)
 			draw_line(p + Vector2(-s, -s * 0.45), p + Vector2(s, -s * 0.45), col, 2.0)
 			draw_line(p + Vector2(-s, s * 0.45), p + Vector2(s, s * 0.45), col, 2.0)
+		&"base":
+			# GAMEPLAY-01D: a base - a walled square with a flag.
+			draw_rect(Rect2(p - Vector2(s, s * 0.8), Vector2(s * 2.0, s * 1.6)), Color(0.08, 0.08, 0.08, 0.9), true)
+			draw_rect(Rect2(p - Vector2(s, s * 0.8), Vector2(s * 2.0, s * 1.6)), col, false, 2.0)
+			for k in 3:
+				draw_rect(Rect2(p + Vector2(-s + k * s * 0.8, -s * 0.8 - 3.0), Vector2(s * 0.4, 3.0)), col, true)
+			draw_line(p + Vector2(-s * 0.2, s * 0.45), p + Vector2(-s * 0.2, -s * 0.45), col, 1.5)
+			draw_colored_polygon(PackedVector2Array([p + Vector2(-s * 0.2, -s * 0.45), p + Vector2(s * 0.5, -s * 0.25), p + Vector2(-s * 0.2, -s * 0.05)]), col)
 		&"town":
 			draw_circle(p, s, Color(0.08, 0.08, 0.08, 0.9))
 			draw_arc(p, s, 0.0, TAU, 20, col, 2.5)

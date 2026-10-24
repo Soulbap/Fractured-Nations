@@ -367,6 +367,15 @@ func _on_war_event(e: Dictionary) -> void:
 			icon = &"blocked"
 	var l := PanelContainer.new()
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var epos: Vector3 = e.get("pos", Vector3.INF)
+	if epos.is_finite() and e.kind in ["threat", "attack", "contested", "captured", "base", "garrison"]:
+		# GAMEPLAY-01D: the warning's place - a click moves the tactical camera there.
+		l.mouse_filter = Control.MOUSE_FILTER_STOP
+		l.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		l.tooltip_text = "Click: go there"
+		l.gui_input.connect(func(ev: InputEvent) -> void:
+			if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT and game and game.rts_camera:
+				game.rts_camera.frame(epos, game.rts_camera.yaw, 120.0))
 	var sb := FNUI.panel_style(FNUI.S3)
 	sb.border_width_left = 2
 	sb.border_color = col

@@ -71,7 +71,9 @@ func update(dt: float) -> void:
 func owned_value(f: FactionState) -> int:
 	var v := 0
 	for o: ObjectiveState in ws.war.owned_by(f.id):
-		v += o.value
+		# GAMEPLAY-01D: a base's own objective is a target, not a source of income (economy baseline unchanged).
+		if not o.is_base():
+			v += o.value
 	return v
 
 
@@ -131,7 +133,8 @@ func player_income(f: FactionState, minutes: float) -> Dictionary:
 		_income_note[f.id] = sim.state.time + 60.0
 		var names: Array[String] = []
 		for o: ObjectiveState in ws.war.owned_by(f.id):
-			names.append(o.obj_name)
+			if not o.is_base():
+				names.append(o.obj_name)
 		ws.log_event(f.id, "income", "Income +%d supplies from %s (%d per minute)" % [roundi(_income_acc[f.id]), ", ".join(names), roundi(rate_per_min(f).supplies)])
 		_income_acc[f.id] = 0.0
 	stats.income_ticks += 1

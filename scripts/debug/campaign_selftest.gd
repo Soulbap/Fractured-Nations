@@ -29,6 +29,12 @@ func run(args: PackedStringArray) -> void:
 		_log("c_forts", await _c_forts())
 	if _want("c_ai_garrison"):
 		_log("c_ai_garrison", await _c_ai_garrison())
+	if _want("d_targets"):
+		_log("d_targets", await _d_targets())
+	if _want("d_ai_war"):
+		_log("d_ai_war", await _d_ai_war())
+	if _want("d_player_assault"):
+		_log("d_player_assault", await _d_player_assault())
 	_finish()
 
 
@@ -312,6 +318,310 @@ func _c_ai_garrison() -> Dictionary:
 	if not held.is_empty():
 		await _frame((held[0] as UnitState).position, 40.0, 0.7)
 		_png("c_ai_garrison")
+	return out
+
+
+# --- 01D: base warfare -------------------------------------------------------------------------------------------------
+
+## A finished building of faction f at `at` facing `out` (the scenario-setup path: check_building, groundwork, the record;
+## no site), or null when the ground refuses it.
+func _add_built(type_id: StringName, at: Vector3, out: Vector3, f: int) -> StructureState:
+	var def := StructureCatalog.get_def(type_id)
+	var yaw := atan2(-out.x, -out.z)
+	for dr: float in [0.0, 5.0, 10.0, 15.0, 22.0, 30.0]:
+		for k in 8:
+			var p := at + Vector3(cos(k * TAU / 8.0), 0.0, sin(k * TAU / 8.0)) * dr
+			p = demo.on_ground(p.x, p.z, 0.0)
+			var chk := demo.structures.check_building(def, p, yaw, -1, true)
+			if chk.ok:
+				var s := demo.sim.state.construction.add_building(type_id, chk.xform.origin, yaw, f)
+				demo.sim.state.construction.add_clearings(demo.structures.clearings_for(s, true))
+				return s
+			if dr == 0.0:
+				break
+	return null
+
+
+## An outpost of faction f round `at`: a command post, two fighting positions and a steel guard tower facing `out`, and a
+## squad of `n` garrisoning it. Returns {base, objective, squad, structures, cp}.
+func _outpost(f: int, at: Vector3, out: Vector3, n := 6) -> Dictionary:
+	var ws := demo.sim.war
+	var cp := _add_built(&"command_post", at, out, f)
+	if cp == null:
+		return {}
+	var built := [cp]
+	for e: Array in [[&"fighting_position", out, 28.0], [&"guard_tower_steel", out.rotated(Vector3.UP, 0.6), 24.0], [&"fighting_position", out.rotated(Vector3.UP, -0.7), 26.0]]:
+		var st := _add_built(e[0], cp.position + (e[1] as Vector3) * float(e[2]), e[1], f)
+		if st:
+			built.append(st)
+	ws.sync_bases()
+	var sq := ws.spawn_squad(_war().faction(f), demo.sim.tactics.pos.nearest_valid(cp.position - out * 15.0, 20.0), n)
+	demo.sim.tactics.assign_garrison(sq, cp.base_id, SquadState.Owner.SQUAD)
+	return {"base": cp.base_id, "objective": ws.base_objective(cp.base_id), "squad": sq, "structures": built, "cp": cp}
+
+
+func _owned_structures(f: int, ids: Array) -> int:
+	var n := 0
+	for id in ids:
+		var s := demo.sim.state.construction.get_structure(id)
+		if s and s.faction == f:
+			n += 1
+	return n
+
+
+## Bases are strategic targets: a player base gets one objective of kind "base" (owner = the base's faction, no income),
+## the HQ base stays linked to its HQ objective, the map draws it, the AI's decision evaluates it among its attack
+## candidates (when in reach), and an enemy approaching the player's base raises the warnings in order, each once.
+func _d_targets() -> Dictionary:
+	var war := _war()
+	var ws := demo.sim.war
+	var pf := war.player_faction
+	var sq: SquadState = _player_squads()[0]
+	var out := {}
+	var at := ws.squad_center(sq)
+	var front := Vector3(0.6, 0.0, -0.8).normalized()
+	var pb := _outpost(pf, at + front * 60.0, front, 4)
+	_expect(not pb.is_empty() and pb.objective != null, "d: no player base / base objective")
+	if pb.is_empty() or pb.objective == null:
+		return out
+	var po: ObjectiveState = pb.objective
+	var income_value := ws.econ.owned_value(war.faction(pf))
+	out["player_base"] = {"objective": po.obj_name, "kind": String(po.kind), "owner": po.owner, "value": po.value, "radius": po.radius, "income_value": income_value}
+	_expect(po.is_base() and po.owner == pf and income_value == 0, "d: the player's base objective is wrong: %s" % str(out.player_base))
+	var south_hq := war.objective(war.faction(1).hq_objective)
+	var sb: Array = demo.sim.logistics.bases.bases_of(1)
+	out["south_hq_link"] = {"base_objective": int(sb[0].get("objective", -1)) if not sb.is_empty() else -1, "hq": south_hq.id if south_hq else -1}
+	_expect(not sb.is_empty() and south_hq != null and int(sb[0].objective) == south_hq.id, "d: South's HQ base is not linked to its HQ objective: %s" % str(out.south_hq_link))
+	demo.toggle_map()
+	demo.strategic_map.focus_on(po.position)
+	await _seconds(1.0)
+	_png("d_map_player_base")
+	demo.toggle_map()
+	await _seconds(0.5)
+	var f1 := war.faction(1)
+	ws.strat.decide(f1)
+	var listed := false
+	var cands: Array = f1.decisions.back().candidates if not f1.decisions.is_empty() else []
+	for c: Dictionary in cands:
+		if c.name == po.obj_name:
+			listed = true
+	out["south_candidates"] = cands.map(func(c: Dictionary) -> String: return "%s %.1f%s" % [c.name, c.score, " (skipped)" if c.skipped else ""])
+	out["listed_by_south"] = listed
+	out["south_reach_km"] = snappedf(ws.profile(f1).max_attack_distance / 1000.0, 0.1)
+	var gsq: SquadState = pb.squad
+	var events0 := war.events.size()
+	var e_at := demo.sim.tactics.pos.nearest_valid(po.position + front * 520.0, 40.0)
+	var esq := ws.spawn_squad(war.faction(1), e_at, 6)
+	demo.sim.squads.order_move([esq.id], po.position)
+	await _until(func() -> bool: return po.contested or esq.members.size() <= 1 or gsq.members.is_empty(), 240.0, 4.0)
+	var texts := []
+	for i in range(events0, war.events.size()):
+		var e: Dictionary = war.events[i]
+		if e.faction == pf and (e.kind == "threat" or e.kind == "attack"):
+			texts.append(e.text)
+	out["warnings"] = texts
+	_expect(texts.size() >= 1, "d: the player was not warned about the approaching enemy: %s" % str(texts))
+	if po.contested:
+		_expect(texts.any(func(t: String) -> bool: return t.contains("under attack")), "d: contested base without an 'under attack' warning: %s" % str(texts))
+	var spam := 0
+	for t: String in texts:
+		spam = maxi(spam, texts.count(t))
+	_expect(spam <= 1, "d: repeated warnings: %s" % str(texts))
+	for id in esq.members.duplicate():
+		demo.sim.combat.kill(demo.sim.state.get_unit(id))
+	return out
+
+
+## An AI faction attacks another AI faction's base: an East outpost near ground South holds; South chooses it as its target
+## (its own decision; the result says when it had to be ordered for the test), attacks with the existing operation, East
+## defends from the outpost's fortifications, the capture is contested while defenders hold and completes after local
+## control; the base and its structures change hands intact; the defenders' garrison ends; all of it with the camera
+## kilometres away (no bodies). A save / load during the operation continues it.
+func _d_ai_war() -> Dictionary:
+	var war := _war()
+	var ws := demo.sim.war
+	var out := {}
+	var best: ObjectiveState = null
+	var best_d := INF
+	var east_ref := Vector3.ZERO
+	for o: ObjectiveState in war.owned_by(1):
+		if o.is_hq() or o.is_base():
+			continue
+		for t: ObjectiveState in war.owned_by(2):
+			var d := WarSim._flat(o.position, t.position)
+			if d < best_d:
+				best_d = d
+				best = o
+				east_ref = t.position
+	_expect(best != null, "d_ai: no South objective near East")
+	if best == null:
+		return out
+	var dir := east_ref - best.position
+	dir.y = 0.0
+	dir = dir.normalized()
+	# Near South's free squads (an attack within reach of its forces), 1.3 km from them towards East.
+	var f1s := war.faction(1)
+	var free0 := ws._free_squads(f1s, ws.profile(f1s))
+	var from: Vector3 = best.position
+	var near_d := INF
+	for sid in free0:
+		var c := ws.squad_center(demo.sim.state.get_squad(sid))
+		if WarSim._flat(c, east_ref) < near_d:
+			near_d = WarSim._flat(c, east_ref)
+			from = c
+	var spot := demo.sim.tactics.pos.nearest_valid(from + dir * 1300.0, 80.0)
+	var ob := _outpost(2, spot, -dir, 6)
+	_expect(not ob.is_empty() and ob.objective != null, "d_ai: the East outpost could not be built at %s" % str(spot))
+	if ob.is_empty() or ob.objective == null:
+		return out
+	var eo: ObjectiveState = ob.objective
+	var ids: Array = ob.structures.map(func(st: StructureState) -> int: return st.id)
+	var gid: int = (ob.squad as SquadState).id
+	out["outpost"] = {"objective": eo.obj_name, "near": best.obj_name, "km_from_south_forces": snappedf(WarSim._flat(eo.position, from) / 1000.0, 0.1), "structures": ids.size(),
+		"free_south_squads": free0.size()}
+	var away := demo.on_ground(eo.position.x + 5000.0, eo.position.z + 3000.0, 0.0)
+	demo.detail.activate_at(away)
+	demo.rts_camera.frame(away, 0.5, 80.0)
+	var f1 := war.faction(1)
+	# Forces to spare: two fresh South squads near the outpost's side (South's own squads are tied up in this scenario).
+	for k in 2:
+		ws.spawn_squad(f1, demo.sim.tactics.pos.nearest_valid(from + Vector3(k * 14.0, 0.0, 10.0), 30.0), 8)
+	f1.recovery_until = 0.0
+	f1.next_decision_at = 0.0
+	var t0 := demo.sim.state.time
+	var find_op := func() -> OperationState:
+		for o2: OperationState in war.active_operations(1):
+			if o2.target_objective == eo.id and o2.type == OperationState.Type.ATTACK:
+				return o2
+		return null
+	await _until(func() -> bool: return find_op.call() != null, 720.0, 8.0)
+	var op: OperationState = find_op.call()
+	out["natural_choice"] = op != null
+	out["choice_after_s"] = roundi(demo.sim.state.time - t0)
+	out["south_last_decision"] = f1.last_decision
+	var cands: Array = f1.decisions.back().candidates if not f1.decisions.is_empty() else []
+	out["south_candidates"] = cands.map(func(c: Dictionary) -> String: return "%s %.1f%s" % [c.name, c.score, " (skipped)" if c.skipped else ""])
+	if op == null:
+		var free := ws._free_squads(f1, ws.profile(f1))
+		op = ws.start_operation(1, OperationState.Type.ATTACK, ws._pick_near(free, eo.position, 14), eo.id)
+	_expect(op != null, "d_ai: no South attack on the East outpost")
+	if op == null:
+		return out
+	out["op"] = {"id": op.id, "squads": op.squads.size(), "soldiers": op.start_strength, "reason": op.reason}
+	await _until(func() -> bool: return op.phase >= OperationState.Phase.ENGAGING or not op.is_active(), 2400.0, 8.0)
+	demo.construction.save()
+	var lr := demo.construction.load_game()
+	await _physics(10)
+	var op2 := war.operation(op.id)
+	out["persist"] = {"load": lr.ok, "op_active": op2 != null and op2.is_active(), "phase": op2.phase_name() if op2 else "-", "stage": op2.stage_name() if op2 else "-"}
+	_expect(lr.ok and op2 != null and (op2.is_active() or op2.phase == OperationState.Phase.COMPLETED), "d_ai: the operation did not survive save / load: %s" % str(out.persist))
+	op = op2
+	eo = war.objective(eo.id)
+	var gsq := demo.sim.state.get_squad(gid)
+	var in_forts := _fort_units(2).size()
+	var contested_seen := false
+	var bodies := 0
+	var t1 := demo.sim.state.time
+	while demo.sim.state.time - t1 < 1800.0 and eo.owner == 2:
+		CoreDemo.apply_time_scale(8.0)
+		await _physics(20)
+		contested_seen = contested_seen or eo.contested
+		for u: UnitState in demo.sim.state.units.values():
+			if u.has_body and WarSim._flat(u.position, eo.position) < 400.0:
+				bodies = 1
+		if op != null and not op.is_active() and eo.owner == 2:
+			break
+		if int(demo.sim.state.time) % 120 < 2:
+			var dd := []
+			for sid in (op.squads if op else []):
+				var dsq := demo.sim.state.get_squad(sid)
+				if dsq:
+					dd.append("%s %.0fm %s %s r%d/%d %s" % [dsq.squad_name, WarSim._flat(ws.squad_center(dsq), eo.position), dsq.order_name(), dsq.tactic_name(), dsq.route_i, dsq.route.size(), dsq.route_wait_kind])
+			print("CP diag t=%d op=%s stage=%s wait=%s why=%s transport=%s squads=%s" % [int(demo.sim.state.time), op.phase_name() if op else "-", op.stage_name() if op else "-", op.wait_reason if op else "", op.stage_why if op else "", str(op.transport.get("mode", "")) if op else "", str(dd)])
+	CoreDemo.apply_time_scale(1.0)
+	gsq = demo.sim.state.get_squad(gid)
+	out["fight"] = {"defenders_in_forts_at_start": in_forts, "contested_seen": contested_seen, "owner": eo.owner, "op": op.phase_name() if op else "-",
+		"outcome": op.outcome if op else "", "defenders_left": gsq.members.size() if gsq else 0, "bodies_near": bodies, "minutes": snappedf((demo.sim.state.time - t1) / 60.0, 0.1)}
+	_expect(bodies == 0, "d_ai: bodies near the fight although the camera is away")
+	_expect(contested_seen, "d_ai: the capture was never contested while defenders were there")
+	_expect(eo.owner == 1, "d_ai: South did not capture the East outpost: %s" % str(out.fight))
+	var b: Dictionary = demo.sim.state.construction.bases.get(int(ob.base), {})
+	out["after"] = {"base_faction": int(b.get("faction", -1)), "structures_south": _owned_structures(1, ids), "structures": ids.size(),
+		"east_garrison": gsq.garrison_base if gsq else -1}
+	_expect(int(b.get("faction", -1)) == 1 and _owned_structures(1, ids) == ids.size(), "d_ai: the base / its structures did not change hands intact: %s" % str(out.after))
+	_expect(gsq == null or gsq.garrison_base < 0, "d_ai: the defeated East squad still garrisons the lost base")
+	demo.detail.activate_at(eo.position)
+	await _frame(eo.position, 70.0, 0.6)
+	_png("d_ai_captured_outpost")
+	return out
+
+
+## The player conducts a base assault from the strategic map: three squads, ATTACK on a South outpost near the start; the
+## operation shows on the map, the squads advance with the existing coordination, a direct order takes one squad out
+## (player override), the capture completes and the structures remain (now the player's).
+func _d_player_assault() -> Dictionary:
+	var war := _war()
+	var ws := demo.sim.war
+	var pf := war.player_faction
+	var sq: SquadState = _player_squads()[0]
+	var out := {}
+	var at := ws.squad_center(sq)
+	var dir := Vector3(-0.7, 0.0, -0.7).normalized()
+	var ob := _outpost(1, demo.sim.tactics.pos.nearest_valid(at + dir * 700.0, 60.0), -dir, 5)
+	_expect(not ob.is_empty() and ob.objective != null, "d_pa: the South outpost could not be built")
+	if ob.is_empty() or ob.objective == null:
+		return out
+	var eo: ObjectiveState = ob.objective
+	var ids: Array = ob.structures.map(func(st: StructureState) -> int: return st.id)
+	var sq2 := ws.spawn_squad(war.faction(pf), demo.sim.tactics.pos.nearest_valid(at + Vector3(12, 0, 12), 20.0), 8)
+	var sq3 := ws.spawn_squad(war.faction(pf), demo.sim.tactics.pos.nearest_valid(at + Vector3(-12, 0, 18), 20.0), 8)
+	var sq4 := ws.spawn_squad(war.faction(pf), demo.sim.tactics.pos.nearest_valid(at + Vector3(-22, 0, 4), 20.0), 8)
+	await _until(func() -> bool: return _fort_units(1).size() >= 3, 120.0, 4.0)
+	out["defenders_in_forts"] = _fort_units(1).size()
+	demo.toggle_map()
+	await _seconds(0.5)
+	var sm := demo.strategic_map
+	sm.selected_squads = [sq.id, sq2.id, sq4.id, sq3.id]
+	var op := sm.order(OperationState.Type.ATTACK, eo.id)
+	if op:
+		sm.select_operation(op.id)
+	sm.focus_on(eo.position)
+	await _seconds(1.0)
+	_png("d_map_player_assault")
+	demo.toggle_map()
+	_expect(op != null and op.player_ordered and op.squads.size() == 4, "d_pa: the map order did not start a player operation")
+	if op == null:
+		return out
+	await _until(func() -> bool: return op.stage >= OperationState.Stage.DEPLOY or not op.is_active(), 600.0, 4.0)
+	await _frame(eo.position - dir * 120.0, 140.0, 0.8)
+	_png("d_player_assault")
+	demo.rts.select_squads([sq3.id])
+	demo.rts.order_move(ws.squad_center(sq3) - dir * 30.0)
+	await _physics(5)
+	out["override"] = {"squad_op": sq3.op_id, "op_squads": op.squads.size()}
+	_expect(sq3.op_id < 0 and not op.squads.has(sq3.id), "d_pa: a player order did not take the squad out of its operation")
+	var contested_seen := false
+	var progress_seen := 0.0
+	var shot := false
+	var t1 := demo.sim.state.time
+	while demo.sim.state.time - t1 < 900.0 and eo.owner == 1 and op.is_active():
+		CoreDemo.apply_time_scale(4.0)
+		await _physics(20)
+		contested_seen = contested_seen or eo.contested
+		if eo.capture_faction == pf:
+			progress_seen = maxf(progress_seen, eo.capture_progress)
+			if eo.capture_progress > 0.4 and not shot:
+				shot = true
+				CoreDemo.apply_time_scale(1.0)
+				await _frame(eo.position, 70.0, 0.7)
+				_png("d_capture_in_progress")
+	CoreDemo.apply_time_scale(1.0)
+	out["result"] = {"owner": eo.owner, "op": op.phase_name(), "outcome": op.outcome, "contested_seen": contested_seen, "progress_seen": snappedf(progress_seen, 0.01),
+		"stage": op.stage_name(), "structures_player": _owned_structures(pf, ids), "structures": ids.size(), "minutes": snappedf((demo.sim.state.time - t1) / 60.0, 0.1)}
+	_expect(eo.owner == pf, "d_pa: the player's assault did not capture the outpost: %s" % str(out.result))
+	_expect(_owned_structures(pf, ids) == ids.size(), "d_pa: the captured structures are not the player's: %s" % str(out.result))
+	await _frame(eo.position, 70.0, 0.7)
+	_png("d_captured_installation")
 	return out
 
 

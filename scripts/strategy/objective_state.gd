@@ -28,12 +28,16 @@ var last_change_at := -1.0e9
 var history: Array = []
 ## Soldiers present per faction at the last capture update (runtime and map display).
 var presence := {}
+## GAMEPLAY-01D: kind &"base" - the strategic target of one base (ConstructionState.bases id). Created and kept in step
+## with the base by WarSim.sync_bases; its owner is the base's ownership (captured like any objective).
+var base_id := -1
 
 
 func to_dict() -> Dictionary:
 	return {"id": id, "name": obj_name, "kind": kind, "position": position, "radius": radius, "value": value,
 		"owner": owner, "capture_faction": capture_faction, "capture_progress": capture_progress,
-		"contested": contested, "last_change_at": last_change_at, "history": history.duplicate(true), "presence": presence.duplicate()}
+		"contested": contested, "last_change_at": last_change_at, "history": history.duplicate(true), "presence": presence.duplicate(),
+		"base_id": base_id}
 
 
 static func from_dict(d: Dictionary) -> ObjectiveState:
@@ -51,7 +55,12 @@ static func from_dict(d: Dictionary) -> ObjectiveState:
 	o.last_change_at = d.get("last_change_at", -1.0e9)
 	o.history = d.get("history", []).duplicate(true)
 	o.presence = d.get("presence", {}).duplicate()
+	o.base_id = d.get("base_id", -1)
 	return o
+
+
+func is_base() -> bool:
+	return kind == &"base"
 
 
 func is_hq() -> bool:

@@ -309,6 +309,18 @@ func capture_base(bid: int, new_faction: int) -> Dictionary:
 		if s.inventory != null:
 			for k in loot:
 				loot[k] += s.inventory.get_qty(StringName(k))
+	# GAMEPLAY-01D: the base's other structures (towers, positions, walls inside its area) are captured with it - intact,
+	# damage included; roads and paved areas stay as they are.
+	var reach := reach_of(b)
+	for s: StructureState in _cs().all():
+		if s.faction != old or FacilityDefs.has(s.type_id):
+			continue
+		var def := StructureCatalog.get_def(s.type_id)
+		if def == null or def.is_surface():
+			continue
+		if Vector2(s.site_center().x - b.anchor.x, s.site_center().z - b.anchor.z).length() <= reach:
+			s.faction = new_faction
+			n += 1
 	b["faction"] = new_faction
 	var of := sim.state.war.faction(old)
 	if of:
