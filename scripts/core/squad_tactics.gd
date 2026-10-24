@@ -1331,7 +1331,8 @@ func assign_garrison(sq: SquadState, base_id: int, owner: int) -> Dictionary:
 	if obj >= 0:
 		sq.station_objective = obj
 	sq.tactic_cooldown_until = 0.0
-	_next_garrison[sq.id] = 0.0
+	# Several squads assigned at once plan in different steps (a plan is a slot search: spread the cost).
+	_next_garrison[sq.id] = sim.state.time + float(sq.id % 4) * tick_s
 	_log(sq, "%s assigned to garrison %s" % [sq.squad_name, b.name])
 	if sim.war and sim.war.enabled:
 		sim.war.log_event(sq.faction, "garrison", "%s garrisons %s" % [sq.squad_name, b.name], b.anchor)

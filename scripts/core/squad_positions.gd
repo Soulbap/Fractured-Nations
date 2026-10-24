@@ -360,6 +360,25 @@ func fort_slots(center: Vector3, radius: float, faction: int, threat: Vector3, m
 ## Every slot of one structure in world space (taken or not), as fort_slots returns them (without a score). Lines: behind
 ## every n-th module, on the side towards base_anchor (both sides when there is none).
 func slots_of_structure(s: StructureState, base_anchor := Vector3.INF) -> Array:
+	# The slots of a structure only change when it or its surroundings do (its modules, owner, other structures placed or
+	# removed): cached per structure.
+	var key := "%d|%d|%d|%d|%s" % [s.instances.size(), s.removed.size(), s.faction, sim.state.construction.count(), str(s.instances[0].origin) if not s.instances.is_empty() else ""]
+	var c: Dictionary = _slot_cache.get(s.id, {})
+	if c.get("key", "") != key:
+		c = {"key": key, "list": _compute_slots(s)}
+		_slot_cache[s.id] = c
+	var out: Array = []
+	for e: Dictionary in c.list:
+		if base_anchor.is_finite() and e.has("mirror") and _flat(e.p, base_anchor) > _flat(e.mirror, base_anchor):
+			continue
+		out.append(e.duplicate())
+	return out
+
+
+var _slot_cache := {}
+
+
+func _compute_slots(s: StructureState) -> Array:
 	var out: Array = []
 	if DefenceDefs.is_line(s.type_id):
 		var rule := DefenceDefs.line_rule(s.type_id)
@@ -374,15 +393,12 @@ func slots_of_structure(s: StructureState, base_anchor := Vector3.INF) -> Array:
 				var facing := (xf.origin - p)
 				facing.y = 0.0
 				facing = facing.normalized()
-				if base_anchor.is_finite():
-					var other: Vector3 = xf * Vector3(0.0, 0.0, -sgn * float(rule.back))
-					if _flat(p, base_anchor) > _flat(other, base_anchor):
-						continue
 				var g := ground(p)
 				if not _slot_ground(g):
 					continue
 				out.append({"p": g, "kind": "slot", "protected": true, "can_fire": true, "los": true, "slot": "%d:%d:%d" % [s.id, i, side],
-					"access": g, "facing": facing, "arc": float(rule.arc), "elevated": false, "role": "", "structure": s.id})
+					"access": g, "facing": facing, "arc": float(rule.arc), "elevated": false, "role": "", "structure": s.id,
+					"mirror": xf * Vector3(0.0, 0.0, -sgn * float(rule.back))})
 		return out
 	var xf0: Transform3D = s.instances[0]
 	var slots := DefenceDefs.slots_of(s.type_id)
