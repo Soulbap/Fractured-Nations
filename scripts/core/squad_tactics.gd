@@ -1211,6 +1211,8 @@ var post_w := {"protect": 3.0, "fire": 2.0, "conceal": 2.5, "prepared": 1.0, "se
 ## Candidates whose exposure is measured, per post needed (the rest are judged without it: bounded sight checks).
 var post_exposure_per := 2
 var fallbacks := 0
+var support_fort_targets := 0
+var _fort_contact := {}
 ## Weapon modifiers when posts are handed out (configurable): the machine gunner values a wide arc and low exposure, the
 ## grenadier moves to a more concealed post only when it is clearly better.
 var role_post_w := {"mg_arc": 1.0, "mg_exposure": 2.0, "grenadier_margin": 0.2}
@@ -1848,21 +1850,27 @@ func _support_fire(sq: SquadState, a: Dictionary, units: Array, target: Vector3,
 	var obj := sim.state.war.objective(op.target_objective) if op else null
 	var centre: Vector3 = obj.position if obj else target
 	var r: float = (obj.radius if obj else 60.0) + 60.0
-	var fresh: Array[Vector3] = []
-	var known: Array[Vector3] = []
+	# GAMEPLAY-03C: the reports ranked by danger - an enemy reported at a fortification (a slot, an MG emplacement, a tower
+	# the faction can see standing there) first, then by recency and strength. Only reported enemies are fired at; an
+	# empty structure is never a target.
+	var ranked: Array = []
 	if sim.war != null and sim.war.enabled:
 		for c: ContactState in sim.war.intel.contacts_near(sq.faction, centre, r):
-			if c.status == ContactState.Status.LOST or c.conf < 0.3:
+			if c.status == ContactState.Status.LOST or c.conf < 0.3 or now - c.t_seen > 90.0:
 				continue
-			if now - c.t_seen <= 15.0:
-				fresh.append(c.pos)
-			elif now - c.t_seen <= 90.0:
-				known.append(c.pos)
-			if fresh.size() + known.size() >= 4:
+			var fresh_c := now - c.t_seen <= 15.0
+			if not cover and not fresh_c:
+				continue
+			var fortified := _contact_fortified(sq, c, now)
+			ranked.append({"p": c.pos, "score": (3.0 if fortified else 0.0) + (1.5 if fresh_c else 0.0) + 0.2 * minf(c.strength, 6.0) * c.conf, "fort": fortified})
+			if ranked.size() >= 6:
 				break
-	var targets: Array[Vector3] = fresh
-	if cover:
-		targets = fresh + known
+	ranked.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return float(x.score) > float(y.score))
+	var targets: Array[Vector3] = []
+	for e: Dictionary in ranked.slice(0, 4):
+		targets.append(e.p)
+	if not ranked.is_empty() and bool(ranked[0].fort):
+		support_fort_targets += 1
 	if targets.is_empty():
 		# Nothing reported to fire at: fire at the objective's centre hit nobody when the defenders stood elsewhere (1000
 		# rounds, no suppression), so the support watches until the first sighting or shot is reported.
@@ -1872,14 +1880,36 @@ func _support_fire(sq: SquadState, a: Dictionary, units: Array, target: Vector3,
 	sq.tactic_rejected = "" if cover else "fire at fresh reports with half the squad until the assault crosses"
 	var spread := _spread_for(sq)
 	var k := 0
+	var j := 0
 	for i in units.size():
-		# Outside the window half the squad fires (the ammunition must last into the assault); a machine gun always does.
-		if not cover and not _is_mg(units[i]):
+		# Outside the window half the squad fires (the ammunition must last into the assault); a machine gun always does,
+		# at the most dangerous report.
+		if _is_mg(units[i]):
+			_fire_on([units[i]], targets[0], spread, mission_s)
+			continue
+		if not cover:
 			k += 1
 			if k % 2 == 0:
 				_cease_fire([units[i]])
 				continue
-		_fire_on([units[i]], targets[i % targets.size()], spread, mission_s)
+		_fire_on([units[i]], targets[j % targets.size()], spread, mission_s)
+		j += 1
+
+
+## GAMEPLAY-03C: a reported enemy stands at a fortification of its side (within 6 m of one; cached per contact for 10 s).
+func _contact_fortified(sq: SquadState, c: ContactState, now: float) -> bool:
+	var key := "%d:%d" % [sq.faction, c.id]
+	var hit: Array = _fort_contact.get(key, [])
+	if not hit.is_empty() and now - float(hit[1]) < 10.0:
+		return bool(hit[0])
+	var yes := false
+	for h: Dictionary in sim.combat.line.structures_near(c.pos, 6.0):
+		var st := sim.state.construction.get_structure(int(h.id))
+		if st and st.faction != sq.faction and st.faction >= 0 and DefenceDefs.has(st.type_id) and st.is_operational():
+			yes = true
+			break
+	_fort_contact[key] = [yes, now]
+	return yes
 
 
 func _suppress_over(sq: SquadState, a: Dictionary, now: float) -> String:

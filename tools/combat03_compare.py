@@ -13,7 +13,8 @@ import sys
 COLS = [("taken", "taken", "%d"), ("att_loss", "attacker losses", "%.0f%%"), ("def_loss", "defender losses", "%.0f%%"),
         ("att_seen_d", "first seen at m", "%.0f"), ("att_seen_t", "first seen at s", "%.0f"), ("def_exposed_s", "defenders seen s", "%.0f"),
         ("def_inside_s", "inside radius s", "%.0f"), ("def_post_changes", "post changes", "%.0f"), ("def_slots_left", "slots given up", "%.1f"),
-        ("def_line_max", "deepest line", "%.1f"), ("contested_s", "contested s", "%.0f")]
+        ("def_line_max", "deepest line", "%.1f"), ("contested_s", "contested s", "%.0f"),
+        ("support_fort_targets", "support at forts", "%.0f"), ("explosives", "explosives", "%.1f"), ("duration_s", "duration s", "%.0f")]
 
 
 def load(path):

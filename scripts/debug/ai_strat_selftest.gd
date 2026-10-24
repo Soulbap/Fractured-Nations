@@ -153,7 +153,7 @@ func _run_attack(sc: Dictionary, max_sim := 700.0, scale := 12.0, near := false)
 	demo.rts_camera.frame(obj.position if near else Vector3(9000, 0, 9000), 0.0, 120.0 if near else 150.0)
 	trace.clear()
 	var st := {"next": demo.sim.state.time, "stages": [], "whys": [], "roles": {}, "best": INF, "best_t": demo.sim.state.time, "max_stall": 0.0, "withdrew": false,
-		"diag_next": demo.sim.state.time}
+		"diag_next": demo.sim.state.time, "dist_t": demo.sim.state.time, "max_stall_dist": 0.0, "defs_alive": _alive_count(defs)}
 	var dg: CombatDiag = null
 	if diag_on:
 		dg = CombatDiag.new()
@@ -182,7 +182,16 @@ func _run_attack(sc: Dictionary, max_sim := 700.0, scale := 12.0, near := false)
 				if closest < st.best - 10.0:
 					st.best = closest
 					st.best_t = now
+					st.dist_t = now
+				# GAMEPLAY-03C: a defender put out of the fight is progress too. Inside a village the assaulting squads fight
+				# from the houses at the edge of the objective (their centres do not get closer while they clear it); the
+				# distance-only measure counted that won close fight as a stall (Haugen: 121 s while the defenders went 6 -> 0).
+				var alive := _alive_count(defs)
+				if alive < int(st.defs_alive):
+					st.defs_alive = alive
+					st.best_t = now
 				st.max_stall = maxf(st.max_stall, now - st.best_t)
+				st.max_stall_dist = maxf(st.max_stall_dist, now - st.dist_t)
 		return not op.is_active())
 	var diag := {}
 	if dg:
@@ -192,7 +201,7 @@ func _run_attack(sc: Dictionary, max_sim := 700.0, scale := 12.0, near := false)
 	var started := op.start_strength
 	return {"diag": diag, "started": true, "op": {"phase": op.phase_name(), "stage": op.stage_name(), "outcome": op.outcome, "losses": op.losses, "start": started},
 		"owner": obj.owner, "attackers_left": left, "defenders_left": _alive_count(defs), "stages": st.stages, "stage_whys": st.whys, "roles_seen": st.roles.keys(),
-		"max_assault_stall_s": snappedf(st.max_stall, 1.0), "withdrew": st.withdrew, "warp": w, "stage_why": op.stage_why, "withdraw_why": op.withdraw_why,
+		"max_assault_stall_s": snappedf(st.max_stall, 1.0), "max_stall_distance_only_s": snappedf(st.max_stall_dist, 1.0), "withdrew": st.withdrew, "warp": w, "stage_why": op.stage_why, "withdraw_why": op.withdraw_why,
 		"trace": trace.slice(0, 80), "consistency": _consistency(), "op_obj": op}
 
 

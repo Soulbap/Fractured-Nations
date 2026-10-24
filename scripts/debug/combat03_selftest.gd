@@ -130,18 +130,23 @@ func _defence_series(key: String) -> Dictionary:
 		if sc.is_empty():
 			_expect(false, "%s: scene could not be set up (seed %d)" % [key, s])
 			continue
+		var tac := demo.sim.tactics
+		var c0 := [tac.support_fort_targets, demo.sim.brain.grenades_thrown, demo.sim.brain.rockets_fired, demo.sim.war.coord.timeouts]
 		var r := await _run_attack(sc, 900.0, 12.0)
 		r.erase("op_obj")
+		# GAMEPLAY-03C: how the attack dealt with the defence (fire support at reported fortified enemies, explosives).
+		var att := {"support_fort_targets": tac.support_fort_targets - int(c0[0]), "grenades": demo.sim.brain.grenades_thrown - int(c0[1]),
+			"rockets": demo.sim.brain.rockets_fired - int(c0[2]), "op_timeouts": demo.sim.war.coord.timeouts - int(c0[3])}
 		var g: Dictionary = r.get("diag", {})
 		var one := {"seed": s, "owner": r.get("owner", -1), "won": int(r.get("owner", -1)) == 0, "attackers_left": r.get("attackers_left", 0), "attackers": 24,
 			"defenders_left": r.get("defenders_left", 0), "defenders": 8, "max_stall_s": r.get("max_assault_stall_s", 0.0), "stages": r.get("stages", []),
 			"withdraw_why": r.get("withdraw_why", ""), "in_slots_at_start": sc.get("in_slots", 0), "diag": g,
-			"posts_judged": demo.sim.tactics._meta(sc.def[0], "posts_judged", {})}
+			"posts_judged": demo.sim.tactics._meta(sc.def[0], "posts_judged", {}), "attack": att}
 		var dd: Dictionary = g.get("defence", {})
-		print("C3 run %s seed %d: won=%s att %d/24 def %d/8 seen(att) %s seen(def) %s exposed %s inside %s posts %s slots_left %s line %s contested %s kept %s %s" % [key, s, one.won,
+		print("C3 run %s seed %d: won=%s att %d/24 def %d/8 seen(att) %s seen(def) %s exposed %s inside %s posts %s slots_left %s line %s contested %s kept %s attack %s %s" % [key, s, one.won,
 			one.attackers_left, one.defenders_left, str(dd.get("first_seen", {}).get("att", "-")), str(dd.get("first_seen", {}).get("def", "-")),
 			dd.get("def_exposed_s", "-"), dd.get("def_inside_s", "-"), dd.get("def_post_changes", "-"), dd.get("def_slots_left", "-"), dd.get("def_line_max", "-"),
-			dd.get("contested_s", "-"), dd.get("garrison_kept", "-"), one.withdraw_why])
+			dd.get("contested_s", "-"), dd.get("garrison_kept", "-"), str(att), one.withdraw_why])
 		runs.append(one)
 		_remove_structures(sc.get("ids", []))
 		_expect(int(g.get("totals", {}).get("att_shots", 0)) > 0, "%s seed %d: no fight happened" % [key, s])
@@ -154,7 +159,7 @@ func _defence_summary(runs: Array) -> Dictionary:
 	var n := maxf(runs.size(), 1)
 	var acc := {"won": 0, "att_loss": 0.0, "def_loss": 0.0, "att_seen_t": 0.0, "att_seen_d": 0.0, "def_seen_d": 0.0, "first_def_hit_t": 0.0,
 		"def_exposed_s": 0.0, "def_inside_s": 0.0, "def_post_changes": 0.0, "def_slots_left": 0.0, "att_supp_avg": 0.0, "def_supp_avg": 0.0,
-		"def_line_max": 0.0, "contested_s": 0.0, "duration_s": 0.0}
+		"def_line_max": 0.0, "contested_s": 0.0, "duration_s": 0.0, "support_fort_targets": 0.0, "explosives": 0.0}
 	for r: Dictionary in runs:
 		var g: Dictionary = r.diag
 		var dd: Dictionary = g.get("defence", {})
@@ -174,6 +179,9 @@ func _defence_summary(runs: Array) -> Dictionary:
 		acc.duration_s += float(g.get("duration_s", 0))
 		acc.att_supp_avg += float(g.get("att_supp_avg", 0.0))
 		acc.def_supp_avg += float(g.get("def_supp_avg", 0.0))
+		var at: Dictionary = r.get("attack", {})
+		acc.support_fort_targets += float(at.get("support_fort_targets", 0))
+		acc.explosives += float(at.get("grenades", 0)) + float(at.get("rockets", 0))
 	var out := {"runs": runs.size(), "taken": acc.won}
 	for k in acc:
 		if k != "won":
@@ -406,3 +414,4 @@ func _f_override() -> Dictionary:
 	_expect(d.tactic == SquadState.Tactic.NONE and d.garrison_base < 0 and d.order == SquadState.Order.MOVE, "f_override: the player's order did not take over %s" % str(out))
 	_remove_structures(sc.ids)
 	return out
+

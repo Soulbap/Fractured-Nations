@@ -57,6 +57,9 @@ var cover_fire_far_m := 290.0
 var cover_fire_near_m := 35.0
 ## No assault squad got 10 m closer for this long: commit everything once, then withdraw.
 var progress_stall_s := 75.0
+## GAMEPLAY-03C: no squad of the operation is actually attacking (all idle, depleted or out of ammunition): the same decision
+## after this long instead (the Haugen trace sat 70 s with nobody moving before the 75 s rule fired).
+var idle_commit_s := 40.0
 
 var ws: WarSim
 var sim: WorldSim
@@ -69,6 +72,7 @@ var usec := 0
 var usec_max := 0
 var updates := 0
 var _cool := {}
+var _tries := {}
 ## op id -> since when no squad of the operation has seen an enemy.
 var _clear_since := {}
 var _idle_since := {}
@@ -417,9 +421,20 @@ func _update_assault(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dic
 						if _to_support(op, obj, sq):
 							op.stage_why = "%s (%d of %d left) supports the others from %.0f m instead of assaulting again" % [sq.squad_name, sq.members.size(),
 								sq.members.size() + sq.fallen.size(), _flat(sim.squads._centroid(sq), obj_pos)]
+						else:
+							# GAMEPLAY-03C: no firing position (or ammunition) for it - it holds in cover as a reserve instead of
+							# standing idle as an "assault" squad the operation keeps waiting for.
+							op.roles[sq.id] = SquadState.OpRole.RESERVE
+							sq.op_role = SquadState.OpRole.RESERVE
+							role_changes += 1
+							_hold(op, sq)
+							op.stage_why = "%s (%d of %d left, no firing position) holds in cover as the reserve" % [sq.squad_name, sq.members.size(), sq.members.size() + sq.fallen.size()]
 					elif f >= 0.3:
-						_send_assault(op, sq, obj, k)
-						op.stage_why = "%s re-tasked to assault (its tactic ended)" % sq.squad_name
+						# GAMEPLAY-03C: another try goes for another spot of the objective (not across the same ground again).
+						var tries := int(_tries.get(sq.id, 0)) + 1
+						_tries[sq.id] = tries
+						_send_assault(op, sq, obj, k + 2 * tries)
+						op.stage_why = "%s re-tasked to assault (its tactic ended), attempt %d from another side" % [sq.squad_name, tries + 1]
 			SquadState.OpRole.SUPPORT:
 				if closest_fit < cover_fire_near_m:
 					# An assault squad that can still fight is on the objective: the support stops firing at it and moves in to
@@ -431,7 +446,16 @@ func _update_assault(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dic
 				elif sq.tactic == SquadState.Tactic.NONE and now >= float(_cool.get(sq.id, 0.0)):
 					_cool[sq.id] = now + 10.0
 					if _fitness(sq) >= 0.3 and sq.members.size() >= min_squad_n:
-						sim.tactics.assign_for_operation(sq, SquadState.Tactic.SUPPRESS, _fire_target(op, obj), "operation #%d: fire support (resumed)" % op.id, {"standoff": support_standoff_m})
+						var rs := sim.tactics.assign_for_operation(sq, SquadState.Tactic.SUPPRESS, _fire_target(op, obj), "operation #%d: fire support (resumed)" % op.id, {"standoff": support_standoff_m})
+						if not rs.ok and not _depleted(sq) and obj.owner != op.faction:
+							# GAMEPLAY-03C: the support cannot fire any more (its ammunition for suppression is spent) but is still a
+							# strong squad: it joins the assault instead of standing idle behind it (the Haugen trace: an 8-man support
+							# squad idle for 140 s while the assault went in three men at a time).
+							op.roles[sq.id] = SquadState.OpRole.ASSAULT
+							sq.op_role = SquadState.OpRole.ASSAULT
+							role_changes += 1
+							_send_assault(op, sq, obj, k + 3)
+							op.stage_why = "%s cannot support any more (%s) and joins the assault" % [sq.squad_name, rs.reason]
 			SquadState.OpRole.REINFORCE:
 				# Joined while the assault runs: goes in as soon as it has arrived at the staging point.
 				if not sim.squads.marching(sq) and sq.tactic == SquadState.Tactic.NONE and obj.owner != op.faction:
@@ -513,11 +537,18 @@ func _update_assault(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dic
 	# On the objective (closest < 40 m) the capture decides, not the distance.
 	if closest < 40.0:
 		op.progress_t = now
-	if obj.owner != op.faction and now - op.progress_t > progress_stall_s:
+	var assaulting := false
+	for sq: SquadState in sqs:
+		var rr: int = int(op.roles.get(sq.id, SquadState.OpRole.NONE))
+		if (rr == SquadState.OpRole.ASSAULT or rr == SquadState.OpRole.MANEUVER) and not op.assault_at.has(sq.id) \
+				and (sq.tactic == SquadState.Tactic.ASSAULT or sq.tactic == SquadState.Tactic.FLANK or sim.squads.marching(sq)):
+			assaulting = true
+	var stall_limit := progress_stall_s if assaulting else idle_commit_s
+	if obj.owner != op.faction and now - op.progress_t > stall_limit:
 		var believed := maxi(int(a.seen), ws.intel.threat_near(op.faction, obj.position, obj.radius + 150.0))
 		if not op.assault_at.has(-1) and float(a.soldiers) < 2.0 * float(maxi(believed, 1)):
 			timeouts += 1
-			withdraw(op, "no progress for %d s and too few to go in together (%d of ours against %d believed)" % [int(progress_stall_s), a.soldiers, believed])
+			withdraw(op, "no progress for %d s and too few to go in together (%d of ours against %d believed)" % [int(stall_limit), a.soldiers, believed])
 			return
 		if not op.assault_at.has(-1):
 			op.assault_at[-1] = now
@@ -535,10 +566,11 @@ func _update_assault(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dic
 					sent.append(sq.squad_name)
 				kk += 1
 			role_changes += 1
-			op.stage_why = "no progress for %d s (closest %.0f m): %s go in together" % [int(progress_stall_s), op.progress_best, ", ".join(sent)]
+			op.stage_why = "no progress for %d s (closest %.0f m, %s): %s go in together" % [int(stall_limit), op.progress_best,
+				"squads advancing" if assaulting else "nobody advancing", ", ".join(sent)]
 			return
 		timeouts += 1
-		withdraw(op, "no progress for %d s after committing every squad (closest %.0f m)" % [int(progress_stall_s), op.progress_best])
+		withdraw(op, "no progress for %d s after committing every squad (closest %.0f m)" % [int(stall_limit), op.progress_best])
 		return
 	if now - op.stage_since > assault_stall_s and obj.owner != op.faction:
 		timeouts += 1
