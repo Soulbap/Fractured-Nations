@@ -53,6 +53,11 @@ func run(args: PackedStringArray) -> void:
 		_log("map", await _map())
 	if _want("fps"):
 		_log("fps", await _fps())
+	if only.has("final"):
+		demo.sim.state.shot_fired.connect(_on_shot_rec)
+		_log("final", await _final())
+	if only.has("final720"):
+		_log("final720", await _final720())
 	_finish()
 
 
@@ -426,6 +431,195 @@ func _mid_drag(from: Vector2, to: Vector2) -> void:
 	up.global_position = up.position
 	Input.parse_input_event(up)
 	await _physics(1)
+
+
+# --- UI-01C.1 final polish: the documentation pictures ---------------------------------------------------
+#
+# One pass through real play (base, truck, squads in the forest, a firefight, an operation) with a few
+# checks; pictures in docs/ui_01c/final_polish/. --only final (1920x1080, fullscreen) or final720 (run in a
+# 1280x720 window).
+
+func _final() -> Dictionary:
+	var out := {}
+	var fac := con.player_faction()
+	var hq := demo.sim.state.war.objective(demo.sim.state.war.faction(fac).hq_objective)
+	# Construction sites: good ground, and a forest road (invalid: too close to the road).
+	base = _find_base_site(hq.position)
+	var cp_at := _spot(&"command_post", base, 3)
+	var road_pt := _road_spot2(base)
+	_press(KEY_B)
+	await _seconds(0.4)
+	con.select_type(&"command_post")
+	con.yaw = deg_to_rad(45.0)
+	demo.rts_camera.frame(cp_at, 0.4, 75.0)
+	await _seconds(0.6)
+	await _cursor_at(cp_at)
+	await _seconds(0.6)
+	out.valid = con.check.get("ok", false)
+	_png("04_construction_valid")
+	demo.rts_camera.frame(road_pt, 0.4, 75.0)
+	await _seconds(0.6)
+	await _cursor_at(road_pt)
+	await _seconds(0.6)
+	out.invalid = con.check.get("reason", "")
+	_png("05_construction_invalid")
+	_expect(bool(out.valid) and String(out.invalid) != "", "construction: valid and invalid previews")
+	# The base and a truck from its depot (real input, as in the phase 2 parts).
+	placed.cp = await _place(&"command_post", cp_at, 3)
+	if placed.cp == null:
+		_expect(false, "command post placed")
+		return out
+	var c: Vector3 = placed.cp.position
+	placed.barracks = await _place(&"barracks_block", _spot(&"barracks_block", c + Vector3(-34, 0, 22), 6), 6)
+	placed.depot = await _place(&"supply_depot", _spot(&"supply_depot", c + Vector3(34, 0, 22), 0), 0)
+	placed.parking = await _place(&"vehicle_parking_pad", _spot(&"vehicle_parking_pad", c + Vector3(30, 0, -26), 0), 0)
+	placed.guard1 = await _place(&"guard_tower_steel", _spot(&"guard_tower_steel", c + Vector3(-48, 0, -40), 0), 0)
+	_press(KEY_B)
+	await _seconds(0.3)
+	var keep_shots := shots
+	shots = false
+	await _vehicle()
+	shots = keep_shots
+	# One squad walks to the base (for the close map), time runs until the march is done.
+	rts.select_squads([squads[3].id])
+	rts.order_move(c + Vector3(10, 0, 30))
+	rts.select([])
+	TimeCompression.apply(32.0, 64)
+	var tw := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - tw < 45000 and squads[3].status == SquadState.Status.MOVING:
+		await _seconds(0.5)
+	TimeCompression.reset()
+	# RTS: three squads at the HQ selected, framed together.
+	var near: Array = squads.slice(0, 3)
+	rts.select_squads(near.map(func(q: SquadState) -> int: return q.id))
+	var mid := Vector3.ZERO
+	var spread := 0.0
+	for q: SquadState in near:
+		mid += demo.sim.squads._centroid(q) / 3.0
+	for q: SquadState in near:
+		spread = maxf(spread, demo.sim.squads._centroid(q).distance_to(mid))
+	demo.rts_camera.frame(mid + Vector3(0, 0, 12), 0.6, clampf(spread * 2.6, 90.0, 220.0))
+	await _seconds(1.5)
+	out.multi = rts.selected_squads().size()
+	_expect(out.multi >= 3, "three squads selected")
+	_png("08_rts_multi_select")
+	# Forest: two temporary own squads in the wood beside the forest road (this run only), one selected.
+	var f1 := _squad("Ranger", fac, 6, demo.on_ground(road_pt.x + 40.0, road_pt.z - 25.0, 0.0), 0.4)
+	var f2 := _squad("Scout", fac, 6, demo.on_ground(road_pt.x - 30.0, road_pt.z + 35.0, 0.0), 2.0)
+	rts.select_squads([f1.id])
+	demo.rts_camera.frame(road_pt + Vector3(5, 0, 10), 0.4, 110.0)
+	# The camera jumped: vegetation, terrain detail and soldier bodies stream in first.
+	await _seconds(5.0)
+	out.forest_trees = _trees_around(demo.sim.squads._centroid(f1), 40.0)
+	_png("09_rts_forest")
+	rts.select([])
+	await _clear()
+	# The truck and its panel.
+	if vehicle_id > 0:
+		rts.select([vehicle_id])
+		demo.rts_camera.frame(_u(vehicle_id).position, 0.7, 45.0)
+		await _seconds(1.2)
+		_png("10_logistics_vehicle")
+	rts.select([])
+	# Strategic map: overview, close on the base, an operation.
+	demo.toggle_map()
+	await _seconds(0.6)
+	var m := demo.strategic_map
+	m.fit_all()
+	await _seconds(0.5)
+	_png("01_map_overview")
+	# Between North HQ (the garrison) and the new base (its buildings and the truck).
+	var mid2 := hq.position.lerp(c, 0.5)
+	m.view_center = Vector2(mid2.x, mid2.z)
+	m.zoom = 0.75
+	await _seconds(0.6)
+	_png("02_map_close_zoom")
+	m.fit_all()
+	m.selected_squads.clear()
+	m.selected_squads.append(squads[1].id)
+	m.selected_squads.append(squads[2].id)
+	var target: ObjectiveState = null
+	for o: ObjectiveState in demo.sim.state.war.all_objectives():
+		if o.owner != fac and (target == null or o.position.distance_to(c) < target.position.distance_to(c)):
+			target = o
+	var op := m.order(OperationState.Type.ATTACK, target.id)
+	if op:
+		m.select_operation(op.id)
+	await _seconds(0.8)
+	out.operation = op != null and m._insp.visible
+	_expect(out.operation, "map: operation ordered and shown")
+	_png("03_map_operation")
+	demo.toggle_map()
+	await _seconds(0.5)
+	# First person in a real firefight: an enemy section 110 m in front of the base squad.
+	var sq: SquadState = squads[0]
+	var pid := sq.members[1] if sq.members.size() > 1 else sq.members[0]
+	var me := _u(pid)
+	var dir := Vector3(0, 0, -1).rotated(Vector3.UP, me.yaw)
+	var enemy_fac := 1 if fac != 1 else 2
+	var foe := _squad("Foe", enemy_fac, 4, me.position + dir * 110.0, me.yaw + PI)
+	var body := await _possess(pid)
+	await _seconds(0.5)
+	if body:
+		_aim(body, demo.sim.squads._centroid(foe) + Vector3.UP * 1.2)
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 12000 and _shots_of(fac) + _shots_of(enemy_fac) < 3 and me.alive:
+		await _seconds(0.1)
+	await _seconds(0.4)
+	out.firing = {"player_side": _shots_of(fac), "enemy": _shots_of(enemy_fac), "alive": me.alive, "mode": demo.game.mode}
+	_expect(me.alive and demo.game.mode == GameController.Mode.FPS and _shots_of(fac) + _shots_of(enemy_fac) > 0, "first person in a firefight")
+	_png("06_fps_combat")
+	me.health = minf(me.health, 24.0)
+	me.mag = mini(me.mag, 2)
+	hud.on_damaged(me, 10.0, 0, -1)
+	await _seconds(0.15)
+	_png("07_fps_low_health")
+	out.low = {"prompt": hud._fps._prompt.visible, "health": me.health}
+	_expect(hud._fps._prompt.visible, "low magazine shows the reload prompt")
+	await _leave()
+	await _clear()
+	return out
+
+
+## The 1280 x 720 check pictures (run the game in a 1280 x 720 window).
+func _final720() -> Dictionary:
+	var out := {}
+	var fac := con.player_faction()
+	var hq := demo.sim.state.war.objective(demo.sim.state.war.faction(fac).hq_objective)
+	base = _find_base_site(hq.position)
+	var cp_at := _spot(&"command_post", base, 3)
+	_press(KEY_B)
+	await _seconds(0.4)
+	con.select_type(&"command_post")
+	demo.rts_camera.frame(cp_at, 0.4, 75.0)
+	await _seconds(0.6)
+	await _cursor_at(cp_at)
+	await _seconds(0.6)
+	out.viewport = demo.get_viewport().get_visible_rect().size
+	_png("11_720p_construction")
+	_press(KEY_ESCAPE)
+	_press(KEY_B)
+	await _seconds(0.3)
+	rts.select_squads([squads[0].id, squads[1].id, squads[2].id])
+	_frame_on_squads()
+	await _seconds(1.2)
+	var tp := hud.tactical_panel.get_global_rect()
+	var vp := demo.get_viewport().get_visible_rect().size
+	out.panel_inside = tp.position.x >= 0.0 and tp.end.x <= vp.x and tp.end.y <= vp.y
+	_expect(out.panel_inside, "720p: command panel inside the screen")
+	_png("12_720p_rts")
+	return out
+
+
+func _trees_around(p: Vector3, r: float) -> int:
+	var n := 0
+	var cs: float = demo.vegetation.cell_size_m
+	for dx in [-1, 0, 1]:
+		for dz in [-1, 0, 1]:
+			for t in sm._trees_in(VegetationChunk.cell_of(p + Vector3(dx * cs, 0, dz * cs), cs)):
+				if Vector2(t[0] - p.x, t[1] - p.z).length() < r:
+					n += 1
+	return n
 
 
 # --- First person -----------------------------------------------------------------------------------

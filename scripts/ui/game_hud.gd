@@ -171,12 +171,19 @@ class Overlay extends Control:
 				for sy: float in [-1.0, 1.0]:
 					draw_line(c + Vector2(sx, sy) * 6.0, c + Vector2(sx, sy) * 13.0, hc, 2.0)
 		if now < hud.hurt_until:
-			var a := clampf((hud.hurt_until - now) / 0.4, 0.0, 1.0) * 0.35
-			var w := 70.0
-			draw_rect(Rect2(0, 0, size.x, w), Color(0.8, 0, 0, a), true)
-			draw_rect(Rect2(0, size.y - w, size.x, w), Color(0.8, 0, 0, a), true)
-			draw_rect(Rect2(0, 0, w, size.y), Color(0.8, 0, 0, a), true)
-			draw_rect(Rect2(size.x - w, 0, w, size.y), Color(0.8, 0, 0, a), true)
+			# UI-01C.1: a thin edge that fades inwards (bands that do not overlap, so the corners are not
+			# darker), strong enough to notice, never covering the HUD.
+			var a := clampf((hud.hurt_until - now) / 0.4, 0.0, 1.0) * 0.32
+			var w := 36.0
+			for k in 4:
+				var f := 1.0 - k / 4.0
+				var band := Color(0.75, 0.05, 0.03, a * f * f)
+				var e := k * w / 4.0
+				var t := w / 4.0
+				draw_rect(Rect2(e, e, size.x - 2.0 * e, t), band, true)
+				draw_rect(Rect2(e, size.y - e - t, size.x - 2.0 * e, t), band, true)
+				draw_rect(Rect2(e, e + t, t, size.y - 2.0 * (e + t)), band, true)
+				draw_rect(Rect2(size.x - e - t, e + t, t, size.y - 2.0 * (e + t)), band, true)
 
 	## Selected squads: name tag over the leader, and while moving a marker on every
 	## member's formation slot with a thin line from the soldier to it.

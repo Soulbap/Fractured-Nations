@@ -180,3 +180,47 @@ Existing tests for the changed code (change-impact, not a full suite):
 `feature/ui-01c`, after Phase 1 (`c732643`). Phase 2 commits: `git log c732643..feature/ui-01c`
 (UI kit extensions and thumbnails; HUD integration of construction, first person, map, vehicles and
 markers; tests, screenshots and this report). Not merged, not pushed.
+
+## 12. UI-01C.1 — final polish
+
+Short, targeted fixes found by looking at real play; no redesign, no gameplay change. Pictures: `docs/ui_01c/final_polish/`,
+1920 × 1080, all from one run of the real game (`--ui01c2-test --shots --only final --shot-dir=res://docs/ui_01c/final_polish`).
+
+| File | Shows |
+| --- | --- |
+| `01_map_overview.png` | whole map: territories, objectives, own base, squads, layers panel |
+| `02_map_close_zoom.png` | North HQ and the new base close: grouped squads, facility footprints, truck |
+| `03_map_operation.png` | an attack operation selected: route, target, inspector |
+| `04_construction_valid.png` | command post, green, footprint outline and front arrow |
+| `05_construction_invalid.png` | the same on a forest road, red, "too close to a road (…)" |
+| `06_fps_combat.png` | first person while an enemy section fires on the squad (squad status ENGAGED) |
+| `07_fps_low_health.png` | low health, 2 rounds left, reload prompt, damage edge |
+| `08_rts_multi_select.png` | three squads selected, brackets, tags, command panel |
+| `09_rts_forest.png` | a selected and an unselected squad in dense forest |
+| `10_logistics_vehicle.png` | truck selected: fuel, condition, cargo, actions |
+
+**Changes**
+
+* **Map, close zoom:** squads closer together than a marker is wide merged into overlapping symbols; the grouping
+  distance is now at least a marker's width at every zoom, so they show as one group ("3 sq · 24") and separate when
+  zoomed further in. Facilities are drawn as their real, rotated footprint once it is large enough on screen; base
+  names, facility letters and vehicle labels are placed so they do not cover each other (a vehicle label without room
+  is dropped unless the vehicle is selected); store figures only for the selected facility. Bases and facilities are
+  drawn under the squads.
+* **Construction:** the placement shows the building's solid footprint (what the rules test) as a green / red outline
+  on the ground and a white arrow to its front, so size, orientation and validity read even when trees hide the ghost.
+* **FPS:** the damage flash covered a 70 px band on every edge with hard, double-darkened corners; it is now a 36 px
+  edge that fades inwards. Notifications stay at the top centre, the squad card top right; nothing overlaps.
+* **RTS:** soldier dots are drawn over foliage (in forest they were hidden under the canopy; only the brackets showed).
+
+**Test state (this run only, nothing saved):** a base built through the real construction input, a truck from its
+depot, two temporary own squads placed in the forest for picture 09, a temporary enemy section 110 m in front of the
+possessed soldier for picture 06; for picture 07 the possessed soldier's health and magazine are lowered.
+
+**Tests:** `--ui01c2-test --only final` PASS (both previews, operation shown, three squads selected, firefight in first
+person, reload prompt at low magazine). Re-run of the existing checks touched by these changes: `--ui01c2-test` (all phase 2 parts) PASS, `--ui01c-test --only checks` PASS.
+1280 × 720 was checked once (panels inside the screen, no overlap); per the product owner only 1920 × 1080 is delivered.
+
+**Remaining:** the possessed soldier's own side fired little in the short firefight (the enemy did most of the
+shooting within the 12 s window); the strategic map's left column covers part of the map when zoomed in close
+(the map can be panned).

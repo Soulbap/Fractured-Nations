@@ -74,7 +74,9 @@ static func style_ring(ring: MeshInstance3D, faction: int, selected: bool, soldi
 	if soldier:
 		ring.mesh = _dot_mesh()
 		mat.albedo_color = Color(c.lightened(0.6), 0.95) if selected else Color(c.lightened(0.1), 0.5)
-		mat.no_depth_test = false
+		# UI-01C.1: drawn over foliage, so a squad in a forest still shows where its soldiers are.
+		mat.no_depth_test = true
+		mat.render_priority = 5
 		ring.scale = Vector3(0.34 if selected else 0.24, 1.0, 0.34 if selected else 0.24)
 	else:
 		mat.albedo_color = c.lightened(0.45) if selected else Color(c, 0.55)

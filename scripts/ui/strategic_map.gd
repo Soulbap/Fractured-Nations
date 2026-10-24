@@ -1263,7 +1263,8 @@ func _objective_at(sp: Vector2) -> int:
 ## objective's garrison badge.
 func squad_groups() -> Array:
 	var level := detail_level()
-	var r_px: float = [30.0, 24.0, 16.0][level]
+	# UI-01C.1: never closer than a marker is wide (22 px symbol + stack offset), so markers do not overlap.
+	var r_px: float = [30.0, 28.0, 28.0][level]
 	var items := []
 	for sq: SquadState in sim.war.squads_of(faction):
 		if sq.members.is_empty():
@@ -1353,6 +1354,9 @@ func _draw() -> void:
 		_draw_known_enemies(font)
 	if dbg_truth:
 		_draw_truth(font)
+	# Bases, facilities and vehicles under the squads; their boxes are taken before the squad labels.
+	if layers.logistics:
+		_draw_logistics_layer(font, level)
 	_groups = squad_groups() if layers.friendly else []
 	# Markers first, then their labels where there is room.
 	# Close in, each soldier as a dot under its squad's marker (from 1 px/m the
@@ -1367,8 +1371,6 @@ func _draw() -> void:
 		return a.selected * 100 + a.ids.size() > b.selected * 100 + b.ids.size())
 	for g: Dictionary in order:
 		_draw_group_label(g, font)
-	if layers.logistics:
-		_draw_logistics_layer(font, level)
 	if layers.camera:
 		_draw_camera()
 	if _box and _drag_from.is_finite():
@@ -1965,7 +1967,11 @@ func _draw_logistics_layer(font: Font, level: int) -> void:
 			# BASE-01: an established base shows its area; a proximity group half its join distance.
 			var radius_px := (float(b.radius) if float(b.get("radius", 0.0)) > 0.0 else BaseSim.JOIN_M * 0.5) * zoom
 			draw_arc(p, maxf(radius_px, 14.0), 0.0, TAU, 40, Color(col, 0.5), 1.5)
-			_text(font, p + Vector2(-30, -maxf(radius_px, 14.0) - 4.0), "%s (%s)" % [b.name, kind], 12, col)
+			var bt := "%s (%s)" % [b.name, kind]
+			var bw := font.get_string_size(bt, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
+			var r_px := maxf(radius_px, 14.0)
+			var at := _place([p + Vector2(-bw * 0.5, -r_px - 5.0), p + Vector2(-bw * 0.5, r_px + 15.0), p + Vector2(r_px + 6.0, 4.0)] as Array[Vector2], bw, 12, 15.0, true)
+			_text(font, at, bt, 12, col)
 	if level >= 1:
 		for s in sim.state.construction.all():
 			if s.faction != faction or not FacilityDefs.has(s.type_id):
@@ -1973,12 +1979,31 @@ func _draw_logistics_layer(font: Font, level: int) -> void:
 			var p2 := to_screen(s.position)
 			var letter: String = FACILITY_LETTERS.get(FacilityDefs.kind_of(s.type_id), "?")
 			var sel: bool = s.id == selected_structure
-			var half_px := 8.0 if level == 1 else 11.0
-			draw_rect(Rect2(p2 - Vector2(half_px, half_px), Vector2(half_px, half_px) * 2.0), Color(0.08, 0.1, 0.12, 0.85), true)
-			draw_rect(Rect2(p2 - Vector2(half_px, half_px), Vector2(half_px, half_px) * 2.0), COL_SELECT if sel else Color(0.75, 0.85, 1.0, 0.9), false, 2.0 if sel else 1.0)
-			_text(font, p2 + Vector2(-4, 5), letter, 12, Color.WHITE, 2)
-			if s.inventory != null and level == 2:
-				_text(font, p2 + Vector2(-20, half_px + 14), "%d/%d/%d" % [roundi(s.inventory.get_qty(Inventory.AMMO)), roundi(s.inventory.get_qty(Inventory.FUEL)), roundi(s.inventory.get_qty(Inventory.SUPPLIES))], 10, Color(0.85, 0.9, 1.0))
+			var edge := COL_SELECT if sel else Color(0.75, 0.85, 1.0, 0.9)
+			var sd := StructureCatalog.get_def(s.type_id)
+			var fp: Vector2 = sd.footprint() if sd else Vector2(8, 8)
+			var box := Rect2(p2 - Vector2(6, 6), Vector2(12, 12))
+			if fp.length() * zoom >= 22.0:
+				# UI-01C.1: the building's own footprint, turned as it stands, so close buildings do not pile up.
+				var ax := Vector3(cos(s.yaw), 0, -sin(s.yaw)) * fp.x * 0.5
+				var az := Vector3(sin(s.yaw), 0, cos(s.yaw)) * fp.y * 0.5
+				var poly := PackedVector2Array([to_screen(s.position + ax + az), to_screen(s.position + ax - az), to_screen(s.position - ax - az), to_screen(s.position - ax + az)])
+				draw_colored_polygon(poly, Color(0.08, 0.1, 0.12, 0.85))
+				poly.append(poly[0])
+				draw_polyline(poly, edge, 2.0 if sel else 1.2, true)
+				box = Rect2(poly[0], Vector2.ZERO)
+				for q in poly:
+					box = box.expand(q)
+			else:
+				draw_rect(box, Color(0.08, 0.1, 0.12, 0.85), true)
+				draw_rect(box, edge, false, 2.0 if sel else 1.0)
+			_taken.append(box)
+			var lw := font.get_string_size(letter, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+			_text(font, p2 + Vector2(-lw * 0.5, 4), letter, 11, Color.WHITE, 2)
+			if s.inventory != null and sel and level >= 1:
+				var st := "%d / %d / %d" % [roundi(s.inventory.get_qty(Inventory.AMMO)), roundi(s.inventory.get_qty(Inventory.FUEL)), roundi(s.inventory.get_qty(Inventory.SUPPLIES))]
+				var sw := font.get_string_size(st, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+				_text(font, Vector2(p2.x - sw * 0.5, box.end.y + 12.0), st, 10, Color(0.85, 0.9, 1.0))
 	# Selected vehicles' routes, then every vehicle.
 	for id in selected_vehicles:
 		var u := sim.state.get_unit(id)
@@ -2015,5 +2040,10 @@ func _draw_logistics_layer(font: Font, level: int) -> void:
 			tag += "+"
 		if not u.veh.occupants.is_empty():
 			tag += " %d" % u.veh.occupants.size()
+		_taken.append(Rect2(p3 - Vector2(big, big), Vector2(big, big) * 2.0))
 		if level >= 1 or sel2:
-			_text(font, p3 + Vector2(big + 4.0, 4.0), "%s %s" % [tag, u.veh.status_name() if u.veh.status != VehicleState.Status.DRIVING else "%d km/h" % roundi(absf(u.veh.speed) * 3.6)], 11, col2)
+			var vt := "%s %s" % [tag, u.veh.status_name() if u.veh.status != VehicleState.Status.DRIVING else "%d km/h" % roundi(absf(u.veh.speed) * 3.6)]
+			var vw := font.get_string_size(vt, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+			var vat := _place([p3 + Vector2(big + 4.0, 4.0), p3 + Vector2(-vw - big - 4.0, 4.0), p3 + Vector2(-vw * 0.5, big + 14.0), p3 + Vector2(-vw * 0.5, -big - 4.0)] as Array[Vector2], vw, 11, 14.0, sel2)
+			if vat.is_finite():
+				_text(font, vat, vt, 11, col2)

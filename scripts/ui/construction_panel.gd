@@ -242,6 +242,54 @@ func _process(delta: float) -> void:
 		_refresh_base()
 		_refresh_cards()
 	_refresh_context()
+	queue_redraw()
+
+
+## UI-01C.1: the footprint of the building being placed (its solid bounds, what the placement rules
+## test), outlined on the ground in green / red with an arrow to its front (the asset's -Z), so size,
+## orientation and validity read even where the ghost is hidden by trees or seen edge-on. Drawn from the controller's placement transform; nothing is decided here.
+func _draw() -> void:
+	if controller == null or not controller.active or controller.tool != ConstructionController.Tool.PLACE:
+		return
+	var d := controller.def
+	if d == null or d.linear or d.is_surface() or not controller.cursor.is_finite():
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var xf: Transform3D = controller.check.get("xform", Transform3D(Basis(Vector3.UP, controller.yaw), controller.cursor))
+	var b := d.bounds()
+	var x0 := b.position.x
+	var x1 := b.end.x
+	var z0 := b.position.z
+	var z1 := b.end.z
+	var hz := (z1 - z0) * 0.5
+	var ok := bool(controller.check.get("ok", false))
+	var col := FNUI.OK if ok else FNUI.DANGER
+	var lift := Vector3.UP * 0.15
+	var pts := PackedVector2Array()
+	for c: Vector3 in [Vector3(x0, 0, z0), Vector3(x1, 0, z0), Vector3(x1, 0, z1), Vector3(x0, 0, z1)]:
+		var w := xf * c + lift
+		if cam.is_position_behind(w):
+			return
+		pts.append(cam.unproject_position(w))
+	pts.append(pts[0])
+	draw_polyline(pts, Color(0, 0, 0, 0.7), 5.0, true)
+	draw_polyline(pts, col.lightened(0.45), 2.5, true)
+	# Front: an arrow from the centre past the front edge.
+	var mid := Vector3((x0 + x1) * 0.5, 0, (z0 + z1) * 0.5)
+	var c0 := xf * mid + lift
+	var tip := xf * Vector3(mid.x, 0, z0 - maxf(3.0, hz * 0.6)) + lift
+	if cam.is_position_behind(c0) or cam.is_position_behind(tip):
+		return
+	var a := cam.unproject_position(c0)
+	var t := cam.unproject_position(tip)
+	var dir := (t - a).normalized()
+	var n := Vector2(-dir.y, dir.x)
+	draw_line(a, t, Color(0, 0, 0, 0.7), 5.0, true)
+	draw_line(a, t, FNUI.INK, 2.5, true)
+	draw_colored_polygon(PackedVector2Array([t + dir * 10.0 + dir, t + n * 7.0 - dir, t - n * 7.0 - dir]), Color(0, 0, 0, 0.7))
+	draw_colored_polygon(PackedVector2Array([t + dir * 9.0, t + n * 6.0, t - n * 6.0]), FNUI.INK)
 
 
 func _layout() -> void:
@@ -358,7 +406,7 @@ func _build_context() -> void:
 	v.add_child(_ctx_reason)
 	_ctx_detail = FNUI.label("", FNUI.CAPTION, FNUI.INK_2, "caps")
 	_ctx_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_ctx_detail.custom_minimum_size = Vector2(190, 0)
+	_ctx_detail.custom_minimum_size = Vector2(250, 0)
 	v.add_child(_ctx_detail)
 	_ctx_info = FNUI.label("", FNUI.CAPTION, FNUI.INK_3, "body")
 	_ctx_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
