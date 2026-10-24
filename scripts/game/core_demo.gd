@@ -506,6 +506,13 @@ func _run_menu() -> String:
 	hud.visible = false
 	if game.diagnostics:
 		game.diagnostics.set_overlay_visible(false)
+	# The backdrop: the tactical camera above New Game's start area (before a scenario no camera stands above ground).
+	var view: Vector3 = sites[0].position
+	var ng := ScenarioDef.load_id("new_game")
+	if ng and not ng.start_squads.is_empty():
+		view = on_ground(float(ng.start_squads[0].x), float(ng.start_squads[0].z), 0.0)
+	rts_camera.set_active(true)
+	rts_camera.frame(view + Vector3(250.0, 0.0, -150.0), 0.9, 420.0)
 	rts_camera.set_process(false)
 	rts_camera.set_process_unhandled_input(false)
 	if "--menu-shot" in OS.get_cmdline_user_args():
