@@ -511,38 +511,75 @@ func _on_damaged(s: StructureState, _band_before: int) -> void:
 static var _damage_mats := {}
 
 
-## The overlay of a damaged structure: soot and scorch blotches over its own materials (a world-space noise, so every
-## building gets its own pattern), covering more the worse it is (band 1 damaged, 2 disabled, 3 destroyed).
+## The overlay of a damaged structure: an even soot darkening over its own materials, darker per band (1 damaged, 2 disabled,
+## 3 destroyed). Disabled and destroyed structures also smoke (damage_smoke).
 static func damage_material(band: int) -> StandardMaterial3D:
 	if not _damage_mats.has(band):
-		var noise := FastNoiseLite.new()
-		noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-		noise.frequency = 0.035
-		noise.fractal_octaves = 4
-		var ramp := Gradient.new()
-		var start: float = [0.9, 0.62, 0.42, 0.22][band]
-		ramp.set_offset(0, 0.0)
-		ramp.set_color(0, Color(1, 1, 1, 0))
-		ramp.set_offset(1, 1.0)
-		ramp.set_color(1, Color(1, 1, 1, [0.0, 0.75, 0.88, 0.95][band]))
-		ramp.add_point(start, Color(1, 1, 1, 0))
-		ramp.add_point(minf(start + 0.12, 0.99), Color(1, 1, 1, [0.0, 0.55, 0.75, 0.88][band]))
-		var tex := NoiseTexture2D.new()
-		tex.width = 256
-		tex.height = 256
-		tex.seamless = true
-		tex.noise = noise
-		tex.color_ramp = ramp
 		var m := StandardMaterial3D.new()
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		m.albedo_color = Color(0.05, 0.04, 0.035)
-		m.albedo_texture = tex
+		m.albedo_color = Color(0.03, 0.025, 0.02, [0.0, 0.28, 0.48, 0.62][band])
 		m.roughness = 1.0
-		m.uv1_triplanar = true
-		m.uv1_world_triplanar = true
-		m.uv1_scale = Vector3(0.12, 0.12, 0.12)
 		_damage_mats[band] = m
 	return _damage_mats[band]
+
+
+static var _smoke_mesh: QuadMesh
+
+
+## A column of grey smoke rising from a disabled / destroyed structure (GPU particles, a few dozen billboards).
+static func damage_smoke(at: Vector3, band: int) -> GPUParticles3D:
+	if _smoke_mesh == null:
+		_smoke_mesh = QuadMesh.new()
+		_smoke_mesh.size = Vector2(2.2, 2.2)
+		var sm := StandardMaterial3D.new()
+		sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		sm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		sm.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		sm.vertex_color_use_as_albedo = true
+		var g := GradientTexture2D.new()
+		var gr := Gradient.new()
+		gr.set_color(0, Color(1, 1, 1, 1))
+		gr.set_color(1, Color(1, 1, 1, 0))
+		g.gradient = gr
+		g.fill = GradientTexture2D.FILL_RADIAL
+		g.fill_from = Vector2(0.5, 0.5)
+		g.fill_to = Vector2(0.5, 0.0)
+		sm.albedo_texture = g
+		_smoke_mesh.material = sm
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = Vector3(0, 1, 0)
+	pm.spread = 12.0
+	pm.initial_velocity_min = 1.2
+	pm.initial_velocity_max = 2.0
+	pm.gravity = Vector3(0.6, 0.35, 0.2)
+	pm.scale_min = 0.8
+	pm.scale_max = 1.6
+	var sc := Curve.new()
+	sc.add_point(Vector2(0, 0.6))
+	sc.add_point(Vector2(1, 2.6))
+	var sct := CurveTexture.new()
+	sct.curve = sc
+	pm.scale_curve = sct
+	var cr := Gradient.new()
+	var dark := 0.18 if band >= 3 else 0.32
+	cr.set_color(0, Color(dark, dark, dark, 0.0))
+	cr.set_color(1, Color(dark + 0.2, dark + 0.2, dark + 0.2, 0.0))
+	cr.add_point(0.15, Color(dark, dark, dark, 0.6))  # after the end points: add_point re-sorts the indices
+	var crt := GradientTexture1D.new()
+	crt.gradient = cr
+	pm.color_ramp = crt
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	pm.emission_sphere_radius = 1.0
+	var p := GPUParticles3D.new()
+	p.amount = 28 if band >= 3 else 18
+	p.lifetime = 7.0
+	p.preprocess = 7.0
+	p.process_material = pm
+	p.draw_pass_1 = _smoke_mesh
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	p.visibility_aabb = AABB(Vector3(-12, -2, -12), Vector3(24, 30, 24))
+	p.position = at
+	return p
 
 
 ## GAMEPLAY-01B: a site's progress passed a tenth - only its look changes (no navmesh rebake).
@@ -794,7 +831,12 @@ func _build_visual(c: Vector2i) -> void:
 			mmi.material_override = site_material()
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		elif dmg:
-			mmi.material_overlay = damage_material(int((key as String).substr(3, 1)))
+			var band := int((key as String).substr(3, 1))
+			mmi.material_overlay = damage_material(band)
+			if band >= 2 and not def.linear:
+				for xf: Transform3D in xforms:
+					var sp := damage_smoke(xf.origin + Vector3(0.0, def.size.y * 0.8, 0.0), band)
+					mmi.add_child(sp)
 		mmi.multimesh = mm
 		mmi.visibility_range_end = def.visible_range
 		mmi.visibility_range_end_margin = 80.0
