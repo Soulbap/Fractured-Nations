@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="DevelopmentDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/development_def.gd" id="1_dev"]
+
+[resource]
+script = ExtResource("1_dev")
+id = &"advanced_base"
+branch = &"base"
+tier = 3
+display_name = "Advanced Base Facilities"
+summary = "Bunkers, tall HESCO and blast walls"
+description = "Heavy fortification for a base you mean to keep: the fighting bunker, tall HESCO, concrete T-walls and the covered MG position. Needs two objectives held - a front worth fortifying."
+requires = Array[StringName]([&"personnel_facilities", &"workshop"])
+requires_facility = &"hq"
+milestone = &"objectives"
+milestone_count = 2
+cost = {
+"supplies": 900.0
+}
+time_s = 300.0
+structures = Array[StringName]([&"bunker_fighting", &"hesco_tall", &"t_wall", &"mg_nest"])
+weapons = Array[StringName]([])
+roles = Array[StringName]([])
+effects = {}
+initial = false
+available = true

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="DevelopmentDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/development_def.gd" id="1_dev"]
+
+[resource]
+script = ExtResource("1_dev")
+id = &"expanded_coordination"
+branch = &"operations"
+tier = 3
+display_name = "Expanded Operational Coordination"
+summary = "Future capability - not available yet"
+description = "Combined operations with vehicles and fire support. Not part of the game yet: shown so the direction is visible, it cannot be started."
+requires = Array[StringName]([&"command_infrastructure"])
+requires_facility = &""
+milestone = &""
+milestone_count = 1
+cost = {
+"supplies": 1200.0
+}
+time_s = 400.0
+structures = Array[StringName]([])
+weapons = Array[StringName]([])
+roles = Array[StringName]([])
+effects = {}
+initial = false
+available = false

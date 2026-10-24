@@ -201,6 +201,9 @@ func _queue(f: int, ef: int, kind: int, src: int, p: Vector3, uid: int, unc: flo
 	if ws.war.intel_pending.size() >= max_pending:
 		reports_dropped += 1
 		return
+	# GAMEPLAY-04B: Reconnaissance Capability shortens the way a report takes to the faction.
+	if ws.dev:
+		delay *= ws.dev.effect(f, "intel_delay_mult")
 	ws.war.intel_pending.append({"f": f, "ef": ef, "kind": kind, "src": src, "p": p, "uid": uid, "unc": unc, "str": strength,
 		"by": by, "t": now, "due": now + delay})
 

@@ -191,6 +191,11 @@ func select_type(id: StringName) -> void:
 	var d := StructureCatalog.get_def(id)
 	if d == null:
 		return
+	# GAMEPLAY-04B: a type the faction has not developed cannot be chosen (the card says what unlocks it).
+	var lock := lock_reason(id)
+	if lock != "":
+		_say("%s: %s" % [d.display_name, lock])
+		return
 	cancel()
 	def = d
 	tool = Tool.PLACE
@@ -551,6 +556,14 @@ func _pay(supplies: float, p: Vector3) -> Variant:
 		_say("Not enough supplies: %s needs %d kg, you have %d kg" % [def.display_name, roundi(supplies), roundi(supplies_available())])
 		return null
 	return paid
+
+
+## GAMEPLAY-04B: "" when the player's faction may build this type, else what unlocks it (MilitaryDevelopment).
+func lock_reason(type_id: StringName) -> String:
+	var sim: WorldSim = structures.sim if structures else null
+	if sim == null or sim.war == null or sim.war.dev == null:
+		return ""
+	return sim.war.dev.structure_lock(player_faction(), type_id)
 
 
 ## The faction the player builds for (the war's player faction, North without a war).
@@ -962,7 +975,9 @@ func _refresh_check() -> void:
 	if not def.linear:
 		check = structures.check_building(def, cursor, yaw, -1, clear_trees)
 		if check.ok:
-			var why := _base_reason(check.xform)
+			var why := lock_reason(def.id)
+			if why == "":
+				why = _base_reason(check.xform)
 			if why == "" and costs_on() and BuildCosts.cost_of(def) > supplies_available() + 0.001:
 				why = "not enough supplies: needs %d kg, you have %d kg" % [roundi(BuildCosts.cost_of(def)), roundi(supplies_available())]
 			if why != "":

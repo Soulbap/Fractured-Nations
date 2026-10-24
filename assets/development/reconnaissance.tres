@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="DevelopmentDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/development_def.gd" id="1_dev"]
+
+[resource]
+script = ExtResource("1_dev")
+id = &"reconnaissance"
+branch = &"operations"
+tier = 1
+display_name = "Reconnaissance Capability"
+summary = "Faster reports, reconnaissance tasks"
+description = "Trained observers and radio discipline: what your soldiers see, hear or are shot by reaches the map in less than half the time, and reconnaissance tasks (observe an enemy position) are offered."
+requires = Array[StringName]([&"basic_operations"])
+requires_facility = &"hq"
+milestone = &""
+milestone_count = 1
+cost = {
+"supplies": 200.0
+}
+time_s = 120.0
+structures = Array[StringName]([])
+weapons = Array[StringName]([])
+roles = Array[StringName]([])
+effects = {
+"intel_delay_mult": 0.4
+}
+initial = false
+available = true

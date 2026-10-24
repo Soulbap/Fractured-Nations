@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="DevelopmentDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/development_def.gd" id="1_dev"]
+
+[resource]
+script = ExtResource("1_dev")
+id = &"field_command"
+branch = &"base"
+tier = 0
+display_name = "Field Command"
+summary = "Command posts, supply depots and field defences"
+description = "What every force can set up from the start: a Command Post founds a base, a Supply Depot stores what you carry, and guard towers, fighting positions, MG emplacements, sandbags and HESCO protect it."
+requires = Array[StringName]([])
+requires_facility = &""
+milestone = &""
+milestone_count = 1
+cost = {}
+time_s = 0.0
+structures = Array[StringName]([])
+weapons = Array[StringName]([])
+roles = Array[StringName]([])
+effects = {}
+initial = true
+available = true

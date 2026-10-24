@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="DevelopmentDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/development_def.gd" id="1_dev"]
+
+[resource]
+script = ExtResource("1_dev")
+id = &"supply_infrastructure"
+branch = &"base"
+tier = 1
+display_name = "Supply Infrastructure"
+summary = "Ammunition magazine, fuel and storage"
+description = "Dedicated stores at a base: the Ammunition Magazine (also the armoury that issues heavier weapons), fuel points, container storage and vehicle parking."
+requires = Array[StringName]([&"field_command"])
+requires_facility = &"supply"
+milestone = &""
+milestone_count = 1
+cost = {
+"supplies": 250.0
+}
+time_s = 100.0
+structures = Array[StringName]([&"ammo_magazine", &"fuel_point", &"fuel_bladder_berm", &"container_yard", &"vehicle_parking_pad"])
+weapons = Array[StringName]([])
+roles = Array[StringName]([])
+effects = {}
+initial = false
+available = true

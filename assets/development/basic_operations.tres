@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="DevelopmentDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/development_def.gd" id="1_dev"]
+
+[resource]
+script = ExtResource("1_dev")
+id = &"basic_operations"
+branch = &"operations"
+tier = 0
+display_name = "Basic Operations"
+summary = "Squad orders, attack and defend operations"
+description = "Squad tactics (assault, suppress, flank, defend, withdraw), garrisons and operations planned on the map."
+requires = Array[StringName]([])
+requires_facility = &""
+milestone = &""
+milestone_count = 1
+cost = {}
+time_s = 0.0
+structures = Array[StringName]([])
+weapons = Array[StringName]([])
+roles = Array[StringName]([])
+effects = {}
+initial = true
+available = true

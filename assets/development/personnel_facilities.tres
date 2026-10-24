@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="DevelopmentDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/development_def.gd" id="1_dev"]
+
+[resource]
+script = ExtResource("1_dev")
+id = &"personnel_facilities"
+branch = &"base"
+tier = 1
+display_name = "Barracks & Personnel"
+summary = "Barracks: recruit and replenish squads"
+description = "Organises personnel at a base. Unlocks the Barracks (trains new squads, refills depleted ones, 32 beds) and the barracks module (8 beds). Recruiting still costs supplies, ammunition and personnel."
+requires = Array[StringName]([&"field_command"])
+requires_facility = &"hq"
+milestone = &""
+milestone_count = 1
+cost = {
+"supplies": 300.0
+}
+time_s = 120.0
+structures = Array[StringName]([&"barracks_block", &"barracks", &"medical_station"])
+weapons = Array[StringName]([])
+roles = Array[StringName]([])
+effects = {}
+initial = false
+available = true

@@ -63,6 +63,8 @@ var econ: WarEconomy
 var bases: AiBases
 var mech: OpTransport
 var supply: WarLogistics
+## GAMEPLAY-04B: Military Development (unlocks, projects, AI development policy).
+var dev: MilitaryDevelopment
 var _profiles := {}
 var _t_capture := 0.0
 var _t_ops := 0.0
@@ -100,6 +102,7 @@ func _init(p_sim: WorldSim) -> void:
 	bases = AiBases.new(self)
 	mech = OpTransport.new(self)
 	supply = WarLogistics.new(self)
+	dev = MilitaryDevelopment.new(self)
 
 
 func setup(p_routes: StrategicRoutes) -> void:
@@ -149,6 +152,7 @@ func update(delta: float) -> void:
 			_update_garrisons(f)
 			_update_base_alerts(f)
 	econ.update(delta)
+	dev.update(delta)
 	var now := sim.state.time
 	for f: FactionState in war.factions.values():
 		if not f.player and now >= f.next_decision_at:

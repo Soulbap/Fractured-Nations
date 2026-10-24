@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="DevelopmentDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/development_def.gd" id="1_dev"]
+
+[resource]
+script = ExtResource("1_dev")
+id = &"marksman"
+branch = &"infantry"
+tier = 2
+display_name = "Marksman Specialization"
+summary = "Designated marksman rifle"
+description = "A 7.62 mm marksman rifle with a magnified optic: precise single shots out to 700 m. Marksmen look for long firing posts and engage before the enemy's rifles reach. Needs one objective captured - lessons from the first fight."
+requires = Array[StringName]([&"infantry_equipment"])
+requires_facility = &"supply"
+milestone = &"captured"
+milestone_count = 1
+cost = {
+"supplies": 350.0,
+"ammo": 150.0
+}
+time_s = 150.0
+structures = Array[StringName]([])
+weapons = Array[StringName]([&"dmr"])
+roles = Array[StringName]([&"marksman"])
+effects = {}
+initial = false
+available = true

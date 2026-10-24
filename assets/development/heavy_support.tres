@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="DevelopmentDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/development_def.gd" id="1_dev"]
+
+[resource]
+script = ExtResource("1_dev")
+id = &"heavy_support"
+branch = &"infantry"
+tier = 3
+display_name = "Heavy Infantry Support"
+summary = "84 mm recoilless rifle"
+description = "A reusable 84 mm recoilless rifle with four rounds: twice the light launcher's effect on fortifications and reach to 400 m. Issued from a Workshop (repair bay)."
+requires = Array[StringName]([&"advanced_support", &"workshop"])
+requires_facility = &"repair"
+milestone = &""
+milestone_count = 1
+cost = {
+"supplies": 700.0,
+"ammo": 300.0
+}
+time_s = 270.0
+structures = Array[StringName]([])
+weapons = Array[StringName]([&"recoilless"])
+roles = Array[StringName]([&"at_gunner"])
+effects = {}
+initial = false
+available = true

@@ -73,6 +73,11 @@ const SHAPES := {
 	&"drive": "<circle cx='12' cy='12' r='9'/><circle cx='12' cy='12' r='2'/><path d='M3.5 10H10M14 10H20.5M12 14V21'/>",
 	&"clock": "<circle cx='12' cy='12' r='9'/><path d='M12 7V12L15 14'/>",
 	&"check": "<path d='M4 12.5L9.5 18L20 6'/>",
+	# GAMEPLAY-04
+	&"development": "<circle cx='12' cy='12' r='3'/><path d='M12 2V5M12 19V22M2 12H5M19 12H22M4.9 4.9L7 7M17 17L19.1 19.1M4.9 19.1L7 17M17 7L19.1 4.9'/>",
+	&"locked": "<rect x='5' y='11' width='14' height='10'/><path d='M8 11V7A4 4 0 0 1 16 7V11'/>",
+	&"mission": "<path d='M5 21V3M5 4H19L16 8L19 12H5'/><circle cx='12' cy='8' r='1'/>",
+	&"equipment": "<path d='M3 9H14L16 7H21V10H17L15.5 12H11L10 16H7L8 12H3Z M5 19H19'/>",
 }
 
 ## Icons are rasterised larger than drawn and shrunk with mipmaps: the canvas is scaled up to the

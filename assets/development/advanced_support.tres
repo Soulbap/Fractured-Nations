@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="DevelopmentDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/development_def.gd" id="1_dev"]
+
+[resource]
+script = ExtResource("1_dev")
+id = &"advanced_support"
+branch = &"infantry"
+tier = 2
+display_name = "Advanced Support Weapons"
+summary = "7.62 general-purpose machine gun"
+description = "The heavy 7.62 machine gun: a 200-round belt, more damage and much more suppression, but slow to move with and hopeless unbraced. Issued from an Ammunition Magazine."
+requires = Array[StringName]([&"infantry_equipment", &"supply_infrastructure"])
+requires_facility = &"ammo"
+milestone = &""
+milestone_count = 1
+cost = {
+"supplies": 500.0,
+"ammo": 250.0
+}
+time_s = 210.0
+structures = Array[StringName]([])
+weapons = Array[StringName]([&"gpmg"])
+roles = Array[StringName]([&"heavy_gunner"])
+effects = {}
+initial = false
+available = true

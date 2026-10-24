@@ -48,6 +48,8 @@ var _badge: Label
 var _hints: FNPanel
 ## GAMEPLAY-01B: supply strip, next-step hint, cache and construction-site markers.
 var economy: EconomyHud
+## GAMEPLAY-04B: the Military Development screen (F2).
+var development: DevelopmentPanel
 
 
 class Overlay extends Control:
@@ -303,7 +305,7 @@ func _ready() -> void:
 	var hb := HBoxContainer.new()
 	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hb.add_theme_constant_override("separation", FNUI.S5)
-	for k: Array in [["LMB", "Select"], ["RMB", "Move"], ["B", "Build"], ["M", "Map"], ["Tab", "First person"], ["F1", "Controls"]]:
+	for k: Array in [["LMB", "Select"], ["RMB", "Move"], ["B", "Build"], ["M", "Map"], ["F2", "Development"], ["Tab", "First person"], ["F1", "Controls"]]:
 		hb.add_child(FNKeyHint.new(k[0], k[1]))
 	_hints.add_child(hb)
 	_hints.visible = false
@@ -323,6 +325,9 @@ func _ready() -> void:
 	economy = EconomyHud.new()
 	economy.hud = self
 	add_child(economy)
+	development = DevelopmentPanel.new()
+	development.hud = self
+	add_child(development)
 	_notes_box = VBoxContainer.new()
 	_notes_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_notes_box.add_theme_constant_override("separation", 3)
@@ -362,6 +367,12 @@ func _on_war_event(e: Dictionary) -> void:
 		"cache", "build":
 			col = FNUI.ARMED
 			icon = &"cargo" if e.kind == "cache" else &"build"
+		"dev_start", "dev_cancel":
+			col = FNUI.ACCENT if e.kind == "dev_start" else FNUI.NEUTRAL
+			icon = &"development"
+		"dev_done":
+			col = FNUI.OK
+			icon = &"development"
 		"op_failed":
 			col = FNUI.DANGER
 			icon = &"blocked"
@@ -478,6 +489,9 @@ func _process(_delta: float) -> void:
 		if economy._hint.visible:
 			notes_y = economy._hint.position.y + economy._hint.size.y + 6.0
 	_notes_box.position = Vector2(vp.x * 0.5 - _notes_box.size.x * 0.5, notes_y)
+	# GAMEPLAY-04: with the development screen open the notifications go below it instead of over its header.
+	if development and development.visible:
+		_notes_box.position.y = development._panel.position.y + development._panel.size.y + 6.0
 	if Engine.get_process_frames() % 6 == 0:
 		var text := _text()
 		if text != _label.text:

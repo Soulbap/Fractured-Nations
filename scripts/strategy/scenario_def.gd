@@ -15,7 +15,9 @@ extends Resource
 ## Per objective (SandboxSetup.OBJECTIVES name): {"name": new name, "kind": ..., "value": ..., "owner": ...}.
 @export var objective_overrides := {}
 ## Per faction id: {"profile": StringName, "reserves": int, "hq": objective name (after renaming) or "",
-## "squads": {objective name: squad count}}. Every faction of WorldState.FACTION_NAMES must be listed.
+## "squads": {objective name: squad count}, "developments": [DevelopmentDef ids known from the start beyond the initial
+## ones (GAMEPLAY-04B; an AI faction whose start base has a barracks knows how to build one)]}. Every faction of
+## WorldState.FACTION_NAMES must be listed.
 @export var factions: Array[Dictionary] = []
 ## Squads placed at a world position instead of an objective: {"faction", "x", "z", "size", "yaw"}.
 @export var start_squads: Array[Dictionary] = []
@@ -39,6 +41,7 @@ extends Resource
 ##   bed_limit          the player cannot recruit beyond the beds of his bases
 ##   recovery_delay_s / recovery_size   a small section after total loss (0 = off)
 ##   guide              early-game hints in the HUD
+##   development        GAMEPLAY-04B Military Development: buildings, weapons and roles are unlocked by developments (off: all open)
 @export var rules := {}
 
 

@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="DevelopmentDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/development_def.gd" id="1_dev"]
+
+[resource]
+script = ExtResource("1_dev")
+id = &"command_infrastructure"
+branch = &"operations"
+tier = 2
+display_name = "Improved Command Infrastructure"
+summary = "Headquarters building, two projects at once"
+description = "A proper headquarters (16 beds, 6 t of stores) and a staff that runs two development projects at the same time."
+requires = Array[StringName]([&"reconnaissance", &"personnel_facilities"])
+requires_facility = &"hq"
+milestone = &"objectives"
+milestone_count = 1
+cost = {
+"supplies": 500.0,
+"ammo": 80.0
+}
+time_s = 200.0
+structures = Array[StringName]([&"hq_building"])
+weapons = Array[StringName]([])
+roles = Array[StringName]([])
+effects = {
+"dev_slots": 1
+}
+initial = false
+available = true

@@ -102,6 +102,9 @@ static func create(demo: CoreDemo, routes: StrategicRoutes, scenario: ScenarioDe
 		if f.player:
 			for item: String in scenario.start_pool:
 				f.pool.add(StringName(item), float(scenario.start_pool[item]))
+		# GAMEPLAY-04B: what the faction knows at minute zero (the initial developments and the scenario's "developments").
+		if sim.war.dev.enabled():
+			sim.war.dev.init_faction(f, d.get("developments", []))
 	for i in WorldState.FACTION_NAMES.size():
 		var f := war.faction(i)
 		var placement: Dictionary = scenario.faction_entry(i).get("squads", {})

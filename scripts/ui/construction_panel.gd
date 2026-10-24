@@ -357,7 +357,10 @@ func _refresh_cards() -> void:
 			card.info_label.text = String(card.get_meta("info")) + ("  ·  %d kg%s" % [roundi(cost), "/module" if d.linear else ""] if cost > 0.0 else "")
 			var needs_base: bool = FacilityDefs.has(id) and not FacilityDefs.founds_base(id) and not has_base
 			var short := cost > have + 0.001
-			card.set_available(not needs_base and not short, "Needs a Command Post" if needs_base else ("Needs %d kg supplies (you have %d)" % [roundi(cost), roundi(have)] if short else ""))
+			# GAMEPLAY-04B: a type not developed yet stays in the menu, greyed, with the development that unlocks it.
+			var lock := controller.lock_reason(id)
+			var why := lock if lock != "" else ("Needs a Command Post" if needs_base else ("Needs %d kg supplies (you have %d)" % [roundi(cost), roundi(have)] if short else ""))
+			card.set_available(lock == "" and not needs_base and not short, why)
 	(_tools[&"demolish"] as FNCommandButton).armed = controller.tool == ConstructionController.Tool.DELETE
 	(_tools[&"clearing"] as FNCommandButton).set_face(&"clearing", "Clearing" if controller.clear_trees else "No clear")
 	(_tools[&"clearing"] as FNCommandButton).current = controller.clear_trees

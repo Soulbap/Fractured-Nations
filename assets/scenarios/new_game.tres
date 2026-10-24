@@ -35,6 +35,7 @@ factions = Array[Dictionary]([{
 "reserves": 24,
 "squads": {}
 }, {
+"developments": ["personnel_facilities", "supply_infrastructure", "workshop"],
 "hq": "Nordmoen HQ",
 "profile": &"aggressive",
 "reserves": 40,
@@ -44,6 +45,7 @@ factions = Array[Dictionary]([{
 "North Bridge": 1
 }
 }, {
+"developments": ["personnel_facilities", "supply_infrastructure", "workshop"],
 "hq": "East HQ",
 "profile": &"defensive",
 "reserves": 40,
@@ -108,6 +110,7 @@ rules = {
 "bed_limit": true,
 "build_costs": true,
 "build_sites": true,
+"development": true,
 "free_reserves": false,
 "guide": true,
 "income_ammo": 12.0,

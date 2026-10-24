@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="DevelopmentDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/development_def.gd" id="1_dev"]
+
+[resource]
+script = ExtResource("1_dev")
+id = &"standard_infantry"
+branch = &"infantry"
+tier = 0
+display_name = "Standard Infantry"
+summary = "Rifle, light machine gun, grenades, light launcher"
+description = "The rifle squad: riflemen with the 5.56 rifle and a hand grenade, a light machine gunner and a grenadier with three grenades and a disposable light anti-structure launcher."
+requires = Array[StringName]([])
+requires_facility = &""
+milestone = &""
+milestone_count = 1
+cost = {}
+time_s = 0.0
+structures = Array[StringName]([])
+weapons = Array[StringName]([&"rifle", &"lmg", &"grenade", &"launcher"])
+roles = Array[StringName]([&"rifleman", &"machine_gunner", &"grenadier"])
+effects = {}
+initial = true
+available = true

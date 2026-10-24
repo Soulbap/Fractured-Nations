@@ -61,6 +61,11 @@ var recovery_at := -1.0
 var expand_next_at := 0.0
 var recoveries := 0
 var home := Vector3.INF
+## GAMEPLAY-04B Military Development (MilitaryDevelopment): {"done": [ids], "active": [{id, progress, paid, started, why}]}.
+var dev := {}
+## GAMEPLAY-04D: weapons the faction holds in store, not carried by anyone (WeaponDef id -> count). A soldier re-equipped
+## at a base hands his old weapon in here and draws the new one from here before anything is bought (SquadEquipment).
+var armory := {}
 
 
 func to_dict() -> Dictionary:
@@ -71,7 +76,8 @@ func to_dict() -> Dictionary:
 		"ops_started": ops_started, "ops_succeeded": ops_succeeded, "ops_failed": ops_failed, "last_decision": last_decision,
 		"focus": [focus_kind, focus_objective, focus_since, focus_until, focus_utility, focus_why],
 		"ledger": ledger.duplicate(true), "econ_next": econ_next_at, "supply_next": supply_next_at,
-		"pool": pool.to_dict(), "recovery_at": recovery_at, "expand_next": expand_next_at, "recoveries": recoveries, "home": home}
+		"pool": pool.to_dict(), "recovery_at": recovery_at, "expand_next": expand_next_at, "recoveries": recoveries, "home": home,
+		"dev": dev.duplicate(true), "armory": armory.duplicate()}
 
 
 static func from_dict(d: Dictionary) -> FactionState:
@@ -112,4 +118,6 @@ static func from_dict(d: Dictionary) -> FactionState:
 	f.expand_next_at = d.get("expand_next", 0.0)
 	f.recoveries = d.get("recoveries", 0)
 	f.home = d.get("home", Vector3.INF)
+	f.dev = d.get("dev", {}).duplicate(true)
+	f.armory = d.get("armory", {}).duplicate()
 	return f

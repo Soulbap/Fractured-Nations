@@ -199,6 +199,11 @@ func request(f: FactionState, type_id: StringName, near: Vector3, why: String, n
 	var def := StructureCatalog.get_def(type_id)
 	if def == null or not BUILD_COST.has(type_id):
 		return {"ok": false, "reason": "unknown building"}
+	# GAMEPLAY-04B: the AI builds only what its faction has developed (the player's rule).
+	var lock := ws.dev.structure_lock(f.id, type_id)
+	if lock != "":
+		stats.refused += 1
+		return {"ok": false, "reason": lock}
 	var bs := sim.logistics.bases
 	var bid := _payer_base(f, near, BUILD_COST[type_id])
 	if bid < 0:

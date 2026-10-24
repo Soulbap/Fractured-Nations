@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="DevelopmentDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/development_def.gd" id="1_dev"]
+
+[resource]
+script = ExtResource("1_dev")
+id = &"workshop"
+branch = &"base"
+tier = 2
+display_name = "Workshop & Maintenance"
+summary = "Repair bay and vehicle depot"
+description = "A repair bay (restores vehicles; the workshop that issues heavy infantry weapons) and the Vehicle Depot, which provides supply trucks."
+requires = Array[StringName]([&"supply_infrastructure"])
+requires_facility = &"supply"
+milestone = &""
+milestone_count = 1
+cost = {
+"supplies": 450.0,
+"ammo": 60.0
+}
+time_s = 180.0
+structures = Array[StringName]([&"repair_bay", &"vehicle_depot"])
+weapons = Array[StringName]([])
+roles = Array[StringName]([])
+effects = {}
+initial = false
+available = true

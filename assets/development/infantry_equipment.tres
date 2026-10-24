@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="DevelopmentDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/development_def.gd" id="1_dev"]
+
+[resource]
+script = ExtResource("1_dev")
+id = &"infantry_equipment"
+branch = &"infantry"
+tier = 1
+display_name = "Infantry Equipment Expansion"
+summary = "Compact carbine, 40 mm grenade launcher"
+description = "A compact carbine for close work (handier on the move, shorter reach) and the 40 mm grenade launcher, which fires explosive rounds out to 350 m - between a hand grenade and a rocket. Procured at a base with a Supply Depot."
+requires = Array[StringName]([&"standard_infantry"])
+requires_facility = &"supply"
+milestone = &""
+milestone_count = 1
+cost = {
+"supplies": 250.0,
+"ammo": 120.0
+}
+time_s = 120.0
+structures = Array[StringName]([])
+weapons = Array[StringName]([&"carbine", &"gl40"])
+roles = Array[StringName]([&"carbineer", &"grenadier_gl"])
+effects = {}
+initial = false
+available = true
