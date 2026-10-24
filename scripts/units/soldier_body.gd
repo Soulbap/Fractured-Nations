@@ -146,7 +146,8 @@ func _physics_process(delta: float) -> void:
 	_sync_state()
 	if character:
 		# Soldiers holding cover crouch behind it (COMBAT-02 tactic -> CHARACTER-01 pose).
-		character.crouched = not player_controlled and unit.tactic == UnitState.Tactic.IN_COVER
+		# GAMEPLAY-01B: soldiers at work on a construction site kneel at it (the work pose).
+		character.crouched = not player_controlled and (unit.tactic == UnitState.Tactic.IN_COVER or unit.work_until > sim.state.time)
 
 
 func _ai_step(delta: float) -> void:

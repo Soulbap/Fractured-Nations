@@ -14,6 +14,10 @@ signal structure_changed(s: StructureState)
 signal cleared
 ## Vegetation clearings were added or replaced.
 signal clearings_changed
+## GAMEPLAY-01B: a construction site was finished (it is now an ordinary structure; facilities start working), or its
+## progress passed another tenth (its look changes).
+signal structure_completed(s: StructureState)
+signal site_progressed(s: StructureState)
 
 ## 2: adds "clearings" (version 1 files load with none).
 const FORMAT_VERSION := 3
@@ -73,6 +77,64 @@ func add_surface(type_id: StringName, points: PackedVector3Array, profile: Packe
 	s.profile = profile
 	s.faction = faction
 	return _insert(s)
+
+
+## GAMEPLAY-01B: a construction site of a building - the structure exists (footprint, groundwork, collision) but works
+## only when `need` soldier-seconds of work are done (add_work). paid: the payment record (refunded on cancel); crew: work
+## per second done without soldiers (AI factions).
+func add_site(type_id: StringName, position: Vector3, yaw: float, faction: int, need: float, paid: Dictionary, crew := 0.0) -> StructureState:
+	var s := StructureState.new()
+	s.type_id = type_id
+	s.position = position
+	s.yaw = wrapf(yaw, -PI, PI)
+	s.faction = faction
+	s.site = _site_record(need, paid, crew)
+	return _insert(s)
+
+
+## The same for a line (HESCO, walls): `need` covers all its built modules.
+func add_line_site(type_id: StringName, points: PackedVector3Array, removed: PackedInt32Array, faction: int, need: float, paid: Dictionary) -> StructureState:
+	if points.size() < 2:
+		return null
+	var s := StructureState.new()
+	s.type_id = type_id
+	s.points = points
+	s.removed = removed
+	s.faction = faction
+	s.site = _site_record(need, paid, 0.0)
+	return _insert(s)
+
+
+func _site_record(need: float, paid: Dictionary, crew: float) -> Dictionary:
+	return {"work": 0.0, "need": maxf(need, 1.0), "paid": paid, "crew": crew, "workers": 0, "why": "", "step": 0}
+
+
+## Adds soldier-seconds of work to a site. Returns true when this call finished it: the site record goes, the structure
+## is complete and structure_completed is emitted - exactly once (a finished structure takes no more work).
+func add_work(s: StructureState, amount: float) -> bool:
+	if s == null or not s.is_site() or not structures.has(s.id) or amount <= 0.0:
+		return false
+	s.site["work"] = float(s.site.work) + amount
+	if float(s.site.work) >= float(s.site.need):
+		s.site = {}
+		structure_completed.emit(s)
+		structure_changed.emit(s)
+		return true
+	var step := int(s.site_progress() * 10.0)
+	if step != int(s.site.get("step", 0)):
+		s.site["step"] = step
+		site_progressed.emit(s)
+	return false
+
+
+## Removes a site that is not finished; returns its payment record (the caller refunds it), {} when it was no site.
+func cancel_site(id: int) -> Dictionary:
+	var s: StructureState = structures.get(id)
+	if s == null or not s.is_site():
+		return {}
+	var paid: Dictionary = s.site.get("paid", {})
+	remove(id)
+	return {"paid": paid, "type": s.type_id, "faction": s.faction, "progress": s.site_progress()}
 
 
 ## A new base (LogisticsSim decides when); returns its record.

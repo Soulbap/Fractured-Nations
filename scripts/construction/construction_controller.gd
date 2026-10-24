@@ -244,14 +244,38 @@ func save() -> bool:
 
 
 func load_saved() -> bool:
+	return bool(load_game().ok)
+
+
+## F9 / Continue: units, squads and the war (world.json), then the structures (construction.json). GAMEPLAY-01B: both
+## files are checked before anything is replaced, so a damaged save is refused with its reason instead of leaving
+## half a world loaded. Returns {ok, reason, structures, units, squads}.
+func load_game() -> Dictionary:
 	cancel()
-	var units := ""
-	if world_state and FileAccess.file_exists(world_save_path()):
-		var r: Variant = world_state.load_file(world_save_path())
-		units = (", %d units, %d squads" % [world_state.units.size(), world_state.squads.size()]) if r is Dictionary else ", units: load failed"
-	var err := structures.state.load_json(save_path)
-	_say(("Loaded %d structures%s" % [structures.state.count(), units]) if err == OK else "Load failed (%s)" % error_string(err))
-	return err == OK
+	var res := {"ok": false, "reason": "", "structures": 0, "units": 0, "squads": 0}
+	var cons: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_path)) if FileAccess.file_exists(save_path) else null
+	if not cons is Dictionary:
+		res.reason = "no construction save" if not FileAccess.file_exists(save_path) else "construction.json is damaged"
+	var snap: Variant = null
+	if world_state and res.reason == "":
+		if not FileAccess.file_exists(world_save_path()):
+			res.reason = "no world save (units, squads, war)"
+		else:
+			snap = str_to_var(FileAccess.get_file_as_string(world_save_path()))
+			if not snap is Dictionary or not (snap as Dictionary).has("units"):
+				res.reason = "world.json is damaged or from an incompatible version"
+	if res.reason != "":
+		_say("Load failed: %s" % res.reason)
+		return res
+	if world_state:
+		world_state.apply_snapshot(snap)
+	structures.state.from_dict(cons)
+	res.ok = true
+	res.structures = structures.state.count()
+	res.units = world_state.units.size() if world_state else 0
+	res.squads = world_state.squads.size() if world_state else 0
+	_say("Loaded %d structures%s" % [res.structures, (", %d units, %d squads" % [res.units, res.squads]) if world_state else ""])
+	return res
 
 
 ## UNIT-01A: units and squads are saved next to the construction file.
@@ -387,6 +411,17 @@ func place_building() -> StructureState:
 		_say("Cannot build here: %s" % check.get("reason", "no ground"))
 		return null
 	var xf: Transform3D = check.xform
+	var paid: Variant = _pay(BuildCosts.cost_of(def), xf.origin)
+	if paid == null:
+		return null
+	if sites_on():
+		# GAMEPLAY-01B: a construction site; soldiers build it (SquadTactics BUILD) and it works when it is finished.
+		var site := structures.state.add_site(def.id, xf.origin, yaw, player_faction(), BuildCosts.work_of(def), paid)
+		structures.state.add_clearings(structures.clearings_for(site, clear_trees))
+		_area_key = []
+		_site_placed(site)
+		built.emit(site)
+		return site
 	var s := structures.state.add_building(def.id, xf.origin, yaw, player_faction())
 	structures.state.add_clearings(structures.clearings_for(s, clear_trees))
 	var b: Dictionary = structures.state.bases.get(s.base_id, {})
@@ -399,6 +434,83 @@ func place_building() -> StructureState:
 	_area_key = []
 	built.emit(s)
 	return s
+
+
+## GAMEPLAY-01B: placing makes a construction site that soldiers build (rule build_sites), instead of a finished structure.
+func sites_on() -> bool:
+	return world_state != null and world_state.war.active and bool(world_state.war.rule("build_sites", false))
+
+
+## A site was placed: the nearest idle squad is called to build it, and the player hears what happens.
+func _site_placed(site: StructureState) -> void:
+	var sim := structures.sim
+	var sq: SquadState = sim.tactics.assign_builders(site) if sim else null
+	var cost := BuildCosts.cost_of(StructureCatalog.get_def(site.type_id), site.built_count() if site.is_line() else 1)
+	var paid_txt := (" for %d kg" % roundi(cost)) if costs_on() and cost > 0.0 else ""
+	if sq:
+		_say("%s site placed%s: %s is on the way to build it" % [def.display_name, paid_txt, sq.squad_name])
+	else:
+		_say("%s site placed%s: no idle squad near - select a squad and right-click the site to build it" % [def.display_name, paid_txt])
+	if sim and sim.war:
+		sim.war.log_event(site.faction, "build", "%s site placed%s" % [def.display_name, paid_txt], site.site_center())
+
+
+## Cancels a construction site of the player: it disappears and its full cost is refunded (the rule for every site,
+## however far it got; a finished building is never refunded). Returns the refunded supplies (-1: no such site).
+func cancel_site(id: int) -> float:
+	var s := structures.state.get_structure(id)
+	if s == null or not s.is_site() or s.faction != player_faction():
+		return -1.0
+	var r := structures.state.cancel_site(id)
+	var paid: Dictionary = r.get("paid", {})
+	var back := 0.0
+	for k: String in paid.get("pool", {}):
+		if k == "supplies":
+			back += float(paid.pool[k])
+	for b in paid.get("bases", {}):
+		back += float(paid.bases[b].get("supplies", 0.0))
+	if not paid.is_empty() and _bases():
+		_bases().faction_refund(s.faction, paid)
+	var d := StructureCatalog.get_def(s.type_id)
+	_say("%s site cancelled (%d%% built): %d kg refunded" % [d.display_name if d else String(s.type_id), roundi(float(r.get("progress", 0.0)) * 100.0), roundi(back)])
+	return back
+
+
+## GAMEPLAY-01B: player construction is paid in the scenarios that say so (rule build_costs).
+func costs_on() -> bool:
+	return world_state != null and world_state.war.active and bool(world_state.war.rule("build_costs", false))
+
+
+## Supplies the player can spend (pool and every base); INF when construction is free.
+func supplies_available() -> float:
+	if not costs_on() or _bases() == null:
+		return INF
+	return float(_bases().faction_stock(player_faction()).supplies)
+
+
+## What the current tool would cost: a building, or the modules of the line being drawn (0 when free).
+func current_cost() -> float:
+	if not costs_on() or def == null:
+		return 0.0
+	if def.linear:
+		var n := 1
+		if check.has("modules"):
+			n = maxi(1, int(check.get("ok_count", 1)))
+		return BuildCosts.cost_of(def, n)
+	return BuildCosts.cost_of(def)
+
+
+## Pays `supplies` for something placed at p (the base there pays after the pool). Returns the payment record ({} when
+## construction is free) or null when the player cannot afford it (with the reason in the message).
+func _pay(supplies: float, p: Vector3) -> Variant:
+	if not costs_on() or supplies <= 0.0:
+		return {}
+	var bs := _bases()
+	var paid := bs.faction_pay(player_faction(), BuildCosts.supplies(supplies), bs.base_area_at(p, player_faction()))
+	if paid.is_empty():
+		_say("Not enough supplies: %s needs %d kg, you have %d kg" % [def.display_name, roundi(supplies), roundi(supplies_available())])
+		return null
+	return paid
 
 
 ## The faction the player builds for (the war's player faction, North without a war).
@@ -462,7 +574,17 @@ func finish_line() -> StructureState:
 		_say("Cannot build: every module is blocked (%s)" % (mods[0].reason if not mods.is_empty() else "too short"))
 		cancel()
 		return null
-	var s := structures.state.add_line(def.id, pts, removed)
+	var paid: Variant = _pay(BuildCosts.cost_of(def, mods.size() - removed.size()), pts[0])
+	if paid == null:
+		return null
+	if sites_on():
+		var site := structures.state.add_line_site(def.id, pts, removed, player_faction(), BuildCosts.work_of(def, mods.size() - removed.size()), paid)
+		structures.state.add_clearings(structures.clearings_for(site, clear_trees))
+		_site_placed(site)
+		cancel()
+		built.emit(site)
+		return site
+	var s := structures.state.add_line(def.id, pts, removed, player_faction())
 	structures.state.add_clearings(structures.clearings_for(s, clear_trees))
 	var blocked := 0
 	for m in mods:
@@ -482,6 +604,10 @@ func delete_hovered(whole_line := false) -> bool:
 	if s == null:
 		return false
 	var d := StructureCatalog.get_def(s.type_id)
+	if s.is_site() and s.faction == player_faction():
+		cancel_site(s.id)
+		hover = {}
+		return true
 	if d.is_surface():
 		structures.state.remove(s.id)
 		_say("Removed %s" % d.display_name)
@@ -797,6 +923,8 @@ func _refresh_check() -> void:
 		check = structures.check_building(def, cursor, yaw, -1, clear_trees)
 		if check.ok:
 			var why := _base_reason(check.xform)
+			if why == "" and costs_on() and BuildCosts.cost_of(def) > supplies_available() + 0.001:
+				why = "not enough supplies: needs %d kg, you have %d kg" % [roundi(BuildCosts.cost_of(def)), roundi(supplies_available())]
 			if why != "":
 				check.ok = false
 				check.reason = why

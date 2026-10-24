@@ -136,10 +136,12 @@ func bind_state(p_state: ConstructionState) -> void:
 		state.structure_changed.disconnect(_on_changed)
 		state.cleared.disconnect(_on_cleared)
 		state.clearings_changed.disconnect(_apply_clearings)
+		state.site_progressed.disconnect(_on_site_progressed)
 	state = p_state
 	state.structure_added.connect(_on_added)
 	state.structure_removed.connect(_on_removed)
 	state.structure_changed.connect(_on_changed)
+	state.site_progressed.connect(_on_site_progressed)
 	state.cleared.connect(_on_cleared)
 	state.clearings_changed.connect(_apply_clearings)
 	_on_cleared()
@@ -498,6 +500,12 @@ func _on_changed(s: StructureState) -> void:
 	area_changed.emit(_rect_of(s))
 
 
+## GAMEPLAY-01B: a site's progress passed a tenth - only its look changes (no navmesh rebake).
+func _on_site_progressed(s: StructureState) -> void:
+	for i in s.instances.size():
+		_dirty_cells[_cell_of(s.instances[i].origin)] = true
+
+
 func _on_cleared() -> void:
 	_block_dirty = true
 	_block_of.clear()
@@ -673,12 +681,50 @@ func _instances_by_type(c: Vector2i) -> Dictionary:
 	return by_type
 
 
+## GAMEPLAY-01B: construction sites of a cell drawn apart: type -> transforms squashed to the height built so far
+## (a fifth at the start, full height when finished).
+func _site_instances(c: Vector2i) -> Dictionary:
+	var by_type := {}
+	for e: Vector2i in _index.get(c, []):
+		var s: StructureState = state.get_structure(e.x)
+		if s == null or not s.is_site() or (s.is_line() and s.is_removed(e.y)) or e.y >= s.instances.size():
+			continue
+		var h := lerpf(0.2, 0.95, floorf(s.site_progress() * 10.0) / 10.0)
+		var xf: Transform3D = s.instances[e.y]
+		if not by_type.has(s.type_id):
+			by_type[s.type_id] = []
+		by_type[s.type_id].append(Transform3D(xf.basis * Basis.from_scale(Vector3(1.0, h, 1.0)), xf.origin))
+	return by_type
+
+
+static var _site_mat: StandardMaterial3D
+
+
+static func site_material() -> StandardMaterial3D:
+	if _site_mat == null:
+		_site_mat = StandardMaterial3D.new()
+		_site_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_site_mat.albedo_color = Color(0.74, 0.64, 0.45, 0.62)
+		_site_mat.roughness = 0.9
+		_site_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return _site_mat
+
+
 func _build_visual(c: Vector2i) -> void:
 	var by_type := _instances_by_type(c)
+	var sites := _site_instances(c)
 	var nodes := {}
-	for t in by_type:
+	for e: Vector2i in _index.get(c, []):
+		var s: StructureState = state.get_structure(e.x)
+		if s and s.is_site() and by_type.has(s.type_id) and e.y < s.instances.size():
+			(by_type[s.type_id] as Array).erase(s.instances[e.y])
+	for key in by_type.keys() + sites.keys().map(func(t: StringName) -> String: return "site:" + String(t)):
+		var site := key is String and (key as String).begins_with("site:")
+		var t: StringName = StringName((key as String).substr(5)) if site else key
+		var xforms: Array = sites[t] if site else by_type[t]
+		if xforms.is_empty():
+			continue
 		var def := StructureCatalog.get_def(t)
-		var xforms: Array = by_type[t]
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
 		mm.mesh = StructureCatalog.mesh_of(def)
@@ -686,13 +732,16 @@ func _build_visual(c: Vector2i) -> void:
 		for i in xforms.size():
 			mm.set_instance_transform(i, xforms[i])
 		var mmi := MultiMeshInstance3D.new()
-		mmi.name = "S_%d_%d_%s" % [c.x, c.y, t]
+		mmi.name = "S_%d_%d_%s" % [c.x, c.y, String(key).replace(":", "_")]
+		if site:
+			mmi.material_override = site_material()
+			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		mmi.multimesh = mm
 		mmi.visibility_range_end = def.visible_range
 		mmi.visibility_range_end_margin = 80.0
 		mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 		add_child(mmi)
-		nodes[t] = mmi
+		nodes[key] = mmi
 	_visual[c] = nodes
 
 

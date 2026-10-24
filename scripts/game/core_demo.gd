@@ -82,6 +82,7 @@ var _road_audit: RoadAuditRunner
 var _playtest_selftest: PlaytestSelfTest
 var _integration03_selftest: Integration03SelfTest
 var _logistics_selftest: LogisticsSelfTest
+var _gameplay_selftest: GameplaySelfTest
 ## WORLD-SANDBOX-01: true when the game runs the three-faction war (the default).
 var sandbox := false
 var routes: StrategicRoutes
@@ -93,6 +94,11 @@ const LEGACY_TESTS: Array[String] = ["--core-test", "--large-test", "--combat-te
 var combat_fx: CombatFX
 ## AI-SQUAD-01: tactical order markers; F7 shows the developer view (fire teams, posts, missions).
 var tactics_overlay: TacticsOverlay
+## GAMEPLAY-01B: the scenario the war was started from (New Game, Development Scenario) and the start screen.
+var scenario: ScenarioDef
+var menu: MainMenu
+## The result of Continue ({ok, reason}); empty when the game did not start from a save.
+var continue_result := {}
 
 
 func _ready() -> void:
@@ -188,7 +194,7 @@ func _setup_construction() -> void:
 		construction.rts = rts
 		construction.game = game
 		construction.terrain = terrain
-		construction.save_path = "user://saves/%s/construction.json" % config.world_name
+		construction.save_path = save_dir().path_join("construction.json")
 		construction.world_state = sim.state
 		game.mode_changed.connect(func(m: int) -> void:
 			if m != GameController.Mode.RTS and construction.active:
@@ -279,7 +285,20 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	# WORLD-SANDBOX-01: the game is the three-faction war unless an earlier milestone's
 	# scripted test asks for its own fixed layout.
 	sandbox = not Array(args).any(func(a: String) -> bool: return LEGACY_TESTS.has(a))
+	var resume := false
 	if sandbox:
+		# GAMEPLAY-01B: the scenario comes from --scenario=<id> / --continue, else (a normal launch) the start screen;
+		# scripted tests default to the Development Scenario and never see the menu.
+		var choice := _scenario_arg(args)
+		if choice == "":
+			choice = await _run_menu()
+		resume = choice == "continue"
+		if resume:
+			choice = String(peek_save().get("scenario", "dev"))
+		scenario = ScenarioDef.load_id(choice)
+		if scenario == null:
+			push_error("Unknown scenario '%s': starting the Development Scenario" % choice)
+			scenario = ScenarioDef.load_id("dev")
 		_start_sandbox()
 	else:
 		_spawn_large_world()
@@ -287,8 +306,8 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	if initial_orders and not sandbox:
 		_issue_large_orders()
 	area_center = sites[0].position
-	var first := _first_soldier_of(0)
-	var start_at := sim.state.war.objective(sim.state.war.faction(0).hq_objective).position if sandbox else first.position
+	var first := _first_soldier_of(sim.state.war.player_faction if sandbox else 0)
+	var start_at := start_focus() if sandbox else first.position
 	detail.activate_at(start_at)
 	nav_info = detail.last_bake
 	print("CORE nav: ", JSON.stringify(nav_info))
@@ -302,8 +321,17 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 			rts_camera.frame(start_at, 0.0, 120.0)
 	if structures:
 		structures.area_changed.connect(detail.structures_changed)
-		if "--load-construction" in args and construction:
-			construction.load_saved()
+		if (resume or "--load-construction" in args) and construction:
+			continue_result = construction.load_game()
+			if continue_result.ok:
+				var at := start_focus()
+				detail.activate_at(at)
+				rts_camera.frame(at, 0.0, 120.0)
+				var back := _first_soldier_of(sim.state.war.player_faction)
+				game.possessed_id = back.id if back else -1
+			else:
+				push_error("Continue failed: %s" % continue_result.reason)
+			print("CORE continue: ", JSON.stringify(continue_result))
 	if "--large-test" in args:
 		_large_selftest = LargeWorldSelfTest.new(self)
 		_large_selftest.run.call_deferred(args)
@@ -383,6 +411,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--sandbox-test" in args:
 		_sandbox_selftest = SandboxSelfTest.new(self)
 		_sandbox_selftest.run.call_deferred(args)
+	elif "--gameplay01b-test" in args:
+		_gameplay_selftest = GameplaySelfTest.new(self)
+		_gameplay_selftest.run.call_deferred(args)
 	elif "--ui01c2-test" in args:
 		_ui01c_selftest = UI01C2SelfTest.new(self)
 		_ui01c_selftest.run.call_deferred(args)
@@ -413,7 +444,7 @@ func _start_sandbox() -> void:
 	# WORLD-SANDBOX-01B: normal play starts without the frame-time overlay (F3).
 	if game.diagnostics:
 		game.diagnostics.set_overlay_visible(false)
-	spawn_info = SandboxSetup.create(self, routes)
+	spawn_info = SandboxSetup.create(self, routes, scenario)
 	spawn_info["route_grid"] = {"ms": snappedf(routes.build_ms, 0.1), "cached": routes.loaded_from_cache, "size": [routes.size.x, routes.size.y]}
 	sim.war.enabled = true
 	# The player commands the player's faction only (the AI factions' soldiers can be
@@ -436,6 +467,119 @@ func _start_sandbox() -> void:
 	# on where the camera happens to be (COMBAT-02's distance LOD saved ~20 % at 100 v 100).
 	sim.brain.distance_lod = false
 	_setup_map()
+
+
+## GAMEPLAY-01B: a scripted test or benchmark is running (a "--...-test" / "-perf" flag, the road audit, the squad demo).
+## Its saves go to user://test_saves/, so no test can overwrite the player's game.
+static func automated_run() -> bool:
+	for a: String in OS.get_cmdline_user_args():
+		if a.ends_with("-test") or a.ends_with("-perf") or a in ["--road-audit", "--squad-demo"]:
+			return true
+	return false
+
+
+## The one save slot of this world: user://saves/<world> for play, user://test_saves/<world> for tests.
+func save_dir() -> String:
+	return "user://%s/%s" % ["test_saves" if automated_run() else "saves", config.world_name]
+
+
+## --scenario=<id> or --continue on the command line; tests and benchmarks default to the Development Scenario;
+## "" = ask the player (start screen).
+func _scenario_arg(args: PackedStringArray) -> String:
+	if "--menu-shot" in args:
+		return ""
+	for a in args:
+		if a.begins_with("--scenario="):
+			return a.substr(11)
+		if a == "--continue":
+			return "continue"
+	if automated_run() or "--load-construction" in args:
+		return "dev"
+	return ""
+
+
+## Shows the start screen until the player picks a scenario (or a valid save to continue). Quit ends the program.
+func _run_menu() -> String:
+	menu = MainMenu.new()
+	menu.save_info = peek_save()
+	add_child(menu)
+	hud.visible = false
+	if game.diagnostics:
+		game.diagnostics.set_overlay_visible(false)
+	# The backdrop: the tactical camera above New Game's start area (before a scenario no camera stands above ground).
+	var view: Vector3 = sites[0].position
+	var ng := ScenarioDef.load_id("new_game")
+	if ng and not ng.start_squads.is_empty():
+		view = on_ground(float(ng.start_squads[0].x), float(ng.start_squads[0].z), 0.0)
+	rts_camera.set_active(true)
+	rts_camera.frame(view + Vector3(250.0, 0.0, -150.0), 0.9, 420.0)
+	rts_camera.set_process(false)
+	rts_camera.set_process_unhandled_input(false)
+	if "--menu-shot" in OS.get_cmdline_user_args():
+		_menu_autoplay.call_deferred()
+	var action: String = await menu.chosen
+	if action == "quit":
+		get_tree().quit()
+		await get_tree().process_frame
+	menu.queue_free()
+	menu = null
+	hud.visible = true
+	rts_camera.set_process(true)
+	rts_camera.set_process_unhandled_input(true)
+	return action
+
+
+## --menu-shot (tests): a screenshot of the start screen at the window size, then New Game is pressed through the menu.
+func _menu_autoplay() -> void:
+	await get_tree().create_timer(3.0).timeout
+	if menu == null:
+		return
+	var size := get_viewport().get_visible_rect().size
+	var path := "res://docs/gameplay01b/menu_%dx%d.png" % [DisplayServer.window_get_size().x, DisplayServer.window_get_size().y]
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://docs/gameplay01b"))
+	get_viewport().get_texture().get_image().save_png(ProjectSettings.globalize_path(path))
+	print("CORE menu shot: %s (canvas %s)" % [path, size])
+	menu._choose("new_game")
+
+
+## What the save slot holds, without loading it: {ok, scenario, title, time} or {ok false, missing, reason}. A save that
+## exists but cannot be read is reported with its reason (Continue refuses it) instead of being silently replaced.
+func peek_save() -> Dictionary:
+	var wpath := save_dir().path_join("world.json")
+	var cpath := save_dir().path_join("construction.json")
+	var has_w := FileAccess.file_exists(wpath)
+	var has_c := FileAccess.file_exists(cpath)
+	if not has_w and not has_c:
+		return {"ok": false, "missing": true, "reason": ""}
+	if not has_w or not has_c:
+		return {"ok": false, "missing": false, "reason": "the save is incomplete (%s is missing)" % ("world.json" if not has_w else "construction.json")}
+	var snap: Variant = str_to_var(FileAccess.get_file_as_string(wpath))
+	if not snap is Dictionary or not (snap as Dictionary).has("units") or not (snap as Dictionary).has("war"):
+		return {"ok": false, "missing": false, "reason": "world.json is damaged or from an incompatible version"}
+	var cons: Variant = JSON.parse_string(FileAccess.get_file_as_string(cpath))
+	if not cons is Dictionary or not (cons as Dictionary).has("structures"):
+		return {"ok": false, "missing": false, "reason": "construction.json is damaged"}
+	var sid := String((snap.war as Dictionary).get("scenario", "dev"))
+	var def := ScenarioDef.load_id(sid)
+	if def == null:
+		return {"ok": false, "missing": false, "reason": "the save is from an unknown scenario '%s'" % sid}
+	return {"ok": true, "scenario": sid, "title": def.title, "time": float(snap.get("time", 0.0))}
+
+
+## Where the camera starts: the player's HQ objective when the scenario says so and he holds it, else the centre of his
+## first squad (New Game: no HQ), else the first base site.
+func start_focus() -> Vector3:
+	var war := sim.state.war
+	var f := war.faction(war.player_faction)
+	if f and (scenario == null or scenario.camera == "hq"):
+		var hq := war.objective(f.hq_objective)
+		if hq and hq.owner == f.id:
+			return hq.position
+	for sq: SquadState in sim.state.all_squads():
+		if sq.faction == war.player_faction and not sq.members.is_empty():
+			return sim.war.squad_center(sq)
+	var u := _first_soldier_of(war.player_faction)
+	return u.position if u else sites[0].position
 
 
 ## The strategic map on its own canvas layer above the HUD.

@@ -27,6 +27,9 @@ var ticks := 0
 var stats := {"income_ticks": 0, "recruits": 0, "trucks": 0, "apcs": 0, "refuels": 0, "repairs": 0, "refused": 0}
 var _t_income := 0.0
 var _mp_acc := {}
+## GAMEPLAY-01B: player income since the last war-log line, and when the next line is due (runtime only).
+var _income_acc := {}
+var _income_note := {}
 ## objective id -> time before which no new building is ordered there (after a failed search / a field-defence order).
 var _build_cool := {}
 
@@ -49,6 +52,8 @@ func update(dt: float) -> void:
 		for f: FactionState in ws.war.factions.values():
 			if not f.player:
 				income(f, minutes)
+			elif ws.war.rule("player_income", false):
+				player_income(f, minutes)
 	var now := sim.state.time
 	for f: FactionState in ws.war.factions.values():
 		if not f.player and now >= f.econ_next_at:
@@ -95,6 +100,53 @@ func income(f: FactionState, minutes: float) -> Dictionary:
 			out["manpower"] = whole
 	stats.income_ticks += 1
 	return out
+
+
+## GAMEPLAY-01B: the player's income (New Game, rule player_income): the scenario's rates per owned objective value and
+## minute (rules income_supplies / income_ammo / income_fuel), into his supply stores or - before he has a depot - his
+## pool (BaseSim.faction_deposit); ledgered like the AI's. Personnel comes as for the AI factions. A war log line once a
+## minute says what came in.
+func player_income(f: FactionState, minutes: float) -> Dictionary:
+	var v := float(owned_value(f))
+	var out := {}
+	if v <= 0.0:
+		return out
+	var rates := {&"supplies": float(ws.war.rule("income_supplies", 0.0)), &"ammo": float(ws.war.rule("income_ammo", 0.0)), &"fuel": float(ws.war.rule("income_fuel", 0.0))}
+	var items := {}
+	for item: StringName in rates:
+		var qty: float = rates[item] * v * minutes
+		if qty > 0.0:
+			items[item] = qty
+			out[String(item)] = qty
+			f.ledger["in"][String(item)] = float(f.ledger["in"][String(item)]) + qty
+	_bases().faction_deposit(f.id, items)
+	_mp_acc[f.id] = float(_mp_acc.get(f.id, 0.0)) + ws.profile(f).income_manpower * v * minutes
+	var whole := int(_mp_acc[f.id])
+	if whole > 0:
+		_mp_acc[f.id] -= whole
+		f.reserves += whole
+		f.ledger["manpower"] = int(f.ledger["manpower"]) + whole
+	_income_acc[f.id] = float(_income_acc.get(f.id, 0.0)) + float(out.get("supplies", 0.0))
+	if sim.state.time >= float(_income_note.get(f.id, 0.0)):
+		_income_note[f.id] = sim.state.time + 60.0
+		var names: Array[String] = []
+		for o: ObjectiveState in ws.war.owned_by(f.id):
+			names.append(o.obj_name)
+		ws.log_event(f.id, "income", "Income +%d supplies from %s (%d per minute)" % [roundi(_income_acc[f.id]), ", ".join(names), roundi(rate_per_min(f).supplies)])
+		_income_acc[f.id] = 0.0
+	stats.income_ticks += 1
+	return out
+
+
+## What faction f earns per minute now ({supplies, ammo, fuel}); 0 for a player without income.
+func rate_per_min(f: FactionState) -> Dictionary:
+	var v := float(owned_value(f))
+	if f.player:
+		if not ws.war.rule("player_income", false):
+			return {"supplies": 0.0, "ammo": 0.0, "fuel": 0.0}
+		return {"supplies": float(ws.war.rule("income_supplies", 0.0)) * v, "ammo": float(ws.war.rule("income_ammo", 0.0)) * v, "fuel": float(ws.war.rule("income_fuel", 0.0)) * v}
+	var p := ws.profile(f)
+	return {"supplies": p.income_supplies * v, "ammo": p.income_ammo * v, "fuel": p.income_fuel * v}
 
 
 ## Into the supply stores of the main base first (HQ base), then any other base of the faction.

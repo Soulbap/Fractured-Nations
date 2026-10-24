@@ -319,6 +319,8 @@ func _refresh_base() -> void:
 		_base_title.text = "No base"
 		_base_title.add_theme_color_override("font_color", FNUI.WARN)
 		_base_info.text = "Place a Command Post on open, level ground: it opens a 150 m base area for the other buildings."
+		if controller.costs_on():
+			_base_info.text += " Supplies: %d kg." % roundi(controller.supplies_available())
 		_base_info.visible = true
 		return
 	var sm := bs.summary(mine[0].id)
@@ -341,12 +343,21 @@ func _refresh_cards() -> void:
 	var bs := controller._bases()
 	var has_base := not controller.base_rules or (bs != null and not bs.bases_of(controller.player_faction()).is_empty())
 	var placing := controller.tool == ConstructionController.Tool.PLACE and controller.def != null
+	# GAMEPLAY-01B: with paid construction every card says its price; one the player cannot afford says how much is missing.
+	var costs := controller.costs_on()
+	var have := controller.supplies_available()
 	for dict in [_base_buttons, _buttons]:
 		for id in dict:
 			var card: FNBuildCard = dict[id]
 			card.selected = placing and controller.def.id == id
+			var d := StructureCatalog.get_def(id)
+			if not card.has_meta("info"):
+				card.set_meta("info", card.info_label.text)
+			var cost := BuildCosts.cost_of(d) if costs else 0.0
+			card.info_label.text = String(card.get_meta("info")) + ("  ·  %d kg%s" % [roundi(cost), "/module" if d.linear else ""] if cost > 0.0 else "")
 			var needs_base: bool = FacilityDefs.has(id) and not FacilityDefs.founds_base(id) and not has_base
-			card.set_available(not needs_base, "Needs a Command Post" if needs_base else "")
+			var short := cost > have + 0.001
+			card.set_available(not needs_base and not short, "Needs a Command Post" if needs_base else ("Needs %d kg supplies (you have %d)" % [roundi(cost), roundi(have)] if short else ""))
 	(_tools[&"demolish"] as FNCommandButton).armed = controller.tool == ConstructionController.Tool.DELETE
 	(_tools[&"clearing"] as FNCommandButton).set_face(&"clearing", "Clearing" if controller.clear_trees else "No clear")
 	(_tools[&"clearing"] as FNCommandButton).current = controller.clear_trees
@@ -455,6 +466,9 @@ func _refresh_context() -> void:
 		_ctx_title.text = d.display_name
 		var e: Array = BASE_ENTRIES.get(d.id, [d.display_name, _short(d)])
 		_ctx_info.text = e[1]
+		var cost := controller.current_cost()
+		if cost > 0.0:
+			_ctx_info.text += "  ·  Cost %d kg supplies (you have %d)" % [roundi(cost), roundi(controller.supplies_available())]
 		var chk := controller.check
 		var clearing := "Clearing on" if controller.clear_trees else "Clearing off"
 		if d.is_surface():

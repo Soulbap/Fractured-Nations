@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="ScenarioDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/strategy/scenario_def.gd" id="1_sc"]
+
+[resource]
+script = ExtResource("1_sc")
+id = &"dev"
+title = "Development Scenario"
+description = "The full three-faction war: North HQ with five squads and 32 reserves, AI bases for South and East, free construction and the starting stockpile. Test environment."
+player_faction = 0
+objective_overrides = {}
+factions = Array[Dictionary]([{
+"hq": "North HQ",
+"profile": &"",
+"reserves": 32,
+"squads": {
+"North HQ": 3,
+"Elvetun": 1,
+"North Bridge": 1
+}
+}, {
+"hq": "South HQ",
+"profile": &"aggressive",
+"reserves": 40,
+"squads": {
+"South HQ": 4,
+"Verket": 1
+}
+}, {
+"hq": "East HQ",
+"profile": &"defensive",
+"reserves": 40,
+"squads": {
+"East HQ": 3,
+"Østby": 1,
+"Ødegård": 1
+}
+}])
+start_squads = Array[Dictionary]([])
+squad_size = 8
+fortify = PackedStringArray("North HQ", "South HQ", "East HQ")
+ai_bases = true
+start_pool = {}
+caches = Array[Dictionary]([])
+camera = "hq"
+rules = {
+"bed_limit": false,
+"build_costs": false,
+"build_sites": false,
+"free_reserves": true,
+"guide": false,
+"player_income": false,
+"recovery_delay_s": 0.0,
+"recovery_size": 0,
+"start_stock_gift": true
+}

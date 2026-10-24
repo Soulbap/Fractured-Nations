@@ -41,13 +41,15 @@ func _init(p_sim: WorldSim, p_vsim: VehicleSim) -> void:
 func bind() -> void:
 	var cs := sim.state.construction
 	cs.structure_added.connect(_on_structure_added)
+	cs.structure_completed.connect(_on_structure_added)
 	for s in cs.all():
 		_on_structure_added(s)
 	bases.bind()
 
 
 func _on_structure_added(s: StructureState) -> void:
-	if not FacilityDefs.is_store(s.type_id):
+	# GAMEPLAY-01B: a construction site stores nothing until it is finished (structure_completed).
+	if not FacilityDefs.is_store(s.type_id) or s.is_site():
 		return
 	if s.inventory == null:
 		s.inventory = FacilityDefs.make_inventory(s.type_id)
@@ -55,7 +57,8 @@ func _on_structure_added(s: StructureState) -> void:
 		# The scenario's initial stockpile: the first supply depot of the player's faction.
 		var war := sim.state.war
 		var lg := sim.state.logistics
-		if kind == &"supply" and war.active and s.faction == war.player_faction and not lg.starter_given.get(s.faction, false):
+		# GAMEPLAY-01B: not in New Game (rule start_stock_gift): there the player's stock is what he carried and found.
+		if kind == &"supply" and war.active and s.faction == war.player_faction and not lg.starter_given.get(s.faction, false) and war.rule("start_stock_gift", true):
 			lg.starter_given[s.faction] = true
 			for item in FacilityDefs.START_STOCK:
 				s.inventory.add(item, FacilityDefs.START_STOCK[item])

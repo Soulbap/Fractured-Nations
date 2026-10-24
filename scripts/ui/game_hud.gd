@@ -46,6 +46,8 @@ var _badge: Label
 ## UI-01C: the tactical view's key hints, bottom left while nothing is selected (the command panel
 ## carries its own keys).
 var _hints: FNPanel
+## GAMEPLAY-01B: supply strip, next-step hint, cache and construction-site markers.
+var economy: EconomyHud
 
 
 class Overlay extends Control:
@@ -318,6 +320,9 @@ func _ready() -> void:
 	add_child(tactical_panel)
 	logistics_panel = LogisticsPanel.new()
 	add_child(logistics_panel)
+	economy = EconomyHud.new()
+	economy.hud = self
+	add_child(economy)
 	_notes_box = VBoxContainer.new()
 	_notes_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_notes_box.add_theme_constant_override("separation", 3)
@@ -338,6 +343,9 @@ func _on_war_event(e: Dictionary) -> void:
 		return
 	if e.kind in ["op_start", "info"] and e.faction < 0:
 		return
+	# GAMEPLAY-01B: income is shown in the supply strip (and kept in the war log), not as a toast every minute.
+	if e.kind == "income":
+		return
 	# UI-01C: a kit toast - status colour on the left edge and the icon, the text in ink.
 	var col := FNUI.NEUTRAL
 	var icon := &"idle"
@@ -348,9 +356,12 @@ func _on_war_event(e: Dictionary) -> void:
 		"contested", "threat", "attack":
 			col = FNUI.ALERT
 			icon = &"under_fire"
-		"op_done", "reinforcements":
+		"op_done", "reinforcements", "cache_taken", "build_done":
 			col = FNUI.OK
 			icon = &"check"
+		"cache", "build":
+			col = FNUI.ARMED
+			icon = &"cargo" if e.kind == "cache" else &"build"
 		"op_failed":
 			col = FNUI.DANGER
 			icon = &"blocked"
@@ -400,6 +411,7 @@ func _process(_delta: float) -> void:
 		logistics_panel.rts = rts
 		logistics_panel.sim = sim
 		logistics_panel.game = game
+		logistics_panel.construction = construction
 	logistics_panel.enabled = not (construction and construction.active)
 	if squad_panel.rts == null and rts:
 		squad_panel.rts = rts
@@ -451,7 +463,12 @@ func _process(_delta: float) -> void:
 		_badge.add_theme_stylebox_override("normal", bsb)
 	if _badge.visible:
 		_badge.position = Vector2(vp.x * 0.5 - _badge.size.x * 0.5, 12)
-	_notes_box.position = Vector2(vp.x * 0.5 - _notes_box.size.x * 0.5, 54 if _badge.visible else FNUI.EDGE)
+	var notes_y := 54.0 if _badge.visible else float(FNUI.EDGE)
+	if economy._strip.visible:
+		notes_y = economy._strip.position.y + economy._strip.size.y + 6.0
+		if economy._hint.visible:
+			notes_y = economy._hint.position.y + economy._hint.size.y + 6.0
+	_notes_box.position = Vector2(vp.x * 0.5 - _notes_box.size.x * 0.5, notes_y)
 	if Engine.get_process_frames() % 6 == 0:
 		var text := _text()
 		if text != _label.text:

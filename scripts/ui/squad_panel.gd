@@ -143,7 +143,7 @@ static func squad_status(p_sim: WorldSim, sq: SquadState, brief := false) -> Dic
 const TACTIC_ICONS := {
 	SquadState.Tactic.DEFEND: &"defend", SquadState.Tactic.SUPPRESS: &"suppress", SquadState.Tactic.ASSAULT: &"assault",
 	SquadState.Tactic.FLANK: &"flank", SquadState.Tactic.BOUND: &"bound", SquadState.Tactic.REPOSITION: &"move",
-	SquadState.Tactic.WITHDRAW: &"withdraw", SquadState.Tactic.REGROUP: &"regroup",
+	SquadState.Tactic.WITHDRAW: &"withdraw", SquadState.Tactic.REGROUP: &"regroup", SquadState.Tactic.BUILD: &"build",
 }
 
 
