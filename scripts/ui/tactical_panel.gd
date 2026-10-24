@@ -23,6 +23,7 @@ var _health: FNMeter
 var _ammo: FNMeter
 var _supp: FNMeter
 var _settings: Label
+var _support_text := ""
 var _feedback: FNStatusIndicator
 var _timer := 0.0
 var _fb_text := ""
@@ -221,6 +222,12 @@ func _refresh_summary(squads: Array[SquadState]) -> void:
 	var capacity := 0
 	var supp := 0.0
 	var n := 0
+	# GAMEPLAY-02D: the support weapons the selection carries (machine guns and their rounds, rockets, grenades).
+	var mgs := 0
+	var mg_rounds := 0
+	var mg_cap := 0
+	var rockets := 0
+	var nades := 0
 	for sq in squads:
 		for id in sq.members:
 			var u := sim.state.get_unit(id)
@@ -235,6 +242,12 @@ func _refresh_summary(squads: Array[SquadState]) -> void:
 				if def:
 					rounds += u.mag + u.reserve
 					capacity += def.magazine_size + def.reserve_start
+					if def.role == &"lmg":
+						mgs += 1
+						mg_rounds += u.mag + u.reserve
+						mg_cap += def.magazine_size + def.reserve_start
+			rockets += u.sec_ammo if u.sec_id != &"" else 0
+			nades += u.grenades
 	var h := hp / hp_max if hp_max > 0.0 else 0.0
 	_health.set_value(h, "%d%%" % roundi(h * 100.0), FNUI.OK if h >= 0.6 else (FNUI.WARN if h >= 0.3 else FNUI.DANGER))
 	_health.critical = h < 0.3
@@ -247,8 +260,19 @@ func _refresh_summary(squads: Array[SquadState]) -> void:
 	_supp.set_value(s, "%d%%" % roundi(s * 100.0), FNUI.DANGER if s >= 0.6 else FNUI.ALERT)
 	_supp.critical = s >= 0.6
 	var form := "Auto" if first.formation_auto else first.formation_name()
+	var support: Array[String] = []
+	if mgs > 0:
+		support.append("MG %d (%d%%)" % [mgs, roundi(100.0 * mg_rounds / maxi(mg_cap, 1))])
+	if rockets > 0:
+		support.append("rockets %d" % rockets)
+	if nades > 0:
+		support.append("grenades %d" % nades)
+	_support_text = "  ·  ".join(support)
 	_settings.text = "Formation %s  ·  %s  ·  spacing %.1f m%s" % [form, first.roe_name(), first.spacing,
 		"  ·  in operation" if first.op_id >= 0 else ("  ·  garrison %s" % sim.state.construction.bases[first.garrison_base].name if sim.state.construction.bases.has(first.garrison_base) else "")]
+	if _support_text != "":
+		_settings.text += "
+" + _support_text
 
 
 func _refresh_buttons(squads: Array[SquadState]) -> void:

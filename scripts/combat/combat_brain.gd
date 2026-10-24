@@ -225,6 +225,7 @@ func _init(p_sim: WorldSim) -> void:
 ## perception queue.
 func connect_signals() -> void:
 	sim.state.shot_fired.connect(_on_shot)
+	sim.state.explosive_launched.connect(_on_explosive)
 	sim.state.unit_damaged.connect(_on_damaged)
 	sim.state.unit_died.connect(_on_died)
 	sim.state.unit_added.connect(func(_u: UnitState) -> void: _queue_dirty = true)
@@ -598,11 +599,15 @@ func _on_shot(shot: Dictionary) -> void:
 		if a.distance_to(b) > 450.0:
 			b = a + (b - a).normalized() * 450.0
 		for u: UnitState in units_near_segment(a, b, miss_m):
-			if u.faction != s.faction and u.alive and not u.player_controlled:
+			if u.faction != s.faction and u.alive:
 				# Vertical check too: a shot far overhead does not count.
 				var pts := Geometry3D.get_closest_points_between_segments(origin, end, u.position, u.position + Vector3.UP * 1.8)
 				var miss: float = pts[0].distance_to(pts[1])
-				if miss <= miss_m:
+				if miss <= miss_m and u.player_controlled:
+					# GAMEPLAY-02D: the possessed soldier's record keeps its suppression too - only the HUD reads it (the
+					# player's aim is the player's), so first person feels the fire the AI feels.
+					u.add_suppression(per_shot * (1.0 - 0.7 * miss / miss_m), sim.state.time)
+				if miss <= miss_m and not u.player_controlled:
 					_under_fire(u, origin)
 					# AI-SQUAD-01: the closer it passes, the more it suppresses; a hit is
 					# counted by _on_damaged.
@@ -1481,6 +1486,7 @@ var launcher_min_m := 35.0
 var launcher_max_m := 260.0
 var launcher_squad_gap_s := 12.0
 var grenades_thrown := 0
+var grenade_dodges := 0
 var grenade_holds := 0
 var rockets_fired := 0
 var _squad_nade_at := {}
@@ -1594,6 +1600,41 @@ func _structure_aim(st: StructureState) -> Vector3:
 	var c := best.get_center()
 	c.y = best.position.y + minf(best.size.y * 0.7, 1.0)
 	return xf * c
+
+
+## GAMEPLAY-02D: "grenade!" - soldiers near where a grenade lands get away from it before it bursts: the thrower's own
+## friends (they were told), and anybody who sees it land (within 20 m with a clear line) or has it at their feet. A soldier
+## in a fortification slot stays down in it (the walls shield it). The run is an ordinary reaction (react_target), so the
+## squad's order resumes afterwards.
+func _on_explosive(e: Dictionary) -> void:
+	if not enabled or not tactics_enabled or String(e.def) != "grenade":
+		return
+	var def := sim.combat.weapon(&"grenade")
+	var at: Vector3 = e.at
+	var r := def.blast_radius if def else 9.0
+	var now := sim.state.time
+	for u: UnitState in units_near(at, r + 1.0):
+		if not u.alive or u.player_controlled or u.kind != UnitState.Kind.SOLDIER or u.fort_slot != "" or u.vehicle_id >= 0:
+			continue
+		var d := _flat(u.position, at)
+		var knows := u.faction == int(e.f) or d <= 4.0
+		if not knows and d <= 20.0:
+			knows = sim.combat.line.trace(CombatSim.eye_of(u), at + Vector3.UP * 0.2, u.id, false).blocker == "range"
+		if not knows:
+			continue
+		var away := Vector3(u.position.x - at.x, 0.0, u.position.z - at.z)
+		away = away.normalized() if away.length() > 0.2 else Vector3(1, 0, 0).rotated(Vector3.UP, float(u.id))
+		var to := sim.tactics.pos.nearest_valid(at + away * (r + 3.0), 5.0) if sim.tactics else Vector3.INF
+		if not to.is_finite():
+			continue
+		u.react_target = to
+		u.react_state = UnitState.ReactState.MOVING
+		u.react_until = now + 5.0
+		u.tactic = UnitState.Tactic.SEEK_COVER
+		u.tactic_since = now
+		u.cover_note = "grenade! %.0f m away: getting clear" % d
+		grenade_dodges += 1
+		_event(u, u.cover_note)
 
 
 ## A living friend (not u) walking to a point within r of p (an assault moving onto the landing spot).

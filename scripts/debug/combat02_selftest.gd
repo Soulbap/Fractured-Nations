@@ -7,6 +7,8 @@
 ## 02C explosives (c_*): a grenade against open and covered soldiers, AI grenades in a close fight (no friends hit, rate
 ## limited), the grenadier's launcher disabling an MG emplacement in combat and the repair, first person (G, X, LMB), and a
 ## grenade in the air across a save and load.
+## 02D (d_*): the machine gunner's post, soldiers getting clear of a grenade they see land, suppression felt in first
+## person, the support weapons named in the RTS command panel, and pictures of a machine gun firing and a burst.
 ## 02A assault scenarios (a_*): an ATTACK operation of North squads against South defenders, run once per world seed (the
 ## seed drives every aim error, spread and scatter), each recorded by a CombatDiag (positions, roles, stages, suppression,
 ## shots, hits, casualties, movement, cover, blocked moves). Each scenario states what it expects over all seeds.
@@ -30,7 +32,7 @@ func run(args: PackedStringArray) -> void:
 		if _want(key):
 			_log(key, await _assault_series(key))
 	for key: String in ["b_compose", "b_suppress", "b_handling", "b_emplacement", "b_fps", "b_persist", "b_nearfar",
-			"c_grenade", "c_ai_grenade", "c_launcher", "c_fps", "c_persist"]:
+			"c_grenade", "c_ai_grenade", "c_launcher", "c_fps", "c_persist", "d_mg_post", "d_grenade_dodge", "d_fps_suppressed", "d_readability"]:
 		if _want(key):
 			var r: Variant = await call("_" + key)
 			# A check that stopped on a script error returns nothing: that is a failure, not a pass.
@@ -866,5 +868,151 @@ func _c_persist() -> Dictionary:
 	var b := await _burst_wait(demo.sim.state.explosives[0] if not demo.sim.state.explosives.is_empty() else {"id": -1, "t": demo.sim.state.time})
 	out["burst_after_load"] = not b.is_empty()
 	_expect(not b.is_empty(), "c_persist: the grenade did not burst after loading")
+	war.rules.erase("squad_composition")
+	return out
+
+
+# --- 02D: weapon-aware squad behaviour, reactions, readability ---------------------------------------------------------------
+
+## A standard squad told to defend with a reported enemy in front: the machine gunner takes one of the most forward posts
+## (the best field of fire), not whatever post the formation order gave it.
+func _d_mg_post() -> Dictionary:
+	await _fresh_c()
+	war.rules["squad_composition"] = "standard"
+	var f := _field()
+	var sq := _spawn(0, f.at)
+	var mg := _u(sq.members[1])
+	await _physics(5)
+	_report(0, f.at + f.dir * 160.0, 6)
+	demo.sim.tactics.order_tactic([sq.id], SquadState.Tactic.DEFEND, f.at, SquadState.Owner.PLAYER)
+	await _warp(20.0, 4.0, 20.0)
+	var fwd := []
+	for id in sq.members:
+		var u := _u(id)
+		if u.post_pos.is_finite():
+			fwd.append([(u.post_pos - f.at).dot(f.dir), id])
+	fwd.sort_custom(func(a: Array, b: Array) -> bool: return a[0] > b[0])
+	var rank := -1
+	for i in fwd.size():
+		if fwd[i][1] == mg.id:
+			rank = i
+	var out := {"posts": fwd.size(), "mg_rank_forward": rank, "mg_forward_m": snappedf(float(fwd[rank][0]) if rank >= 0 else 0.0, 0.1),
+		"spread_m": snappedf(float(fwd[0][0]) - float(fwd[-1][0]), 0.1) if fwd.size() > 1 else 0.0}
+	_expect(fwd.size() >= 6 and rank >= 0 and rank <= 2, "d_mg_post: the machine gunner is not on a forward post %s" % str(out))
+	war.rules.erase("squad_composition")
+	return out
+
+
+## Three soldiers who see a grenade land among them get clear before it bursts (and are hurt less than standing still -
+## c_grenade measures the same blast on soldiers held in place: 147 / 48 hp at 1.6 / 5 m).
+func _d_grenade_dodge() -> Dictionary:
+	await _fresh_c()
+	war.rules["squad_composition"] = "riflemen"
+	var f := _field()
+	var thrower := _spawn(0, f.at, 1)
+	thrower.roe = SquadState.Roe.HOLD_FIRE
+	var u := _u(thrower.members[0])
+	var aim: Vector3 = f.at + f.dir * 20.0
+	var tgt := _spawn(1, aim, 3)
+	tgt.roe = SquadState.Roe.HOLD_FIRE
+	_tough(tgt, 400.0)
+	var ids := Array(tgt.members)
+	demo.rts_camera.frame(aim, 0.5, 45.0)
+	await _seconds(1.5)
+	var d0 := {}
+	var dodges0 := brain.grenade_dodges
+	var res := demo.sim.combat.throw_grenade(u.id, aim)
+	_expect(res.get("ok", false), "d_grenade_dodge: the throw was refused")
+	if not res.get("ok", false):
+		return {}
+	var e: Dictionary = res.e
+	for id in ids:
+		d0[str(id)] = snappedf(_flat(_u(id).position, e.at), 0.1)
+	if shots:
+		await _warp(float(e.t) - demo.sim.state.time - 0.6, 1.0, 10.0)
+		_png("d_grenade_dodge")
+	var b := await _burst_wait(e)
+	var d1 := {}
+	var hurt := 0.0
+	for h: Dictionary in b.get("hits", []):
+		hurt += float(h.dmg)
+	for id in ids:
+		d1[str(id)] = snappedf(_flat(_u(id).position, e.at), 0.1)
+	var gained := 0
+	for k in d0:
+		if float(d1[k]) > float(d0[k]) + 2.0:
+			gained += 1
+	var out := {"dodges": brain.grenade_dodges - dodges0, "dist_before": d0, "dist_at_burst": d1, "damage_total": snappedf(hurt, 0.1)}
+	_expect(brain.grenade_dodges - dodges0 >= 2 and gained >= 2, "d_grenade_dodge: the soldiers did not get clear %s" % str(out))
+	war.rules.erase("squad_composition")
+	return out
+
+
+## First person under machine-gun fire: the possessed soldier's record takes the suppression (only the HUD reads it), the
+## status says Suppressed and the screen edges darken.
+func _d_fps_suppressed() -> Dictionary:
+	await _fresh_c()
+	war.rules["squad_composition"] = "standard"
+	var f := _field()
+	var sq := _spawn(0, f.at, 2)
+	var me := _u(sq.members[0])
+	_tough(sq, 5000.0)
+	var foe := _spawn(1, demo.sim.tactics.pos.nearest_valid(f.at + f.dir * 110.0, 15.0), 2)
+	demo.sim.combat._equip_role(_u(foe.members[0]), &"machine_gunner")
+	_tough(foe, 5000.0)
+	demo.rts_camera.frame(f.at, 0.0, 50.0)
+	await _seconds(1.0)
+	var body := await _possess(me.id)
+	_expect(body != null, "d_fps_suppressed: could not take over the soldier")
+	if body == null:
+		return {}
+	await _fps_shot_at(body, demo.sim.squads._centroid(foe) + Vector3.UP * 1.2)
+	var peak := 0.0
+	var t0 := demo.sim.state.time
+	while demo.sim.state.time - t0 < 25.0 and peak < 0.45:
+		await _physics(10)
+		peak = maxf(peak, me.suppression_at(demo.sim.state.time))
+	var fh: FPSHud = demo.hud._fps
+	await _physics(2)
+	var out := {"peak_suppression": snappedf(peak, 0.01), "vignette": snappedf(fh._vignette.modulate.a, 0.01), "status_visible": fh._state.visible}
+	if shots:
+		_png("d_fps_suppressed")
+	_expect(peak >= 0.3 and fh._vignette.modulate.a > 0.1, "d_fps_suppressed: no suppression feedback in first person %s" % str(out))
+	await _leave()
+	war.rules.erase("squad_composition")
+	return out
+
+
+## The RTS command panel names the selection's support weapons; an RTS view of a machine gun firing and a burst.
+func _d_readability() -> Dictionary:
+	await _fresh_c()
+	war.rules["squad_composition"] = "standard"
+	var f := _field()
+	var sq := _spawn(0, f.at)
+	demo.rts.select_squads([sq.id])
+	demo.rts_camera.frame(f.at, 0.5, 60.0)
+	await _seconds(1.0)
+	var txt: String = demo.hud.tactical_panel._settings.text
+	var out := {"panel": txt}
+	_expect(txt.contains("MG 1") and txt.contains("rockets 2") and txt.contains("grenades"), "d_readability: the panel does not list the support weapons: %s" % txt)
+	if shots:
+		_png("d_rts_support_panel")
+		# The machine gun firing at a target 120 m away, and a grenade burst, seen from the tactical camera.
+		var foe := _spawn(1, demo.sim.tactics.pos.nearest_valid(f.at + f.dir * 120.0, 15.0), 3)
+		_tough(foe, 5000.0)
+		_tough(sq, 5000.0)
+		demo.rts_camera.frame(f.at + f.dir * 30.0, 0.4, 55.0)
+		await _seconds(6.0)
+		_png("d_rts_mg_tracers")
+		var g := _u(sq.members[2])
+		g.grenades = 1
+		var res := demo.sim.combat.throw_grenade(g.id, f.at + f.dir * 25.0)
+		if res.get("ok", false):
+			demo.rts_camera.frame(res.e.at, 0.5, 40.0)
+			await _warp(float(res.e.t) - demo.sim.state.time + 0.15, 1.0, 10.0)
+			_png("d_rts_grenade_burst")
+			await _seconds(1.5)
+			_png("d_rts_grenade_smoke")
+	demo.rts.select([])
 	war.rules.erase("squad_composition")
 	return out

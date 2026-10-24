@@ -19,12 +19,32 @@ var _sq_count: Label
 var _sq_status: FNStatusIndicator
 var _sq_lead: Label
 var _prompt: FNPrompt
+## GAMEPLAY-02D: darkened screen edges while the possessed soldier is suppressed (its record's suppression).
+var _vignette: TextureRect
 
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	theme = FNUI.theme()
+	_vignette = TextureRect.new()
+	var g := Gradient.new()
+	g.set_color(0, Color(0.05, 0.03, 0.02, 0.0))
+	g.set_color(1, Color(0.05, 0.03, 0.02, 1.0))
+	g.add_point(0.42, Color(0.05, 0.03, 0.02, 0.0))
+	var gt := GradientTexture2D.new()
+	gt.gradient = g
+	gt.fill = GradientTexture2D.FILL_RADIAL
+	gt.fill_from = Vector2(0.5, 0.5)
+	gt.fill_to = Vector2(1.0, 0.5)
+	gt.width = 256
+	gt.height = 256
+	_vignette.texture = gt
+	_vignette.stretch_mode = TextureRect.STRETCH_SCALE
+	_vignette.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_vignette.modulate.a = 0.0
+	add_child(_vignette)
 	_weapon = FNWeaponStatus.new()
 	add_child(_weapon)
 	# Health block: no frame, a faint backing.
@@ -101,6 +121,7 @@ func update(sim: WorldSim, u: UnitState) -> void:
 	_name.text = u.unit_name
 	_health.set_health(u.health, u.max_health)
 	var supp := u.suppression_at(now)
+	_vignette.modulate.a = clampf((supp - 0.08) * 1.1, 0.0, 0.75)
 	if supp > 0.3:
 		_state.set_status(&"suppression", "Suppressed", FNUI.ALERT)
 	elif u.under_fire_until >= now:

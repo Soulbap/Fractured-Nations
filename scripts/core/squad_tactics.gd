@@ -1242,8 +1242,16 @@ static func _bearing(from: Vector3, to: Vector3) -> float:
 	return atan2(to.z - from.z, to.x - from.x)
 
 
-## The MG slot goes to an MG-armed soldier when the squad has one (no MG weapon exists yet: then any soldier keeps it).
-func _mg_first(units: Array, posts: Array, idx: Array) -> void:
+## The MG slot goes to an MG-armed soldier when the squad has one. GAMEPLAY-02D: without an MG slot among the posts, the
+## machine gunner takes the post with the best field of fire towards the threat (its score, height, and how far forward
+## it lies) - the gun that suppresses belongs where it sees the most.
+func _mg_first(units: Array, posts: Array, idx: Array, dir := Vector3.ZERO) -> void:
+	var has_slot := false
+	for p: Dictionary in posts:
+		has_slot = has_slot or String(p.get("role", "")) == "mg"
+	if not has_slot:
+		_mg_best_post(units, posts, idx, dir)
+		return
 	for i in units.size():
 		var post: Dictionary = posts[idx[i]]
 		if String(post.get("role", "")) != "mg" or _is_mg(units[i]):
@@ -1254,6 +1262,34 @@ func _mg_first(units: Array, posts: Array, idx: Array) -> void:
 				idx[i] = idx[j]
 				idx[j] = t
 				break
+
+
+func _mg_best_post(units: Array, posts: Array, idx: Array, dir: Vector3) -> void:
+	var gunner := -1
+	for i in units.size():
+		if _is_mg(units[i]):
+			gunner = i
+			break
+	if gunner < 0 or units.size() < 2:
+		return
+	var c := Vector3.ZERO
+	for p: Dictionary in posts:
+		c += p.p
+	c /= maxf(posts.size(), 1)
+	var best_i := gunner
+	var best_sc := -INF
+	for i in units.size():
+		var p: Dictionary = posts[idx[i]]
+		var sc := float(p.get("score", 0.0)) + (0.5 if bool(p.get("elevated", false)) else 0.0)
+		if dir.length() > 0.1:
+			sc += 0.03 * (p.p as Vector3 - c).dot(dir)
+		if sc > best_sc:
+			best_sc = sc
+			best_i = i
+	if best_i != gunner:
+		var t: int = idx[gunner]
+		idx[gunner] = idx[best_i]
+		idx[best_i] = t
 
 
 ## GAMEPLAY-02B: the soldier carries a machine gun (WeaponDef.role lmg).
@@ -2119,7 +2155,7 @@ func _send_posts(sq: SquadState, units: Array, posts: Array, dir: Vector3) -> vo
 	for u: UnitState in units:
 		ups.append(u.position)
 	var idx := pos.assign(ups, posts, axis)
-	_mg_first(units, posts, idx)
+	_mg_first(units, posts, idx, d)
 	for i in units.size():
 		var u: UnitState = units[i]
 		var post: Dictionary = posts[idx[i]]

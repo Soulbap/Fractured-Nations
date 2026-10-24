@@ -163,7 +163,11 @@ func _on_shot(shot: Dictionary) -> void:
 		return
 	shown += 1
 	var muzzle := _muzzle_of(shot.shooter, origin)
-	_flash(muzzle, 0.3 if own else 1.0)
+	# GAMEPLAY-02D: a machine gun reads as one: a bigger flash and a deeper report.
+	var su := sim.state.get_unit(shot.shooter)
+	var wdef := sim.combat.weapon(su.weapon_id) if su else null
+	var heavy := wdef != null and wdef.role == &"lmg"
+	_flash(muzzle, (0.3 if own else 1.0) * (1.5 if heavy else 1.0))
 	_tracer(muzzle, end)
 	if shot.blocker != "range":
 		_impact(end, shot.blocker == "unit")
@@ -174,7 +178,9 @@ func _on_shot(shot: Dictionary) -> void:
 		if shot.hit_unit > 0:
 			_play3d(_kill_stream if shot.killed else _tick_stream, cam, 0.0)
 	else:
-		_play3d(_shot_stream, origin, 0.0)
+		_play3d(_shot_stream, origin, 2.0 if heavy else 0.0)
+		if heavy:
+			(_players[(_next.player + _players.size() - 1) % _players.size()] as AudioStreamPlayer3D).pitch_scale = randf_range(0.82, 0.88)
 
 
 func _on_reload(u: UnitState) -> void:
@@ -219,7 +225,10 @@ func _tracer(from: Vector3, to: Vector3) -> void:
 	var mid := from.lerp(to, 0.35) if d > 30.0 else from.lerp(to, 0.5)
 	var dir := (to - from).normalized()
 	# Local Z scale (Basis.scaled() would scale world axes and shear the streak).
-	var basis := Basis.looking_at(dir, Vector3.UP if absf(dir.y) < 0.99 else Vector3.RIGHT) * Basis.from_scale(Vector3(1, 1, len))
+	# GAMEPLAY-02D: thicker the farther the camera is, so a firefight reads from the tactical view too (2.5 cm up close).
+	var cam := _camera_pos()
+	var w := clampf(cam.distance_to(mid) * 0.0016 / 0.025, 1.0, 8.0) if cam.is_finite() else 1.0
+	var basis := Basis.looking_at(dir, Vector3.UP if absf(dir.y) < 0.99 else Vector3.RIGHT) * Basis.from_scale(Vector3(w, w, len))
 	t.global_transform = Transform3D(basis, mid)
 	t.visible = true
 	_life[t] = 0.06
@@ -336,11 +345,11 @@ func _burst_node() -> Node3D:
 	var fire := _particles(18, 0.35, Color(1.0, 0.62, 0.22), 7.0, 0.5, 1.1, true)
 	fire.name = "Fire"
 	b.add_child(fire)
-	var dust := _particles(28, 1.4, Color(0.42, 0.37, 0.3), 9.0, 0.4, 1.0, false)
+	var dust := _particles(28, 1.4, Color(0.48, 0.42, 0.34, 0.9), 9.0, 0.8, 2.0, false, true)
 	dust.spread = 80.0
 	dust.gravity = Vector3(0, -7, 0)
 	b.add_child(dust)
-	var smoke := _particles(16, 5.0, Color(0.28, 0.27, 0.26, 0.85), 2.0, 1.2, 3.2, false)
+	var smoke := _particles(18, 5.5, Color(0.3, 0.29, 0.28, 0.7), 2.0, 2.4, 6.0, false, true)
 	smoke.gravity = Vector3(0, 0.6, 0)
 	smoke.explosiveness = 0.85
 	b.add_child(smoke)
@@ -354,7 +363,8 @@ func _burst_node() -> Node3D:
 	return b
 
 
-func _particles(amount: int, life: float, col: Color, speed: float, s0: float, s1: float, glow: bool) -> CPUParticles3D:
+## soft: camera-facing quads with a soft round edge (smoke, dust) instead of solid spheres.
+func _particles(amount: int, life: float, col: Color, speed: float, s0: float, s1: float, glow: bool, soft := false) -> CPUParticles3D:
 	var p := CPUParticles3D.new()
 	p.emitting = false
 	p.one_shot = true
@@ -369,13 +379,22 @@ func _particles(amount: int, life: float, col: Color, speed: float, s0: float, s
 	p.damping_max = 4.0
 	p.scale_amount_min = s0
 	p.scale_amount_max = s1
-	var sm := SphereMesh.new()
-	sm.radius = 0.5
-	sm.height = 1.0
-	sm.radial_segments = 8
-	sm.rings = 4
-	p.mesh = sm
 	var m := StandardMaterial3D.new()
+	if soft:
+		var qm := QuadMesh.new()
+		qm.size = Vector2.ONE
+		p.mesh = qm
+		m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		m.albedo_texture = _puff_texture()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	else:
+		var sm := SphereMesh.new()
+		sm.radius = 0.5
+		sm.height = 1.0
+		sm.radial_segments = 8
+		sm.rings = 4
+		p.mesh = sm
 	m.albedo_color = col
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED if glow else BaseMaterial3D.SHADING_MODE_PER_PIXEL
 	if col.a < 1.0:
@@ -390,6 +409,26 @@ func _particles(amount: int, life: float, col: Color, speed: float, s0: float, s
 	curve.add_point(Vector2(1.0, 0.0 if glow else 0.7))
 	p.scale_amount_curve = curve
 	return p
+
+
+static var _puff: GradientTexture2D
+
+
+## A soft round puff (alpha falling off from the centre), shared by smoke and dust.
+static func _puff_texture() -> GradientTexture2D:
+	if _puff == null:
+		var g := Gradient.new()
+		g.set_color(0, Color(1, 1, 1, 1))
+		g.set_color(1, Color(1, 1, 1, 0))
+		g.add_point(0.45, Color(1, 1, 1, 0.75))
+		_puff = GradientTexture2D.new()
+		_puff.gradient = g
+		_puff.fill = GradientTexture2D.FILL_RADIAL
+		_puff.fill_from = Vector2(0.5, 0.5)
+		_puff.fill_to = Vector2(1.0, 0.5)
+		_puff.width = 64
+		_puff.height = 64
+	return _puff
 
 
 func _play3d(stream: AudioStream, at: Vector3, db: float) -> void:
