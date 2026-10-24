@@ -44,6 +44,7 @@ static func create(demo: CoreDemo, routes: StrategicRoutes, scenario: ScenarioDe
 	war.player_faction = scenario.player_faction
 	war.scenario_id = String(scenario.id)
 	war.rules = scenario.rules.duplicate(true)
+	IntroGuide.setup(war, scenario)
 	var settlements := {}
 	var src := "res://worlds/%s/source/" % demo.config.world_name
 	var sites: Variant = JSON.parse_string(FileAccess.get_file_as_string(src + "sites.json"))
@@ -78,6 +79,21 @@ static func create(demo: CoreDemo, routes: StrategicRoutes, scenario: ScenarioDe
 		o.value = ov.get("value", d[3])
 		o.radius = d[4]
 		o.owner = ov.get("owner", d[5])
+		if o.owner >= 0:
+			o.history.append([0.0, o.owner])
+		war.objectives[o.id] = o
+		by_name[o.obj_name] = o
+	for e: Dictionary in scenario.extra_objectives:
+		var o := ObjectiveState.new()
+		o.id = id
+		id += 1
+		o.obj_name = String(e.get("name", "Outpost"))
+		o.kind = StringName(e.get("kind", "outpost"))
+		o.position = demo.on_ground(float(e.x), float(e.z), 0.0)
+		o.value = int(e.get("value", 1))
+		o.radius = float(e.get("radius", 80.0))
+		o.owner = int(e.get("owner", -1))
+		o.hold = int(e.get("hold", 0))
 		if o.owner >= 0:
 			o.history.append([0.0, o.owner])
 		war.objectives[o.id] = o
@@ -127,6 +143,13 @@ static func create(demo: CoreDemo, routes: StrategicRoutes, scenario: ScenarioDe
 		var at := demo.on_ground(float(e.x), float(e.z), 0.0)
 		var sq := sim.war.spawn_squad(f, at, int(e.get("size", scenario.squad_size)))
 		sq.formation_auto = not f.player
+		if String(e.get("composition", "")) != "":
+			for uid in sq.members:
+				sim.state.get_unit(uid).role = &""
+			sim.combat.apply_composition(sq, [], String(e.composition))
+		var st: ObjectiveState = by_name.get(String(e.get("station", "")))
+		if st:
+			sq.station_objective = st.id
 		sq.order_yaw = float(e.get("yaw", 0.0))
 		for uid in sq.members:
 			var u := sim.state.get_unit(uid)
@@ -141,6 +164,9 @@ static func create(demo: CoreDemo, routes: StrategicRoutes, scenario: ScenarioDe
 			"radius": float(c.get("radius", 30.0)), "supplies": float(c.get("supplies", 0.0)), "ammo": float(c.get("ammo", 0.0)), "fuel": float(c.get("fuel", 0.0)),
 			"state": "intact", "faction": -1, "progress": 0.0, "known": [scenario.player_faction] if bool(c.get("known", false)) else [],
 			"taken_by": -1, "taken_at": -1.0})
+	if demo.structures:
+		for e: Dictionary in scenario.structures:
+			_place_structure(demo, StringName(e.type), float(e.x), float(e.z), float(e.get("yaw", 0.0)), int(e.get("faction", -1)))
 	var base_info := {}
 	var centre: ObjectiveState = by_name.get("Sentrum")
 	# Each faction's HQ is walled before its base is laid out round it (the base keeps clear of the wall).
@@ -167,6 +193,24 @@ static func create(demo: CoreDemo, routes: StrategicRoutes, scenario: ScenarioDe
 	sim.war.log_event(-1, "info", "%s: %s" % [scenario.title, ", ".join(sides)])
 	return {"scenario": String(scenario.id), "objectives": war.objectives.size(), "factions": war.factions.size(), "squads": squads, "bases": base_info,
 		"soldiers": sim.state.count_of(UnitState.Kind.SOLDIER), "caches": war.caches.size()}
+
+
+## GAMEPLAY-04A: a finished scenario structure at (x, z), on the first spot within 20 m the construction checks accept.
+static func _place_structure(demo: CoreDemo, type_id: StringName, x: float, z: float, yaw: float, faction: int) -> StructureState:
+	var def := StructureCatalog.get_def(type_id)
+	if def == null:
+		push_warning("SandboxSetup: unknown scenario structure %s" % type_id)
+		return null
+	for r: float in [0.0, 4.0, 8.0, 12.0, 16.0, 20.0]:
+		for k in (1 if r == 0.0 else 8):
+			var p := demo.on_ground(x + cos(k * TAU / 8.0) * r, z + sin(k * TAU / 8.0) * r, 0.0)
+			var chk := demo.structures.check_building(def, p, yaw, -1, true)
+			if chk.ok:
+				var s := demo.sim.state.construction.add_building(type_id, chk.xform.origin, yaw, faction)
+				demo.sim.state.construction.add_clearings(demo.structures.clearings_for(s, true))
+				return s
+	push_warning("SandboxSetup: no ground for %s near (%.0f, %.0f)" % [type_id, x, z])
+	return null
 
 
 ## A 56 x 56 m HESCO perimeter with an 8 m entrance on each side, round the HQ centre.

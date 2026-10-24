@@ -301,6 +301,7 @@ func _store_chunk(loc: Vector2i, res: Resource) -> void:
 			loc, ch.cell_size_m, ch.chunk_size_m, cell_size_m, chunk_size_m])
 		cell_size_m = ch.cell_size_m
 		chunk_size_m = ch.chunk_size_m
+	RoadShoulders.fix_chunk(ch)  # GAMEPLAY-04A: instances on the eased road shoulders back on the ground
 	chunks[loc] = ch
 	if overrides:
 		overrides.on_chunk_loaded(loc)

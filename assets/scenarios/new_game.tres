@@ -55,13 +55,77 @@ factions = Array[Dictionary]([{
 "Ødegård": 1
 }
 }])
+extra_objectives = Array[Dictionary]([{
+"hold": 1,
+"kind": "outpost",
+"name": "Moen checkpoint",
+"owner": 1,
+"radius": 80.0,
+"value": 1,
+"x": -1350.0,
+"z": 7380.0
+}])
 start_squads = Array[Dictionary]([{
 "faction": 0,
 "size": 8,
 "x": -1350.0,
 "yaw": -0.6,
-"z": 6950.0
+"z": 6870.0
+}, {
+"composition": "riflemen",
+"faction": 1,
+"size": 3,
+"station": "Moen checkpoint",
+"x": -1345.0,
+"yaw": 3.14,
+"z": 7395.0
 }])
+structures = Array[Dictionary]([{
+"faction": 1,
+"type": "checkpoint_station",
+"x": -1380.0,
+"yaw": 0.0,
+"z": 7365.0
+}])
+intro = Array[Dictionary]([{
+"done": "moved:40",
+"id": "command",
+"text": "Select your squad (left click on a soldier or the roster, top left) and move it with a right click on the ground.",
+"title": "Take command"
+}, {
+"done": "fps",
+"id": "tip_fps",
+"optional": true,
+"title": "Tab: fight as one of your soldiers"
+}, {
+"done": "map",
+"id": "tip_map",
+"optional": true,
+"title": "M: the map of the region"
+}, {
+"done": "clear:Moen checkpoint",
+"id": "checkpoint",
+"target": "objective:Moen checkpoint",
+"text": "A South fire team holds the checkpoint north of you. Close in through cover; Suppress (K) pins them, Flank (L) goes round, Assault (Z) takes the position. You can also fight in first person.",
+"title": "Clear Moen checkpoint"
+}, {
+"done": "cache:Moen farm cache",
+"id": "supplies",
+"target": "cache:Moen farm cache",
+"text": "Keep soldiers on the farm cache for about 30 s with no enemy near. The supplies and ammunition go to your stock.",
+"title": "Secure the supply cache"
+}, {
+"done": "base",
+"id": "foothold",
+"text": "Press B, choose Command Post and place it on open, level ground near the farm. Idle soldiers walk over and build it; the base opens when it is finished.",
+"title": "Establish a command post"
+}, {
+"done": "dev_started",
+"id": "develop",
+"text": "Press F2 (Military Development) and start a project - Barracks & Personnel lets you recruit. It runs while you fight.",
+"title": "Plan your development"
+}])
+briefing = "1st Section, North. South has pushed into the valley and set up a checkpoint at Moen farm, 500 m north, on top of a supply cache we need. Clear it, take the supplies and dig in."
 squad_size = 8
 fortify = PackedStringArray("Nordmoen HQ", "East HQ")
 ai_bases = true

@@ -31,13 +31,16 @@ var presence := {}
 ## GAMEPLAY-01D: kind &"base" - the strategic target of one base (ConstructionState.bases id). Created and kept in step
 ## with the base by WarSim.sync_bases; its owner is the base's ownership (captured like any objective).
 var base_id := -1
+## GAMEPLAY-04A: squads its owner keeps stationed here whatever its profile says (a scenario outpost such as New Game's
+## checkpoint: WarSim._free_squads never sends them away).
+var hold := 0
 
 
 func to_dict() -> Dictionary:
 	return {"id": id, "name": obj_name, "kind": kind, "position": position, "radius": radius, "value": value,
 		"owner": owner, "capture_faction": capture_faction, "capture_progress": capture_progress,
 		"contested": contested, "last_change_at": last_change_at, "history": history.duplicate(true), "presence": presence.duplicate(),
-		"base_id": base_id}
+		"base_id": base_id, "hold": hold}
 
 
 static func from_dict(d: Dictionary) -> ObjectiveState:
@@ -56,6 +59,7 @@ static func from_dict(d: Dictionary) -> ObjectiveState:
 	o.history = d.get("history", []).duplicate(true)
 	o.presence = d.get("presence", {}).duplicate()
 	o.base_id = d.get("base_id", -1)
+	o.hold = d.get("hold", 0)
 	return o
 
 

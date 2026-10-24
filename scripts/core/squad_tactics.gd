@@ -49,6 +49,8 @@ var abort_eff := 0.28
 var pinned_go := 0.5
 var calm_end_s := 40.0
 var assault_timeout_s := 170.0
+## GAMEPLAY-04A: an assault still approaching its target stops when it has not got 10 m closer for this long.
+var approach_stall_s := 60.0
 var flank_timeout_s := 160.0
 ## Bounding / advancing leg length (m) and how long a leg may take (s).
 var leg_m := 30.0
@@ -574,6 +576,8 @@ func start(sq: SquadState, tactic: int, owner: int, target := Vector3.INF, conta
 	sq.tactic_phase = PH_SETUP
 	sq.tactic_leg = 0
 	sq.tactic_since = now
+	_set_meta(sq, "approach_best", INF)
+	_set_meta(sq, "approach_best_at", now)
 	if sq.tactic == SquadState.Tactic.DEFEND:
 		sq.defence_line = 0
 	sq.tactic_phase_since = now
@@ -1332,6 +1336,7 @@ func _mg_first(units: Array, posts: Array, idx: Array, dir := Vector3.ZERO) -> v
 		has_slot = has_slot or String(p.get("role", "")) == "mg"
 	if not has_slot:
 		_mg_best_post(units, posts, idx, dir)
+		_marksman_post(units, posts, idx)
 		return
 	for i in units.size():
 		var post: Dictionary = posts[idx[i]]
@@ -1401,6 +1406,33 @@ func _grenadier_post(units: Array, posts: Array, idx: Array, gunner: int) -> voi
 
 
 ## GAMEPLAY-02B: the soldier carries a machine gun (WeaponDef.role lmg).
+## GAMEPLAY-04C: the designated marksman (a dmr-role weapon) takes the remaining post that sees farthest - elevated, the
+## widest arc, the least exposed - instead of whatever post its place in the squad gave it. MG and grenadier keep theirs.
+func _marksman_post(units: Array, posts: Array, idx: Array) -> void:
+	var m := -1
+	for i in units.size():
+		var def := sim.combat.weapon((units[i] as UnitState).weapon_id)
+		if def and def.role == &"dmr":
+			m = i
+			break
+	if m < 0 or units.size() < 2:
+		return
+	var best_i := m
+	var best_sc := -INF
+	for i in units.size():
+		if i != m and (_is_mg(units[i]) or (units[i] as UnitState).sec_id != &""):
+			continue
+		var p: Dictionary = posts[idx[i]]
+		var sc := (1.0 if bool(p.get("elevated", false)) else 0.0) + float(p.get("arc", 150.0)) / 180.0 - float(p.get("exposure", 0.5)) + 0.3 * float(p.get("score", 0.0))
+		if sc > best_sc:
+			best_sc = sc
+			best_i = i
+	if best_i != m:
+		var t: int = idx[m]
+		idx[m] = idx[best_i]
+		idx[best_i] = t
+
+
 func _is_mg(u: UnitState) -> bool:
 	var def := sim.combat.weapon(u.weapon_id)
 	return def != null and def.role == &"lmg"
@@ -2057,7 +2089,19 @@ func _run_assault(sq: SquadState, a: Dictionary, now: float) -> void:
 	var all := _units(sq)
 	var centre := _centroid(all)
 	var d := _flat(centre, target)
-	var why := _attack_failed(sq, a, now, assault_timeout_s)
+	# GAMEPLAY-04A: the approach from far away is not part of the attack's time limit (a player ordering an assault 500 m
+	# out had it "stall" after 170 s of steady progress). While approaching, the order stops only when the squad has not got
+	# 10 m closer for approach_stall_s (runtime record: after loading the window starts again); the time limit counts from the
+	# end of the approach (tactic_since is reset there).
+	var why := ""
+	if sq.tactic_phase == PH_SETUP and not sq.tactic_ext:
+		if d < float(_meta(sq, "approach_best", INF)) - 10.0:
+			_set_meta(sq, "approach_best", d)
+			_set_meta(sq, "approach_best_at", now)
+		if now - float(_meta(sq, "approach_best_at", now)) > approach_stall_s:
+			why = "no progress towards the target for %.0f s" % approach_stall_s
+	else:
+		why = _attack_failed(sq, a, now, assault_timeout_s)
 	if why != "":
 		_fail(sq, a, why)
 		return
@@ -2074,6 +2118,7 @@ func _run_assault(sq: SquadState, a: Dictionary, now: float) -> void:
 			# Approach: bound towards a staging point until the target is within reach.
 			if d <= 130.0 or (int(a.seen_n) > 0 and d <= 170.0):
 				sq.tactic_phase = PH_SUPPORT
+				sq.tactic_since = now  # GAMEPLAY-04A: the attack (and its time limit) begins at the end of the approach
 				sq.tactic_phase_since = now
 				sq.tactic_dest = Vector3.INF
 				_assault_support(sq, a, target)

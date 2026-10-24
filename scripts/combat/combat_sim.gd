@@ -69,11 +69,14 @@ func equip_all(id: StringName) -> void:
 ## replacement fills a role the squad lacks first (a squad that lost its machine gunner gets the next recruit as one),
 ## everybody else a rifleman. Soldiers that already have a role keep it and their weapon: veterans are never re-armed.
 ## only: when given, just these soldiers (the new recruits) are equipped; the others count with their weapon (a soldier of
-## an old save without a role counts by its weapon). Returns how many soldiers got a role.
-func apply_composition(sq: SquadState, only: Array = []) -> int:
+## an old save without a role counts by its weapon). comp_override: another composition (a scenario squad). Returns how
+## many soldiers got a role.
+func apply_composition(sq: SquadState, only: Array = [], comp_override := "") -> int:
 	var comp_id := "standard"
 	if sim.state.war and sim.state.war.active:
 		comp_id = String(sim.state.war.rule("squad_composition", "standard"))
+	if comp_override != "":
+		comp_id = comp_override
 	var comp := SquadComposition.by_id(comp_id)
 	var slots: Array[StringName] = comp.slots if comp else ([] as Array[StringName])
 	var fresh: Array = []

@@ -65,6 +65,10 @@ var mech: OpTransport
 var supply: WarLogistics
 ## GAMEPLAY-04B: Military Development (unlocks, projects, AI development policy).
 var dev: MilitaryDevelopment
+## GAMEPLAY-04A: the New Game opening (phases checked against the world).
+var intro: IntroGuide
+## GAMEPLAY-04E: opportunities offered to the player.
+var opps: Opportunities
 var _profiles := {}
 var _t_capture := 0.0
 var _t_ops := 0.0
@@ -103,6 +107,8 @@ func _init(p_sim: WorldSim) -> void:
 	mech = OpTransport.new(self)
 	supply = WarLogistics.new(self)
 	dev = MilitaryDevelopment.new(self)
+	intro = IntroGuide.new(self)
+	opps = Opportunities.new(self)
 
 
 func setup(p_routes: StrategicRoutes) -> void:
@@ -153,6 +159,8 @@ func update(delta: float) -> void:
 			_update_base_alerts(f)
 	econ.update(delta)
 	dev.update(delta)
+	intro.update(delta)
+	opps.update(delta)
 	var now := sim.state.time
 	for f: FactionState in war.factions.values():
 		if not f.player and now >= f.next_decision_at:
@@ -1397,6 +1405,7 @@ func _free_squads(f: FactionState, p: FactionProfile) -> Array:
 	var keep := {}
 	for o: ObjectiveState in war.owned_by(f.id):
 		keep[o.id] = p.hq_squads if o.is_hq() else (p.garrison_squads if o.value >= p.garrison_min_value else 0)
+		keep[o.id] = maxi(int(keep[o.id]), o.hold)
 	var sqs := squads_of(f.id)
 	sqs.sort_custom(func(a: SquadState, b: SquadState) -> bool: return a.members.size() < b.members.size())
 	for sq: SquadState in sqs:

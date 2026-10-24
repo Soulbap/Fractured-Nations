@@ -146,7 +146,8 @@ func _a_new() -> Dictionary:
 	_expect(out.owners.Verket == -1 and out.owners["Sørmoen"] == -1, "a_new: the south is not neutral: %s" % str(out.owners))
 	_expect(out.owners["East HQ"] == 2 and out.owners["Østby"] == 2, "a_new: East lost its ground: %s" % str(out.owners))
 	_expect(south_bases.size() == 1 and out.south_base_z < -5000, "a_new: South's base is not in the north (%s)" % str(out.south_base_z))
-	_expect(nearest_enemy_base > 5000.0 and nearest_enemy > 2500.0, "a_new: enemy too close to the start (base %d m, soldier %d m)" % [out.nearest_enemy_base_m, out.nearest_enemy_soldier_m])
+	# GAMEPLAY-04A: the opening's South checkpoint section stands ~500 m north on purpose (out of sight range, 400 m).
+	_expect(nearest_enemy_base > 5000.0 and nearest_enemy > 420.0, "a_new: enemy too close to the start (base %d m, soldier %d m)" % [out.nearest_enemy_base_m, out.nearest_enemy_soldier_m])
 	_expect(start.z > 5000.0, "a_new: the start is not in the south (%s)" % str(out.start))
 	_expect(out.overlay_faction == pf and out.rts_faction == pf, "a_new: overlay / RTS faction differ from the war's player faction")
 	var cam := demo.rts_camera.focus

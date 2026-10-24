@@ -19,8 +19,21 @@ extends Resource
 ## ones (GAMEPLAY-04B; an AI faction whose start base has a barracks knows how to build one)]}. Every faction of
 ## WorldState.FACTION_NAMES must be listed.
 @export var factions: Array[Dictionary] = []
-## Squads placed at a world position instead of an objective: {"faction", "x", "z", "size", "yaw"}.
+## GAMEPLAY-04A: objectives of this scenario besides SandboxSetup.OBJECTIVES (an outpost at a world position):
+## {"name", "kind", "x", "z", "value", "radius", "owner", "hold" (squads its owner keeps there)}.
+@export var extra_objectives: Array[Dictionary] = []
+## Squads placed at a world position instead of an objective: {"faction", "x", "z", "size", "yaw"}; GAMEPLAY-04A optional
+## "station" (objective name the squad holds) and "composition" (SquadComposition id instead of the rule's).
 @export var start_squads: Array[Dictionary] = []
+## GAMEPLAY-04A: finished structures at minute zero ({"type", "x", "z", "yaw", "faction"}), placed with the construction
+## system's checks and groundwork like the HQ walls.
+@export var structures: Array[Dictionary] = []
+## GAMEPLAY-04A: the opening's phases, shown by the objective tracker and checked by IntroGuide (WarSim.intro):
+## {"id", "title", "text" (what to do and how), "done" (condition, see IntroGuide.met), "target" ("objective:<name>",
+## "cache:<name>" or ""), "optional" (true: a tip that never blocks)}. Empty: no introduction.
+@export var intro: Array[Dictionary] = []
+## Two or three lines of situation shown with the first phase of the introduction.
+@export_multiline var briefing := ""
 @export var squad_size := 8
 ## Objectives (after renaming) that get the HESCO perimeter of an HQ.
 @export var fortify: PackedStringArray = []

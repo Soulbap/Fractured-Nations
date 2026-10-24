@@ -50,6 +50,8 @@ var _hints: FNPanel
 var economy: EconomyHud
 ## GAMEPLAY-04B: the Military Development screen (F2).
 var development: DevelopmentPanel
+## GAMEPLAY-04A: the objective tracker (opening phases, accepted opportunities).
+var tracker: ObjectiveTracker
 
 
 class Overlay extends Control:
@@ -325,6 +327,9 @@ func _ready() -> void:
 	economy = EconomyHud.new()
 	economy.hud = self
 	add_child(economy)
+	tracker = ObjectiveTracker.new()
+	tracker.hud = self
+	add_child(tracker)
 	development = DevelopmentPanel.new()
 	development.hud = self
 	add_child(development)
@@ -370,9 +375,9 @@ func _on_war_event(e: Dictionary) -> void:
 		"dev_start", "dev_cancel":
 			col = FNUI.ACCENT if e.kind == "dev_start" else FNUI.NEUTRAL
 			icon = &"development"
-		"dev_done":
+		"dev_done", "objective_done":
 			col = FNUI.OK
-			icon = &"development"
+			icon = &"development" if e.kind == "dev_done" else &"mission"
 		"op_failed":
 			col = FNUI.DANGER
 			icon = &"blocked"

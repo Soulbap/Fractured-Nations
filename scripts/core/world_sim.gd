@@ -68,7 +68,14 @@ const INFANTRY_CLEARANCE_M := 0.5
 ## NAV-INF-01: the steepest ground infantry is sent over, in both tiers: tan(38 deg). The near tier's navmesh (AreaNavigation) takes
 ## its slope limit from this value. Before, the navmesh and the abstract tier allowed 45 degrees while a SoldierBody (capsule, no
 ## foothold) stood still on 40+ degree faces, so near soldiers were routed up banks they could not climb.
-const INFANTRY_MAX_GRADE := 0.78
+##
+## GAMEPLAY-04A: raised to tan(50 deg) with slower climbing (slope_speed) - road shoulders and cut banks of 40-45 degrees next to
+## the New Game start held soldiers at the foot of the bank or routed them far round; a soldier climbs such a bank, slowly.
+const INFANTRY_MAX_GRADE := 1.19
+## GAMEPLAY-04A: walking speed uphill, as a share of the flat speed: full up to SLOPE_EASY_GRADE, falling linearly to
+## SLOPE_MIN_FACTOR at INFANTRY_MAX_GRADE. Downhill and across the slope are not slowed. Both tiers use slope_speed.
+const SLOPE_EASY_GRADE := 0.25
+const SLOPE_MIN_FACTOR := 0.4
 const INFANTRY_RETRY_BUDGET := 3
 const INFANTRY_RETRY_RENEW_M := 10.0
 const INFANTRY_FAIL_MEMORY_S := 20.0
@@ -301,8 +308,14 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 			u.anchor_pos = u.position
 		_clear_local_route(u.id)
 		return
-	var step := minf(u.speed * abstract_friction * delta, dist)
 	var dir := to / dist
+	var climb := 1.0
+	if terrain:
+		var h0: float = terrain.data.get_height(u.position)
+		var h1: float = terrain.data.get_height(u.position + dir)
+		if not is_nan(h0) and not is_nan(h1):
+			climb = slope_speed(h1 - h0)
+	var step := minf(u.speed * abstract_friction * climb * delta, dist)
 	if structures and _step_blocked(u.position, dir, step):
 		var invalid: Dictionary = _local_routes.get(u.id, {})
 		if bool(invalid.get("cached", false)):
@@ -314,7 +327,7 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 			u.move_state = UnitState.MoveState.MOVING
 		return
 	u.position += dir * step
-	u.velocity = dir * u.speed * abstract_friction
+	u.velocity = dir * u.speed * abstract_friction * climb
 	u.yaw = atan2(-dir.x, -dir.z)
 	u.move_state = UnitState.MoveState.MOVING
 	_settle_height(u)
@@ -704,6 +717,14 @@ static func _flat(a: Vector3, b: Vector3) -> float:
 
 ## Height of an abstract unit: the terrain, or the bridge deck it stands on; a unit beside
 ## a bridge above the river (a formation's outer file) moves onto the deck.
+## GAMEPLAY-04A: share of the walking speed left on an uphill grade (rise per metre walked; negative = downhill).
+static func slope_speed(grade: float) -> float:
+	if grade <= SLOPE_EASY_GRADE:
+		return 1.0
+	var t := clampf((grade - SLOPE_EASY_GRADE) / (INFANTRY_MAX_GRADE - SLOPE_EASY_GRADE), 0.0, 1.0)
+	return lerpf(1.0, SLOPE_MIN_FACTOR, t)
+
+
 func _settle_height(u: UnitState) -> void:
 	if terrain:
 		var h: float = terrain.data.get_height(u.position)

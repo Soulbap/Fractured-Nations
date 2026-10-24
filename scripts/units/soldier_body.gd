@@ -34,6 +34,11 @@ extends FPSController
 ## meshes 12-25 cm above it with a sharp edge: a capsule of radius 0.35 m cannot slide up such an edge (contact normal y 0.3-0.6),
 ## so every soldier whose path crossed a road verge stood still against it until the stuck logic gave up on the order.
 @export var step_height := 0.35
+## GAMEPLAY-04A: the highest edge a stuck soldier climbs over on its first unstick attempt (_hop_ledge).
+@export var ledge_hop_m := 0.95
+## GAMEPLAY-04A: a soldier whose navmesh path ends under its feet walks straight at a goal farther than this (nearer, among
+## the squad's formation slots, it waits for the path as before).
+@export var straight_fallback_m := 15.0
 
 var unit: UnitState
 var sim: WorldSim
@@ -64,6 +69,8 @@ var _fov_hip := 75.0
 var _progress_ref := Vector3.INF
 var _progress_t := 0.0
 var _stuck_stage := 0
+## Which movement branch _ai_step took last (diagnostics).
+var dbg_branch := ""
 ## Where the first stuck stage was raised: real progress from there (stuck_clear_m) renews the recovery budget.
 var _stuck_at := Vector3.INF
 var _unstick_left := 0.0
@@ -81,6 +88,8 @@ func _ready() -> void:
 	nav.velocity_computed.connect(_on_velocity_computed)
 	possession_changed.connect(_on_possession_changed)
 	nav.max_speed = walk_speed
+	# GAMEPLAY-04A: the body stands and walks on the same grades the routes send it over (WorldSim.INFANTRY_MAX_GRADE, slower uphill).
+	floor_max_angle = atan(WorldSim.INFANTRY_MAX_GRADE) + deg_to_rad(2.0)
 
 
 ## Attaches this body to a unit record and registers it with the simulation.
@@ -202,12 +211,16 @@ func _ai_step(delta: float) -> void:
 		# get_next_path_position() is what makes the agent (re)query its path.
 		var next := nav.get_next_path_position()
 		var path_len := nav.get_current_navigation_path().size()
+		dbg_branch = "?"
 		if remaining <= (react_arrive_distance if reacting else arrive_distance):
+			dbg_branch = "arrive"
 			_finish(remaining, reacting)
 		elif path_len == 0 and sim.detail and not sim.detail.nav_covers(goal):
+			dbg_branch = "no_path_off_nav"
 			desired = flat.normalized() * walk_speed
 			_face(flat.normalized(), delta)
 		elif path_len == 0:
+			dbg_branch = "no_path"
 			# No path yet (navigation map not synced, or target off the navmesh): retry.
 			_empty_path_s += delta
 			if _empty_path_s > max_empty_path_s:
@@ -215,6 +228,7 @@ func _ai_step(delta: float) -> void:
 			elif Engine.get_physics_frames() % 10 == 0:
 				nav.target_position = goal
 		elif nav.is_navigation_finished():
+			dbg_branch = "nav_finished"
 			if remaining > blocked_distance and sim.detail and not sim.detail.nav_covers(goal):
 				# The target lies beyond the navmesh area around the active camera: keep
 				# heading for it. Leaving the camera's detail radius hands the unit to
@@ -225,6 +239,7 @@ func _ai_step(delta: float) -> void:
 			else:
 				_finish(remaining, reacting, "navmesh path ends short of the target")
 		else:
+			dbg_branch = "path"
 			var dir := next - global_position
 			dir.y = 0.0
 			dbg_next_dist = dir.length()
@@ -234,6 +249,13 @@ func _ai_step(delta: float) -> void:
 			# valid path for minutes while the abstract tier walked the same route in a fraction of the time.
 			if dir.length_squared() <= 0.09:
 				dir = _next_distinct_dir()
+			if dir.length_squared() <= 1e-4 and remaining > straight_fallback_m:
+				# GAMEPLAY-04A: the rest of the path lies straight above / below the soldier (the navmesh is baked from the
+				# terrain with up to 1 m of height error and without the road surface, so beside a road bank its path can end
+				# "here" one metre up). Standing still waiting for a better path held soldiers at road banks next to the New
+				# Game start for the rest of the order: walk straight at the goal instead, as off the navmesh; the stuck
+				# handling still watches the progress.
+				dir = flat
 			if dir.length_squared() > 1e-4:
 				dir = dir.normalized()
 				desired = dir * walk_speed
@@ -309,6 +331,7 @@ func _check_stuck(delta: float, remaining: float, reacting := false) -> void:
 		_stuck_at = global_position
 		nav.target_position = unit.react_target if reacting else unit.order_target
 		_unstick_left = unstick_s
+		_hop_ledge(unit.react_target if reacting else unit.order_target)
 	else:
 		_finish(remaining, reacting, "stuck: no progress after an unstick attempt")
 
@@ -334,11 +357,46 @@ func _finish_order(remaining: float, why := "") -> void:
 func _apply_velocity(v: Vector3, delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
+	elif v.length_squared() > 0.01:
+		# GAMEPLAY-04A: uphill slower, the same rule as the abstract tier (WorldSim.slope_speed); the floor normal gives the grade
+		# along the walking direction.
+		var n := get_floor_normal()
+		var flat_n := Vector2(n.x, n.z)
+		if flat_n.length_squared() > 1e-6 and n.y > 0.01:
+			var along := -Vector2(v.x, v.z).normalized().dot(flat_n) / n.y
+			v *= WorldSim.slope_speed(along)
 	velocity.x = v.x
 	velocity.z = v.z
 	if step_height > 0.0 and is_on_floor():
 		_step_up(delta)
 	move_and_slide()
+
+
+## GAMEPLAY-04A: a soldier pressed against a low edge stops dead (its velocity after the collision is zero, so _step_up,
+## which needs a moving body, never fires): seen at road verges next to the New Game start, where a soldier stood against
+## the road's edge 0.1 m below its surface for the rest of the order. On the first stuck stage the body is lifted over the
+## edge towards its goal when the space above and ahead is free (the same test _step_up makes); otherwise nothing changes.
+func _hop_ledge(goal: Vector3) -> void:
+	if not is_on_wall():
+		return
+	var ahead := goal - global_position
+	ahead.y = 0.0
+	if ahead.length_squared() < 0.01:
+		return
+	# The lowest lift that clears it, up to ledge_hop_m (road embankments stand up to ~0.7 m above the terrain beside them).
+	var motion := ahead.normalized() * 0.5
+	for h: float in [step_height + 0.15, 0.7, ledge_hop_m]:
+		var lift := Vector3.UP * h
+		if test_move(global_transform, lift) or test_move(global_transform.translated(lift), motion):
+			continue
+		global_position += lift + motion
+		velocity.y = 0.0
+		ledge_hops += 1
+		return
+
+
+## Times a stuck soldier was lifted over a low edge (_hop_ledge), for tests.
+static var ledge_hops := 0
 
 
 ## Walks up a ledge the capsule would otherwise stand against: when the next move hits a wall (not a floor) and the same move

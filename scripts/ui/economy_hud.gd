@@ -90,7 +90,9 @@ func _process(delta: float) -> void:
 	_strip_label.text = "Supplies %d kg%s   ·   Ammunition %d kg   ·   Fuel %d l   ·   Personnel %d" % [roundi(st.supplies),
 		("  (+%d/min)" % roundi(rate.supplies)) if float(rate.supplies) > 0.0 else "", roundi(st.ammo), roundi(st.fuel), f.reserves]
 	_strip.size = Vector2.ZERO
-	var h := next_hint() if bool(w.rule("guide", false)) and not w.guide.get("off", false) else {}
+	# GAMEPLAY-04A: during the introduction the objective tracker guides; the hints take over after it.
+	var intro_on := hud.war_sim.intro.active() and not hud.war_sim.intro.complete()
+	var h := next_hint() if bool(w.rule("guide", false)) and not w.guide.get("off", false) and not intro_on else {}
 	hint_id = h.get("id", "")
 	hint_text = h.get("text", "")
 	_hint.visible = hint_text != "" and hud.game.mode == GameController.Mode.RTS
@@ -140,6 +142,13 @@ func next_hint() -> Dictionary:
 		return {"id": "depot", "text": "Build a Supply Depot inside the base (%d kg): the supplies you carry are stored there." % roundi(BuildCosts.COST[&"supply_depot"])}
 	if not has.call(&"barracks"):
 		var need := BuildCosts.COST[&"barracks_block"]
+		# GAMEPLAY-04B: the barracks has to be developed first.
+		var dev := hud.war_sim.dev
+		if dev.structure_lock(pf, &"barracks_block") != "":
+			var st := dev.status(pf, &"personnel_facilities")
+			if st.state == "active":
+				return {"id": "dev_barracks_running", "text": "Barracks & Personnel is in development (%d%%). Meanwhile: capture ground, fortify, or develop something else later." % roundi(float(st.progress) * 100.0)}
+			return {"id": "dev_barracks", "text": "Develop Barracks & Personnel (F2) to build a Barracks and recruit squads."}
 		return {"id": "barracks", "text": "Construct a Barracks (%d kg): it trains new squads.%s" % [roundi(need),
 			"" if supplies >= need else " You have %d kg - secure caches or capture Verket for income." % roundi(supplies)]}
 	if int(f.ledger.squads_recruited) == 0 and bs.queued_recruits(pf) == 0:

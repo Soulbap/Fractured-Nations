@@ -13,7 +13,7 @@ extends NavigationRegion3D
 @export var agent_radius := 0.5
 @export var cell_size := 0.5
 ## Extra clearance around tree trunks beyond the collider radius.
-@export var tree_margin := 0.2
+@export var tree_margin := 0.45
 
 var area_center := Vector3.ZERO
 var area_size := 0.0

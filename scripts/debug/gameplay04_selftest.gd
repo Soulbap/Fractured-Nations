@@ -10,8 +10,8 @@ class_name Gameplay04SelfTest
 extends GameplaySelfTest
 
 ## Every check in run order. Checks that need another scenario are only run when named in --only.
-const CHECKS: Array[String] = ["b_lock", "b_start", "b_pause", "b_persist", "b_complete", "b_future", "b_ui", "b_ai", "b_dev_off"]
-const ONLY_NAMED: Array[String] = ["b_dev_off"]
+const CHECKS: Array[String] = ["a_setup", "a_ui", "a_phases", "a_persist", "a_skip", "a_road", "a_profile", "a_shoulders", "a_trees", "a_encounter", "b_lock", "b_start", "b_pause", "b_persist", "b_complete", "b_future", "b_ui", "b_ai", "b_dev_off"]
+const ONLY_NAMED: Array[String] = ["b_dev_off", "a_encounter", "a_road", "a_profile", "a_trees"]
 
 
 func run(args: PackedStringArray) -> void:
@@ -61,6 +61,411 @@ func _running_project() -> Dictionary:
 		_dev().start(pf, &"personnel_facilities")
 	return _dev().active_entry(pf, &"personnel_facilities")
 
+
+
+# --- 04A New Game opening ---------------------------------------------------------------------------------------------
+
+func _objective(oname: String) -> ObjectiveState:
+	for o: ObjectiveState in _war().all_objectives():
+		if o.obj_name == oname:
+			return o
+	return null
+
+
+func _squads_at(f: int, oid: int) -> Array:
+	return demo.sim.war.squads_of(f).filter(func(sq: SquadState) -> bool: return sq.station_objective == oid)
+
+
+## The opening as set up: the checkpoint (South, kept by the South AI), its section of four riflemen and position, the
+## distance from the start, the phases copied into the war, nobody in contact at minute zero.
+func _a_setup() -> Dictionary:
+	var war := _war()
+	var cp := _objective("Moen checkpoint")
+	_expect(cp != null, "a_setup: no Moen checkpoint")
+	if cp == null:
+		return {}
+	var guards := _squads_at(1, cp.id)
+	var roles := []
+	for sq: SquadState in guards:
+		for uid in sq.members:
+			roles.append(String(demo.sim.state.get_unit(uid).role))
+	var start := demo.sim.war.squad_center(_player_squads()[0])
+	var fp := 0
+	for st: StructureState in demo.sim.state.construction.all():
+		if st.faction == 1 and st.type_id in [&"fighting_position", &"checkpoint_station"] and WarSim._flat(st.position, cp.position) < 80.0:
+			fp += 1
+	var free: Array = demo.sim.war._free_squads(war.faction(1), demo.sim.war.profile(war.faction(1)))
+	var seen := 0
+	for sq: SquadState in _player_squads():
+		for uid in sq.members:
+			if demo.sim.state.get_unit(uid).target_id >= 0:
+				seen += 1
+	var out := {"owner": cp.owner, "hold": cp.hold, "guards": guards.size(), "roles": roles, "structures": fp,
+		"start_to_checkpoint_m": roundi(WarSim._flat(start, cp.position)), "guard_free_for_ops": guards.any(func(sq: SquadState) -> bool: return free.has(sq.id)),
+		"phases": (war.guide.get("intro", []) as Array).map(func(p: Dictionary) -> String: return p.id), "player_targets_at_start": seen}
+	_expect(cp.owner == 1 and cp.hold == 1, "a_setup: checkpoint owner/hold %s" % str([cp.owner, cp.hold]))
+	_expect(guards.size() == 1 and roles.size() == 3 and roles.all(func(r: String) -> bool: return r == "rifleman"), "a_setup: guards %s" % str(roles))
+	_expect(fp == 1, "a_setup: checkpoint structures %d" % fp)
+	_expect(out.start_to_checkpoint_m > 420 and out.start_to_checkpoint_m < 650, "a_setup: start %d m from the checkpoint" % out.start_to_checkpoint_m)
+	_expect(not out.guard_free_for_ops, "a_setup: the South AI may send the checkpoint section away")
+	_expect((out.phases as Array).size() >= 5 and demo.sim.war.intro.current().get("id", "") == "command", "a_setup: phases %s" % str(out.phases))
+	_expect(seen == 0, "a_setup: the player soldiers see an enemy at minute zero")
+	return out
+
+
+## The tracker at the start (briefing, the first phase) in the tactical view, its compact form in first person.
+func _a_ui() -> Dictionary:
+	if demo.game.mode != GameController.Mode.RTS:
+		demo.game.enter_rts()
+	var sq: SquadState = _player_squads()[0]
+	demo.rts.select_squads([sq.id])
+	await _frame(demo.sim.war.squad_center(sq) + Vector3(0, 0, 120), 260.0, 0.0)
+	await _physics(20)
+	var tr := demo.hud.tracker
+	var out := {"visible": tr._panel.visible, "current": tr.current_id, "brief": tr._brief.visible, "rows": tr._list.get_child_count(), "foot": tr._foot.text}
+	_expect(tr._panel.visible and tr.current_id == "command" and tr._brief.visible, "a_ui: tracker at the start %s" % str(out))
+	_png("a_start_tracker")
+	demo.game.possess(sq.leader_id)
+	await _seconds(1.0)
+	out["fps_visible"] = tr._panel.visible
+	out["fps_rows"] = tr._list.get_child_count()
+	out["fps_flag"] = _war().guide.get("fps", false)
+	_expect(tr._panel.visible and _war().guide.get("fps", false), "a_ui: tracker / fps tip in first person %s" % str(out))
+	_png("a_fps_tracker")
+	demo.game.enter_rts()
+	await _seconds(0.5)
+	return out
+
+
+## Each phase completes from its world condition (state set directly), in the order the player happens to do things; the
+## introduction ends once every phase is done and says so once.
+func _a_phases() -> Dictionary:
+	var war := _war()
+	var pf := war.player_faction
+	var it := demo.sim.war.intro
+	var f := war.faction(pf)
+	var out := {}
+	var home := f.home
+	# The command post first (out of order): its phase is ticked though an earlier one is still current.
+	_player_cp()
+	await _until(func() -> bool: return war.guide.intro_done.has("foothold"), 3.0, 1.0)
+	out["out_of_order"] = war.guide.intro_done.duplicate()
+	_expect(war.guide.intro_done.has("foothold") and it.current().get("id", "") == "command", "a_phases: out-of-order base %s" % str(out.out_of_order))
+	f.home = home + Vector3(100, 0, 0)
+	await _until(func() -> bool: return war.guide.intro_done.has("command"), 3.0, 1.0)
+	f.home = home
+	_expect(it.current().get("id", "") == "checkpoint", "a_phases: after moving the current phase is %s" % it.current().get("id", ""))
+	for sq: SquadState in _squads_at(1, _objective("Moen checkpoint").id):
+		for uid in sq.members.duplicate():
+			demo.sim.combat.kill(demo.sim.state.get_unit(uid))
+	await _until(func() -> bool: return war.guide.intro_done.has("checkpoint"), 3.0, 1.0)
+	_expect(war.guide.intro_done.has("checkpoint"), "a_phases: checkpoint not cleared with its section dead")
+	for c: Dictionary in war.caches:
+		if c.name == "Moen farm cache":
+			c.taken_by = pf
+			c.state = "depleted"
+	war.faction(pf).pool.add(&"supplies", 500.0)
+	demo.sim.war.dev.start(pf, &"personnel_facilities")
+	await _until(func() -> bool: return it.complete(), 3.0, 1.0)
+	out["done"] = war.guide.intro_done.duplicate()
+	out["complete"] = it.complete()
+	var msgs := war.events.filter(func(e: Dictionary) -> bool: return e.kind == "objective_done").map(func(e: Dictionary) -> String: return e.text)
+	out["messages"] = msgs
+	_expect(it.complete() and msgs.size() == 6, "a_phases: introduction not complete or messages %s" % str(msgs))
+	return out
+
+
+## The introduction progress survives save / load.
+func _a_persist() -> Dictionary:
+	var war := _war()
+	var before: Array = (war.guide.get("intro_done", []) as Array).duplicate()
+	demo.construction.save()
+	war.guide["intro_done"] = []
+	var res := demo.construction.load_game()
+	await _physics(5)
+	var after: Array = _war().guide.get("intro_done", [])
+	_expect(res.ok and after == before and not (_war().guide.get("intro", []) as Array).is_empty(), "a_persist: %s -> %s" % [str(before), str(after)])
+	return {"before": before, "after": after}
+
+
+## The x hides the guidance; the phases still count (the world does not depend on the guide).
+func _a_skip() -> Dictionary:
+	var war := _war()
+	war.guide.erase("intro_complete_at")
+	war.guide["off"] = true
+	await _physics(10)
+	var hidden := not demo.hud.tracker._panel.visible
+	_expect(hidden, "a_skip: tracker still shown")
+	war.guide.erase("off")
+	return {"hidden": hidden}
+
+
+## The first encounter as a player would start it: the squad ordered to ASSAULT the checkpoint from the start (RTS order,
+## real combat, compressed time). It must be winnable without expert play. Records time to contact and the outcome.
+## Run alone (--only a_encounter) on a fresh New Game.
+func _a_encounter() -> Dictionary:
+	var cp := _objective("Moen checkpoint")
+	var sq: SquadState = _player_squads()[0]
+	demo.rts.select_squads([sq.id])
+	var res := demo.rts.order_tactic(SquadState.Tactic.ASSAULT, cp.position)
+	_expect(res.get("ok", false), "a_encounter: assault refused: %s" % str(res))
+	var t0 := demo.sim.state.time
+	var shots0 := demo.sim.combat.shots_total
+	var contact := -1.0
+	var guards := _squads_at(1, cp.id)
+	var shot_taken := false
+	CoreDemo.apply_time_scale(4.0)
+	var trace := []
+	var next_trace := 0.0
+	while demo.sim.state.time - t0 < 300.0 and _alive(guards) > 0 and _alive([sq]) > 0:
+		await _physics(20)
+		if demo.sim.state.time - t0 >= next_trace:
+			next_trace += 20.0
+			var g: SquadState = guards[0]
+			trace.append([roundi(demo.sim.state.time - t0), roundi(WarSim._flat(demo.sim.war.squad_center(sq), cp.position)),
+				SquadState.TACTIC_NAMES[sq.tactic], sq.tactic_phase, sq.tactic_why.left(60), SquadState.TACTIC_NAMES[g.tactic],
+				roundi(WarSim._flat(demo.sim.war.squad_center(g), cp.position)), demo.sim.combat.shots_total - shots0, _why(sq), _why(g)])
+		if contact < 0.0 and demo.sim.combat.shots_total > shots0:
+			contact = demo.sim.state.time - t0
+		if shots and not shot_taken and contact >= 0.0 and demo.sim.state.time - t0 - contact > 20.0:
+			shot_taken = true
+			CoreDemo.apply_time_scale(1.0)
+			await _frame(cp.position + Vector3(0, 0, -90), 140.0, 0.0)
+			_png("a_encounter_fight")
+			CoreDemo.apply_time_scale(4.0)
+	CoreDemo.apply_time_scale(1.0)
+	var out := {"duration_s": roundi(demo.sim.state.time - t0), "first_shot_s": roundi(contact), "guards_left": _alive(guards),
+		"player_left": _alive([sq]), "shots": demo.sim.combat.shots_total - shots0, "trace": trace}
+	_expect(int(out.guards_left) == 0 and int(out.player_left) >= 5, "a_encounter: not won comfortably: %s" % str(out))
+	return out
+
+
+## What the soldiers of a squad are doing (ai_reason counts, visible targets) - diagnostics.
+func _why(sq: SquadState) -> Dictionary:
+	var out := {}
+	for uid in sq.members:
+		var u := demo.sim.state.get_unit(uid)
+		if u and u.alive:
+			var k := "%s%s" % [u.ai_reason, "+vis" if u.target_visible else ""]
+			out[k] = int(out.get(k, 0)) + 1
+	return out
+
+
+## Crossing the road next to the start (seen getting stuck by the product owner): the squad is moved 150 m towards the
+## checkpoint with a right-click order, near tier (bodies); per soldier the time to arrive and the stuck stages raised,
+## and the road along the line (where it is crossed, its height over the terrain).
+func _a_road() -> Dictionary:
+	var cp := _objective("Moen checkpoint")
+	var sq: SquadState = _player_squads()[0]
+	var start := demo.sim.war.squad_center(sq)
+	var dir := Vector3(cp.position.x - start.x, 0, cp.position.z - start.z).normalized()
+	var line := []
+	for i in 76:
+		var p := start + dir * float(i) * 2.0
+		if demo.sim.state.roads.on_road(p, 0.0):
+			var g := demo.on_ground(p.x, p.z, 0.0)
+			line.append([i * 2, snappedf(g.y, 0.01)])
+	var dest := demo.on_ground(start.x + dir.x * 150.0, start.z + dir.z * 150.0, 0.0)
+	demo.rts.select_squads([sq.id])
+	await _frame(start + dir * 60.0, 70.0, 0.0)
+	var n := demo.rts.order_move(dest)
+	var t0 := demo.sim.state.time
+	var arrived := {}
+	var stuck := {}
+	var body_log := {}
+	while demo.sim.state.time - t0 < 90.0 and arrived.size() < sq.members.size():
+		await _physics(5)
+		for uid in sq.members:
+			var u := demo.sim.state.get_unit(uid)
+			var body := demo.sim.view_of(uid) as SoldierBody
+			if body and body._stuck_stage > 0:
+				stuck[uid] = maxi(int(stuck.get(uid, 0)), body._stuck_stage)
+			if not arrived.has(uid) and WarSim._flat(u.position, dest) < 12.0:
+				arrived[uid] = snappedf(demo.sim.state.time - t0, 0.1)
+		if demo.sim.state.time - t0 > 25.0:
+			for uid in sq.members:
+				var b := demo.sim.view_of(uid) as SoldierBody
+				if b and not arrived.has(uid) and (body_log.get(uid, []) as Array).size() < 4 and randi() % 6 == 0 and stuck.has(uid):
+					if not body_log.has(uid):
+						body_log[uid] = []
+					body_log[uid].append([snappedf(b.global_position.x, 0.01), snappedf(b.global_position.y, 0.01), snappedf(b.global_position.z, 0.01), b.is_on_floor(), b.is_on_wall(),
+						snappedf(b.velocity.length(), 0.01), snappedf(b.dbg_desired, 0.01), b._stuck_stage, snappedf(b._progress_t, 0.1),
+						(func() -> Array:
+							var c := b.get_last_slide_collision()
+							return [] if c == null else [String((c.get_collider() as Node).name) if c.get_collider() is Node else "", c.get_normal().snappedf(0.01), c.get_position().snappedf(0.01)]).call(),
+						b.get_floor_normal().snappedf(0.01), b.nav.get_next_path_position().snappedf(0.1), b.dbg_branch, b.nav.get_current_navigation_path().size(), b.nav.get_current_navigation_path_index(), b._unstick_left, b.unit.is_reacting(), b._applied_target.snappedf(0.1)])
+		if shots and demo.sim.state.time - t0 > 12.0 and not results.has("_road_shot"):
+			results["_road_shot"] = true
+			_png("a_road_crossing")
+	results.erase("_road_shot")
+	var left := {}
+	for uid in sq.members:
+		if not arrived.has(uid):
+			var u := demo.sim.state.get_unit(uid)
+			left[uid] = [roundi(WarSim._flat(u.position, dest)), u.ai_reason, String(UnitState.Order.keys()[u.order]), _colliders_near(u.position + Vector3.UP * 0.9, 1.5),
+				[snappedf(u.position.x, 0.1), snappedf(u.position.y, 0.01), snappedf(u.position.z, 0.1)], snappedf(demo.on_ground(u.position.x, u.position.z, 0.0).y, 0.01)]
+	var out := {"ordered": n, "road_along_line_m": line, "arrived_s": arrived, "not_arrived": left, "stuck_stages": stuck, "ledge_hops": SoldierBody.ledge_hops, "body_log": body_log,
+		"near_bodies": demo.sim.view_of(sq.leader_id) is SoldierBody}
+	_expect(arrived.size() == sq.members.size(), "a_road: %d of %d soldiers crossed in 90 s: %s" % [arrived.size(), sq.members.size(), str(left)])
+	return out
+
+
+## Physics colliders within r of p (what a body stands against) - diagnostics.
+func _colliders_near(p: Vector3, r: float) -> Array:
+	var q := PhysicsShapeQueryParameters3D.new()
+	var sh := SphereShape3D.new()
+	sh.radius = r
+	q.shape = sh
+	q.transform = Transform3D(Basis.IDENTITY, p)
+	var out := []
+	for h: Dictionary in demo.get_world_3d().direct_space_state.intersect_shape(q, 12):
+		var c: Object = h.collider
+		var n: Node = c as Node
+		out.append("%s:%s" % [c.get_class(), n.name if n else ""] + ("/" + String(n.get_parent().name) if n and n.get_parent() else ""))
+	return out
+
+
+## Terrain profile north of the start (where soldiers stood against an edge): height every 0.5 m along three lines, the
+## steepest steps, and what the physics ground reports there (a ray down) - diagnostics only.
+func _a_profile() -> Dictionary:
+	var out := {}
+	var space := demo.get_world_3d().direct_space_state
+	await _frame(Vector3(-1330, 190, 6905), 60.0, 0.0)
+	await _seconds(2.0)
+	for x: float in [-1340.0, -1333.0, -1327.0, -1322.0]:
+		var steps := []
+		var prev := NAN
+		var prev_ray := NAN
+		var z := 6870.0
+		while z <= 6935.0:
+			var h := demo.terrain.data.get_height(Vector3(x, 0, z))
+			var q := PhysicsRayQueryParameters3D.create(Vector3(x, h + 5.0, z), Vector3(x, h - 5.0, z))
+			var hit := space.intersect_ray(q)
+			var ray_y: float = hit.position.y if not hit.is_empty() else NAN
+			if not is_nan(prev) and (absf(h - prev) > 0.15 or absf(ray_y - prev_ray) > 0.2):
+				steps.append([z, snappedf(h - prev, 0.01), snappedf(ray_y - prev_ray, 0.01), snappedf(ray_y - h, 0.01), String(hit.collider.name) if not hit.is_empty() else ""])
+			prev = h
+			prev_ray = ray_y
+			z += 0.5
+		out[str(x)] = steps
+	return out
+
+
+## The eased road shoulders: vegetation of the loaded chunks stands on the ground there (offset 0 .. -0.2 m), and a look at
+## the road beside the start.
+func _a_shoulders() -> Dictionary:
+	var veg := demo.vegetation
+	var fpi := VegetationChunk.FLOATS_PER_INSTANCE
+	var checked := 0
+	var off_ground := 0
+	var worst := 0.0
+	for loc in veg.chunks:
+		var ch: VegetationChunk = veg.chunks[loc]
+		for cell in ch.cells:
+			if not RoadShoulders.touched.has(cell):
+				continue
+			for mesh_id in ch.cells[cell]:
+				var buf: PackedFloat32Array = ch.cells[cell][mesh_id]
+				for i in buf.size() / fpi:
+					var k := i * fpi
+					var h: float = demo.terrain.data.get_height(Vector3(buf[k + 3], 0.0, buf[k + 11]))
+					if is_nan(h):
+						continue
+					checked += 1
+					var off := buf[k + 7] - h
+					if off > 0.1 or off < -0.25:
+						off_ground += 1
+						worst = maxf(worst, absf(off))
+	_expect(checked > 100 and off_ground == 0, "a_shoulders: %d of %d instances off the ground (worst %.2f m)" % [off_ground, checked, worst])
+	var start := demo.sim.war.squad_center(_player_squads()[0])
+	await _frame(start + Vector3(-15, 0, 35), 35.0, 2.4)
+	await _seconds(1.5)
+	_png("a_road_shoulder")
+	return {"touched_cells": RoadShoulders.touched.size(), "instances_checked": checked, "off_ground": off_ground, "worst_m": snappedf(worst, 0.01)}
+
+
+## Walking through woods near the start (the product owner saw soldiers walk into trunks and slide round them): the squad is
+## moved 150 m through the densest trees within 400 m, near tier; per soldier the physics frames spent against a tree
+## collider and the movement branch they were in, and the trees the navmesh bake knew about.
+func _a_trees() -> Dictionary:
+	var sq: SquadState = _player_squads()[0]
+	var start := demo.sim.war.squad_center(sq)
+	var veg := demo.vegetation
+	var solid := []
+	for d in veg.library.meshes:
+		if d.collider.x >= 0.0 and d.collider.x < 1.0:
+			solid.append(d.id)
+	# The densest 150 m line within 1.5 km of the start (trees within 6 m of it).
+	var best_dir := Vector3.ZERO
+	var best_n := -1
+	var best_from := start
+	var count_line := func(from: Vector3, dir: Vector3) -> int:
+		var n := 0
+		for s2 in range(10, 160, 10):
+			var p := from + dir * float(s2)
+			for inst in veg.get_cell_instances(VegetationChunk.cell_of(p, veg.cell_size_m), solid):
+				var o: Vector3 = (inst[1] as Transform3D).origin
+				if Vector2(o.x - p.x, o.z - p.z).length() < 6.0:
+					n += 1
+		return n
+	for gx in range(-6, 7):
+		for gz in range(-6, 7):
+			var from := start + Vector3(gx * 250.0, 0, gz * 250.0)
+			if not demo.sim.war.routes.passable(from):
+				continue
+			for k in 8:
+				var dir := Vector3(cos(k * TAU / 8.0), 0, sin(k * TAU / 8.0))
+				var n: int = count_line.call(from, dir)
+				if n > best_n:
+					best_n = n
+					best_dir = dir
+					best_from = from
+	# Move the squad there (records first, then the camera so the bodies are made at the new place).
+	await _frame(best_from + Vector3(0, 0, 900), 200.0, 0.0)
+	await _seconds(2.0)
+	var k2 := 0
+	for uid in sq.members:
+		var u := demo.sim.state.get_unit(uid)
+		u.position = demo.on_ground(best_from.x + (k2 % 4) * 2.5 - best_dir.x * 5.0, best_from.z + (k2 / 4) * 2.5 - best_dir.z * 5.0, 0.0)
+		u.order = UnitState.Order.NONE
+		k2 += 1
+	start = best_from
+	var dest := demo.on_ground(start.x + best_dir.x * 150.0, start.z + best_dir.z * 150.0, 0.0)
+	await _frame(start + best_dir * 60.0, 60.0, 0.0)
+	await _seconds(6.0)
+	demo.rts.select_squads([sq.id])
+	demo.rts.order_move(dest)
+	var t0 := demo.sim.state.time
+	var hits := {}
+	var branches := {}
+	var arrived := {}
+	while demo.sim.state.time - t0 < 90.0 and arrived.size() < sq.members.size():
+		await _physics(1)
+		for uid in sq.members:
+			var b := demo.sim.view_of(uid) as SoldierBody
+			if b == null:
+				continue
+			if not arrived.has(uid) and WarSim._flat(b.global_position, dest) < 14.0:
+				arrived[uid] = snappedf(demo.sim.state.time - t0, 0.1)
+			for c in b.get_slide_collision_count():
+				var col := b.get_slide_collision(c).get_collider() as Node
+				if col and col.name == "InstanceColliders":
+					hits[uid] = int(hits.get(uid, 0)) + 1
+					branches[b.dbg_branch] = int(branches.get(b.dbg_branch, 0)) + 1
+	var out := {"from": [roundi(best_from.x), roundi(best_from.z)], "dir_deg": roundi(rad_to_deg(atan2(best_dir.z, best_dir.x))), "trees_on_line": best_n, "arrived_s": arrived,
+		"tree_contact_frames": hits, "contact_branches": branches, "nav_bake": demo.detail.last_bake.duplicate()}
+	_png("a_trees")
+	return out
+
+
+func _alive(list: Array) -> int:
+	var n := 0
+	for g: SquadState in list:
+		for uid in g.members:
+			var u := demo.sim.state.get_unit(uid)
+			if u and u.alive:
+				n += 1
+	return n
 
 # --- 04B Military Development --------------------------------------------------------------------------------------
 

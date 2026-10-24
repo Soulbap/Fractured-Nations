@@ -182,6 +182,15 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   "support joins the assault". Tests: `--combat03-test [--shots] [--only p_posts,f_threat,f_persist,f_override,g_launcher_hands,
   g_grenade_react,i_player,j_persist,d_open,d_village,d_forest,d_reverse] [--seeds=1,2,3]` (results
   `benchmarks/raw/combat03_test.json`, compare with `tools/combat03_compare.py`, shots `docs/gameplay03/`).
+- **Road shoulders and slopes (GAMEPLAY-04A).** `RoadShoulders` (`scripts/world/road_shoulders.gd`) eases the terrain beside every
+  world road into the road surface in memory at game start (like the settlement layer: never saved, manifest untouched; cached in
+  `user://terrain/`), and puts the vegetation of those cells back on the ground when chunks load. Infantry climbs grades up to
+  `WorldSim.INFANTRY_MAX_GRADE` (tan 50°) slower uphill through `WorldSim.slope_speed` in both tiers (navmesh, abstract step,
+  SoldierBody floor angle). `--no-road-shoulders` switches the easing off for comparison.
+- **Military Development and the opening (GAMEPLAY-04A/B).** `MilitaryDevelopment` (`WarSim.dev`, data `assets/development/*.tres`,
+  state `FactionState.dev`) is the only unlock authority: `structure_lock` / `weapon_lock` / `role_lock` for player and AI alike; scenario
+  rule `development`. The New Game opening is scenario data (`ScenarioDef.intro`, `extra_objectives`, `structures`) checked against the
+  world by `IntroGuide` (`WarSim.intro`) and shown by `ObjectiveTracker`. Tests: `--gameplay04-test --only <check>` (narrow checks).
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are

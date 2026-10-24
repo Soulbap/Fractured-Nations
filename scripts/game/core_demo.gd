@@ -451,6 +451,11 @@ func _start_sandbox() -> void:
 	# terrain (its cache has its own name, so switching the layer off never reuses it).
 	SettlementLayer.apply_terrain(terrain, config.world_name)
 	var layer := "_settlements" if SettlementLayer.enabled(config.world_name) else ""
+	# GAMEPLAY-04A: road shoulders eased into the road surface (memory only); the route grid reads the eased terrain.
+	if not "--no-road-shoulders" in OS.get_cmdline_user_args():
+		RoadShoulders.apply(terrain, sim.state.roads, config.world_name, config.vertex_spacing)
+		RoadShoulders.refix_loaded(vegetation)
+		layer += "_shoulders"
 	routes.setup(terrain, config.half_size(), src, "user://strategic/%s_grid%s.bin" % [config.world_name, layer], sim.state.roads)
 	sim.war.setup(routes)
 	sim.vehicles.setup(routes)
@@ -712,6 +717,8 @@ func toggle_map() -> void:
 	rts_camera.set_process(false)
 	rts_camera.set_process_unhandled_input(false)
 	strategic_map.visible = true
+	if sim.state.war.active:
+		sim.state.war.guide["map"] = true  # GAMEPLAY-04A: the introduction notes that the map was used
 	strategic_map.grab_focus()
 
 
