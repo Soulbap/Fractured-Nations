@@ -608,14 +608,17 @@ func _d_player_assault() -> Dictionary:
 	_expect(op != null and op.player_ordered and op.squads.size() == 4, "d_pa: the map order did not start a player operation")
 	if op == null:
 		return out
-	await _until(func() -> bool: return op.stage >= OperationState.Stage.DEPLOY or not op.is_active(), 600.0, 4.0)
-	await _frame(eo.position - dir * 120.0, 140.0, 0.8)
-	_png("d_player_assault")
+	# A player order takes a squad out of the running operation (checked while it runs: GAMEPLAY-02's squads may win the
+	# fight on the approach already).
 	demo.rts.select_squads([sq3.id])
 	demo.rts.order_move(ws.squad_center(sq3) - dir * 30.0)
 	await _physics(5)
-	out["override"] = {"squad_op": sq3.op_id, "op_squads": op.squads.size()}
+	out["override"] = {"squad_op": sq3.op_id, "op_squads": op.squads.size(), "op_active": op.is_active()}
+	_expect(op.is_active(), "d_pa: the operation ended before the override could be checked")
 	_expect(sq3.op_id < 0 and not op.squads.has(sq3.id), "d_pa: a player order did not take the squad out of its operation")
+	await _until(func() -> bool: return op.stage >= OperationState.Stage.DEPLOY or not op.is_active(), 600.0, 4.0)
+	await _frame(eo.position - dir * 120.0, 140.0, 0.8)
+	_png("d_player_assault")
 	var contested_seen := false
 	var progress_seen := 0.0
 	var shot := false

@@ -1492,6 +1492,7 @@ var rockets_fired := 0
 var _squad_nade_at := {}
 var _squad_rocket_at := {}
 var _rocket_check := {}
+var _nade_check := {}
 ## Why a launcher was not fired (reason -> count), for tests and the report.
 var rocket_holds := {}
 
@@ -1518,7 +1519,8 @@ func _support_weapons(u: UnitState, t: UnitState, now: float) -> bool:
 			seen = true
 		elif u.target_last_pos.is_finite() and now - u.target_seen_at < 8.0:
 			known = u.target_last_pos
-	if u.grenades > 0 and known.is_finite() and now - u.nade_at >= grenade_soldier_gap_s and now >= float(_squad_nade_at.get(sq.id if sq else -1, -INF)):
+	if u.grenades > 0 and known.is_finite() and now - u.nade_at >= grenade_soldier_gap_s and now >= float(_squad_nade_at.get(sq.id if sq else -1, -INF)) 			and now >= float(_nade_check.get(u.id, -INF)):
+		_nade_check[u.id] = now + 1.0  # considered at most once a second per soldier
 		var d := _flat(u.position, known)
 		# Into cover: an enemy that went out of sight, one in a position or behind cover, or two together.
 		var worth := not seen or (t.tactic == UnitState.Tactic.IN_COVER) or t.fort_slot != "" or _group_near(t, 6.0) >= 2

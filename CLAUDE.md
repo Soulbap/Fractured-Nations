@@ -162,6 +162,17 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   `base` objective); the objective's owner is the base's ownership and `WarSim._transfer` → `BaseSim.capture_base` is the
   only path a base changes hands. Condition is `StructureState.hp` / `repair` (`StructureHealth` table); damage never deletes
   a structure or a base; repair is BUILD work on the same record. AI expansion: `AiBases` templates + `WarState.expansions`.
+- **Weapons, roles and explosives (GAMEPLAY-02).** A weapon is a `WeaponDef` (`assets/combat/*.tres`: rifle, lmg, grenade,
+  launcher) - role, suppression per near miss and its radius, braced / moving handling, AI bursts, blast fields - and the
+  same `CombatSim` rules serve AI and player. What a soldier carries is its `InfantryRole` (`assets/combat/roles/`, saved as
+  `UnitState.role`, grenades, `sec_id` / `sec_ammo`); a squad's roles come from a `SquadComposition` (`assets/combat/squads/`,
+  scenario rule `squad_composition`, default `standard`) through `CombatSim.apply_composition` only (fresh squads,
+  replacements; veterans keep their weapons). Grenades and rockets are entries of `WorldState.explosives` (saved) stepped by
+  `CombatSim`; a burst (`CombatSim.detonate`) is one bounded query (brain grid, `LineOfFire.structures_near`) and damages
+  structures only through `ConstructionState.damage` x `StructureHealth.blast_resist`. AI use is individual (`CombatBrain`):
+  only at what the soldier saw or was told, with friend checks and per-squad rate limits. `OperationState.cover_fire` is the
+  fire support's window (OpCoordination). Tests: `--combat02-test [--only a_*,b_*,c_*,d_*,e_*] [--seeds=1,2,3]`
+  (`CombatDiag` records engagements; `tools/combat02_compare.py` compares series).
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are

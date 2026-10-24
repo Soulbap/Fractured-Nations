@@ -11,7 +11,16 @@ branches are contained in `develop` and stay as history. Next milestone: **NAVIG
 obstacle navigation). See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest gameplay: **GAMEPLAY-01C–01G** (on `develop`) — base warfare: soldiers fight from fortifications (towers,
+Newest gameplay: **GAMEPLAY-02** (on `develop`) — infantry combat and support weapons: every squad carries a **light
+machine gun** (sustained, suppressive fire; better braced, worse on the move) and a **grenadier** with hand grenades and a
+light **anti-structure launcher**; all soldiers carry a frag grenade. The AI uses them on what it has seen (grenades into
+positions and cover, rockets at enemy structures, never with friends in the blast), the MG gunner takes the best firing
+post and the MG emplacement's gun slot, soldiers get clear of grenades they see land. Multi-squad attacks were diagnosed
+with a combat recorder and recoordinated (assault positions, staggered starts, a fire support that covers when the assault
+crosses, no lone re-assaults). First person: **G** throws a grenade, **X** raises the launcher; suppression darkens the
+screen edges. New Blender assets: LMG, ammunition box, grenade, launcher. See [docs/GAMEPLAY-02_REPORT.md](docs/GAMEPLAY-02_REPORT.md).
+
+Before that, **GAMEPLAY-01C–01G** (on `develop`) — base warfare: soldiers fight from fortifications (towers,
 fighting positions, an MG emplacement, HESCO and sandbag walls; new and rebuilt Blender assets), squads can be ordered to
 **Garrison** a base (**O**), every base is a strategic objective that the player and the AI factions attack, defend and
 capture (also off-screen), AI factions expand with outpost / defensive / main base templates, depleted squads are
@@ -275,6 +284,8 @@ thumbnails come from `tools/ui/make_structure_thumbs.gd`.
 | W A S D / Shift / Space | Move / sprint / jump |
 | LMB (hold in auto) / RMB | Fire / aim (narrower view) |
 | R / V | Reload / semi or automatic fire |
+| G | GAMEPLAY-02: throw a grenade at the point under the crosshair (up to 35 m; the HUD shows the grenades left) |
+| X | GAMEPLAY-02: raise / lower the secondary weapon (the grenadier's light anti-structure launcher); LMB fires it |
 | **Tab** | Switch to the tactical camera (the soldier returns to the simulation) |
 | F | Debug fly / noclip |
 | F3 | Performance overlay (in the war also unit / detail counters in the HUD) |

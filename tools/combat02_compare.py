@@ -1,6 +1,7 @@
 """GAMEPLAY-02A: before / after table of the --combat02-test assault series (benchmarks/raw/gameplay02/*.json).
 
     python tools/combat02_compare.py benchmarks/raw/gameplay02/combat02_before.json benchmarks/raw/gameplay02/combat02_after.json
+    python tools/combat02_compare.py rifles.json standard.json --map a_=e_   (02E: the same scenarios, a_* against e_*)
 
 Per scenario and in total over all seeds: objectives taken, clean withdrawals (decided by the operation with >= 40 % of the
 attackers left), other outcomes (wiped out, stalled), mean attacker and defender losses, the longest assault without
@@ -10,10 +11,10 @@ import json
 import sys
 
 
-def load(path):
+def load(path, prefix="a_"):
     with open(path, encoding="utf-8") as f:
         d = json.load(f)
-    return {k: v for k, v in d.items() if k.startswith("a_") and isinstance(v, dict) and "detail" in v}
+    return {"a_" + k[len(prefix):]: v for k, v in d.items() if k.startswith(prefix) and isinstance(v, dict) and "detail" in v}
 
 
 def stats(series):
@@ -32,7 +33,10 @@ def stats(series):
 
 
 def main():
-    a, b = load(sys.argv[1]), load(sys.argv[2])
+    prefix = "a_"
+    if "--map" in sys.argv:
+        prefix = sys.argv[sys.argv.index("--map") + 1].split("=")[1]
+    a, b = load(sys.argv[1]), load(sys.argv[2], prefix)
     keys = [k for k in a if k in b]
     print("| scenario | taken | clean withdrawal | other | attacker losses | defender losses | longest stall s | defender supp. | hit rate |")
     print("|---|---|---|---|---|---|---|---|---|")

@@ -9,6 +9,8 @@
 ## grenade in the air across a save and load.
 ## 02D (d_*): the machine gunner's post, soldiers getting clear of a grenade they see land, suppression felt in first
 ## person, the support weapons named in the RTS command panel, and pictures of a machine gun firing and a burst.
+## 02E (e_*): the assault series with the standard squads (e_haugen ... like a_*), AI against AI off-screen with the new
+## weapons, first person as the machine gunner inside a running operation, save / load in mid-assault, a large fight's cost.
 ## 02A assault scenarios (a_*): an ATTACK operation of North squads against South defenders, run once per world seed (the
 ## seed drives every aim error, spread and scatter), each recorded by a CombatDiag (positions, roles, stages, suppression,
 ## shots, hits, casualties, movement, cover, blocked moves). Each scenario states what it expects over all seeds.
@@ -28,11 +30,13 @@ func run(args: PackedStringArray) -> void:
 			seeds = Array(a.trim_prefix("--seeds=").split(",")).map(func(x: String) -> int: return int(x))
 	await _strat_setup(args, "res://docs/gameplay02")
 	_log("setup", {"soldiers": default_soldiers.size(), "seeds": seeds})
-	for key: String in ["a_haugen", "a_cover", "a_two", "a_three", "a_limited", "a_unfavourable", "a_fortified"]:
+	for key: String in ["a_haugen", "a_cover", "a_two", "a_three", "a_limited", "a_unfavourable", "a_fortified",
+			"e_haugen", "e_cover", "e_two", "e_three", "e_limited", "e_unfavourable", "e_fortified"]:
 		if _want(key):
 			_log(key, await _assault_series(key))
 	for key: String in ["b_compose", "b_suppress", "b_handling", "b_emplacement", "b_fps", "b_persist", "b_nearfar",
-			"c_grenade", "c_ai_grenade", "c_launcher", "c_fps", "c_persist", "d_mg_post", "d_grenade_dodge", "d_fps_suppressed", "d_readability"]:
+			"c_grenade", "c_ai_grenade", "c_launcher", "c_fps", "c_persist", "d_mg_post", "d_grenade_dodge", "d_fps_suppressed", "d_readability",
+			"e_ai_war", "e_fps_operation", "e_persist", "e_perf"]:
 		if _want(key):
 			var r: Variant = await call("_" + key)
 			# A check that stopped on a script error returns nothing: that is a failure, not a pass.
@@ -55,10 +59,15 @@ const SCEN := {
 	"a_unfavourable": {"obj": "Haugen", "att": 2, "def": 2, "dist": 480.0, "from": "hq", "want": "clean_withdraw_or_win"},
 	"a_fortified": {"obj": "Haugen", "att": 3, "def": 1, "dist": 500.0, "from": "hq", "fort": true, "want": "win_or_clean_withdraw"},
 }
+## 02E: the same scenarios with the standard squads (a machine gunner and a grenadier each, on both sides).
+static func scen(key: String) -> Dictionary:
+	if key.begins_with("e_"):
+		return (SCEN["a_" + key.substr(2)] as Dictionary).merged({"comp": "standard"}, true)
+	return SCEN[key]
 
 
 func _assault_series(key: String) -> Dictionary:
-	var sc: Dictionary = SCEN[key]
+	var sc: Dictionary = scen(key)
 	var seed0 := demo.sim.state.world_seed
 	var runs: Array = []
 	for s: int in seeds:
@@ -83,7 +92,7 @@ func _assault_series(key: String) -> Dictionary:
 	return _judge(key, sc, runs)
 
 
-## What a series must show. "win": most runs take the objective, none stalls, losses below 60 %. A "clean withdrawal" is a
+## What a series must show. "win": most runs take the objective, losses below 60 %; no assault stalls beyond 160 s. A "clean withdrawal" is a
 ## withdrawal decided by the operation with at least 40 % of the attackers left (not wiped out, not stuck in the open).
 func _judge(key: String, sc: Dictionary, runs: Array) -> Dictionary:
 	var wins := 0
@@ -108,7 +117,9 @@ func _judge(key: String, sc: Dictionary, runs: Array) -> Dictionary:
 			_expect(losses / n <= 0.6, "%s: average losses %.0f %%" % [key, losses / n * 100.0])
 		"win_or_clean_withdraw", "clean_withdraw_or_win":
 			_expect(wins + clean == n, "%s: %d of %d runs neither took the objective nor withdrew cleanly" % [key, n - wins - clean, n])
-	_expect(stall <= 120.0, "%s: an assault made no progress for %.0f s" % [key, stall])
+	# An assault without progress commits everything after 75 s and breaks off after another 75 s (OpCoordination
+	# progress_stall_s): 160 s is the longest a stuck assault may last.
+	_expect(stall <= 160.0, "%s: an assault made no progress for %.0f s" % [key, stall])
 	return out
 
 
@@ -406,7 +417,7 @@ func _b_emplacement() -> Dictionary:
 	out["gunner"] = {"weapon": gunner.weapon_id, "slot": gunner.fort_slot, "role": slot.get("role", ""), "structure": slot.get("structure", -1)}
 	_expect(gunner.fort_slot != "" and String(slot.get("role", "")) == "mg" and int(slot.get("structure", -1)) == em.id, "b_emplacement: the machine gunner is not on the MG slot %s" % str(out.gunner))
 	if shots:
-		demo.rts_camera.frame(em.position, 0.6, 38.0)
+		demo.rts_camera.frame(em.position - dir * 6.0, 0.6, 26.0)
 		await _seconds(1.5)
 		_png("b_mg_emplacement_manned")
 	_remove_structures([cp.id, em.id])
@@ -1014,5 +1025,210 @@ func _d_readability() -> Dictionary:
 			await _seconds(1.5)
 			_png("d_rts_grenade_smoke")
 	demo.rts.select([])
+	war.rules.erase("squad_composition")
+	return out
+
+
+# --- 02E: integrated scenarios ---------------------------------------------------------------------------------------------
+
+## AI against AI with the camera far away (abstract tier): South's AI attacks Haugen, held by a North squad, with three
+## standard squads (its own operation, not the player's); the fight runs off-screen through the same records - shots,
+## casualties, grenades, rockets and bursts happen, the operation ends, the records stay consistent. (The free-running war
+## of --ai-strat-test l_war was measured separately before and after this work: same frame times and the same two failures.)
+func _e_ai_war() -> Dictionary:
+	await _fresh_c()
+	war.rules["squad_composition"] = "standard"
+	var hau := _obj("Haugen")
+	hau.owner = 0
+	hau.capture_faction = -1
+	hau.capture_progress = 0.0
+	hau.history.append([demo.sim.state.time, 0])
+	var d := _spawn(0, hau.position + Vector3(10, 0, -10))
+	d.station_objective = hau.id
+	var start := _near_point(hau.position, _obj("South HQ").position, 500.0)
+	var atk: Array = []
+	for i in 3:
+		atk.append(_spawn(1, start + Vector3((i - 1) * 25.0, 0, 25.0 * (1 if i > 0 else 0))))
+	await _physics(10)
+	var op := ws.start_operation(1, OperationState.Type.ATTACK, atk.map(func(q: SquadState) -> int: return q.id), hau.id, Vector3.INF, false)
+	_expect(op != null, "e_ai_war: South's attack could not start")
+	if op == null:
+		return {}
+	demo.rts_camera.frame(Vector3(9000, 0, 9000), 0.0, 150.0)
+	var c0 := {"nades": brain.grenades_thrown, "rockets": brain.rockets_fired, "bursts": demo.sim.combat.detonated, "dodges": brain.grenade_dodges}
+	var count := {"shots": 0, "killed": 0, "body_shots": 0}
+	var on_shot := func(_s: Dictionary) -> void: count.shots += 1
+	var on_died := func(_u: UnitState) -> void: count.killed += 1
+	demo.sim.state.shot_fired.connect(on_shot)
+	demo.sim.state.unit_died.connect(on_died)
+	var w := await _warp(900.0, 12.0, 200.0, func() -> bool:
+		for sq: SquadState in atk + [d]:
+			for id in sq.members:
+				if _u(id) and _u(id).has_body:
+					count.body_shots += 1
+		return not op.is_active())
+	demo.sim.state.shot_fired.disconnect(on_shot)
+	demo.sim.state.unit_died.disconnect(on_died)
+	var out := {"op": {"phase": op.phase_name(), "outcome": op.outcome, "stages": op.stage_name()}, "owner": hau.owner, "warp": w,
+		"combat": {"shots": count.shots, "killed": count.killed, "grenades": brain.grenades_thrown - int(c0.nades), "rockets": brain.rockets_fired - int(c0.rockets),
+			"bursts": demo.sim.combat.detonated - int(c0.bursts), "grenade_dodges": brain.grenade_dodges - int(c0.dodges)},
+		"abstract_tier": count.body_shots == 0, "consistency": _consistency().count}
+	_expect(count.shots > 100 and count.killed > 0, "e_ai_war: no real fight happened %s" % str(out.combat))
+	_expect(not op.is_active(), "e_ai_war: South's attack did not end")
+	_expect(count.body_shots == 0, "e_ai_war: soldiers had bodies (the fight was not off-screen)")
+	_expect(_consistency().count == 0, "e_ai_war: records inconsistent")
+	war.rules.erase("squad_composition")
+	return out
+
+
+## First person in a running operation (scenario H): North's standard squads attack Haugen with the camera near; when the
+## assault goes in the player takes over the support squad's machine gunner, fires a long burst at the objective, hands
+## him back; the operation carries on and its records stay consistent.
+func _e_fps_operation() -> Dictionary:
+	war.rules["squad_composition"] = "standard"
+	var sc := await _assault_scene(SCEN.a_haugen.merged({"comp": "standard"}))
+	war.rules["squad_composition"] = "standard"
+	var obj: ObjectiveState = sc.obj
+	var ids := (sc.atk as Array).map(func(q: SquadState) -> int: return q.id)
+	var op := ws.start_operation(0, OperationState.Type.ATTACK, ids, obj.id, Vector3.INF, true)
+	_expect(op != null, "e_fps_operation: the attack could not start")
+	if op == null:
+		return {}
+	demo.rts_camera.frame(obj.position, 0.0, 120.0)
+	await _warp(400.0, 8.0, 160.0, func() -> bool: return op.stage >= OperationState.Stage.ASSAULT or not op.is_active())
+	var support: SquadState = null
+	for sid in op.roles:
+		if int(op.roles[sid]) == SquadState.OpRole.SUPPORT:
+			support = demo.sim.state.get_squad(sid)
+	var out := {"stage": op.stage_name()}
+	_expect(support != null, "e_fps_operation: no fire support to take over")
+	if support == null:
+		return out
+	var gunner: UnitState = null
+	for id in support.members:
+		if _u(id).weapon_id == &"lmg":
+			gunner = _u(id)
+	_expect(gunner != null, "e_fps_operation: the support squad has no machine gunner")
+	if gunner == null:
+		return out
+	demo.rts_camera.frame(gunner.position, 0.0, 40.0)
+	await _seconds(2.0)
+	var body := await _possess(gunner.id)
+	_expect(body != null, "e_fps_operation: could not take over the machine gunner")
+	if body == null:
+		return out
+	await _fps_shot_at(body, obj.position + Vector3.UP * 1.0)
+	# A loaded gun and a fresh trigger pull (the trigger re-arms after a release).
+	if gunner.mag <= 0 and not gunner.is_reloading():
+		demo.sim.combat.request_reload(gunner.id)
+	await _warp(8.0, 1.0, 12.0, func() -> bool: return not gunner.is_reloading() and gunner.mag > 0)
+	Input.action_release("fire")
+	await _physics(3)
+	out["gun_before"] = {"mag": gunner.mag, "reserve": gunner.reserve, "reloading": gunner.is_reloading()}
+	var r0 := gunner.mag + gunner.reserve
+	Input.action_press("fire")
+	await _physics(120)
+	if shots:
+		_png("e_fps_mg_in_operation")
+	Input.action_release("fire")
+	await _physics(5)
+	out["player_rounds"] = r0 - (gunner.mag + gunner.reserve)
+	out["in_operation_while_possessed"] = support.op_id == op.id
+	await _leave()
+	await _physics(10)
+	out["gunner_ai_again"] = not gunner.player_controlled
+	demo.rts_camera.frame(Vector3(9000, 0, 9000), 0.0, 150.0)
+	await _warp(500.0, 12.0, 160.0, func() -> bool: return not op.is_active())
+	out["end"] = {"phase": op.phase_name(), "outcome": op.outcome, "owner": obj.owner, "consistency": _consistency().count}
+	_expect(int(out.player_rounds) >= 15, "e_fps_operation: the player's burst did not fire (%d rounds)" % out.player_rounds)
+	_expect(not gunner.player_controlled, "e_fps_operation: the gunner was not handed back")
+	_expect(not op.is_active() or op.stage >= OperationState.Stage.ASSAULT, "e_fps_operation: the operation stopped after the possession")
+	_expect(_consistency().count == 0, "e_fps_operation: records inconsistent")
+	war.rules.erase("squad_composition")
+	return out
+
+
+## Save in the middle of an assault with the new weapons (grenades and rockets carried, perhaps one in the air) to the
+## test save folder, load, compare, and let the operation finish.
+func _e_persist() -> Dictionary:
+	war.rules["squad_composition"] = "standard"
+	var sc := await _assault_scene(SCEN.a_haugen.merged({"comp": "standard"}))
+	war.rules["squad_composition"] = "standard"
+	var obj: ObjectiveState = sc.obj
+	var ids := (sc.atk as Array).map(func(q: SquadState) -> int: return q.id)
+	var op := ws.start_operation(0, OperationState.Type.ATTACK, ids, obj.id, Vector3.INF, true)
+	if op == null:
+		_expect(false, "e_persist: the attack could not start")
+		return {}
+	demo.rts_camera.frame(Vector3(9000, 0, 9000), 0.0, 150.0)
+	await _warp(500.0, 12.0, 160.0, func() -> bool: return op.stage >= OperationState.Stage.ASSAULT or not op.is_active())
+	await _warp(25.0, 6.0, 30.0)
+	var sig := func() -> Array:
+		var a: Array = [_op_sig(op) if war.operation(op.id) else "-", demo.sim.state.explosives.size()]
+		for sq: SquadState in sc.atk + sc.def:
+			if demo.sim.state.get_squad(sq.id):
+				a.append(_equip_sig(demo.sim.state.get_squad(sq.id)))
+		return a
+	var before: Array = sig.call()
+	var path := demo.save_dir() + "/combat02_assault.sav"
+	var err := demo.sim.state.save_file(path)
+	demo.sim.state.load_file(path)
+	await tree.physics_frame
+	war = demo.sim.state.war
+	ws = demo.sim.war
+	op = war.operation(op.id)
+	var after: Array = sig.call()
+	var out := {"saved": err == OK, "path": path, "same": before == after, "explosives_in_air": before[1]}
+	_expect(err == OK and path.contains("test_saves"), "e_persist: the save did not go to the test save folder")
+	_expect(before == after, "e_persist: the assault differs after loading")
+	if op:
+		await _warp(500.0, 12.0, 160.0, func() -> bool: return not op.is_active())
+		out["end"] = {"phase": op.phase_name(), "outcome": op.outcome}
+	_expect(_consistency().count == 0, "e_persist: records inconsistent after loading")
+	war.rules.erase("squad_composition")
+	return out
+
+
+## Cost of a large fight with the new weapons: four standard squads against four 150 m apart, 60 simulated seconds far
+## (abstract tier) and 60 near (bodies, effects), and the same far with rifle squads for comparison: CombatBrain per
+## update and its parts, the slowest burst, frame times.
+func _e_perf() -> Dictionary:
+	var out := {}
+	for mode: String in ["far", "near", "far_riflemen"]:
+		await _fresh_c()
+		war.rules["squad_composition"] = "riflemen" if mode.ends_with("riflemen") else "standard"
+		var f := _field(350.0)
+		var side := Vector3(-f.dir.z, 0.0, f.dir.x)
+		var sqs: Array = []
+		for i in 4:
+			sqs.append(_spawn(0, demo.sim.tactics.pos.nearest_valid(f.at + side * (i - 1.5) * 30.0, 15.0)))
+			sqs.append(_spawn(1, demo.sim.tactics.pos.nearest_valid(f.at + f.dir * 150.0 + side * (i - 1.5) * 30.0, 15.0)))
+		for sq: SquadState in sqs:
+			_tough(sq, 300.0)
+		demo.rts_camera.frame(f.at + f.dir * 75.0 if mode == "near" else Vector3(9000, 0, 9000), 0.4, 110.0 if mode == "near" else 150.0)
+		await _seconds(2.0)
+		demo.sim.brain.reset_stats()
+		demo.sim.combat.blast_usec_max = 0
+		var b0 := demo.sim.combat.detonated
+		var ms := PackedFloat32Array()
+		var t0 := demo.sim.state.time
+		TimeCompression.apply(2.0, 16)
+		while demo.sim.state.time - t0 < 60.0:
+			var t := Time.get_ticks_usec()
+			await tree.process_frame
+			ms.append((Time.get_ticks_usec() - t) / 1000.0)
+		TimeCompression.reset()
+		var sorted := Array(ms)
+		sorted.sort()
+		var bs := demo.sim.brain.summary()
+		out[mode] = {"soldiers": 64, "brain_update_us_avg": bs.update_us_avg, "brain_update_us_max": bs.update_us_max, "ai_shots": bs.ai_shots,
+			"bursts": demo.sim.combat.detonated - b0, "blast_us_max": demo.sim.combat.blast_usec_max,
+			"frame_ms_avg": snappedf(float(sorted.reduce(func(a, b): return a + b, 0.0)) / maxf(sorted.size(), 1.0), 0.01),
+			"frame_ms_p99": snappedf(sorted[int(sorted.size() * 0.99)], 0.1), "frame_ms_max": snappedf(sorted[-1], 0.1),
+			"brain_prof_us_per_frame": bs.prof_us_per_frame}
+		if shots and mode == "near":
+			_png("e_large_fight_near")
+		_expect(int(out[mode].ai_shots) > 50, "e_perf(%s): the fight did not happen" % mode)
+		_expect(int(out[mode].blast_us_max) < 5000, "e_perf(%s): a burst took %d us" % [mode, out[mode].blast_us_max])
 	war.rules.erase("squad_composition")
 	return out

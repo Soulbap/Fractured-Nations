@@ -663,6 +663,8 @@ func _war_sample(st: Dictionary) -> void:
 			st.stage_since[op.id] = sk
 			st.stage_t[op.id] = now
 		if op.stage != OperationState.Stage.APPROACH:  # the approach is a march of kilometres
+			if now - float(st.stage_t[op.id]) > st.max_stage_s:
+				st["long_stage"] = "%s #%d %s %s, %s / %s" % [WorldState.faction_name(op.faction), op.id, op.type_name(), op.stage_name(), op.stage_why.left(90), op.wait_reason.left(60)]
 			st.max_stage_s = maxf(st.max_stage_s, now - float(st.stage_t[op.id]))
 		if op.roles.size() >= 2:
 			st.coordinated.erase(op.id)
