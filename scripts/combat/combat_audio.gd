@@ -45,6 +45,44 @@ static func reload_sound() -> AudioStreamWAV:
 	return _wav(data)
 
 
+## GAMEPLAY-02C: a burst (grenade, rocket): a hard crack, a long rumbling low body and debris.
+static func explosion() -> AudioStreamWAV:
+	var n := int(RATE * 1.6)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 31
+	var data := PackedByteArray()
+	data.resize(n * 2)
+	var lp := 0.0
+	var lp2 := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		var noise := rng.randf_range(-1.0, 1.0)
+		lp += (noise - lp) * 0.08
+		lp2 += (lp - lp2) * 0.05
+		var crack := noise * exp(-t * 120.0) * 0.9
+		var body := lp * 6.0 * exp(-t * 3.2) * 0.8
+		var rumble := lp2 * 14.0 * exp(-t * 1.8) * 0.7
+		var thump := sin(TAU * (55.0 - 25.0 * t) * t) * exp(-t * 6.0) * 0.8
+		_put(data, i, clampf(crack + body + rumble + thump, -1.0, 1.0))
+	return _wav(data)
+
+
+## GAMEPLAY-02C: a rocket leaving the tube (a whoosh with a bang).
+static func launch() -> AudioStreamWAV:
+	var n := int(RATE * 0.9)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 41
+	var data := PackedByteArray()
+	data.resize(n * 2)
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		var noise := rng.randf_range(-1.0, 1.0)
+		lp += (noise - lp) * clampf(0.15 + t * 0.3, 0.1, 0.5)
+		_put(data, i, noise * exp(-t * 60.0) * 0.8 + lp * exp(-t * 3.5) * 0.9)
+	return _wav(data)
+
+
 ## Hit confirmation tick.
 static func hit_tick(kill := false) -> AudioStreamWAV:
 	var n := int(RATE * (0.12 if kill else 0.05))

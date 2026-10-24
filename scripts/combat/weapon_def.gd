@@ -69,7 +69,26 @@ enum Delivery { HITSCAN, PROJECTILE }
 @export var burst_mult := 1.0
 @export var mission_burst := 3
 
+@export_group("Explosive (GAMEPLAY-02C)")
+## A weapon that bursts (hand grenade, rocket): no hitscan damage of its own; CombatSim.detonate applies blast_damage to
+## soldiers (falling off to nothing at blast_radius, mostly stopped by cover between them and the burst) and
+## blast_structure x StructureHealth.blast_resist to the structures within blast_radius; soldiers within twice the radius
+## are suppressed by blast_suppression.
+@export var blast_radius := 0.0
+@export var blast_damage := 0.0
+@export var blast_structure := 0.0
+@export var blast_suppression := 0.0
+## Thrown (a hand grenade): lands where it was aimed (scatter grows with the distance), bursts fuse_s after the throw;
+## max_range is the longest throw. Not thrown (a rocket): flies straight to the first thing in its way at
+## projectile_speed and bursts there.
+@export var thrown := false
+@export var fuse_s := 0.0
+@export var projectile_speed := 0.0
+
 @export_group("Presentation")
+## GAMEPLAY-02C: what first person holds for a weapon that is not a loadout piece in the hand (the launcher carried on the
+## back is held in weapon space); null = the loadout's weapon pieces.
+@export var viewmodel_scene: PackedScene
 ## Camera kick per shot in first person (degrees up, random sideways).
 @export var recoil_pitch_deg := 0.55
 @export var recoil_yaw_deg := 0.25

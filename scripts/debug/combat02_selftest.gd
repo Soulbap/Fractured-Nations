@@ -4,6 +4,9 @@
 ##
 ## 02B weapon roles (b_*): squad composition and replacements, machine-gun suppression against a rifle, braced / moving
 ## handling, the MG emplacement's gunner slot, first person with the LMG, save / load and near / far of the equipment.
+## 02C explosives (c_*): a grenade against open and covered soldiers, AI grenades in a close fight (no friends hit, rate
+## limited), the grenadier's launcher disabling an MG emplacement in combat and the repair, first person (G, X, LMB), and a
+## grenade in the air across a save and load.
 ## 02A assault scenarios (a_*): an ATTACK operation of North squads against South defenders, run once per world seed (the
 ## seed drives every aim error, spread and scatter), each recorded by a CombatDiag (positions, roles, stages, suppression,
 ## shots, hits, casualties, movement, cover, blocked moves). Each scenario states what it expects over all seeds.
@@ -26,9 +29,13 @@ func run(args: PackedStringArray) -> void:
 	for key: String in ["a_haugen", "a_cover", "a_two", "a_three", "a_limited", "a_unfavourable", "a_fortified"]:
 		if _want(key):
 			_log(key, await _assault_series(key))
-	for key: String in ["b_compose", "b_suppress", "b_handling", "b_emplacement", "b_fps", "b_persist", "b_nearfar"]:
+	for key: String in ["b_compose", "b_suppress", "b_handling", "b_emplacement", "b_fps", "b_persist", "b_nearfar",
+			"c_grenade", "c_ai_grenade", "c_launcher", "c_fps", "c_persist"]:
 		if _want(key):
-			_log(key, await call("_" + key))
+			var r: Variant = await call("_" + key)
+			# A check that stopped on a script error returns nothing: that is a failure, not a pass.
+			_expect(r is Dictionary and not (r as Dictionary).is_empty(), "%s: the check did not finish (script error?)" % key)
+			_log(key, r if r is Dictionary else {})
 	await _end_strat()
 
 
@@ -510,5 +517,354 @@ func _b_nearfar() -> Dictionary:
 		_expect(not mg.has_body, "b_nearfar: far away the machine gunner still has a body")
 	out["record_same"] = _equip_sig(sq) == s0
 	_expect(out.record_same, "b_nearfar: the record changed between near and far")
+	war.rules.erase("squad_composition")
+	return out
+
+
+# --- 02C: grenades and the anti-structure launcher -----------------------------------------------------------------------
+
+## Open ground near Haugen, the direction towards it and a point `d` further on.
+func _field(d := 300.0) -> Dictionary:
+	var at := _start_near(d)
+	var dir := _obj("Haugen").position - at
+	dir.y = 0.0
+	return {"at": at, "dir": dir.normalized()}
+
+
+func _burst_wait(e: Dictionary) -> Dictionary:
+	var done := {}
+	var on := func(x: Dictionary) -> void:
+		if int(x.id) == int(e.id):
+			done.merge(x)
+	demo.sim.state.exploded.connect(on)
+	await _warp(float(e.t) - demo.sim.state.time + 1.0, 4.0, 30.0, func() -> bool: return not done.is_empty())
+	demo.sim.state.exploded.disconnect(on)
+	return done
+
+
+## The usual reset, and no grenade or rocket of an earlier check still in the air.
+func _fresh_c() -> void:
+	await _fresh()
+	demo.sim.state.explosives.clear()
+
+
+## A grenade thrown at three soldiers in the open and one behind a sandbag wall (camera far: abstract tier): the open ones
+## are hurt by distance, the covered one barely; soldiers out of the radius are only suppressed; the thrower's count drops.
+func _c_grenade() -> Dictionary:
+	await _fresh_c()
+	war.rules["squad_composition"] = "riflemen"
+	var f := _field()
+	var at: Vector3 = f.at
+	var dir: Vector3 = f.dir
+	var side := Vector3(-dir.z, 0.0, dir.x)
+	var thrower := _spawn(0, at, 1)
+	thrower.roe = SquadState.Roe.HOLD_FIRE
+	var u := _u(thrower.members[0])
+	var aim := at + dir * 22.0
+	var tgt := _spawn(1, aim, 4)
+	tgt.roe = SquadState.Roe.HOLD_FIRE
+	_tough(tgt, 400.0)
+	var ids := Array(tgt.members)
+	var spots := [aim + side * 1.5, aim + side * 5.0, aim - side * 4.0, aim + dir * 16.0]
+	for i in 4:
+		var t := _u(tgt.members[i])
+		t.position = demo.on_ground(spots[i].x, spots[i].z, 0.0)
+		t.order = UnitState.Order.NONE
+	var wall: StructureState = null
+	var covered_id: int = ids[2]
+	demo.rts_camera.frame(Vector3(9000, 0, 9000), 0.0, 150.0)
+	await _physics(5)
+	var hp := {}
+	for id in ids:
+		hp[id] = _u(id).health
+	var n0 := u.grenades
+	u.grenades = maxi(u.grenades, 1)
+	n0 = u.grenades
+	var res := demo.sim.combat.throw_grenade(u.id, aim)
+	var out := {"thrown": res.get("ok", false), "reason": res.get("reason", ""), "wall": wall != null}
+	_expect(res.get("ok", false), "c_grenade: the throw was refused (%s)" % res.get("reason", ""))
+	if not res.get("ok", false):
+		return out
+	for i in ids.size():
+		_u(ids[i]).position = demo.on_ground(spots[i].x, spots[i].z, 0.0)
+	var e: Dictionary = res.e
+	out["landed_off_m"] = snappedf(_flat(e.at, aim), 0.1)
+	# The targets run from a grenade they see land (their own reaction); for the blast check they stand where the test
+	# put them, relative to where it landed, at the moment it bursts.
+	await _warp(float(e.t) - demo.sim.state.time - 0.1, 4.0, 20.0)
+	var land: Vector3 = e.at
+	spots = [land + side * 1.5, land + side * 5.0, land - side * 4.0, land + dir * 16.0]
+	# A fighting position (1.08 m front wall towards the burst) round the third soldier; a 0.72 m sandbag ring would not
+	# cover the chest of a man standing behind it.
+	wall = CoreSelfTest.add_built(demo, &"fighting_position", land - side * 4.0, side, 1)
+	out["wall"] = wall != null
+	if wall:
+		spots[2] = wall.position
+	for i in ids.size():
+		var tu := _u(ids[i])
+		tu.position = demo.on_ground(spots[i].x, spots[i].z, 0.0)
+		tu.velocity = Vector3.ZERO
+		if tu.has_body and demo.sim.bodies.has(tu.id):
+			(demo.sim.bodies[tu.id] as Node3D).global_position = tu.position
+	var b := await _burst_wait(e)
+	out["burst"] = not b.is_empty()
+	var dmg := {}
+	for id in ids:
+		dmg[str(id)] = snappedf(float(hp[id]) - _u(id).health, 0.1) if _u(id) else -1.0
+	out["damage"] = dmg
+	out["hits"] = b.get("hits", [])
+	out["grenades_left"] = u.grenades
+	out["far_tier"] = not u.has_body
+	_expect(not b.is_empty(), "c_grenade: no burst")
+	_expect(u.grenades == n0 - 1, "c_grenade: the grenade count did not drop")
+	var near_open := float(dmg[str(ids[0])])
+	var covered := float(dmg[str(covered_id)])
+	var outside := float(dmg[str(ids[3])])
+	_expect(near_open >= 40.0, "c_grenade: the soldier next to the burst was not hurt (%.0f)" % near_open)
+	_expect(wall != null, "c_grenade: the sandbags could not be placed")
+	_expect(covered < near_open * 0.5, "c_grenade: cover did not protect (%.0f vs %.0f)" % [covered, near_open])
+	_expect(outside == 0.0 and _u(ids[3]).suppression_at(demo.sim.state.time) > 0.0, "c_grenade: the soldier outside the radius was hurt or not suppressed")
+	if wall:
+		_remove_structures([wall.id])
+	war.rules.erase("squad_composition")
+	return out
+
+
+## Grenades in a close firefight: a standard North squad holds 25 m from a South squad in fighting positions. Grenades are
+## thrown by the AI at enemies it saw in their positions, never with a friend near the landing point, and a squad throws at
+## most one per grenade_squad_gap_s. (Grenades during a moving assault are measured by the 02E scenarios.)
+func _c_ai_grenade() -> Dictionary:
+	await _fresh_c()
+	war.rules["squad_composition"] = "standard"
+	var hau := _obj("Haugen").position
+	var dir := _obj("North HQ").position - hau
+	dir.y = 0.0
+	dir = dir.normalized()
+	var base := demo.sim.tactics.pos.nearest_valid(hau + dir * 60.0, 30.0)
+	var fp1 := CoreSelfTest.add_built(demo, &"fighting_position", base, dir, 1)
+	var fp2 := CoreSelfTest.add_built(demo, &"fighting_position", base + dir.rotated(Vector3.UP, PI / 2) * 9.0, dir, 1)
+	var defs := _spawn(1, base - dir * 6.0, 4)
+	_tough(defs, 400.0)  # both sides must live long enough for the fight to come within throwing range
+	demo.sim.tactics.order_tactic([defs.id], SquadState.Tactic.DEFEND, base, SquadState.Owner.PLAYER)
+	await _warp(20.0, 6.0, 20.0)
+	var atk := _spawn(0, demo.sim.tactics.pos.nearest_valid(base + dir * 25.0, 12.0), 8)
+	_tough(atk, 400.0)
+	demo.sim.tactics.order_tactic([atk.id], SquadState.Tactic.DEFEND, demo.sim.squads._centroid(atk), SquadState.Owner.PLAYER)
+	var log: Array = []
+	var on := func(e: Dictionary) -> void:
+		if String(e.def) == "grenade":
+			log.append({"t": snappedf(demo.sim.state.time, 0.1), "f": int(e.f), "src": int(e.src), "at": e.at})
+	demo.sim.state.explosive_launched.connect(on)
+	var bursts: Array = []
+	var on_b := func(e: Dictionary) -> void:
+		if String(e.def) == "grenade":
+			bursts.append(e)
+	demo.sim.state.exploded.connect(on_b)
+	demo.rts_camera.frame(base + dir * 15.0, 0.5, 60.0)
+	await _warp(90.0, 4.0, 90.0, func() -> bool:
+		return _alive_count([defs]) == 0 or log.size() >= 3)
+	if shots:
+		await _seconds(0.5)
+		_png("c_grenade_firefight")
+	demo.sim.state.explosive_launched.disconnect(on)
+	demo.sim.state.exploded.disconnect(on_b)
+	var friendly := 0
+	var enemy := 0
+	for e: Dictionary in bursts:
+		for h: Dictionary in e.get("hits", []):
+			if int(h.f) == int(e.f):
+				friendly += 1
+			else:
+				enemy += 1
+	var gaps := []
+	var by_f := {}
+	for x: Dictionary in log:
+		if by_f.has(x.f):
+			gaps.append(snappedf(float(x.t) - float(by_f[x.f]), 0.1))
+		by_f[x.f] = x.t
+	var out := {"thrown": log.size(), "bursts": bursts.size(), "enemy_hits": enemy, "friendly_hits": friendly, "gaps_s": gaps,
+		"defenders_left": _alive_count([defs]), "attackers_left": _alive_count([atk]), "brain": {"thrown": brain.grenades_thrown, "held": brain.grenade_holds}}
+	_expect(log.size() >= 1, "c_ai_grenade: no grenade was thrown in the close fight %s" % str(out))
+	_expect(friendly == 0, "c_ai_grenade: a grenade hurt a friend")
+	var min_gap := 99.0
+	for g in gaps:
+		min_gap = minf(min_gap, float(g))
+	_expect(gaps.is_empty() or min_gap >= brain.grenade_squad_gap_s - 1.5, "c_ai_grenade: grenades thrown too often (%s)" % str(gaps))
+	_remove_structures([fp1.id if fp1 else -1, fp2.id if fp2 else -1])
+	war.rules.erase("squad_composition")
+	return out
+
+
+## Anti-structure: a standard North squad (its grenadier carries two rockets) engages a small South base (command post and
+## MG emplacement, two soldiers) from 150 m. The grenadier fires at an enemy structure where it saw the enemy, and the hit
+## damages it through ConstructionState.damage. Then rockets from a soldier 60 m out (the same CombatSim call, aimed as the AI
+## aims) disable the emplacement (two direct hits do; its firing slots go), and a repair restores it.
+func _c_launcher() -> Dictionary:
+	await _fresh_c()
+	war.rules["squad_composition"] = "standard"
+	var hau := _obj("Haugen").position
+	var dir := _obj("North HQ").position - hau
+	dir.y = 0.0
+	dir = dir.normalized()
+	var at := demo.sim.tactics.pos.nearest_valid(hau + dir * 60.0, 30.0)
+	var cp := CoreSelfTest.add_built(demo, &"command_post", at - dir * 20.0, dir, 1)
+	var em := CoreSelfTest.add_built(demo, &"mg_emplacement", at, dir, 1)
+	var out := {"built": cp != null and em != null}
+	_expect(em != null and cp != null, "c_launcher: the base could not be built")
+	if em == null or cp == null:
+		return out
+	ws.sync_bases()
+	var defs := _spawn(1, demo.sim.tactics.pos.nearest_valid(cp.position, 20.0), 2)
+	_tough(defs, 600.0)
+	demo.sim.tactics.assign_garrison(defs, cp.base_id, SquadState.Owner.SQUAD)
+	await _warp(60.0, 6.0, 40.0, func() -> bool: return _u(defs.members[0]).fort_slot != "" and _u(defs.members[1]).fort_slot != "")
+	out["slots"] = [_u(defs.members[0]).fort_slot, _u(defs.members[1]).fort_slot]
+	var atk := _spawn(0, demo.sim.tactics.pos.nearest_valid(em.position + dir * 150.0, 25.0), 8)
+	var gren := _u(atk.members[5])
+	out["grenadier"] = {"role": gren.role, "sec": gren.sec_id, "rounds": gren.sec_ammo, "loadout": gren.loadout}
+	_expect(gren.sec_id == &"launcher" and gren.sec_ammo == 2 and gren.loadout == "NATO_gren", "c_launcher: the grenadier is not equipped %s" % str(out.grenadier))
+	var hp0 := em.health()
+	var bursts: Array = []
+	var on_b := func(e: Dictionary) -> void:
+		if String(e.def) == "launcher":
+			bursts.append(e)
+	demo.sim.state.exploded.connect(on_b)
+	demo.sim.tactics.order_tactic([atk.id], SquadState.Tactic.SUPPRESS, em.position, SquadState.Owner.PLAYER)
+	demo.rts_camera.frame(em.position + dir * 40.0, 0.5, 80.0)
+	await _warp(180.0, 4.0, 120.0, func() -> bool:
+		return (gren.sec_ammo == 0 and demo.sim.state.explosives.is_empty()) or not gren.alive)
+	demo.sim.state.exploded.disconnect(on_b)
+	out["rockets"] = bursts.size()
+	out["holds"] = brain.rocket_holds.duplicate()
+	out["aimed_at"] = brain.events.filter(func(x: Dictionary) -> bool: return String(x.text).begins_with("launcher at")).map(func(x: Dictionary) -> String: return x.text)
+	out["structures"] = {"cp": [cp.type_id, roundi(_flat(cp.position, em.position))], "em": em.id}
+	out["rocket_impacts"] = bursts.map(func(e: Dictionary) -> String: return "%s %.1f m from it" % [e.get("blocker", "?"), _flat(e.at, em.position)])
+	out["struct_hits"] = bursts.map(func(e: Dictionary) -> Array: return e.get("structures", []))
+	out["emplacement"] = {"hp0": hp0, "hp": snappedf(em.health(), 0.1), "frac": snappedf(em.health_frac(), 0.01), "operational": em.is_operational()}
+	var hit_ids := {}
+	for e: Dictionary in bursts:
+		for h: Dictionary in e.get("structures", []):
+			hit_ids[int(h.id)] = true
+	_expect(bursts.size() >= 1, "c_launcher: the grenadier never fired at an enemy structure")
+	_expect(not hit_ids.is_empty(), "c_launcher: no rocket damaged a structure %s" % str(out.rocket_impacts))
+	# The rest of the way through the same CombatSim call (any soldier with the launcher, aimed like the AI aims): rockets
+	# until the emplacement is disabled, counted.
+	var gsq := _spawn(0, demo.sim.tactics.pos.nearest_valid(em.position + dir * 60.0, 15.0), 1)
+	gsq.roe = SquadState.Roe.HOLD_FIRE
+	var gun := _u(gsq.members[0])
+	_tough(gsq, 5000.0)
+	gun.sec_id = &"launcher"
+	gun.sec_active = false
+	var spot := demo.sim.tactics.pos.nearest_valid(em.position + dir * 60.0, 15.0)
+	gun.position = spot
+	gun.velocity = Vector3.ZERO
+	var extra := 0
+	var per: Array = []
+	while em.is_operational() and extra < 4:
+		gun.sec_ammo = 1
+		gun.sec_ready_at = 0.0
+		gun.moved_at = -100.0
+		var origin := CombatSim.eye_of(gun)
+		var aim := brain._structure_aim(em)
+		var r := demo.sim.combat.fire_secondary(gun.id, origin, (aim - origin).normalized())
+		if not r.get("fired", false):
+			break
+		extra += 1
+		var hit := await _burst_wait(r.e)
+		per.append("%s %.1f m: %s" % [r.get("blocker", ""), _flat(r.e.at, em.position), ", ".join(hit.get("structures", []).map(func(h: Dictionary) -> String: return "%s -%d" % [h.type, roundi(h.dmg)]))])
+	out["to_disable"] = {"ai_rockets_on_it": int(hit_ids.has(em.id)), "more": extra, "per_rocket": per, "frac": snappedf(em.health_frac(), 0.01)}
+	out["emplacement"] = {"hp0": hp0, "hp": snappedf(em.health(), 0.1), "frac": snappedf(em.health_frac(), 0.01), "operational": em.is_operational()}
+	_expect(not em.is_operational() and extra <= 3, "c_launcher: rockets did not disable the emplacement %s" % str(out.to_disable))
+	if shots:
+		demo.rts_camera.frame(em.position, 0.7, 30.0)
+		await _seconds(1.5)
+		_png("c_emplacement_disabled")
+	# Repair restores it (the GAMEPLAY-01F path).
+	var need := StructureHealth.repair_work(em)
+	demo.sim.state.construction.start_repair(em, need, {}, 0.0)
+	demo.sim.state.construction.add_work(em, need + 1.0)
+	out["repaired"] = {"frac": snappedf(em.health_frac(), 0.01), "operational": em.is_operational()}
+	_expect(em.is_operational() and em.health_frac() > 0.99, "c_launcher: the repair did not restore the emplacement %s" % str(out.repaired))
+	_remove_structures([cp.id, em.id])
+	war.rules.erase("squad_composition")
+	return out
+
+
+## First person as the grenadier: G throws (count down, the burst follows), X raises the launcher (the first-person model
+## is the launcher, the HUD names it), LMB fires it, X lowers it again.
+func _c_fps() -> Dictionary:
+	await _fresh_c()
+	war.rules["squad_composition"] = "standard"
+	var f := _field()
+	var sq := _spawn(0, f.at)
+	var g := _u(sq.members[5])
+	demo.rts_camera.frame(f.at, 0.0, 60.0)
+	await _seconds(1.5)
+	var body := await _possess(g.id)
+	await _seconds(0.8)
+	var out := {"possessed": body != null}
+	_expect(body != null, "c_fps: could not take over the grenadier")
+	if body == null:
+		return out
+	await _fps_shot_at(body, body.camera.global_position + Vector3(f.dir.x, 0, f.dir.z) * 25.0 + Vector3.DOWN * 1.6)
+	var n0 := g.grenades
+	var launched: Array = []
+	var on := func(e: Dictionary) -> void: launched.append(e)
+	demo.sim.state.explosive_launched.connect(on)
+	_press(KEY_G)
+	await _physics(3)
+	out["grenade"] = {"before": n0, "after": g.grenades, "launched": launched.size()}
+	_expect(g.grenades == n0 - 1 and launched.size() == 1, "c_fps: G did not throw %s" % str(out.grenade))
+	await _seconds(4.5)
+	if shots:
+		_png("c_fps_grenade_burst")
+	_press(KEY_X)
+	await _physics(4)
+	var held := body.viewmodel != null and body.viewmodel.held_scene != null
+	out["launcher_raised"] = {"sec_active": g.sec_active, "viewmodel_launcher": held, "hud": (demo.hud._fps as FPSHud)._weapon.visible}
+	_expect(g.sec_active and held, "c_fps: X did not raise the launcher %s" % str(out.launcher_raised))
+	await _fps_shot_at(body, body.camera.global_position + Vector3(f.dir.x, 0, f.dir.z) * 120.0 + Vector3.DOWN * 3.0)
+	if shots:
+		_png("c_fps_launcher")
+	var r0 := g.sec_ammo
+	await _click_fire()
+	await _physics(4)
+	out["rocket"] = {"before": r0, "after": g.sec_ammo, "launched": launched.size()}
+	_expect(g.sec_ammo == r0 - 1 and launched.size() == 2, "c_fps: LMB did not fire the launcher %s" % str(out.rocket))
+	_press(KEY_X)
+	await _physics(4)
+	_expect(not g.sec_active, "c_fps: X did not lower the launcher")
+	demo.sim.state.explosive_launched.disconnect(on)
+	await _leave()
+	war.rules.erase("squad_composition")
+	return out
+
+
+## A grenade in the air at a save bursts after the load; grenades and rockets carried are saved.
+func _c_persist() -> Dictionary:
+	await _fresh_c()
+	war.rules["squad_composition"] = "standard"
+	var f := _field()
+	var sq := _spawn(0, f.at)
+	sq.roe = SquadState.Roe.HOLD_FIRE
+	var g := _u(sq.members[5])
+	var tgt := _spawn(1, f.at + f.dir * 20.0, 2)
+	tgt.roe = SquadState.Roe.HOLD_FIRE
+	var res := demo.sim.combat.throw_grenade(g.id, f.at + f.dir * 20.0)
+	_expect(res.get("ok", false), "c_persist: the throw was refused")
+	g.sec_ammo = 1
+	var path := demo.save_dir() + "/combat02_explosive.sav"
+	var err := demo.sim.state.save_file(path)
+	var keep := {"grenades": g.grenades, "sec": g.sec_ammo, "pending": demo.sim.state.explosives.size()}
+	demo.sim.state.explosives.clear()
+	g.grenades = 0
+	g.sec_ammo = 0
+	demo.sim.state.load_file(path)
+	await _physics(2)
+	var out := {"saved": err == OK, "before": keep, "after": {"grenades": g.grenades, "sec": g.sec_ammo, "pending": demo.sim.state.explosives.size()}}
+	_expect(out.after == keep and int(keep.pending) == 1, "c_persist: explosives / equipment differ after loading %s" % str(out))
+	var b := await _burst_wait(demo.sim.state.explosives[0] if not demo.sim.state.explosives.is_empty() else {"id": -1, "t": demo.sim.state.time})
+	out["burst_after_load"] = not b.is_empty()
+	_expect(not b.is_empty(), "c_persist: the grenade did not burst after loading")
 	war.rules.erase("squad_composition")
 	return out

@@ -9,3 +9,4 @@ display_name = "Rifleman"
 short = ""
 weapon_id = &"rifle"
 loadout_suffix = ""
+grenades = 1

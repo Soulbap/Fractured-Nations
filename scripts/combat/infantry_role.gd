@@ -14,6 +14,11 @@ const DIR := "res://assets/combat/roles/"
 @export var weapon_id: StringName = &"rifle"
 ## Loadout family suffix ("" = the faction's rifleman loadout).
 @export var loadout_suffix := ""
+## GAMEPLAY-02C: hand grenades carried, and a secondary weapon (WeaponDef id, e.g. the light anti-structure launcher) with
+## its rounds; none = &"".
+@export var grenades := 1
+@export var secondary_id: StringName = &""
+@export var secondary_rounds := 0
 
 static var _cache := {}
 

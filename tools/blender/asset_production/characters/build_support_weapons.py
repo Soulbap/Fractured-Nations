@@ -6,6 +6,11 @@
                  (docs/CHARACTER_STANDARD.md section 3): origin = pistol-grip centre, +Y muzzle, +Z up, bore at
                  z = BORE_Z, GRIP_Support at (0, 0.165, BORE_Z) on the handguard, ATT_Muzzle at the flash hider.
   lmg_ammo_box   200-round hard ammunition box carried on the machine gunner's left hip (ATT_Hip_L).
+  grenade        M67-class fragmentation grenade (the thrown grenade of the effects; origin at its centre).
+  launcher       M72-class light anti-structure rocket launcher in weapon space (origin at the grip, +Y muzzle): what
+                 first person holds when the secondary weapon is raised (WeaponDef.viewmodel_scene).
+  launcher_back  the same tube carried diagonally across the back, behind the pack (ATT_Back), for the grenadier loadouts
+                 NATO_gren / RU_gren / CN_gren (the faction rifleman plus the launcher).
 
 Machine-gunner loadouts (NATO_mg, RU_mg, CN_mg) are the faction rifleman loadouts with the rifle, foregrip and laser
 replaced by the LMG and the ammunition box (the faction optic sits on the LMG's rail) (InfantryRole "machine_gunner", loadout suffix "mg").
@@ -57,12 +62,18 @@ RIGID = 1
 PIECES = {
     "lmg": ("ATT_Weapon", "weapon", "weapons"),
     "lmg_ammo_box": ("ATT_Hip_L", "hip", "parts"),
+    "grenade": ("", "item", "weapons"),
+    "launcher": ("", "item", "weapons"),
+    "launcher_back": ("ATT_Back", "back_weapon", "parts"),
 }
 LMG_MOUNTS = {"ATT_Optic": (0, 0.000, FW.OPTIC_Z), "ATT_Underbarrel": (0, 0.300, BORE_Z - 0.040),
               "ATT_RailRight": (0.032, 0.190, BORE_Z), "ATT_Muzzle": (0, 0.640, BORE_Z)}
 # Pieces of the rifleman loadouts the machine gunner does not carry (the faction optic moves to the LMG's rail: the
 # first-person sight line is the same for every weapon).
 RIFLE_ITEMS = ("nato_rifle", "ru_rifle", "cn_rifle", "foregrip", "laser")
+GREN_LOADOUTS = {"NATO_gren": ("NATO_rifleman", "NATO grenadier (carbine, grenades, M72-class launcher on the back)"),
+                 "RU_gren": ("RU_rifleman", "Russian grenadier (rifle, grenades, M72-class launcher on the back)"),
+                 "CN_gren": ("CN_rifleman", "Chinese grenadier (rifle, grenades, M72-class launcher on the back)")}
 MG_LOADOUTS = {"NATO_mg": ("NATO_rifleman", "NATO machine gunner (Minimi-class LMG, plate carrier)"),
                "RU_mg": ("RU_rifleman", "Russian machine gunner (Minimi-class LMG, 6B45-class armour)"),
                "CN_mg": ("CN_rifleman", "Chinese machine gunner (Minimi-class LMG, Type 21 kit)")}
@@ -140,6 +151,67 @@ def build_lmg(coll, mats):
     return w.obj("LMG", coll)
 
 
+def build_grenade(coll, mats):
+    """M67-class fragmentation grenade: 64 mm body, fuze with spoon and pin ring (origin at the centre)."""
+    w = FW.WB(mats, ["Polymer_OD", "Metal_Worn", "Metal_Black"])
+    w._set(L.bm_sphere(w.bm, 0.032, Vector((0, 0, 0)), scale=(1.0, 1.0, 1.05), segs=14, rings=9), "Polymer_OD")
+    w.cyl(0.011, 0.011, 0.020, (0, 0, 0.040), "Metal_Worn", axis=(0, 0, 1), segs=10)          # fuze body
+    w.box((0.012, 0.060, 0.006), (0, -0.018, 0.040), "Metal_Worn", 0.002, rot=rx(-55))       # spoon
+    w.cyl(0.010, 0.010, 0.002, (0.016, 0, 0.044), "Metal_Black", axis=(1, 0, 0), segs=10)    # pin ring
+    return w.obj("Grenade", coll)
+
+
+LAUNCHER_Z = 0.090
+
+
+def build_launcher(coll, mats):
+    """Light disposable anti-structure rocket launcher (M72-class original): extended OD tube 0.88 m, end caps, pop-up
+    sights, firing mechanism with the trigger bar on top, a pistol grip at the origin; the tube axis LAUNCHER_Z above it."""
+    w = FW.WB(mats, ["Helmet_Shell", "Polymer_Black", "Metal_Worn", "Metal_Black"])
+    z = LAUNCHER_Z
+    w.cyl(0.033, 0.033, 0.880, (0, 0.200, z), "Helmet_Shell", segs=16)                       # tube (olive drab)
+    w.cyl(0.036, 0.036, 0.040, (0, 0.630, z), "Polymer_Black", segs=16)                      # muzzle band
+    w.cyl(0.036, 0.036, 0.050, (0, -0.230, z), "Polymer_Black", segs=16)                     # rear band
+    w.box((0.030, 0.060, 0.050), (0, 0.000, z - 0.050), "Polymer_Black", 0.006)              # grip housing
+    w.box((0.026, 0.040, 0.080), (0, 0.000, -0.010), "Polymer_Black", 0.008, rot=rx(-12))    # grip
+    w.box((0.010, 0.050, 0.012), (0, 0.040, z + 0.040), "Metal_Black", 0.002)                # trigger bar
+    w.box((0.004, 0.012, 0.030), (0, 0.380, z + 0.045), "Metal_Black", 0.001)                # front sight
+    w.box((0.020, 0.008, 0.026), (0, -0.120, z + 0.045), "Metal_Black", 0.001)               # rear sight
+    for y in (-0.150, 0.300):
+        w.box((0.072, 0.010, 0.012), (0, y, z), "Metal_Worn", 0.002)                         # sling swivels
+    return w.obj("Launcher", coll)
+
+
+def launcher_mounts(coll, weapon):
+    out = []
+    for name, pos in (("ATT_Muzzle", (0, 0.650, LAUNCHER_Z)), ("ATT_Optic", (0, -0.120, LAUNCHER_Z + 0.035))):
+        e = bpy.data.objects.new(name, None)
+        e.empty_display_size = 0.02
+        e.location = pos
+        coll.objects.link(e)
+        e.parent = weapon
+        out.append(e)
+    return out
+
+
+def launcher_on_back(arm, launcher, coll):
+    """A copy of the launcher mesh carried diagonally across the back behind the pack, in ATT_Back bone space."""
+    o = launcher.copy()
+    o.data = launcher.data.copy()
+    o.name = "LauncherBack"
+    coll.objects.link(o)
+    o.parent = None
+    # World (rest pose): the body faces +Y, so the back is -Y; the tube runs from the right hip up to the left shoulder.
+    world = Matrix.Translation((0.0, -0.33, 1.12)) @ Matrix.Rotation(math.radians(-58), 4, "Y") @ Matrix.Rotation(math.radians(90), 4, "X") \
+        @ Matrix.Translation((0, -0.200, -LAUNCHER_Z))
+    o.data.transform(world)
+    att = arm.data.bones["ATT_Back"].matrix_local
+    o.data.transform(att.inverted())
+    o.matrix_world = Matrix.Identity(4)
+    place(arm, o, "ATT_Back")
+    return o
+
+
 def build_ammo_box(coll, mats):
     """Hard 200-round box: 0.08 x 0.16 x 0.11 m, its belt clip against the hip (x across the body, y forward, z up)."""
     w = FW.WB(mats, ["Polymer_OD", "Polymer_Black", "Metal_Worn", "Webbing_RangerGreen"])
@@ -205,7 +277,7 @@ def place(arm, o, bone):
     o.matrix_world = arm.matrix_world @ arm.data.bones[bone].matrix_local
 
 
-def previews(outdir, arm, lmg, box):
+def previews(outdir, arm, lmg, box, nade, tube):
     import ap_lib
     os.makedirs(outdir, exist_ok=True)
     L.setup_render((760, 760))
@@ -238,6 +310,15 @@ def previews(outdir, arm, lmg, box):
     box.matrix_world = Matrix.Translation((0, 0, 0.6))
     shots.append(L.render_view(os.path.join(outdir, "lmg_ammo_box.jpg"), (0, 0, 0.55), 0.6, 35, 25, lens=55))
     ap_lib.sheet(shots, os.path.join(outdir, "lmg_turntable.jpg"), 5)
+    box.hide_render = True
+    shots = []
+    for o, at, d in ((nade, (0, 0, 0.6), 0.35), (tube, (0, 0.2, 0.6), 1.5)):
+        o.hide_render = False
+        o.matrix_world = Matrix.Translation((0, 0, 0.6))
+        for name, az, el in (("a", 60, 20), ("b", 250, 15)):
+            shots.append(L.render_view(os.path.join(outdir, "%s_%s.jpg" % (o.name, name)), at, d, az, el, lens=55))
+        o.hide_render = True
+    ap_lib.sheet(shots, os.path.join(outdir, "grenade_launcher.jpg"), 4)
     lmg.hide_render = False
     lmg.parent, lmg.parent_type, lmg.parent_bone = saved[0], saved[1], saved[2]
     lmg.matrix_world = saved[3]
@@ -257,14 +338,20 @@ def write_equipment(key, attach, slot, glb_res):
 
 
 def write_mg_loadouts():
-    """NATO_mg / RU_mg / CN_mg: the faction rifleman's items minus the rifle and its accessories, plus the LMG and box."""
+    """NATO_mg / RU_mg / CN_mg: the faction rifleman's items minus the rifle and its accessories, plus the LMG and box;
+    NATO_gren / RU_gren / CN_gren: the faction rifleman plus the launcher on the back."""
     import re
-    for lo, (src, display) in MG_LOADOUTS.items():
+    todo = [(lo, src, display, True) for lo, (src, display) in MG_LOADOUTS.items()]
+    todo += [(lo, src, display, False) for lo, (src, display) in GREN_LOADOUTS.items()]
+    for lo, src, display, mg in todo:
         with open(os.path.join(LOADOUT_DIR, src + ".tres"), encoding="utf-8") as f:
             txt = f.read()
         paths = re.findall(r'\[ext_resource type="Resource" path="([^"]+)" id="[^"]+"\]', txt)
-        keep = [p for p in paths if os.path.splitext(os.path.basename(p))[0] not in RIFLE_ITEMS]
-        keep += ["res://assets/characters/infantry/equipment/lmg.tres", "res://assets/characters/infantry/equipment/lmg_ammo_box.tres"]
+        if mg:
+            keep = [p for p in paths if os.path.splitext(os.path.basename(p))[0] not in RIFLE_ITEMS]
+            keep += ["res://assets/characters/infantry/equipment/lmg.tres", "res://assets/characters/infantry/equipment/lmg_ammo_box.tres"]
+        else:
+            keep = paths + ["res://assets/characters/infantry/equipment/launcher_back.tres"]
         lines = ['[gd_resource type="Resource" script_class="InfantryLoadout" load_steps=%d format=3]\n' % (len(keep) + 3),
                  '[ext_resource type="Script" path="res://scripts/characters/infantry_loadout.gd" id="1_lo"]',
                  '[ext_resource type="Script" path="res://scripts/characters/infantry_equipment.gd" id="2_eq"]']
@@ -292,17 +379,27 @@ def main():
     box = build_ammo_box(coll, mats)
     M.apply_box_uvs(box)
     place(arm, box, "ATT_Hip_L")
-    log = {"tris": {"lmg": L.tri_count(lmg), "lmg_ammo_box": L.tri_count(box)}}
+    nade = build_grenade(coll, mats)
+    M.apply_box_uvs(nade)
+    tube = build_launcher(coll, mats)
+    M.apply_box_uvs(tube)
+    tube_mounts = launcher_mounts(coll, tube)
+    back = launcher_on_back(arm, tube, coll)
+    nade.hide_render = True
+    tube.hide_render = True
+    log = {"tris": {"lmg": L.tri_count(lmg), "lmg_ammo_box": L.tri_count(box), "grenade": L.tri_count(nade), "launcher": L.tri_count(tube)}}
     if o["previews"]:
-        previews(os.path.abspath(o["previews"]), arm, lmg, box)
+        previews(os.path.abspath(o["previews"]), arm, lmg, box, nade, tube)
     if o["export"]:
         lod_coll = L.collection("LODs")
         out = {}
-        for key, obj, extra in (("lmg", lmg, mounts), ("lmg_ammo_box", box, [])):
+        for key, obj, extra in (("lmg", lmg, mounts), ("lmg_ammo_box", box, []), ("grenade", nade, []), ("launcher", tube, tube_mounts),
+                                ("launcher_back", back, [])):
             attach, slot, sub = PIECES[key]
             path = os.path.join(INF, sub, key + ".glb")
             size, tris = E.export_rigid(obj, key, path, lod_coll, extra)
-            write_equipment(key, attach, slot, "res://assets/characters/infantry/%s/%s.glb" % (sub, key))
+            if attach:
+                write_equipment(key, attach, slot, "res://assets/characters/infantry/%s/%s.glb" % (sub, key))
             out[key] = {"bytes": size, "lod_tris": tris}
         write_mg_loadouts()
         log["export"] = out

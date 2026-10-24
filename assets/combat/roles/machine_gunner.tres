@@ -9,3 +9,4 @@ display_name = "Machine gunner"
 short = "MG"
 weapon_id = &"lmg"
 loadout_suffix = "mg"
+grenades = 0

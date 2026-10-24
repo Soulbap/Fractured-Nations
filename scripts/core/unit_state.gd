@@ -69,6 +69,15 @@ var role: StringName = &""
 ## Last time (sim) the soldier moved faster than a shuffle: braced weapons (WeaponDef.settle_s) count from here. Derived
 ## each tick from the velocity, so it is not saved.
 var moved_at := 0.0
+## GAMEPLAY-02C: hand grenades carried; the secondary weapon (WeaponDef id, "" = none), its rounds, whether it is in the
+## hands (first person: X; the AI raises it only to fire) and when it may fire again. Saved.
+var grenades := 0
+var sec_id: StringName = &""
+var sec_ammo := 0
+var sec_active := false
+var sec_ready_at := 0.0
+## Last grenade throw (sim time): one grenade per soldier at a time.
+var nade_at := -1.0e9
 ## Simulation time (WorldState.time) from which the next shot may leave the barrel.
 var next_shot_at := 0.0
 ## Simulation time at which a running reload completes (-1 = not reloading).
@@ -185,7 +194,8 @@ func to_dict() -> Dictionary:
 		"order": order, "order_target": order_target, "move_state": move_state, "nav_reason": nav_reason,
 		"player_controlled": player_controlled, "has_body": has_body, "loadout": loadout,
 		"veh": veh.to_dict() if veh else null, "vehicle_id": vehicle_id, "resupply": resupply_src,
-		"alive": alive, "weapon_id": weapon_id, "role": role, "mag": mag, "reserve": reserve, "fire_auto": fire_auto,
+		"alive": alive, "weapon_id": weapon_id, "role": role, "grenades": grenades, "sec_id": sec_id, "sec_ammo": sec_ammo,
+		"sec_active": sec_active, "sec_ready_at": sec_ready_at, "nade_at": nade_at, "mag": mag, "reserve": reserve, "fire_auto": fire_auto,
 		"next_shot_at": next_shot_at, "reload_until": reload_until, "shot_counter": shot_counter,
 		"bloom": bloom, "last_shot_at": last_shot_at, "died_at": died_at, "killer_id": killer_id,
 		"ai_state": ai_state, "target_id": target_id, "target_seen_at": target_seen_at, "target_last_pos": target_last_pos,
@@ -232,6 +242,12 @@ func copy_combat_from(d: Dictionary) -> void:
 	alive = d.get("alive", true)
 	weapon_id = StringName(d.get("weapon_id", ""))
 	role = StringName(d.get("role", ""))
+	grenades = d.get("grenades", 0)
+	sec_id = StringName(d.get("sec_id", ""))
+	sec_ammo = d.get("sec_ammo", 0)
+	sec_active = d.get("sec_active", false)
+	sec_ready_at = d.get("sec_ready_at", 0.0)
+	nade_at = d.get("nade_at", -1.0e9)
 	mag = d.get("mag", 0)
 	reserve = d.get("reserve", 0)
 	fire_auto = d.get("fire_auto", true)

@@ -23,6 +23,10 @@ signal unit_damaged(unit: UnitState, amount: float, zone: int, source_id: int)
 signal unit_died(unit: UnitState)
 signal reload_started(unit: UnitState)
 signal reload_finished(unit: UnitState)
+## GAMEPLAY-02C: a grenade left a hand / a rocket left a tube (an entry of `explosives`), and one burst (the same entry
+## with what it did: "hits", "structures").
+signal explosive_launched(e: Dictionary)
+signal exploded(e: Dictionary)
 ## Seed for combat randomness (spread), so shots are reproducible.
 var world_seed := 1
 
@@ -59,6 +63,15 @@ var _squad_index_dirty := true
 var roads := RoadNetwork.new()
 ## LOGISTICS-01: convoys, starting stockpile bookkeeping, automation rules (saved with the units).
 var logistics := LogisticsState.new()
+## GAMEPLAY-02C: grenades and rockets on their way - {id, def, src, f, from, at, t0, t} (thrown from `from` at t0, bursts at
+## `at` at time t). Written only by CombatSim (launch, detonate); saved, so a fuse burning at a save bursts after loading.
+var explosives: Array = []
+var _next_explosive := 1
+
+
+func next_explosive_id() -> int:
+	_next_explosive += 1
+	return _next_explosive - 1
 
 
 func _init() -> void:
@@ -350,7 +363,7 @@ func snapshot() -> Dictionary:
 		sq_list.append(sq.to_dict())
 	return {"time": time, "next_id": _next_id, "units": list, "construction": construction.to_dict(),
 		"squads": sq_list, "next_squad_id": _next_squad_id, "war": war.to_dict(), "logistics": logistics.to_dict(),
-		"bridges": roads.bridge_states()}
+		"bridges": roads.bridge_states(), "explosives": explosives.duplicate(true), "next_explosive": _next_explosive}
 
 
 func restore(snap: Dictionary) -> void:
@@ -371,6 +384,8 @@ func restore(snap: Dictionary) -> void:
 		war.from_dict(snap.war)
 	if snap.has("logistics"):
 		logistics.from_dict(snap.logistics)
+	explosives = (snap.get("explosives", []) as Array).duplicate(true)
+	_next_explosive = snap.get("next_explosive", 1)
 
 
 ## Loads a snapshot without replacing the record objects of units that exist in both:
@@ -428,6 +443,8 @@ func apply_snapshot(snap: Dictionary) -> Dictionary:
 		war.from_dict(snap.war)
 	if snap.has("logistics"):
 		logistics.from_dict(snap.logistics)
+	explosives = (snap.get("explosives", []) as Array).duplicate(true)
+	_next_explosive = snap.get("next_explosive", 1)
 	restored.emit()
 	return {"updated": updated, "added": added, "removed": removed}
 

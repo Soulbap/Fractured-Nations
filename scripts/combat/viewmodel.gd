@@ -14,6 +14,8 @@ const ADS := Vector3(0.0, -0.172, -0.36)
 
 ## Loadout whose weapon pieces are shown; set before the node enters the tree.
 var loadout: InfantryLoadout
+## GAMEPLAY-02C: a weapon held instead of the loadout's (the secondary weapon, WeaponDef.viewmodel_scene).
+var held_scene: PackedScene
 var faction := 0
 var aiming := false
 var muzzle: Node3D
@@ -24,8 +26,16 @@ static var _housing_mat: ShaderMaterial
 
 func _ready() -> void:
 	var mounts := {}
+	if held_scene:
+		var held: Node3D = held_scene.instantiate()
+		add_child(held)
+		for n in held.find_children("*", "", true, false):
+			if n is MeshInstance3D:
+				_style(n)
+			elif String(n.name).begins_with("ATT_"):
+				mounts["weapon:" + String(n.name)] = n
 	# Weapon first, then the accessories mounted on it ("weapon:ATT_Optic" ...).
-	for pass_i in 2:
+	for pass_i in (0 if held_scene else 2):
 		for it in loadout.items:
 			if not it.slot.begins_with("weapon") or it.scene == null or it.attach.contains(":") != (pass_i == 1):
 				continue

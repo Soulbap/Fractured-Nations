@@ -28,6 +28,10 @@ var last_shot_usec := 0
 var shots_total := 0
 var shot_usec_total := 0
 var shot_usec_max := 0
+## GAMEPLAY-02C: explosives launched / burst, and the slowest burst (us).
+var launched := 0
+var detonated := 0
+var blast_usec_max := 0
 
 
 func _init(p_sim: WorldSim) -> void:
@@ -110,10 +114,15 @@ func apply_composition(sq: SquadState, only: Array = []) -> int:
 	return fresh.size()
 
 
-## Gives a soldier a role: its weapon with a full load and the role's look for its faction.
+## Gives a soldier a role: its weapon with a full load, its grenades and secondary weapon, and the role's look.
 func _equip_role(u: UnitState, role_id: StringName) -> void:
 	var role := InfantryRole.by_id(role_id)
 	u.role = role_id
+	if role:
+		u.grenades = role.grenades
+		u.sec_id = role.secondary_id
+		u.sec_ammo = role.secondary_rounds
+		u.sec_active = false
 	var wid: StringName = role.weapon_id if role else &"rifle"
 	var def := weapon(wid)
 	if def == null:
@@ -246,6 +255,164 @@ func set_fire_mode(unit_id: int, auto: bool) -> bool:
 	return true
 
 
+# --- Explosives (GAMEPLAY-02C) ----------------------------------------------------------------------------------------------
+# A hand grenade or a rocket is an entry of WorldState.explosives from the moment it leaves the hand / the tube until it
+# bursts: plain data, stepped here every tick and saved, so near and far, possession and a save in mid-flight give the
+# same result. No physics body flies: a grenade lands where it was aimed (with scatter), a rocket where its line first
+# meets something (LineOfFire, the shot rules). The burst is one bounded query: soldiers from the CombatBrain grid,
+# structures from the StructureManager cell index, each soldier's cover checked with one line.
+
+## Throws one of u's grenades at `target` (a point the thrower chose: what it saw or was told, never a hidden enemy's true
+## position). Returns {ok, reason, e}.
+func throw_grenade(unit_id: int, target: Vector3, source := Source.AI) -> Dictionary:
+	var u := sim.state.get_unit(unit_id)
+	if u == null or not u.alive:
+		return {"ok": false, "reason": "dead"}
+	if (source == Source.PLAYER) != u.player_controlled:
+		return {"ok": false, "reason": "not_controller"}
+	var def := weapon(&"grenade")
+	if def == null or u.grenades <= 0:
+		return {"ok": false, "reason": "no grenades"}
+	var now := sim.state.time
+	if now - u.nade_at < 1.5 or u.is_reloading():
+		return {"ok": false, "reason": "busy"}
+	var from := eye_of(u)
+	var flat := Vector3(target.x - from.x, 0.0, target.z - from.z)
+	var d := flat.length()
+	if d < 2.0:
+		return {"ok": false, "reason": "too close"}
+	if d > def.max_range:
+		flat = flat / d * def.max_range
+		d = def.max_range
+	# The first metres of the throw must be free (no wall in the thrower's face); over a parapet is fine.
+	var first := line.trace(from, from + (flat / d) * 2.5 + Vector3.UP * 0.6, u.id, false)
+	if first.blocker != "range":
+		return {"ok": false, "reason": "blocked"}
+	# Where it lands: seeded scatter growing with the throw (and with the thrower's suppression).
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([sim.state.world_seed, u.id, u.shot_counter + 1, 5303])
+	var sigma := 0.8 + d * 0.06 + 2.0 * u.suppression_at(now)
+	var land := from + flat + Vector3(rng.randfn(0.0, sigma), 0.0, rng.randfn(0.0, sigma))
+	land.y = sim.tactics.pos.ground(land).y if sim.tactics else target.y
+	u.grenades -= 1
+	u.nade_at = now
+	u.shot_counter += 1
+	return {"ok": true, "e": _launch(u, &"grenade", from, land, now + def.fuse_s)}
+
+
+## Fires the secondary weapon (a rocket) from origin along direction, like request_fire: the round flies straight to the
+## first thing in its way. Returns {fired, reason, e}.
+func fire_secondary(unit_id: int, origin: Vector3, direction: Vector3, source := Source.AI) -> Dictionary:
+	var u := sim.state.get_unit(unit_id)
+	if u == null or not u.alive:
+		return {"fired": false, "reason": "dead"}
+	if (source == Source.PLAYER) != u.player_controlled:
+		return {"fired": false, "reason": "not_controller"}
+	var def := weapon(u.sec_id)
+	if def == null:
+		return {"fired": false, "reason": "no secondary weapon"}
+	var now := sim.state.time
+	if u.sec_ammo <= 0:
+		return {"fired": false, "reason": "empty"}
+	if now < u.sec_ready_at or u.is_reloading():
+		return {"fired": false, "reason": "cooldown"}
+	u.sec_ammo -= 1
+	u.shot_counter += 1
+	u.sec_ready_at = now + def.reload_time
+	# Moving spoils the aim; standing (a shuffle under 0.6 m/s, as UnitState.moved_at counts it) does not.
+	var spread := def.spread_base_deg + def.spread_moving_deg * clampf((Vector2(u.velocity.x, u.velocity.z).length() - 0.6) / 3.9, 0.0, 1.5)
+	var dir := spread_direction(direction.normalized(), spread, sim.state.world_seed, u.id, u.shot_counter)
+	var r := line.trace(origin, origin + dir * def.max_range, u.id)
+	var at: Vector3 = r.point - dir * 0.2
+	var e := _launch(u, def.id, origin, at, now + r.distance / maxf(def.projectile_speed, 1.0))
+	e["hit_structure"] = int(r.structure_id) if r.blocker == "structure" else -1
+	e["blocker"] = String(r.blocker)
+	return {"fired": true, "e": e, "blocker": r.blocker}
+
+
+func _launch(u: UnitState, def_id: StringName, from: Vector3, at: Vector3, t: float) -> Dictionary:
+	var e := {"id": sim.state.next_explosive_id(), "def": String(def_id), "src": u.id, "f": u.faction, "from": from, "at": at,
+		"t0": sim.state.time, "t": t}
+	sim.state.explosives.append(e)
+	sim.state.explosive_launched.emit(e)
+	launched += 1
+	return e
+
+
+## Bursts every explosive whose time has come (every physics tick, from update).
+func _step_explosives() -> void:
+	var list := sim.state.explosives
+	if list.is_empty():
+		return
+	var now := sim.state.time
+	var i := 0
+	while i < list.size():
+		var e: Dictionary = list[i]
+		if now >= float(e.t):
+			list.remove_at(i)
+			detonate(e)
+		else:
+			i += 1
+
+
+## The burst of explosive e at e.at: blast damage to soldiers (falloff with distance, cut to a tenth behind cover), damage
+## to structures (blast_structure x blast_resist, falloff from the nearest part of the structure), suppression and a
+## reaction (under fire) for every soldier within twice the radius. Friends are hurt as much as enemies. Emits exploded.
+func detonate(e: Dictionary) -> Dictionary:
+	var t0 := Time.get_ticks_usec()
+	var def := weapon(StringName(e.def))
+	if def == null:
+		return e
+	var at: Vector3 = e.at
+	var src := int(e.src)
+	var r := def.blast_radius
+	var centre := at + Vector3.UP * 0.35
+	var hits: Array = []
+	var now := sim.state.time
+	for u: UnitState in sim.brain.units_near(at, r * 2.0):
+		if not u.alive or u.kind != UnitState.Kind.SOLDIER:
+			continue
+		var chest := u.position + Vector3.UP * 1.0
+		var d := centre.distance_to(chest)
+		if d > r * 2.0:
+			continue
+		# Suppression and the reaction reach twice as far as the fragments.
+		if def.blast_suppression > 0.0 and not u.player_controlled:
+			u.add_suppression(def.blast_suppression * clampf(1.0 - d / (r * 2.0), 0.0, 1.0), now)
+			sim.brain.under_fire_from(u, at)
+		if d > r:
+			continue
+		var f := pow(1.0 - d / r, 1.4)
+		var cover := line.trace(centre, chest, -1, false)
+		var shielded: bool = cover.blocker != "range" and float(cover.distance) < d - 0.4
+		if shielded:
+			f *= 0.1
+		var dmg := def.blast_damage * f
+		if dmg >= 1.0:
+			var done := apply_damage(u.id, dmg, Zone.BODY, src)
+			hits.append({"id": u.id, "f": u.faction, "d": snappedf(d, 0.1), "dmg": snappedf(done, 0.1), "cover": shielded, "killed": not u.alive})
+	var structs: Array = []
+	if def.blast_structure > 0.0:
+		for hit: Dictionary in line.structures_near(at, r):
+			var st := sim.state.construction.get_structure(int(hit.id))
+			if st == null:
+				continue
+			var f := clampf(1.0 - float(hit.d) / r, 0.0, 1.0)
+			if int(e.get("hit_structure", -1)) == st.id:
+				f = 1.0  # a rocket that struck it
+			var amount := def.blast_structure * f * StructureHealth.blast_resist(st.type_id)
+			var done := sim.state.construction.damage(st, amount)
+			if done > 0.0:
+				structs.append({"id": st.id, "type": String(st.type_id), "dmg": snappedf(done, 0.1), "frac": snappedf(st.health_frac(), 0.01)})
+	e["hits"] = hits
+	e["structures"] = structs
+	e["burst_at"] = now
+	detonated += 1
+	blast_usec_max = maxi(blast_usec_max, Time.get_ticks_usec() - t0)
+	sim.state.exploded.emit(e)
+	return e
+
+
 # --- Reloading ----------------------------------------------------------------------
 
 func request_reload(unit_id: int) -> bool:
@@ -263,6 +430,7 @@ func request_reload(unit_id: int) -> bool:
 ## Completes reloads whose time has come (called every physics tick by WorldSim).
 func update(_delta: float) -> void:
 	var now := sim.state.time
+	_step_explosives()
 	for u: UnitState in sim.state.units.values():
 		if u.velocity.x * u.velocity.x + u.velocity.z * u.velocity.z > 0.36:
 			u.moved_at = now

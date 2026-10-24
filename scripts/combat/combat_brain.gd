@@ -679,6 +679,18 @@ func _is_far(u: UnitState) -> bool:
 	return _flat(u.position, sim.detail.observer) > far_m
 
 
+## GAMEPLAY-02C: soldiers within r of p (the grid is refreshed first); for bursts and other bounded queries.
+func units_near(p: Vector3, r: float) -> Array:
+	_ensure_grid()
+	return _near(p, r)
+
+
+## GAMEPLAY-02C: a burst near u - it knows roughly where it came from, as from a shot.
+func under_fire_from(u: UnitState, from: Vector3) -> void:
+	if enabled and tactics_enabled and u.alive and not u.player_controlled:
+		_under_fire(u, from + Vector3.UP * CombatSim.EYE_HEIGHT)
+
+
 func _near(p: Vector3, r: float) -> Array:
 	var out := []
 	var c0 := Vector2i(floori((p.x - r) / GRID), floori((p.z - r) / GRID))
@@ -1279,6 +1291,8 @@ func _engage(u: UnitState) -> void:
 		u.ai_state = UnitState.AiState.RELOADING
 		u.ai_reason = "reloading"
 		return
+	if _support_weapons(u, t, now):
+		return
 	if t == null or not u.target_visible:
 		# AI-SQUAD-01: no visible target - a fire mission (suppressive fire at a reported
 		# position a squad tactic gave this soldier) may still apply.
@@ -1453,6 +1467,165 @@ func _aim_error(u: UnitState, dir: Vector3, dist: float) -> Vector3:
 	side = side.normalized()
 	var up := side.cross(dir).normalized()
 	return (dir + side * tan(ex) + up * tan(ey)).normalized()
+
+
+# --- Grenades and the anti-structure launcher (GAMEPLAY-02C) ---------------------------------------------------------------
+# The same individual layer as the rifle: what this soldier knows (its target, the last place it saw it, the squad's fire
+# mission point), never where a hidden enemy really is. A few cheap conditions, a rate limit per soldier and per squad.
+
+var grenade_min_m := 11.0
+var grenade_max_m := 30.0
+var grenade_squad_gap_s := 7.0
+var grenade_soldier_gap_s := 14.0
+var launcher_min_m := 35.0
+var launcher_max_m := 260.0
+var launcher_squad_gap_s := 12.0
+var grenades_thrown := 0
+var grenade_holds := 0
+var rockets_fired := 0
+var _squad_nade_at := {}
+var _squad_rocket_at := {}
+var _rocket_check := {}
+## Why a launcher was not fired (reason -> count), for tests and the report.
+var rocket_holds := {}
+
+
+func _rocket_hold(why: String) -> void:
+	rocket_holds[why] = int(rocket_holds.get(why, 0)) + 1
+
+
+## Throws a grenade or fires the launcher when the situation calls for it; true when it did (this update is spent).
+func _support_weapons(u: UnitState, t: UnitState, now: float) -> bool:
+	if u.grenades <= 0 and (u.sec_id == &"" or u.sec_ammo <= 0):
+		return false
+	var sq := sim.state.squad_of(u.id)
+	if sq and sq.roe == SquadState.Roe.HOLD_FIRE:
+		return false
+	if u.suppression_at(now) >= 0.85:
+		return false
+	# What the soldier knows of the enemy: the target it sees, or where it saw it last (a few seconds ago).
+	var known := Vector3.INF
+	var seen := false
+	if t and t.alive:
+		if u.target_visible:
+			known = t.position
+			seen = true
+		elif u.target_last_pos.is_finite() and now - u.target_seen_at < 8.0:
+			known = u.target_last_pos
+	if u.grenades > 0 and known.is_finite() and now - u.nade_at >= grenade_soldier_gap_s and now >= float(_squad_nade_at.get(sq.id if sq else -1, -INF)):
+		var d := _flat(u.position, known)
+		# Into cover: an enemy that went out of sight, one in a position or behind cover, or two together.
+		var worth := not seen or (t.tactic == UnitState.Tactic.IN_COVER) or t.fort_slot != "" or _group_near(t, 6.0) >= 2
+		if d >= grenade_min_m and d <= grenade_max_m and worth:
+			# No friend in the blast, nor one that could walk into it before it bursts (the fuse) or is on its way there.
+			if _friend_near(u, known, 14.0) or _friend_heading(u, known, 11.0):
+				grenade_holds += 1
+			else:
+				var res := sim.combat.throw_grenade(u.id, known)
+				if res.ok:
+					grenades_thrown += 1
+					_squad_nade_at[sq.id if sq else -1] = now + grenade_squad_gap_s
+					_event(u, "grenade at %.0f m" % d)
+					return true
+	if u.sec_id != &"" and u.sec_ammo > 0 and now >= u.sec_ready_at and now >= float(_squad_rocket_at.get(sq.id if sq else -1, -INF)) 			and now >= float(_rocket_check.get(u.id, -INF)):
+		_rocket_check[u.id] = now + 2.0  # the structure query at most every two seconds per soldier
+		var aim_at := known
+		if not aim_at.is_finite() and u.fire_at.is_finite() and now < u.fire_until:
+			aim_at = u.fire_at  # the squad's fire mission: a reported position
+		if aim_at.is_finite():
+			# The position the seen enemy fights from, else an enemy structure at the point it knows.
+			var st: StructureState = null
+			if t and t.alive and t.fort_slot != "" and (seen or now - u.target_seen_at < 8.0):
+				st = sim.state.construction.get_structure(int(t.fort_slot.split(":")[0]))
+				if st and (st.faction == u.faction or st.health() <= 0.0):
+					st = null
+			if st == null:
+				st = _enemy_structure_at(u, aim_at)
+			if st == null:
+				_rocket_hold("no enemy structure where the enemy is")
+			elif now - u.moved_at < 1.0:
+				_rocket_hold("moving")
+			# A shoulder-fired rocket is fired standing still (a moving soldier waits), at the middle of the structure's body.
+			if st and now - u.moved_at >= 1.0:
+				var origin := CombatSim.eye_of(u)
+				var aim := _structure_aim(st)
+				var d := _flat(u.position, aim)
+				if d < launcher_min_m or d > launcher_max_m:
+					_rocket_hold("range")
+				elif _friendly_near_line(u, origin, aim):
+					_rocket_hold("friend in the line")
+				else:
+					# A clear line to it, with room to the sides for the launcher's spread (a trunk that just misses the line of
+					# sight catches a rocket that strays).
+					var look := sim.combat.line.trace(origin, aim, u.id, false)
+					# (structure_id stays set when something nearer - a tree - blocks: the blocker decides.)
+					var clear: bool = look.blocker == "structure" and int(look.structure_id) == st.id
+					var side := Vector3(-(aim - origin).z, 0.0, (aim - origin).x).normalized() * 0.4
+					for off: Vector3 in [side, -side]:
+						if not clear:
+							break
+						var edge := sim.combat.line.trace(origin, aim + off, u.id, false)
+						clear = (edge.blocker == "structure" and int(edge.structure_id) == st.id) or edge.blocker == "range"
+					if not clear:
+						_rocket_hold("no clear line")
+					else:
+						# Aimed and braced: the launcher's own spread (WeaponDef) is the error, as for the player.
+						var res := sim.combat.fire_secondary(u.id, origin, (aim - origin).normalized(), CombatSim.Source.AI)
+						if res.get("fired", false):
+							rockets_fired += 1
+							_squad_rocket_at[sq.id if sq else -1] = now + launcher_squad_gap_s
+							_event(u, "launcher at %s %.0f m" % [st.type_id, d])
+							return true
+	return false
+
+
+## Where a rocket is aimed: inside the largest collision box standing on the ground (a parapet or a wall, not a roof - a
+## point between them is a firing slit the rocket would fly through), at most 1 m up.
+func _structure_aim(st: StructureState) -> Vector3:
+	var def := StructureCatalog.get_def(st.type_id)
+	var xf: Transform3D = st.instances[0] if not st.instances.is_empty() else Transform3D(Basis(), st.position)
+	var best := AABB()
+	if def:
+		for b: AABB in def.get_collision_boxes():
+			if b.position.y < 0.4 and b.get_volume() > best.get_volume():
+				best = b
+	if best.get_volume() <= 0.0:
+		return st.position + Vector3.UP * 0.8
+	var c := best.get_center()
+	c.y = best.position.y + minf(best.size.y * 0.7, 1.0)
+	return xf * c
+
+
+## A living friend (not u) walking to a point within r of p (an assault moving onto the landing spot).
+func _friend_heading(u: UnitState, p: Vector3, r: float) -> bool:
+	for f: UnitState in units_near(p, 40.0):
+		if f != u and f.alive and f.faction == u.faction and f.order == UnitState.Order.MOVE and f.move_state == UnitState.MoveState.MOVING 				and _flat(f.order_target, p) <= r:
+			return true
+	return false
+
+
+## A living friend (not u) within r of p.
+func _friend_near(u: UnitState, p: Vector3, r: float) -> bool:
+	for f: UnitState in units_near(p, r):
+		if f != u and f.alive and f.faction == u.faction:
+			return true
+	return false
+
+
+## A standing enemy (owned by another faction) structure the enemy u knows of uses: within 6 m of the point.
+func _enemy_structure_at(u: UnitState, p: Vector3) -> StructureState:
+	var best: StructureState = null
+	var best_d := INF
+	for hit: Dictionary in sim.combat.line.structures_near(p, 6.0):
+		var st := sim.state.construction.get_structure(int(hit.id))
+		if st == null or st.faction < 0 or st.faction == u.faction or st.is_site() or st.health() <= 0.0:
+			continue
+		# Fortifications (firing positions) first, then the nearest.
+		var d := float(hit.d) - (10.0 if DefenceDefs.has(st.type_id) else 0.0)
+		if d < best_d:
+			best_d = d
+			best = st
+	return best
 
 
 ## Cheap pre-check before the shot preview: a living friend close to the line in front.

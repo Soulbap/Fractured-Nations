@@ -171,6 +171,39 @@ func foliage_layers(from: Vector3, to: Vector3, stop_at := 1 << 30) -> int:
 
 # --- Structures ---------------------------------------------------------------------
 
+## GAMEPLAY-02C: structures with a part within r of p - [{id, d}] (d: distance from p to the nearest collision box of the
+## structure, 0 inside). Walks only the StructureManager cells round p.
+func structures_near(p: Vector3, r: float) -> Array:
+	var out: Array = []
+	if structures == null or structures.state == null:
+		return out
+	var best := {}
+	var reach := r + StructureManager.MAX_REACH
+	var c0 := Vector2i(floori((p.x - reach) / StructureManager.CELL), floori((p.z - reach) / StructureManager.CELL))
+	var c1 := Vector2i(floori((p.x + reach) / StructureManager.CELL), floori((p.z + reach) / StructureManager.CELL))
+	for cx in range(c0.x, c1.x + 1):
+		for cz in range(c0.y, c1.y + 1):
+			for e: Vector2i in structures._index.get(Vector2i(cx, cz), []):
+				var st := structures.state.get_structure(e.x)
+				if st == null or (st.is_line() and st.is_removed(e.y)) or e.y >= st.instances.size():
+					continue
+				var xf := st.instances[e.y]
+				if Vector2(xf.origin.x - p.x, xf.origin.z - p.z).length() > reach:
+					continue
+				var def := StructureCatalog.get_def(st.type_id)
+				if def == null:
+					continue
+				var lp := xf.affine_inverse() * p
+				for box: AABB in def.get_collision_boxes():
+					var q := Vector3(clampf(lp.x, box.position.x, box.end.x), clampf(lp.y, box.position.y, box.end.y), clampf(lp.z, box.position.z, box.end.z))
+					var d := lp.distance_to(q)
+					if d <= r and d < float(best.get(st.id, INF)):
+						best[st.id] = d
+	for id in best:
+		out.append({"id": id, "d": best[id]})
+	return out
+
+
 func _structures_hit(from: Vector3, to: Vector3, length: float) -> Dictionary:
 	var best := {"d": INF, "id": -1}
 	if structures == null or structures.state == null:

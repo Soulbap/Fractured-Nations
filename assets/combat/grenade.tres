@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_def.gd" id="1_wdef"]
+
+[resource]
+script = ExtResource("1_wdef")
+id = &"grenade"
+display_name = "Frag grenade"
+delivery = 1
+rounds_per_minute = 30.0
+allow_auto = false
+default_mode = 0
+magazine_size = 1
+reserve_start = 0
+reload_time = 0.0
+damage = 0.0
+max_range = 35.0
+effective_range = 25.0
+role = &"grenade"
+blast_radius = 9.0
+blast_damage = 150.0
+blast_structure = 60.0
+blast_suppression = 0.7
+thrown = true
+fuse_s = 3.5

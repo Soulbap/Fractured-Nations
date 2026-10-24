@@ -26,6 +26,14 @@ const RESIST := {
 	&"guard_tower_steel": 0.01, &"ammo_magazine": 0.01, &"t_wall": 0.005, &"concrete_barrier": 0.005, &"guard_tower": 0.04,
 }
 const RESIST_BUILDING := 0.06
+## GAMEPLAY-02C: the share of an explosive's structure damage (WeaponDef.blast_structure) a structure takes: earth-filled
+## walls soak most of it, light buildings and towers much less.
+const BLAST_RESIST := {
+	&"hesco": 0.35, &"hesco_tall": 0.3, &"sandbag_wall_2m": 0.5, &"sandbag_wall_low_2m": 0.5, &"fighting_position": 0.6,
+	&"mg_emplacement": 0.6, &"sandbag_fighting_position": 0.6, &"dfp_sandbag_ring": 0.6, &"mg_nest": 0.6, &"bunker_fighting": 0.2,
+	&"guard_tower_steel": 0.7, &"guard_tower": 0.9, &"ammo_magazine": 0.4, &"t_wall": 0.15, &"concrete_barrier": 0.15,
+}
+const BLAST_RESIST_BUILDING := 1.0
 
 
 static func max_hp(s: StructureState) -> float:
@@ -41,6 +49,10 @@ static func max_hp(s: StructureState) -> float:
 
 static func resist(type_id: StringName) -> float:
 	return float(RESIST.get(type_id, RESIST_BUILDING))
+
+
+static func blast_resist(type_id: StringName) -> float:
+	return float(BLAST_RESIST.get(type_id, BLAST_RESIST_BUILDING))
 
 
 ## Supplies a repair of s costs now (0 when it needs none): the build cost per missing share, REPAIR_COST_SHARE of it.

@@ -391,6 +391,8 @@ func _on_possession_changed(controlled: bool) -> void:
 
 ## LMB fire (held = automatic when the rifle is in auto), R reload, V fire mode, RMB aim.
 ## The shot leaves from the eye along the view; CombatSim resolves it like any other.
+## GAMEPLAY-02C: G throws a grenade at the point under the crosshair (at most 35 m), X raises / lowers the secondary
+## weapon (the launcher: LMB fires it). The same CombatSim calls as the AI's.
 func _player_weapon(delta: float) -> void:
 	if unit == null or not unit.alive or sim == null:
 		return
@@ -410,7 +412,21 @@ func _player_weapon(delta: float) -> void:
 		sim.combat.request_reload(unit.id)
 	if Input.is_action_just_pressed("fire_mode"):
 		sim.combat.set_fire_mode(unit.id, not unit.fire_auto)
+	if Input.is_action_just_pressed("throw_grenade"):
+		var view := -camera.global_basis.z
+		var look := sim.combat.line.trace(camera.global_position, camera.global_position + view * 35.0, unit.id)
+		sim.combat.throw_grenade(unit.id, look.point, CombatSim.Source.PLAYER)
+	if Input.is_action_just_pressed("switch_weapon") and unit.sec_id != &"":
+		unit.sec_active = not unit.sec_active
+		_set_viewmodel(false)
+		_set_viewmodel(true)
 	if not _trigger_armed or not held:
+		return
+	if unit.sec_active:
+		if Input.is_action_just_pressed("fire"):
+			var r := sim.combat.fire_secondary(unit.id, camera.global_position, -camera.global_basis.z, CombatSim.Source.PLAYER)
+			if r.get("fired", false):
+				_recoil()
 		return
 	if not unit.fire_auto and not Input.is_action_just_pressed("fire"):
 		return
@@ -420,7 +436,7 @@ func _player_weapon(delta: float) -> void:
 
 
 func _recoil() -> void:
-	var def := sim.combat.weapon(unit.weapon_id)
+	var def := sim.combat.weapon(unit.sec_id if unit.sec_active else unit.weapon_id)
 	if def == null:
 		return
 	head.rotation.x = clampf(head.rotation.x + deg_to_rad(def.recoil_pitch_deg), -deg_to_rad(max_pitch_deg), deg_to_rad(max_pitch_deg))
@@ -433,6 +449,9 @@ func _set_viewmodel(on: bool) -> void:
 	if on and viewmodel == null and unit and unit.weapon_id != &"":
 		viewmodel = Viewmodel.new()
 		viewmodel.loadout = InfantryLoadout.by_id(unit.loadout if unit.loadout != "" else InfantryLoadout.default_for(unit.id, unit.faction))
+		var sec := sim.combat.weapon(unit.sec_id) if unit.sec_active else null
+		if sec and sec.viewmodel_scene:
+			viewmodel.held_scene = sec.viewmodel_scene
 		viewmodel.faction = unit.faction
 		camera.add_child(viewmodel)
 		camera.near = 0.03
@@ -456,7 +475,7 @@ func muzzle_position() -> Vector3:
 
 
 static func ensure_combat_actions() -> void:
-	var keys := {"reload": KEY_R, "fire_mode": KEY_V}
+	var keys := {"reload": KEY_R, "fire_mode": KEY_V, "throw_grenade": KEY_G, "switch_weapon": KEY_X}
 	for action in keys:
 		if not InputMap.has_action(action):
 			InputMap.add_action(action)

@@ -85,10 +85,17 @@ func update(sim: WorldSim, u: UnitState) -> void:
 	var def: WeaponDef = sim.combat.weapon(u.weapon_id) if u.weapon_id != &"" else null
 	_weapon.visible = def != null
 	var reload := -1.0
-	if def:
+	# GAMEPLAY-02C: the grenades carried, and the secondary weapon while it is raised (X).
+	var nades := ("   G x%d" % u.grenades) if u.grenades > 0 else ""
+	var sec: WeaponDef = sim.combat.weapon(u.sec_id) if u.sec_active and u.sec_id != &"" else null
+	if sec:
+		if now < u.sec_ready_at:
+			reload = clampf(1.0 - (u.sec_ready_at - now) / maxf(sec.reload_time, 0.1), 0.0, 1.0)
+		_weapon.set_state(sec.display_name + nades, mini(u.sec_ammo, 1), 1, maxi(u.sec_ammo - 1, 0), "X", reload)
+	elif def:
 		if u.is_reloading():
 			reload = clampf(1.0 - (u.reload_until - now) / def.reload_time, 0.0, 1.0)
-		_weapon.set_state(def.display_name, u.mag, def.magazine_size, u.reserve, "AUTO" if u.fire_auto else "SEMI", reload)
+		_weapon.set_state(def.display_name + nades, u.mag, def.magazine_size, u.reserve, "AUTO" if u.fire_auto else "SEMI", reload)
 		_weapon.position = Vector2(vp.x - _weapon.size.x - FNUI.EDGE - 4, vp.y - _weapon.size.y - FNUI.EDGE - 4)
 	# Health and combat state.
 	_name.text = u.unit_name

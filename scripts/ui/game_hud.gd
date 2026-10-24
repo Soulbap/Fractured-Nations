@@ -526,7 +526,7 @@ func _war_text() -> String:
 	if game.mode == GameController.Mode.FPS:
 		# UI-01C: soldier, squad and weapon are in the first-person HUD; only F1 adds text here.
 		if show_controls:
-			lines.append("LMB fire, R reload, V semi/auto, RMB aim | WASD move, Shift sprint, Space jump, Esc release mouse, F fly")
+			lines.append("LMB fire, R reload, V semi/auto, RMB aim, G grenade, X launcher | WASD move, Shift sprint, Space jump, Esc release mouse, F fly")
 			lines.append("Tab tactical view  ·  M strategic map  ·  F1 hide controls")
 	elif game.mode == GameController.Mode.DRIVE:
 		var du := sim.state.get_unit(game.driving_id)

@@ -5,7 +5,10 @@
 [resource]
 script = ExtResource("1_role")
 id = &"grenadier"
-display_name = "Grenadier"
+display_name = "Grenadier (grenades, light anti-structure launcher)"
 short = "GR"
 weapon_id = &"rifle"
-loadout_suffix = ""
+loadout_suffix = "gren"
+grenades = 3
+secondary_id = &"launcher"
+secondary_rounds = 2
