@@ -76,6 +76,12 @@ var sec_id: StringName = &""
 var sec_ammo := 0
 var sec_active := false
 var sec_ready_at := 0.0
+## GAMEPLAY-03D: the AI soldier shoulders the launcher before it fires (sec_raised_at, -1 = not raised) and holds it a moment
+## after (sec_shown_until): bodies show the launcher in the hands and the rifle away while either says so. Saved.
+var sec_raised_at := -1.0
+var sec_shown_until := -1.0
+## GAMEPLAY-03D: flat on the ground against a grenade until this time (sim): a burst reaches him lower and weaker. Saved.
+var down_until := -1.0
 ## Last grenade throw (sim time): one grenade per soldier at a time.
 var nade_at := -1.0e9
 ## Simulation time (WorldState.time) from which the next shot may leave the barrel.
@@ -195,7 +201,7 @@ func to_dict() -> Dictionary:
 		"player_controlled": player_controlled, "has_body": has_body, "loadout": loadout,
 		"veh": veh.to_dict() if veh else null, "vehicle_id": vehicle_id, "resupply": resupply_src,
 		"alive": alive, "weapon_id": weapon_id, "role": role, "grenades": grenades, "sec_id": sec_id, "sec_ammo": sec_ammo,
-		"sec_active": sec_active, "sec_ready_at": sec_ready_at, "nade_at": nade_at, "mag": mag, "reserve": reserve, "fire_auto": fire_auto,
+		"sec_active": sec_active, "sec_ready_at": sec_ready_at, "sec_raised_at": sec_raised_at, "sec_shown_until": sec_shown_until, "down_until": down_until, "nade_at": nade_at, "mag": mag, "reserve": reserve, "fire_auto": fire_auto,
 		"next_shot_at": next_shot_at, "reload_until": reload_until, "shot_counter": shot_counter,
 		"bloom": bloom, "last_shot_at": last_shot_at, "died_at": died_at, "killer_id": killer_id,
 		"ai_state": ai_state, "target_id": target_id, "target_seen_at": target_seen_at, "target_last_pos": target_last_pos,
@@ -247,6 +253,9 @@ func copy_combat_from(d: Dictionary) -> void:
 	sec_ammo = d.get("sec_ammo", 0)
 	sec_active = d.get("sec_active", false)
 	sec_ready_at = d.get("sec_ready_at", 0.0)
+	sec_raised_at = d.get("sec_raised_at", -1.0)
+	sec_shown_until = d.get("sec_shown_until", -1.0)
+	down_until = d.get("down_until", -1.0)
 	nade_at = d.get("nade_at", -1.0e9)
 	mag = d.get("mag", 0)
 	reserve = d.get("reserve", 0)
@@ -310,6 +319,11 @@ func tactic_name() -> String:
 ## exponentially (time constant SUPPRESSION_TAU_S).
 const SUPPRESSION_HOLD_S := 1.2
 const SUPPRESSION_TAU_S := 5.0
+
+
+## GAMEPLAY-03D: the launcher is in the hands (first person: switched to it; AI: raised to fire or just fired).
+func launcher_in_hands(now: float) -> bool:
+	return sec_id != &"" and (sec_active or (sec_raised_at >= 0.0 and now - sec_raised_at < 6.0) or now < sec_shown_until)
 
 
 func suppression_at(now: float) -> float:

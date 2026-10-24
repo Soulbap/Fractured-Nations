@@ -154,6 +154,9 @@ var home_pos := Vector3.INF
 
 
 func tactic_name() -> String:
+	# GAMEPLAY-03B/D: a defence falling back a line is a REPOSITION in stages 100+ (readable as such in the HUD and inspector).
+	if tactic == Tactic.REPOSITION and tactic_leg >= 100:
+		return "Fall back (line %d)" % defence_line
 	return TACTIC_NAMES[tactic]
 
 

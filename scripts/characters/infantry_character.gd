@@ -331,6 +331,44 @@ func _process(delta: float) -> void:
 		_frame_skip = 0
 
 
+## GAMEPLAY-03D: the secondary weapon (the launcher) in the hands instead of the rifle: the rifle, its accessories and the
+## launcher carried on the back are hidden, `scene` is held at the weapon bone; false restores the loadout's look. Only the
+## full-detail meshes change (the merged distance LODs keep the carried look).
+var _held_secondary: Node3D
+
+
+func show_secondary(on: bool, scene: PackedScene) -> void:
+	if on == (_held_secondary != null) or skeleton == null:
+		return
+	for it in loadout.items:
+		if it.slot == "weapon" or it.slot == "back_weapon" or it.attach.begins_with("weapon:"):
+			for n: Node3D in pieces.get(it.id, []):
+				if is_instance_valid(n):
+					n.visible = not on
+	if on and scene:
+		var parent := _attach_point("ATT_Weapon")
+		if parent:
+			_held_secondary = scene.instantiate()
+			_held_secondary.name = "HeldSecondary"
+			parent.add_child(_held_secondary)
+			_held_secondary.transform = Transform3D(_att_correction(), Vector3.ZERO)
+			# The character's materials; the closest LOD only, at every distance (a small piece; it is held briefly).
+			for mi in _meshes(_held_secondary):
+				var n := String(mi.name)
+				mi.visible = not n.contains("_LOD") or n.ends_with("_LOD0")
+				for s in mi.mesh.get_surface_count():
+					var mat := mi.mesh.surface_get_material(s)
+					if mat:
+						mi.set_surface_override_material(s, InfantryMaterials.get_material(mat.resource_name, faction))
+	elif not on and _held_secondary:
+		_held_secondary.queue_free()
+		_held_secondary = null
+
+
+func secondary_shown() -> bool:
+	return _held_secondary != null
+
+
 ## Muzzle mount of the held weapon (null when the loadout has no weapon with one).
 func muzzle() -> Node3D:
 	return mounts.get("weapon:ATT_Muzzle")

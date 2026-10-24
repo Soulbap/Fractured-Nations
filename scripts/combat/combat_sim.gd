@@ -31,6 +31,9 @@ var shot_usec_max := 0
 ## GAMEPLAY-02C: explosives launched / burst, and the slowest burst (us).
 var launched := 0
 var detonated := 0
+## GAMEPLAY-03D: a soldier down against a burst: the height the fragments are traced to and the share of them that reach him.
+var blast_down_height := 0.35
+var blast_down_factor := 0.5
 var blast_usec_max := 0
 
 
@@ -372,7 +375,9 @@ func detonate(e: Dictionary) -> Dictionary:
 	for u: UnitState in sim.brain.units_near(at, r * 2.0):
 		if not u.alive or u.kind != UnitState.Kind.SOLDIER:
 			continue
-		var chest := u.position + Vector3.UP * 1.0
+		# GAMEPLAY-03D: a soldier flat on the ground (down_until) is reached lower (low cover shields him) and by fewer fragments.
+		var down := now < u.down_until
+		var chest := u.position + Vector3.UP * (blast_down_height if down else 1.0)
 		var d := centre.distance_to(chest)
 		if d > r * 2.0:
 			continue
@@ -387,6 +392,8 @@ func detonate(e: Dictionary) -> Dictionary:
 		var shielded: bool = cover.blocker != "range" and float(cover.distance) < d - 0.4
 		if shielded:
 			f *= 0.1
+		if down:
+			f *= blast_down_factor
 		var dmg := def.blast_damage * f
 		if dmg >= 1.0:
 			var done := apply_damage(u.id, dmg, Zone.BODY, src)

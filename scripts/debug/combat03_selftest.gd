@@ -36,6 +36,11 @@ func run(args: PackedStringArray) -> void:
 			var rf: Variant = await call("_" + key)
 			_expect(rf is Dictionary and not (rf as Dictionary).is_empty(), "%s: the check did not finish (script error?)" % key)
 			_log(key, rf if rf is Dictionary else {})
+	for key: String in ["g_launcher_hands", "g_grenade_react"]:
+		if _want(key):
+			var rg: Variant = await call("_" + key)
+			_expect(rg is Dictionary and not (rg as Dictionary).is_empty(), "%s: the check did not finish (script error?)" % key)
+			_log(key, rg if rg is Dictionary else {})
 	for key: String in ["d_open", "d_village", "d_forest", "d_reverse"]:
 		if _want(key):
 			var r: Variant = await _defence_series(key)
@@ -415,3 +420,130 @@ func _f_override() -> Dictionary:
 	_remove_structures(sc.ids)
 	return out
 
+
+# --- Combat polish (GAMEPLAY-03D) ------------------------------------------------------------------------------------------
+
+## An AI grenadier near the camera (a body) fires at an occupied enemy MG emplacement: the launcher is in its hands and the
+## rifle away from the moment it is raised (at least launcher_raise_s before the rocket leaves) until a moment after, then
+## the rifle is back. Sampled every frame from the body's character; the record (sec_raised_at / sec_shown_until) drives it.
+func _g_launcher_hands() -> Dictionary:
+	await _fresh_c()
+	war.rules["squad_composition"] = "standard"
+	var f := _field(260.0)
+	var at: Vector3 = demo.sim.tactics.pos.nearest_valid(f.at + f.dir * 110.0, 20.0)
+	var dir: Vector3 = -f.dir
+	var cp := CoreSelfTest.add_built(demo, &"command_post", at - dir * 18.0, dir, 1)
+	var em := CoreSelfTest.add_built(demo, &"mg_emplacement", at, dir, 1)
+	_expect(cp != null and em != null, "g_launcher_hands: the emplacement could not be built")
+	if cp == null or em == null:
+		return {}
+	ws.sync_bases()
+	var defs := _spawn(1, demo.sim.tactics.pos.nearest_valid(cp.position, 15.0), 2)
+	_tough(defs, 2000.0)
+	demo.sim.tactics.assign_garrison(defs, cp.base_id, SquadState.Owner.SQUAD)
+	await _warp(60.0, 6.0, 40.0, func() -> bool: return _u(defs.members[0]).fort_slot != "")
+	var atk := _spawn(0, f.at, 8)
+	_tough(atk, 2000.0)
+	var gren := _u(atk.members[5])
+	demo.detail.activate_at(gren.position)
+	demo.rts_camera.frame(gren.position, 0.35, 25.0)
+	await _seconds(1.0)
+	var st := {"first_shown": -1.0, "fired": -1.0, "shown_at_fire": false, "rifle_hidden_at_fire": false, "hidden_after": -1.0, "frames_shown": 0}
+	var body_of := func() -> InfantryCharacter:
+		var b: Variant = demo.sim.bodies.get(gren.id)
+		return (b as SoldierBody).character if b is SoldierBody else null
+	var rifle_hidden := func(c: InfantryCharacter) -> bool:
+		for it in c.loadout.items:
+			if it.slot == "weapon":
+				for n: Node3D in c.pieces.get(it.id, []):
+					if n.visible:
+						return false
+		return true
+	var on_launch := func(e: Dictionary) -> void:
+		if String(e.def) == "launcher" and int(e.src) == gren.id and float(st.fired) < 0.0:
+			st.fired = demo.sim.state.time
+			var c: InfantryCharacter = body_of.call()
+			st.shown_at_fire = c != null and c.secondary_shown()
+			st.rifle_hidden_at_fire = c != null and rifle_hidden.call(c)
+	demo.sim.state.explosive_launched.connect(on_launch)
+	demo.sim.tactics.order_tactic([atk.id], SquadState.Tactic.SUPPRESS, em.position, SquadState.Owner.PLAYER)
+	await _warp(150.0, 2.0, 150.0, func() -> bool:
+		var c: InfantryCharacter = body_of.call()
+		var now := demo.sim.state.time
+		if c and c.secondary_shown():
+			st.frames_shown += 1
+			if float(st.first_shown) < 0.0:
+				st.first_shown = now
+		if float(st.fired) >= 0.0 and c and not c.secondary_shown() and float(st.hidden_after) < 0.0:
+			st.hidden_after = now
+		return float(st.hidden_after) >= 0.0)
+	demo.sim.state.explosive_launched.disconnect(on_launch)
+	var c2: InfantryCharacter = body_of.call()
+	var out := {"body": c2 != null, "raised_before_fire_s": snappedf(float(st.fired) - float(st.first_shown), 0.01) if float(st.fired) >= 0.0 else -1.0,
+		"lowered_after_s": snappedf(float(st.hidden_after) - float(st.fired), 0.01) if float(st.hidden_after) >= 0.0 else -1.0,
+		"shown_at_fire": st.shown_at_fire, "rifle_hidden_at_fire": st.rifle_hidden_at_fire, "rifle_back": c2 != null and not rifle_hidden.call(c2),
+		"frames_shown": st.frames_shown, "holds": brain.rocket_holds.duplicate()}
+	_expect(c2 != null, "g_launcher_hands: the grenadier has no body near the camera")
+	_expect(float(st.fired) >= 0.0, "g_launcher_hands: the grenadier never fired %s" % str(out))
+	_expect(bool(st.shown_at_fire) and bool(st.rifle_hidden_at_fire), "g_launcher_hands: the launcher was not in the hands when it fired %s" % str(out))
+	_expect(float(out.raised_before_fire_s) >= brain.launcher_raise_s - 0.05, "g_launcher_hands: fired before the launcher was raised %s" % str(out))
+	_expect(float(out.lowered_after_s) >= 1.0 and bool(out.rifle_back), "g_launcher_hands: the rifle did not come back after the shot %s" % str(out))
+	_remove_structures([cp.id, em.id])
+	war.rules.erase("squad_composition")
+	return out
+
+
+## A grenade lands among three soldiers: the two who are not pinned react after a noticing delay (not on the throw) and get
+## clear; the pinned one stays down instead of getting up into the open.
+func _g_grenade_react() -> Dictionary:
+	await _fresh_c()
+	war.rules["squad_composition"] = "riflemen"
+	var f := _field()
+	var thrower := _spawn(0, f.at, 1)
+	thrower.roe = SquadState.Roe.HOLD_FIRE
+	var u := _u(thrower.members[0])
+	var aim: Vector3 = f.at + f.dir * 20.0
+	var tgt := _spawn(1, aim, 3)
+	tgt.roe = SquadState.Roe.HOLD_FIRE
+	_tough(tgt, 400.0)
+	var ids := Array(tgt.members)
+	await _seconds(1.0)
+	var pinned := _u(ids[0])
+	pinned.add_suppression(1.0, demo.sim.state.time)
+	var t_throw := demo.sim.state.time
+	var res := demo.sim.combat.throw_grenade(u.id, aim)
+	_expect(res.get("ok", false), "g_grenade_react: the throw was refused")
+	if not res.get("ok", false):
+		return {}
+	var e: Dictionary = res.e
+	var reacted := {}
+	var d0 := {}
+	for id in ids:
+		d0[id] = _flat(_u(id).position, e.at)
+	await _warp(float(e.t) - demo.sim.state.time + 1.0, 1.0, 20.0, func() -> bool:
+		for id in ids:
+			var x := _u(id)
+			if not reacted.has(id) and x.cover_note.begins_with("grenade!"):
+				reacted[id] = demo.sim.state.time - t_throw
+			# keep the pinned soldier pinned (the fire that pinned him goes on)
+		pinned.add_suppression(0.02, demo.sim.state.time)
+		return false)
+	var out := {"fuse_s": snappedf(float(e.t) - t_throw, 0.1), "react_s": {}, "notes": {}, "moved": {}, "downs": brain.grenade_downs}
+	for id in ids:
+		out.react_s[str(id)] = snappedf(float(reacted.get(id, -1.0)), 0.01)
+		out.notes[str(id)] = _u(id).cover_note
+		out.moved[str(id)] = snappedf(_flat(_u(id).position, e.at) - float(d0[id]), 0.1)
+	# Each free soldier notices after the delay, then gets clear - or, when the time left cannot carry him out of the blast
+	# (he stood where it landed and noticed late), gets down where he is; at least one gets clear.
+	var cleared := 0
+	var sensible := 0
+	for id in ids.slice(1):
+		var late_enough := float(reacted.get(id, -1.0)) >= brain.grenade_notice_s.x - 0.05
+		var clear := float(out.moved[str(id)]) > 2.0
+		var down := _u(id).cover_note.contains("no time to get clear")
+		cleared += 1 if late_enough and clear else 0
+		sensible += 1 if late_enough and (clear or down) else 0
+	_expect(sensible == 2 and cleared >= 1, "g_grenade_react: the free soldiers did not react after a delay and get clear (or down) %s" % str(out))
+	_expect(_u(ids[0]).cover_note.contains("stays down") and float(out.moved[str(ids[0])]) < 1.5, "g_grenade_react: the pinned soldier ran %s" % str(out))
+	war.rules.erase("squad_composition")
+	return out

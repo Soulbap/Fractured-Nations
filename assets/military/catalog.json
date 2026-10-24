@@ -1734,17 +1734,17 @@
   "category": "Defences",
   "size_above_ground": [
    4.18,
-   2.962,
+   2.877,
    2.52
   ],
   "footprint_xy": [
    -2.093,
-   -1.275,
+   -1.189,
    2.087,
    1.687
   ],
   "tris": [
-   11576,
+   9992,
    168,
    72
   ],
@@ -1760,7 +1760,7 @@
    "Sandbag",
    "Timber"
   ],
-  "glb_bytes": 1529260,
+  "glb_bytes": 1326224,
   "glb": "res://assets/military/modules/mg_emplacement.glb"
  },
  "mg_nest": {

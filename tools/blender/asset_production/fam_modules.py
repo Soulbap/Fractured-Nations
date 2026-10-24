@@ -786,29 +786,31 @@ def fighting_position(A):
 def mg_emplacement(A):
     """Machine-gun emplacement for a gunner and an assistant: 1.2 m sandbag parapet in front and on the sides, a timber
     frame carrying a sandbagged plywood roof at 2.2 m, so a 1 m firing band stays open over the forward arc; a timber
-    sill on the parapet for the gun, ammunition boxes; open rear."""
+    sill on the parapet for the gun, ammunition boxes; open rear. GAMEPLAY-03D: the roof covers the front two thirds
+    (over the gun and both slots) and leaves the rear open, so the crew is visible from behind and above (the RTS view
+    showed a closed box whether manned or not); the cover towards the enemy is unchanged."""
     a = A.Asset("mg_emplacement", "module", "MG emplacement", "Defences",
                 "Machine-gun emplacement: 1.2 m sandbag parapet front and sides, timber frame with a sandbagged roof at "
-                "2.2 m (1 m open firing band forward), gun sill, open rear. 4.1 x 3.4 m.")
+                "2.2 m over the front two thirds (1 m open firing band forward), gun sill, open rear. 4.1 x 3.4 m.")
     H = 10
     _bag_wall(a, -2.07, 2.07, 1.5, H, seed=31)
     _bag_wall(a, -1.2, 1.33, -1.9, H, seed=32, along="y")
     _bag_wall(a, -1.2, 1.33, 1.9, H, seed=33, along="y")
     a.box((1.3, 0.32, 0.07), (0, 1.47, 1.235), "Timber", L01)   # gun sill
     for sx in (-1.62, 1.62):
-        for sy in (-1.05, 1.22):
+        for sy in (-0.15, 1.22):
             a.box((0.14, 0.14, 2.2), (sx, sy, 1.1), "Timber", L01)
-    for sy in (-1.05, 1.22):
+    for sy in (-0.15, 1.22):
         a.box((3.5, 0.16, 0.16), (0, sy, 2.14), "Timber", L01)
-    a.box((3.95, 2.75, 0.05), (0, 0.1, 2.245), "Plywood", ALL)
-    _roof_bags(a, -1.9, 1.9, -1.2, 1.4, 2.27, 2, seed=34)
+    a.box((3.95, 1.75, 0.05), (0, 0.6, 2.245), "Plywood", ALL)
+    _roof_bags(a, -1.9, 1.9, -0.2, 1.4, 2.27, 2, seed=34)
     a.box((3.2, 2.5, 0.03), (0, 0.12, -0.005), "Dirt", ALL)
     for k, (x, y) in enumerate(((1.25, 0.6), (1.25, 0.25), (-1.3, 0.9))):
         a.box((0.32, 0.17, 0.2), (x, y, 0.112), "Paint_OD", L0 if k else L01)
     a.col_box((3.84, 0.34, 1.2), (0, 1.5, 0.6))
     a.col_box((0.34, 2.53, 1.2), (-1.9, 0.065, 0.6))
     a.col_box((0.34, 2.53, 1.2), (1.9, 0.065, 0.6))
-    a.col_box((3.95, 2.75, 0.33), (0, 0.1, 2.385))
+    a.col_box((3.95, 1.75, 0.33), (0, 0.6, 2.385))
     for sx in (-1.62, 1.62):
         a.col_box((0.14, 0.14, 1.0), (sx, 1.22, 1.7))
     a.marker("DEF_Gunner", (0, 0.75, 0), 0, "MG gunner slot (DefenceDefs mg_emplacement 0, role mg), faces +Y")

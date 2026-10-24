@@ -278,6 +278,7 @@ func update(delta: float) -> void:
 	prof.warm += tq - tw
 	prof_max.warm = maxi(prof_max.warm, tq - tw)
 	_prune_recent_shots()
+	_grenade_reactions(sim.state.time)
 	# Perception (and the tactical decision): each soldier perception_hz times per
 	# second, spread over the frames.
 	_accum = minf(_accum + delta * perception_hz * _queue.size(), float(_queue.size()))
@@ -1485,6 +1486,15 @@ var grenade_soldier_gap_s := 14.0
 var launcher_min_m := 35.0
 var launcher_max_m := 260.0
 var launcher_squad_gap_s := 12.0
+## GAMEPLAY-03D: shouldering the launcher before the shot, holding it after (the rifle is away meanwhile).
+var launcher_raise_s := 0.8
+var launcher_lower_s := 2.5
+## GAMEPLAY-03D: "grenade!" takes a moment to notice (seeded per soldier and grenade, longer when suppressed); a soldier
+## who cannot get clear before the burst (or is pinned) gets down where he is instead of running into the open.
+var grenade_notice_s := Vector2(0.5, 1.5)
+var grenade_told_s := Vector2(0.2, 0.5)
+var grenade_downs := 0
+var _nade_react: Array = []
 var grenades_thrown := 0
 var grenade_dodges := 0
 var grenade_holds := 0
@@ -1576,10 +1586,20 @@ func _support_weapons(u: UnitState, t: UnitState, now: float) -> bool:
 						clear = (edge.blocker == "structure" and int(edge.structure_id) == st.id) or edge.blocker == "range"
 					if not clear:
 						_rocket_hold("no clear line")
+					elif u.sec_raised_at < 0.0 or now - u.sec_raised_at > launcher_raise_s + 4.0:
+						# GAMEPLAY-03D: the rifle goes away and the launcher comes up first (the update is spent on it).
+						u.sec_raised_at = now
+						_rocket_hold("raising the launcher")
+						return true
+					elif now - u.sec_raised_at < launcher_raise_s:
+						_rocket_hold("raising the launcher")
+						return true
 					else:
 						# Aimed and braced: the launcher's own spread (WeaponDef) is the error, as for the player.
 						var res := sim.combat.fire_secondary(u.id, origin, (aim - origin).normalized(), CombatSim.Source.AI)
 						if res.get("fired", false):
+							u.sec_raised_at = -1.0
+							u.sec_shown_until = now + launcher_lower_s
 							rockets_fired += 1
 							_squad_rocket_at[sq.id if sq else -1] = now + launcher_squad_gap_s
 							_event(u, "launcher at %s %.0f m" % [st.type_id, d])
@@ -1619,10 +1639,50 @@ func _on_explosive(e: Dictionary) -> void:
 		if not u.alive or u.player_controlled or u.kind != UnitState.Kind.SOLDIER or u.fort_slot != "" or u.vehicle_id >= 0:
 			continue
 		var d := _flat(u.position, at)
-		var knows := u.faction == int(e.f) or d <= 4.0
+		var told := u.faction == int(e.f)
+		var knows := told or d <= 4.0
 		if not knows and d <= 20.0:
 			knows = sim.combat.line.trace(CombatSim.eye_of(u), at + Vector3.UP * 0.2, u.id, false).blocker == "range"
 		if not knows:
+			continue
+		# GAMEPLAY-03D: noticing takes a moment (the thrower's friends were told, the others see it land), more under fire.
+		var span := grenade_told_s if told else grenade_notice_s
+		var h := fposmod(sin(float(u.id) * 12.9898 + float(e.id) * 78.233) * 43758.5453, 1.0)
+		var delay := lerpf(span.x, span.y, h) * (1.0 + u.suppression_at(now))
+		_nade_react.append({"u": u.id, "at": at, "t": now + delay, "burst": float(e.t)})
+
+
+## The delayed "grenade!" reactions whose moment has come: get clear if there is time, else get down where he is.
+func _grenade_reactions(now: float) -> void:
+	if _nade_react.is_empty():
+		return
+	var def := sim.combat.weapon(&"grenade")
+	var r := def.blast_radius if def else 9.0
+	var keep: Array = []
+	for q: Dictionary in _nade_react:
+		if now < float(q.t):
+			keep.append(q)
+			continue
+		var u := sim.state.get_unit(int(q.u))
+		if u == null or not u.alive or u.player_controlled or u.fort_slot != "" or u.vehicle_id >= 0 or now >= float(q.burst):
+			continue
+		var at: Vector3 = q.at
+		var d := _flat(u.position, at)
+		if d > r + 1.0:
+			continue
+		# Pinned, or no time to run out of the blast (a soldier covers about 80 % of his speed from a standstill): down.
+		var reach := u.speed * 0.8 * (float(q.burst) - now)
+		if u.suppression_at(now) >= pinned_at or reach < r + 1.0 - d:
+			# Down where he is (the "staying here" reaction): no walking on along his order until the burst has passed.
+			u.react_target = u.position
+			u.react_state = UnitState.ReactState.ARRIVED
+			u.react_until = float(q.burst) + 1.5
+			u.down_until = float(q.burst) + 0.5
+			u.tactic = UnitState.Tactic.IN_COVER
+			u.tactic_since = now
+			u.cover_note = "grenade! %.0f m away: no time to get clear, down" % d if u.suppression_at(now) < pinned_at else "grenade! pinned: stays down"
+			grenade_downs += 1
+			_event(u, u.cover_note)
 			continue
 		var away := Vector3(u.position.x - at.x, 0.0, u.position.z - at.z)
 		away = away.normalized() if away.length() > 0.2 else Vector3(1, 0, 0).rotated(Vector3.UP, float(u.id))
@@ -1637,6 +1697,7 @@ func _on_explosive(e: Dictionary) -> void:
 		u.cover_note = "grenade! %.0f m away: getting clear" % d
 		grenade_dodges += 1
 		_event(u, u.cover_note)
+	_nade_react = keep
 
 
 ## A living friend (not u) walking to a point within r of p (an assault moving onto the landing spot).

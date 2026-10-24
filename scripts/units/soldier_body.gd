@@ -130,6 +130,12 @@ func _exit_tree() -> void:
 
 
 func _process(_delta: float) -> void:
+	# GAMEPLAY-03D: the launcher in the hands while the record says so (AI raising / just fired, or switched to in first person).
+	if character and unit and sim and unit.sec_id != &"":
+		var on := unit.launcher_in_hands(sim.state.time)
+		if on != character.secondary_shown():
+			var def := sim.combat.weapon(unit.sec_id)
+			character.show_secondary(on, def.viewmodel_scene if def else null)
 	if ring.visible:
 		UnitVisuals.scale_ring_for_camera(ring, selected, true)
 
