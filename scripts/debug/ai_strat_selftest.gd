@@ -10,46 +10,15 @@ extends AISquadSelfTest
 
 ## Time series of the last diagnosis / scenario: one line per sample.
 var trace: Array = []
+## GAMEPLAY-02A: record a CombatDiag of every _run_attack (returned as "diag").
+var diag_on := false
+## Results file in res://benchmarks/raw and the print prefix (subclasses change them).
+var out_file := "ai_strat_test.json"
+var prefix := "STRAT"
 
 
 func run(args: PackedStringArray) -> void:
-	shots = "--shots" in args
-	_shot_dir = "res://docs/ai_strat01"
-	for a in args:
-		if a.begins_with("--shot-dir="):
-			_shot_dir = a.trim_prefix("--shot-dir=")
-	var oi := args.find("--only")
-	if oi >= 0 and oi + 1 < args.size():
-		only = args[oi + 1].split(",")
-	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
-	con = demo.construction
-	sm = demo.structures
-	cs = demo.sim.state.construction
-	combat = demo.sim.combat
-	lof = combat.line
-	brain = demo.sim.brain
-	def = combat.weapon(&"rifle")
-	war = demo.sim.state.war
-	ws = demo.sim.war
-	SoldierBody.require_mouse_capture = false
-	var state := demo.sim.state
-	state.shot_fired.connect(_on_shot_rec)
-	state.unit_damaged.connect(func(t: UnitState, _a: float, _z: int, _s: int) -> void:
-		dmg_events += 1
-		if not t.alive:
-			dmg_on_dead += 1)
-	state.unit_died.connect(func(u: UnitState) -> void:
-		deaths.append({"id": u.id, "t": snappedf(state.time, 0.1)}))
-	tree.create_timer(3300.0, true, false, true).timeout.connect(func() -> void:
-		failures.append("watchdog: test did not finish")
-		_finish())
-	await _physics(60)
-	_load_world_data()
-	for u in state.soldiers():
-		default_soldiers.append(u.position)
-	_pause_ai(true)
-	for sq: SquadState in state.all_squads():
-		_stations[sq.id] = sq.station_objective
+	await _strat_setup(args, "res://docs/ai_strat01")
 	_log("setup", {"soldiers": default_soldiers.size(), "ops_assault": demo.sim.tactics.ops_assault})
 	if _want("a_assault"):
 		_log("a_assault", await _a_assault())
@@ -86,6 +55,47 @@ func run(args: PackedStringArray) -> void:
 	if _want("s0_repro"):
 		_log("s0_repro", await _s0_repro())
 	await _end_strat()
+
+
+## Shared setup of the strategy suites: arguments, references, signal recorders, watchdog, world data, AI paused.
+func _strat_setup(args: PackedStringArray, shot_dir: String) -> void:
+	shots = "--shots" in args
+	_shot_dir = shot_dir
+	for a in args:
+		if a.begins_with("--shot-dir="):
+			_shot_dir = a.trim_prefix("--shot-dir=")
+	var oi := args.find("--only")
+	if oi >= 0 and oi + 1 < args.size():
+		only = args[oi + 1].split(",")
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	con = demo.construction
+	sm = demo.structures
+	cs = demo.sim.state.construction
+	combat = demo.sim.combat
+	lof = combat.line
+	brain = demo.sim.brain
+	def = combat.weapon(&"rifle")
+	war = demo.sim.state.war
+	ws = demo.sim.war
+	SoldierBody.require_mouse_capture = false
+	var state := demo.sim.state
+	state.shot_fired.connect(_on_shot_rec)
+	state.unit_damaged.connect(func(t: UnitState, _a: float, _z: int, _s: int) -> void:
+		dmg_events += 1
+		if not t.alive:
+			dmg_on_dead += 1)
+	state.unit_died.connect(func(u: UnitState) -> void:
+		deaths.append({"id": u.id, "t": snappedf(state.time, 0.1)}))
+	tree.create_timer(3300.0, true, false, true).timeout.connect(func() -> void:
+		failures.append("watchdog: test did not finish")
+		_finish())
+	await _physics(60)
+	_load_world_data()
+	for u in state.soldiers():
+		default_soldiers.append(u.position)
+	_pause_ai(true)
+	for sq: SquadState in state.all_squads():
+		_stations[sq.id] = sq.station_objective
 
 
 func _end_strat() -> void:
@@ -142,9 +152,17 @@ func _run_attack(sc: Dictionary, max_sim := 700.0, scale := 12.0, near := false)
 		return {"started": false}
 	demo.rts_camera.frame(obj.position if near else Vector3(9000, 0, 9000), 0.0, 120.0 if near else 150.0)
 	trace.clear()
-	var st := {"next": demo.sim.state.time, "stages": [], "whys": [], "roles": {}, "best": INF, "best_t": demo.sim.state.time, "max_stall": 0.0, "withdrew": false}
+	var st := {"next": demo.sim.state.time, "stages": [], "whys": [], "roles": {}, "best": INF, "best_t": demo.sim.state.time, "max_stall": 0.0, "withdrew": false,
+		"diag_next": demo.sim.state.time}
+	var dg: CombatDiag = null
+	if diag_on:
+		dg = CombatDiag.new()
+		dg.start(demo.sim, op, atk, defs, obj.position)
 	var w := await _warp(max_sim, scale, 200.0, func() -> bool:
 		var now := demo.sim.state.time
+		if dg and now >= st.diag_next:
+			st.diag_next = now + 1.0
+			dg.sample()
 		if st.stages.is_empty() or st.stages[-1] != op.stage_name():
 			st.stages.append(op.stage_name())
 			st.whys.append("%s: %s" % [op.stage_name(), op.stage_why])
@@ -165,9 +183,13 @@ func _run_attack(sc: Dictionary, max_sim := 700.0, scale := 12.0, near := false)
 					st.best_t = now
 				st.max_stall = maxf(st.max_stall, now - st.best_t)
 		return not op.is_active())
+	var diag := {}
+	if dg:
+		dg.stop()
+		diag = dg.result()
 	var left := _alive_count(atk)
 	var started := op.start_strength
-	return {"started": true, "op": {"phase": op.phase_name(), "stage": op.stage_name(), "outcome": op.outcome, "losses": op.losses, "start": started},
+	return {"diag": diag, "started": true, "op": {"phase": op.phase_name(), "stage": op.stage_name(), "outcome": op.outcome, "losses": op.losses, "start": started},
 		"owner": obj.owner, "attackers_left": left, "defenders_left": _alive_count(defs), "stages": st.stages, "stage_whys": st.whys, "roles_seen": st.roles.keys(),
 		"max_assault_stall_s": snappedf(st.max_stall, 1.0), "withdrew": st.withdrew, "warp": w, "stage_why": op.stage_why, "withdraw_why": op.withdraw_why,
 		"trace": trace.slice(0, 80), "consistency": _consistency(), "op_obj": op}
@@ -846,13 +868,13 @@ func _s1_hunt(near := false, stop_on_bad := true) -> Dictionary:
 
 func _log(check: String, data: Dictionary) -> void:
 	results[check] = data
-	print("STRAT %s %s" % [check, JSON.stringify(data)])
+	print("%s %s %s" % [prefix, check, JSON.stringify(data)])
 
 
 func _expect(cond: bool, msg: String) -> void:
 	if not cond and msg != "":
 		failures.append(msg)
-		print("STRAT FAILED CHECK: ", msg)
+		print(prefix + " FAILED CHECK: ", msg)
 
 
 func _shot(shot_name: String) -> void:
@@ -871,10 +893,10 @@ func _finish() -> void:
 	results["pass"] = failures.is_empty()
 	results["tactics"] = demo.sim.tactics.summary()
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://benchmarks/raw"))
-	var f := FileAccess.open(ProjectSettings.globalize_path("res://benchmarks/raw/ai_strat_test.json"), FileAccess.WRITE)
+	var f := FileAccess.open(ProjectSettings.globalize_path("res://benchmarks/raw/" + out_file), FileAccess.WRITE)
 	f.store_string(JSON.stringify(results, "  "))
 	f.close()
-	print("STRAT %s %s" % ["PASS" if failures.is_empty() else "FAIL", JSON.stringify(failures)])
+	print("%s %s %s" % [prefix, "PASS" if failures.is_empty() else "FAIL", JSON.stringify(failures)])
 	if keep_open:
 		return
 	demo.shutdown_cleanup()

@@ -68,6 +68,15 @@ var fallback_pos := Vector3.INF
 var reassess_at := 0.0
 var assault_pos := Vector3.INF
 var reason := ""
+## GAMEPLAY-02A: the fire support's window. False: the support observes and fires only at enemies it sees (or that were just
+## reported on the objective); true: the assault is crossing the last few hundred metres and the support covers it with
+## fire at the believed defenders. Set by OpCoordination from where the assault squads are.
+var cover_fire := false
+## GAMEPLAY-02A: the assault's progress (closest assault squad to the objective) and since when it has not improved; squad id
+## -> sim time it may start its assault (staggered starts).
+var progress_best := INF
+var progress_t := 0.0
+var assault_at := {}
 ## NAVIGATION N1-C1: since when (sim time) no squad of the operation could be given a route to its goal; -1 = not blocked.
 var blocked_since := -1.0
 ## NAV-PERF-01B: the operation was started and its squads' routes are being planned (RouteService); it begins (transport plan, the
@@ -112,7 +121,8 @@ func to_dict() -> Dictionary:
 		"stage": stage, "stage_since": stage_since, "roles": roles.duplicate(), "wait": wait_reason, "stage_why": stage_why,
 		"withdraw_why": withdraw_why, "fallback": fallback_pos, "reassess_at": reassess_at, "assault_pos": assault_pos,
 		"vehicles": Array(vehicles), "transport": transport.duplicate(true), "readiness": readiness.duplicate(true), "supply_why": supply_why,
-		"blocked_since": blocked_since, "starting": starting}
+		"blocked_since": blocked_since, "starting": starting, "cover_fire": cover_fire, "progress_best": progress_best, "progress_t": progress_t,
+		"assault_at": assault_at.duplicate()}
 
 
 static func from_dict(d: Dictionary) -> OperationState:
@@ -147,6 +157,11 @@ static func from_dict(d: Dictionary) -> OperationState:
 	o.blocked_since = d.get("blocked_since", -1.0)
 	o.starting = d.get("starting", false)
 	o.assault_pos = d.get("assault_pos", Vector3.INF)
+	o.cover_fire = d.get("cover_fire", false)
+	o.progress_best = d.get("progress_best", INF)
+	o.progress_t = d.get("progress_t", 0.0)
+	for k in d.get("assault_at", {}):
+		o.assault_at[int(k)] = float(d.assault_at[k])
 	o.vehicles = PackedInt32Array(d.get("vehicles", []))
 	o.transport = d.get("transport", {}).duplicate(true)
 	o.readiness = d.get("readiness", {}).duplicate(true)

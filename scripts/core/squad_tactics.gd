@@ -1502,13 +1502,51 @@ func _run_suppress(sq: SquadState, a: Dictionary, now: float) -> void:
 	if why != "":
 		_finish(sq, why, SquadState.Tactic.REGROUP)
 		return
-	# Fire discipline: an operation's fire support that has seen no enemy (it fires at the believed centre of the
-	# objective) fires in bursts - eight seconds in twenty-four - because ammunition is not free; as soon as an
-	# enemy is seen the fire is continuous.
-	if sq.tactic_owner == SquadState.Owner.OPERATION and int(a.seen_n) == 0 and fmod(now - sq.tactic_since, 24.0) >= 8.0:
-		_cease_fire(units)
+	if sq.tactic_owner == SquadState.Owner.OPERATION:
+		_support_fire(sq, a, units, target, now)
 		return
 	_fire_on(units, target, _spread_for(sq), mission_s)
+
+
+## GAMEPLAY-02A: fire control of an operation's fire support. Its soldiers engage every enemy they see on their own
+## (CombatBrain); fire missions go to the freshest reports on the objective (several, one per soldier in turn) - always
+## when a report is new (an enemy just seen or firing), otherwise only while the operation's cover-fire window is open (the
+## assault is crossing the defenders' ground), then at the objective's believed centre if nothing better is known. Outside
+## that the support observes: blind fire from the deployment on emptied its magazines before the assault needed it.
+func _support_fire(sq: SquadState, a: Dictionary, units: Array, target: Vector3, now: float) -> void:
+	var op := sim.state.war.operation(sq.tactic_op)
+	var cover: bool = op != null and op.cover_fire
+	var obj := sim.state.war.objective(op.target_objective) if op else null
+	var centre: Vector3 = obj.position if obj else target
+	var r: float = (obj.radius if obj else 60.0) + 60.0
+	var fresh: Array[Vector3] = []
+	var known: Array[Vector3] = []
+	if sim.war != null and sim.war.enabled:
+		for c: ContactState in sim.war.intel.contacts_near(sq.faction, centre, r):
+			if c.status == ContactState.Status.LOST or c.conf < 0.3:
+				continue
+			if now - c.t_seen <= 15.0:
+				fresh.append(c.pos)
+			elif now - c.t_seen <= 90.0:
+				known.append(c.pos)
+			if fresh.size() + known.size() >= 4:
+				break
+	var targets: Array[Vector3] = fresh
+	if cover:
+		targets = fresh + known
+	if targets.is_empty():
+		# Nothing reported to fire at: fire at the objective's centre hit nobody when the defenders stood elsewhere (1000
+		# rounds, no suppression), so the support watches until the first sighting or shot is reported.
+		_cease_fire(units)
+		sq.tactic_rejected = "observing: no report of the enemy on the objective to fire at" if cover else "observing: no fresh report of the enemy on the objective, the assault is not crossing yet"
+		return
+	sq.tactic_rejected = "" if cover else "fire at fresh reports with half the squad until the assault crosses"
+	var spread := _spread_for(sq)
+	for i in units.size():
+		if not cover and i % 2 == 1:
+			_cease_fire([units[i]])  # outside the window half the squad fires: the ammunition must last into the assault
+			continue
+		_fire_on([units[i]], targets[i % targets.size()], spread, mission_s)
 
 
 func _suppress_over(sq: SquadState, a: Dictionary, now: float) -> String:
@@ -1531,7 +1569,9 @@ func _spread_for(sq: SquadState) -> float:
 	if sq.tactic_contact >= 0:
 		var c := sim.war.intel.get_contact(sq.faction, sq.tactic_contact)
 		if c:
-			return clampf(c.unc * 0.5, 4.0, 22.0)
+			# GAMEPLAY-02A: aimed at the reported position, spread over a third of its uncertainty (half of it scattered most
+			# rounds beyond the 3 m a near miss needs: a thousand rounds suppressed nobody).
+			return clampf(c.unc * 0.3, 3.0, 15.0)
 	return 8.0
 
 
@@ -1697,6 +1737,11 @@ func _run_assault(sq: SquadState, a: Dictionary, now: float) -> void:
 			var step := (42.0 if sq.tactic_ext else 28.0) * (2.2 if quiet_march else 1.0)
 			if sq.teams.size() < 2:
 				_advance(sq, a, 0, target, now, step)
+			elif quiet_march and d > 160.0 and (not sq.tactic_dest.is_finite() or int(_meta(sq, "leg_team", 0)) < 0):
+				# GAMEPLAY-02A: nobody sees or fires at the squad and it is still far out: both teams move together
+				# (leapfrogging out of contact halved the speed across the open ground); the bounds start with the first
+				# contact or 160 m out (a squad that marched on to 45 m of hidden defenders was shot in seconds).
+				_advance(sq, a, -1, target, now, step)
 			else:
 				# Leapfrog: the team that is behind moves up (or the two take turns when level), the
 				# other one fires; the squad closes as one body instead of one team running ahead.
@@ -1708,7 +1753,10 @@ func _run_assault(sq: SquadState, a: Dictionary, now: float) -> void:
 					_cease_fire(_units(sq))
 					return
 				var team := _assault_mover(sq, target)
-				if front > 40.0:
+				if team < 0:
+					team = 0
+				# The covering team fires only where a rifle can reach the defenders (not from 300 m at a map position).
+				if front > 40.0 and (front < 260.0 or int(a.seen_n) > 0):
 					_fire_on(_units(sq, 1 - team), target, _spread_for(sq), mission_s)
 				else:
 					_cease_fire(_units(sq))

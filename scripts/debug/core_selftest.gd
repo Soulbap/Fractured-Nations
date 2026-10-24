@@ -440,3 +440,26 @@ func _measure(frames: int) -> Dictionary:
 		"draw_calls": Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
 		"physics_ms": snappedf(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0, 0.01),
 		"nav_ms": snappedf(Performance.get_monitor(Performance.TIME_NAVIGATION_PROCESS) * 1000.0, 0.01)}
+
+
+## A finished building of faction f at `at` facing `out` (the scenario-setup path: check_building, groundwork, the record;
+## no site), or null when the ground refuses it. Static: the GAMEPLAY-02 suite (another test family) uses it too.
+static func add_built(demo: CoreDemo, type_id: StringName, at: Vector3, out: Vector3, f: int) -> StructureState:
+	var def := StructureCatalog.get_def(type_id)
+	var yaw := atan2(-out.x, -out.z)
+	for dr: float in [0.0, 5.0, 10.0, 15.0, 22.0, 30.0]:
+		for k in 8:
+			var p := at + Vector3(cos(k * TAU / 8.0), 0.0, sin(k * TAU / 8.0)) * dr
+			p = demo.on_ground(p.x, p.z, 0.0)
+			var chk := demo.structures.check_building(def, p, yaw, -1, true)
+			if chk.ok:
+				var s := demo.sim.state.construction.add_building(type_id, chk.xform.origin, yaw, f)
+				demo.sim.state.construction.add_clearings(demo.structures.clearings_for(s, true))
+				return s
+			if dr == 0.0:
+				break
+	return null
+
+
+func _add_built(type_id: StringName, at: Vector3, out: Vector3, f: int) -> StructureState:
+	return add_built(demo, type_id, at, out, f)

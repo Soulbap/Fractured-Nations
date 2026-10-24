@@ -407,6 +407,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--navigation-n1-test" in args:
 		_navigation_n1_selftest = NavigationN1SelfTest.new(self)
 		_navigation_n1_selftest.run.call_deferred(args)
+	elif "--combat02-test" in args:
+		_ai_strat_selftest = Combat02SelfTest.new(self)
+		_ai_strat_selftest.run.call_deferred(args)
 	elif "--ai-strat-test" in args:
 		_ai_strat_selftest = AIStratSelfTest.new(self)
 		_ai_strat_selftest.run.call_deferred(args)

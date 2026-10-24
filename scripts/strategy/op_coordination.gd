@@ -19,6 +19,15 @@
 ## 130 m, nobody had another role. Here the support fires first, the assault closes only once it is set
 ## (or after a timeout), and a depleted or unreachable support squad is replaced or skipped.
 ##
+## GAMEPLAY-02A (measured with CombatDiag, 3 seeds of the Haugen attack): the support never saw a defender and fired ~1500
+## rounds blind at the objective's centre from the deployment on (defenders' mean suppression 0.02), so it was out of
+## ammunition when the assault reached the defenders' range; the two assault squads left the staging point 330 m out together,
+## on one line, bounding half-speed through open ground; depleted squads were sent back in one by one. Now: the support
+## observes and fires at what it sees or was just told about, and covers with fire only while the assault crosses the last
+## few hundred metres (OperationState.cover_fire); assault squads first move up to their own assault positions, spread
+## sideways, and start one after the other; a squad at half strength or less becomes fire support instead of walking in
+## again; an assault without progress for progress_stall_s commits everything once, then withdraws.
+##
 ## Every stage has a success condition, a timeout and a fallback; the operation withdraws (all squads
 ## break contact to a fallback point, the support covering last) when its effectiveness is too low,
 ## instead of being marked FAILED while the survivors stand in the killing ground. Player-controlled
@@ -39,6 +48,15 @@ var withdraw_eff := 0.32
 var min_squad_n := 2
 ## The assault goes in once the support is set or this long after deployment, whichever first.
 var assault_hold_s := 35.0
+## GAMEPLAY-02A: assault positions this far from the objective (m), squads this far apart sideways; assault squads start this
+## many seconds after each other; the support covers with fire while the nearest assault squad is between these distances.
+var assault_line_m := 250.0
+var assault_spread_m := 50.0
+var assault_stagger_s := 14.0
+var cover_fire_far_m := 290.0
+var cover_fire_near_m := 35.0
+## No assault squad got 10 m closer for this long: commit everything once, then withdraw.
+var progress_stall_s := 75.0
 
 var ws: WarSim
 var sim: WorldSim
@@ -144,6 +162,7 @@ func withdraw(op: OperationState, why: String) -> void:
 		return
 	withdrawals += 1
 	op.withdraw_why = why
+	op.cover_fire = false
 	var sqs := _squads(op)
 	var lead: SquadState = sqs[0] if not sqs.is_empty() else null
 	var fb := Vector3.INF
@@ -254,10 +273,38 @@ func _issue_roles(op: OperationState, obj: ObjectiveState) -> void:
 					op.roles[sq.id] = SquadState.OpRole.ASSAULT
 					sq.op_role = SquadState.OpRole.ASSAULT
 					role_changes += 1
-					_hold(op, sq)
+					_move_up(op, obj, sq)
+			SquadState.OpRole.ASSAULT:
+				_move_up(op, obj, sq)
 			_:
 				_hold(op, sq)
 		k += 1
+
+
+## GAMEPLAY-02A: an assault squad moves up by bounds to its own assault position (assault_line_m out, spread sideways from the
+## other assault squads) and waits there in cover; one that is already that close holds where it is.
+func _move_up(op: OperationState, obj: ObjectiveState, sq: SquadState) -> void:
+	var p := _assault_position(op, obj, sq)
+	if not p.is_finite() or _flat(sim.squads._centroid(sq), p) < 40.0 or _flat(sim.squads._centroid(sq), obj.position) < assault_line_m:
+		_hold(op, sq)
+		return
+	var res := sim.tactics.assign_for_operation(sq, SquadState.Tactic.BOUND, p, "operation #%d: move up to the assault position %.0f m from %s" % [op.id, _flat(p, obj.position), obj.obj_name])
+	if not res.ok:
+		_hold(op, sq)
+
+
+## Where the i-th assault squad waits: on the line from the objective towards the force, assault_line_m out, the squads
+## assault_spread_m apart sideways (centred on the line), snapped to walkable ground.
+func _assault_position(op: OperationState, obj: ObjectiveState, sq: SquadState) -> Vector3:
+	var assault := _of_role(op, SquadState.OpRole.ASSAULT)
+	var i := maxi(assault.find(sq), 0)
+	var from := op.staging_pos if op.staging_pos.is_finite() else sim.squads._centroid(sq)
+	var dir := Vector3(from.x - obj.position.x, 0.0, from.z - obj.position.z).normalized()
+	if dir.length() < 0.1:
+		return Vector3.INF
+	var side := Vector3(-dir.z, 0.0, dir.x)
+	var off := float(i) - float(assault.size() - 1) * 0.5
+	return sim.tactics.pos.nearest_valid(obj.position + dir * assault_line_m + side * off * assault_spread_m, 30.0)
 
 
 ## A squad waiting for its turn: takes cover where it stands.
@@ -301,43 +348,83 @@ func _update_support(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dic
 	for sq: SquadState in man:
 		if sq.tactic == SquadState.Tactic.FLANK and sq.tactic_phase < SquadTactics.PH_MOVE and held < support_timeout_s:
 			man_ready = false
-	var go := held >= assault_hold_s or (held >= 8.0 and man_ready and _of_role(op, SquadState.OpRole.SUPPORT).is_empty())
-	op.wait_reason = "" if go else "support firing for %d s of %d, maneuver %s" % [int(held), int(assault_hold_s), "in position" if man_ready else "moving"]
+		# GAMEPLAY-02A: the assault waits until the flanking squad is about as close as the assault squads (an assault that
+		# went in while the flank was still 250 m out met the defenders alone).
+		if sq.tactic == SquadState.Tactic.FLANK and _flat(sim.squads._centroid(sq), obj.position) > assault_line_m * 0.85 and held < assault_hold_s + 40.0:
+			man_ready = false
+	# GAMEPLAY-02A: the assault squads are at their assault positions (or gave up moving there).
+	var moving := 0
+	for sq: SquadState in _of_role(op, SquadState.OpRole.ASSAULT):
+		if sq.tactic == SquadState.Tactic.BOUND:
+			moving += 1
+	var in_place := moving == 0
+	var go := (held >= 8.0 and in_place and man_ready) or held >= assault_hold_s + 30.0 \
+			or (held >= 8.0 and man_ready and in_place and _of_role(op, SquadState.OpRole.SUPPORT).is_empty())
+	op.wait_reason = "" if go else "support in overwatch for %d s; %s; maneuver %s" % [int(held), "assault squads in position" if in_place else "%d assault squad(s) moving up" % moving,
+		"in position" if man_ready else "moving"]
 	if go:
-		_set_stage(op, OperationState.Stage.ASSAULT, "support has been firing for %d s: the assault goes in" % int(held))
+		_set_stage(op, OperationState.Stage.ASSAULT, "support in overwatch for %d s, assault squads %s: the assault goes in, one squad after the other" % [int(held),
+			"in position" if in_place else "still moving up"])
+		op.progress_best = INF
+		op.progress_t = now
+		# The squad nearest the objective goes first, the others follow at assault_stagger_s intervals.
+		var order: Array = _of_role(op, SquadState.OpRole.ASSAULT)
+		order.sort_custom(func(x: SquadState, y: SquadState) -> bool: return _flat(sim.squads._centroid(x), obj.position) < _flat(sim.squads._centroid(y), obj.position))
 		var k := 0
-		for sq: SquadState in sqs:
-			var role: int = int(op.roles.get(sq.id, SquadState.OpRole.NONE))
-			if role == SquadState.OpRole.ASSAULT:
+		for sq: SquadState in order:
+			if k == 0:
 				_send_assault(op, sq, obj, k)
-				k += 1
+			else:
+				op.assault_at[sq.id] = now + assault_stagger_s * k
+			k += 1
 
 
 func _update_assault(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dictionary, now: float) -> void:
+	var obj_pos := obj.position
+	var closest := INF
+	var closest_fit := INF
+	for sq: SquadState in sqs:
+		var role: int = int(op.roles.get(sq.id, SquadState.OpRole.NONE))
+		if (role == SquadState.OpRole.ASSAULT or role == SquadState.OpRole.MANEUVER) and not op.assault_at.has(sq.id):
+			closest = minf(closest, _flat(sim.squads._centroid(sq), obj_pos))
+			if not _depleted(sq):
+				closest_fit = minf(closest_fit, _flat(sim.squads._centroid(sq), obj_pos))
+	# GAMEPLAY-02A: the support covers with fire while the assault crosses the ground the defenders can reach.
+	op.cover_fire = closest <= cover_fire_far_m and closest >= cover_fire_near_m
 	if now < op.reassess_at:
 		return
 	op.reassess_at = now + 4.0
-	var obj_pos := obj.position
-	var closest := INF
-	for sq: SquadState in sqs:
-		var role: int = int(op.roles.get(sq.id, SquadState.OpRole.NONE))
-		if role == SquadState.OpRole.ASSAULT or role == SquadState.OpRole.MANEUVER:
-			closest = minf(closest, _flat(sim.squads._centroid(sq), obj_pos))
+	if closest < op.progress_best - 10.0:
+		op.progress_best = closest
+		op.progress_t = now
 	var k := 0
 	for sq: SquadState in sqs:
 		var role: int = int(op.roles.get(sq.id, SquadState.OpRole.NONE))
 		match role:
 			SquadState.OpRole.ASSAULT, SquadState.OpRole.MANEUVER:
+				if op.assault_at.has(sq.id):
+					# A staggered start: this squad goes once its time has come (the one before it is on its way).
+					if now >= float(op.assault_at[sq.id]):
+						op.assault_at.erase(sq.id)
+						_send_assault(op, sq, obj, k)
+						op.stage_why = "%s starts its assault (%.0f s after the first squad)" % [sq.squad_name, assault_stagger_s * k]
 				# An assaulting squad whose tactic ended (done, failed, cancelled) is tasked again after a pause.
-				if sq.tactic == SquadState.Tactic.NONE and now >= float(_cool.get(sq.id, 0.0)) and obj.owner != op.faction:
+				elif sq.tactic == SquadState.Tactic.NONE and now >= float(_cool.get(sq.id, 0.0)) and obj.owner != op.faction:
 					_cool[sq.id] = now + 10.0
 					var f := _fitness(sq)
-					if f >= 0.3:
+					if _depleted(sq) and _flat(sim.squads._centroid(sq), obj_pos) > 60.0:
+						# GAMEPLAY-02A: half the squad is gone - it does not walk in again on its own; it supports from where it is.
+						if _to_support(op, obj, sq):
+							op.stage_why = "%s (%d of %d left) supports the others from %.0f m instead of assaulting again" % [sq.squad_name, sq.members.size(),
+								sq.members.size() + sq.fallen.size(), _flat(sim.squads._centroid(sq), obj_pos)]
+					elif f >= 0.3:
 						_send_assault(op, sq, obj, k)
 						op.stage_why = "%s re-tasked to assault (its tactic ended)" % sq.squad_name
 			SquadState.OpRole.SUPPORT:
-				if closest < 70.0:
-					# The assault is on the objective: the support stops firing at it and moves in to secure.
+				if closest_fit < cover_fire_near_m:
+					# An assault squad that can still fight is on the objective: the support stops firing at it and moves in to
+					# secure (GAMEPLAY-02A: only when it is on the objective, and not for a shattered squad - lifting the fire at 70 m let
+					# the defenders shoot the last 50 m of the assault unhindered).
 					if sq.tactic == SquadState.Tactic.SUPPRESS or sq.tactic == SquadState.Tactic.NONE:
 						_send_assault(op, sq, obj, k + 3)
 						op.stage_why = "assault on the objective: %s lifts fire and moves in" % sq.squad_name
@@ -421,6 +508,38 @@ func _update_assault(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dic
 				_idle_since.erase(op.id)
 	# A depleted support squad is replaced by a reserve (rarely, explained).
 	_replace_support(op, sqs, obj)
+	# GAMEPLAY-02A: no assault squad got closer for progress_stall_s - every fit squad goes in together once (the support lifts
+	# its fire and joins); a second stall breaks the attack off instead of waiting for assault_stall_s.
+	# On the objective (closest < 40 m) the capture decides, not the distance.
+	if closest < 40.0:
+		op.progress_t = now
+	if obj.owner != op.faction and now - op.progress_t > progress_stall_s:
+		var believed := maxi(int(a.seen), ws.intel.threat_near(op.faction, obj.position, obj.radius + 150.0))
+		if not op.assault_at.has(-1) and float(a.soldiers) < 2.0 * float(maxi(believed, 1)):
+			timeouts += 1
+			withdraw(op, "no progress for %d s and too few to go in together (%d of ours against %d believed)" % [int(progress_stall_s), a.soldiers, believed])
+			return
+		if not op.assault_at.has(-1):
+			op.assault_at[-1] = now
+			op.progress_t = now
+			var kk := 0
+			var sent: Array[String] = []
+			for sq: SquadState in sqs:
+				if sq.members.size() >= min_squad_n and _fitness(sq) >= 0.2:
+					op.roles[sq.id] = SquadState.OpRole.ASSAULT
+					sq.op_role = SquadState.OpRole.ASSAULT
+					if sq.tactic != SquadState.Tactic.ASSAULT:
+						if sq.tactic != SquadState.Tactic.NONE and sq.tactic_owner == SquadState.Owner.OPERATION:
+							sim.tactics.cancel(sq, "every squad goes in")
+						_send_assault(op, sq, obj, kk)
+					sent.append(sq.squad_name)
+				kk += 1
+			role_changes += 1
+			op.stage_why = "no progress for %d s (closest %.0f m): %s go in together" % [int(progress_stall_s), op.progress_best, ", ".join(sent)]
+			return
+		timeouts += 1
+		withdraw(op, "no progress for %d s after committing every squad (closest %.0f m)" % [int(progress_stall_s), op.progress_best])
+		return
 	if now - op.stage_since > assault_stall_s and obj.owner != op.faction:
 		timeouts += 1
 		withdraw(op, "the assault has not taken the objective in %d s" % int(now - op.stage_since))
@@ -459,6 +578,7 @@ func _finish_withdraw(op: OperationState, sqs: Array, now: float) -> void:
 func _secure(op: OperationState, obj: ObjectiveState, sqs: Array) -> void:
 	_set_stage(op, OperationState.Stage.SECURE, "%s is being taken: the squads move in" % obj.obj_name)
 	op.wait_reason = ""
+	op.cover_fire = false
 	var k := 0
 	for sq: SquadState in sqs:
 		if sq.tactic != SquadState.Tactic.NONE and sq.tactic_owner == SquadState.Owner.OPERATION:
@@ -484,6 +604,23 @@ func _send_assault(op: OperationState, sq: SquadState, obj: ObjectiveState, k: i
 	var res := sim.tactics.assign_for_operation(sq, SquadState.Tactic.ASSAULT, _slot(obj, k), "operation #%d: assault on %s" % [op.id, obj.obj_name], {"ext": true})
 	if not res.ok:
 		op.stage_why += "; %s cannot assault (%s)" % [sq.squad_name, res.reason]
+
+
+## GAMEPLAY-02A: half or more of the squad is gone.
+func _depleted(sq: SquadState) -> bool:
+	return sq.members.size() * 2 <= sq.members.size() + sq.fallen.size()
+
+
+## A depleted assault squad becomes fire support from about where it stands (it does not walk into the fire again).
+func _to_support(op: OperationState, obj: ObjectiveState, sq: SquadState) -> bool:
+	var d := clampf(_flat(sim.squads._centroid(sq), obj.position), 80.0, support_standoff_m)
+	var res := sim.tactics.assign_for_operation(sq, SquadState.Tactic.SUPPRESS, _fire_target(op, obj), "operation #%d: depleted, supports the assault" % op.id, {"standoff": d})
+	if not res.ok:
+		return false
+	op.roles[sq.id] = SquadState.OpRole.SUPPORT
+	sq.op_role = SquadState.OpRole.SUPPORT
+	role_changes += 1
+	return true
 
 
 ## A support squad that can no longer fire (effectiveness low) hands its role to the reserve (if any).

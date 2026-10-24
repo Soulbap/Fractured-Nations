@@ -358,25 +358,6 @@ func _c_ai_garrison() -> Dictionary:
 
 # --- 01D: base warfare -------------------------------------------------------------------------------------------------
 
-## A finished building of faction f at `at` facing `out` (the scenario-setup path: check_building, groundwork, the record;
-## no site), or null when the ground refuses it.
-func _add_built(type_id: StringName, at: Vector3, out: Vector3, f: int) -> StructureState:
-	var def := StructureCatalog.get_def(type_id)
-	var yaw := atan2(-out.x, -out.z)
-	for dr: float in [0.0, 5.0, 10.0, 15.0, 22.0, 30.0]:
-		for k in 8:
-			var p := at + Vector3(cos(k * TAU / 8.0), 0.0, sin(k * TAU / 8.0)) * dr
-			p = demo.on_ground(p.x, p.z, 0.0)
-			var chk := demo.structures.check_building(def, p, yaw, -1, true)
-			if chk.ok:
-				var s := demo.sim.state.construction.add_building(type_id, chk.xform.origin, yaw, f)
-				demo.sim.state.construction.add_clearings(demo.structures.clearings_for(s, true))
-				return s
-			if dr == 0.0:
-				break
-	return null
-
-
 ## An outpost of faction f round `at`: a command post, two fighting positions and a steel guard tower facing `out`, and a
 ## squad of `n` garrisoning it. Returns {base, objective, squad, structures, cp}.
 func _outpost(f: int, at: Vector3, out: Vector3, n := 6) -> Dictionary:
