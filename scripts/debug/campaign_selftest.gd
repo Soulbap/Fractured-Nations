@@ -43,6 +43,18 @@ func run(args: PackedStringArray) -> void:
 		_log("f_damage", await _f_damage())
 	if _want("f_ai_repair"):
 		_log("f_ai_repair", await _f_ai_repair())
+	if _want("g_pause"):
+		_log("g_pause", await _g_pause())
+	if only.has("g_campaign"):
+		_log("g_campaign", await _g_campaign())
+	if only.has("g_campaign_continue"):
+		_log("g_campaign_continue", await _g_campaign_continue())
+	if only.has("g_menu_return"):
+		_finish_no_quit()
+		PauseMenu.test_quit_on_menu = true
+		demo.toggle_pause()
+		demo._on_pause_chosen("main_menu")
+		return
 	_finish()
 
 
@@ -936,6 +948,316 @@ func _f_ai_repair() -> Dictionary:
 	out["result"] = {"health": snappedf(depot.health_frac(), 0.01), "operational": depot.is_operational(), "paid_about": roundi(sup0 - float(bs.faction_stock(1).supplies))}
 	_expect(depot.health_frac() >= 0.999 and depot.is_operational(), "f_ai: the repair did not finish: %s" % str(out.result))
 	return out
+
+
+# --- 01G: in-game menu and the campaign --------------------------------------------------------------------------------
+
+const CAMPAIGN_EXPECT := "user://test_saves/campaign_expect.json"
+
+
+## Esc opens the in-game menu and pauses the game (simulation time stops, the mouse is free), Esc closes it; Save Game
+## writes the test slot, Load Game restores it, a damaged save is refused with its reason and changes nothing.
+func _g_pause() -> Dictionary:
+	var out := {}
+	demo.game.enter_rts()
+	demo.rts.select([])
+	await _seconds(0.5)
+	_press(KEY_ESCAPE)
+	await _seconds(0.5)
+	var t0 := demo.sim.state.time
+	await get_tree_timer(1.0)
+	out["open"] = {"menu": demo.pause_menu != null and demo.pause_menu.visible, "paused": tree.paused, "time_frozen": absf(demo.sim.state.time - t0) < 0.001,
+		"mouse": Input.mouse_mode == Input.MOUSE_MODE_VISIBLE}
+	_expect(bool(out.open.menu) and tree.paused and bool(out.open.time_frozen), "g: Esc did not open the menu / pause the game: %s" % str(out.open))
+	_png("g_pause_menu")
+	demo._on_pause_chosen("save")
+	await get_tree_timer(0.5)
+	out["save"] = {"peek": demo.peek_save().get("ok", false), "path": demo.save_dir()}
+	_expect(bool(out.save.peek) and String(out.save.path).contains("test_saves"), "g: Save Game from the menu failed: %s" % str(out.save))
+	var squads0 := demo.sim.state.squads.size()
+	demo._on_pause_chosen("load")
+	await _seconds(1.0)
+	out["load"] = {"closed": not demo.pause_menu.visible, "paused": tree.paused, "squads": demo.sim.state.squads.size() == squads0}
+	_expect(not demo.pause_menu.visible and not tree.paused and bool(out.load.squads), "g: Load Game from the menu failed: %s" % str(out.load))
+	# A damaged save: refused, nothing replaced.
+	var wpath := demo.save_dir().path_join("world.json")
+	var good := FileAccess.get_file_as_string(wpath)
+	var fw := FileAccess.open(wpath, FileAccess.WRITE)
+	fw.store_string("{ broken")
+	fw.close()
+	demo.toggle_pause()
+	await get_tree_timer(0.3)
+	var load_disabled := (demo.pause_menu._buttons["load"] as Button).disabled
+	demo._on_pause_chosen("load")
+	await get_tree_timer(0.3)
+	out["damaged"] = {"load_button_disabled": load_disabled, "still_open": demo.pause_menu.visible, "status": demo.pause_menu._status.text, "squads_same": demo.sim.state.squads.size() == squads0}
+	_expect(load_disabled and demo.pause_menu.visible and bool(out.damaged.squads_same), "g: a damaged save was not refused: %s" % str(out.damaged))
+	fw = FileAccess.open(wpath, FileAccess.WRITE)
+	fw.store_string(good)
+	fw.close()
+	# Esc closes it again; the game runs.
+	_press(KEY_ESCAPE)
+	await _seconds(0.5)
+	var t1 := demo.sim.state.time
+	await _seconds(0.5)
+	out["resume"] = {"closed": not demo.pause_menu.visible, "running": demo.sim.state.time > t1}
+	_expect(not demo.pause_menu.visible and demo.sim.state.time > t1, "g: Esc did not resume the game: %s" % str(out.resume))
+	# From first person: Esc frees the mouse and opens the menu; Resume gives the view its mouse back.
+	var sq: SquadState = _player_squads()[0] if not _player_squads().is_empty() else null
+	if sq:
+		demo.game.possess(sq.leader_id)
+		await _seconds(1.0)
+		demo.toggle_pause()
+		await get_tree_timer(0.3)
+		var fps_paused := tree.paused and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE
+		demo._on_pause_chosen("resume")
+		await _seconds(0.3)
+		out["fps"] = {"paused_with_free_mouse": fps_paused, "resumed": not tree.paused, "mode": demo.game.mode}
+		_expect(fps_paused and not tree.paused, "g: the menu does not work from first person: %s" % str(out.fps))
+		demo.game.enter_rts()
+		await _seconds(0.5)
+	return out
+
+
+func get_tree_timer(s: float) -> void:
+	await tree.create_timer(s, true, false, true).timeout
+
+
+## The campaign from the real start screen (run with --menu-shot): the GAMEPLAY-01B early game (cache, command post, depot,
+## Verket, barracks, recruit, guard tower; steps 1-18 of the first-playable loop), then fortifications, a garrison in its
+## positions, an assault on an enemy outpost (placed near the player: New Game has no enemy base within reach of the start),
+## its capture, a counterattack by South's own operation machinery, replenishment, a repair, a second base, a save; a second
+## process (--continue ... --only g_campaign_continue) checks what came back and that the AI factions act on.
+func _g_campaign() -> Dictionary:
+	var war := _war()
+	var ws := demo.sim.war
+	var pf := war.player_faction
+	var bs := demo.sim.logistics.bases
+	var out := {}
+	var early := await _loop()
+	out["early_game"] = {"steps": _steps.size(), "failed": _steps.filter(func(e: Dictionary) -> bool: return not e.ok).map(func(e: Dictionary) -> int: return e.step),
+		"game_minutes": early.get("game_minutes", -1)}
+	var mb := bs.main_base(pf)
+	_expect(mb >= 0, "g: no player base after the early game")
+	if mb < 0:
+		return out
+	var cpos: Vector3 = demo.sim.state.construction.bases[mb].anchor
+	var sqs := _player_squads()
+	var n1: SquadState = sqs[0]
+	var n2: SquadState = sqs[sqs.size() - 1]
+	var front := Vector3(-0.3, 0.0, -1.0).normalized()
+	# 9. Fortifications through the construction tool (paid, built by the squads).
+	await _until(func() -> bool: return _stock().supplies >= 160.0, 600.0, 8.0)
+	var fp := _place_facing(&"fighting_position", _spot_dir(&"fighting_position", cpos, front, 45.0), front)
+	var mg := _place_facing(&"mg_emplacement", _spot_dir(&"mg_emplacement", cpos, front.rotated(Vector3.UP, 0.5), 50.0), front.rotated(Vector3.UP, 0.5))
+	await _until(func() -> bool: return (fp == null or not fp.is_site()) and (mg == null or not mg.is_site()), 600.0, 8.0)
+	_g_step(9, "fortifications built", fp != null and mg != null and not fp.is_site() and not mg.is_site(), {"fp": fp != null, "mg": mg != null})
+	# 10-11. Garrison: the recruited squad holds the base from its positions.
+	demo.rts.select_squads([n2.id])
+	demo.rts.order_garrison(mb)
+	await _until(func() -> bool: return _fort_units(pf).size() >= 3, 240.0, 4.0)
+	_g_step(10, "squad assigned to Garrison Base", n2.garrison_base == mb, {"squad": n2.squad_name})
+	_g_step(11, "soldiers occupy defensive positions", _fort_units(pf).size() >= 3, {"in_slots": _fort_units(pf).size()})
+	await _frame(cpos + front * 30.0, 70.0, 0.7)
+	_png("g_player_base_garrison")
+	# 12-13. An enemy outpost 1.2 km away; the player's assault through the map with the free squad and a fresh recruit.
+	var dir := front.rotated(Vector3.UP, 1.1)
+	var ob := _outpost(1, demo.sim.tactics.pos.nearest_valid(cpos + dir * 1200.0, 80.0), -dir, 4)
+	_expect(not ob.is_empty() and ob.objective != null, "g: the enemy outpost could not be placed")
+	if ob.is_empty():
+		return out
+	var eo: ObjectiveState = ob.objective
+	await _until(func() -> bool: return _stock().supplies >= 330.0 and _stock().ammo >= 200.0, 900.0, 8.0)
+	var bk: StructureState = null
+	for s: StructureState in bs.facilities_of(mb):
+		if FacilityDefs.kind_of(s.type_id) == &"barracks":
+			bk = s
+	var n_before := _player_squads().size()
+	if bk:
+		bs.recruit(bk.id)
+	await _until(func() -> bool: return _player_squads().size() > n_before, 120.0, 4.0)
+	var n3: SquadState = _player_squads().back()
+	demo.toggle_map()
+	await _seconds(0.5)
+	demo.strategic_map.selected_squads = [n1.id, n3.id]
+	var op := demo.strategic_map.order(OperationState.Type.ATTACK, eo.id)
+	demo.strategic_map.focus_on(eo.position)
+	await _seconds(1.0)
+	_png("g_map_operation")
+	demo.toggle_map()
+	await _until(func() -> bool: return eo.owner == pf or op == null or not op.is_active(), 1500.0, 4.0)
+	_g_step(12, "player-led attack on an enemy base", op != null and op.player_ordered, {"outcome": op.outcome if op else "-", "stage": op.stage_name() if op else "-"})
+	_g_step(13, "enemy base captured", eo.owner == pf, {"owner": eo.owner, "structures_player": _owned_structures(pf, ob.structures.map(func(st: StructureState) -> int: return st.id))})
+	await _frame(eo.position, 70.0, 0.6)
+	_png("g_captured_outpost")
+	# 14. A South counterattack (its own operation machinery) on the captured base; the defenders respond.
+	var holders: Array = []
+	for sq: SquadState in _player_squads():
+		if sq.garrison_base == int(ob.base) or WarSim._flat(ws.squad_center(sq), eo.position) < 300.0:
+			holders.append(sq)
+	if eo.owner == pf and not holders.is_empty() and (holders[0] as SquadState).garrison_base < 0:
+		demo.rts.select_squads([(holders[0] as SquadState).id])
+		demo.rts.order_garrison(int(ob.base))
+	var csq := ws.spawn_squad(war.faction(1), demo.sim.tactics.pos.nearest_valid(eo.position + dir * 600.0, 60.0), 6)
+	var cop := ws.start_operation(1, OperationState.Type.ATTACK, [csq.id], eo.id)
+	var ev_t0 := demo.sim.state.time
+	await _until(func() -> bool: return cop == null or not cop.is_active() or eo.owner != pf, 900.0, 4.0)
+	var warned := false
+	for e: Dictionary in war.events:
+		if float(e.t) >= ev_t0 - 0.1 and e.faction == pf and e.kind in ["threat", "attack"]:
+			warned = true
+	_g_step(14, "AI counterattack met", cop != null, {"outcome": cop.outcome if cop else "-", "owner_after": eo.owner, "warned": warned})
+	# 15. Replenishment of a depleted squad at the barracks (the panel button).
+	var dep: SquadState = null
+	for sq: SquadState in _player_squads():
+		if sq.members.size() < BaseSim.SQUAD_SIZE and (dep == null or sq.members.size() < dep.members.size()):
+			dep = sq
+	if dep and bk:
+		demo.rts.select_squads([dep.id])
+		demo.rts.order_move(demo.sim.tactics.pos.nearest_valid(bk.position - front * 15.0, 20.0))
+		await _until(func() -> bool: return dep.status != SquadState.Status.MOVING, 900.0, 8.0)
+		await _until(func() -> bool: return _stock().supplies >= 200.0 and _stock().ammo >= 120.0, 600.0, 8.0)
+		demo.rts.select_squads([dep.id])
+		demo.rts.selected_structure = bk.id
+		await _frame(bk.position, 55.0)
+		await _seconds(1.0)
+		var pressed := _press_panel_button("REPLENISH")
+		var m0 := dep.members.size()
+		await _until(func() -> bool: return dep.members.size() >= BaseSim.SQUAD_SIZE, 180.0, 4.0)
+		_g_step(15, "casualties replenished at the barracks", pressed and dep.members.size() > m0, {"squad": dep.squad_name, "from": m0, "to": dep.members.size()})
+	else:
+		_g_step(15, "casualties replenished at the barracks", dep == null, {"note": "no squad had casualties to replace (replenishment is shown by e_replenish)" if dep == null else "no barracks"})
+	# 16. Repair: the most damaged structure of the player.
+	var worst: StructureState = null
+	for s: StructureState in demo.sim.state.construction.all():
+		if s.faction == pf and not s.is_site() and s.health_frac() < 0.999 and (worst == null or s.health_frac() < worst.health_frac()):
+			worst = s
+	out["damage_seen"] = {"worst": String(worst.type_id) if worst else "-", "health": snappedf(worst.health_frac(), 0.001) if worst else 1.0}
+	if worst:
+		var rr := demo.construction.order_repair(worst.id)
+		var busy := false
+		for sq: SquadState in _player_squads():
+			busy = busy or (sq.tactic == SquadState.Tactic.BUILD and sq.tactic_site == worst.id)
+		if rr.ok and not busy:
+			# Every squad holds a base: the player sends the nearest one (right-click with it selected).
+			var near: SquadState = null
+			for sq: SquadState in _player_squads():
+				if near == null or WarSim._flat(ws.squad_center(sq), worst.site_center()) < WarSim._flat(ws.squad_center(near), worst.site_center()):
+					near = sq
+			demo.rts.select_squads([near.id])
+			demo.rts.order_build(worst.id)
+		await _until(func() -> bool: return worst.repair.is_empty(), 600.0, 4.0)
+		_g_step(16, "damaged infrastructure repaired", rr.ok and worst.health_frac() >= 0.999, {"what": String(worst.type_id), "cost": rr.get("cost", 0)})
+	else:
+		_g_step(16, "damaged infrastructure repaired", true, {"note": "nothing of the player's was damaged in this run"})
+	# 17. Expansion: a second command post near Verket.
+	var verket: ObjectiveState = null
+	for o: ObjectiveState in war.all_objectives():
+		if o.obj_name == "Verket":
+			verket = o
+	await _until(func() -> bool: return _stock().supplies >= 420.0, 900.0, 8.0)
+	var cp2: StructureState = null
+	for anchor: Vector3 in [verket.position if verket else cpos, cpos + Vector3(900, 0, 600), cpos + Vector3(-900, 0, 700), cpos + Vector3(700, 0, -900)]:
+		var spot := _cp_spot(anchor)
+		if spot.is_finite():
+			cp2 = _place(&"command_post", spot)
+			if cp2 != null:
+				break
+	if cp2 != null:
+		var builder := false
+		for sq: SquadState in _player_squads():
+			builder = builder or (sq.tactic_site == cp2.id)
+		if not builder:
+			# Every squad holds a base: the player sends one that does not hold the main base.
+			for sq: SquadState in _player_squads():
+				if sq.garrison_base != mb:
+					demo.rts.select_squads([sq.id])
+					demo.rts.order_build(cp2.id)
+					break
+	await _until(func() -> bool: return cp2 != null and not cp2.is_site(), 900.0, 8.0)
+	_g_step(17, "expanded into another area", cp2 != null and not cp2.is_site() and bs.bases_of(pf).size() >= 3, {"bases": bs.bases_of(pf).size()})
+	# 18. Save.
+	_press(KEY_F5)
+	await _physics(5)
+	var hp := {}
+	for s: StructureState in demo.sim.state.construction.all():
+		if s.faction == pf and s.hp >= 0.0:
+			hp[str(s.id)] = snappedf(s.hp, 0.1)
+	var garr := {}
+	for sq: SquadState in _player_squads():
+		garr[str(sq.id)] = sq.garrison_base
+	var expect := {"squads": _player_squads().size(), "soldiers": bs.soldiers_of(pf), "bases": bs.bases_of(pf).size(), "supplies": roundi(_stock().supplies),
+		"owners": _owners(), "hp": hp, "garrisons": garr, "ops": war.active_operations().size(), "time": demo.sim.state.time,
+		"ai_ops_started": war.faction(1).ops_started + war.faction(2).ops_started}
+	var fw := FileAccess.open(CAMPAIGN_EXPECT, FileAccess.WRITE)
+	fw.store_string(JSON.stringify(expect))
+	fw.close()
+	_g_step(18, "saved", demo.peek_save().get("ok", false), {"game_minutes": snappedf(demo.sim.state.time / 60.0, 0.1)})
+	await _frame(cpos + front * 40.0, 140.0, 0.7)
+	_png("g_campaign_before_save")
+	out["steps"] = _g_steps
+	out["expect"] = expect
+	return out
+
+
+## Steps 19-22: the program was restarted and continued; ownership, squads, buildings, damage, garrisons, resources and
+## operations are back, and the AI factions keep acting.
+func _g_campaign_continue() -> Dictionary:
+	var war := _war()
+	var pf := war.player_faction
+	var bs := demo.sim.logistics.bases
+	var expect: Variant = JSON.parse_string(FileAccess.get_file_as_string(CAMPAIGN_EXPECT)) if FileAccess.file_exists(CAMPAIGN_EXPECT) else null
+	_g_step(19, "program restarted", expect is Dictionary)
+	if not expect is Dictionary:
+		return {"steps": _g_steps}
+	_g_step(20, "campaign continued", bool(demo.continue_result.get("ok", false)), {"continue": demo.continue_result})
+	var hp := {}
+	for s: StructureState in demo.sim.state.construction.all():
+		if s.faction == pf and s.hp >= 0.0:
+			hp[str(s.id)] = snappedf(s.hp, 0.1)
+	var garr := {}
+	for sq: SquadState in _player_squads():
+		garr[str(sq.id)] = sq.garrison_base
+	var now := {"squads": _player_squads().size(), "soldiers": bs.soldiers_of(pf), "bases": bs.bases_of(pf).size(), "supplies": roundi(_stock().supplies),
+		"owners": _owners(), "hp": hp, "garrisons": garr, "ops": war.active_operations().size()}
+	# Through JSON like the expectation file, so 8 and 8.0 compare equal.
+	var nj: Dictionary = JSON.parse_string(JSON.stringify(now))
+	var same: bool = int(now.squads) == int(expect.squads) and int(now.soldiers) == int(expect.soldiers) and int(now.bases) == int(expect.bases) \
+		and absi(int(now.supplies) - int(expect.supplies)) <= 1 and str(nj.owners) == str(expect.owners) and str(nj.hp) == str(expect.hp) \
+		and str(nj.garrisons) == str(expect.garrisons) and int(now.ops) == int(expect.ops)
+	_g_step(21, "ownership, squads, buildings, damage, garrisons, resources and operations persisted", same, {"now": now, "expect": expect})
+	var ai0: int = war.faction(1).ops_started + war.faction(2).ops_started
+	await _until(func() -> bool: return war.faction(1).ops_started + war.faction(2).ops_started > ai0, 900.0, 8.0)
+	_g_step(22, "AI factions keep acting", war.faction(1).ops_started + war.faction(2).ops_started > ai0,
+		{"ops_started_before": ai0, "after": war.faction(1).ops_started + war.faction(2).ops_started, "south": war.faction(1).last_decision, "east": war.faction(2).last_decision})
+	demo.toggle_map()
+	demo.strategic_map.fit_all()
+	await _seconds(1.5)
+	_png("g_map_after_continue")
+	demo.toggle_map()
+	return {"steps": _g_steps}
+
+
+var _g_steps: Array = []
+
+
+func _g_step(n: int, what: String, ok: bool, data := {}) -> void:
+	var e := {"step": n, "what": what, "ok": ok, "t": snappedf(demo.sim.state.time, 0.1)}
+	e.merge(data)
+	_g_steps.append(e)
+	print("CP step %s" % JSON.stringify(e))
+	_expect(ok, "campaign step %d (%s) failed: %s" % [n, what, str(data)])
+
+
+## Writes the results without quitting (g_menu_return: the reloaded start screen quits).
+func _finish_no_quit() -> void:
+	_done = true
+	results["failures"] = failures
+	results["pass"] = failures.is_empty()
+	var f := FileAccess.open(ProjectSettings.globalize_path("res://benchmarks/raw/campaign_test.json"), FileAccess.WRITE)
+	f.store_string(JSON.stringify(results, "  "))
+	f.close()
+	print("CP %s %s" % ["PASS" if failures.is_empty() else "FAIL", JSON.stringify(failures)])
 
 
 func _finish() -> void:

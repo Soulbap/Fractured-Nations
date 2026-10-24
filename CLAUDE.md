@@ -155,6 +155,13 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   the player pays with `BaseSim.faction_pay/faction_refund`. A placed structure can be a site (`StructureState.site`):
   no facility until `ConstructionState.add_work` completes it once (`structure_completed`); soldiers build through the
   squad tactic BUILD (`SquadTactics`), AI sites through a crew rate in `AiBases.update`. Tests save to `user://test_saves`.
+- **Base warfare (GAMEPLAY-01C–01G).** Fortification slots are data (`DefenceDefs`); who holds one is the soldier record
+  (`UnitState.fort_slot` / `fort_pos`, saved), never a reservation table; both tiers hold a soldier in his slot and any move
+  order takes him out (`WorldState.leave_fort`). GARRISON_BASE is `SquadState.garrison_base` (DEFEND at the base through
+  `SquadTactics`). Every base has one objective (`WarSim.sync_bases`: the held objective it stands on, else its own kind
+  `base` objective); the objective's owner is the base's ownership and `WarSim._transfer` → `BaseSim.capture_base` is the
+  only path a base changes hands. Condition is `StructureState.hp` / `repair` (`StructureHealth` table); damage never deletes
+  a structure or a base; repair is BUILD work on the same record. AI expansion: `AiBases` templates + `WarState.expansions`.
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are
@@ -216,7 +223,13 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
 - `docs/combat_tech01/lab/` is an isolated COMBAT-TECH-01 experiment with its own `project.godot` (reference
   material, incomplete: its third-party files were never committed). The editor skips that folder; it is not a
   second game project.
-- A script that fails to compile makes a test hang until timeout; check the log head first.
+- A script that fails to compile makes a test hang until timeout; check the log head first, or run
+  `Godot_console.exe --headless --path . --script res://tools/check_scripts.gd` (compiles every script, exit 1 on failure).
+- GAMEPLAY-01C–01G scenarios: `--scenario=new_game --campaign-test [--shots] --only c_forts,c_ai_garrison,d_targets,d_ai_war,d_player_assault,e_replenish,e_expansion,f_damage,f_ai_repair,g_pause`
+  (`--fullscreen` for 1920x1080 shots in `docs/gameplay01c/`; results `benchmarks/raw/campaign_test.json`); the campaign:
+  `--menu-shot --campaign-test --shots --only g_campaign`, then `--continue --campaign-test --shots --only g_campaign_continue`,
+  `--continue --campaign-test --only g_menu_return`. Blender: `build_assets.py -- --only <ids> --export --save-blend` keeps
+  `assets/military/blender/<id>.blend`.
 - Blender asset pipeline: `tools/blender/` (+Y forward, one joined mesh, origin on the ground,
   material names drive faction colours; character: `tools/blender/character/`, standard in
   `docs/CHARACTER_STANDARD.md`). Always inspect imported assets in Godot, not only Blender.

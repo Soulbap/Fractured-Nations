@@ -408,6 +408,7 @@ func slots_of_structure(s: StructureState, base_anchor := Vector3.INF) -> Array:
 
 ## The world slot a key names, or {} when it no longer exists or cannot be used by `faction` (structure gone, not
 ## operational, captured, module removed).
+## Only that one slot is computed (soldiers in slots ask every tactics step: a HESCO perimeter has hundreds).
 func slot_by_key(key: String, faction: int) -> Dictionary:
 	var parts := key.split(":")
 	if parts.size() < 2:
@@ -415,10 +416,34 @@ func slot_by_key(key: String, faction: int) -> Dictionary:
 	var s := sim.state.construction.get_structure(int(parts[0]))
 	if s == null or s.faction != faction or not s.is_operational() or s.instances.is_empty():
 		return {}
-	for e: Dictionary in slots_of_structure(s):
-		if e.slot == key:
-			return e
-	return {}
+	var k := int(parts[1])
+	if DefenceDefs.is_line(s.type_id):
+		if parts.size() < 3 or k < 0 or k >= s.instances.size() or s.is_removed(k):
+			return {}
+		var rule := DefenceDefs.line_rule(s.type_id)
+		var xf: Transform3D = s.instances[k]
+		var sgn := 1.0 if int(parts[2]) == 0 else -1.0
+		var p: Vector3 = ground(xf * Vector3(0.0, 0.0, sgn * float(rule.back)))
+		var facing := xf.origin - p
+		facing.y = 0.0
+		return {"p": p, "slot": key, "access": p, "facing": facing.normalized(), "arc": float(rule.arc), "elevated": false, "role": "", "structure": s.id}
+	var slots := DefenceDefs.slots_of(s.type_id)
+	if k < 0 or k >= slots.size():
+		return {}
+	var d: Dictionary = slots[k]
+	var xf0: Transform3D = s.instances[0]
+	var lp: Vector3 = d.p
+	var elevated := lp.y > 0.5
+	var p0: Vector3 = xf0 * lp
+	var facing0 := xf0.basis * DefenceDefs.yaw_dir(float(d.yaw))
+	facing0.y = 0.0
+	var acc := ground(xf0 * (d.get("access", lp) as Vector3))
+	if not valid_ground(acc):
+		acc = nearest_valid(acc, 6.0)  # the same access point the slot search gave
+		if not acc.is_finite():
+			return {}
+	return {"p": p0 if elevated else ground(p0), "slot": key, "access": acc, "facing": facing0.normalized(),
+		"arc": float(d.get("arc", 120.0)), "elevated": elevated, "role": String(d.get("role", "")), "structure": s.id}
 
 
 ## A slot behind a wall: dry, not inside a footprint (a soldier's own radius only: slots stand close to their wall).

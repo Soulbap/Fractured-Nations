@@ -100,6 +100,10 @@ var scenario: ScenarioDef
 var menu: MainMenu
 ## The result of Continue ({ok, reason}); empty when the game did not start from a save.
 var continue_result := {}
+## GAMEPLAY-01G: the in-game menu (Esc) and the request to show the start screen after the scene is reloaded (Main Menu).
+var pause_menu: PauseMenu
+static var return_to_menu := false
+var _pause_mouse := Input.MOUSE_MODE_VISIBLE
 
 
 func _ready() -> void:
@@ -490,6 +494,10 @@ func save_dir() -> String:
 ## --scenario=<id> or --continue on the command line; tests and benchmarks default to the Development Scenario;
 ## "" = ask the player (start screen).
 func _scenario_arg(args: PackedStringArray) -> String:
+	if return_to_menu:
+		# GAMEPLAY-01G: Main Menu from the in-game menu - the start screen again, whatever the command line said.
+		return_to_menu = false
+		return ""
 	if "--menu-shot" in args:
 		return ""
 	for a in args:
@@ -521,6 +529,8 @@ func _run_menu() -> String:
 	rts_camera.set_process_unhandled_input(false)
 	if "--menu-shot" in OS.get_cmdline_user_args():
 		_menu_autoplay.call_deferred()
+	if PauseMenu.test_quit_on_menu:
+		_menu_return_check.call_deferred()
 	var action: String = await menu.chosen
 	if action == "quit":
 		get_tree().quit()
@@ -544,6 +554,17 @@ func _menu_autoplay() -> void:
 	get_viewport().get_texture().get_image().save_png(ProjectSettings.globalize_path(path))
 	print("CORE menu shot: %s (canvas %s)" % [path, size])
 	menu._choose("new_game")
+
+
+## GAMEPLAY-01G test: the start screen came back after Main Menu - a screenshot, a line for the test, then quit.
+func _menu_return_check() -> void:
+	await get_tree().create_timer(4.0).timeout
+	if menu == null:
+		return
+	var path := "res://docs/gameplay01c/g_main_menu_returned.png"
+	get_viewport().get_texture().get_image().save_png(ProjectSettings.globalize_path(path))
+	print("CP menu_return %s" % JSON.stringify({"menu": menu != null, "save_ok": bool(menu.save_info.get("ok", false)), "squads": sim.state.squads.size()}))
+	get_tree().quit()
 
 
 ## What the save slot holds, without loading it: {ok, scenario, title, time} or {ok false, missing, reason}. A save that
@@ -584,6 +605,71 @@ func start_focus() -> Vector3:
 			return sim.war.squad_center(sq)
 	var u := _first_soldier_of(war.player_faction)
 	return u.position if u else sites[0].position
+
+
+# --- In-game menu (GAMEPLAY-01G) -----------------------------------------------------------------------------------------
+
+## Esc: pauses the game (the tree, so the simulation stops) and shows the in-game menu; Esc / Resume closes it and gives the
+## view back its mouse mode.
+func toggle_pause() -> void:
+	if pause_menu != null and pause_menu.visible:
+		_close_pause()
+		return
+	if menu != null or not sandbox:
+		return
+	if pause_menu == null:
+		pause_menu = PauseMenu.new()
+		pause_menu.name = "PauseMenu"
+		add_child(pause_menu)
+		pause_menu.chosen.connect(_on_pause_chosen)
+	pause_menu.save_info = peek_save()
+	pause_menu.refresh()
+	pause_menu.say("Game time %s  ·  %s" % [MainMenu._clock(sim.state.time), scenario.title if scenario else ""])
+	_pause_mouse = Input.mouse_mode
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	pause_menu.visible = true
+	get_tree().paused = true
+
+
+func _close_pause() -> void:
+	if pause_menu:
+		pause_menu.visible = false
+	get_tree().paused = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if game.mode == GameController.Mode.FPS else _pause_mouse
+
+
+func _on_pause_chosen(action: String) -> void:
+	if not is_inside_tree():
+		return
+	match action:
+		"resume":
+			_close_pause()
+		"save":
+			var ok := construction != null and construction.save()
+			pause_menu.save_info = peek_save()
+			pause_menu.refresh()
+			pause_menu.say(construction.message if construction else "Nothing to save", ok)
+		"load":
+			# The same safe path as Continue / F9: both files are checked before anything is replaced.
+			if game.mode != GameController.Mode.RTS:
+				game.enter_rts()
+			var r := construction.load_game() if construction else {"ok": false, "reason": "no construction system"}
+			if r.ok:
+				_close_pause()
+				var at := start_focus()
+				detail.activate_at(at)
+				rts_camera.frame(at, 0.0, 120.0)
+				var back := _first_soldier_of(sim.state.war.player_faction)
+				game.possessed_id = back.id if back else -1
+			else:
+				pause_menu.say("Cannot load: %s" % r.reason, false)
+		"main_menu":
+			return_to_menu = true
+			get_tree().paused = false
+			apply_time_scale(1.0)
+			get_tree().reload_current_scene()
+		"quit":
+			get_tree().quit()
 
 
 ## The strategic map on its own canvas layer above the HUD.
@@ -692,6 +778,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_ESCAPE:
 			if strategic_map and strategic_map.visible:
 				strategic_map.close()
+				get_viewport().set_input_as_handled()
+			elif menu == null:
+				toggle_pause()
 				get_viewport().set_input_as_handled()
 		KEY_COMMA:
 			set_time_speed(-1)

@@ -2015,7 +2015,9 @@ func _draw_logistics_layer(font: Font, level: int) -> void:
 		if level == 0:
 			draw_rect(Rect2(p - Vector2(7, 7), Vector2(14, 14)), Color(0, 0, 0, 0.7), true)
 			draw_rect(Rect2(p - Vector2(6, 6), Vector2(12, 12)), col, false, 2.0)
-			_text(font, p + Vector2(10, 5), b.name if kind == "Main base" else "", 12, col)
+			# GAMEPLAY-01D: a base with its own objective is already named by the objective symbol.
+			var own_obj := sim.war.base_objective(int(b.id))
+			_text(font, p + Vector2(10, 5), b.name if kind == "Main base" and (own_obj == null or not own_obj.is_base()) else "", 12, col)
 		else:
 			# BASE-01: an established base shows its area; a proximity group half its join distance.
 			var radius_px := (float(b.radius) if float(b.get("radius", 0.0)) > 0.0 else BaseSim.JOIN_M * 0.5) * zoom

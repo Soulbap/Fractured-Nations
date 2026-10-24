@@ -189,14 +189,20 @@ func _unhandled_input(event: InputEvent) -> void:
 				ids.append(u.id)
 		select(ids)
 	elif event.is_action_pressed("ui_cancel"):
+		# GAMEPLAY-01G: Esc cancels what is armed, then clears the selection; with nothing to cancel it is the in-game menu's
+		# (CoreDemo), so it is consumed only when it did something here.
 		if follow_pick:
 			follow_pick = false
 			_say("Follow cancelled")
+			get_viewport().set_input_as_handled()
 		elif armed_tactic >= 0:
 			armed_tactic = -1
 			_say("Tactical order cancelled")
-		else:
+			get_viewport().set_input_as_handled()
+		elif not selected.is_empty() or selected_structure >= 0:
 			select([])
+			selected_structure = -1
+			get_viewport().set_input_as_handled()
 
 
 func select(p_ids: Array) -> void:

@@ -11,7 +11,14 @@ branches are contained in `develop` and stay as history. Next milestone: **NAVIG
 obstacle navigation). See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest gameplay: **GAMEPLAY-01B** (branch `feature/gameplay-01b`) — the first playable early game: a start screen with
+Newest gameplay: **GAMEPLAY-01C–01G** (on `develop`) — base warfare: soldiers fight from fortifications (towers,
+fighting positions, an MG emplacement, HESCO and sandbag walls; new and rebuilt Blender assets), squads can be ordered to
+**Garrison** a base (**O**), every base is a strategic objective that the player and the AI factions attack, defend and
+capture (also off-screen), AI factions expand with outpost / defensive / main base templates, depleted squads are
+replenished at a barracks, structures take damage, are disabled and repaired by soldiers, and **Esc** opens an in-game
+menu (resume, save, load, main menu, quit). See [docs/GAMEPLAY-01C_01G_REPORT.md](docs/GAMEPLAY-01C_01G_REPORT.md).
+
+Before that, **GAMEPLAY-01B** (merged) — the first playable early game: a start screen with
 **New Game** (eight North soldiers in the south, no base, little supply), Continue and the Development Scenario;
 supply caches, paid construction and recruitment, income from captured objectives; buildings are construction sites
 that idle soldiers build (squad tactic BUILD); safe, scenario-aware saves. See
@@ -205,7 +212,8 @@ Then press **F5**. The start screen (GAMEPLAY-01B) offers:
   North territory in the north, East the east bank. Secure supply caches (diamond markers, 30 s), place a **Command
   Post** (B) — your idle soldiers walk there and build it — then a Supply Depot, Barracks and defences, recruit at the
   barracks and take objectives for income. The supply strip (top) and a dismissible hint guide the first steps.
-- **Continue** — the saved game (F5 saves, F9 loads; one slot in `user://saves/ref_20km/`).
+- **Continue** — the saved game (F5 saves, F9 loads, or **Esc** → Save Game / Load Game; one slot in `user://saves/ref_20km/`).
+  Esc → Main Menu returns here without starting anything.
 - **Development Scenario** — the full three-faction war as before: you are North (blue) in the tactical view over
   your HQ with five squads, free and instant construction and the starting stockpile; South (orange, aggressive) and
   East (green, defensive) plan and launch their own operations.
@@ -288,6 +296,8 @@ thumbnails come from `tools/ui/make_structure_thumbs.gd`.
 | G / Shift+G | Regroup selected squads on their leader / at the cursor |
 | V, [ and ] | Line or column formation, spacing −/+ 0.5 m (1.5–10 m) |
 | Y, FREE / HOLD in the squad panel | Rules of engagement of the selected squads: Weapons Free (default, soldiers engage on their own) / Hold Fire (they track but do not shoot) |
+| **O**, Garrison button | GAMEPLAY-01C: the selected squads garrison the base at the cursor (or clicked after the button): they man its towers, positions and walls and stay until given another order |
+| Esc (nothing selected) | GAMEPLAY-01G in-game menu: Resume, Save Game, Load Game, Main Menu, Quit Game (the game is paused) |
 | P, Enter or double-click | Possess the selected soldier (first person) |
 | **Tab** | Return to the soldier you last controlled |
 

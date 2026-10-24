@@ -2312,7 +2312,8 @@ func summary() -> Dictionary:
 	return {"ticks": ticks, "steps": steps, "step_us_avg": snappedf(float(step_usec) / maxi(ticks, 1), 0.1), "step_us_max": step_usec_max,
 		"started": started.duplicate(), "finished": finished.duplicate(), "decisions": decisions, "refusals": refusals, "replans": replans,
 		"posts": {"searches": pos.searches, "evals": pos.evals, "us_avg": snappedf(float(pos.usec) / maxi(pos.searches, 1), 0.1), "us_max": pos.usec_max,
-			"flank_plans": pos.flank_plans, "flank_us_avg": snappedf(float(pos.flank_usec) / maxi(pos.flank_plans, 1), 0.1)}}
+			"flank_plans": pos.flank_plans, "flank_us_avg": snappedf(float(pos.flank_usec) / maxi(pos.flank_plans, 1), 0.1),
+			"slot_searches": pos.slot_searches, "slot_us_avg": snappedf(float(pos.slot_usec) / maxi(pos.slot_searches, 1), 0.1), "slot_us_max": pos.slot_usec_max}}
 
 
 func reset_stats() -> void:
@@ -2331,6 +2332,9 @@ func reset_stats() -> void:
 	pos.usec_max = 0
 	pos.flank_plans = 0
 	pos.flank_usec = 0
+	pos.slot_searches = 0
+	pos.slot_usec = 0
+	pos.slot_usec_max = 0
 
 
 # --- Small helpers ---------------------------------------------------------------------------------------------------------------
