@@ -574,6 +574,8 @@ func start(sq: SquadState, tactic: int, owner: int, target := Vector3.INF, conta
 	sq.tactic_phase = PH_SETUP
 	sq.tactic_leg = 0
 	sq.tactic_since = now
+	if sq.tactic == SquadState.Tactic.DEFEND:
+		sq.defence_line = 0
 	sq.tactic_phase_since = now
 	sq.tactic_leg_since = now
 	sq.tactic_target = plan.get("target", target)
@@ -1208,6 +1210,7 @@ func _work_posts(site: StructureState, count: int, from: Vector3) -> Array:
 var post_w := {"protect": 3.0, "fire": 2.0, "conceal": 2.5, "prepared": 1.0, "sector": 1.0, "elevated": 0.4, "dist_slot": 0.008, "dist_nat": 0.04, "mg_slot": 2.0}
 ## Candidates whose exposure is measured, per post needed (the rest are judged without it: bounded sight checks).
 var post_exposure_per := 2
+var fallbacks := 0
 ## Weapon modifiers when posts are handed out (configurable): the machine gunner values a wide arc and low exposure, the
 ## grenadier moves to a more concealed post only when it is clearly better.
 var role_post_w := {"mg_arc": 1.0, "mg_exposure": 2.0, "grenadier_margin": 0.2}
@@ -1224,6 +1227,7 @@ func _defend_posts(sq: SquadState, units: Array, centre: Vector3, dir: Vector3, 
 		_set_meta(sq, "planned_blind", false)
 		return _judged_posts(sq, units, centre, dir, look, slots, base_anchor, nat_r)
 	_set_meta(sq, "planned_blind", true)
+	slots = slots.filter(func(e: Dictionary) -> bool: return _inside_limit(sq, e.p))
 	var posts: Array = []
 	if not look.is_finite() and slots.size() > count:
 		# No threat known: the slots that cover the most different directions round the centre.
@@ -1250,7 +1254,7 @@ func _defend_posts(sq: SquadState, units: Array, centre: Vector3, dir: Vector3, 
 		var nat := pos.find_posts(need, centre, nat_r, centre + dir * 90.0, {"mode": "fire", "los": look, "reserved": _reserved(sq, centre) + posts.map(func(e: Dictionary) -> Vector3: return e.p), "avoid": _avoid_list(sq), "unit_id": uid})
 		if nat.size() < need:
 			nat = pos.find_posts(need, centre, nat_r, centre + dir * 90.0, {"mode": "cover", "reserved": _reserved(sq, centre), "avoid": _avoid_list(sq), "unit_id": uid})
-		posts.append_array(nat.slice(0, need))
+		posts.append_array(nat.filter(func(e: Dictionary) -> bool: return _inside_limit(sq, e.p)).slice(0, need))
 		posts = pos.fill_open(posts, count, centre, dir)
 	return posts
 
@@ -1266,6 +1270,14 @@ func _judged_posts(sq: SquadState, units: Array, centre: Vector3, dir: Vector3, 
 		nat.append_array(pos.find_posts(count, centre, nat_r, centre + dir * 90.0, {"mode": "cover", "reserved": reserved, "avoid": _avoid_list(sq), "unit_id": uid}))
 	var cands: Array = []
 	var has_mg := units.any(func(u: UnitState) -> bool: return _is_mg(u))
+	# GAMEPLAY-03B: inside the defended area only, and when falling back only behind the line it leaves.
+	var behind: Dictionary = _meta(sq, "behind", {})
+	var keep_in := func(e: Dictionary) -> bool:
+		if not _inside_limit(sq, e.p):
+			return false
+		return behind.is_empty() or ((e.p as Vector3) - (behind.c as Vector3)).dot(behind.d) <= float(behind.max)
+	slots = slots.filter(keep_in)
+	nat = nat.filter(keep_in)
 	for e: Dictionary in slots:
 		var sector := maxf((e.facing as Vector3).dot(_dir_to(e.p, look)), 0.0)
 		e["pre"] = w.protect + w.fire + w.prepared + w.sector * sector + (w.elevated if bool(e.elevated) else 0.0) - w.dist_slot * _flat(e.p, centre)
@@ -1530,9 +1542,17 @@ func _run_defend(sq: SquadState, a: Dictionary, now: float) -> void:
 			sq.tactic_phase = PH_HOLD
 			sq.tactic_phase_since = now
 		return
-	# A squad that cannot hold: withdraw unless the player ordered the defence.
-	if now >= sq.tactic_commit_until and a.in_contact and float(a.eff) < withdraw_eff:
+	# A squad that cannot hold: withdraw unless the player ordered the defence. GAMEPLAY-03B: a garrison, or a defence of an
+	# objective, judges this without the "outnumbered" factor (holding prepared posts against more is what a defence is for)
+	# and first falls back a line inside its area; only from its last line does it leave (and a garrison keeps its base).
+	var hold_eff := float(a.eff)
+	var bound := sq.garrison_base >= 0 or sq.station_objective >= 0
+	if bound:
+		hold_eff = float(a.eff) / maxf(float(a.parts.get("threat", 1.0)), 0.01)
+	if now >= sq.tactic_commit_until and a.in_contact and hold_eff < withdraw_eff:
 		var parts: Dictionary = a.parts
+		if bound and sq.defence_line < 2 and _fall_back(sq, a, now):
+			return
 		if sq.tactic_owner != SquadState.Owner.PLAYER:
 			var f := _fallback_point(sq, a)
 			if f.is_finite():
@@ -1633,6 +1653,147 @@ func _reposition(sq: SquadState, a: Dictionary, why: String, now: float) -> void
 	_send_posts(sq, units, posts, dir)
 
 
+# --- GAMEPLAY-03B: falling back a line ------------------------------------------------------------------------------------
+
+## The area the defence must stay in: the capture radius of the objective it holds (a garrison's base objective, a stationed
+## squad's objective), less a margin, so a defence never gives the objective away by where it stands. {} = no such limit.
+func _defence_limit(sq: SquadState) -> Dictionary:
+	var oid := -1
+	if sq.garrison_base >= 0:
+		oid = int(sim.state.construction.bases.get(sq.garrison_base, {}).get("objective", -1))
+	if oid < 0:
+		oid = sq.station_objective
+	var o := sim.state.war.objective(oid) if oid >= 0 else null
+	if o == null:
+		return {}
+	return {"c": o.position, "r": maxf(o.radius - 8.0, 20.0)}
+
+
+func _inside_limit(sq: SquadState, p: Vector3) -> bool:
+	var lim := _defence_limit(sq)
+	return lim.is_empty() or _flat(p, lim.c) <= float(lim.r)
+
+
+## Falls back one line: posts further from the believed threat but still inside the defended area (the objective's capture
+## radius), the forward fire team first while the other covers, then the other. Returns true when it acted (or waits while
+## the squad is pinned down: soldiers do not get up and run across open ground under heavy fire).
+func _fall_back(sq: SquadState, a: Dictionary, now: float) -> bool:
+	var threat: Vector3 = a.threat_pos
+	var units := _units(sq)
+	if not threat.is_finite() or units.is_empty():
+		return false
+	if _pinned_frac(units) >= 0.5:
+		var since := float(_meta(sq, "fb_wait", now))
+		_set_meta(sq, "fb_wait", since)
+		if now - since < 20.0:
+			sq.tactic_rejected = "falling back waits: %d%% of the squad is pinned" % roundi(_pinned_frac(units) * 100.0)
+			return true
+	_set_meta(sq, "fb_wait", now)
+	var lim := _defence_limit(sq)
+	var c: Vector3 = lim.get("c", sq.tactic_target)
+	var r: float = float(lim.get("r", 40.0))
+	var d := _dir_to(c, threat)
+	var line := sq.defence_line + 1
+	# The secondary line a third of the radius behind the centre's front edge, the last one round the centre itself.
+	var front := 0.0
+	for u: UnitState in units:
+		front += ((u.post_pos if u.post_pos.is_finite() else u.position) - c).dot(d)
+	front /= units.size()
+	var centre := pos.nearest_valid(c + d * minf(front - 12.0, r * 0.15), 12.0) if line == 1 else pos.nearest_valid(c - d * 6.0, 12.0)
+	if not centre.is_finite():
+		centre = c
+	for u: UnitState in units:
+		if u.post_pos.is_finite():
+			_remember_post(sq, u.post_pos)
+	_set_meta(sq, "behind", {"c": c, "d": d, "max": front - 8.0})
+	var gb: Dictionary = sim.state.construction.bases.get(sq.garrison_base, {})
+	var posts := _defend_posts(sq, units, centre, d, threat, minf(r, 30.0 if line == 2 else 45.0), gb.get("anchor", Vector3.INF), 20.0 if line == 2 else 28.0)
+	_set_meta(sq, "behind", {})
+	if posts.size() < maxi(1, units.size() / 2):
+		sq.tactic_rejected = "no line %d to fall back to behind the current posts" % line
+		return false
+	sq.defence_line = line
+	sq.tactic = SquadState.Tactic.REPOSITION
+	sq.tactic_dir = d
+	sq.tactic_target = centre
+	sq.tactic_phase = PH_SETUP
+	sq.tactic_phase_since = now
+	sq.tactic_leg_since = now
+	var why := "falling back to line %d (%s): effectiveness %.2f, suppression %.2f, %d of %d left" % [line, "secondary" if line == 1 else "last, round the objective",
+		float(a.eff), float(a.supp), int(a.n), int(a.n0)]
+	sq.tactic_why = why
+	_log(sq, "%s %s" % [sq.squad_name, why])
+	fallbacks += 1
+	# Every soldier gets his new post now (it is on his record: a load in the middle carries on); the forward team moves first.
+	var dd := Vector3(d.x, 0.0, d.z)
+	var axis := Vector3(-dd.z, 0.0, dd.x)
+	var ups: Array = units.map(func(u: UnitState) -> Vector3: return u.position)
+	var idx := pos.assign(ups, posts, axis)
+	_mg_first(units, posts, idx, dd)
+	for i in units.size():
+		var u: UnitState = units[i]
+		var post: Dictionary = posts[idx[i]]
+		u.post_pos = post.p
+		u.fort_slot = String(post.get("slot", ""))
+		if u.fort_slot != "":
+			u.fort_pos = Vector3.INF
+	var mover := 0
+	if sq.teams.size() == 2:
+		var f0 := _team_front(sq, 0, c, d)
+		var f1 := _team_front(sq, 1, c, d)
+		mover = 0 if f0 >= f1 else 1
+	sq.tactic_leg = 100 + mover
+	_fall_back_move(sq, mover)
+	return true
+
+
+func _team_front(sq: SquadState, team: int, c: Vector3, d: Vector3) -> float:
+	var us := _units(sq, team)
+	if us.is_empty():
+		return -INF
+	return (_centroid(us) - c).dot(d)
+
+
+## Sends the soldiers of `team` (-1: all) to their (new) posts; the others cover the move with fire at the threat.
+func _fall_back_move(sq: SquadState, team: int) -> void:
+	for u: UnitState in _units(sq, team if sq.teams.size() == 2 else -1):
+		if not u.post_pos.is_finite():
+			continue
+		var goal := u.post_pos
+		if u.fort_slot != "":
+			var e := pos.slot_by_key(u.fort_slot, sq.faction)
+			goal = e.get("access", u.post_pos)
+		if _flat(u.position, goal) > 1.2:
+			sim.state.issue_move(u.id, goal, true)
+
+
+## The two halves of a fall back: the moving team goes (the other fires at the threat); when it is there (or 18 s), the other
+## goes; when most are in place (or 20 s), the defence holds the new line.
+func _run_fall_back(sq: SquadState, a: Dictionary, units: Array, now: float) -> void:
+	var team := sq.tactic_leg - 100
+	var two := sq.teams.size() == 2
+	var movers := _units(sq, team) if two and team < 2 else units
+	var threat: Vector3 = a.threat_pos
+	if two and team < 2 and threat.is_finite() and float(a.ammo) > 0.25:
+		_fire_on(_units(sq, 1 - team), threat, 10.0, mission_s)
+	if _arrived_frac(movers, 4.0) >= 0.7 or now - sq.tactic_leg_since > 18.0:
+		if two and team < 2 and sq.tactic_leg_since >= sq.tactic_phase_since and sq.tactic_leg < 102 and not bool(_meta(sq, "fb_second", false)):
+			_set_meta(sq, "fb_second", true)
+			sq.tactic_leg = 100 + (1 - team)
+			sq.tactic_leg_since = now
+			_cease_fire(units)
+			_fall_back_move(sq, 1 - team)
+			return
+		_set_meta(sq, "fb_second", false)
+		_cease_fire(units)
+		sq.tactic_leg = 0
+		sq.tactic = SquadState.Tactic.DEFEND
+		sq.tactic_phase = PH_HOLD
+		sq.tactic_phase_since = now
+		sq.tactic_commit_until = now + 25.0
+		sq.tactic_rejected = "holding line %d" % sq.defence_line
+
+
 ## The soldier's post still serves against `threat`: a fortification slot whose sector faces it, or natural cover that
 ## protects from it.
 func _post_still_good(sq: SquadState, u: UnitState, threat: Vector3) -> bool:
@@ -1644,6 +1805,9 @@ func _post_still_good(sq: SquadState, u: UnitState, threat: Vector3) -> bool:
 
 func _run_reposition(sq: SquadState, _a: Dictionary, now: float) -> void:
 	var units := _units(sq)
+	if sq.tactic_leg >= 100:
+		_run_fall_back(sq, _a, units, now)
+		return
 	if _arrived_frac(units) >= 0.7 or now - sq.tactic_phase_since > 14.0:
 		sq.tactic = SquadState.Tactic.DEFEND
 		sq.tactic_phase = PH_HOLD

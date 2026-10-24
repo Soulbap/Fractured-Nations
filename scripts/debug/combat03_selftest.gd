@@ -2,6 +2,9 @@
 ##
 ##   Godot.exe --path . --resolution 1600x900 --log-file c3.log res://scenes/game/world_ref_20km.tscn -- --combat03-test [--shots] [--only d_open,...] [--seeds=1,2,3]
 ##
+## Layered defence (f_*): a new threat direction moves only the soldiers whose posts no longer cover them (f_threat); a save
+## in the middle of a fall back is identical after loading and the fall back completes (f_persist); a player order takes a
+## falling-back garrison out of it (f_override).
 ## Defence scenarios (d_*): one standard South squad garrisons a small base (a command post) and three standard North squads
 ## attack it from 500 m with an ATTACK operation, camera far away, once per world seed. The places differ only in ground:
 ##   d_open     fortified outpost on open ground (two fighting positions, an MG emplacement, a steel guard tower)
@@ -28,6 +31,11 @@ func run(args: PackedStringArray) -> void:
 	_log("setup", {"soldiers": default_soldiers.size(), "seeds": seeds})
 	if _want("p_posts"):
 		_log("p_posts", await _p_posts())
+	for key: String in ["f_threat", "f_persist", "f_override"]:
+		if _want(key):
+			var rf: Variant = await call("_" + key)
+			_expect(rf is Dictionary and not (rf as Dictionary).is_empty(), "%s: the check did not finish (script error?)" % key)
+			_log(key, rf if rf is Dictionary else {})
 	for key: String in ["d_open", "d_village", "d_forest", "d_reverse"]:
 		if _want(key):
 			var r: Variant = await _defence_series(key)
@@ -130,9 +138,10 @@ func _defence_series(key: String) -> Dictionary:
 			"withdraw_why": r.get("withdraw_why", ""), "in_slots_at_start": sc.get("in_slots", 0), "diag": g,
 			"posts_judged": demo.sim.tactics._meta(sc.def[0], "posts_judged", {})}
 		var dd: Dictionary = g.get("defence", {})
-		print("C3 run %s seed %d: won=%s att %d/24 def %d/8 seen(att) %s seen(def) %s exposed %s inside %s posts %s slots_left %s %s" % [key, s, one.won,
+		print("C3 run %s seed %d: won=%s att %d/24 def %d/8 seen(att) %s seen(def) %s exposed %s inside %s posts %s slots_left %s line %s contested %s kept %s %s" % [key, s, one.won,
 			one.attackers_left, one.defenders_left, str(dd.get("first_seen", {}).get("att", "-")), str(dd.get("first_seen", {}).get("def", "-")),
-			dd.get("def_exposed_s", "-"), dd.get("def_inside_s", "-"), dd.get("def_post_changes", "-"), dd.get("def_slots_left", "-"), one.withdraw_why])
+			dd.get("def_exposed_s", "-"), dd.get("def_inside_s", "-"), dd.get("def_post_changes", "-"), dd.get("def_slots_left", "-"), dd.get("def_line_max", "-"),
+			dd.get("contested_s", "-"), dd.get("garrison_kept", "-"), one.withdraw_why])
 		runs.append(one)
 		_remove_structures(sc.get("ids", []))
 		_expect(int(g.get("totals", {}).get("att_shots", 0)) > 0, "%s seed %d: no fight happened" % [key, s])
@@ -144,7 +153,8 @@ func _defence_series(key: String) -> Dictionary:
 func _defence_summary(runs: Array) -> Dictionary:
 	var n := maxf(runs.size(), 1)
 	var acc := {"won": 0, "att_loss": 0.0, "def_loss": 0.0, "att_seen_t": 0.0, "att_seen_d": 0.0, "def_seen_d": 0.0, "first_def_hit_t": 0.0,
-		"def_exposed_s": 0.0, "def_inside_s": 0.0, "def_post_changes": 0.0, "def_slots_left": 0.0, "att_supp_avg": 0.0, "def_supp_avg": 0.0}
+		"def_exposed_s": 0.0, "def_inside_s": 0.0, "def_post_changes": 0.0, "def_slots_left": 0.0, "att_supp_avg": 0.0, "def_supp_avg": 0.0,
+		"def_line_max": 0.0, "contested_s": 0.0, "duration_s": 0.0}
 	for r: Dictionary in runs:
 		var g: Dictionary = r.diag
 		var dd: Dictionary = g.get("defence", {})
@@ -159,6 +169,9 @@ func _defence_summary(runs: Array) -> Dictionary:
 		acc.def_inside_s += float(dd.get("def_inside_s", 0))
 		acc.def_post_changes += float(dd.get("def_post_changes", 0))
 		acc.def_slots_left += float(dd.get("def_slots_left", 0))
+		acc.def_line_max += float(dd.get("def_line_max", 0))
+		acc.contested_s += float(dd.get("contested_s", 0))
+		acc.duration_s += float(g.get("duration_s", 0))
 		acc.att_supp_avg += float(g.get("att_supp_avg", 0.0))
 		acc.def_supp_avg += float(g.get("def_supp_avg", 0.0))
 	var out := {"runs": runs.size(), "taken": acc.won}
@@ -278,4 +291,118 @@ func _p_posts() -> Dictionary:
 			_png("p_posts_%s" % kind)
 		_remove_structures(ids)
 	war.rules.erase("squad_composition")
+	return out
+
+
+# --- Layered defence ------------------------------------------------------------------------------------------------------
+
+## A squad defends at the forest edge against an enemy reported in front; then the enemy is reported from 120 degrees to
+## the side (the faction's belief changes: the old report is forgotten). The squad repositions, moving the soldiers whose
+## posts do not cover them against the new bearing and keeping the others.
+func _f_threat() -> Dictionary:
+	var site := _site("open")
+	await _fresh_c()
+	war.rules["squad_composition"] = "standard"
+	var p: Vector3 = site.p
+	var dir: Vector3 = site.dir
+	var sq := _spawn(1, demo.sim.tactics.pos.nearest_valid(p - dir * 8.0, 15.0), 8)
+	await _physics(5)
+	_report(1, p + dir * 200.0, 6)
+	demo.sim.tactics.order_tactic([sq.id], SquadState.Tactic.DEFEND, p, SquadState.Owner.PLAYER)
+	await _warp(25.0, 4.0, 20.0)
+	var before := {}
+	for id in sq.members:
+		before[id] = _u(id).post_pos
+	war.contacts.clear()
+	ws.intel.rebuild()
+	var side := dir.rotated(Vector3.UP, deg_to_rad(120.0))
+	var r0 := int(demo.sim.tactics.started.get(SquadState.Tactic.REPOSITION, 0))
+	for k in 6:
+		_report(1, p + side * 150.0, 6)
+		await _warp(5.0, 4.0, 10.0)
+	await _warp(20.0, 4.0, 20.0)
+	var moved := 0
+	var kept := 0
+	for id in sq.members:
+		var a: Vector3 = before[id]
+		var b := _u(id).post_pos
+		if a.is_finite() and b.is_finite() and Vector2(a.x - b.x, a.z - b.z).length() > 2.0:
+			moved += 1
+		else:
+			kept += 1
+	var out := {"repositions": int(demo.sim.tactics.started.get(SquadState.Tactic.REPOSITION, 0)) - r0, "moved": moved, "kept": kept,
+		"why": sq.tactic_why, "note": sq.tactic_rejected, "tactic": sq.tactic_name()}
+	_expect(int(out.repositions) >= 1 and moved >= 1, "f_threat: the squad did not react to the new bearing %s" % str(out))
+	if shots:
+		demo.rts_camera.frame(p, 0.6, 45.0)
+		await _seconds(1.5)
+		_png("f_threat_reoriented")
+	war.rules.erase("squad_composition")
+	return out
+
+
+## The fortified outpost under attack until its garrison falls back: a save to the test save folder in the middle of the
+## move, a load, the same squad record (line, garrison, posts, the stage of the move), and the move completes to a held line.
+func _f_persist() -> Dictionary:
+	var site := _site("open")
+	var sc := await _defence_scene("open", site)
+	if sc.is_empty():
+		_expect(false, "f_persist: scene not set up")
+		return {}
+	var d: SquadState = sc.def[0]
+	var ids := (sc.atk as Array).map(func(q: SquadState) -> int: return q.id)
+	var op := ws.start_operation(0, OperationState.Type.ATTACK, ids, sc.obj.id, Vector3.INF, true)
+	demo.rts_camera.frame(Vector3(9000, 0, 9000), 0.0, 150.0)
+	await _warp(500.0, 8.0, 160.0, func() -> bool: return d.tactic == SquadState.Tactic.REPOSITION and d.tactic_leg >= 100 or not op.is_active())
+	var out := {"falling_back": d.tactic == SquadState.Tactic.REPOSITION and d.tactic_leg >= 100, "line": d.defence_line}
+	_expect(out.falling_back, "f_persist: the garrison never fell back (precondition)")
+	if not out.falling_back:
+		_remove_structures(sc.ids)
+		return out
+	var sig := func() -> String:
+		var a: Array = [d.defence_line, d.garrison_base, d.tactic, d.tactic_leg]
+		for id in d.members:
+			var u := _u(id)
+			a.append("%d:%s:%s" % [id, str(u.post_pos.snapped(Vector3.ONE * 0.1)), u.fort_slot])
+		return str(a)
+	var before: String = sig.call()
+	var path := demo.save_dir() + "/combat03_fallback.sav"
+	var err := demo.sim.state.save_file(path)
+	demo.sim.state.load_file(path)
+	await tree.physics_frame
+	war = demo.sim.state.war
+	ws = demo.sim.war
+	d = demo.sim.state.get_squad(d.id)
+	var after: String = sig.call()
+	out["same"] = before == after
+	out["saved"] = err == OK and path.contains("test_saves")
+	_expect(out.saved and out.same, "f_persist: the fall back differs after loading %s / %s" % [before, after])
+	await _warp(40.0, 4.0, 40.0, func() -> bool: return d.tactic == SquadState.Tactic.DEFEND)
+	out["after"] = {"tactic": d.tactic_name(), "line": d.defence_line, "garrison": d.garrison_base}
+	_expect(d.tactic == SquadState.Tactic.DEFEND and d.defence_line >= 1 and d.garrison_base >= 0, "f_persist: the fall back did not complete after loading %s" % str(out.after))
+	_remove_structures(sc.ids)
+	return out
+
+
+## A player order to a garrison that is falling back: the squad obeys (its tactic ends, it walks where it was sent) and
+## its garrison assignment ends (GAMEPLAY-01C: any other order reassigns the squad).
+func _f_override() -> Dictionary:
+	var site := _site("open")
+	var sc := await _defence_scene("open", site)
+	if sc.is_empty():
+		_expect(false, "f_override: scene not set up")
+		return {}
+	var d: SquadState = sc.def[0]
+	var ids := (sc.atk as Array).map(func(q: SquadState) -> int: return q.id)
+	var op := ws.start_operation(0, OperationState.Type.ATTACK, ids, sc.obj.id, Vector3.INF, true)
+	demo.rts_camera.frame(Vector3(9000, 0, 9000), 0.0, 150.0)
+	await _warp(500.0, 8.0, 160.0, func() -> bool: return d.tactic == SquadState.Tactic.REPOSITION and d.tactic_leg >= 100 or not op.is_active())
+	var was := d.tactic == SquadState.Tactic.REPOSITION
+	_expect(was, "f_override: the garrison never fell back (precondition)")
+	var goal: Vector3 = demo.sim.tactics.pos.nearest_valid(demo.sim.squads._centroid(d) - (site.dir as Vector3) * 60.0, 20.0)
+	demo.sim.squads.order_move([d.id], goal)
+	await _physics(5)
+	var out := {"was_falling_back": was, "tactic": d.tactic_name(), "garrison": d.garrison_base, "order": d.order_name()}
+	_expect(d.tactic == SquadState.Tactic.NONE and d.garrison_base < 0 and d.order == SquadState.Order.MOVE, "f_override: the player's order did not take over %s" % str(out))
+	_remove_structures(sc.ids)
 	return out

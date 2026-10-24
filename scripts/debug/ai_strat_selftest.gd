@@ -158,6 +158,7 @@ func _run_attack(sc: Dictionary, max_sim := 700.0, scale := 12.0, near := false)
 	if diag_on:
 		dg = CombatDiag.new()
 		dg.start(demo.sim, op, atk, defs, obj.position, obj.radius)
+		dg.objective = obj
 	var w := await _warp(max_sim, scale, 200.0, func() -> bool:
 		var now := demo.sim.state.time
 		if dg and now >= st.diag_next:

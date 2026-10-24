@@ -38,6 +38,11 @@ var def_slots_left := 0
 var def_slot_s := 0.0
 var _posts := {}
 var _slots := {}
+## GAMEPLAY-03B: the deepest defence line any defending squad reached, seconds the objective was contested, whether the
+## defending squads still held their garrison assignment at the end.
+var def_line_max := 0
+var contested_s := 0.0
+var objective: ObjectiveState
 
 
 func start(p_sim: WorldSim, p_op: OperationState, attackers: Array, defenders: Array, objective_pos: Vector3, objective_r := 0.0) -> void:
@@ -181,9 +186,12 @@ func sample() -> void:
 
 func _sample_defence(now: float, dt: float) -> void:
 	var def_ids := {}
+	if objective and objective.contested:
+		contested_s += dt
 	for sq: SquadState in defs:
 		if sim.state.get_squad(sq.id) == null:
 			continue
+		def_line_max = maxi(def_line_max, sq.defence_line)
 		for id in sq.members:
 			var u := sim.state.get_unit(id)
 			if u == null or not u.alive:
@@ -236,7 +244,8 @@ func result() -> Dictionary:
 		"att_accuracy": snappedf(float(totals.att_hits) / maxf(float(totals.att_shots), 1.0), 0.003), "def_accuracy": snappedf(float(totals.def_hits) / maxf(float(totals.def_shots), 1.0), 0.003),
 		"squads": per, "stages": stages, "withdraw_why": op.withdraw_why if op else "", "outcome": op.outcome if op else "", "rows": rows,
 		"defence": {"first_seen": seen, "first_hit": first_hit, "def_exposed_s": roundi(def_exposed_s), "def_inside_s": roundi(def_inside_s),
-			"def_slot_s": roundi(def_slot_s), "def_post_changes": def_post_changes, "def_slots_left": def_slots_left}}
+			"def_slot_s": roundi(def_slot_s), "def_post_changes": def_post_changes, "def_slots_left": def_slots_left, "def_line_max": def_line_max,
+			"contested_s": roundi(contested_s), "garrison_kept": defs.filter(func(q: SquadState) -> bool: return sim.state.get_squad(q.id) != null and q.garrison_base >= 0).size()}}
 
 
 ## Soldiers the squads started with (start = true) or have now.
