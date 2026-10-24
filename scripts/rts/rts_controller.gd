@@ -343,7 +343,7 @@ func order_build(site_id: int) -> int:
 	var n := 0
 	for sid in sqs:
 		var sq := sim.state.get_squad(sid)
-		if sq and sq.tactic == SquadState.Tactic.BUILD:
+		if sq and (sq.tactic == SquadState.Tactic.BUILD or sq.order == SquadState.Order.MOVE):
 			n += sq.members.size()
 	if n > 0:
 		var s := structures.state.get_structure(site_id)

@@ -11,7 +11,13 @@ branches are contained in `develop` and stay as history. Next milestone: **NAVIG
 obstacle navigation). See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest gameplay: **BASE-01** (branch `feature/base-01`) — the player establishes their own base anywhere suitable: in
+Newest gameplay: **GAMEPLAY-01B** (branch `feature/gameplay-01b`) — the first playable early game: a start screen with
+**New Game** (eight North soldiers in the south, no base, little supply), Continue and the Development Scenario;
+supply caches, paid construction and recruitment, income from captured objectives; buildings are construction sites
+that idle soldiers build (squad tactic BUILD); safe, scenario-aware saves. See
+[docs/GAMEPLAY-01B_REPORT.md](docs/GAMEPLAY-01B_REPORT.md).
+
+Before that, **BASE-01** (branch `feature/base-01`) — the player establishes their own base anywhere suitable: in
 construction mode (**B**, RTS) a **Command Post** opens a base with a 150 m area, and **Barracks**, **Supply Depot**,
 **Vehicle Parking** and **Guard Post** are built inside it; refused spots say why (too steep, water, road or bridge, outside
 the base area, overlap). The base is a real, saved `ConstructionState` base that the logistics and war systems read; see
@@ -193,9 +199,19 @@ generator runs in Blender's Python):
 bash tools/terrain_ref/build_ref_world.sh
 ```
 
-Then press **F5**. The war starts at once: you are North (blue), in the tactical view over
-your HQ; South (orange, aggressive) and East (green, defensive) are AI factions that plan and
-launch their own operations. Press **M** for the strategic map. The first start builds the
+Then press **F5**. The start screen (GAMEPLAY-01B) offers:
+
+- **New Game** — one North squad of eight near Moen in the south, no base, 500 kg of supplies. South holds the former
+  North territory in the north, East the east bank. Secure supply caches (diamond markers, 30 s), place a **Command
+  Post** (B) — your idle soldiers walk there and build it — then a Supply Depot, Barracks and defences, recruit at the
+  barracks and take objectives for income. The supply strip (top) and a dismissible hint guide the first steps.
+- **Continue** — the saved game (F5 saves, F9 loads; one slot in `user://saves/ref_20km/`).
+- **Development Scenario** — the full three-faction war as before: you are North (blue) in the tactical view over
+  your HQ with five squads, free and instant construction and the starting stockpile; South (orange, aggressive) and
+  East (green, defensive) plan and launch their own operations.
+
+`-- --scenario=new_game|dev` or `-- --continue` skip the menu; scripted tests default to the Development Scenario and
+save to `user://test_saves/`, never to your save. Press **M** for the strategic map. The first start builds the
 strategic route grid (about 1 s) and caches it in `user://strategic/`. The scripted tests of
 earlier milestones (`--squad-test`, `--combat-test` ...) still use their own fixed two-faction
 layout. The small `scenes/game/core_demo.tscn` (2 km world, no build needed) still runs on its

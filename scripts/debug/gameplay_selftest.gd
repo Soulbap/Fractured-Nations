@@ -41,6 +41,24 @@ func run(args: PackedStringArray) -> void:
 		_log("c_build", await _c_build())
 	if _want("c_ai"):
 		_log("c_ai", await _c_ai())
+	if only.has("smoke_dev"):
+		_log("a_dev", _a_dev())
+		var t0 := demo.sim.tick_usec.duplicate()
+		await _until(func() -> bool: return false, 120.0, 4.0)
+		var t1 := demo.sim.tick_usec
+		var ticks := maxi(int(t1.ticks) - int(t0.ticks), 1)
+		var per := {}
+		for k in ["tactics", "war", "squads", "brain"]:
+			per[k] = snappedf(float(int(t1[k]) - int(t0[k])) / ticks, 0.1)
+		_log("smoke_dev", {"squads": demo.sim.state.squads.size(), "objectives": _war().objectives.size(), "us_per_tick": per,
+			"tactics": demo.sim.tactics.summary(), "war_update_us_avg": demo.sim.war.summary().update_us_avg, "economy_hud": demo.hud.economy._strip.visible})
+		_expect(not demo.hud.economy._strip.visible, "smoke_dev: the New Game supply strip shows in the Development Scenario")
+		await _frame(demo.start_focus() + Vector3(0, 0, 40), 140.0)
+		_png("dev_scenario")
+	if only.has("loop"):
+		_log("loop", await _loop())
+	if only.has("loop_continue"):
+		_log("loop_continue", await _loop_continue())
 	_finish()
 
 
@@ -593,30 +611,250 @@ func _c_ai() -> Dictionary:
 	return out
 
 
-## A command post spot within 150 m of p (check_building + base rules), or INF.
+# --- Integrated first-playable loop --------------------------------------------------------------------------------
+
+const LOOP_EXPECT := "user://test_saves/gameplay01b_loop.json"
+var _steps: Array = []
+
+
+func _step_log(n: int, what: String, ok: bool, data := {}) -> void:
+	var e := {"step": n, "what": what, "ok": ok, "t": snappedf(demo.sim.state.time, 0.1), "supplies": roundi(_stock().supplies)}
+	e.merge(data)
+	_steps.append(e)
+	print("GP step %s" % JSON.stringify(e))
+	_expect(ok, "loop step %d (%s) failed: %s" % [n, what, str(data)])
+
+
+func _frame(p: Vector3, zoom := 70.0, yaw := 0.6) -> void:
+	demo.rts_camera.frame(p, yaw, zoom)
+	await _seconds(1.5)
+
+
+## The early game from a New Game start (run with --menu-shot so the start went through the real menu), each step with
+## the controls a player uses: RTS selection and right-click orders, the map, the construction tool driven through its
+## cursor, the barracks' panel button, the tactical order keys. Simulated time is compressed on the walks. Writes what it
+## built for the second process (--continue ... --only loop_continue).
+func _loop() -> Dictionary:
+	var war := _war()
+	var pf := war.player_faction
+	var f := war.faction(pf)
+	var bs := demo.sim.logistics.bases
+	var con := demo.construction
+	var rts := demo.rts
+	var t_start := demo.sim.state.time
+	# 1. Eight North soldiers in the south.
+	var sqs := _player_squads()
+	var sq: SquadState = sqs[0] if not sqs.is_empty() else null
+	_step_log(1, "start: one North squad of eight in the south", war.scenario_id == "new_game" and sqs.size() == 1 and sq.members.size() == 8 and demo.sim.war.squad_center(sq).z > 5000.0,
+		{"scenario": war.scenario_id, "squads": sqs.size(), "pos": str(demo.sim.war.squad_center(sq)) if sq else "-"})
+	if sq == null:
+		return {"steps": _steps}
+	await _frame(demo.sim.war.squad_center(sq), 80.0)
+	_png("loop_01_start")
+	# 2. Select the squad.
+	rts.select_squads([sq.id])
+	await _seconds(1.0)
+	_step_log(2, "squad selected in the tactical view", rts.selected_squads() == [sq.id])
+	_png("loop_02_selected")
+	# 3. The map: the reported cache is on it.
+	demo.toggle_map()
+	await _seconds(1.0)
+	var sc := demo.sim.war.squad_center(sq)
+	demo.strategic_map.zoom = 0.12
+	demo.strategic_map.view_center = Vector2(sc.x, sc.z - 700.0)
+	await _seconds(1.0)
+	_png("loop_03_map")
+	_step_log(3, "strategic map open with the reported cache", demo.strategic_map.visible and (_cache(0).known as Array).has(pf))
+	demo.toggle_map()
+	await _seconds(0.5)
+	# 4-6. To the cache, secure it, supplies rise.
+	var c0: Dictionary = _cache(0)
+	var before := _stock()
+	rts.select_squads([sq.id])
+	rts.order_move(c0.pos)
+	await _until(func() -> bool: return c0.state == "securing", 300.0)
+	await _frame(c0.pos, 55.0)
+	await _until(func() -> bool: return float(c0.progress) >= 0.45, 40.0, 1.0)
+	_png("loop_05_cache_securing")
+	var secure_t := await _until(func() -> bool: return c0.state == "depleted", 60.0, 2.0)
+	_step_log(4, "moved to the cache", true)
+	_step_log(5, "cache secured", c0.state == "depleted", {"seconds": roundi(secure_t)})
+	_step_log(6, "supplies increased", _stock().supplies > before.supplies + 800.0, {"gain": roundi(_stock().supplies - before.supplies)})
+	await _seconds(1.0)
+	_png("loop_06_cache_taken")
+	# 7-8. A Command Post site through the construction tool's cursor.
+	var spot := _cp_spot(demo.sim.war.squad_center(sq))
+	_step_log(7, "command post location found", spot.is_finite(), {"at": str(spot)})
+	await _frame(spot, 60.0)
+	con.set_active(true)
+	con.select_type(&"command_post")
+	con.mouse_override = demo.rts_camera.camera.unproject_position(spot)
+	await _seconds(1.0)
+	_png("loop_08_cp_blueprint")
+	con.primary_action()
+	con.mouse_override = Vector2.INF
+	con.set_active(false)
+	var cp: StructureState = null
+	for s: StructureState in demo.sim.state.construction.all():
+		if s.faction == pf and s.type_id == &"command_post":
+			cp = s
+	_step_log(8, "command post blueprint placed", cp != null and cp.is_site(), {"message": con.message})
+	if cp == null:
+		return {"steps": _steps}
+	# 9-10. Soldiers build it; the base exists only when it is finished.
+	await _until(func() -> bool: return cp.site_progress() >= 0.5, 120.0, 2.0)
+	await _frame(cp.position + Vector3(0, 0, 12), 75.0)
+	_png("loop_09_cp_construction")
+	var no_base_mid := bs.bases_of(pf).is_empty()
+	await _until(func() -> bool: return not cp.is_site(), 120.0, 2.0)
+	_step_log(9, "soldiers built the command post", not cp.is_site() and no_base_mid, {"workers_seen": no_base_mid})
+	_step_log(10, "base operational on completion", bs.bases_of(pf).size() == 1 and cp.base_id >= 0, {"base": bs.describe(cp.base_id)})
+	# 11-12. Depot; the pool moves into it.
+	var pool_before := f.pool.get_qty(Inventory.SUPPLIES)
+	var depot := _place(&"supply_depot", _site_in_base(&"supply_depot", cp.position))
+	await _until(func() -> bool: return depot != null and not depot.is_site(), 150.0, 2.0)
+	await _physics(90)
+	_step_log(11, "supply depot built", depot != null and not depot.is_site())
+	_step_log(12, "pool moved into the depot", f.pool.is_empty() and depot != null and depot.inventory.get_qty(Inventory.SUPPLIES) >= pool_before - 451.0, {"pool_before": roundi(pool_before), "depot": depot.inventory.summary() if depot and depot.inventory else "-"})
+	await _frame(cp.position + Vector3(10, 0, 30), 70.0)
+	_png("loop_12_base_depot")
+	# 13. More supplies: the cache the first one pointed to, then Verket for income.
+	var c1: Dictionary = _cache(1)
+	rts.select_squads([sq.id])
+	rts.order_move(c1.pos)
+	await _until(func() -> bool: return c1.state == "depleted", 900.0, 8.0)
+	var verket: ObjectiveState = null
+	for o: ObjectiveState in war.all_objectives():
+		if o.obj_name == "Verket":
+			verket = o
+	rts.select_squads([sq.id])
+	rts.order_move(verket.position)
+	await _until(func() -> bool: return verket.owner == pf, 400.0, 8.0)
+	_step_log(13, "more supplies: second cache and Verket captured", c1.state == "depleted" and verket.owner == pf, {"income_per_min": demo.sim.war.econ.rate_per_min(f)})
+	# 14. Barracks, built by the squad that walks back.
+	await _until(func() -> bool: return _stock().supplies >= 560.0, 300.0, 8.0)
+	var barracks := _place(&"barracks_block", _site_in_base(&"barracks_block", cp.position))
+	if barracks and sq.tactic_site != barracks.id:
+		rts.select_squads([sq.id])
+		rts.order_build(barracks.id)
+	await _until(func() -> bool: return barracks != null and not barracks.is_site(), 900.0, 8.0)
+	_step_log(14, "barracks built", barracks != null and not barracks.is_site(), {"stock": _stock()})
+	# 15. Recruit through the barracks' panel button.
+	await _until(func() -> bool: return _stock().supplies >= 330.0 and _stock().ammo >= 200.0, 400.0, 8.0)
+	rts.select([])
+	rts.selected_structure = barracks.id
+	await _frame(barracks.position + Vector3(0, 0, 25), 55.0)
+	await _seconds(1.0)
+	var pressed := _press_panel_button("RECRUIT")
+	await _seconds(0.5)
+	_png("loop_15_recruit")
+	var n0 := _player_squads().size()
+	await _until(func() -> bool: return _player_squads().size() > n0, 90.0, 4.0)
+	var recruit: SquadState = _player_squads().back()
+	_step_log(15, "squad recruited through the barracks panel", pressed and _player_squads().size() == n0 + 1, {"queue_paid": true})
+	# 16. A defensive structure.
+	var guard := _place(&"guard_tower_steel", _site_in_base(&"guard_tower_steel", cp.position + Vector3(0, 0, -40)))
+	await _until(func() -> bool: return guard != null and not guard.is_site(), 240.0, 4.0)
+	_step_log(16, "defensive structure built", guard != null and not guard.is_site())
+	# 17. The new squad takes orders.
+	rts.select_squads([recruit.id])
+	var moved := rts.order_move(demo.sim.war.squad_center(recruit) + Vector3(-30, 0, 25))
+	await _seconds(2.0)
+	_step_log(17, "recruited squad selected and commanded", moved == recruit.members.size() and recruit.order == SquadState.Order.MOVE)
+	await _frame(cp.position + Vector3(0, 0, 35), 110.0)
+	_png("loop_17_base_overview")
+	# 18. Save (F5 through the input map).
+	_press(KEY_F5)
+	await _physics(5)
+	var expect := {"squads": _player_squads().size(), "soldiers": bs.soldiers_of(pf), "structures": demo.sim.state.construction.all().filter(func(s: StructureState) -> bool: return s.faction == pf and not s.is_line()).size(),
+		"sites": demo.sim.state.construction.all().filter(func(s: StructureState) -> bool: return s.faction == pf and s.is_site()).size(),
+		"bases": bs.bases_of(pf).size(), "supplies": roundi(_stock().supplies), "verket": verket.owner, "caches": war.caches.map(func(x: Dictionary) -> String: return x.state), "time": demo.sim.state.time}
+	var fw := FileAccess.open(LOOP_EXPECT, FileAccess.WRITE)
+	fw.store_string(JSON.stringify(expect))
+	fw.close()
+	_step_log(18, "saved (F5)", demo.peek_save().get("ok", false), {"message": con.message, "game_minutes": snappedf((demo.sim.state.time - t_start) / 60.0, 0.1)})
+	return {"steps": _steps, "expect": expect, "game_minutes": snappedf((demo.sim.state.time - t_start) / 60.0, 0.1)}
+
+
+## Steps 19-22 in a second process started with --continue: everything is back, and the war still takes orders.
+func _loop_continue() -> Dictionary:
+	var war := _war()
+	var pf := war.player_faction
+	var bs := demo.sim.logistics.bases
+	var expect: Variant = JSON.parse_string(FileAccess.get_file_as_string(LOOP_EXPECT)) if FileAccess.file_exists(LOOP_EXPECT) else null
+	_step_log(19, "restarted the program", expect is Dictionary, {"expect_file": expect is Dictionary})
+	if not expect is Dictionary:
+		return {"steps": _steps}
+	_step_log(20, "continued the saved game", bool(demo.continue_result.get("ok", false)) and war.scenario_id == "new_game", {"continue": demo.continue_result})
+	var verket_owner := -2
+	for o: ObjectiveState in war.all_objectives():
+		if o.obj_name == "Verket":
+			verket_owner = o.owner
+	var now := {"squads": _player_squads().size(), "soldiers": bs.soldiers_of(pf), "structures": demo.sim.state.construction.all().filter(func(s: StructureState) -> bool: return s.faction == pf and not s.is_line()).size(),
+		"sites": demo.sim.state.construction.all().filter(func(s: StructureState) -> bool: return s.faction == pf and s.is_site()).size(),
+		"bases": bs.bases_of(pf).size(), "supplies": roundi(_stock().supplies), "verket": verket_owner, "caches": war.caches.map(func(x: Dictionary) -> String: return x.state)}
+	var same: bool = int(now.squads) == int(expect.squads) and int(now.soldiers) == int(expect.soldiers) and int(now.structures) == int(expect.structures) \
+		and int(now.bases) == int(expect.bases) and absi(int(now.supplies) - int(expect.supplies)) <= 1 and int(now.verket) == int(expect.verket) and str(now.caches) == str(expect.caches)
+	_step_log(21, "squads, buildings, resources and ownership persisted", same, {"now": now, "expect": expect})
+	var cp_pos: Vector3 = demo.sim.state.construction.bases[bs.main_base(pf)].anchor if bs.main_base(pf) >= 0 else demo.start_focus()
+	await _frame(cp_pos + Vector3(0, 0, 35), 110.0)
+	_png("loop_20_continued")
+	# 22. The war still works: a tactical DEFEND at the base and a strategic attack from the map's operation call.
+	var sqs := _player_squads()
+	demo.rts.select_squads([sqs[0].id])
+	demo.rts.order_tactic(SquadState.Tactic.DEFEND, cp_pos)
+	await _seconds(2.0)
+	var defend_ok: bool = sqs[0].tactic == SquadState.Tactic.DEFEND
+	var target: ObjectiveState = null
+	for o: ObjectiveState in war.all_objectives():
+		if o.obj_name == "Sørmoen":
+			target = o
+	var op: OperationState = demo.sim.war.start_operation(pf, OperationState.Type.ATTACK, [sqs[sqs.size() - 1].id], target.id, Vector3.INF, true) if target else null
+	await _seconds(3.0)
+	_step_log(22, "tactical and strategic orders still work", defend_ok and op != null and op.is_active(), {"defend": defend_ok, "op": op.phase_name() if op else "-"})
+	demo.toggle_map()
+	demo.strategic_map.zoom = 0.07
+	demo.strategic_map.view_center = Vector2(cp_pos.x - 900.0, cp_pos.z - 1500.0)
+	await _seconds(1.5)
+	_png("loop_22_map_operation")
+	demo.toggle_map()
+	return {"steps": _steps}
+
+
+## Presses the logistics panel's button whose text contains `word` (the real button, its pressed signal). Returns true when found.
+func _press_panel_button(word: String) -> bool:
+	var panel := demo.hud.logistics_panel
+	var stack: Array = [panel]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if n is Button and (n as Button).text.to_upper().contains(word) and not (n as Button).disabled:
+			(n as Button).pressed.emit()
+			return true
+		stack.append_array(n.get_children())
+	return false
+
+
+## A command post spot within 150 m of p (check_building + base rules), or INF. Open ground first (no trees to cut, as a
+## player would choose), then any ground the clearing makes buildable.
 func _cp_spot(p: Vector3) -> Vector3:
-	var sm := demo.structures
-	var def := StructureCatalog.get_def(&"command_post")
-	for r: float in [30.0, 50.0, 70.0, 90.0, 120.0, 150.0]:
-		for k in 12:
-			var a := TAU * k / 12.0
-			var g := demo.on_ground(p.x + cos(a) * r, p.z + sin(a) * r, 0.0)
-			if sm.check_building(def, g, 0.0, -1, true).ok and demo.sim.logistics.bases.placement_rule(&"command_post", g, _war().player_faction) == "" \
-					and sm.road_conflict(def, Transform3D(Basis.IDENTITY, g)) == "":
-				return g
-	return Vector3.INF
+	return _spot(&"command_post", p, [30.0, 50.0, 70.0, 90.0, 120.0, 150.0], 12)
 
 
 func _site_in_base(type_id: StringName, anchor: Vector3) -> Vector3:
+	return _spot(type_id, anchor, [35.0, 50.0, 65.0, 80.0, 95.0, 110.0], 16)
+
+
+func _spot(type_id: StringName, p: Vector3, rings: Array, dirs: int) -> Vector3:
 	var sm := demo.structures
 	var def := StructureCatalog.get_def(type_id)
-	for r: float in [35.0, 50.0, 65.0, 80.0, 95.0, 110.0]:
-		for k in 16:
-			var a := TAU * k / 16.0 + r * 0.01
-			var g := demo.on_ground(anchor.x + cos(a) * r, anchor.z + sin(a) * r, 0.0)
-			if sm.check_building(def, g, 0.0, -1, true).ok and sm.road_conflict(def, Transform3D(Basis.IDENTITY, g)) == "" \
-					and demo.sim.logistics.bases.placement_rule(type_id, g, _war().player_faction) == "":
-				return g
+	for clear: bool in [false, true]:
+		for r: float in rings:
+			for k in dirs:
+				var a := TAU * k / dirs + r * 0.01
+				var g := demo.on_ground(p.x + cos(a) * r, p.z + sin(a) * r, 0.0)
+				if sm.check_building(def, g, 0.0, -1, clear).ok and sm.road_conflict(def, Transform3D(Basis.IDENTITY, g)) == "" \
+						and demo.sim.logistics.bases.placement_rule(type_id, g, _war().player_faction) == "":
+					return g
 	return Vector3.INF
 
 
@@ -698,7 +936,21 @@ func _probe() -> Dictionary:
 				continue
 			var road := sim.state.roads.nearest(p, 400.0, 0, 0.0)
 			caches.append({"r": r, "deg": roundi(rad_to_deg(a)), "x": roundi(p.x), "z": roundi(p.z), "road_m": roundi(Vector2(road.pos.x - p.x, road.pos.z - p.z).length()) if not road.is_empty() else -1})
-	return {"objectives": objs, "start_candidates": cands.slice(0, 25), "n_candidates": cands.size(), "cache_spots": caches}
+	var cache_check: Array = []
+	for c: Dictionary in war.caches:
+		var g := sim.tactics.pos.ground(c.pos)
+		var nv := sim.tactics.pos.nearest_valid(c.pos, 40.0)
+		var blocked := 0
+		for k in 16:
+			var a := TAU * k / 16.0
+			if not sim.tactics.pos.valid_ground(sim.tactics.pos.ground(c.pos + Vector3(cos(a), 0, sin(a)) * 15.0)):
+				blocked += 1
+		cache_check.append({"name": c.name, "valid": sim.tactics.pos.valid_ground(g), "nearest_valid_m": roundi(_flat2(nv, c.pos)) if nv.is_finite() else -1, "ring15_blocked": blocked})
+	return {"objectives": objs, "start_candidates": cands.slice(0, 25), "n_candidates": cands.size(), "cache_spots": caches, "cache_check": cache_check}
+
+
+static func _flat2(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x - b.x, a.z - b.z).length()
 
 
 # --- Output ------------------------------------------------------------------------------------------------------

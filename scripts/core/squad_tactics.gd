@@ -804,6 +804,8 @@ func cancel(sq: SquadState, why: String) -> void:
 func on_order(sq: SquadState) -> void:
 	if _internal:
 		return
+	# GAMEPLAY-01B: a new order replaces a march to a construction site.
+	_set_meta(sq, "build_goal", null)
 	if sq.tactic == SquadState.Tactic.BUILD:
 		# GAMEPLAY-01B: the player took the squad away from the site - it is not called back on its own for a while.
 		_set_meta(sq, "no_build_until", sim.state.time + build_respect_s)
@@ -954,10 +956,36 @@ func build_eligible(sq: SquadState, ignore_cooldown := false) -> bool:
 	return false
 
 
-## An idle squad takes up the nearest site of its faction within radius that needs work and was not found unreachable.
+## Starts BUILD on a site, or - for a squad more than 120 m away - first marches it there with an ordinary squad move (the
+## route system: roads, bridges, terrain) and starts BUILD when it has arrived (_auto_build). {ok, reason, marching}.
+func send_to_build(sq: SquadState, site: StructureState, owner: int) -> Dictionary:
+	var c := _centroid(_units(sq))
+	var centre := site.site_center()
+	if _flat(c, centre) > 120.0:
+		var goal := pos.nearest_valid(centre + _dir_to(centre, c) * 22.0, 30.0)
+		sim.squads.order_move([sq.id], goal if goal.is_finite() else centre)
+		_set_meta(sq, "build_goal", [site.id, owner])
+		_log(sq, "%s marches %.0f m to build site #%d" % [sq.squad_name, _flat(c, centre), site.id])
+		site.site["why"] = "%s on the way (%.0f m)" % [sq.squad_name, _flat(c, centre)]
+		return {"ok": true, "reason": "", "marching": true}
+	var res := start(sq, SquadState.Tactic.BUILD, owner, centre, -1, "", {"site": site.id})
+	res["marching"] = false
+	return res
+
+
+## An idle squad takes up the nearest site of its faction within radius that needs work and was not found unreachable;
+## a squad that marched to a site to build it (send_to_build) takes up that site first.
 func _auto_build(sq: SquadState, from: Vector3, radius: float) -> bool:
 	if not build_eligible(sq):
 		return false
+	var goal: Variant = _meta(sq, "build_goal", null)
+	if goal is Array:
+		_set_meta(sq, "build_goal", null)
+		var gs := sim.state.construction.get_structure(int(goal[0]))
+		if gs and gs.is_site():
+			if _flat(from, gs.site_center()) <= radius:
+				return bool(start(sq, SquadState.Tactic.BUILD, int(goal[1]), gs.site_center(), -1, "", {"site": gs.id}).ok)
+			gs.site["why"] = "%s could not get there" % sq.squad_name
 	var best: StructureState = null
 	var best_d := radius
 	var now := sim.state.time
@@ -981,7 +1009,7 @@ func assign_builders(site: StructureState) -> SquadState:
 	for sq: SquadState in sqs:
 		if _flat(_centroid(_units(sq)), c) > build_assign_m:
 			break
-		if start(sq, SquadState.Tactic.BUILD, SquadState.Owner.SQUAD, c, -1, "", {"site": site.id}).ok:
+		if send_to_build(sq, site, SquadState.Owner.SQUAD).ok:
 			return sq
 	return null
 
@@ -997,8 +1025,11 @@ func order_build(squad_ids: Array, site_id: int) -> Dictionary:
 			continue
 		sim.war.release_squads([sq.id], "player build order")
 		var site := sim.state.construction.get_structure(site_id)
-		var res := start(sq, SquadState.Tactic.BUILD, SquadState.Owner.PLAYER, site.site_center() if site else Vector3.INF, -1, "", {"site": site_id})
-		parts.append("%s: %s" % [sq.squad_name, "BUILD accepted" if res.ok else "cannot - " + str(res.reason)])
+		if site == null or not site.is_site():
+			parts.append("%s: cannot - there is no construction site there" % sq.squad_name)
+			continue
+		var res := send_to_build(sq, site, SquadState.Owner.PLAYER)
+		parts.append("%s: %s" % [sq.squad_name, ("marching to the site, then BUILD" if res.marching else "BUILD accepted") if res.ok else "cannot - " + str(res.reason)])
 		if res.ok:
 			n += 1
 	return {"ok": n > 0, "n": n, "text": " | ".join(parts)}

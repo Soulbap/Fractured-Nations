@@ -148,6 +148,13 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   (never teleport or delete). `VehicleSim` brakes short of a closed deck and re-plans one vehicle per tick; `SquadControl` re-routes or
   stops the march with a reason; operations report `route blocked` and fail after 300 s. `BridgeMarkers` is a debug indicator only.
   Tests: `--navigation-n1c1-test`.
+- **Scenarios, economy and construction sites (GAMEPLAY-01B).** A game starts from a `ScenarioDef`
+  (`assets/scenarios/dev.tres`, `new_game.tres`) through the one `SandboxSetup.create`; its rules are copied into
+  `WarState.rules` (saved) and every economy switch reads `war.rule(...)` with the Development Scenario's behaviour as
+  fallback. `BuildCosts` is the one cost / work table (player and AI). Stock without a building is `FactionState.pool`;
+  the player pays with `BaseSim.faction_pay/faction_refund`. A placed structure can be a site (`StructureState.site`):
+  no facility until `ConstructionState.add_work` completes it once (`structure_completed`); soldiers build through the
+  squad tactic BUILD (`SquadTactics`), AI sites through a crew rate in `AiBases.update`. Tests save to `user://test_saves`.
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are
@@ -194,6 +201,11 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
 - AI-WAR-LOGISTICS-01 scenarios: `--ai-war-test [--only a_init,b_recruit,c_vehicle,d_mech,e_convoy,f_preop,g_delivery,h_shortage,i_counter,j_base_loss,l_player,m_save,n_long,o_war,m_move,m_march,m_haugen]`
   and the road scenarios `--only r_yard,r_exit,r_lanes,r_offroad,r_gaps,r_obstacles,r_convoy,r_overlay` (minutes);
   `r_drive` drives 20 km routes (~20 minutes, optional). `--road-audit` writes `benchmarks/raw/road_audit.json`.
+- GAMEPLAY-01B: `--scenario=new_game|dev` / `--continue` skip the start screen (tests default to dev).
+  `--scenario=new_game --gameplay01b-test [--shots] --only a_new,a_save,b_economy,b_recovery,c_build,c_ai`
+  (`a_dev`, `smoke_dev` with `--scenario=dev`; `a_continue` / `loop_continue` with `--continue`); the integrated loop:
+  `--menu-shot --gameplay01b-test --shots --only loop` then `--continue --gameplay01b-test --shots --only loop_continue`.
+  Screenshots at 1920x1080 only (`--fullscreen`), in `docs/gameplay01b/`.
 - UI-01C HUD (kit in `scripts/ui/kit/`, one style for every mode): `--ui01c-test [--shots] [--only shots,checks,small]`
   (RTS roster / command panel) and `--ui01c2-test [--shots] [--only construction,vehicle,markers,map,fps]` (run
   `--fullscreen` for 1920x1080 captures in `docs/ui_01c/`). HUD sizes are in the 1152x648 logical canvas
