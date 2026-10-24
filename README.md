@@ -11,7 +11,17 @@ branches are contained in `develop` and stay as history. Next milestone: **NAVIG
 obstacle navigation). See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest gameplay: **GAMEPLAY-02** (on `develop`) — infantry combat and support weapons: every squad carries a **light
+Newest gameplay: **GAMEPLAY-03** (on `develop`) — defensive warfare: defending squads judge their posts against the
+believed threat (protection, line of fire, **concealment** measured from the enemy's side, prepared positions, weapon
+roles: the machine gunner takes the widest arc it is least seen from, the grenadier a concealed post), keep the posts that
+still serve when the threat moves, and a garrison no longer gives up its base because it is outnumbered: it **falls back
+line by line inside the base** (forward fire team first, the other covering) and holds its last line round the objective.
+Attackers rank their fire support by danger (enemies reported at fortifications first), send a support squad that can no
+longer fire in with the assault, and retry from another side. The AI grenadier visibly raises the launcher before firing;
+soldiers notice a grenade after a moment and get down when they cannot get clear. The MG emplacement's roof now leaves the
+rear open (the crew is visible). See [docs/GAMEPLAY-03_REPORT.md](docs/GAMEPLAY-03_REPORT.md).
+
+Before that, **GAMEPLAY-02** (on `develop`) — infantry combat and support weapons: every squad carries a **light
 machine gun** (sustained, suppressive fire; better braced, worse on the move) and a **grenadier** with hand grenades and a
 light **anti-structure launcher**; all soldiers carry a frag grenade. The AI uses them on what it has seen (grenades into
 positions and cover, rockets at enemy structures, never with friends in the blast), the MG gunner takes the best firing

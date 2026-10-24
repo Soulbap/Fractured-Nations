@@ -173,6 +173,15 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   only at what the soldier saw or was told, with friend checks and per-squad rate limits. `OperationState.cover_fire` is the
   fire support's window (OpCoordination). Tests: `--combat02-test [--only a_*,b_*,c_*,d_*,e_*] [--seeds=1,2,3]`
   (`CombatDiag` records engagements; `tools/combat02_compare.py` compares series).
+- **Defensive warfare (GAMEPLAY-03).** A defence's posts are judged in `SquadTactics._judged_posts` (fortification slots and
+  natural posts on one scale: protection, line of fire, concealment = `SquadPositions.exposure` from the believed threat's side,
+  prepared, sector, elevation, distance; weights `post_w`, weapon modifiers `role_post_w`); a REPOSITION keeps the soldiers whose
+  posts still serve. A garrison / stationed defence never withdraws for being outnumbered: it falls back a line
+  (`SquadState.defence_line`, saved; REPOSITION with `tactic_leg >= 100`, shown as "Fall back (line N)") inside the objective's
+  capture radius and keeps `garrison_base`. Fire support ranks reports (fortified first); OpCoordination's `idle_commit_s` and
+  "support joins the assault". Tests: `--combat03-test [--shots] [--only p_posts,f_threat,f_persist,f_override,g_launcher_hands,
+  g_grenade_react,i_player,j_persist,d_open,d_village,d_forest,d_reverse] [--seeds=1,2,3]` (results
+  `benchmarks/raw/combat03_test.json`, compare with `tools/combat03_compare.py`, shots `docs/gameplay03/`).
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are
