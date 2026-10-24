@@ -57,6 +57,79 @@ func equip_all(id: StringName) -> void:
 			u.fire_auto = def.default_mode == WeaponDef.FireMode.AUTO and def.allow_auto
 
 
+## GAMEPLAY-02B: gives the soldiers of a squad that have no role yet (fresh squads, replacements) their role from the
+## scenario's squad composition (WarState.rules "squad_composition", default "standard"): a fresh squad by position, a
+## replacement fills a role the squad lacks first (a squad that lost its machine gunner gets the next recruit as one),
+## everybody else a rifleman. Soldiers that already have a role keep it and their weapon: veterans are never re-armed.
+## only: when given, just these soldiers (the new recruits) are equipped; the others count with their weapon (a soldier of
+## an old save without a role counts by its weapon). Returns how many soldiers got a role.
+func apply_composition(sq: SquadState, only: Array = []) -> int:
+	var comp_id := "standard"
+	if sim.state.war and sim.state.war.active:
+		comp_id = String(sim.state.war.rule("squad_composition", "standard"))
+	var comp := SquadComposition.by_id(comp_id)
+	var slots: Array[StringName] = comp.slots if comp else ([] as Array[StringName])
+	var fresh: Array = []
+	var have := {}
+	for i in sq.members.size():
+		var u := sim.state.get_unit(sq.members[i])
+		if u == null or u.kind != UnitState.Kind.SOLDIER:
+			continue
+		if u.role == &"" and (only.is_empty() or only.has(u.id)):
+			fresh.append([i, u])
+		elif u.alive:
+			var r := u.role
+			if r == &"":
+				r = &"machine_gunner" if weapon(u.weapon_id) and weapon(u.weapon_id).role == &"lmg" else &"rifleman"
+			have[r] = int(have.get(r, 0)) + 1
+	if fresh.is_empty():
+		return 0
+	var want := {}
+	for i in mini(slots.size(), sq.members.size()):
+		want[slots[i]] = int(want.get(slots[i], 0)) + 1
+	var given := {}
+	# A fresh soldier first takes the role of its own slot when the squad still lacks it, then any lacking role.
+	for e: Array in fresh:
+		var i: int = e[0]
+		if i < slots.size():
+			var r: StringName = slots[i]
+			if int(have.get(r, 0)) + int(given.get(r, 0)) < int(want.get(r, 0)):
+				given[r] = int(given.get(r, 0)) + 1
+				_equip_role(e[1], r)
+	for e: Array in fresh:
+		var u: UnitState = e[1]
+		if u.role != &"":
+			continue
+		var pick: StringName = &"rifleman"
+		for r: StringName in want:
+			if r != &"rifleman" and int(have.get(r, 0)) + int(given.get(r, 0)) < int(want[r]):
+				pick = r
+				break
+		given[pick] = int(given.get(pick, 0)) + 1
+		_equip_role(u, pick)
+	return fresh.size()
+
+
+## Gives a soldier a role: its weapon with a full load and the role's look for its faction.
+func _equip_role(u: UnitState, role_id: StringName) -> void:
+	var role := InfantryRole.by_id(role_id)
+	u.role = role_id
+	var wid: StringName = role.weapon_id if role else &"rifle"
+	var def := weapon(wid)
+	if def == null:
+		wid = &"rifle"
+		def = weapon(wid)
+	if def and (u.weapon_id != wid or u.weapon_id == &""):
+		u.weapon_id = wid
+		u.mag = def.magazine_size
+		u.reserve = def.reserve_start
+		u.fire_auto = def.default_mode == WeaponDef.FireMode.AUTO and def.allow_auto
+	if role:
+		var lo := role.loadout_for(u.faction)
+		if lo != "":
+			u.loadout = lo
+
+
 # --- Firing -------------------------------------------------------------------------
 
 ## Pulls the trigger once. Returns {fired: bool, reason, ...shot}. The caller decides
@@ -137,7 +210,14 @@ func preview_shot(unit_id: int, origin: Vector3, direction: Vector3, counter: in
 func current_spread(u: UnitState, def: WeaponDef) -> float:
 	var speed := Vector2(u.velocity.x, u.velocity.z).length()
 	var bloom := maxf(u.bloom - def.spread_recovery_deg_s * (sim.state.time - u.last_shot_at), 0.0)
-	return def.spread_base_deg + def.spread_moving_deg * clampf(speed / 4.5, 0.0, 1.5) + bloom
+	return (def.spread_base_deg + bloom) * settle_factor(u, def) + def.spread_moving_deg * clampf(speed / 4.5, 0.0, 1.5)
+
+
+## GAMEPLAY-02B: a braced weapon (WeaponDef.settle_s > 0: bipod, prone) held still for settle_s shoots tighter.
+func settle_factor(u: UnitState, def: WeaponDef) -> float:
+	if def.settle_s <= 0.0 or sim.state.time - u.moved_at < def.settle_s:
+		return 1.0
+	return def.settled_mult
 
 
 ## Direction inside a cone of half-angle spread_deg around dir, from a seed built from the
@@ -184,6 +264,8 @@ func request_reload(unit_id: int) -> bool:
 func update(_delta: float) -> void:
 	var now := sim.state.time
 	for u: UnitState in sim.state.units.values():
+		if u.velocity.x * u.velocity.x + u.velocity.z * u.velocity.z > 0.36:
+			u.moved_at = now
 		if u.reload_until >= 0.0 and now >= u.reload_until:
 			u.reload_until = -1.0
 			if not u.alive:

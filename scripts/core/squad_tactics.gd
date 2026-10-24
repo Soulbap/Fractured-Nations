@@ -1246,14 +1246,20 @@ static func _bearing(from: Vector3, to: Vector3) -> float:
 func _mg_first(units: Array, posts: Array, idx: Array) -> void:
 	for i in units.size():
 		var post: Dictionary = posts[idx[i]]
-		if String(post.get("role", "")) != "mg" or String((units[i] as UnitState).weapon_id).contains("mg"):
+		if String(post.get("role", "")) != "mg" or _is_mg(units[i]):
 			continue
 		for j in units.size():
-			if j != i and String((units[j] as UnitState).weapon_id).contains("mg"):
+			if j != i and _is_mg(units[j]):
 				var t: int = idx[i]
 				idx[i] = idx[j]
 				idx[j] = t
 				break
+
+
+## GAMEPLAY-02B: the soldier carries a machine gun (WeaponDef.role lmg).
+func _is_mg(u: UnitState) -> bool:
+	var def := sim.combat.weapon(u.weapon_id)
+	return def != null and def.role == &"lmg"
 
 
 ## Every tactic step: soldiers sent to a fortification slot take it once they stand at its access point (and are not walking
@@ -1542,10 +1548,14 @@ func _support_fire(sq: SquadState, a: Dictionary, units: Array, target: Vector3,
 		return
 	sq.tactic_rejected = "" if cover else "fire at fresh reports with half the squad until the assault crosses"
 	var spread := _spread_for(sq)
+	var k := 0
 	for i in units.size():
-		if not cover and i % 2 == 1:
-			_cease_fire([units[i]])  # outside the window half the squad fires: the ammunition must last into the assault
-			continue
+		# Outside the window half the squad fires (the ammunition must last into the assault); a machine gun always does.
+		if not cover and not _is_mg(units[i]):
+			k += 1
+			if k % 2 == 0:
+				_cease_fire([units[i]])
+				continue
 		_fire_on([units[i]], targets[i % targets.size()], spread, mission_s)
 
 

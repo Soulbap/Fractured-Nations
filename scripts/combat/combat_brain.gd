@@ -588,20 +588,25 @@ func _on_shot(shot: Dictionary) -> void:
 	_ensure_grid()
 	_recent_shots.append([origin, s.faction, sim.state.time])
 	if tactics_enabled:
+		# GAMEPLAY-02B: the weapon decides how close a round must pass and how much it suppresses (a machine gun's stream
+		# of rounds); the damage is never scaled for it.
+		var wdef := sim.combat.weapon(s.weapon_id)
+		var miss_m := wdef.near_miss_m if wdef else near_miss_m
+		var per_shot := suppression_per_shot * (wdef.suppression_mult if wdef else 1.0)
 		var a := Vector2(origin.x, origin.z)
 		var b := Vector2(end.x, end.z)
 		if a.distance_to(b) > 450.0:
 			b = a + (b - a).normalized() * 450.0
-		for u: UnitState in units_near_segment(a, b, near_miss_m):
+		for u: UnitState in units_near_segment(a, b, miss_m):
 			if u.faction != s.faction and u.alive and not u.player_controlled:
 				# Vertical check too: a shot far overhead does not count.
 				var pts := Geometry3D.get_closest_points_between_segments(origin, end, u.position, u.position + Vector3.UP * 1.8)
 				var miss: float = pts[0].distance_to(pts[1])
-				if miss <= near_miss_m:
+				if miss <= miss_m:
 					_under_fire(u, origin)
 					# AI-SQUAD-01: the closer it passes, the more it suppresses; a hit is
 					# counted by _on_damaged.
-					u.add_suppression(suppression_per_shot * (1.0 - 0.7 * miss / near_miss_m), sim.state.time)
+					u.add_suppression(per_shot * (1.0 - 0.7 * miss / miss_m), sim.state.time)
 					suppression_events += 1
 	prof.shot_events += Time.get_ticks_usec() - t0
 
@@ -1321,7 +1326,7 @@ func _engage(u: UnitState) -> void:
 			u.ai_reason = "suppressed: head down"
 			u.next_burst_at = now + 0.8 + 1.2 * supp
 			return
-		u.burst_left = _burst_size(u, dist)
+		u.burst_left = maxi(1, roundi(_burst_size(u, dist) * def.burst_mult))
 	var aim := t.position + Vector3.UP * u.target_aim_y - Vector3(t.velocity.x, 0.0, t.velocity.z) * track_lag_s
 	_try_fire(u, aim, dist, now, false)
 
@@ -1353,7 +1358,7 @@ func _fire_mission(u: UnitState, def: WeaponDef, now: float) -> bool:
 		if now < u.next_burst_at:
 			u.ai_reason = "mission: between bursts"
 			return true
-		u.burst_left = maxi(1, mission_burst - (1 if have / full < mission_slow_ammo else 0))
+		u.burst_left = maxi(1, def.mission_burst - (1 if have / full < mission_slow_ammo else 0))
 	# Scatter over the area the report covers (deterministic: world seed, soldier, shot).
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash([sim.state.world_seed, u.id, u.shot_counter + 1, 4177])
@@ -1433,7 +1438,10 @@ func _burst_pause(u: UnitState, dist: float) -> float:
 ## grows with distance and while walking (the weapon's spread is added by CombatSim).
 func _aim_error(u: UnitState, dir: Vector3, dist: float) -> Vector3:
 	var speed := Vector2(u.velocity.x, u.velocity.z).length()
-	var sigma := aim_error_base_deg + aim_error_per_100m_deg * dist / 100.0 + aim_error_moving_deg * clampf(speed / 4.5, 0.0, 1.0)
+	# GAMEPLAY-02B: the weapon's handling - a braced machine gun holds tighter, the same gun on the move much worse.
+	var wdef := sim.combat.weapon(u.weapon_id)
+	var settle := sim.combat.settle_factor(u, wdef) if wdef else 1.0
+	var sigma := (aim_error_base_deg + aim_error_per_100m_deg * dist / 100.0) * lerpf(1.0, settle, 0.5) 			+ aim_error_moving_deg * clampf(speed / 4.5, 0.0, 1.0) * (wdef.moving_aim_mult if wdef else 1.0)
 	sigma *= 1.0 + suppression_aim_mult * u.suppression_at(sim.state.time)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash([sim.state.world_seed, u.id, u.shot_counter + 1, 977])

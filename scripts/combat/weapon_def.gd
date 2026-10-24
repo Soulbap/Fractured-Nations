@@ -52,6 +52,23 @@ enum Delivery { HITSCAN, PROJECTILE }
 @export var spread_bloom_max_deg := 1.8
 @export var spread_recovery_deg_s := 4.0
 
+@export_group("Role (GAMEPLAY-02B)")
+## What the weapon is for: &"rifle", &"lmg" (sustained fire, suppression; fortification slots marked "mg" prefer it).
+## Squad tactics, the HUD and the AI read it; the firing rules are the same for every weapon.
+@export var role: StringName = &"rifle"
+## Suppression of one near miss relative to a rifle round (CombatBrain.suppression_per_shot), and how close a round must
+## pass to count as a near miss (m). Damage is never scaled for suppression.
+@export var suppression_mult := 1.0
+@export var near_miss_m := 3.0
+## Braced fire: after the shooter has stood still for settle_s the spread (and the AI's aim error) is multiplied by
+## settled_mult (bipod, prone); 0 = no such effect. moving_aim_mult scales the AI aim error while walking.
+@export var settle_s := 0.0
+@export var settled_mult := 1.0
+@export var moving_aim_mult := 1.0
+## AI fire: burst length multiplier against targets it sees, and rounds per burst of a fire mission.
+@export var burst_mult := 1.0
+@export var mission_burst := 3
+
 @export_group("Presentation")
 ## Camera kick per shot in first person (degrees up, random sideways).
 @export var recoil_pitch_deg := 0.55

@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="SquadComposition" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/squad_composition.gd" id="1_comp"]
+
+[resource]
+script = ExtResource("1_comp")
+id = "riflemen"
+display_name = "Riflemen only (the composition before GAMEPLAY-02)"
+slots = Array[StringName]([])

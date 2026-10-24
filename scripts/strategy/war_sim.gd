@@ -1264,12 +1264,13 @@ func _recovery_point(f: FactionState) -> Vector3:
 	return _ground(f.home) if f.home.is_finite() else _ground(Vector3.ZERO)
 
 
-## New squad of n soldiers of faction f in a line around p (rifles equipped).
+## New squad of n soldiers of faction f in a line around p, armed by the squad composition (GAMEPLAY-02B).
 func spawn_squad(f: FactionState, p: Vector3, n: int) -> SquadState:
 	f.squad_counter += 1
 	var tag := "%s%d" % [f.faction_name.left(1), f.squad_counter]
 	var ids := spawn_recruits(f, p, n, tag)
 	var sq := sim.state.add_squad(tag, f.id, ids)
+	sim.combat.apply_composition(sq)
 	# AI-SQUAD-01: war squads pick their formation from the terrain and the situation.
 	sq.formation_auto = true
 	sq.born_at = sim.state.time

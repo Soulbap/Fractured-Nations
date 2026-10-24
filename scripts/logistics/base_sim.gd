@@ -858,6 +858,7 @@ func _finish_replenish(s: StructureState, e: Dictionary) -> bool:
 	n = mini(n, SQUAD_SIZE - sq.members.size())
 	var ids := sim.war.spawn_recruits(f, at, n, sq.squad_name)
 	var joined := sim.state.add_to_squad(sq.id, ids)
+	sim.combat.apply_composition(sq, ids)
 	sim.tactics.validate(sq)
 	sim.squads._reapply(sq)
 	stats.soldiers_replaced = int(stats.get("soldiers_replaced", 0)) + joined
@@ -889,6 +890,7 @@ func _fill_depleted(f: FactionState, barracks: StructureState, at: Vector3, n: i
 			continue
 		var ids := sim.war.spawn_recruits(f, at, take)
 		var joined := sim.state.add_to_squad(sq.id, ids)
+		sim.combat.apply_composition(sq, ids)
 		sim.tactics.validate(sq)
 		n -= joined
 		stats.soldiers_replaced = int(stats.get("soldiers_replaced", 0)) + joined

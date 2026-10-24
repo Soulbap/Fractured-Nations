@@ -2,6 +2,8 @@
 ##
 ##   Godot.exe --path . --resolution 1600x900 --log-file c2.log res://scenes/game/world_ref_20km.tscn -- --combat02-test [--shots] [--only a_haugen,...] [--seeds=1,2,3]
 ##
+## 02B weapon roles (b_*): squad composition and replacements, machine-gun suppression against a rifle, braced / moving
+## handling, the MG emplacement's gunner slot, first person with the LMG, save / load and near / far of the equipment.
 ## 02A assault scenarios (a_*): an ATTACK operation of North squads against South defenders, run once per world seed (the
 ## seed drives every aim error, spread and scatter), each recorded by a CombatDiag (positions, roles, stages, suppression,
 ## shots, hits, casualties, movement, cover, blocked moves). Each scenario states what it expects over all seeds.
@@ -24,6 +26,9 @@ func run(args: PackedStringArray) -> void:
 	for key: String in ["a_haugen", "a_cover", "a_two", "a_three", "a_limited", "a_unfavourable", "a_fortified"]:
 		if _want(key):
 			_log(key, await _assault_series(key))
+	for key: String in ["b_compose", "b_suppress", "b_handling", "b_emplacement", "b_fps", "b_persist", "b_nearfar"]:
+		if _want(key):
+			_log(key, await call("_" + key))
 	await _end_strat()
 
 
@@ -102,6 +107,8 @@ func _judge(key: String, sc: Dictionary, runs: Array) -> Dictionary:
 func _assault_scene(sc: Dictionary) -> Dictionary:
 	await _fresh()
 	_pause_ai(true)
+	# 02A measures the coordination with the rifle squads it was diagnosed with; the 02B weapons are measured separately.
+	war.rules["squad_composition"] = String(sc.get("comp", "riflemen"))
 	var obj := _obj(String(sc.obj))
 	obj.owner = 1
 	obj.capture_faction = -1
@@ -209,3 +216,299 @@ func _remove_structures(ids: Array) -> void:
 		if demo.sim.state.construction.structures.has(id):
 			demo.sim.state.construction.remove(id)
 	ws.sync_bases()
+
+
+# --- 02B: weapon roles and the machine gun ------------------------------------------------------------------------------
+
+## A screenshot (1920 x 1080 with --fullscreen) into docs/gameplay02.
+func _png(shot_name: String) -> void:
+	if not shots:
+		return
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_shot_dir))
+	var path := "%s/%s.png" % [_shot_dir, shot_name]
+	demo.get_viewport().get_texture().get_image().save_png(ProjectSettings.globalize_path(path))
+	print("C2 shot: ", path)
+
+
+func _roles_of(sq: SquadState) -> Array:
+	return Array(sq.members).map(func(id: int) -> String: return String(_u(id).role))
+
+
+func _start_near(d: float) -> Vector3:
+	return _near_point(_obj("North HQ").position, _obj("Haugen").position, d)
+
+
+## A fresh squad gets the standard composition (machine gunner second, grenadier sixth, the rest riflemen) with the
+## faction's machine-gunner look; a squad that lost its gunner gets the next recruit as one; the "riflemen" table arms
+## everybody with rifles (the composition is the scenario's choice, data only).
+func _b_compose() -> Dictionary:
+	await _fresh()
+	war.rules["squad_composition"] = "standard"
+	var sq := _spawn(0, _start_near(300.0))
+	var out := {"roles": _roles_of(sq)}
+	var mg := _u(sq.members[1])
+	out["mg"] = {"weapon": mg.weapon_id, "mag": mg.mag, "reserve": mg.reserve, "loadout": mg.loadout, "auto": mg.fire_auto}
+	_expect(out.roles[1] == "machine_gunner" and out.roles[5] == "grenadier" and out.roles.count("rifleman") == 6, "b_compose: wrong roles %s" % str(out.roles))
+	_expect(mg.weapon_id == &"lmg" and mg.mag == 100 and mg.reserve == 300 and mg.loadout == "NATO_mg", "b_compose: machine gunner not equipped %s" % str(out.mg))
+	_expect(_u(sq.members[0]).weapon_id == &"rifle" and _u(sq.members[0]).loadout == "NATO_rifleman", "b_compose: rifleman not equipped")
+	# The machine gunner falls; a replacement joins and takes the gun, the veterans keep their weapons.
+	demo.sim.combat.kill(mg, -1)
+	await _physics(3)
+	var before := Array(sq.members).map(func(id: int) -> StringName: return _u(id).weapon_id)
+	var ids := ws.spawn_recruits(war.faction(0), demo.sim.squads._centroid(sq), 1, sq.squad_name)
+	for id in ids:
+		spawned_ids.append(id)
+	demo.sim.state.add_to_squad(sq.id, ids)
+	demo.sim.combat.apply_composition(sq, ids)
+	var rec := _u(ids[0])
+	out["replacement"] = {"role": rec.role, "weapon": rec.weapon_id, "loadout": rec.loadout}
+	_expect(rec.role == &"machine_gunner" and rec.weapon_id == &"lmg", "b_compose: the replacement did not take the machine gun %s" % str(out.replacement))
+	var same := true
+	for i in before.size():
+		same = same and _u(sq.members[i]).weapon_id == before[i]
+	_expect(same, "b_compose: a veteran was re-armed")
+	# South and East wear their own machine-gunner loadouts.
+	var s2 := _spawn(1, _start_near(360.0))
+	var s3 := _spawn(2, _start_near(420.0))
+	out["looks"] = [_u(s2.members[1]).loadout, _u(s3.members[1]).loadout]
+	_expect(out.looks == ["RU_mg", "CN_mg"], "b_compose: faction machine-gunner loadouts %s" % str(out.looks))
+	war.rules["squad_composition"] = "riflemen"
+	var r := _spawn(0, _start_near(480.0))
+	out["riflemen_table"] = Array(r.members).map(func(id: int) -> String: return String(_u(id).weapon_id))
+	_expect(not out.riflemen_table.has("lmg"), "b_compose: the riflemen table still gave a machine gun")
+	war.rules.erase("squad_composition")
+	return out
+
+
+## One soldier (rifleman, then machine gunner) fires at four soldiers 150 m away for 30 simulated seconds; the targets do
+## not fire back and cannot die. Suppression is the time integral of the targets' mean suppression; the damage per hit
+## must be the same (a 5.56 round is a 5.56 round: suppression is not bought with damage).
+func _b_suppress() -> Dictionary:
+	var out := {}
+	for role: StringName in [&"rifleman", &"machine_gunner"]:
+		await _fresh()
+		war.rules["squad_composition"] = "riflemen"
+		var at := _start_near(250.0)
+		var dir := _obj("Haugen").position - at
+		dir.y = 0.0
+		dir = dir.normalized()
+		var shooter := _spawn(0, at, 1)
+		var u := _u(shooter.members[0])
+		demo.sim.combat._equip_role(u, role)
+		var tgt := _spawn(1, demo.sim.tactics.pos.nearest_valid(at + dir * 150.0, 20.0), 4)
+		tgt.roe = SquadState.Roe.HOLD_FIRE
+		_tough(tgt, 100000.0)
+		await _physics(10)
+		var st := {"shots": 0, "hits": 0, "dmg": 0.0, "supp_s": 0.0, "next": demo.sim.state.time, "ammo0": u.mag + u.reserve}
+		var on_shot := func(shot: Dictionary) -> void:
+			if int(shot.shooter) == u.id:
+				st.shots += 1
+				if int(shot.get("hit_unit", -1)) > 0:
+					st.hits += 1
+					st.dmg += float(shot.damage)
+		demo.sim.state.shot_fired.connect(on_shot)
+		demo.rts_camera.frame(at + dir * 75.0, 0.0, 140.0)
+		var t0 := demo.sim.state.time
+		await _warp(30.0, 4.0, 60.0, func() -> bool:
+			var now := demo.sim.state.time
+			if now >= st.next:
+				st.next = now + 0.5
+				var sum := 0.0
+				for id in tgt.members:
+					sum += _u(id).suppression_at(now)
+				st.supp_s += sum / maxf(tgt.members.size(), 1) * 0.5
+			return false)
+		demo.sim.state.shot_fired.disconnect(on_shot)
+		if shots and role == &"machine_gunner":
+			demo.rts_camera.frame(u.position + dir * 20.0, 0.0, 45.0)
+			await _seconds(0.6)
+			_png("b_mg_firing_rts")
+		out[String(role)] = {"shots": st.shots, "hits": st.hits, "dmg_per_hit": snappedf(st.dmg / maxf(st.hits, 1), 0.1), "supp_integral": snappedf(st.supp_s, 0.01),
+			"ammo_used": st.ammo0 - (u.mag + u.reserve), "sim_s": snappedf(demo.sim.state.time - t0, 0.1)}
+	var r: Dictionary = out.rifleman
+	var m: Dictionary = out.machine_gunner
+	_expect(int(r.shots) > 5 and int(m.shots) > 5, "b_suppress: too few shots %s" % str(out))
+	_expect(float(m.supp_integral) >= 2.0 * float(r.supp_integral), "b_suppress: the MG does not suppress clearly more than a rifle (%s vs %s)" % [m.supp_integral, r.supp_integral])
+	_expect(int(m.ammo_used) > int(r.ammo_used), "b_suppress: the MG did not fire more")
+	if int(r.hits) > 0 and int(m.hits) > 0:
+		_expect(absf(float(m.dmg_per_hit) - float(r.dmg_per_hit)) <= 12.0, "b_suppress: damage per hit differs (%s vs %s)" % [m.dmg_per_hit, r.dmg_per_hit])
+	war.rules.erase("squad_composition")
+	return out
+
+
+## The LMG: braced (still for settle_s) it shoots tighter than a standing rifle; on the move much wider; a long reload.
+func _b_handling() -> Dictionary:
+	await _fresh()
+	war.rules["squad_composition"] = "standard"
+	var sq := _spawn(0, _start_near(300.0))
+	var mg := _u(sq.members[1])
+	var rf := _u(sq.members[0])
+	var cs := demo.sim.combat
+	var lmg := cs.weapon(&"lmg")
+	var rifle := cs.weapon(&"rifle")
+	var now := demo.sim.state.time
+	mg.velocity = Vector3.ZERO
+	mg.moved_at = now - 5.0
+	mg.bloom = 0.0
+	var braced := cs.current_spread(mg, lmg)
+	mg.moved_at = now - 0.3
+	var unsettled := cs.current_spread(mg, lmg)
+	mg.velocity = Vector3(3.5, 0, 0)
+	mg.moved_at = now
+	var moving := cs.current_spread(mg, lmg)
+	rf.velocity = Vector3(3.5, 0, 0)
+	rf.bloom = 0.0
+	var rifle_moving := cs.current_spread(rf, rifle)
+	mg.velocity = Vector3.ZERO
+	rf.velocity = Vector3.ZERO
+	var out := {"lmg_braced": snappedf(braced, 0.001), "lmg_unsettled": snappedf(unsettled, 0.001), "lmg_moving": snappedf(moving, 0.001),
+		"rifle_moving": snappedf(rifle_moving, 0.001), "rifle_still": snappedf(rifle.spread_base_deg, 0.001), "lmg_reload_s": lmg.reload_time, "rifle_reload_s": rifle.reload_time}
+	_expect(braced < unsettled and braced < rifle.spread_base_deg, "b_handling: a braced LMG is not tighter %s" % str(out))
+	_expect(moving > rifle_moving * 2.0, "b_handling: the LMG on the move is not clearly worse than a rifle %s" % str(out))
+	mg.mag = 0
+	cs.request_reload(mg.id)
+	out["reload_until"] = snappedf(mg.reload_until - demo.sim.state.time, 0.1)
+	_expect(absf(float(out.reload_until) - lmg.reload_time) < 0.1, "b_handling: the LMG reload does not take its time")
+	war.rules.erase("squad_composition")
+	return out
+
+
+## A South garrison (standard squad) in a base with an MG emplacement: the machine gunner takes the gunner slot.
+func _b_emplacement() -> Dictionary:
+	await _fresh()
+	war.rules["squad_composition"] = "standard"
+	var hau := _obj("Haugen").position
+	var dir := _obj("North HQ").position - hau
+	dir.y = 0.0
+	dir = dir.normalized()
+	var at := demo.sim.tactics.pos.nearest_valid(hau + dir * 60.0, 30.0)
+	var cp := CoreSelfTest.add_built(demo, &"command_post", at, dir, 1)
+	var em: StructureState = CoreSelfTest.add_built(demo, &"mg_emplacement", cp.position + dir * 24.0, dir, 1) if cp else null
+	var out := {"built": cp != null and em != null}
+	_expect(cp != null and em != null, "b_emplacement: the base could not be built")
+	if em == null:
+		return out
+	ws.sync_bases()
+	var sq := _spawn(1, demo.sim.tactics.pos.nearest_valid(cp.position - dir * 15.0, 20.0), 8)
+	demo.sim.tactics.assign_garrison(sq, cp.base_id, SquadState.Owner.SQUAD)
+	var gunner := _u(sq.members[1])
+	await _warp(60.0, 6.0, 40.0, func() -> bool: return gunner.fort_slot != "")
+	var slot := demo.sim.tactics.pos.slot_by_key(gunner.fort_slot, 1)
+	out["gunner"] = {"weapon": gunner.weapon_id, "slot": gunner.fort_slot, "role": slot.get("role", ""), "structure": slot.get("structure", -1)}
+	_expect(gunner.fort_slot != "" and String(slot.get("role", "")) == "mg" and int(slot.get("structure", -1)) == em.id, "b_emplacement: the machine gunner is not on the MG slot %s" % str(out.gunner))
+	if shots:
+		demo.rts_camera.frame(em.position, 0.6, 38.0)
+		await _seconds(1.5)
+		_png("b_mg_emplacement_manned")
+	_remove_structures([cp.id, em.id])
+	war.rules.erase("squad_composition")
+	return out
+
+
+## First person with the machine gun: the viewmodel is the LMG (with the faction optic), a held trigger fires a stream from
+## the 100-round box, the reload takes its time. The same CombatSim rules as the AI's.
+func _b_fps() -> Dictionary:
+	await _fresh()
+	war.rules["squad_composition"] = "standard"
+	var at := _start_near(300.0)
+	var sq := _spawn(0, at)
+	var mg := _u(sq.members[1])
+	demo.rts_camera.frame(at, 0.0, 60.0)
+	await _seconds(1.5)
+	var body := await _possess(mg.id)
+	await _seconds(1.0)
+	var out := {"possessed": body != null and demo.game.mode == GameController.Mode.FPS}
+	_expect(out.possessed, "b_fps: could not take over the machine gunner")
+	if body == null:
+		return out
+	var items: Array = []
+	if body.viewmodel and body.viewmodel.loadout:
+		for it in body.viewmodel.loadout.items:
+			if it.slot.begins_with("weapon"):
+				items.append(it.id)
+	out["viewmodel"] = items
+	_expect(items.has("lmg") and not items.has("nato_rifle"), "b_fps: the first-person weapon is not the LMG %s" % str(items))
+	await _fps_shot_at(body, body.camera.global_position + (-body.global_basis.z) * 80.0 + Vector3.DOWN * 1.0)
+	var mag0 := mg.mag
+	Input.action_press("fire")
+	await _physics(60)
+	if shots:
+		_png("b_fps_lmg")
+	Input.action_release("fire")
+	await _physics(4)
+	out["burst"] = mag0 - mg.mag
+	_expect(int(out.burst) >= 8, "b_fps: holding the trigger did not fire a stream (%d rounds)" % out.burst)
+	mg.mag = 0
+	_press(KEY_R)
+	await _physics(3)
+	out["reload_s"] = snappedf(mg.reload_until - demo.sim.state.time, 0.1)
+	_expect(mg.is_reloading() and float(out.reload_s) > 5.5, "b_fps: the LMG reload is not the LMG's (%s s)" % out.reload_s)
+	await _leave()
+	war.rules.erase("squad_composition")
+	return out
+
+
+## Role, weapon, rounds and look of every soldier survive a save to the test save folder and a load.
+func _b_persist() -> Dictionary:
+	await _fresh()
+	war.rules["squad_composition"] = "standard"
+	var sq := _spawn(0, _start_near(300.0))
+	var mg := _u(sq.members[1])
+	mg.mag = 37
+	mg.reserve = 211
+	var before := _equip_sig(sq)
+	var path := demo.save_dir() + "/combat02_persist.sav"
+	var err := demo.sim.state.save_file(path)
+	mg.mag = 100
+	mg.role = &"rifleman"
+	mg.weapon_id = &"rifle"
+	mg.loadout = "NATO_rifleman"
+	demo.sim.state.load_file(path)
+	await _physics(3)
+	var after := _equip_sig(sq)
+	var out := {"path": path, "saved": err == OK, "before": before, "after": after}
+	_expect(err == OK and path.contains("test_saves"), "b_persist: the save did not go to the test save folder (%s)" % path)
+	_expect(before == after, "b_persist: equipment differs after loading")
+	war.rules.erase("squad_composition")
+	return out
+
+
+func _equip_sig(sq: SquadState) -> Array:
+	var out := []
+	for id in sq.members:
+		var u := _u(id)
+		out.append("%s/%s/%d/%d/%s" % [u.role, u.weapon_id, u.mag, u.reserve, u.loadout])
+	return out
+
+
+## The camera comes near (a body with the machine-gunner character and the LMG in its hands), goes far (no body) and back:
+## the record and the look are the same every time.
+func _b_nearfar() -> Dictionary:
+	await _fresh()
+	war.rules["squad_composition"] = "standard"
+	var at := _start_near(300.0)
+	var sq := _spawn(0, at)
+	var mg := _u(sq.members[1])
+	var out := {}
+	var s0 := _equip_sig(sq)
+	for k in 2:
+		demo.rts_camera.frame(at, 0.0, 40.0)
+		await _seconds(3.0)
+		var body: SoldierBody = demo.sim.bodies.get(mg.id)
+		var look := ""
+		if body and body.character and body.character.loadout:
+			look = body.character.loadout.id
+		out["near%d" % k] = {"body": mg.has_body, "character": look}
+		_expect(mg.has_body and look == "NATO_mg", "b_nearfar: near, the machine gunner has no body with the LMG %s" % str(out["near%d" % k]))
+		if shots and k == 0:
+			demo.rts_camera.frame(mg.position, 0.4, 7.0)
+			await _seconds(1.2)
+			_png("b_mg_gunner_near")
+		demo.rts_camera.frame(Vector3(9000, 0, 9000), 0.0, 150.0)
+		await _seconds(3.0)
+		out["far%d" % k] = {"body": mg.has_body}
+		_expect(not mg.has_body, "b_nearfar: far away the machine gunner still has a body")
+	out["record_same"] = _equip_sig(sq) == s0
+	_expect(out.record_same, "b_nearfar: the record changed between near and far")
+	war.rules.erase("squad_composition")
+	return out

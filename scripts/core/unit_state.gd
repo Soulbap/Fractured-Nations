@@ -64,6 +64,11 @@ var weapon_id: StringName = &""
 var mag := 0
 var reserve := 0
 var fire_auto := true
+## GAMEPLAY-02B: InfantryRole id (rifleman, machine_gunner, grenadier ...); "" = not assigned yet (CombatSim.apply_composition).
+var role: StringName = &""
+## Last time (sim) the soldier moved faster than a shuffle: braced weapons (WeaponDef.settle_s) count from here. Derived
+## each tick from the velocity, so it is not saved.
+var moved_at := 0.0
 ## Simulation time (WorldState.time) from which the next shot may leave the barrel.
 var next_shot_at := 0.0
 ## Simulation time at which a running reload completes (-1 = not reloading).
@@ -180,7 +185,7 @@ func to_dict() -> Dictionary:
 		"order": order, "order_target": order_target, "move_state": move_state, "nav_reason": nav_reason,
 		"player_controlled": player_controlled, "has_body": has_body, "loadout": loadout,
 		"veh": veh.to_dict() if veh else null, "vehicle_id": vehicle_id, "resupply": resupply_src,
-		"alive": alive, "weapon_id": weapon_id, "mag": mag, "reserve": reserve, "fire_auto": fire_auto,
+		"alive": alive, "weapon_id": weapon_id, "role": role, "mag": mag, "reserve": reserve, "fire_auto": fire_auto,
 		"next_shot_at": next_shot_at, "reload_until": reload_until, "shot_counter": shot_counter,
 		"bloom": bloom, "last_shot_at": last_shot_at, "died_at": died_at, "killer_id": killer_id,
 		"ai_state": ai_state, "target_id": target_id, "target_seen_at": target_seen_at, "target_last_pos": target_last_pos,
@@ -226,6 +231,7 @@ static func from_dict(d: Dictionary) -> UnitState:
 func copy_combat_from(d: Dictionary) -> void:
 	alive = d.get("alive", true)
 	weapon_id = StringName(d.get("weapon_id", ""))
+	role = StringName(d.get("role", ""))
 	mag = d.get("mag", 0)
 	reserve = d.get("reserve", 0)
 	fire_auto = d.get("fire_auto", true)
