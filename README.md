@@ -16,9 +16,16 @@ made the forest 71 % pine everywhere and washed out the forest-floor, gravel, bo
 drawn with a new ground shader (`GroundLook`, in memory; `--legacy-ground` for the old one): softened colour-map edges, macro
 variation, fields with rows / tramlines / mowing bands, distant forest as canopy. Houses, barns, sheds and fences are rebuilt
 with textures (fewer triangles). A **candidate world** `ref_20km_visual02` (new cover model: regions, forestry stands,
-clear-cuts, species by site; same relief, roads, settlements) is built next to the reference and waits for approval: load
-`res://scenes/game/world_ref_20km_visual02.tscn`. Survey: `--scenario=new_game --visual02-test --shots --only survey`. See
+clear-cuts, species by site; same relief, roads, settlements) was approved and is now `ref_20km`'s vegetation, colour and
+ground (new manifest). Survey: `--scenario=new_game --visual02-test --shots --only survey`. See
 [docs/VISUAL-02_REPORT.md](docs/VISUAL-02_REPORT.md).
+
+Alongside it, **GAMEPLAY-05B** (on `develop`) — stabilization. Squads that once defended themselves on their own never built
+again (fixed); soldiers no longer get stuck in roadside ditches (the terrain beside roads now meets the real road surface, and a
+soldier scrambles over an edge up to 1.2 m); rifles are useful at medium range (the aim error no longer explodes with distance;
+DMR still the long-range weapon, machine guns still suppression weapons; `--aim=g04` for the old model); capturing shows
+CAPTURING / CAPTURE PAUSED with the real radius and the two-soldier rule; command buttons explain their orders and an armed order
+previews its target; one structure name everywhere. Report: [docs/GAMEPLAY-05B_REPORT.md](docs/GAMEPLAY-05B_REPORT.md).
 
 Before that, **GAMEPLAY-05** (on `develop`) — a quality review of the game as it plays. Fixed: squads showed fewer soldiers than they
 had ("1/5" for five alive), a garrison could stay **BLOCKED** for good after one soldier failed to reach his post, the EQUIP
@@ -532,8 +539,9 @@ python tools/terrain_ref/world_manifest.py verify --ignore-editor-metadata
 ```
 
 and re-create the manifest (`create --note "..."`) after an intended world change. The consolidated
-copy is backed up in `../fractured-nations-backups/2026-10-22_PROJECT-CONSOLIDATION-01/`; restore from
-there rather than rebuilding, because a rebuild is not bit-identical to the edited data. To build a
+copy is backed up in `../fractured-nations-backups/2026-10-22_PROJECT-CONSOLIDATION-01/`; the files VISUAL-02 replaced
+(vegetation, terrain regions, cover and colour maps, settlement overrides, old manifest) in
+`../fractured-nations-backups/2026-10-25_VISUAL-02_pre_adoption/`. Restore from there rather than rebuilding, because a rebuild is not bit-identical to the edited data. To build a
 world from scratch (about 14 minutes; `--assets` also regenerates the Blender assets, whose outputs
 are committed):
 

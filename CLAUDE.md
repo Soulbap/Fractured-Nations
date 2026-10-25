@@ -35,8 +35,10 @@ Norwegian; code, comments and docs are English.
   1.953125 m, region size 1024, seed 3031. These are the current values, not limits: size, terrain, roads,
   bridges, rivers, lakes, forests, settlements, bases and faction areas can all be changed in this project.
 - **Sources** (`worlds/ref_20km/source/`, written by `tools/terrain_ref/generate.py` from
-  `tools/terrain_ref/layout_ref03.json`): `height.r32`, `control.r32`, `color.rgba8`, `roads.json`,
-  `water.json`, `sites.json`, `vegetation.png`, `info.png`, `generation_stats.json`, `macro_height.npy`;
+  `tools/terrain_ref/layout_ref03.json`; since VISUAL-02 the cover - `vegetation.png`, `info.png`, `stand.png`, `color.rgba8`,
+  `control.r32` - comes from `layout_ref03_visual02.json` (`cover_v2`) on the unchanged relief and roads, merged by
+  `tools/visual02/build_candidate.gd`): `height.r32`, `control.r32`, `color.rgba8`, `roads.json`,
+  `water.json`, `sites.json`, `vegetation.png`, `info.png`, `stand.png`, `generation_stats.json`, `macro_height.npy`;
   `playability.json` / `playability_map.png` come from `analyze.py`. **Generated** (by `tools/build_world.gd`
   + `ReferenceWorldBuilder`): `terrain/` (Terrain3D regions), `vegetation/`, `water/`, `terrain_assets.tres`,
   `terrain_material.tres`, `scenes/world/ref_20km.tscn` (bridges/culverts re-placed by
@@ -45,7 +47,8 @@ Norwegian; code, comments and docs are English.
   `worlds/ref_20km.manifest.json` (SHA-256 of all 540 files) identifies the canonical copy:
   `python tools/terrain_ref/world_manifest.py verify --ignore-editor-metadata` must say OK. After an
   intended world change, re-create it (`... world_manifest.py create --note "<what changed>"`) and commit it.
-  Backup of the consolidated copy: `../fractured-nations-backups/2026-10-22_PROJECT-CONSOLIDATION-01/`.
+  Backup of the consolidated copy: `../fractured-nations-backups/2026-10-22_PROJECT-CONSOLIDATION-01/`; of the files VISUAL-02
+  replaced: `../fractured-nations-backups/2026-10-25_VISUAL-02_pre_adoption/`.
 - **Do not regenerate the world to "repair" it**: the generated files carry later editor re-saves and
   structure placement, so a rebuild is not bit-identical and can lose edits. Restore from the backup instead.
 - Other worlds: `worlds/test_2km` (tracked, small test world); `worlds/tile_*`, `real_20km`, `scale_4km`,
@@ -187,6 +190,13 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   `user://terrain/`), and puts the vegetation of those cells back on the ground when chunks load. Infantry climbs grades up to
   `WorldSim.INFANTRY_MAX_GRADE` (tan 50°) slower uphill through `WorldSim.slope_speed` in both tiers (navmesh, abstract step,
   SoldierBody floor angle). `--no-road-shoulders` switches the easing off for comparison.
+- **World look (VISUAL-02).** The terrain is drawn with `shaders/world/terrain_visual02.gdshader` (Terrain3D's default shader plus
+  colour-map softening, open-ground macro variation, field patterns, distant canopy), applied in memory by `GroundLook` like
+  `WorldLook` (`--legacy-ground` for the old shader); the grass tufts match it. Settlement buildings / fences use
+  `shaders/environment/building.gdshader` (instance colour paints only siding and doors). Vegetation cover is `cover_v2`
+  (`generate.py build_cover_v2`, `stand.png`, scatter v2 in `ReferenceWorldBuilder._trees_v2`): one set of environmental
+  parameters drives density, stand age, species and ground together; saplings (ids 22-23) have no collider. Procedural
+  4-channel PNGs must be written with straight alpha (`oiio:UnassociatedAlpha`). Survey: `--visual02-test --only survey`.
 - **Military Development and the opening (GAMEPLAY-04A/B).** `MilitaryDevelopment` (`WarSim.dev`, data `assets/development/*.tres`,
   state `FactionState.dev`) is the only unlock authority: `structure_lock` / `weapon_lock` / `role_lock` for player and AI alike; scenario
   rule `development`. The New Game opening is scenario data (`ScenarioDef.intro`, `extra_objectives`, `structures`) checked against the
@@ -195,6 +205,11 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   terrain texture tints in memory at game start (`CoreDemo._ready`; the generated world scene and manifest are untouched);
   `--legacy-look` switches it off for comparison. Tune the look there, not in `scenes/world/ref_20km.tscn`. Infantry LODs
   cross-fade (`InfantryCharacter.LOD_MARGIN`, fade SELF): plain hysteresis left soldiers invisible at the switch.
+- **Aim and capture (GAMEPLAY-05B).** The AI aim model lives in `CombatBrain.AIM_PROFILES` ("g05b" default; `--aim=g04` the
+  GAMEPLAY-04 model for comparisons); change accuracy there and validate with `c_arena --arena-seeds=` plus combat03/combat02
+  series on both profiles. Capture state is `WarSim.capture_state(o, f)` - every UI surface reads it. A HOLD / REGROUP issued by
+  the tactics themselves is marked `tactic_hold` (not the player's order; the squad may build again). `RoadShoulders` eases the
+  terrain to the road *mesh* (`MESH_EDGE_M`), which is wider than `RoadNetwork.width`.
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are
