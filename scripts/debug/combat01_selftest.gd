@@ -449,6 +449,12 @@ func _f_gunplay() -> Dictionary:
 	b.head.rotation.x = deg_to_rad(-1.0)
 	await _seconds(0.6)
 	_png("f_hip")
+	if b.viewmodel and b.viewmodel.arms:
+		var vm := b.viewmodel
+		var wr := vm._weapon_root.global_transform
+		out["muzzle_in_weapon"] = str((wr.affine_inverse() * vm.muzzle.global_position).snapped(Vector3.ONE * 0.001))
+		out["muzzle_node"] = str(vm.muzzle.get_path())
+		out["mounts"] = str(vm.arms.mounts.keys())
 	Input.action_press("aim")
 	await _seconds(0.8)
 	_png("f_ads_rifle")

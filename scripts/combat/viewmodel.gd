@@ -193,6 +193,9 @@ func _place_arms(delta: float) -> void:
 	var turn := Basis.from_euler(Vector3(deg_to_rad(HIP_TURN.x), deg_to_rad(HIP_TURN.y), deg_to_rad(HIP_TURN.z)))
 	var hip := Transform3D(turn, HIP_OFFSET + Vector3(0, 0, -EYE_RELIEF)) * sight.affine_inverse()
 	arms.transform = hip.interpolate_with(ads, smoothstep(0.0, 1.0, _ads))
+	# The glass is looked through only when aiming; at the hip it is dark, reflecting glass (else the muzzle flash in front
+	# of the barrel shows through the side of the optic as if it burnt inside it).
+	_lens().albedo_color = Color(0.55, 0.75, 0.9, 0.08).lerp(Color(0.05, 0.07, 0.09, 0.92), 1.0 - smoothstep(0.6, 1.0, _ads))
 	position = Vector3(0, 0.004, 0.035) * _kick
 	rotation = Vector3(deg_to_rad(2.5) * _kick, 0.0, 0.0)
 

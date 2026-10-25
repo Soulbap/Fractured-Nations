@@ -297,9 +297,11 @@ func _on_shot(shot: Dictionary) -> void:
 		return
 	shown += 1
 	var muzzle := _muzzle_of(shot.shooter, origin)
+	if own and shot.has("dir"):
+		muzzle += (shot.dir as Vector3) * 0.12   # the flash forms just in front of the muzzle
 	var mg := prof == "lmg" or prof == "gpmg"
 	_flash(muzzle, cam.distance_to(muzzle) if cam.is_finite() else 0.0, (0.6 if own else 1.0) * (1.4 if mg else (1.15 if heavy else 1.0)),
-		shot.dir if shot.has("dir") else Vector3.ZERO)
+		shot.dir if shot.has("dir") else Vector3.ZERO, not own)   # own flash unlit: its light glared inside the optic
 	if not own:
 		_smoke(muzzle, shot.shooter, d_cam, mg)
 	# Every round leaves a faint streak; a machine gun's every third is a bright tracer.
@@ -441,7 +443,7 @@ func _take(kind: String, pool: Array) -> Variant:
 
 ## A muzzle flash: brief, star-shaped, a little different each time; it grows with the camera distance (at 300 m a few
 ## pixels, as a flicker reads); the light only near the camera. dir: the bore (flame quads along it), ZERO = star only.
-func _flash(at: Vector3, cam_d: float, size := 1.0, dir := Vector3.ZERO) -> void:
+func _flash(at: Vector3, cam_d: float, size := 1.0, dir := Vector3.ZERO, lit := true) -> void:
 	var f: Node3D = _take("flash", _flashes)
 	var grow := clampf(cam_d * 0.012, 1.0, 9.0)
 	f.global_position = at
@@ -452,7 +454,7 @@ func _flash(at: Vector3, cam_d: float, size := 1.0, dir := Vector3.ZERO) -> void
 	for k in 2:
 		(f.get_node("Flame%d" % k) as Node3D).visible = dir.length_squared() > 0.01 and cam_d < 200.0
 	var light := f.get_node("Light") as OmniLight3D
-	light.visible = cam_d < 80.0
+	light.visible = cam_d < 80.0 and lit
 	f.visible = true
 	_life[f] = 0.045
 
