@@ -3,10 +3,10 @@
 [ext_resource type="ArrayMesh" path="res://assets/environment/meshes/fern_lod0.res" id="1_crx5p"]
 [ext_resource type="ArrayMesh" path="res://assets/environment/meshes/fern_lod1.res" id="2_qbwen"]
 
-[node name="Fern" type="Node3D" unique_id=1173915468]
+[node name="Fern" type="Node3D" unique_id=1767973434]
 
-[node name="fern_LOD0" type="MeshInstance3D" parent="." unique_id=857268809]
+[node name="fern_LOD0" type="MeshInstance3D" parent="." unique_id=776375028]
 mesh = ExtResource("1_crx5p")
 
-[node name="fern_LOD1" type="MeshInstance3D" parent="." unique_id=1244222931]
+[node name="fern_LOD1" type="MeshInstance3D" parent="." unique_id=786459054]
 mesh = ExtResource("2_qbwen")

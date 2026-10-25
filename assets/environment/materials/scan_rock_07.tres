@@ -1,0 +1,21 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/environment/scan_prop.gdshader" id="1_isq62"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/scan_rock_07_alb.png" id="2_g3w65"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/scan_rock_07_nrm.png" id="3_mqap7"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/scan_rock_07_orm.png" id="4_kt7cu"]
+
+[resource]
+resource_name = "Scan_rock_07"
+render_priority = 0
+shader = ExtResource("1_isq62")
+shader_parameter/albedo_tex = ExtResource("2_g3w65")
+shader_parameter/normal_tex = ExtResource("3_mqap7")
+shader_parameter/orm_tex = ExtResource("4_kt7cu")
+shader_parameter/saturation = 0.35
+shader_parameter/grade = Color(1, 1, 1, 1)
+shader_parameter/brightness = 0.95
+shader_parameter/moss_amount = 0.2
+shader_parameter/moss_color = null
+shader_parameter/lichen_amount = 0.25
+shader_parameter/lichen_color = null

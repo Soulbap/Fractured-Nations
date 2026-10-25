@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/pine_a_v2_lod0.res" id="1_8hc84"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/pine_a_v2_lod1.res" id="2_8cibs"]
+
+[node name="PineAV2" type="Node3D" unique_id=965367181]
+
+[node name="pine_a_v2_LOD0" type="MeshInstance3D" parent="." unique_id=1715184321]
+mesh = ExtResource("1_8hc84")
+
+[node name="pine_a_v2_LOD1" type="MeshInstance3D" parent="." unique_id=1974608614]
+mesh = ExtResource("2_8cibs")

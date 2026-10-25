@@ -1,21 +1,6 @@
 [gd_resource type="Resource" script_class="VegetationLibrary" format=3 uid="uid://sn5crnqpj1fr"]
 
 [ext_resource type="Script" uid="uid://xwqlqdpdd80y" path="res://scripts/vegetation/vegetation_mesh_def.gd" id="1_xbpqk"]
-[ext_resource type="PackedScene" path="res://assets/environment/scenes/pine_a.tscn" id="2_1lruq"]
-[ext_resource type="PackedScene" path="res://assets/environment/scenes/pine_b.tscn" id="3_ty61t"]
-[ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_a.tscn" id="4_sknsb"]
-[ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_b.tscn" id="5_nams5"]
-[ext_resource type="PackedScene" path="res://assets/environment/scenes/birch_a.tscn" id="6_jijsd"]
-[ext_resource type="PackedScene" path="res://assets/environment/scenes/birch_b.tscn" id="7_fbbk1"]
-[ext_resource type="PackedScene" path="res://assets/environment/scenes/juniper.tscn" id="8_pr3qx"]
-[ext_resource type="PackedScene" path="res://assets/environment/scenes/shrub.tscn" id="9_o8kou"]
-[ext_resource type="PackedScene" path="res://assets/environment/scenes/boulder_a.tscn" id="10_h3r5v"]
-[ext_resource type="PackedScene" path="res://assets/environment/scenes/boulder_b.tscn" id="11_0mey5"]
-[ext_resource type="PackedScene" path="res://assets/environment/scenes/rocks_small.tscn" id="12_b7p2o"]
-[ext_resource type="PackedScene" path="res://assets/environment/scenes/outcrop.tscn" id="13_mvvnm"]
-[ext_resource type="PackedScene" path="res://assets/environment/scenes/log.tscn" id="14_iwvvg"]
-[ext_resource type="PackedScene" path="res://assets/environment/scenes/stump.tscn" id="15_hoi20"]
-[ext_resource type="PackedScene" path="res://assets/environment/scenes/fern.tscn" id="16_wse37"]
 [ext_resource type="PackedScene" path="res://assets/environment/scenes/house.tscn" id="17_nbre4"]
 [ext_resource type="PackedScene" path="res://assets/environment/scenes/barn.tscn" id="18_3wjxs"]
 [ext_resource type="PackedScene" path="res://assets/environment/scenes/shed.tscn" id="19_xaqt8"]
@@ -23,151 +8,241 @@
 [ext_resource type="PackedScene" path="res://assets/environment/scenes/mailbox.tscn" id="21_iq5rp"]
 [ext_resource type="PackedScene" path="res://assets/environment/scenes/road_post.tscn" id="22_21nfq"]
 [ext_resource type="Script" uid="uid://dtom7sxtnagxa" path="res://scripts/vegetation/vegetation_library.gd" id="23_6b78p"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/pine_a.tscn" id="wv1_pine_a"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/pine_a_v1.tscn" id="wv1_pine_a_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/pine_a_v2.tscn" id="wv1_pine_a_v2"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/pine_b.tscn" id="wv1_pine_b"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/pine_b_v1.tscn" id="wv1_pine_b_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/pine_b_v2.tscn" id="wv1_pine_b_v2"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_a.tscn" id="wv1_spruce_a"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_a_v1.tscn" id="wv1_spruce_a_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_a_v2.tscn" id="wv1_spruce_a_v2"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_a_v3.tscn" id="wv1_spruce_a_v3"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_a_v4.tscn" id="wv1_spruce_a_v4"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_a_v5.tscn" id="wv1_spruce_a_v5"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_b.tscn" id="wv1_spruce_b"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_b_v1.tscn" id="wv1_spruce_b_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_b_v2.tscn" id="wv1_spruce_b_v2"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/birch_a.tscn" id="wv1_birch_a"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/birch_a_v1.tscn" id="wv1_birch_a_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/birch_a_v2.tscn" id="wv1_birch_a_v2"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/birch_b.tscn" id="wv1_birch_b"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/birch_b_v1.tscn" id="wv1_birch_b_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/juniper.tscn" id="wv1_juniper"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/juniper_v1.tscn" id="wv1_juniper_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/juniper_v2.tscn" id="wv1_juniper_v2"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/shrub.tscn" id="wv1_shrub"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/shrub_v1.tscn" id="wv1_shrub_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/shrub_v2.tscn" id="wv1_shrub_v2"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/shrub_v3.tscn" id="wv1_shrub_v3"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/shrub_v4.tscn" id="wv1_shrub_v4"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/boulder_a.tscn" id="wv1_boulder_a"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/boulder_a_v1.tscn" id="wv1_boulder_a_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/boulder_a_v2.tscn" id="wv1_boulder_a_v2"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/boulder_b.tscn" id="wv1_boulder_b"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/boulder_b_v1.tscn" id="wv1_boulder_b_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/boulder_b_v2.tscn" id="wv1_boulder_b_v2"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/rocks_small.tscn" id="wv1_rocks_small"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/rocks_small_v1.tscn" id="wv1_rocks_small_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/rocks_small_v2.tscn" id="wv1_rocks_small_v2"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/rocks_small_v3.tscn" id="wv1_rocks_small_v3"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/rocks_small_v4.tscn" id="wv1_rocks_small_v4"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/rocks_small_v5.tscn" id="wv1_rocks_small_v5"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/rocks_small_v6.tscn" id="wv1_rocks_small_v6"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/rocks_small_v7.tscn" id="wv1_rocks_small_v7"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/rocks_small_v8.tscn" id="wv1_rocks_small_v8"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/rocks_small_v9.tscn" id="wv1_rocks_small_v9"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/rocks_small_v10.tscn" id="wv1_rocks_small_v10"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/rocks_small_v11.tscn" id="wv1_rocks_small_v11"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/outcrop.tscn" id="wv1_outcrop"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/outcrop_v1.tscn" id="wv1_outcrop_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/outcrop_v2.tscn" id="wv1_outcrop_v2"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/log.tscn" id="wv1_log"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/log_v1.tscn" id="wv1_log_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/log_v2.tscn" id="wv1_log_v2"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/stump.tscn" id="wv1_stump"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/stump_v1.tscn" id="wv1_stump_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/stump_v2.tscn" id="wv1_stump_v2"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/fern.tscn" id="wv1_fern"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/fern_v1.tscn" id="wv1_fern_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/fern_v2.tscn" id="wv1_fern_v2"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/fern_v3.tscn" id="wv1_fern_v3"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_s.tscn" id="wv1_spruce_s"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_s_v1.tscn" id="wv1_spruce_s_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/birch_s.tscn" id="wv1_birch_s"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/birch_s_v1.tscn" id="wv1_birch_s_v1"]
 
 [sub_resource type="Resource" id="Resource_t6y5q"]
 script = ExtResource("1_xbpqk")
 name = "Pine A"
-scene = ExtResource("2_1lruq")
-near_range = 90.0
+scene = ExtResource("wv1_pine_a")
+near_range = 35.0
+mid_range = 95.0
 max_range = 1000.0
 fade_m = 80.0
 collider = Vector3(0, 0.28, 8)
+variants = Array[PackedScene]([ExtResource("wv1_pine_a_v1"), ExtResource("wv1_pine_a_v2")])
+shared_far = true
 
 [sub_resource type="Resource" id="Resource_4thry"]
 script = ExtResource("1_xbpqk")
 id = 2
 name = "Pine B"
-scene = ExtResource("3_ty61t")
-near_range = 90.0
+scene = ExtResource("wv1_pine_b")
+near_range = 35.0
+mid_range = 95.0
 max_range = 1000.0
 fade_m = 80.0
 collider = Vector3(0, 0.32, 9)
+variants = Array[PackedScene]([ExtResource("wv1_pine_b_v1"), ExtResource("wv1_pine_b_v2")])
+shared_far = true
 
 [sub_resource type="Resource" id="Resource_ux4vf"]
 script = ExtResource("1_xbpqk")
 id = 3
 name = "Spruce A"
-scene = ExtResource("4_sknsb")
-near_range = 85.0
+scene = ExtResource("wv1_spruce_a")
+near_range = 30.0
+mid_range = 90.0
 max_range = 950.0
 fade_m = 80.0
 collider = Vector3(0, 0.3, 8)
+variants = Array[PackedScene]([ExtResource("wv1_spruce_a_v1"), ExtResource("wv1_spruce_a_v2"), ExtResource("wv1_spruce_a_v3"), ExtResource("wv1_spruce_a_v4"), ExtResource("wv1_spruce_a_v5")])
+shared_far = true
 
 [sub_resource type="Resource" id="Resource_ow4jh"]
 script = ExtResource("1_xbpqk")
 id = 4
 name = "Spruce B"
-scene = ExtResource("5_nams5")
-near_range = 70.0
+scene = ExtResource("wv1_spruce_b")
+near_range = 25.0
+mid_range = 70.0
 max_range = 650.0
 collider = Vector3(0, 0.2, 5)
+variants = Array[PackedScene]([ExtResource("wv1_spruce_b_v1"), ExtResource("wv1_spruce_b_v2")])
+shared_far = true
 
 [sub_resource type="Resource" id="Resource_4urcw"]
 script = ExtResource("1_xbpqk")
 id = 5
 name = "Birch A"
-scene = ExtResource("6_jijsd")
-near_range = 110.0
+scene = ExtResource("wv1_birch_a")
+near_range = 40.0
+mid_range = 110.0
 max_range = 900.0
 fade_m = 80.0
 collider = Vector3(0, 0.18, 7)
+variants = Array[PackedScene]([ExtResource("wv1_birch_a_v1"), ExtResource("wv1_birch_a_v2")])
+shared_far = true
 
 [sub_resource type="Resource" id="Resource_2ow38"]
 script = ExtResource("1_xbpqk")
 id = 6
 name = "Birch B"
-scene = ExtResource("7_fbbk1")
-near_range = 100.0
+scene = ExtResource("wv1_birch_b")
+near_range = 35.0
+mid_range = 100.0
 max_range = 850.0
 fade_m = 80.0
 collider = Vector3(0, 0.15, 6)
+variants = Array[PackedScene]([ExtResource("wv1_birch_b_v1")])
+shared_far = true
 
 [sub_resource type="Resource" id="Resource_nipys"]
 script = ExtResource("1_xbpqk")
 id = 7
 name = "Juniper"
-scene = ExtResource("8_pr3qx")
+scene = ExtResource("wv1_juniper")
 near_range = 60.0
 max_range = 260.0
 fade_m = 40.0
 cast_shadows = false
+variants = Array[PackedScene]([ExtResource("wv1_juniper_v1"), ExtResource("wv1_juniper_v2")])
 
 [sub_resource type="Resource" id="Resource_ngi1v"]
 script = ExtResource("1_xbpqk")
 id = 8
 name = "Shrub"
-scene = ExtResource("9_o8kou")
+scene = ExtResource("wv1_shrub")
 near_range = 60.0
 max_range = 300.0
 fade_m = 40.0
 cast_shadows = false
+variants = Array[PackedScene]([ExtResource("wv1_shrub_v1"), ExtResource("wv1_shrub_v2"), ExtResource("wv1_shrub_v3"), ExtResource("wv1_shrub_v4")])
 
 [sub_resource type="Resource" id="Resource_77nvk"]
 script = ExtResource("1_xbpqk")
 id = 9
 name = "Boulder A"
-scene = ExtResource("10_h3r5v")
+scene = ExtResource("wv1_boulder_a")
 near_range = 140.0
 max_range = 650.0
 collider = Vector3(1, 1.1, 0)
+variants = Array[PackedScene]([ExtResource("wv1_boulder_a_v1"), ExtResource("wv1_boulder_a_v2")])
 
 [sub_resource type="Resource" id="Resource_vpp75"]
 script = ExtResource("1_xbpqk")
 id = 10
 name = "Boulder B"
-scene = ExtResource("11_0mey5")
+scene = ExtResource("wv1_boulder_b")
 near_range = 140.0
 max_range = 650.0
 collider = Vector3(1, 1, 0)
+variants = Array[PackedScene]([ExtResource("wv1_boulder_b_v1"), ExtResource("wv1_boulder_b_v2")])
 
 [sub_resource type="Resource" id="Resource_prot2"]
 script = ExtResource("1_xbpqk")
 id = 11
 name = "Stones"
-scene = ExtResource("12_b7p2o")
+scene = ExtResource("wv1_rocks_small")
 near_range = 45.0
 max_range = 180.0
 fade_m = 30.0
 cast_shadows = false
+variants = Array[PackedScene]([ExtResource("wv1_rocks_small_v1"), ExtResource("wv1_rocks_small_v2"), ExtResource("wv1_rocks_small_v3"), ExtResource("wv1_rocks_small_v4"), ExtResource("wv1_rocks_small_v5"), ExtResource("wv1_rocks_small_v6"), ExtResource("wv1_rocks_small_v7"), ExtResource("wv1_rocks_small_v8"), ExtResource("wv1_rocks_small_v9"), ExtResource("wv1_rocks_small_v10"), ExtResource("wv1_rocks_small_v11")])
 
 [sub_resource type="Resource" id="Resource_34ylq"]
 script = ExtResource("1_xbpqk")
 id = 12
 name = "Outcrop"
-scene = ExtResource("13_mvvnm")
+scene = ExtResource("wv1_outcrop")
 near_range = 200.0
 max_range = 1000.0
 fade_m = 90.0
 collider = Vector3(1, 2.4, 0)
+variants = Array[PackedScene]([ExtResource("wv1_outcrop_v1"), ExtResource("wv1_outcrop_v2")])
 
 [sub_resource type="Resource" id="Resource_wonga"]
 script = ExtResource("1_xbpqk")
 id = 13
 name = "Fallen log"
-scene = ExtResource("14_iwvvg")
+scene = ExtResource("wv1_log")
 near_range = 60.0
 max_range = 220.0
 fade_m = 40.0
+variants = Array[PackedScene]([ExtResource("wv1_log_v1"), ExtResource("wv1_log_v2")])
 
 [sub_resource type="Resource" id="Resource_8q1gf"]
 script = ExtResource("1_xbpqk")
 id = 14
 name = "Stump"
-scene = ExtResource("15_hoi20")
+scene = ExtResource("wv1_stump")
 near_range = 40.0
 max_range = 160.0
 fade_m = 30.0
 cast_shadows = false
+variants = Array[PackedScene]([ExtResource("wv1_stump_v1"), ExtResource("wv1_stump_v2")])
 
 [sub_resource type="Resource" id="Resource_eb01y"]
 script = ExtResource("1_xbpqk")
 id = 15
 name = "Fern"
-scene = ExtResource("16_wse37")
+scene = ExtResource("wv1_fern")
 near_range = 30.0
 max_range = 110.0
 fade_m = 25.0
 cast_shadows = false
+variants = Array[PackedScene]([ExtResource("wv1_fern_v1"), ExtResource("wv1_fern_v2"), ExtResource("wv1_fern_v3")])
 
 [sub_resource type="Resource" id="Resource_xl0ie"]
 script = ExtResource("1_xbpqk")
@@ -232,21 +307,27 @@ cast_shadows = false
 script = ExtResource("1_xbpqk")
 id = 22
 name = "Sapling spruce"
-scene = ExtResource("5_nams5")
-near_range = 45.0
+scene = ExtResource("wv1_spruce_s")
+near_range = 20.0
+mid_range = 45.0
 max_range = 320.0
 fade_m = 40.0
 cast_shadows = false
+variants = Array[PackedScene]([ExtResource("wv1_spruce_s_v1")])
+shared_far = true
 
 [sub_resource type="Resource" id="Resource_v2sap2"]
 script = ExtResource("1_xbpqk")
 id = 23
 name = "Sapling birch"
-scene = ExtResource("7_fbbk1")
-near_range = 45.0
+scene = ExtResource("wv1_birch_s")
+near_range = 20.0
+mid_range = 45.0
 max_range = 320.0
 fade_m = 40.0
 cast_shadows = false
+variants = Array[PackedScene]([ExtResource("wv1_birch_s_v1")])
+shared_far = true
 
 [resource]
 script = ExtResource("23_6b78p")

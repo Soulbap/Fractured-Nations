@@ -1,0 +1,21 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/environment/scan_prop.gdshader" id="1_c3x86"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/scan_tree_stump_02_alb.png" id="2_2urfm"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/scan_tree_stump_02_nrm.png" id="3_ueast"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/scan_tree_stump_02_orm.png" id="4_eosr6"]
+
+[resource]
+resource_name = "Scan_tree_stump_02"
+render_priority = 0
+shader = ExtResource("1_c3x86")
+shader_parameter/albedo_tex = ExtResource("2_2urfm")
+shader_parameter/normal_tex = ExtResource("3_ueast")
+shader_parameter/orm_tex = ExtResource("4_eosr6")
+shader_parameter/saturation = 0.85
+shader_parameter/grade = Color(1, 1, 1, 1)
+shader_parameter/brightness = 0.95
+shader_parameter/moss_amount = 0.25
+shader_parameter/moss_color = null
+shader_parameter/lichen_amount = 0.0
+shader_parameter/lichen_color = null

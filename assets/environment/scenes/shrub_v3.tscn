@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/shrub_v3_lod0.res" id="1_6ncaw"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/shrub_v3_lod1.res" id="2_oq3bi"]
+
+[node name="ShrubV3" type="Node3D" unique_id=1118303284]
+
+[node name="shrub_v3_LOD0" type="MeshInstance3D" parent="." unique_id=695779024]
+mesh = ExtResource("1_6ncaw")
+
+[node name="shrub_v3_LOD1" type="MeshInstance3D" parent="." unique_id=309133166]
+mesh = ExtResource("2_oq3bi")

@@ -1,0 +1,21 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/environment/bark.gdshader" id="1_mw4xr"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/bark_birch_base3_alb.png" id="2_xyoqy"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/bark_birch_base3_nrm.png" id="3_o5qk2"]
+
+[resource]
+resource_name = "Bark_Birch3_s0.3"
+render_priority = 0
+shader = ExtResource("1_mw4xr")
+shader_parameter/wind_strength = 0.16
+shader_parameter/wind_speed = null
+shader_parameter/sway_height = 12.0
+shader_parameter/wind_dir = null
+shader_parameter/albedo_tex = ExtResource("2_xyoqy")
+shader_parameter/normal_tex = ExtResource("3_o5qk2")
+shader_parameter/tint = null
+shader_parameter/roughness_value = null
+shader_parameter/use_upper = null
+shader_parameter/split_y = null
+shader_parameter/split_soft = null

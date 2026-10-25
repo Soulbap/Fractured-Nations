@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/stump_v2_lod0.res" id="1_myotd"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/stump_v2_lod1.res" id="2_pdyx0"]
+
+[node name="StumpV2" type="Node3D" unique_id=60456211]
+
+[node name="stump_v2_LOD0" type="MeshInstance3D" parent="." unique_id=1002328320]
+mesh = ExtResource("1_myotd")
+
+[node name="stump_v2_LOD1" type="MeshInstance3D" parent="." unique_id=1525334416]
+mesh = ExtResource("2_pdyx0")

@@ -3,10 +3,10 @@
 [ext_resource type="ArrayMesh" path="res://assets/environment/meshes/juniper_lod0.res" id="1_rrf53"]
 [ext_resource type="ArrayMesh" path="res://assets/environment/meshes/juniper_lod1.res" id="2_idnhl"]
 
-[node name="Juniper" type="Node3D" unique_id=332459473]
+[node name="Juniper" type="Node3D" unique_id=86528047]
 
-[node name="juniper_LOD0" type="MeshInstance3D" parent="." unique_id=395094157]
+[node name="juniper_LOD0" type="MeshInstance3D" parent="." unique_id=1721844109]
 mesh = ExtResource("1_rrf53")
 
-[node name="juniper_LOD1" type="MeshInstance3D" parent="." unique_id=331463685]
+[node name="juniper_LOD1" type="MeshInstance3D" parent="." unique_id=1398156412]
 mesh = ExtResource("2_idnhl")

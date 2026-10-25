@@ -1,0 +1,24 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/environment/foliage.gdshader" id="1_blorq"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/pine3_alb.png" id="2_6ydi2"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/pine3_nrm.png" id="3_slggq"]
+
+[resource]
+resource_name = "Needles_Pine3"
+render_priority = 0
+shader = ExtResource("1_blorq")
+shader_parameter/wind_strength = 0.09
+shader_parameter/wind_speed = null
+shader_parameter/sway_height = 16.0
+shader_parameter/wind_dir = null
+shader_parameter/albedo_tex = ExtResource("2_6ydi2")
+shader_parameter/normal_tex = ExtResource("3_slggq")
+shader_parameter/use_normal_tex = null
+shader_parameter/tint = Color(1.06, 1.08, 0.8, 1)
+shader_parameter/alpha_cut = null
+shader_parameter/translucency = 0.3
+shader_parameter/roughness_value = null
+shader_parameter/flutter = 0.005
+shader_parameter/normal_up_blend = null
+shader_parameter/edge_fade = null

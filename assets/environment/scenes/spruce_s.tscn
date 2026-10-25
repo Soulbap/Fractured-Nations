@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/spruce_s_lod0.res" id="1_gmrs2"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/spruce_s_lod1.res" id="2_j5tmv"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/spruce_s_lod2.res" id="3_wk1ia"]
+
+[node name="SpruceS" type="Node3D" unique_id=498871342]
+
+[node name="spruce_s_LOD0" type="MeshInstance3D" parent="." unique_id=1455972672]
+mesh = ExtResource("1_gmrs2")
+
+[node name="spruce_s_LOD1" type="MeshInstance3D" parent="." unique_id=1483015853]
+mesh = ExtResource("2_j5tmv")
+
+[node name="spruce_s_LOD2" type="MeshInstance3D" parent="." unique_id=1462000045]
+mesh = ExtResource("3_wk1ia")

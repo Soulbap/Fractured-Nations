@@ -1,0 +1,23 @@
+[gd_resource type="ShaderMaterial" format=4]
+
+[ext_resource type="Shader" path="res://shaders/environment/impostor_v3.gdshader" id="1_lk2hf"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/spruce_s_imp3.png" id="2_ybnqu"]
+
+[resource]
+resource_name = "Impostor3_spruce_s"
+render_priority = 0
+shader = ExtResource("1_lk2hf")
+shader_parameter/wind_strength = 0.06
+shader_parameter/wind_speed = null
+shader_parameter/sway_height = 16.0
+shader_parameter/wind_dir = null
+shader_parameter/albedo_tex = ExtResource("2_ybnqu")
+shader_parameter/tint = Color(0.95, 0.97, 0.92, 1)
+shader_parameter/alpha_cut = 0.5
+shader_parameter/translucency = null
+shader_parameter/normal_up_blend = null
+shader_parameter/edge_fade = 0.0
+shader_parameter/is_top = false
+shader_parameter/var_rect = PackedVector4Array(0, 0, 0.33333334, 0.5, 0.33333334, 0, 0.33333334, 0.5, 0.33333334, 0, 0.33333334, 0.5, 0.33333334, 0, 0.33333334, 0.5, 0.33333334, 0, 0.33333334, 0.5, 0.33333334, 0, 0.33333334, 0.5, 0.33333334, 0, 0.33333334, 0.5, 0.33333334, 0, 0.33333334, 0.5)
+shader_parameter/var_scale = PackedVector3Array(1, 1, 1, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746, 0.8127746)
+shader_parameter/var_count = 2

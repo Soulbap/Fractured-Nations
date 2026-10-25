@@ -16,3 +16,6 @@ shader_parameter/albedo_tex = ExtResource("2_xq7aq")
 shader_parameter/normal_tex = ExtResource("3_xot1x")
 shader_parameter/tint = null
 shader_parameter/roughness_value = null
+shader_parameter/use_upper = null
+shader_parameter/split_y = null
+shader_parameter/split_soft = null

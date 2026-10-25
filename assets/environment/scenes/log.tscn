@@ -3,10 +3,10 @@
 [ext_resource type="ArrayMesh" path="res://assets/environment/meshes/log_lod0.res" id="1_jtybu"]
 [ext_resource type="ArrayMesh" path="res://assets/environment/meshes/log_lod1.res" id="2_fbwem"]
 
-[node name="Log" type="Node3D" unique_id=1886111047]
+[node name="Log" type="Node3D" unique_id=711571248]
 
-[node name="log_LOD0" type="MeshInstance3D" parent="." unique_id=1832840820]
+[node name="log_LOD0" type="MeshInstance3D" parent="." unique_id=693169526]
 mesh = ExtResource("1_jtybu")
 
-[node name="log_LOD1" type="MeshInstance3D" parent="." unique_id=1033602598]
+[node name="log_LOD1" type="MeshInstance3D" parent="." unique_id=922992191]
 mesh = ExtResource("2_fbwem")

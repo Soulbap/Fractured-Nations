@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/fern_v3_lod0.res" id="1_8240t"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/fern_v3_lod1.res" id="2_rgo7o"]
+
+[node name="FernV3" type="Node3D" unique_id=1530818844]
+
+[node name="fern_v3_LOD0" type="MeshInstance3D" parent="." unique_id=1707175262]
+mesh = ExtResource("1_8240t")
+
+[node name="fern_v3_LOD1" type="MeshInstance3D" parent="." unique_id=472959725]
+mesh = ExtResource("2_rgo7o")

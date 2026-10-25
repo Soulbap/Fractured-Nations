@@ -81,3 +81,6 @@ __pycache__/
 # VISUAL-03: CMU BVH takes are committed zipped (zip/), unpacked on demand by v03_proto.py
 assets/characters/infantry/mocap/cmu/*.bvh
 docs/visual03/proto/_tmp/
+
+# WORLD-VISUALS-01: raw CC0 downloads (tools/blender/env/fetch_polyhaven.py)
+assets/environment/source/

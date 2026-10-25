@@ -1,12 +1,16 @@
 [gd_scene format=3]
 
-[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/spruce_b_lod0.res" id="1_qniil"]
-[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/spruce_b_lod1.res" id="2_ihs7v"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/spruce_b_lod0.res" id="1_ihs7v"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/spruce_b_lod1.res" id="2_6owqd"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/spruce_b_lod2.res" id="3_v082g"]
 
-[node name="SpruceB" type="Node3D" unique_id=635726645]
+[node name="SpruceB" type="Node3D" unique_id=946778212]
 
-[node name="spruce_b_LOD0" type="MeshInstance3D" parent="." unique_id=284024004]
-mesh = ExtResource("1_qniil")
+[node name="spruce_b_LOD0" type="MeshInstance3D" parent="." unique_id=1243284668]
+mesh = ExtResource("1_ihs7v")
 
-[node name="spruce_b_LOD1" type="MeshInstance3D" parent="." unique_id=286833029]
-mesh = ExtResource("2_ihs7v")
+[node name="spruce_b_LOD1" type="MeshInstance3D" parent="." unique_id=193354511]
+mesh = ExtResource("2_6owqd")
+
+[node name="spruce_b_LOD2" type="MeshInstance3D" parent="." unique_id=1141011782]
+mesh = ExtResource("3_v082g")

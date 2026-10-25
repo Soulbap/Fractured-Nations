@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/rocks_small_v6_lod0.res" id="1_0jact"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/rocks_small_v6_lod1.res" id="2_2jcw2"]
+
+[node name="RocksSmallV6" type="Node3D" unique_id=1475297797]
+
+[node name="rocks_small_v6_LOD0" type="MeshInstance3D" parent="." unique_id=1013878398]
+mesh = ExtResource("1_0jact")
+
+[node name="rocks_small_v6_LOD1" type="MeshInstance3D" parent="." unique_id=851366223]
+mesh = ExtResource("2_2jcw2")

@@ -1,0 +1,24 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/environment/foliage.gdshader" id="1_pnxt6"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/bush3_alb.png" id="2_x5uha"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/bush3_nrm.png" id="3_sj5a1"]
+
+[resource]
+resource_name = "Foliage_Bush3"
+render_priority = 0
+shader = ExtResource("1_pnxt6")
+shader_parameter/wind_strength = 0.05
+shader_parameter/wind_speed = null
+shader_parameter/sway_height = 2.5
+shader_parameter/wind_dir = null
+shader_parameter/albedo_tex = ExtResource("2_x5uha")
+shader_parameter/normal_tex = ExtResource("3_sj5a1")
+shader_parameter/use_normal_tex = null
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/alpha_cut = null
+shader_parameter/translucency = 0.45
+shader_parameter/roughness_value = null
+shader_parameter/flutter = 0.02
+shader_parameter/normal_up_blend = null
+shader_parameter/edge_fade = null

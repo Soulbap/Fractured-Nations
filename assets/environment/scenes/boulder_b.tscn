@@ -3,10 +3,10 @@
 [ext_resource type="ArrayMesh" path="res://assets/environment/meshes/boulder_b_lod0.res" id="1_eetoh"]
 [ext_resource type="ArrayMesh" path="res://assets/environment/meshes/boulder_b_lod1.res" id="2_yl0gt"]
 
-[node name="BoulderB" type="Node3D" unique_id=1520785240]
+[node name="BoulderB" type="Node3D" unique_id=1928688077]
 
-[node name="boulder_b_LOD0" type="MeshInstance3D" parent="." unique_id=1291668766]
+[node name="boulder_b_LOD0" type="MeshInstance3D" parent="." unique_id=798977459]
 mesh = ExtResource("1_eetoh")
 
-[node name="boulder_b_LOD1" type="MeshInstance3D" parent="." unique_id=1374086236]
+[node name="boulder_b_LOD1" type="MeshInstance3D" parent="." unique_id=1306281428]
 mesh = ExtResource("2_yl0gt")

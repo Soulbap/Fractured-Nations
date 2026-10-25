@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/boulder_a_v2_lod0.res" id="1_gra2x"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/boulder_a_v2_lod1.res" id="2_tw3xq"]
+
+[node name="BoulderAV2" type="Node3D" unique_id=1519773798]
+
+[node name="boulder_a_v2_LOD0" type="MeshInstance3D" parent="." unique_id=414026009]
+mesh = ExtResource("1_gra2x")
+
+[node name="boulder_a_v2_LOD1" type="MeshInstance3D" parent="." unique_id=1807479130]
+mesh = ExtResource("2_tw3xq")

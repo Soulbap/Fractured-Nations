@@ -348,7 +348,11 @@ def render_impostor_top(objs, out_path, half_w, px=512):
     sc.render.film_transparent = False
 
 
-def export_glb(objs, path):
+def export_glb(objs, path, materials="EXPORT"):
+    """materials: EXPORT (with images) or NAMES (materials without images - the Godot import binds project textures by
+    material name; glTF's own PLACEHOLDER mode drops the names)."""
+    images = "NONE" if materials == "NAMES" else "AUTO"
+    materials = "EXPORT" if materials == "NAMES" else materials
     bpy.ops.object.select_all(action="DESELECT")
     for ob in objs:
         ob.select_set(True)
@@ -357,7 +361,7 @@ def export_glb(objs, path):
     bpy.ops.export_scene.gltf(filepath=path, export_format="GLB", use_selection=True, export_apply=True,
                               export_yup=True, export_texcoords=True, export_normals=True,
                               export_vertex_color="ACTIVE", export_all_vertex_colors=False,
-                              export_materials="EXPORT", export_image_format="AUTO")
+                              export_materials=materials, export_image_format=images)
 
 
 def stats(ob):

@@ -1,12 +1,16 @@
 [gd_scene format=3]
 
-[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/pine_b_lod0.res" id="1_yy7tj"]
-[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/pine_b_lod1.res" id="2_fhmtd"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/pine_b_lod0.res" id="1_fhmtd"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/pine_b_lod1.res" id="2_jisvx"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/pine_b_lod2.res" id="3_x21b1"]
 
-[node name="PineB" type="Node3D" unique_id=776046543]
+[node name="PineB" type="Node3D" unique_id=1255614848]
 
-[node name="pine_b_LOD0" type="MeshInstance3D" parent="." unique_id=2108507194]
-mesh = ExtResource("1_yy7tj")
+[node name="pine_b_LOD0" type="MeshInstance3D" parent="." unique_id=1255196963]
+mesh = ExtResource("1_fhmtd")
 
-[node name="pine_b_LOD1" type="MeshInstance3D" parent="." unique_id=1911753165]
-mesh = ExtResource("2_fhmtd")
+[node name="pine_b_LOD1" type="MeshInstance3D" parent="." unique_id=564857771]
+mesh = ExtResource("2_jisvx")
+
+[node name="pine_b_LOD2" type="MeshInstance3D" parent="." unique_id=913891973]
+mesh = ExtResource("3_x21b1")

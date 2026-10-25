@@ -3,10 +3,10 @@
 [ext_resource type="ArrayMesh" path="res://assets/environment/meshes/rocks_small_lod0.res" id="1_jjmqh"]
 [ext_resource type="ArrayMesh" path="res://assets/environment/meshes/rocks_small_lod1.res" id="2_b6y1n"]
 
-[node name="RocksSmall" type="Node3D" unique_id=407402550]
+[node name="RocksSmall" type="Node3D" unique_id=952070492]
 
-[node name="rocks_small_LOD0" type="MeshInstance3D" parent="." unique_id=1638206463]
+[node name="rocks_small_LOD0" type="MeshInstance3D" parent="." unique_id=1620875427]
 mesh = ExtResource("1_jjmqh")
 
-[node name="rocks_small_LOD1" type="MeshInstance3D" parent="." unique_id=622960669]
+[node name="rocks_small_LOD1" type="MeshInstance3D" parent="." unique_id=623160122]
 mesh = ExtResource("2_b6y1n")

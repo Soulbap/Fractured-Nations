@@ -1,0 +1,25 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/environment/bark.gdshader" id="1_nuhy3"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/bark_pine3_lower_alb.png" id="2_ipex2"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/bark_pine3_lower_nrm.png" id="3_ksp11"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/bark_pine3_upper_alb.png" id="4_ck57n"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/bark_pine3_upper_nrm.png" id="5_hbrx2"]
+
+[resource]
+resource_name = "Bark_Pine3_s8.1"
+render_priority = 0
+shader = ExtResource("1_nuhy3")
+shader_parameter/wind_strength = 0.09
+shader_parameter/wind_speed = null
+shader_parameter/sway_height = 16.0
+shader_parameter/wind_dir = null
+shader_parameter/albedo_tex = ExtResource("2_ipex2")
+shader_parameter/normal_tex = ExtResource("3_ksp11")
+shader_parameter/tint = null
+shader_parameter/roughness_value = null
+shader_parameter/use_upper = true
+shader_parameter/upper_albedo_tex = ExtResource("4_ck57n")
+shader_parameter/upper_normal_tex = ExtResource("5_hbrx2")
+shader_parameter/split_y = 8.1
+shader_parameter/split_soft = 2.5
