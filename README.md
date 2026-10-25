@@ -11,7 +11,17 @@ branches are contained in `develop` and stay as history. Next milestone: **NAVIG
 obstacle navigation). See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest gameplay: **GAMEPLAY-04** (on `develop`) — the New Game experience and progression. **New Game** now opens as an
+Newest: **GAMEPLAY-05** (on `develop`) — a quality review of the game as it plays. Fixed: squads showed fewer soldiers than they
+had ("1/5" for five alive), a garrison could stay **BLOCKED** for good after one soldier failed to reach his post, the EQUIP
+screen errored on every refresh, soldiers about 12 m from the camera were invisible (LOD gap), distant trees had black lines
+across their canopies, captured bases kept the enemy's name. Clearer: fallen soldiers' equipment is one summary marker per
+cluster (contents on mouse-over, new weapon types in amber) and shows on the map; messages name facilities by base; REARM says
+why it found nothing. The world looks more grounded (ambient occlusion, haze, calmer colours; `--legacy-look` for the old look).
+The report has the findings, the rifle-accuracy analysis and the recommended roadmap (next: GAMEPLAY-06 motorised logistics and
+battlefield salvage, for the product owner to decide). Tests: `--scenario=new_game --gameplay05-test --only <check>`. See
+[docs/GAMEPLAY-05_QUALITY_REVIEW.md](docs/GAMEPLAY-05_QUALITY_REVIEW.md).
+
+Before that, **GAMEPLAY-04** (on `develop`) — the New Game experience and progression. **New Game** now opens as an
 operation: a short briefing, an objective tracker (top right, hideable with ×) and a South fire team holding the
 **Moen checkpoint** in front of the first supply cache; clear it, secure the cache, **REARM** (**R**) at the checkpoint's
 stores, place a Command Post and start your first project in **Military Development** (**F2**: three branches - Base &

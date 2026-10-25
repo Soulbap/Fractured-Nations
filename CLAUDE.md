@@ -191,6 +191,10 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   state `FactionState.dev`) is the only unlock authority: `structure_lock` / `weapon_lock` / `role_lock` for player and AI alike; scenario
   rule `development`. The New Game opening is scenario data (`ScenarioDef.intro`, `extra_objectives`, `structures`) checked against the
   world by `IntroGuide` (`WarSim.intro`) and shown by `ObjectiveTracker`. Tests: `--gameplay04-test --only <check>` (narrow checks).
+- **World look (GAMEPLAY-05).** `WorldLook` (`scripts/world/world_look.gd`) sets SSAO, grading, haze, sky, sun colour and two
+  terrain texture tints in memory at game start (`CoreDemo._ready`; the generated world scene and manifest are untouched);
+  `--legacy-look` switches it off for comparison. Tune the look there, not in `scenes/world/ref_20km.tscn`. Infantry LODs
+  cross-fade (`InfantryCharacter.LOD_MARGIN`, fade SELF): plain hysteresis left soldiers invisible at the switch.
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are
@@ -246,6 +250,11 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   (RTS roster / command panel) and `--ui01c2-test [--shots] [--only construction,vehicle,markers,map,fps]` (run
   `--fullscreen` for 1920x1080 captures in `docs/ui_01c/`). HUD sizes are in the 1152x648 logical canvas
   (stretch mode canvas_items). Building thumbnails: `Godot_v4.7.2-stable_win64.exe --path . --script res://tools/ui/make_structure_thumbs.gd`.
+- GAMEPLAY-05 review checks: `--scenario=new_game --gameplay05-test [--shots] --only u_post_block,u_strength,u_markers,u_capture_name,u_bodies,v_tour,q_perf`
+  (`v_tour --shot-tag=before --legacy-look` / `--shot-tag=after` for comparable look screenshots with frame rates; `q_perf` the
+  opening fight's frame times; `--continue ... --only p_state,p_watch` diagnoses the last test save). Results
+  `benchmarks/raw/gameplay05_test.json`, shots `docs/gameplay05/`. Known flaky on unchanged code: `--nav-inf-test` navinf_04 near
+  tier (about one run in two); `--campaign-test c_forts` fails (timber guard tower never built; GAMEPLAY-05 report §3.1).
 - After adding `class_name` scripts or assets run `Godot ... --headless --path . --import` once (two
   "placeholder instance" SCRIPT ERRORs from VegetationMask / VegetationMeshDef during a headless import are known
   and harmless).
