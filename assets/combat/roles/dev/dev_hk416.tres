@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="InfantryRole" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/infantry_role.gd" id="1_role"]
+
+[resource]
+script = ExtResource("1_role")
+id = &"dev_hk416"
+display_name = "HK416N 5.56 (development armoury)"
+short = "416"
+weapon_id = &"hk416"
+loadout_suffix = "w_hk416"
+grenades = 2
+secondary_id = &""
+secondary_rounds = 0

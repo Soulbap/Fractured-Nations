@@ -1,0 +1,47 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_def.gd" id="1_wdef"]
+
+[resource]
+script = ExtResource("1_wdef")
+id = &"hk417"
+display_name = "HK417 7.62"
+rounds_per_minute = 300.0
+allow_auto = false
+default_mode = 0
+magazine_size = 20
+reserve_start = 100
+reload_time = 2.8
+damage = 58.0
+head_multiplier = 2.5
+body_multiplier = 1.0
+falloff_start = 350.0
+falloff_end = 800.0
+min_damage_fraction = 0.75
+max_range = 1000.0
+effective_range = 650.0
+spread_base_deg = 0.02
+spread_moving_deg = 2.2
+spread_bloom_deg = 0.35
+spread_bloom_max_deg = 1.2
+spread_recovery_deg_s = 2.5
+role = &"dmr"
+suppression_mult = 1.3
+near_miss_m = 3.5
+settle_s = 0.8
+settled_mult = 0.7
+moving_aim_mult = 2.0
+burst_mult = 0.5
+mission_burst = 1
+aim_time_s = 1.6
+ai_engage_m = 650.0
+optic_sight_m = 650.0
+recoil_pitch_deg = 1.4
+recoil_yaw_deg = 0.35
+aim_mult = 0.4
+recoil_recover = 0.85
+recoil_recover_s = 0.18
+recoil_yaw_bias = 0.2
+viewmodel_kick = 1.5
+ads_fov = 14.0
+

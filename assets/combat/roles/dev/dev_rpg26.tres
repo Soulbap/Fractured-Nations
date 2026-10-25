@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="InfantryRole" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/infantry_role.gd" id="1_role"]
+
+[resource]
+script = ExtResource("1_role")
+id = &"dev_rpg26"
+display_name = "RPG-26 Aglen 72.5 mm (development armoury)"
+short = "RPG26"
+weapon_id = &"ak12"
+loadout_suffix = "w_ak12"
+grenades = 2
+secondary_id = &"rpg26"
+secondary_rounds = 1

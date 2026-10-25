@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="InfantryLoadout" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/characters/infantry_loadout.gd" id="1_lo"]
+[ext_resource type="Script" path="res://scripts/characters/infantry_equipment.gd" id="2_eq"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/factions/ru/equipment/ru_jacket.tres" id="3_ru_jacket"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/factions/ru/equipment/ru_trousers.tres" id="4_ru_trousers"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/uniform_boots.tres" id="5_uniform_boots"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/uniform_gloves.tres" id="6_uniform_gloves"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/factions/ru/equipment/ru_helmet.tres" id="7_ru_helmet"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/factions/ru/equipment/ru_armor.tres" id="8_ru_armor"]
+[ext_resource type="Resource" path="res://assets/weapons/russian/pkp_pecheneg/weapon_pkp_pecheneg.tres" id="9_weapon_pkp_pecheneg"]
+
+[resource]
+script = ExtResource("1_lo")
+id = "RU_w_pkp_pecheneg"
+display_name = "RU rifleman with the PKP Pecheneg 7.62x54R (development armoury)"
+items = Array[ExtResource("2_eq")]([ExtResource("3_ru_jacket"), ExtResource("4_ru_trousers"), ExtResource("5_uniform_boots"), ExtResource("6_uniform_gloves"), ExtResource("7_ru_helmet"), ExtResource("8_ru_armor"), ExtResource("9_weapon_pkp_pecheneg")])

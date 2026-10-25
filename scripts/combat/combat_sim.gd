@@ -17,6 +17,8 @@ enum Source { AI, PLAYER }
 enum Zone { NONE, BODY, HEAD }
 
 const WEAPON_DIR := "res://assets/combat/%s.tres"
+## ASSET-INTEGRATION-01: the named weapons of the WEAPON-ASSETS-01 pack (HK416, AK-12 ...), same ids, own folder.
+const WEAPON_DIR_NAMED := "res://assets/combat/weapons/%s.tres"
 ## Eye height of a soldier record (origin of shots from units without a camera).
 const EYE_HEIGHT := 1.6
 
@@ -46,6 +48,8 @@ func weapon(id: StringName) -> WeaponDef:
 		return null
 	if not _weapons.has(id):
 		var path := WEAPON_DIR % id
+		if not ResourceLoader.exists(path):
+			path = WEAPON_DIR_NAMED % id
 		_weapons[id] = load(path) as WeaponDef if ResourceLoader.exists(path) else null
 	return _weapons[id]
 
@@ -128,6 +132,25 @@ func apply_composition(sq: SquadState, only: Array = [], comp_override := "") ->
 		given[pick] = int(given.get(pick, 0)) + 1
 		_equip_role(u, pick)
 	return fresh.size()
+
+
+## ASSET-INTEGRATION-01 (development armoury): re-equips one soldier in a role at once, outside the economy - a full load
+## of its weapon and secondary weapon, the role's look, the body (and first-person view) rebuilt.
+func give_role(u: UnitState, role_id: StringName) -> bool:
+	var role := InfantryRole.by_id(role_id)
+	if u == null or u.kind != UnitState.Kind.SOLDIER or role == null or weapon(role.weapon_id) == null:
+		return false
+	var look := u.loadout
+	u.role = &""
+	u.weapon_id = &""
+	u.reload_until = -1.0
+	u.sec_ready_at = 0.0
+	_equip_role(u, role_id)
+	# _equip_role rebuilds a view whose loadout changed; the same look with another secondary needs it too
+	var view := sim.view_of(u.id)
+	if u.loadout == look and view and view.has_method("refresh_look"):
+		view.refresh_look()
+	return true
 
 
 ## Gives a soldier a role: its weapon with a full load, its grenades and secondary weapon, and the role's look.

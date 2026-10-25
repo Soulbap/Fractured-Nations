@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="InfantryRole" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/infantry_role.gd" id="1_role"]
+
+[resource]
+script = ExtResource("1_role")
+id = &"dev_glock_17"
+display_name = "Glock 17 (P80) 9 mm (development armoury)"
+short = "P80"
+weapon_id = &"glock_17"
+loadout_suffix = "w_glock_17"
+grenades = 2
+secondary_id = &""
+secondary_rounds = 0

@@ -9,6 +9,10 @@
 ## the cheek weld when aiming, Fire and the magazine-change Reload as the AI soldiers have them). At the hip the character's
 ## eye sits on the camera (the rifle low and to the right, muzzle towards the centre, both hands on it); aiming, the sight
 ## line is laid along the camera axis. A secondary weapon held instead (launcher, held_scene) is shown on its own as before.
+##
+## ASSET-INTEGRATION-01: the sight line and the aiming eye are the held weapon's own (InfantryEquipment.aim_eye: a pistol
+## at arm's length, the SVD's lower scope, a launcher's sight on the left of its tube); the arms hold it through
+## InfantryGripIK. A secondary weapon with an equipment piece (WeaponDef.held_piece) is held by the arms the same way.
 class_name Viewmodel
 extends Node3D
 
@@ -22,6 +26,8 @@ const ADS := Vector3(0.0, -0.172, -0.36)
 var loadout: InfantryLoadout
 ## GAMEPLAY-02C: a weapon held instead of the loadout's (the secondary weapon, WeaponDef.viewmodel_scene).
 var held_scene: PackedScene
+## ASSET-INTEGRATION-01: the held secondary weapon's piece (its scene and hold); with it the arms hold the secondary.
+var held_piece: InfantryEquipment
 var faction := 0
 var aiming := false
 var muzzle: Node3D
@@ -31,12 +37,15 @@ var arms: InfantryCharacter
 var _weapon_root: Node3D
 var _ads := 0.0
 var _kick := 0.0
+## ASSET-INTEGRATION-01: the hold kept while a reload runs (the clip lowers the weapon in front of a still body).
+var _steady := Transform3D.IDENTITY
+var _reload_k := 0.0
 static var _lens_mat: StandardMaterial3D
 static var _housing_mat: ShaderMaterial
 
 
 func _ready() -> void:
-	if held_scene == null and loadout and _build_arms():
+	if (held_scene == null or held_piece != null) and loadout and _build_arms():
 		return
 	var mounts := {}
 	if held_scene:
@@ -112,6 +121,92 @@ void fragment() {
 	return _housing_mat
 
 
+## The see-through first-person glass on a mesh's `Lens` surfaces, its other materials left as they are.
+func _clear_lens(mi: MeshInstance3D) -> void:
+	for si in mi.mesh.get_surface_count():
+		var mat := mi.mesh.surface_get_material(si)
+		if mat and mat.resource_name == "Lens":
+			mi.set_surface_override_material(si, _lens())
+
+
+## ASSET-INTEGRATION-01: an optic built into the weapon (PIV_Optic, the WEAPON-ASSETS-01 pack) is looked through: the faces
+## across the sight axis within the eyepiece's inner radius are cut away (the tube walls, mount and turrets stay), the axis
+## being the weapon's own aiming eye (InfantryEquipment.aim_eye) and the radius measured on the eyepiece ring.
+static var _cut_shader: Shader
+## A magnified scope (a long optic: PIV_Optic deeper than SCOPE_LEN): at full aim the weapon is hidden and the sight picture is
+## drawn over the zoomed view (ring and cross hairs), as a tube 30 cm long seen at 8-15 degrees leaves only a pinhole.
+const SCOPE_LEN := 0.25
+var _scope_meshes: Array = []
+var _scope_overlay: Control
+
+
+func _scope_view(on: bool) -> void:
+	if _scope_meshes.is_empty():
+		return
+	for mi: MeshInstance3D in _scope_meshes:
+		mi.visible = not on
+	if on and _scope_overlay == null:
+		_scope_overlay = ScopeReticle.new()
+		var layer := CanvasLayer.new()
+		layer.layer = 5
+		add_child(layer)
+		layer.add_child(_scope_overlay)
+	if _scope_overlay:
+		_scope_overlay.visible = on
+
+
+func _open_optic(root: Node3D) -> void:
+	var piv := root.find_child("PIV_Optic", true, false) as Node3D
+	if piv == null:
+		return
+	var meshes := piv.find_children("*_LOD0", "MeshInstance3D", true, false)
+	var zmax := -INF
+	var zmin := INF
+	for mi: MeshInstance3D in meshes:
+		zmax = maxf(zmax, mi.get_aabb().end.z)
+		zmin = minf(zmin, mi.get_aabb().position.z)
+	if zmax - zmin > SCOPE_LEN:
+		# the whole weapon: its front sight or muzzle would stand in the zoomed picture
+		_scope_meshes = root.find_children("*_LOD0", "MeshInstance3D", true, false)
+	var centre := Vector2(_eye.x - piv.position.x, _eye.y - piv.position.y)
+	var r := INF
+	for mi: MeshInstance3D in meshes:
+		for v in mi.mesh.get_faces():
+			if v.z > zmax - 0.008:
+				r = minf(r, maxf(absf(v.x - centre.x), absf(v.y - centre.y)))
+	r = clampf(r * 0.85 if r < INF else 0.012, 0.008, 0.02)
+	if _cut_shader == null:
+		_cut_shader = Shader.new()
+		_cut_shader.code = """shader_type spatial;
+render_mode cull_disabled;
+uniform vec2 centre;
+uniform float radius;
+uniform vec3 albedo : source_color = vec3(0.045);
+varying vec3 v_pos;
+varying vec3 v_nrm;
+void vertex() { v_pos = VERTEX; v_nrm = NORMAL; }
+void fragment() {
+	if (length(v_pos.xy - centre) < radius && abs(v_nrm.z) > 0.7) { discard; }
+	ALBEDO = albedo;
+	METALLIC = 0.6;
+	ROUGHNESS = 0.45;
+}"""
+	for mi: MeshInstance3D in meshes:
+		for si in mi.mesh.get_surface_count():
+			var mat := mi.mesh.surface_get_material(si)
+			if mat and mat.resource_name == "Lens":
+				mi.set_surface_override_material(si, _lens())
+				continue
+			var m := ShaderMaterial.new()
+			m.shader = _cut_shader
+			m.set_shader_parameter("centre", centre)
+			m.set_shader_parameter("radius", r)
+			var lib := InfantryMaterials.get_material(mat.resource_name if mat else "", faction)
+			if lib is StandardMaterial3D:
+				m.set_shader_parameter("albedo", (lib as StandardMaterial3D).albedo_color)
+			mi.set_surface_override_material(si, m)
+
+
 ## Optic glass for the first-person view: nearly clear, so the sight picture is visible.
 static func _lens() -> StandardMaterial3D:
 	if _lens_mat == null:
@@ -133,6 +228,8 @@ func kick(strength := 1.0) -> void:
 ## scope share it) and how far in front of the eye it is laid when aiming.
 const SIGHT_Y := 0.172
 const EYE_RELIEF := 0.24
+## ASSET-INTEGRATION-01: the held weapon's aiming eye in weapon space (x, sight line height, distance behind the grip).
+var _eye := Vector3(0.0, SIGHT_Y, EYE_RELIEF)
 
 
 ## The arms: the loadout's character, everything but sleeves, gloves, hands and the weapon hidden. False when the loadout
@@ -155,11 +252,24 @@ func _build_arms() -> bool:
 						# the sight is looked through: clear glass, the tube cut open along its axis (as the floating weapon)
 						if it.slot == "weapon_optic" and String(mi.name).ends_with("_LOD0"):
 							_style(mi, true)
+						# ASSET-INTEGRATION-01: a weapon with its optic built in (the WEAPON-ASSETS-01 pack) is looked through its glass
+						elif it.slot == "weapon" and String(mi.name).ends_with("_LOD0"):
+							_clear_lens(mi)
 		if it.slot == "weapon" and not c.pieces.get(it.id, []).is_empty():
 			_weapon_root = c.pieces[it.id][0]
+			_eye = it.aim_eye
+	if held_piece and held_piece.scene:
+		c.show_secondary(true, held_piece.scene, held_piece)
+		_weapon_root = c._held_secondary
+		_eye = held_piece.aim_eye
+		for mi in c._meshes(_weapon_root):
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			if String(mi.name).ends_with("_LOD0"):
+				_style(mi, false)
 	if _weapon_root == null:
 		c.queue_free()
 		return false
+	_open_optic(_weapon_root)
 	for mi in c.lod_meshes:
 		if not is_instance_valid(mi):
 			continue
@@ -172,6 +282,9 @@ func _build_arms() -> bool:
 	arms = c
 	arms.alert = true
 	muzzle = c.muzzle() if c.muzzle() else _weapon_root
+	if held_piece and _weapon_root:
+		var tip := _weapon_root.find_child("ATT_Muzzle", true, false) as Node3D
+		muzzle = tip if tip else _weapon_root
 	return true
 
 
@@ -188,11 +301,20 @@ func _place_arms(delta: float) -> void:
 	arms.reloading = reloading
 	var inv := arms.global_transform.affine_inverse()
 	var w := inv * _weapon_root.global_transform
-	var sight := Transform3D(w.basis.orthonormalized(), w.origin + w.basis.orthonormalized().y * SIGHT_Y)
-	var ads := Transform3D(Basis.IDENTITY, Vector3(0, 0, -EYE_RELIEF)) * sight.affine_inverse()
+	var wb := w.basis.orthonormalized()
+	var sight := Transform3D(wb, w.origin + wb * Vector3(_eye.x, _eye.y, 0.0))
+	var ads := Transform3D(Basis.IDENTITY, Vector3(0, 0, -_eye.z)) * sight.affine_inverse()
 	var turn := Basis.from_euler(Vector3(deg_to_rad(HIP_TURN.x), deg_to_rad(HIP_TURN.y), deg_to_rad(HIP_TURN.z)))
-	var hip := Transform3D(turn, HIP_OFFSET + Vector3(0, 0, -EYE_RELIEF)) * sight.affine_inverse()
-	arms.transform = hip.interpolate_with(ads, smoothstep(0.0, 1.0, _ads))
+	var hip := Transform3D(turn, HIP_OFFSET + Vector3(0, 0, -_eye.z)) * sight.affine_inverse()
+	var xf := hip.interpolate_with(ads, smoothstep(0.0, 1.0, _ads))
+	# ASSET-INTEGRATION-01: placed from the moving weapon, a reload would swing the body up to the camera (sleeves fill the
+	# view); while it runs the arms keep the hold they had, so the weapon visibly comes down and back.
+	_reload_k = move_toward(_reload_k, 1.0 if reloading else 0.0, delta * 6.0)
+	if _reload_k <= 0.0:
+		_steady = xf
+	# halfway between: the body stays below the view and the weapon stays in it
+	arms.transform = xf.interpolate_with(_steady, 0.55 * smoothstep(0.0, 1.0, _reload_k))
+	_scope_view(_ads > 0.85 and not reloading)
 	# The glass is looked through only when aiming; at the hip it is dark, reflecting glass (else the muzzle flash in front
 	# of the barrel shows through the side of the optic as if it burnt inside it).
 	_lens().albedo_color = Color(0.55, 0.75, 0.9, 0.08).lerp(Color(0.05, 0.07, 0.09, 0.92), 1.0 - smoothstep(0.6, 1.0, _ads))
@@ -208,3 +330,25 @@ func _process(delta: float) -> void:
 	var target := ADS if aiming else HIP
 	position = position.lerp(target, clampf(delta * 14.0, 0.0, 1.0)) + Vector3(0, 0.004, 0.035) * _kick
 	rotation.x = deg_to_rad(2.5) * _kick
+
+
+## ASSET-INTEGRATION-01: the sight picture of a magnified scope at full aim: a dark ring round the field of view and thin
+## cross hairs with a heavier lower post (a plain duplex reticle; the weapon's own reticle is not modelled).
+class ScopeReticle extends Control:
+	func _ready() -> void:
+		set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var c := size * 0.5
+		var r := minf(size.x, size.y) * 0.46
+		var black := Color(0.0, 0.0, 0.0, 1.0)
+		# the ring: everything outside the circle dark
+		draw_arc(c, r + size.x, 0.0, TAU, 96, black, size.x * 2.0)
+		draw_arc(c, r, 0.0, TAU, 96, Color(0, 0, 0, 0.85), 6.0)
+		var ink := Color(0.02, 0.02, 0.02, 0.95)
+		draw_line(c + Vector2(-r, 0), c + Vector2(r, 0), ink, 1.5)
+		draw_line(c + Vector2(0, -r), c + Vector2(0, r * 0.12), ink, 1.5)
+		draw_line(c + Vector2(0, r * 0.12), c + Vector2(0, r), ink, 5.0)
+		draw_line(c + Vector2(-r, 0), c + Vector2(-r * 0.55, 0), ink, 5.0)
+		draw_line(c + Vector2(r * 0.55, 0), c + Vector2(r, 0), ink, 5.0)

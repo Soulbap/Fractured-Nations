@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_def.gd" id="1_wdef"]
+
+[resource]
+script = ExtResource("1_wdef")
+id = &"mp443"
+display_name = "MP-443 Grach 9 mm"
+rounds_per_minute = 400.0
+allow_auto = false
+default_mode = 0
+magazine_size = 18
+reserve_start = 54
+reload_time = 1.7
+damage = 24.0
+head_multiplier = 2.5
+body_multiplier = 1.0
+falloff_start = 25.0
+falloff_end = 60.0
+min_damage_fraction = 0.5
+max_range = 120.0
+effective_range = 50.0
+spread_base_deg = 0.27
+spread_moving_deg = 0.9
+spread_bloom_deg = 0.26
+spread_bloom_max_deg = 2.0
+spread_recovery_deg_s = 4.5
+role = &"rifle"
+moving_aim_mult = 0.7
+aim_time_s = 0.3
+ai_engage_m = 60.0
+recoil_pitch_deg = 1.2
+recoil_yaw_deg = 0.5
+aim_mult = 1.15
+recoil_recover = 0.72
+recoil_recover_s = 0.11
+recoil_yaw_bias = 0.3
+viewmodel_kick = 0.7
+ads_fov = 55.0

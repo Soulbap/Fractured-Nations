@@ -11,3 +11,6 @@ mode = 1
 attach = "ATT_Weapon"
 slot = "weapon"
 hides_body = PackedStringArray()
+aim_eye = Vector3(0.0, 0.076, 0.45)
+support_grip = Vector3(-0.03, -0.035, 0.02)
+hold_shift = Vector3(0.0, 0.0, 0.0)

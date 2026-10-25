@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="InfantryRole" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/infantry_role.gd" id="1_role"]
+
+[resource]
+script = ExtResource("1_role")
+id = &"dev_axmc"
+display_name = "AI AXMC .338 (development armoury)"
+short = "AX"
+weapon_id = &"axmc"
+loadout_suffix = "w_axmc"
+grenades = 2
+secondary_id = &""
+secondary_rounds = 0

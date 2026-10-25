@@ -84,6 +84,9 @@ var _aim_amount := 0.0
 var _turn_amount := 0.0
 var _aim_mod: InfantryAimModifier
 var _flinch_mod: InfantryAimModifier
+## ASSET-INTEGRATION-01: the hands on a weapon held differently from the shared rifle (pistol, launcher, MG).
+var _grip: InfantryGripIK
+var _support_amount := 1.0
 var _flinch := Vector2.ZERO
 var _was_reloading := false
 
@@ -178,6 +181,9 @@ func _clear() -> void:
 	mounts.clear()
 	attachments.clear()
 	lod_meshes.clear()
+	# ASSET-INTEGRATION-01: a rebuilt character holds nothing until the owner shows the secondary again
+	_held_secondary = null
+	_held_scene = null
 
 
 func _add_piece(it: InfantryEquipment) -> void:
@@ -305,6 +311,19 @@ func _setup_animation() -> void:
 	_flinch_mod.name = "FlinchModifier"
 	_flinch_mod.influence = 1.0
 	skeleton.add_child(_flinch_mod)
+	# ASSET-INTEGRATION-01: last, so it holds the weapon where the aimed and flinched pose put it.
+	_grip = InfantryGripIK.new()
+	_grip.name = "GripIK"
+	_grip.att_corr = _att_correction()
+	_measure_eye()
+	var hb := skeleton.find_bone("Head")
+	if hb >= 0 and _eye_head.is_finite():
+		var rest := skeleton.get_bone_global_rest(hb)
+		_grip.eye_local = _eye_head
+		# the character faces -Z in skeleton space: the head's look direction at rest
+		_grip.head_fwd_local = rest.basis.inverse() * Vector3.FORWARD
+	skeleton.add_child(_grip)
+	_configure_grip(loadout.item_in_slot("weapon"), _weapon_root_node())
 	if is_inside_tree():
 		_apply_params(0.0, true)
 		anim_tree.advance(0.0)
@@ -560,11 +579,16 @@ func _process(delta: float) -> void:
 ## launcher carried on the back are hidden, `scene` is held at the weapon bone; false restores the loadout's look. Only the
 ## full-detail meshes change (the merged distance LODs keep the carried look).
 var _held_secondary: Node3D
+var _held_scene: PackedScene
 
 
-func show_secondary(on: bool, scene: PackedScene) -> void:
-	if on == (_held_secondary != null) or skeleton == null:
+func show_secondary(on: bool, scene: PackedScene, piece: InfantryEquipment = null) -> void:
+	if skeleton == null or (on == (_held_secondary != null) and (not on or scene == _held_scene)):
 		return
+	if on and _held_secondary:
+		# another secondary weapon than the one held (re-equipped): swap it
+		_held_secondary.queue_free()
+		_held_secondary = null
 	for it in loadout.items:
 		if it.slot == "weapon" or it.slot == "back_weapon" or it.attach.begins_with("weapon:"):
 			for n: Node3D in pieces.get(it.id, []):
@@ -574,6 +598,7 @@ func show_secondary(on: bool, scene: PackedScene) -> void:
 		var parent := _attach_point("ATT_Weapon")
 		if parent:
 			_held_secondary = scene.instantiate()
+			_held_scene = scene
 			_held_secondary.name = "HeldSecondary"
 			parent.add_child(_held_secondary)
 			_held_secondary.transform = Transform3D(_att_correction(), Vector3.ZERO)
@@ -585,13 +610,78 @@ func show_secondary(on: bool, scene: PackedScene) -> void:
 					var mat := mi.mesh.surface_get_material(s)
 					if mat:
 						mi.set_surface_override_material(s, InfantryMaterials.get_material(mat.resource_name, faction))
+			# ASSET-INTEGRATION-01: a held piece with its own hold (a launcher on the shoulder) gets the hands put on it.
+			if piece:
+				_configure_grip(piece, _held_secondary)
 	elif not on and _held_secondary:
 		_held_secondary.queue_free()
 		_held_secondary = null
+		_configure_grip(loadout.item_in_slot("weapon"), _weapon_root_node())
 
 
 func secondary_shown() -> bool:
 	return _held_secondary != null
+
+
+func secondary_scene() -> PackedScene:
+	return _held_scene if _held_secondary else null
+
+
+## ASSET-INTEGRATION-01: the right eye in the Head bone's rest space, measured once on the rig's head mesh (the centre of
+## the `Eye` surface's vertices on the right, +X, side; char_anim welds the same eye to the sight line in Blender).
+static var _eye_head := Vector3.INF
+static var _eye_measured := false
+
+
+func _measure_eye() -> void:
+	if _eye_measured:
+		return
+	_eye_measured = true
+	# on a fresh rig: a loadout may have freed this character's head mesh (hides_body)
+	var r: Node3D = rig_scene().instantiate()
+	var head := _find(r, func(n: Node) -> bool: return n is MeshInstance3D and String(n.name) == "Char_Head_LOD0") as MeshInstance3D
+	var hb := skeleton.find_bone("Head")
+	if head == null or hb < 0:
+		r.free()
+		return
+	var sum := Vector3.ZERO
+	var n := 0
+	for si in head.mesh.get_surface_count():
+		var mat := head.mesh.surface_get_material(si)
+		if mat == null or mat.resource_name != "Eye":
+			continue
+		for v: Vector3 in head.mesh.surface_get_arrays(si)[Mesh.ARRAY_VERTEX]:
+			if v.x > 0.0:
+				sum += v
+				n += 1
+	if n > 0:
+		_eye_head = skeleton.get_bone_global_rest(hb).affine_inverse() * (sum / n)
+	r.free()
+
+
+## The held weapon's root node (the loadout's weapon piece; null without one).
+func _weapon_root_node() -> Node3D:
+	var it := loadout.item_in_slot("weapon") if loadout else null
+	var nodes: Array = pieces.get(it.id, []) if it else []
+	return nodes[0] if not nodes.is_empty() else null
+
+
+## ASSET-INTEGRATION-01: the grip modifier for the weapon in the hands (piece = its equipment data, root = its node; the
+## support marker is read from the node, in weapon space).
+func _configure_grip(piece: InfantryEquipment, root: Node3D) -> void:
+	if _grip == null:
+		return
+	var marker := root.find_child("GRIP_Support", true, false) as Node3D if root else null
+	_grip.configure(piece, _local_in(root, marker) if marker else Vector3.INF)
+
+
+static func _local_in(root: Node3D, n: Node3D) -> Vector3:
+	var xf := n.transform
+	var p := n.get_parent()
+	while p != root and p is Node3D:
+		xf = (p as Node3D).transform * xf
+		p = p.get_parent()
+	return xf.origin
 
 
 ## Muzzle mount of the held weapon (null when the loadout has no weapon with one).
@@ -652,6 +742,10 @@ func _apply_params(delta: float, snap: bool) -> void:
 	_was_reloading = reloading
 	if _has_prone:
 		_apply_prone(delta, snap, speed)
+	if _grip:
+		_support_amount = move_toward(_support_amount, 0.0 if reloading else 1.0, step * 5.0)
+		_grip.aim_w = _aim_amount
+		_grip.support_w = _support_amount
 	if _flinch_mod:
 		_flinch = _flinch.move_toward(Vector2.ZERO, delta * 1.6)
 		_flinch_mod.yaw = _flinch.x

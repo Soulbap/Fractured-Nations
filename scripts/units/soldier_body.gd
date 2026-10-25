@@ -159,9 +159,11 @@ func _process(_delta: float) -> void:
 	# GAMEPLAY-03D: the launcher in the hands while the record says so (AI raising / just fired, or switched to in first person).
 	if character and unit and sim and unit.sec_id != &"":
 		var on := unit.launcher_in_hands(sim.state.time)
-		if on != character.secondary_shown():
-			var def := sim.combat.weapon(unit.sec_id)
-			character.show_secondary(on, def.viewmodel_scene if def else null)
+		var def := sim.combat.weapon(unit.sec_id)
+		var scene := def.held_scene() if def else null
+		# ASSET-INTEGRATION-01: also when another secondary weapon was issued while one is held
+		if on != character.secondary_shown() or (on and scene != character.secondary_scene()):
+			character.show_secondary(on, scene, def.held_piece if def else null)
 	if ring.visible:
 		UnitVisuals.scale_ring_for_camera(ring, selected, true)
 
@@ -701,8 +703,9 @@ func _set_viewmodel(on: bool) -> void:
 		viewmodel = Viewmodel.new()
 		viewmodel.loadout = InfantryLoadout.by_id(unit.loadout if unit.loadout != "" else InfantryLoadout.default_for(unit.id, unit.faction))
 		var sec := sim.combat.weapon(unit.sec_id) if unit.sec_active else null
-		if sec and sec.viewmodel_scene:
-			viewmodel.held_scene = sec.viewmodel_scene
+		if sec and sec.held_scene():
+			viewmodel.held_scene = sec.held_scene()
+			viewmodel.held_piece = sec.held_piece
 		viewmodel.faction = unit.faction
 		camera.add_child(viewmodel)
 		camera.near = 0.03

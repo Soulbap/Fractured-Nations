@@ -6,6 +6,9 @@ class_name InfantryRole
 extends Resource
 
 const DIR := "res://assets/combat/roles/"
+## ASSET-INTEGRATION-01: development-only roles (one per named weapon, given by the Development Scenario's armoury). A
+## subfolder, so the equipment screen's role list (SquadEquipment.options reads DIR only) never offers them.
+const DEV_DIR := "res://assets/combat/roles/dev/"
 
 @export var id: StringName = &"rifleman"
 @export var display_name := "Rifleman"
@@ -26,6 +29,8 @@ static var _cache := {}
 static func by_id(role_id: StringName) -> InfantryRole:
 	if not _cache.has(role_id):
 		var path := DIR + String(role_id) + ".tres"
+		if not ResourceLoader.exists(path):
+			path = DEV_DIR + String(role_id) + ".tres"
 		_cache[role_id] = load(path) if ResourceLoader.exists(path) else null
 	return _cache[role_id]
 

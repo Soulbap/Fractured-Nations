@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="WeaponDef" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_def.gd" id="1_wdef"]
+[ext_resource type="PackedScene" path="res://assets/weapons/russian/rpg26/weapon_rpg26.glb" id="2_vm"]
+[ext_resource type="Resource" path="res://assets/weapons/russian/rpg26/weapon_rpg26.tres" id="3_piece"]
+
+[resource]
+script = ExtResource("1_wdef")
+id = &"rpg26"
+display_name = "RPG-26 Aglen 72.5 mm"
+delivery = 1
+rounds_per_minute = 6.0
+allow_auto = false
+default_mode = 0
+magazine_size = 1
+reserve_start = 0
+reload_time = 6.0
+damage = 0.0
+max_range = 250.0
+effective_range = 180.0
+spread_base_deg = 0.22
+spread_moving_deg = 3.0
+role = &"launcher"
+blast_radius = 4.5
+blast_damage = 140.0
+blast_structure = 520.0
+blast_suppression = 0.8
+projectile_speed = 145.0
+recoil_pitch_deg = 3.0
+recoil_yaw_deg = 0.6
+viewmodel_scene = ExtResource("2_vm")
+recoil_recover = 0.4
+recoil_recover_s = 0.3
+recoil_yaw_bias = 0.0
+viewmodel_kick = 2.0
+held_piece = ExtResource("3_piece")

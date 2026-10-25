@@ -114,6 +114,9 @@ enum Delivery { HITSCAN, PROJECTILE }
 ## GAMEPLAY-02C: what first person holds for a weapon that is not a loadout piece in the hand (the launcher carried on the
 ## back is held in weapon space); null = the loadout's weapon pieces.
 @export var viewmodel_scene: PackedScene
+## ASSET-INTEGRATION-01: the secondary weapon as an equipment piece (scene + hold: InfantryEquipment.aim_eye ...); when set it
+## is what the hands hold, in third person and first person (the arms hold it), instead of viewmodel_scene.
+@export var held_piece: InfantryEquipment
 ## Camera kick per shot in first person (degrees up, random sideways).
 @export var recoil_pitch_deg := 0.55
 @export var recoil_yaw_deg := 0.25
@@ -127,6 +130,11 @@ enum Delivery { HITSCAN, PROJECTILE }
 @export var viewmodel_kick := 1.0
 ## COMBAT-01: first-person field of view aiming down the sight (deg): the red dot 42, a magnified marksman optic far less.
 @export var ads_fov := 42.0
+
+
+## The scene held in the hands for this (secondary) weapon: the held piece's, else viewmodel_scene.
+func held_scene() -> PackedScene:
+	return held_piece.scene if held_piece and held_piece.scene else viewmodel_scene
 
 
 func fire_interval() -> float:

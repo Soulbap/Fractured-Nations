@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="InfantryRole" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/infantry_role.gd" id="1_role"]
+
+[resource]
+script = ExtResource("1_role")
+id = &"dev_m72_law"
+display_name = "M72 EC Mk1 66 mm (development armoury)"
+short = "M72"
+weapon_id = &"hk416"
+loadout_suffix = "w_hk416"
+grenades = 2
+secondary_id = &"m72_law"
+secondary_rounds = 1

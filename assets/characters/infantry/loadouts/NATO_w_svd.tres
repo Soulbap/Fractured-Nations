@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="InfantryLoadout" load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://scripts/characters/infantry_loadout.gd" id="1_lo"]
+[ext_resource type="Script" path="res://scripts/characters/infantry_equipment.gd" id="2_eq"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/factions/nato/equipment/nato_jacket.tres" id="3_nato_jacket"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/factions/nato/equipment/nato_trousers.tres" id="4_nato_trousers"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/uniform_boots.tres" id="5_uniform_boots"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/uniform_gloves.tres" id="6_uniform_gloves"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/factions/nato/equipment/nato_helmet.tres" id="7_nato_helmet"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/eyepro.tres" id="8_eyepro"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/factions/nato/equipment/nato_vest.tres" id="9_nato_vest"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/belt_standard.tres" id="10_belt_standard"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/pack_assault.tres" id="11_pack_assault"]
+[ext_resource type="Resource" path="res://assets/weapons/russian/svd/weapon_svd.tres" id="12_weapon_svd"]
+
+[resource]
+script = ExtResource("1_lo")
+id = "NATO_w_svd"
+display_name = "NATO rifleman with the SVD 7.62x54R (development armoury)"
+items = Array[ExtResource("2_eq")]([ExtResource("3_nato_jacket"), ExtResource("4_nato_trousers"), ExtResource("5_uniform_boots"), ExtResource("6_uniform_gloves"), ExtResource("7_nato_helmet"), ExtResource("8_eyepro"), ExtResource("9_nato_vest"), ExtResource("10_belt_standard"), ExtResource("11_pack_assault"), ExtResource("12_weapon_svd")])

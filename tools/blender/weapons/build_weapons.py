@@ -133,6 +133,13 @@ def write_equipment(w, out_dir, faction_dir):
            '[ext_resource type="PackedScene" path="%s" id="2_scene"]\n\n'
            '[resource]\nscript = ExtResource("1_eq")\nid = "%s"\nscene = ExtResource("2_scene")\nmode = 1\n'
            'attach = "ATT_Weapon"\nslot = "weapon"\nhides_body = PackedStringArray()\n') % (res, w.wid)
+    # ASSET-INTEGRATION-01: the hold (aiming eye, support hand) from the gameplay data's table, so a new export keeps it.
+    holds_path = os.path.join(os.path.dirname(__file__), "..", "..", "asset_integration", "weapon_holds.json")
+    if os.path.exists(holds_path):
+        with open(holds_path, encoding="utf-8") as hf:
+            hold = json.load(hf).get(w.wid)
+        for k in ("aim_eye", "support_grip", "hold_shift") if hold else ():
+            txt += "%s = Vector3(%s)\n" % (k, ", ".join(repr(float(x)) for x in hold[k]))
     with open(os.path.join(out_dir, w.wid + ".tres"), "w", encoding="utf-8") as f:
         f.write(txt)
 

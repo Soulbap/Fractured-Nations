@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="InfantryRole" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/infantry_role.gd" id="1_role"]
+
+[resource]
+script = ExtResource("1_role")
+id = &"dev_pkp_pecheneg"
+display_name = "PKP Pecheneg 7.62x54R (development armoury)"
+short = "PKP"
+weapon_id = &"pkp_pecheneg"
+loadout_suffix = "w_pkp_pecheneg"
+grenades = 2
+secondary_id = &""
+secondary_rounds = 0

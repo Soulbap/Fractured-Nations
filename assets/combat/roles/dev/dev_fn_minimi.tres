@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="InfantryRole" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/infantry_role.gd" id="1_role"]
+
+[resource]
+script = ExtResource("1_role")
+id = &"dev_fn_minimi"
+display_name = "FN Minimi 7.62 Mk3 (development armoury)"
+short = "MIN"
+weapon_id = &"fn_minimi"
+loadout_suffix = "w_fn_minimi"
+grenades = 2
+secondary_id = &""
+secondary_rounds = 0
