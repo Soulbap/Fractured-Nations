@@ -291,10 +291,8 @@ class Asset:
         objs = []
         for i in ALL:
             bm = self.bms[i]
-            if not bm.faces:
-                objs.append(None)
-                continue
-            self._orient_closed_islands(bm)
+            if bm.faces:
+                self._orient_closed_islands(bm)
         for i in ALL:
             bm = self.bms[i]
             if not bm.faces:

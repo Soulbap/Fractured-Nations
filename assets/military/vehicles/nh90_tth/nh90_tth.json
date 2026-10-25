@@ -1,0 +1,601 @@
+{
+ "id": "nh90_tth",
+ "family": "vehicle",
+ "display_name": "NH90 TTH",
+ "category": "Military helicopter",
+ "description": "NHIndustries NH90 TTH tactical transport helicopter (NATO reference configuration).",
+ "bounds_min": [
+  -6.1,
+  -8.901,
+  -0.15
+ ],
+ "bounds_max": [
+  6.1,
+  8.15,
+  4.85
+ ],
+ "size_above_ground": [
+  12.201,
+  17.051,
+  4.85
+ ],
+ "footprint_xy": [
+  -6.1,
+  -8.901,
+  6.1,
+  8.15
+ ],
+ "tris": [
+  14282,
+  4912,
+  3500
+ ],
+ "surfaces": [
+  23,
+  17,
+  8
+ ],
+ "draw_objects": [
+  12,
+  12,
+  7
+ ],
+ "materials": [
+  "Canvas_Green",
+  "Glass_Vehicle",
+  "Kit_Palette",
+  "Paint_Green"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   60
+  ],
+  [
+   60,
+   260
+  ],
+  [
+   260,
+   3000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.25,
+   0.48,
+   -7.27,
+   2.5,
+   2.5,
+   8.27
+  ],
+  [
+   -0.9,
+   0.8,
+   -8.07,
+   1.8,
+   1.2,
+   0.8
+  ],
+  [
+   -0.5,
+   2.0,
+   1.0,
+   1.0,
+   1.3,
+   7.06
+  ],
+  [
+   -0.15,
+   3.0,
+   6.4,
+   0.3,
+   2.1,
+   1.5
+  ],
+  [
+   -1.9,
+   0.0,
+   -3.0,
+   3.8,
+   1.35,
+   3.6
+  ]
+ ],
+ "markers": [
+  {
+   "name": "DOOR_L",
+   "pos": [
+    -2.2,
+    2.7,
+    0.0
+   ],
+   "yaw": 90,
+   "note": "sliding cabin door"
+  },
+  {
+   "name": "DOOR_R",
+   "pos": [
+    2.2,
+    2.7,
+    0.0
+   ],
+   "yaw": -90,
+   "note": "sliding cabin door"
+  },
+  {
+   "name": "DOOR_RAMP",
+   "pos": [
+    0.0,
+    -3.4,
+    0.0
+   ],
+   "yaw": 0.0,
+   "note": "rear ramp"
+  },
+  {
+   "name": "SEAT_PILOT",
+   "pos": [
+    0.55,
+    5.97,
+    1.15
+   ],
+   "yaw": 0.0,
+   "note": ""
+  },
+  {
+   "name": "SEAT_COPILOT",
+   "pos": [
+    -0.55,
+    5.97,
+    1.15
+   ],
+   "yaw": 0.0,
+   "note": ""
+  },
+  {
+   "name": "SEAT_1",
+   "pos": [
+    -0.95,
+    2.8,
+    1.1
+   ],
+   "yaw": 90,
+   "note": "troop seat"
+  },
+  {
+   "name": "SEAT_2",
+   "pos": [
+    0.95,
+    2.8,
+    1.1
+   ],
+   "yaw": -90,
+   "note": "troop seat"
+  },
+  {
+   "name": "SEAT_3",
+   "pos": [
+    -0.95,
+    2.1,
+    1.1
+   ],
+   "yaw": 90,
+   "note": "troop seat"
+  },
+  {
+   "name": "SEAT_4",
+   "pos": [
+    0.95,
+    2.1,
+    1.1
+   ],
+   "yaw": -90,
+   "note": "troop seat"
+  },
+  {
+   "name": "SEAT_5",
+   "pos": [
+    -0.95,
+    1.4,
+    1.1
+   ],
+   "yaw": 90,
+   "note": "troop seat"
+  },
+  {
+   "name": "SEAT_6",
+   "pos": [
+    0.95,
+    1.4,
+    1.1
+   ],
+   "yaw": -90,
+   "note": "troop seat"
+  },
+  {
+   "name": "SEAT_7",
+   "pos": [
+    -0.95,
+    0.7,
+    1.1
+   ],
+   "yaw": 90,
+   "note": "troop seat"
+  },
+  {
+   "name": "SEAT_8",
+   "pos": [
+    0.95,
+    0.7,
+    1.1
+   ],
+   "yaw": -90,
+   "note": "troop seat"
+  },
+  {
+   "name": "SEAT_9",
+   "pos": [
+    -0.95,
+    0.0,
+    1.1
+   ],
+   "yaw": 90,
+   "note": "troop seat"
+  },
+  {
+   "name": "SEAT_10",
+   "pos": [
+    0.95,
+    0.0,
+    1.1
+   ],
+   "yaw": -90,
+   "note": "troop seat"
+  },
+  {
+   "name": "ROTOR_MAIN",
+   "pos": [
+    0.0,
+    2.05,
+    4.12
+   ],
+   "yaw": 0.0,
+   "note": "main rotor hub (spin about Z)"
+  },
+  {
+   "name": "ROTOR_TAIL",
+   "pos": [
+    -0.42,
+    -7.72,
+    3.63
+   ],
+   "yaw": 0.0,
+   "note": "tail rotor hub (spin about X)"
+  }
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "fuselage",
+   "instance_of": "",
+   "tris": [
+    11858,
+    3744,
+    2680
+   ]
+  },
+  {
+   "name": "Door_Pilot",
+   "parent": "Body",
+   "pivot_godot": [
+    1.2473,
+    1.4038,
+    -6.09
+   ],
+   "axis": "z",
+   "note": "cockpit door, hinge at the front",
+   "instance_of": "",
+   "tris": [
+    304,
+    44,
+    0
+   ]
+  },
+  {
+   "name": "Door_CoPilot",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.2473,
+    1.4038,
+    -6.09
+   ],
+   "axis": "z",
+   "note": "cockpit door, hinge at the front",
+   "instance_of": "",
+   "tris": [
+    304,
+    44,
+    0
+   ]
+  },
+  {
+   "name": "Door_Slide_L",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.25,
+    1.74,
+    -3.62
+   ],
+   "axis": "slide -y",
+   "note": "sliding cabin door (slides aft along the fuselage)",
+   "instance_of": "",
+   "tris": [
+    304,
+    92,
+    0
+   ]
+  },
+  {
+   "name": "Door_Slide_R",
+   "parent": "Body",
+   "pivot_godot": [
+    1.25,
+    1.74,
+    -3.62
+   ],
+   "axis": "slide -y",
+   "note": "sliding cabin door (slides aft along the fuselage)",
+   "instance_of": "",
+   "tris": [
+    304,
+    92,
+    0
+   ]
+  },
+  {
+   "name": "Ramp",
+   "parent": "Body",
+   "pivot_godot": [
+    0.0,
+    0.62,
+    0.45
+   ],
+   "axis": "x",
+   "note": "rear ramp, hinge at the lower front edge",
+   "instance_of": "",
+   "tris": [
+    12,
+    12,
+    0
+   ]
+  },
+  {
+   "name": "MainRotor",
+   "parent": "Body",
+   "pivot_godot": [
+    0.0,
+    4.12,
+    -2.05
+   ],
+   "axis": "z",
+   "note": "main rotor (spins about Z, counter-clockwise seen from above)",
+   "instance_of": "",
+   "tris": [
+    420,
+    132,
+    68
+   ]
+  },
+  {
+   "name": "Blade_1",
+   "parent": "MainRotor",
+   "pivot_godot": [
+    0.0,
+    4.12,
+    -2.05
+   ],
+   "axis": "pitch along span",
+   "note": "main rotor blade",
+   "instance_of": "",
+   "tris": [
+    116,
+    116,
+    116
+   ]
+  },
+  {
+   "name": "Blade_2",
+   "parent": "MainRotor",
+   "pivot_godot": [
+    0.0,
+    4.12,
+    -2.05
+   ],
+   "axis": "pitch along span",
+   "note": "main rotor blade",
+   "instance_of": "",
+   "tris": [
+    116,
+    116,
+    116
+   ]
+  },
+  {
+   "name": "Blade_3",
+   "parent": "MainRotor",
+   "pivot_godot": [
+    0.0,
+    4.12,
+    -2.05
+   ],
+   "axis": "pitch along span",
+   "note": "main rotor blade",
+   "instance_of": "",
+   "tris": [
+    116,
+    116,
+    116
+   ]
+  },
+  {
+   "name": "Blade_4",
+   "parent": "MainRotor",
+   "pivot_godot": [
+    0.0,
+    4.12,
+    -2.05
+   ],
+   "axis": "pitch along span",
+   "note": "main rotor blade",
+   "instance_of": "",
+   "tris": [
+    116,
+    116,
+    116
+   ]
+  },
+  {
+   "name": "TailRotor",
+   "parent": "Body",
+   "pivot_godot": [
+    -0.42,
+    3.63,
+    7.72
+   ],
+   "axis": "x",
+   "note": "tail rotor (spins about X)",
+   "instance_of": "",
+   "tris": [
+    312,
+    288,
+    288
+   ]
+  }
+ ],
+ "reference": "NH90 TTH (NHIndustries), NATO transport configuration",
+ "dimensions_m": {
+  "fuselage": 16.13,
+  "main_rotor_d": 16.3,
+  "tail_rotor_d": 3.2,
+  "mast_y": 2.05,
+  "hub_z": 4.12
+ },
+ "paint": "Paint_Green",
+ "glb_bytes": 1130016,
+ "qa": {
+  "pass": false,
+  "parts": {
+   "Body": {
+    "pass": false,
+    "errors": [
+     "Body_LOD0: 70 edges with inconsistent face winding",
+     "z-fighting: Body_LOD0 (89 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Body_LOD0: non-manifold edges=38 wire=2",
+     "Body_LOD0: duplicate verts=136 loose verts=0",
+     "Body_LOD0: 451 n-gons"
+    ]
+   },
+   "Door_Pilot": {
+    "pass": false,
+    "errors": [
+     "z-fighting: Door_Pilot_LOD0 (18 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Door_Pilot_LOD0: duplicate verts=8 loose verts=0",
+     "Door_Pilot_LOD0: 14 n-gons"
+    ]
+   },
+   "Door_CoPilot": {
+    "pass": false,
+    "errors": [
+     "z-fighting: Door_CoPilot_LOD0 (19 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Door_CoPilot_LOD0: duplicate verts=8 loose verts=0",
+     "Door_CoPilot_LOD0: 14 n-gons"
+    ]
+   },
+   "Door_Slide_L": {
+    "pass": false,
+    "errors": [
+     "Door_Slide_L_LOD0: degenerate faces=1 zero-len edges=0",
+     "z-fighting: Door_Slide_L_LOD0 (17 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Door_Slide_L_LOD0: duplicate verts=16 loose verts=0",
+     "Door_Slide_L_LOD0: 14 n-gons"
+    ]
+   },
+   "Door_Slide_R": {
+    "pass": false,
+    "errors": [
+     "Door_Slide_R_LOD0: degenerate faces=1 zero-len edges=0",
+     "z-fighting: Door_Slide_R_LOD0 (17 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Door_Slide_R_LOD0: duplicate verts=16 loose verts=0",
+     "Door_Slide_R_LOD0: 14 n-gons"
+    ]
+   },
+   "Ramp": {
+    "pass": true,
+    "errors": [],
+    "warnings": []
+   },
+   "MainRotor": {
+    "pass": false,
+    "errors": [
+     "z-fighting: MainRotor_LOD0 (14 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "MainRotor_LOD0: 22 n-gons"
+    ]
+   },
+   "Blade_1": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "Blade_1_LOD0: 2 n-gons"
+    ]
+   },
+   "Blade_2": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "Blade_2_LOD0: 2 n-gons"
+    ]
+   },
+   "Blade_3": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "Blade_3_LOD0: 2 n-gons"
+    ]
+   },
+   "Blade_4": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "Blade_4_LOD0: 2 n-gons"
+    ]
+   },
+   "TailRotor": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "TailRotor_LOD0: 8 n-gons"
+    ]
+   }
+  }
+ }
+}

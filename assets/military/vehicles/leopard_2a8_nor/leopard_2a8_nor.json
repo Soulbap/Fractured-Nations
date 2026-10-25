@@ -1,0 +1,883 @@
+{
+ "id": "leopard_2a8_nor",
+ "family": "vehicle",
+ "display_name": "Leopard 2A8 NOR",
+ "category": "Main battle tank",
+ "description": "Leopard 2A8 NOR main battle tank (Norway): 120 mm L55A1, EuroTrophy APS, lightweight Norwegian skirts.",
+ "bounds_min": [
+  -2.21,
+  -4.195,
+  -0.023
+ ],
+ "bounds_max": [
+  2.21,
+  7.145,
+  4.94
+ ],
+ "size_above_ground": [
+  4.42,
+  11.34,
+  4.94
+ ],
+ "footprint_xy": [
+  -2.21,
+  -4.195,
+  2.21,
+  7.145
+ ],
+ "tris": [
+  67514,
+  15908,
+  1730
+ ],
+ "surfaces": [
+  63,
+  58,
+  8
+ ],
+ "draw_objects": [
+  36,
+  36,
+  6
+ ],
+ "materials": [
+  "Camo_NATO3",
+  "Canvas_Green",
+  "Kit_Palette",
+  "Paint_Green",
+  "Paint_OD"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   45
+  ],
+  [
+   45,
+   180
+  ],
+  [
+   180,
+   2000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.9,
+   0.45,
+   -4.025,
+   3.8,
+   1.31,
+   8.05
+  ],
+  [
+   -1.8,
+   1.76,
+   -2.0,
+   3.6,
+   0.96,
+   4.3
+  ],
+  [
+   -0.45,
+   2.0,
+   -3.0,
+   0.9,
+   0.6,
+   1.0
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SEAT_DRIVER",
+   "pos": [
+    -0.62,
+    2.55,
+    1.2
+   ],
+   "yaw": 0.0,
+   "note": ""
+  },
+  {
+   "name": "SEAT_COMMANDER",
+   "pos": [
+    0.62,
+    -0.88,
+    2.1
+   ],
+   "yaw": 0.0,
+   "note": ""
+  },
+  {
+   "name": "SEAT_GUNNER",
+   "pos": [
+    0.7,
+    0.4,
+    1.9
+   ],
+   "yaw": 0.0,
+   "note": ""
+  },
+  {
+   "name": "SEAT_LOADER",
+   "pos": [
+    -0.62,
+    -0.88,
+    1.9
+   ],
+   "yaw": 0.0,
+   "note": ""
+  },
+  {
+   "name": "WEAPON_MUZZLE",
+   "pos": [
+    0.0,
+    7.145,
+    2.3
+   ],
+   "yaw": 0.0,
+   "note": "120 mm muzzle at 0 deg elevation"
+  }
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "hull",
+   "instance_of": "",
+   "tris": [
+    3684,
+    752,
+    296
+   ]
+  },
+  {
+   "name": "Hatch_Driver",
+   "parent": "Body",
+   "pivot_godot": [
+    -0.62,
+    1.84,
+    -2.55
+   ],
+   "axis": "z",
+   "note": "driver hatch (lifts and swings)",
+   "instance_of": "",
+   "tris": [
+    44,
+    12,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_L1",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.53,
+    0.42,
+    -2.62
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelLeo",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_L2",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.53,
+    0.42,
+    -1.78
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelLeo",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_L3",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.53,
+    0.42,
+    -0.94
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelLeo",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_L4",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.53,
+    0.42,
+    -0.1
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelLeo",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_L5",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.53,
+    0.42,
+    0.74
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelLeo",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_L6",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.53,
+    0.42,
+    1.58
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelLeo",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_L7",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.53,
+    0.42,
+    2.42
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelLeo",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "Sprocket_L",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.53,
+    0.72,
+    3.38
+   ],
+   "axis": "x",
+   "note": "spin x (drive)",
+   "instance_of": "SprocketLeo",
+   "tris": [
+    784,
+    152,
+    0
+   ]
+  },
+  {
+   "name": "Idler_L",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.53,
+    0.66,
+    -3.48
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "IdlerLeo",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "Roller_L1",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.53,
+    1.1,
+    -2.18
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RollerLeo",
+   "tris": [
+    192,
+    96,
+    0
+   ]
+  },
+  {
+   "name": "Roller_L2",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.53,
+    1.1,
+    -0.85
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RollerLeo",
+   "tris": [
+    192,
+    96,
+    0
+   ]
+  },
+  {
+   "name": "Roller_L3",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.53,
+    1.1,
+    0.5
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RollerLeo",
+   "tris": [
+    192,
+    96,
+    0
+   ]
+  },
+  {
+   "name": "Roller_L4",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.53,
+    1.1,
+    1.85
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RollerLeo",
+   "tris": [
+    192,
+    96,
+    0
+   ]
+  },
+  {
+   "name": "Track_L",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.53,
+    0.42,
+    -0.0
+   ],
+   "axis": "",
+   "note": "track loop (links follow Belt; prepared for UV / link animation)",
+   "instance_of": "",
+   "tris": [
+    11484,
+    1044,
+    524
+   ]
+  },
+  {
+   "name": "RoadWheel_R1",
+   "parent": "Body",
+   "pivot_godot": [
+    1.53,
+    0.42,
+    -2.62
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelLeo",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_R2",
+   "parent": "Body",
+   "pivot_godot": [
+    1.53,
+    0.42,
+    -1.78
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelLeo",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_R3",
+   "parent": "Body",
+   "pivot_godot": [
+    1.53,
+    0.42,
+    -0.94
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelLeo",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_R4",
+   "parent": "Body",
+   "pivot_godot": [
+    1.53,
+    0.42,
+    -0.1
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelLeo",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_R5",
+   "parent": "Body",
+   "pivot_godot": [
+    1.53,
+    0.42,
+    0.74
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelLeo",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_R6",
+   "parent": "Body",
+   "pivot_godot": [
+    1.53,
+    0.42,
+    1.58
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelLeo",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_R7",
+   "parent": "Body",
+   "pivot_godot": [
+    1.53,
+    0.42,
+    2.42
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelLeo",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "Sprocket_R",
+   "parent": "Body",
+   "pivot_godot": [
+    1.53,
+    0.72,
+    3.38
+   ],
+   "axis": "x",
+   "note": "spin x (drive)",
+   "instance_of": "SprocketLeo",
+   "tris": [
+    784,
+    152,
+    0
+   ]
+  },
+  {
+   "name": "Idler_R",
+   "parent": "Body",
+   "pivot_godot": [
+    1.53,
+    0.66,
+    -3.48
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "IdlerLeo",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "Roller_R1",
+   "parent": "Body",
+   "pivot_godot": [
+    1.53,
+    1.1,
+    -2.18
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RollerLeo",
+   "tris": [
+    192,
+    96,
+    0
+   ]
+  },
+  {
+   "name": "Roller_R2",
+   "parent": "Body",
+   "pivot_godot": [
+    1.53,
+    1.1,
+    -0.85
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RollerLeo",
+   "tris": [
+    192,
+    96,
+    0
+   ]
+  },
+  {
+   "name": "Roller_R3",
+   "parent": "Body",
+   "pivot_godot": [
+    1.53,
+    1.1,
+    0.5
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RollerLeo",
+   "tris": [
+    192,
+    96,
+    0
+   ]
+  },
+  {
+   "name": "Roller_R4",
+   "parent": "Body",
+   "pivot_godot": [
+    1.53,
+    1.1,
+    1.85
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RollerLeo",
+   "tris": [
+    192,
+    96,
+    0
+   ]
+  },
+  {
+   "name": "Track_R",
+   "parent": "Body",
+   "pivot_godot": [
+    1.53,
+    0.42,
+    -0.0
+   ],
+   "axis": "",
+   "note": "track loop (links follow Belt; prepared for UV / link animation)",
+   "instance_of": "",
+   "tris": [
+    11484,
+    1044,
+    524
+   ]
+  },
+  {
+   "name": "Turret",
+   "parent": "Body",
+   "pivot_godot": [
+    0.0,
+    1.76,
+    -0.25
+   ],
+   "axis": "z",
+   "note": "turret yaw (ring centre)",
+   "instance_of": "",
+   "tris": [
+    2830,
+    992,
+    108
+   ]
+  },
+  {
+   "name": "Hatch_Commander",
+   "parent": "Turret",
+   "pivot_godot": [
+    0.62,
+    2.74,
+    1.15
+   ],
+   "axis": "x",
+   "note": "commander hatch",
+   "instance_of": "",
+   "tris": [
+    44,
+    12,
+    0
+   ]
+  },
+  {
+   "name": "Hatch_Loader",
+   "parent": "Turret",
+   "pivot_godot": [
+    -0.62,
+    2.74,
+    1.2
+   ],
+   "axis": "x",
+   "note": "loader hatch",
+   "instance_of": "",
+   "tris": [
+    44,
+    12,
+    0
+   ]
+  },
+  {
+   "name": "RWS",
+   "parent": "Turret",
+   "pivot_godot": [
+    -0.8,
+    2.72,
+    -0.3
+   ],
+   "axis": "z",
+   "note": "Protector RWS yaw",
+   "instance_of": "",
+   "tris": [
+    376,
+    92,
+    52
+   ]
+  },
+  {
+   "name": "RWS_Gun",
+   "parent": "RWS",
+   "pivot_godot": [
+    -0.8,
+    3.176,
+    -0.3475
+   ],
+   "axis": "x",
+   "note": "Protector RWS elevation",
+   "instance_of": "",
+   "tris": [
+    416,
+    100,
+    0
+   ]
+  },
+  {
+   "name": "Gun",
+   "parent": "Turret",
+   "pivot_godot": [
+    0.0,
+    2.3,
+    -2.1
+   ],
+   "axis": "x",
+   "note": "gun elevation (trunnions)",
+   "instance_of": "",
+   "tris": [
+    980,
+    280,
+    226
+   ]
+  }
+ ],
+ "tracks": {
+  "L": {
+   "links": 87,
+   "pitch_m": 0.185,
+   "length_m": 16.098
+  },
+  "R": {
+   "links": 87,
+   "pitch_m": 0.185,
+   "length_m": 16.098
+  }
+ },
+ "reference": "Leopard 2A8 NOR (KNDS / Norway 2026); RWS type unconfirmed (estimate)",
+ "dimensions_m": {
+  "hull_length": 8.05,
+  "length_gun_forward": 11.17,
+  "width": 4.0,
+  "turret_roof": 2.72,
+  "periscope": 3.13,
+  "road_wheel_d": 0.7,
+  "track_width": 0.635
+ },
+ "paint": "Camo_NATO3 (the first NOR tanks were delivered without camouflage; NATO three-colour as on Norwegian Leopard 2A4NO)",
+ "glb_bytes": 4163196,
+ "qa": {
+  "pass": false,
+  "parts": {
+   "Body": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "Body_LOD0: 103 n-gons"
+    ]
+   },
+   "Hatch_Driver": {
+    "pass": true,
+    "errors": [],
+    "warnings": []
+   },
+   "RoadWheelLeo": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "RoadWheelLeo_LOD0: 40 n-gons"
+    ]
+   },
+   "IdlerLeo": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "IdlerLeo_LOD0: 40 n-gons"
+    ]
+   },
+   "SprocketLeo": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "SprocketLeo_LOD0: 24 n-gons"
+    ]
+   },
+   "RollerLeo": {
+    "pass": true,
+    "errors": [],
+    "warnings": []
+   },
+   "Track_L": {
+    "pass": false,
+    "errors": [
+     "z-fighting: Track_L_LOD0 (2088 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Track_L_LOD0: duplicate verts=1392 loose verts=0"
+    ]
+   },
+   "Track_R": {
+    "pass": false,
+    "errors": [
+     "z-fighting: Track_R_LOD0 (2088 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Track_R_LOD0: duplicate verts=1392 loose verts=0"
+    ]
+   },
+   "Turret": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "Turret_LOD0: 110 n-gons"
+    ]
+   },
+   "Hatch_Commander": {
+    "pass": true,
+    "errors": [],
+    "warnings": []
+   },
+   "Hatch_Loader": {
+    "pass": true,
+    "errors": [],
+    "warnings": []
+   },
+   "RWS": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "RWS_LOD0: 2 n-gons"
+    ]
+   },
+   "RWS_Gun": {
+    "pass": false,
+    "errors": [
+     "z-fighting: RWS_Gun_LOD0 (2 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "RWS_Gun_LOD0: 16 n-gons"
+    ]
+   },
+   "Gun": {
+    "pass": false,
+    "errors": [
+     "z-fighting: Gun_LOD0 (10 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Gun_LOD0: 4 n-gons"
+    ]
+   }
+  }
+ }
+}

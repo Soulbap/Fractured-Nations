@@ -310,4 +310,8 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   `.claude/skills/`; start Blender work with `fn-blender-pipeline` (our conventions on top of
   them) and run the QA gate `build_assets.py -- --qa` after geometry changes
   (`--qa-strict --qa-baseline benchmarks/asset01/qa_baseline.json` = no new defects).
+- Vehicle pack (VEHICLE-ASSETS-01): `tools/blender/vehicles/build_vehicles.py` (`ap_vehicle.VehicleAsset` = parts with pivots on top
+  of `ap_lib.Asset`; shells with boolean cabin cuts on LOD0; `veh_kit` tyres / tracks / RWS) -> `assets/military/vehicles/<id>/`,
+  `.blend` in `assets/military/blender/vehicles/`; Godot check `tools/vehicle_assets/run_vehicle_lab.sh --validate | --shots`.
+  Reference photos: `tools/vehicle_assets/fetch_references.py` (Wikimedia rate-limits: standard thumb widths only).
 - Python on Windows: open files with `encoding='utf-8'`.

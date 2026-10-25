@@ -1,0 +1,570 @@
+{
+ "id": "iveco_lmv",
+ "family": "vehicle",
+ "display_name": "Iveco LMV (Norwegian Army)",
+ "category": "Light tactical vehicle",
+ "description": "Iveco Light Multirole Vehicle, Norwegian Army configuration with Kongsberg Protector RS4 RWS.",
+ "bounds_min": [
+  -1.23,
+  -2.755,
+  0.0
+ ],
+ "bounds_max": [
+  1.23,
+  2.685,
+  3.88
+ ],
+ "size_above_ground": [
+  2.46,
+  5.44,
+  3.88
+ ],
+ "footprint_xy": [
+  -1.23,
+  -2.755,
+  1.23,
+  2.685
+ ],
+ "tris": [
+  32780,
+  7008,
+  1140
+ ],
+ "surfaces": [
+  37,
+  24,
+  11
+ ],
+ "draw_objects": [
+  13,
+  12,
+  6
+ ],
+ "materials": [
+  "Canvas_Green",
+  "Glass_Vehicle",
+  "Kit_Palette",
+  "Paint_Green",
+  "Paint_OD",
+  "Tyre"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   45
+  ],
+  [
+   45,
+   180
+  ],
+  [
+   180,
+   2000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -0.99,
+   0.55,
+   -2.585,
+   1.98,
+   0.83,
+   5.17
+  ],
+  [
+   -0.94,
+   1.38,
+   -0.62,
+   1.88,
+   0.67,
+   2.95
+  ],
+  [
+   -0.45,
+   2.05,
+   -0.3,
+   0.9,
+   0.65,
+   1.05
+  ]
+ ],
+ "markers": [
+  {
+   "name": "WHEEL_1L",
+   "pos": [
+    -0.86,
+    1.68,
+    0.52
+   ],
+   "yaw": 0.0,
+   "note": "wheel centre, axle 1"
+  },
+  {
+   "name": "WHEEL_1R",
+   "pos": [
+    0.86,
+    1.68,
+    0.52
+   ],
+   "yaw": 0.0,
+   "note": "wheel centre, axle 1"
+  },
+  {
+   "name": "WHEEL_2L",
+   "pos": [
+    -0.86,
+    -1.52,
+    0.52
+   ],
+   "yaw": 0.0,
+   "note": "wheel centre, axle 2"
+  },
+  {
+   "name": "WHEEL_2R",
+   "pos": [
+    0.86,
+    -1.52,
+    0.52
+   ],
+   "yaw": 0.0,
+   "note": "wheel centre, axle 2"
+  },
+  {
+   "name": "DOOR_FL",
+   "pos": [
+    -1.59,
+    0.55,
+    0.0
+   ],
+   "yaw": 90,
+   "note": "stand point outside the door"
+  },
+  {
+   "name": "DOOR_FR",
+   "pos": [
+    1.59,
+    0.55,
+    0.0
+   ],
+   "yaw": -90,
+   "note": "stand point outside the door"
+  },
+  {
+   "name": "DOOR_RL",
+   "pos": [
+    -1.59,
+    -0.55,
+    0.0
+   ],
+   "yaw": 90,
+   "note": "stand point outside the door"
+  },
+  {
+   "name": "DOOR_RR",
+   "pos": [
+    1.59,
+    -0.55,
+    0.0
+   ],
+   "yaw": -90,
+   "note": "stand point outside the door"
+  },
+  {
+   "name": "DOOR_REAR",
+   "pos": [
+    0.0,
+    -3.135,
+    0.0
+   ],
+   "yaw": 0,
+   "note": "rear door"
+  },
+  {
+   "name": "SEAT_1",
+   "pos": [
+    -0.45,
+    0.25,
+    1.05
+   ],
+   "yaw": 0.0,
+   "note": "driver"
+  },
+  {
+   "name": "SEAT_2",
+   "pos": [
+    0.45,
+    0.25,
+    1.05
+   ],
+   "yaw": 0.0,
+   "note": "commander"
+  },
+  {
+   "name": "SEAT_3",
+   "pos": [
+    -0.45,
+    -0.75,
+    1.05
+   ],
+   "yaw": 0.0,
+   "note": "passenger"
+  },
+  {
+   "name": "SEAT_4",
+   "pos": [
+    0.45,
+    -0.75,
+    1.05
+   ],
+   "yaw": 0.0,
+   "note": "passenger"
+  },
+  {
+   "name": "SEAT_GUNNER",
+   "pos": [
+    0.0,
+    -0.25,
+    1.05
+   ],
+   "yaw": 0.0,
+   "note": "RWS operator (inside)"
+  },
+  {
+   "name": "TOW_REAR",
+   "pos": [
+    0.0,
+    -2.685,
+    0.64
+   ],
+   "yaw": 0.0,
+   "note": "towing pintle"
+  }
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "hull / body",
+   "instance_of": "",
+   "tris": [
+    10442,
+    2416,
+    512
+   ]
+  },
+  {
+   "name": "Door_FL",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.0,
+    1.2,
+    -0.94
+   ],
+   "axis": "z",
+   "note": "door, hinge at the front edge",
+   "instance_of": "",
+   "tris": [
+    390,
+    112,
+    0
+   ]
+  },
+  {
+   "name": "Door_FR",
+   "parent": "Body",
+   "pivot_godot": [
+    1.0,
+    1.2,
+    -0.94
+   ],
+   "axis": "z",
+   "note": "door, hinge at the front edge",
+   "instance_of": "",
+   "tris": [
+    384,
+    112,
+    0
+   ]
+  },
+  {
+   "name": "Door_RL",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.0,
+    1.2,
+    0.15
+   ],
+   "axis": "z",
+   "note": "door, hinge at the front edge",
+   "instance_of": "",
+   "tris": [
+    372,
+    120,
+    0
+   ]
+  },
+  {
+   "name": "Door_RR",
+   "parent": "Body",
+   "pivot_godot": [
+    1.0,
+    1.2,
+    0.15
+   ],
+   "axis": "z",
+   "note": "door, hinge at the front edge",
+   "instance_of": "",
+   "tris": [
+    368,
+    120,
+    0
+   ]
+  },
+  {
+   "name": "Door_Rear",
+   "parent": "Body",
+   "pivot_godot": [
+    0.62,
+    1.3,
+    2.445
+   ],
+   "axis": "z",
+   "note": "rear door, hinge on the right",
+   "instance_of": "",
+   "tris": [
+    148,
+    40,
+    0
+   ]
+  },
+  {
+   "name": "SteeringWheel",
+   "parent": "Body",
+   "pivot_godot": [
+    -0.45,
+    1.48,
+    -0.6
+   ],
+   "axis": "column",
+   "note": "steering wheel (rotates about the column)",
+   "instance_of": "",
+   "tris": [
+    196,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "Wheel_L1",
+   "parent": "",
+   "pivot_godot": [
+    -0.86,
+    0.52,
+    -1.68
+   ],
+   "axis": "x",
+   "note": "spin x, steer z",
+   "instance_of": "WheelLMV",
+   "tris": [
+    4922,
+    974,
+    144
+   ]
+  },
+  {
+   "name": "Wheel_R1",
+   "parent": "",
+   "pivot_godot": [
+    0.86,
+    0.52,
+    -1.68
+   ],
+   "axis": "x",
+   "note": "spin x, steer z",
+   "instance_of": "WheelLMV",
+   "tris": [
+    4922,
+    974,
+    144
+   ]
+  },
+  {
+   "name": "Wheel_L2",
+   "parent": "",
+   "pivot_godot": [
+    -0.86,
+    0.52,
+    1.52
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "WheelLMV",
+   "tris": [
+    4922,
+    974,
+    144
+   ]
+  },
+  {
+   "name": "Wheel_R2",
+   "parent": "",
+   "pivot_godot": [
+    0.86,
+    0.52,
+    1.52
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "WheelLMV",
+   "tris": [
+    4922,
+    974,
+    144
+   ]
+  },
+  {
+   "name": "RWS",
+   "parent": "Body",
+   "pivot_godot": [
+    0.0,
+    2.12,
+    0.25
+   ],
+   "axis": "z",
+   "note": "Protector RWS yaw",
+   "instance_of": "",
+   "tris": [
+    376,
+    92,
+    52
+   ]
+  },
+  {
+   "name": "RWS_Gun",
+   "parent": "RWS",
+   "pivot_godot": [
+    0.0,
+    2.5616,
+    0.204
+   ],
+   "axis": "x",
+   "note": "Protector RWS elevation",
+   "instance_of": "",
+   "tris": [
+    416,
+    100,
+    0
+   ]
+  }
+ ],
+ "reference": "Iveco LMV, Norwegian Army (LAV) with Kongsberg Protector RS4",
+ "dimensions_m": {
+  "length": 4.87,
+  "width_body": 1.98,
+  "roof": 2.05,
+  "wheelbase": 3.2,
+  "track_est": 1.72,
+  "tyre": "335/80 R20, d 1.04"
+ },
+ "paint": "Paint_Green (faction paint swaps Paint_Green)",
+ "glb_bytes": 1501848,
+ "qa": {
+  "pass": false,
+  "parts": {
+   "Body": {
+    "pass": false,
+    "errors": [
+     "Body_LOD0: 648 edges with inconsistent face winding",
+     "Body_LOD0: degenerate faces=16 zero-len edges=16",
+     "z-fighting: Body_LOD0 (73 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Body_LOD0: non-manifold edges=435 wire=0",
+     "Body_LOD0: duplicate verts=48 loose verts=0",
+     "Body_LOD0: 308 n-gons"
+    ]
+   },
+   "Door_FL": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "Door_FL_LOD0: duplicate verts=16 loose verts=0",
+     "Door_FL_LOD0: 21 n-gons"
+    ]
+   },
+   "Door_FR": {
+    "pass": false,
+    "errors": [
+     "z-fighting: Door_FR_LOD0 (15 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Door_FR_LOD0: duplicate verts=16 loose verts=0",
+     "Door_FR_LOD0: 18 n-gons"
+    ]
+   },
+   "Door_RL": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "Door_RL_LOD0: duplicate verts=16 loose verts=0",
+     "Door_RL_LOD0: 16 n-gons"
+    ]
+   },
+   "Door_RR": {
+    "pass": false,
+    "errors": [
+     "z-fighting: Door_RR_LOD0 (16 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Door_RR_LOD0: duplicate verts=16 loose verts=0",
+     "Door_RR_LOD0: 16 n-gons"
+    ]
+   },
+   "Door_Rear": {
+    "pass": false,
+    "errors": [
+     "Door_Rear_LOD0: degenerate faces=2 zero-len edges=0"
+    ],
+    "warnings": [
+     "Door_Rear_LOD0: 2 n-gons"
+    ]
+   },
+   "SteeringWheel": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "SteeringWheel_LOD0: 8 n-gons"
+    ]
+   },
+   "WheelLMV": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "WheelLMV_LOD0: 64 n-gons"
+    ]
+   },
+   "RWS": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "RWS_LOD0: 2 n-gons"
+    ]
+   },
+   "RWS_Gun": {
+    "pass": false,
+    "errors": [
+     "z-fighting: RWS_Gun_LOD0 (4 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "RWS_Gun_LOD0: 16 n-gons"
+    ]
+   }
+  }
+ }
+}

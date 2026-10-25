@@ -1,0 +1,947 @@
+{
+ "id": "cv9030n",
+ "family": "vehicle",
+ "display_name": "CV9030N Mk IIIb (Norwegian Army)",
+ "category": "Infantry fighting vehicle",
+ "description": "CV9030N Mk IIIb IFV with 30 mm Bushmaster II, Kongsberg Protector RWS and Soucy rubber tracks.",
+ "bounds_min": [
+  -1.645,
+  -3.455,
+  -0.022
+ ],
+ "bounds_max": [
+  1.645,
+  4.24,
+  4.62
+ ],
+ "size_above_ground": [
+  3.29,
+  7.695,
+  4.62
+ ],
+ "footprint_xy": [
+  -1.645,
+  -3.455,
+  1.645,
+  4.24
+ ],
+ "tris": [
+  54086,
+  15678,
+  1506
+ ],
+ "surfaces": [
+  66,
+  58,
+  9
+ ],
+ "draw_objects": [
+  34,
+  34,
+  6
+ ],
+ "materials": [
+  "Camo_NATO3",
+  "Canvas_Green",
+  "Glass_Vehicle",
+  "Kit_Palette",
+  "Paint_Green",
+  "Paint_OD"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   45
+  ],
+  [
+   45,
+   180
+  ],
+  [
+   180,
+   2000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.62,
+   0.4,
+   -3.275,
+   3.24,
+   1.22,
+   6.55
+  ],
+  [
+   -1.52,
+   1.62,
+   -0.9,
+   3.04,
+   0.22,
+   4.175
+  ],
+  [
+   -1.15,
+   1.8,
+   -1.45,
+   2.3,
+   0.82,
+   2.75
+  ]
+ ],
+ "markers": [
+  {
+   "name": "DOOR_REAR",
+   "pos": [
+    0.0,
+    -4.275,
+    0.0
+   ],
+   "yaw": 0.0,
+   "note": "rear troop door"
+  },
+  {
+   "name": "SEAT_DRIVER",
+   "pos": [
+    -0.55,
+    1.9,
+    1.0
+   ],
+   "yaw": 0.0,
+   "note": ""
+  },
+  {
+   "name": "SEAT_COMMANDER",
+   "pos": [
+    0.45,
+    -0.2,
+    1.75
+   ],
+   "yaw": 0.0,
+   "note": ""
+  },
+  {
+   "name": "SEAT_GUNNER",
+   "pos": [
+    -0.45,
+    -0.1,
+    1.75
+   ],
+   "yaw": 0.0,
+   "note": ""
+  },
+  {
+   "name": "SEAT_1",
+   "pos": [
+    -0.55,
+    -1.1,
+    1.0
+   ],
+   "yaw": 90,
+   "note": "troop seat"
+  },
+  {
+   "name": "SEAT_2",
+   "pos": [
+    0.55,
+    -1.1,
+    1.0
+   ],
+   "yaw": -90,
+   "note": "troop seat"
+  },
+  {
+   "name": "SEAT_3",
+   "pos": [
+    -0.55,
+    -1.6,
+    1.0
+   ],
+   "yaw": 90,
+   "note": "troop seat"
+  },
+  {
+   "name": "SEAT_4",
+   "pos": [
+    0.55,
+    -1.6,
+    1.0
+   ],
+   "yaw": -90,
+   "note": "troop seat"
+  },
+  {
+   "name": "SEAT_5",
+   "pos": [
+    -0.55,
+    -2.1,
+    1.0
+   ],
+   "yaw": 90,
+   "note": "troop seat"
+  },
+  {
+   "name": "SEAT_6",
+   "pos": [
+    0.55,
+    -2.1,
+    1.0
+   ],
+   "yaw": -90,
+   "note": "troop seat"
+  },
+  {
+   "name": "SEAT_7",
+   "pos": [
+    -0.55,
+    -2.6,
+    1.0
+   ],
+   "yaw": 90,
+   "note": "troop seat"
+  },
+  {
+   "name": "SEAT_8",
+   "pos": [
+    0.55,
+    -2.6,
+    1.0
+   ],
+   "yaw": -90,
+   "note": "troop seat"
+  }
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "hull",
+   "instance_of": "",
+   "tris": [
+    4316,
+    862,
+    308
+   ]
+  },
+  {
+   "name": "Hatch_Driver",
+   "parent": "Body",
+   "pivot_godot": [
+    -0.55,
+    1.66,
+    -1.62
+   ],
+   "axis": "z",
+   "note": "driver hatch (swings)",
+   "instance_of": "",
+   "tris": [
+    156,
+    36,
+    0
+   ]
+  },
+  {
+   "name": "Hatch_L",
+   "parent": "Body",
+   "pivot_godot": [
+    -0.95,
+    1.86,
+    1.75
+   ],
+   "axis": "y",
+   "note": "troop roof hatch",
+   "instance_of": "",
+   "tris": [
+    88,
+    12,
+    0
+   ]
+  },
+  {
+   "name": "Hatch_R",
+   "parent": "Body",
+   "pivot_godot": [
+    0.95,
+    1.86,
+    1.75
+   ],
+   "axis": "y",
+   "note": "troop roof hatch",
+   "instance_of": "",
+   "tris": [
+    88,
+    12,
+    0
+   ]
+  },
+  {
+   "name": "Door_Rear",
+   "parent": "Body",
+   "pivot_godot": [
+    0.62,
+    1.2,
+    3.305
+   ],
+   "axis": "z",
+   "note": "rear troop door, hinge on the right",
+   "instance_of": "",
+   "tris": [
+    192,
+    52,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_L1",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.25,
+    0.36,
+    -2.12
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelCV90",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_L2",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.25,
+    0.36,
+    -1.44
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelCV90",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_L3",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.25,
+    0.36,
+    -0.76
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelCV90",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_L4",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.25,
+    0.36,
+    -0.08
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelCV90",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_L5",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.25,
+    0.36,
+    0.6
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelCV90",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_L6",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.25,
+    0.36,
+    1.28
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelCV90",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_L7",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.25,
+    0.36,
+    1.96
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelCV90",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "Sprocket_L",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.25,
+    0.78,
+    -2.8
+   ],
+   "axis": "x",
+   "note": "spin x (drive)",
+   "instance_of": "SprocketCV90",
+   "tris": [
+    816,
+    152,
+    0
+   ]
+  },
+  {
+   "name": "Idler_L",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.25,
+    0.56,
+    2.88
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "IdlerCV90",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "Roller_L1",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.25,
+    0.94,
+    -1.3
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RollerCV90",
+   "tris": [
+    64,
+    32,
+    0
+   ]
+  },
+  {
+   "name": "Roller_L2",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.25,
+    0.94,
+    0.75
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RollerCV90",
+   "tris": [
+    64,
+    32,
+    0
+   ]
+  },
+  {
+   "name": "Track_L",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.25,
+    0.36,
+    -0.0
+   ],
+   "axis": "",
+   "note": "track loop (links follow Belt; prepared for UV / link animation)",
+   "instance_of": "",
+   "tris": [
+    5424,
+    1356,
+    460
+   ]
+  },
+  {
+   "name": "RoadWheel_R1",
+   "parent": "Body",
+   "pivot_godot": [
+    1.25,
+    0.36,
+    -2.12
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelCV90",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_R2",
+   "parent": "Body",
+   "pivot_godot": [
+    1.25,
+    0.36,
+    -1.44
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelCV90",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_R3",
+   "parent": "Body",
+   "pivot_godot": [
+    1.25,
+    0.36,
+    -0.76
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelCV90",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_R4",
+   "parent": "Body",
+   "pivot_godot": [
+    1.25,
+    0.36,
+    -0.08
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelCV90",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_R5",
+   "parent": "Body",
+   "pivot_godot": [
+    1.25,
+    0.36,
+    0.6
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelCV90",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_R6",
+   "parent": "Body",
+   "pivot_godot": [
+    1.25,
+    0.36,
+    1.28
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelCV90",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "RoadWheel_R7",
+   "parent": "Body",
+   "pivot_godot": [
+    1.25,
+    0.36,
+    1.96
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RoadWheelCV90",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "Sprocket_R",
+   "parent": "Body",
+   "pivot_godot": [
+    1.25,
+    0.78,
+    -2.8
+   ],
+   "axis": "x",
+   "note": "spin x (drive)",
+   "instance_of": "SprocketCV90",
+   "tris": [
+    816,
+    152,
+    0
+   ]
+  },
+  {
+   "name": "Idler_R",
+   "parent": "Body",
+   "pivot_godot": [
+    1.25,
+    0.56,
+    2.88
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "IdlerCV90",
+   "tris": [
+    2064,
+    656,
+    0
+   ]
+  },
+  {
+   "name": "Roller_R1",
+   "parent": "Body",
+   "pivot_godot": [
+    1.25,
+    0.94,
+    -1.3
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RollerCV90",
+   "tris": [
+    64,
+    32,
+    0
+   ]
+  },
+  {
+   "name": "Roller_R2",
+   "parent": "Body",
+   "pivot_godot": [
+    1.25,
+    0.94,
+    0.75
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "RollerCV90",
+   "tris": [
+    64,
+    32,
+    0
+   ]
+  },
+  {
+   "name": "Track_R",
+   "parent": "Body",
+   "pivot_godot": [
+    1.25,
+    0.36,
+    -0.0
+   ],
+   "axis": "",
+   "note": "track loop (links follow Belt; prepared for UV / link animation)",
+   "instance_of": "",
+   "tris": [
+    5424,
+    1356,
+    460
+   ]
+  },
+  {
+   "name": "Turret",
+   "parent": "Body",
+   "pivot_godot": [
+    0.0,
+    1.78,
+    -0.25
+   ],
+   "axis": "z",
+   "note": "turret yaw (ring centre)",
+   "instance_of": "",
+   "tris": [
+    2192,
+    706,
+    96
+   ]
+  },
+  {
+   "name": "Hatch_Commander",
+   "parent": "Turret",
+   "pivot_godot": [
+    0.45,
+    2.73,
+    0.48
+   ],
+   "axis": "x",
+   "note": "commander hatch",
+   "instance_of": "",
+   "tris": [
+    156,
+    36,
+    0
+   ]
+  },
+  {
+   "name": "RWS",
+   "parent": "Turret",
+   "pivot_godot": [
+    -0.4,
+    2.62,
+    0.35
+   ],
+   "axis": "z",
+   "note": "Protector RWS yaw",
+   "instance_of": "",
+   "tris": [
+    376,
+    92,
+    52
+   ]
+  },
+  {
+   "name": "RWS_Gun",
+   "parent": "RWS",
+   "pivot_godot": [
+    -0.4,
+    3.052,
+    0.305
+   ],
+   "axis": "x",
+   "note": "Protector RWS elevation",
+   "instance_of": "",
+   "tris": [
+    416,
+    100,
+    0
+   ]
+  },
+  {
+   "name": "Gun",
+   "parent": "Turret",
+   "pivot_godot": [
+    0.0,
+    2.12,
+    -1.3
+   ],
+   "axis": "x",
+   "note": "gun elevation (trunnions)",
+   "instance_of": "",
+   "tris": [
+    346,
+    130,
+    130
+   ]
+  }
+ ],
+ "tracks": {
+  "L": {
+   "links": 113,
+   "pitch_m": 0.1248,
+   "length_m": 14.102
+  },
+  "R": {
+   "links": 113,
+   "pitch_m": 0.1248,
+   "length_m": 14.102
+  }
+ },
+ "reference": "CV9030N Mk IIIb (Norway), Soucy rubber tracks, Protector RWS",
+ "dimensions_m": {
+  "hull_length": 6.55,
+  "width": 3.24,
+  "turret_roof": 2.62,
+  "road_wheel_d": 0.62,
+  "track_width": 0.533,
+  "track_centres": 2.5
+ },
+ "paint": "Camo_NATO3",
+ "glb_bytes": 2804156,
+ "qa": {
+  "pass": false,
+  "parts": {
+   "Body": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "Body_LOD0: 194 n-gons"
+    ]
+   },
+   "Hatch_Driver": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "Hatch_Driver_LOD0: 2 n-gons"
+    ]
+   },
+   "Hatch_L": {
+    "pass": false,
+    "errors": [
+     "Hatch_L_LOD0: degenerate faces=2 zero-len edges=0"
+    ],
+    "warnings": [
+     "Hatch_L_LOD0: 2 n-gons"
+    ]
+   },
+   "Hatch_R": {
+    "pass": false,
+    "errors": [
+     "Hatch_R_LOD0: degenerate faces=2 zero-len edges=0"
+    ],
+    "warnings": [
+     "Hatch_R_LOD0: 2 n-gons"
+    ]
+   },
+   "Door_Rear": {
+    "pass": false,
+    "errors": [
+     "z-fighting: Door_Rear_LOD0 (8 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Door_Rear_LOD0: duplicate verts=16 loose verts=0",
+     "Door_Rear_LOD0: 4 n-gons"
+    ]
+   },
+   "RoadWheelCV90": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "RoadWheelCV90_LOD0: 40 n-gons"
+    ]
+   },
+   "SprocketCV90": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "SprocketCV90_LOD0: 24 n-gons"
+    ]
+   },
+   "IdlerCV90": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "IdlerCV90_LOD0: 40 n-gons"
+    ]
+   },
+   "RollerCV90": {
+    "pass": true,
+    "errors": [],
+    "warnings": []
+   },
+   "Track_L": {
+    "pass": false,
+    "errors": [
+     "z-fighting: Track_L_LOD0 (43 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Track_L_LOD0: duplicate verts=348 loose verts=0"
+    ]
+   },
+   "Track_R": {
+    "pass": false,
+    "errors": [
+     "z-fighting: Track_R_LOD0 (43 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Track_R_LOD0: duplicate verts=348 loose verts=0"
+    ]
+   },
+   "Turret": {
+    "pass": false,
+    "errors": [
+     "z-fighting: Turret_LOD0 (179 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Turret_LOD0: duplicate verts=64 loose verts=0",
+     "Turret_LOD0: 102 n-gons"
+    ]
+   },
+   "Hatch_Commander": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "Hatch_Commander_LOD0: 2 n-gons"
+    ]
+   },
+   "RWS": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "RWS_LOD0: 2 n-gons"
+    ]
+   },
+   "RWS_Gun": {
+    "pass": false,
+    "errors": [
+     "z-fighting: RWS_Gun_LOD0 (7 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "RWS_Gun_LOD0: 16 n-gons"
+    ]
+   },
+   "Gun": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "Gun_LOD0: 2 n-gons"
+    ]
+   }
+  }
+ }
+}

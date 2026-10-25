@@ -1,0 +1,128 @@
+{
+ "cv9030n": {
+  "checks": {
+   "bounds_err_m": 0.0,
+   "collision_shapes": 3,
+   "markers": 12,
+   "parts": 34,
+   "size_m": [
+    3.29,
+    4.64,
+    7.69
+   ],
+   "surfaces": 133,
+   "tris_godot": [
+    54086,
+    15678,
+    1506
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "iveco_lmv": {
+  "checks": {
+   "bounds_err_m": 0.0,
+   "collision_shapes": 3,
+   "markers": 15,
+   "parts": 13,
+   "size_m": [
+    2.46,
+    3.88,
+    5.44
+   ],
+   "surfaces": 72,
+   "tris_godot": [
+    32780,
+    7008,
+    1140
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "leopard_2a8_nor": {
+  "checks": {
+   "bounds_err_m": 0.0,
+   "collision_shapes": 3,
+   "markers": 5,
+   "parts": 36,
+   "size_m": [
+    4.42,
+    4.96,
+    11.34
+   ],
+   "surfaces": 129,
+   "tris_godot": [
+    67514,
+    15908,
+    1730
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "nh90_tth": {
+  "checks": {
+   "bounds_err_m": 0.001,
+   "collision_shapes": 5,
+   "markers": 17,
+   "parts": 12,
+   "size_m": [
+    12.2,
+    5.0,
+    17.05
+   ],
+   "surfaces": 48,
+   "tris_godot": [
+    14282,
+    4912,
+    3500
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "patria_6x6": {
+  "checks": {
+   "bounds_err_m": 0.0,
+   "collision_shapes": 4,
+   "markers": 22,
+   "parts": 15,
+   "size_m": [
+    3.53,
+    4.08,
+    7.72
+   ],
+   "surfaces": 85,
+   "tris_godot": [
+    40720,
+    8010,
+    1160
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "scania_military": {
+  "checks": {
+   "bounds_err_m": 0.0,
+   "collision_shapes": 3,
+   "markers": 13,
+   "parts": 12,
+   "size_m": [
+    2.99,
+    4.67,
+    9.12
+   ],
+   "surfaces": 77,
+   "tris_godot": [
+    37210,
+    8750,
+    1204
+   ]
+  },
+  "fail": [],
+  "pass": true
+ }
+}

@@ -1,0 +1,501 @@
+{
+ "id": "scania_military",
+ "family": "vehicle",
+ "display_name": "Scania XT 6x6 military truck",
+ "category": "Logistics vehicle",
+ "description": "Scania XT 6x6 military cargo truck (G-cab, dropside body with canvas cover), Danish / Dutch Army configuration.",
+ "bounds_min": [
+  -1.495,
+  -4.54,
+  0.0
+ ],
+ "bounds_max": [
+  1.495,
+  4.582,
+  4.67
+ ],
+ "size_above_ground": [
+  2.99,
+  9.122,
+  4.67
+ ],
+ "footprint_xy": [
+  -1.495,
+  -4.54,
+  1.495,
+  4.582
+ ],
+ "tris": [
+  37210,
+  8750,
+  1204
+ ],
+ "surfaces": [
+  36,
+  23,
+  18
+ ],
+ "draw_objects": [
+  12,
+  11,
+  9
+ ],
+ "materials": [
+  "Canvas_Green",
+  "Canvas_OD",
+  "Glass_Vehicle",
+  "Kit_Palette",
+  "Paint_Green",
+  "Tyre"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   45
+  ],
+  [
+   45,
+   180
+  ],
+  [
+   180,
+   2000
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.17,
+   0.95,
+   -4.45,
+   2.34,
+   2.3,
+   2.15
+  ],
+  [
+   -1.25,
+   1.32,
+   -2.12,
+   2.5,
+   2.35,
+   6.57
+  ],
+  [
+   -1.15,
+   0.55,
+   -4.45,
+   2.3,
+   0.77,
+   8.9
+  ]
+ ],
+ "markers": [
+  {
+   "name": "WHEEL_1L",
+   "pos": [
+    -1.03,
+    3.0,
+    0.6
+   ],
+   "yaw": 0.0,
+   "note": "wheel centre, axle 1"
+  },
+  {
+   "name": "WHEEL_1R",
+   "pos": [
+    1.03,
+    3.0,
+    0.6
+   ],
+   "yaw": 0.0,
+   "note": "wheel centre, axle 1"
+  },
+  {
+   "name": "WHEEL_2L",
+   "pos": [
+    -1.03,
+    -0.8,
+    0.6
+   ],
+   "yaw": 0.0,
+   "note": "wheel centre, axle 2"
+  },
+  {
+   "name": "WHEEL_2R",
+   "pos": [
+    1.03,
+    -0.8,
+    0.6
+   ],
+   "yaw": 0.0,
+   "note": "wheel centre, axle 2"
+  },
+  {
+   "name": "WHEEL_3L",
+   "pos": [
+    -1.03,
+    -2.2,
+    0.6
+   ],
+   "yaw": 0.0,
+   "note": "wheel centre, axle 3"
+  },
+  {
+   "name": "WHEEL_3R",
+   "pos": [
+    1.03,
+    -2.2,
+    0.6
+   ],
+   "yaw": 0.0,
+   "note": "wheel centre, axle 3"
+  },
+  {
+   "name": "DOOR_L",
+   "pos": [
+    -1.97,
+    3.5,
+    0.0
+   ],
+   "yaw": 90,
+   "note": "cab door"
+  },
+  {
+   "name": "SEAT_DRIVER",
+   "pos": [
+    -0.55,
+    3.15,
+    1.9
+   ],
+   "yaw": 0.0,
+   "note": ""
+  },
+  {
+   "name": "DOOR_R",
+   "pos": [
+    1.97,
+    3.5,
+    0.0
+   ],
+   "yaw": -90,
+   "note": "cab door"
+  },
+  {
+   "name": "SEAT_CODRIVER",
+   "pos": [
+    0.55,
+    3.15,
+    1.9
+   ],
+   "yaw": 0.0,
+   "note": ""
+  },
+  {
+   "name": "CARGO_BED",
+   "pos": [
+    0.0,
+    -1.165,
+    1.48
+   ],
+   "yaw": 0.0,
+   "note": "cargo floor centre"
+  },
+  {
+   "name": "DOOR_REAR",
+   "pos": [
+    0.0,
+    -5.45,
+    0.0
+   ],
+   "yaw": 0.0,
+   "note": "tailgate / loading point"
+  },
+  {
+   "name": "TOW_REAR",
+   "pos": [
+    0.0,
+    -4.5,
+    0.85
+   ],
+   "yaw": 0.0,
+   "note": ""
+  }
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "cab and chassis",
+   "instance_of": "",
+   "tris": [
+    4984,
+    1484,
+    76
+   ]
+  },
+  {
+   "name": "Door_L",
+   "parent": "Body",
+   "pivot_godot": [
+    -1.18,
+    2.0,
+    -4.2
+   ],
+   "axis": "z",
+   "note": "cab door, hinge at the front",
+   "instance_of": "",
+   "tris": [
+    176,
+    104,
+    0
+   ]
+  },
+  {
+   "name": "Door_R",
+   "parent": "Body",
+   "pivot_godot": [
+    1.18,
+    2.0,
+    -4.2
+   ],
+   "axis": "z",
+   "note": "cab door, hinge at the front",
+   "instance_of": "",
+   "tris": [
+    176,
+    104,
+    0
+   ]
+  },
+  {
+   "name": "SpareWheel",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    1.91,
+    -2.0
+   ],
+   "axis": "",
+   "note": "spare wheel (static)",
+   "instance_of": "WheelScania",
+   "tris": [
+    4386,
+    974,
+    144
+   ]
+  },
+  {
+   "name": "CargoBody",
+   "parent": "Body",
+   "pivot_godot": [
+    0.0,
+    1.42,
+    1.165
+   ],
+   "axis": "",
+   "note": "dropside cargo body with canvas cover (separable)",
+   "instance_of": "",
+   "tris": [
+    1044,
+    240,
+    120
+   ]
+  },
+  {
+   "name": "Wheel_L1",
+   "parent": "",
+   "pivot_godot": [
+    -1.03,
+    0.6,
+    -3.0
+   ],
+   "axis": "x",
+   "note": "spin x, steer z",
+   "instance_of": "WheelScania",
+   "tris": [
+    4386,
+    974,
+    144
+   ]
+  },
+  {
+   "name": "Wheel_R1",
+   "parent": "",
+   "pivot_godot": [
+    1.03,
+    0.6,
+    -3.0
+   ],
+   "axis": "x",
+   "note": "spin x, steer z",
+   "instance_of": "WheelScania",
+   "tris": [
+    4386,
+    974,
+    144
+   ]
+  },
+  {
+   "name": "Wheel_L2",
+   "parent": "",
+   "pivot_godot": [
+    -1.03,
+    0.6,
+    0.8
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "WheelScania",
+   "tris": [
+    4386,
+    974,
+    144
+   ]
+  },
+  {
+   "name": "Wheel_R2",
+   "parent": "",
+   "pivot_godot": [
+    1.03,
+    0.6,
+    0.8
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "WheelScania",
+   "tris": [
+    4386,
+    974,
+    144
+   ]
+  },
+  {
+   "name": "Wheel_L3",
+   "parent": "",
+   "pivot_godot": [
+    -1.03,
+    0.6,
+    2.2
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "WheelScania",
+   "tris": [
+    4386,
+    974,
+    144
+   ]
+  },
+  {
+   "name": "Wheel_R3",
+   "parent": "",
+   "pivot_godot": [
+    1.03,
+    0.6,
+    2.2
+   ],
+   "axis": "x",
+   "note": "spin x",
+   "instance_of": "WheelScania",
+   "tris": [
+    4386,
+    974,
+    144
+   ]
+  },
+  {
+   "name": "SteeringWheel",
+   "parent": "Body",
+   "pivot_godot": [
+    -0.55,
+    2.3,
+    -3.68
+   ],
+   "axis": "column",
+   "note": "steering wheel",
+   "instance_of": "",
+   "tris": [
+    128,
+    0,
+    0
+   ]
+  }
+ ],
+ "reference": "Scania XT 6x6 G-cab military cargo truck (Danish / Dutch Army configuration)",
+ "dimensions_m": {
+  "length": 8.9,
+  "width": 2.55,
+  "cab_roof": 3.25,
+  "axles_y": [
+   3.0,
+   -0.8,
+   -2.2
+  ],
+  "wheelbase_to_tandem": 4.5,
+  "tandem": 1.4,
+  "tyre": "395/85 R20, d 1.20",
+  "cargo_bed": [
+   2.5,
+   6.55
+  ]
+ },
+ "paint": "Paint_Green",
+ "glb_bytes": 1031688,
+ "qa": {
+  "pass": false,
+  "parts": {
+   "Body": {
+    "pass": false,
+    "errors": [
+     "z-fighting: Body_LOD0 (35 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Body_LOD0: duplicate verts=52 loose verts=0",
+     "Body_LOD0: 87 n-gons"
+    ]
+   },
+   "Door_L": {
+    "pass": false,
+    "errors": [
+     "z-fighting: Door_L_LOD0 (4 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Door_L_LOD0: duplicate verts=16 loose verts=0",
+     "Door_L_LOD0: 4 n-gons"
+    ]
+   },
+   "Door_R": {
+    "pass": false,
+    "errors": [
+     "z-fighting: Door_R_LOD0 (28 overlapping coplanar tri pairs)"
+    ],
+    "warnings": [
+     "Door_R_LOD0: duplicate verts=18 loose verts=0",
+     "Door_R_LOD0: 4 n-gons"
+    ]
+   },
+   "WheelScania": {
+    "pass": true,
+    "errors": [],
+    "warnings": [
+     "WheelScania_LOD0: 36 n-gons"
+    ]
+   },
+   "CargoBody": {
+    "pass": true,
+    "errors": [],
+    "warnings": []
+   },
+   "SteeringWheel": {
+    "pass": true,
+    "errors": [],
+    "warnings": []
+   }
+  }
+ }
+}

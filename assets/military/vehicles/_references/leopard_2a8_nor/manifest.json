@@ -1,0 +1,84 @@
+{
+ "vehicle": "leopard_2a8_nor",
+ "source": "Wikimedia Commons",
+ "images": [
+  {
+   "file": "01_Leopard_2A8.jpg",
+   "title": "Leopard 2A8.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Leopard_2A8.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/d/dd/Leopard_2A8.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    1200,
+    870
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Wikimedilea",
+   "description": "Leopard 2A8 at Arena Zagreb, 2025,"
+  },
+  {
+   "file": "02_LEOPARD_2A8.jpg",
+   "title": "LEOPARD 2A8.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:LEOPARD_2A8.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/7/77/LEOPARD_2A8.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    4272,
+    2848
+   ],
+   "license": "CC BY 4.0",
+   "author": "Meumeu03",
+   "description": "LEOPARD 2A8 (Demonstrateur) - Eurosatory 2022"
+  },
+  {
+   "file": "03_Leopard_2A8_with_Trophy_system.jpg",
+   "title": "Leopard 2A8 with Trophy system.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Leopard_2A8_with_Trophy_system.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/5/57/Leopard_2A8_with_Trophy_system.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    735,
+    491
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Defensie",
+   "description": "Leopard 2A7A1 with Trophy system"
+  },
+  {
+   "file": "04_Leopard_2A8_prototype.jpg",
+   "title": "Leopard 2A8 prototype.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Leopard_2A8_prototype.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/7/74/Leopard_2A8_prototype.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    1250,
+    833
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Defensie Nederlands",
+   "description": "Leopard 2A8 prototype"
+  },
+  {
+   "file": "05_Leopard_2A7_Trophy_APS_at_NATO_Days_2023.jpg",
+   "title": "Leopard 2A7 Trophy APS at NATO Days 2023.JPG",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Leopard_2A7_Trophy_APS_at_NATO_Days_2023.JPG",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/6/65/Leopard_2A7_Trophy_APS_at_NATO_Days_2023.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    1200,
+    800
+   ],
+   "license": "CC BY-SA 3.0",
+   "author": "Boevaya mashina",
+   "description": "KMW Leopard 2 A7A1 with Trophy APS on display at NATO Days Ostrava 2023"
+  },
+  {
+   "file": "06_Tank_Leopard_2A7_NATO_Days_2022.jpg",
+   "title": "Tank Leopard 2A7 NATO Days 2022.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Tank_Leopard_2A7_NATO_Days_2022.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/c/ce/Tank_Leopard_2A7_NATO_Days_2022.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    4608,
+    2304
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Fric.matej",
+   "description": "Leopard 2A7 tank (KMW) at NATO Days 2022. NATO Days is the biggest security show in Europe, traditionally held annually at Ostrava Leos Janacek Airport."
+  }
+ ]
+}

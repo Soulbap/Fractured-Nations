@@ -615,6 +615,20 @@ See `docs/BLENDER-SKILLS-01_REPORT.md`.
   (faction infantry: `.../asset_production/characters/build_factions.py`).
 * Check in Godot: `benchmarks/asset01/run_lab.sh --validate | --shots | --lod | --factions | --showcase`.
 
+### Vehicle pack (VEHICLE-ASSETS-01)
+
+Six Norwegian / NATO vehicles with moving parts (wheels, tracks, turrets, guns, doors, hatches,
+rotors), see-through cabins on LOD0 and three authored LODs: Iveco LMV, Patria 6x6, CV9030N
+Mk IIIb, Scania XT 6x6, Leopard 2A8 NOR, NH90 TTH. Report: `docs/VEHICLE-ASSETS-01_REPORT.md`;
+reference photos and notes per vehicle: `assets/military/vehicles/_references/`.
+
+* `assets/military/vehicles/<id>/<id>.glb` + `.json` sidecar (parts, pivots, LOD triangles, markers);
+  editable sources `assets/military/blender/vehicles/<id>.blend`.
+* Build: `blender -b --factory-startup --python tools/blender/vehicles/build_vehicles.py -- --export --save-blend [--only id,..] [--previews DIR --details --lods] [--qa]`.
+* Check in Godot: `tools/vehicle_assets/run_vehicle_lab.sh --validate | --shots` (screenshots in
+  `docs/vehicle_assets01/godot/`). Not yet used by gameplay (`VehicleDefs` still drives the
+  LOGISTICS-01 truck / APC).
+
 ## Repository layout
 
 ```

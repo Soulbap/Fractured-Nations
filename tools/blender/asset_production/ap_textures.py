@@ -360,8 +360,35 @@ def rubber(tex_dir, n=256, seed=199):
     save(tex_dir, "rubber_normal", normal_map(1.5 * fnoise(n, 90, seed + 2), 1.0))
 
 
+def camo_nato3(tex_dir, n=1024, seed=211):
+    """NATO three-colour vehicle camouflage (VEHICLE-ASSETS-01): green base with large
+    brown and black patches with hard, slightly soft-edged boundaries (sprayed), the paint
+    texture's fading and wear multiplied in. Colours are the albedo itself (sRGB), the
+    material tint stays white."""
+    green = np.array((0.235, 0.275, 0.190), F)
+    brown = np.array((0.300, 0.250, 0.180), F)
+    black = np.array((0.085, 0.090, 0.080), F)
+    # Two warped noise fields give blotches of the size of a hatch to a side panel at 7 m.
+    wx = fnoise(n, 3, seed + 1) - 0.5
+    wy = fnoise(n, 3, seed + 2) - 0.5
+    ix = (np.arange(n)[None, :] + (wx * n * 0.10)).astype(np.int64) % n
+    iy = (np.arange(n)[:, None] + (wy * n * 0.10)).astype(np.int64) % n
+    a = fractal(n, seed + 3, cuts=(2.5, 5, 14, 40), weights=(0.55, 0.28, 0.12, 0.05))[iy, ix]
+    b = fractal(n, seed + 7, cuts=(3, 6, 16, 40), weights=(0.55, 0.28, 0.12, 0.05))[iy, ix]
+    m_brown = ramp(a, 0.56, 0.585)
+    m_black = ramp(b, 0.62, 0.645) * (1 - 0.6 * m_brown)
+    col = green[None, None, :] * (1 - m_brown[..., None]) + brown[None, None, :] * m_brown[..., None]
+    col = col * (1 - m_black[..., None]) + black[None, None, :] * m_black[..., None]
+    shade = 0.93 + 0.10 * (fnoise(n, 1.5, seed + 11) - 0.5) + 0.04 * (fnoise(n, 9, seed + 12) - 0.5)
+    shade += 0.02 * (fnoise(n, 160, seed + 13) - 0.5)
+    dust = ramp(fnoise(n, 5, seed + 14), 0.64, 0.95) * 0.10
+    col = col * shade[..., None] * (1 - dust[..., None]) + np.array((0.36, 0.32, 0.25), F)[None, None, :] * dust[..., None]
+    save(tex_dir, "camo_nato3", col)
+
+
 def build_all(tex_dir):
     os.makedirs(tex_dir, exist_ok=True)
+    camo_nato3(tex_dir)
     paint(tex_dir)
     # Container walls: 8 trapezoid ribs per 2.24 m tile (ISO side-wall pitch ~0.28 m).
     ribs_normal(tex_dir, "container_ribs_normal", 1024, 8, 0.9, trapezoid=True)

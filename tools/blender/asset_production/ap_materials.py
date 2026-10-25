@@ -84,12 +84,20 @@ MATERIALS = {
     "Plywood":         _m("wood", "wood_normal", (1.18, 1.12, 1.02), 0.85, 0.0, 0.5, 1.2),
     "Timber_Dark":     _m("wood", "wood_normal", (0.62, 0.58, 0.52), 0.88, 0.0, 0.8, 1.2),
     # Small parts.
+    # VEHICLE-ASSETS-01: NATO three-colour camouflage (green / brown / black, as on Norwegian
+    # Army vehicles) painted into the texture itself (no tint), tile 7 m so a hull shows one or
+    # two patterns; tyre rubber with the rubber texture (not folded into the palette).
+    "Camo_NATO3":      _m("camo_nato3", "paint_normal", (1.0, 1.0, 1.0), 0.74, 0.12, 0.6, 7.0),
+    "Tyre":            _m("rubber", "rubber_normal", (0.13, 0.13, 0.125), 0.90, 0.0, 1.0, 0.6),
     "Rubber":          _m("rubber", "rubber_normal", (0.09, 0.09, 0.09), 0.90, 0.0, 0.8, 0.5),
     "Plastic_Black":   _m("rubber", None, (0.06, 0.06, 0.06), 0.60, 0.0, 1.0, 0.5),
     "Plastic_White":   _m("rubber", None, (0.85, 0.85, 0.82), 0.55, 0.0, 1.0, 0.5),
     "Plastic_Orange":  _m("rubber", None, (0.85, 0.32, 0.06), 0.55, 0.0, 1.0, 0.5),
     "Plastic_OD":      _m("rubber", None, (0.27, 0.29, 0.21), 0.65, 0.0, 1.0, 0.5),
     "Glass":           _m(None, None, (0.05, 0.07, 0.08), 0.06, 0.2, 1.0, 1.0),
+    # VEHICLE-ASSETS-01: see-through armoured glass of vehicle LOD0 (cabins have interiors);
+    # the 4th colour component is the alpha (blend). LOD1/2 keep the opaque "Glass".
+    "Glass_Vehicle":   _m(None, None, (0.16, 0.20, 0.21, 0.42), 0.04, 0.3, 1.0, 1.0, ("blend",)),
     "Lamp":            _m(None, None, (1.0, 0.95, 0.82), 0.30, 0.0, 1.0, 1.0, ("emit",)),
     "Reflector_Red":   _m(None, None, (0.75, 0.05, 0.03), 0.25, 0.0, 1.0, 1.0),
     # Atlases (authored UVs).
@@ -174,7 +182,7 @@ def blender_material(name, tex_dir):
     nrm = path(m["nrm"])
     if nrm and not os.path.exists(nrm):
         nrm = None
-    col = tuple(min(c, 1.0) for c in m["col"])
+    col = tuple(min(c, 1.0) for c in m["col"][:3])
     mat = L.pbr_material(name, col, m["rough"], m["metal"], albedo=alb, normal=nrm, normal_strength=m["ns"])
     nt = mat.node_tree
     bsdf = nt.nodes.get("Principled BSDF")
@@ -192,6 +200,9 @@ def blender_material(name, tex_dir):
         mix.inputs[6].default_value = bsdf.inputs["Base Color"].default_value
     nt.links.new(vc.outputs["Color"], mix.inputs[7])
     nt.links.new(mix.outputs[2], bsdf.inputs["Base Color"])
+    if "blend" in m["flags"] and not alb and len(m["col"]) > 3:
+        bsdf.inputs["Alpha"].default_value = m["col"][3]
+        mat.surface_render_method = "BLENDED"
     if ("blend" in m["flags"] or "scissor" in m["flags"]) and alb:
         tex = [n for n in nt.nodes if n.type == "TEX_IMAGE" and n.image and n.image.colorspace_settings.name == "sRGB"][0]
         nt.links.new(tex.outputs["Alpha"], bsdf.inputs["Alpha"])
@@ -260,7 +271,8 @@ texture_filter = 0
 
 
 def _color(c):
-    return "Color(%.4f, %.4f, %.4f, 1)" % tuple(min(x, 1.0) for x in c)
+    a = c[3] if len(c) > 3 else 1.0
+    return "Color(%.4f, %.4f, %.4f, %.3f)" % (min(c[0], 1.0), min(c[1], 1.0), min(c[2], 1.0), a)
 
 
 def godot_tres(name):
