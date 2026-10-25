@@ -20,7 +20,10 @@ const META_PATH := "res://assets/characters/infantry/animation_meta.json"
 
 ## LOD switch distances (m from the camera): LOD0 close/FPS, LOD1 medium, LOD2 far RTS.
 const LOD_DISTANCES := [0.0, 12.0, 28.0]
-const LOD_MARGIN := 1.0
+## GAMEPLAY-05: the LODs cross-fade over this band (VISIBILITY_RANGE_FADE_SELF). Each mesh measures its range from its own
+## AABB centre (boots, jacket, helmet and the merged mesh sit at different heights), so plain hysteresis left a gap at the
+## switch: a soldier 12 m from the camera drew no mesh at all (two of eight invisible in the squad close-up).
+const LOD_MARGIN := 1.5
 ## Beyond this distance the animation is advanced every ANIM_FAR_STEP frames.
 const ANIM_FAR_DISTANCE := 45.0
 const ANIM_FAR_STEP := 3
@@ -128,6 +131,7 @@ func _merge_distance_lods() -> void:
 		mi.visibility_range_begin_margin = LOD_MARGIN
 		mi.visibility_range_end = LOD_DISTANCES[lod + 1] if lod + 1 < LOD_DISTANCES.size() else 0.0
 		mi.visibility_range_end_margin = LOD_MARGIN if lod + 1 < LOD_DISTANCES.size() else 0.0
+		mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 		lod_meshes.append(mi)
 
 
@@ -206,6 +210,7 @@ func _register_mesh(mi: MeshInstance3D) -> void:
 	mi.visibility_range_begin_margin = LOD_MARGIN if lod > 0 else 0.0
 	mi.visibility_range_end = LOD_DISTANCES[lod + 1] if lod + 1 < LOD_DISTANCES.size() else 0.0
 	mi.visibility_range_end_margin = LOD_MARGIN if lod + 1 < LOD_DISTANCES.size() else 0.0
+	mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	var mesh := mi.mesh
 	for s in mesh.get_surface_count():
 		var mat := mesh.surface_get_material(s)

@@ -148,9 +148,11 @@ func _new_navmesh() -> NavigationMesh:
 	var nm := NavigationMesh.new()
 	nm.cell_size = cell_size
 	nm.cell_height = 0.25
-	nm.agent_radius = agent_radius
-	nm.agent_height = 1.8
-	nm.agent_max_climb = 0.6
+	# GAMEPLAY-05: the values Recast bakes with (whole voxels: radius and height rounded up, climb down), written out so the
+	# bake is the same and the engine stops warning three times per bake (radius 0.5 -> 0.75 at 0.75 m cells, 1.8 -> 2.0, 0.6 -> 0.5).
+	nm.agent_radius = ceilf(agent_radius / cell_size - 0.0001) * cell_size
+	nm.agent_height = ceilf(1.8 / nm.cell_height - 0.0001) * nm.cell_height
+	nm.agent_max_climb = floorf(0.6 / nm.cell_height + 0.0001) * nm.cell_height
 	nm.agent_max_slope = rad_to_deg(atan(WorldSim.INFANTRY_MAX_GRADE))  # NAV-INF-01: one slope limit for both tiers
 	nm.region_min_size = 4.0
 	nm.edge_max_length = 12.0
