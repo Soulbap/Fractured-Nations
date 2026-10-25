@@ -1,7 +1,7 @@
 # GAMEPLAY-04 — New Game Experience, Military Development & Expanded Arsenal
 
 Branch `develop` (the project standard allows no milestone branches). Commits: `70b19bd` 04B · `486a24b` 04A · `2520adb`
-04C · `3beb152` 04D · `aec1700` 04E · 04G (this report: the playthrough, the planning budget, the second outpost, the opening
+04C · `3beb152` 04D · `aec1700` 04E · `56fd10b` 04G (this report: the playthrough, the planning budget, the second outpost, the opening
 grace rule, the New Game economy).
 Not pushed. Markers: **[RUN]** measured in a run of the real game on ref_20km; **[CODE]** read from the code; **[NOTE]**
 judgement. The two addenda of the brief (combat accuracy; REARM, recovery and discovery) are integrated in 04C and 04B/04D.
