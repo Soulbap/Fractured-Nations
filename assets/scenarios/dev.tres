@@ -47,6 +47,7 @@ rules = {
 "bed_limit": false,
 "build_costs": false,
 "build_sites": false,
+"dev_armoury": true,
 "free_reserves": true,
 "guide": false,
 "player_income": false,

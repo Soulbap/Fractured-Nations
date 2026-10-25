@@ -96,6 +96,8 @@ const LEGACY_TESTS: Array[String] = ["--core-test", "--large-test", "--combat-te
 var combat_fx: CombatFX
 ## AI-SQUAD-01: tactical order markers; F7 shows the developer view (fire teams, posts, missions).
 var tactics_overlay: TacticsOverlay
+## ASSET-INTEGRATION-01: the development armoury (null outside the Development Scenario).
+var armoury: DevArmoury
 var contact_markers: ContactMarkers
 ## GAMEPLAY-01B: the scenario the war was started from (New Game, Development Scenario) and the start screen.
 var scenario: ScenarioDef
@@ -443,6 +445,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--campaign-test" in args:
 		_campaign_selftest = CampaignSelfTest.new(self)
 		_campaign_selftest.run.call_deferred(args)
+	elif "--asset-integration-test" in args:
+		_gameplay_selftest = AssetIntegrationSelfTest.new(self)
+		_gameplay_selftest.run.call_deferred(args)
 	elif "--combat01-test" in args:
 		_gameplay_selftest = Combat01SelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)
@@ -522,6 +527,15 @@ func _start_sandbox() -> void:
 	# on where the camera happens to be (COMBAT-02's distance LOD saved ~20 % at 100 v 100).
 	sim.brain.distance_lod = false
 	_setup_map()
+	# ASSET-INTEGRATION-01: the development armoury (F10), in a scenario that asks for it only (the Development Scenario).
+	if armoury:
+		armoury.queue_free()
+		armoury = null
+	if DevArmoury.enabled_for(self):
+		armoury = DevArmoury.new()
+		armoury.name = "DevArmoury"
+		armoury.demo = self
+		hud.add_child(armoury)
 
 
 ## GAMEPLAY-01B: a scripted test or benchmark is running (a "--...-test" / "-perf" flag, the road audit, the squad demo).
