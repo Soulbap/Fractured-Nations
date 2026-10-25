@@ -199,6 +199,8 @@ func order_drive(id: int, target: Vector3, from_transport := false) -> Dictionar
 	var v := u.veh
 	if v.status == VehicleState.Status.DISABLED:
 		return {"ok": false, "reason": "The vehicle is disabled"}
+	if not v.def().drivable:
+		return {"ok": false, "reason": "%s cannot move: no movement model for it yet" % v.def().display_name}
 	_drop_drive(id)
 	_take_order(u, v, target, from_transport)
 	var t := Vector3(target.x, ground_at(target), target.z)
@@ -241,6 +243,8 @@ func request_drive(id: int, target: Vector3, from_transport := false, priority :
 	var v := u.veh
 	if v.status == VehicleState.Status.DISABLED:
 		return {"ok": false, "reason": "The vehicle is disabled"}
+	if not v.def().drivable:
+		return {"ok": false, "reason": "%s cannot move: no movement model for it yet" % v.def().display_name}
 	_drop_drive(id)
 	_take_order(u, v, target, from_transport)
 	var t := Vector3(target.x, ground_at(target), target.z)
@@ -672,6 +676,10 @@ func _step(u: UnitState, dt: float) -> void:
 			# NAV-PERF-01B: a vehicle waiting for its route stands still, waiting (not parked: it has an order).
 			v.status = VehicleState.Status.WAITING if _drive_job.has(u.id) else VehicleState.Status.PARKED
 		v.stuck_s = 0.0
+	# ASSET-INTEGRATION-01: a type without a movement model (the NH90: no flight model) stays where it is, driven or not.
+	if not d.drivable:
+		target_speed = 0.0
+		steer_target = 0.0
 	# Fuel.
 	if v.fuel <= 0.0 and (target_speed != 0.0):
 		target_speed = 0.0
