@@ -451,6 +451,9 @@ func _perceive(u: UnitState, budget: int) -> int:
 		_drop_target(u, "target down")
 		cur = null
 	var cur_visible := false
+	# COMBAT-01: whether the sight line was really checked this update. While vegetation cells along it still fill, the last
+	# answer is kept - but then the target's position is not refreshed (that would follow a hidden enemy).
+	var cur_checked := false
 	var cur_dist := INF
 	var sight := sight_of(u)
 	if cur:
@@ -459,6 +462,7 @@ func _perceive(u: UnitState, budget: int) -> int:
 			var s := _see(eye, cur, u.target_aim_y)
 			used += s.checks
 			cur_visible = s.visible
+			cur_checked = true
 			if cur_visible:
 				u.target_aim_y = s.aim_y
 		elif cur_dist <= sight:
@@ -486,6 +490,8 @@ func _perceive(u: UnitState, budget: int) -> int:
 			break
 	if best:
 		_acquire(u, best, best_aim)
+	elif cur and cur_visible and not cur_checked:
+		u.target_visible = true
 	elif cur and cur_visible:
 		u.target_seen_at = now
 		u.target_last_pos = cur.position
@@ -1504,7 +1510,9 @@ func _engage(u: UnitState) -> void:
 		return
 	if _support_weapons(u, t, now):
 		return
-	if t == null or not u.target_visible:
+	# COMBAT-01: aimed fire only at a target confirmed in sight lately (a kept "visible" answer while vegetation data fills
+	# is not a sighting: the true position of an enemy nobody checked is never aimed at; 1.2 s covers the half-rate far tier).
+	if t == null or not u.target_visible or now - u.target_seen_at > 1.2:
 		# AI-SQUAD-01: no visible target - a fire mission (suppressive fire at a reported
 		# position a squad tactic gave this soldier) may still apply.
 		if u.fire_at.is_finite() and now < u.fire_until and _fire_mission(u, def, now):
@@ -1761,8 +1769,8 @@ func _support_weapons(u: UnitState, t: UnitState, now: float) -> bool:
 	var known := Vector3.INF
 	var seen := false
 	if t and t.alive:
-		if u.target_visible:
-			known = t.position
+		if u.target_visible and now - u.target_seen_at <= 1.2:
+			known = u.target_last_pos   # COMBAT-01: where it was seen (written at the sighting)
 			seen = true
 		elif u.target_last_pos.is_finite() and now - u.target_seen_at < 8.0:
 			known = u.target_last_pos

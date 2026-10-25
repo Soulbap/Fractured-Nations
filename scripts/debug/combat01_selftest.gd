@@ -22,11 +22,13 @@
 ##            at 350 m and 700 m (muzzle flickers, tracers). Screenshots of each.
 ## t_withdraw a squad of four on open ground against eight kept-alive enemies 110 m away: an AI squad withdraws locally
 ##            (short, out of sight, with its reason); the player's squad holding where the player ordered does not (it says so).
+## r_markers  the RTS contact markers of the selected squad: an enemy its soldiers see is marked where it is; moved out of
+##            sight, the marker stays where it was last seen (never follows it) and fades; nothing is marked that nobody saw.
 ## Prints "C1 <check> <json>", writes res://benchmarks/raw/combat01_test.json.
 class_name Combat01SelfTest
 extends Visual03SelfTest
 
-const CHECKS1: Array[String] = ["v_detect", "p_posture", "g_grass", "a_accuracy", "f_gunplay", "t_withdraw"]
+const CHECKS1: Array[String] = ["v_detect", "p_posture", "g_grass", "a_accuracy", "f_gunplay", "t_withdraw", "r_markers"]
 
 
 func run(args: PackedStringArray) -> void:
@@ -590,3 +592,86 @@ func _t_withdraw() -> Dictionary:
 		"t_withdraw: the AI squad never withdrew: %s" % JSON.stringify(out.ai))
 	_expect(String(out.player_hold.withdrew) == "", "t_withdraw: the player's held squad withdrew on its own: %s" % out.player_hold.withdrew)
 	return out
+
+
+func _r_markers() -> Dictionary:
+	var sim := demo.sim
+	var c: Vector3 = _site.def
+	var dir: Vector3 = _site.dir
+	var pf := sim.state.war.player_faction if sim.state.war else 0
+	var ef := 1 if pf != 1 else 2
+	var cm: ContactMarkers = demo.contact_markers
+	cm.remember_s = 5.0
+	sim.brain.enabled = false
+	var mine := _cs.spawn(pf, c, dir, 4, "C1M")
+	var foe := _cs.spawn(ef, c + dir * 120.0, -dir, 2, "C1N")
+	_keep_alive([mine, foe])
+	mine.roe = SquadState.Roe.HOLD_FIRE
+	foe.roe = SquadState.Roe.HOLD_FIRE
+	await _physics(10)
+	# A spot none of the squad can see (from every soldier's eye to head and torso height).
+	var hidden := Vector3.INF
+	for r: float in [160.0, 220.0, 300.0]:
+		for k in 36:
+			var q := demo.on_ground(c.x + cos(k * TAU / 36.0) * r, c.z + sin(k * TAU / 36.0) * r, 0.0)
+			var blind := true
+			for id in mine.members:
+				var m := sim.state.get_unit(id)
+				for y: float in [0.3, 1.1, 1.6]:
+					if sim.combat.line.sight(CombatSim.eye_of(m), q + Vector3.UP * y).visible:
+						blind = false
+			if blind:
+				hidden = q
+				break
+		if hidden.is_finite():
+			break
+	demo.game.enter_rts()
+	demo.rts.select_squads([mine.id])
+	await _physics(5)
+	var out := {}
+	var e0 := sim.state.get_unit(foe.members[0])
+	sim.brain.enabled = true
+	await _seconds(3.0)
+	await _view(c + dir * 60.0 + Vector3.UP * 2.0, 120.0, atan2(dir.x, dir.z) + PI * 0.4, 35.0)
+	_png("r_markers_seen")
+	out["seen"] = cm.shown.duplicate()
+	var near_true := _marker_near(cm, e0.position, 3.0)
+	_expect(int(cm.shown.seen) > 0 and near_true, "r_markers: a visible enemy is not marked where it is: %s" % JSON.stringify(cm.shown))
+	# Out of sight: the enemy goes behind the rise; its marker must stay where it was seen.
+	var was := e0.position
+	_expect(hidden.is_finite(), "r_markers: no hidden spot near the site")
+	if hidden.is_finite():
+		for id in foe.members:
+			var u := sim.state.get_unit(id)
+			u.position = hidden + Vector3(randf(), 0, randf())
+			var b := _body(u)
+			if b:
+				b.teleport(u.position, u.yaw)
+		var seen_after := 0
+		for i in 12:
+			await _physics(10)
+			for id in mine.members:
+				var m := sim.state.get_unit(id)
+				if m.target_visible and m.target_id in foe.members:
+					seen_after += 1
+		out["seen_after_move"] = seen_after
+		_png("r_markers_remembered")
+		out["remembered"] = cm.shown.duplicate()
+		out["marker_at_last_seen"] = _marker_near(cm, was, 3.0)
+		out["marker_follows_hidden"] = _marker_near(cm, hidden, 20.0)
+		_expect(bool(out.marker_at_last_seen) and int(cm.shown.seen) == 0, "r_markers: no remembered marker at the last seen place: %s" % JSON.stringify(out))
+		_expect(not bool(out.marker_follows_hidden), "r_markers: a marker followed the hidden enemy")
+		await _seconds(5.0)
+		out["after_memory"] = cm.shown.duplicate()
+		_expect(int(cm.shown.remembered) == 0, "r_markers: the stale contact did not fade away: %s" % JSON.stringify(cm.shown))
+	cm.remember_s = 20.0
+	sim.brain.enabled = false
+	return out
+
+
+func _marker_near(cm: ContactMarkers, p: Vector3, r: float) -> bool:
+	for c in cm.get_children():
+		var mi := c as MeshInstance3D
+		if mi and mi.visible and Vector2(mi.global_position.x - p.x, mi.global_position.z - p.z).length() < r:
+			return true
+	return false

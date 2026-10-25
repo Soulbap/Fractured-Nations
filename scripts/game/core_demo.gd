@@ -96,6 +96,7 @@ const LEGACY_TESTS: Array[String] = ["--core-test", "--large-test", "--combat-te
 var combat_fx: CombatFX
 ## AI-SQUAD-01: tactical order markers; F7 shows the developer view (fire teams, posts, missions).
 var tactics_overlay: TacticsOverlay
+var contact_markers: ContactMarkers
 ## GAMEPLAY-01B: the scenario the war was started from (New Game, Development Scenario) and the start screen.
 var scenario: ScenarioDef
 var menu: MainMenu
@@ -236,6 +237,13 @@ func _setup_combat() -> void:
 	tactics_overlay.rts = rts
 	tactics_overlay.terrain = terrain
 	add_child(tactics_overlay)
+	# COMBAT-01: what the selected squad knows of the enemy (its soldiers' own perception), in the tactical view.
+	contact_markers = ContactMarkers.new()
+	contact_markers.name = "ContactMarkers"
+	contact_markers.sim = sim
+	contact_markers.rts = rts
+	contact_markers.game = game
+	add_child(contact_markers)
 	sim.state.shot_fired.connect(hud.on_shot)
 	sim.state.unit_damaged.connect(hud.on_damaged)
 	sim.state.unit_died.connect(game.on_unit_died)
