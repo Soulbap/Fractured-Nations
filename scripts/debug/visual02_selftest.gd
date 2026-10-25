@@ -8,7 +8,7 @@
 class_name Visual02SelfTest
 extends Gameplay04SelfTest
 
-const CHECKS_V2: Array[String] = ["survey", "veg_stats"]
+const CHECKS_V2: Array[String] = ["survey", "veg_stats", "wv_streamer"]
 
 ## name, eye (x, height above ground, z), target (x, height above ground, z), field of view. World coordinates (+X east,
 ## +Z south); the places were chosen from the generator's maps (see docs/VISUAL-02_REPORT.md, section 2).
@@ -27,6 +27,9 @@ const VIEWS := [
 	["11_valley", Vector3(-600, 80, -3200), Vector3(300, 0, 1500), 60.0],
 	["13_rts_high", Vector3(1000, 900, 3000), Vector3(1000, 0, 2300), 55.0],
 	["15_long_distance", Vector3(5900, 70, -5900), Vector3(-2000, 0, 2000), 55.0],
+	# WORLD-VISUALS-01: a rocky pine hillside (Vestheia) and a lakeshore (Langvatnet, west bank).
+	["17_rocky_hillside", Vector3(-7240, 1.8, -1060), Vector3(-7330, 14.0, -930), 70.0],
+	["18_lakeshore", Vector3(-3768, 1.8, 2140), Vector3(-4150, 0.0, 2000), 65.0],
 ]
 
 ## Suffix of the screenshots (before / after a visual change).
@@ -216,6 +219,62 @@ func _veg_stats() -> Dictionary:
 		var_s += (d - mean) * (d - mean)
 	var sd := sqrt(var_s / maxf(nn.size(), 1))
 	return {"files": files, "per_mesh": counts, "nn_mean_m": snappedf(mean, 0.01), "nn_cv": snappedf(sd / maxf(mean, 0.001), 0.001), "nn_samples": nn.size()}
+
+
+## WORLD-VISUALS-01: the variant split draws exactly the stored instances. At a forest view and an open view, for every
+## active (cell, mesh) of a mesh type with variants: drawn instances (the cell's MultiMesh plus its variant children) equal the
+## stored, filtered instances; every drawn instance stands in the MultiMesh of the variant VegetationMeshDef.variant_of picks;
+## a far cell with a shared impostor carries that variant in its colour alpha. Fails when nothing with variants was active.
+func _wv_streamer() -> Dictionary:
+	var veg: VegetationStreamer = demo.vegetation
+	var out := {"cells": 0, "instances": 0, "far_cells": 0, "mid_cells": 0, "errors": []}
+	_set_hud(false)
+	for v: Array in [VIEWS[1], VIEWS[6]]:
+		await _look(v[1], v[2], v[3])
+		await _seconds(5.0)
+		for key: Vector3i in veg.active:
+			var def := veg.library.get_def(key.z)
+			if def == null or def.variant_count() < 2:
+				continue
+			var mmi: MultiMeshInstance3D = veg.active[key]
+			var cell := Vector2i(key.x, key.y)
+			var stored := veg._filtered(cell, key.z, veg._effective_cell(cell).get(key.z, PackedFloat32Array()))
+			var n_stored := stored.size() / VegetationChunk.FLOATS_PER_INSTANCE
+			var lod: int = veg.active_lod[key]
+			var drawn := 0
+			var parts: Array = [[mmi, 0]]
+			for c in mmi.get_children(true):
+				parts.append([c, -1])
+			for e: Array in parts:
+				var m: MultiMeshInstance3D = e[0]
+				var buf := m.multimesh.buffer
+				var cnt := m.multimesh.instance_count
+				drawn += cnt
+				for i in cnt:
+					var k := i * VegetationChunk.FLOATS_PER_INSTANCE
+					var want := VegetationMeshDef.variant_of(buf[k + 3], buf[k + 11], def.variant_count())
+					if lod == VegetationMeshDef.FAR and def.shared_far:
+						if int(buf[k + 15] * 8.0) != want:
+							out.errors.append("alpha %s" % key)
+							break
+					elif e[1] == 0 and want != 0:
+						out.errors.append("variant %s" % key)
+						break
+			if drawn != n_stored:
+				out.errors.append("count %s drawn %d stored %d" % [key, drawn, n_stored])
+			out.cells += 1
+			out.instances += drawn
+			if lod == VegetationMeshDef.FAR:
+				out.far_cells += 1
+			elif lod == VegetationMeshDef.MID:
+				out.mid_cells += 1
+	_set_hud(true)
+	if out.cells == 0:
+		failures.append("wv_streamer: no active cell with variants")
+	if not (out.errors as Array).is_empty():
+		failures.append("wv_streamer: %d mismatches, first %s" % [out.errors.size(), out.errors[0]])
+	out.errors = (out.errors as Array).slice(0, 10)
+	return out
 
 
 ## Frames per second over two real seconds.

@@ -5,8 +5,9 @@
 ## the streamer looks at the active camera (and optional extra observers), loads the
 ## chunks around them on a background thread, and keeps one MultiMeshInstance3D per
 ## (cell, mesh type) within that mesh type's range. Cells beyond the range are freed.
-## Two LODs: the full mesh inside near_range, the cheapest mesh of the asset beyond it,
-## switched by swapping the MultiMesh mesh (no re-upload). Activations are spread over
+## LODs: the full mesh inside near_range, the cheapest mesh of the asset beyond it (trees:
+## a mid mesh up to mid_range between them), switched by swapping the MultiMesh mesh (no
+## re-upload; WORLD-VISUALS-01 variants rebuild their per-variant MultiMeshes). Activations are spread over
 ## frames (activations_per_frame, nearest first) so camera jumps do not stall.
 ##
 ## Not a general streaming framework: it only knows vegetation chunks and observers.
@@ -87,11 +88,14 @@ var _release_pos := 0
 var _reusable := {}
 ## --veg-immediate-free: the old behaviour (every leaving cell freed in the same frame), for comparisons only.
 var _immediate_free := false
+## --veg-no-variants: every instance draws variant 0 (WORLD-VISUALS-01 comparisons only).
+var _no_variants := false
 
 
 func _ready() -> void:
 	top_level = true
 	_immediate_free = "--veg-immediate-free" in OS.get_cmdline_user_args()
+	_no_variants = "--veg-no-variants" in OS.get_cmdline_user_args()
 	_init_overrides()
 	# Instantiate the mesh assets now, not during the first activation.
 	if library:
@@ -180,6 +184,8 @@ func get_stats() -> Dictionary:
 	for key in active:
 		var mmi: MultiMeshInstance3D = active[key]
 		inst += mmi.multimesh.instance_count
+		for c in mmi.get_children(true):
+			inst += (c as MultiMeshInstance3D).multimesh.instance_count
 		cells[Vector2i(key.x, key.y)] = true
 	var out := {"active_mmis": active.size(), "active_cells": cells.size(), "active_instances": inst,
 		"loaded_chunks": chunks.size(), "loading_chunks": _loading.size(),
@@ -488,9 +494,12 @@ func _activate(key: Vector3i, dist: float) -> void:
 		_reusable.erase(key)
 		if is_instance_valid(back):
 			var d := library.get_def(key.z)
-			var l := 0 if dist < d.near_range else 1
+			var l := d.lod_at(dist)
 			if l != int(back.get_meta("lod", l)):
-				back.multimesh.mesh = d.get_mesh(l)
+				if back.has_meta("vparts"):
+					_set_variant_lod(back, d, l)
+				else:
+					back.multimesh.mesh = d.get_mesh(l)
 				_apply_lod(back, d, l)
 			back.visible = true
 			active[key] = back
@@ -505,18 +514,18 @@ func _activate(key: Vector3i, dist: float) -> void:
 	var buf := _filtered(cell, key.z, by_mesh[key.z])
 	if buf.is_empty():
 		return
-	var lod := 0 if dist < def.near_range else 1
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_colors = true
-	mm.mesh = def.get_mesh(lod)
-	mm.instance_count = buf.size() / VegetationChunk.FLOATS_PER_INSTANCE
-	mm.buffer = buf
+	var lod := def.lod_at(dist)
 	var mmi := MultiMeshInstance3D.new()
-	mmi.multimesh = mm
 	mmi.visibility_range_end = def.max_range
 	mmi.visibility_range_end_margin = def.fade_m
 	mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	if def.variant_count() > 1 and not _no_variants:
+		var split := _split_variants(def, buf)
+		mmi.set_meta("vparts", split[0])
+		mmi.set_meta("vfull", split[1])
+		_set_variant_lod(mmi, def, lod)
+	else:
+		mmi.multimesh = _multimesh(def.get_mesh(lod), buf)
 	_apply_lod(mmi, def, lod)
 	add_child(mmi, false, Node.INTERNAL_MODE_BACK)
 	active[key] = mmi
@@ -527,23 +536,82 @@ func _activate(key: Vector3i, dist: float) -> void:
 func _update_lod(key: Vector3i, dist: float) -> void:
 	var def := library.get_def(key.z)
 	var cur: int = active_lod[key]
-	var want := cur
-	if cur == 0 and dist > def.near_range * (1.0 + lod_hysteresis):
-		want = 1
-	elif cur == 1 and dist < def.near_range * (1.0 - lod_hysteresis):
-		want = 0
+	var want := def.lod_at(dist, cur, lod_hysteresis)
 	if want == cur:
 		return
 	var mmi: MultiMeshInstance3D = active[key]
-	mmi.multimesh.mesh = def.get_mesh(want)
+	if mmi.has_meta("vparts"):
+		_set_variant_lod(mmi, def, want)
+	else:
+		mmi.multimesh.mesh = def.get_mesh(want)
 	_apply_lod(mmi, def, want)
 	active_lod[key] = want
 
 
 func _apply_lod(mmi: MultiMeshInstance3D, def: VegetationMeshDef, lod: int) -> void:
-	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if lod == 0 and def.cast_shadows \
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if lod != VegetationMeshDef.FAR and def.cast_shadows \
 		else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mmi.material_override = def.get_material_override(lod)
+	for c in mmi.get_children(true):
+		(c as GeometryInstance3D).cast_shadow = mmi.cast_shadow
+
+
+func _multimesh(mesh: Mesh, buf: PackedFloat32Array) -> MultiMesh:
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	mm.mesh = mesh
+	mm.instance_count = buf.size() / VegetationChunk.FLOATS_PER_INSTANCE
+	mm.buffer = buf
+	return mm
+
+
+## WORLD-VISUALS-01: the instances of one (cell, mesh) by variant: [[buffer per variant], whole buffer with the variant in the
+## colour alpha ((v + 0.5) / 8, read by shaders/environment/impostor_v3.gdshader; empty unless the far LOD is shared)].
+func _split_variants(def: VegetationMeshDef, buf: PackedFloat32Array) -> Array:
+	var n := def.variant_count()
+	var fpi := VegetationChunk.FLOATS_PER_INSTANCE
+	# Instance indices per variant first (packed arrays inside an Array are copied on access: append to locals only).
+	var idx := []
+	for v in n:
+		idx.append([])
+	var full := buf.duplicate() if def.shared_far else PackedFloat32Array()
+	for i in buf.size() / fpi:
+		var k := i * fpi
+		var v := VegetationMeshDef.variant_of(buf[k + 3], buf[k + 11], n)
+		(idx[v] as Array).append(k)
+		if def.shared_far:
+			full[k + 15] = (v + 0.5) / 8.0
+	var parts := []
+	for v in n:
+		var part := PackedFloat32Array()
+		for k: int in idx[v]:
+			part.append_array(buf.slice(k, k + fpi))
+		parts.append(part)
+	return [parts, full]
+
+
+## Near: one MultiMesh per variant (variant 0 on the cell's own instance, the others as internal children). Far with a shared
+## far mesh: every instance in one MultiMesh again.
+func _set_variant_lod(mmi: MultiMeshInstance3D, def: VegetationMeshDef, lod: int) -> void:
+	for c in mmi.get_children(true):
+		c.free()
+	var parts: Array = mmi.get_meta("vparts")
+	if lod == VegetationMeshDef.FAR and def.shared_far:
+		mmi.multimesh = _multimesh(def.get_mesh(lod), mmi.get_meta("vfull"))
+		return
+	mmi.multimesh = _multimesh(def.get_variant_mesh(lod, 0), parts[0])
+	for v in range(1, parts.size()):
+		var part: PackedFloat32Array = parts[v]
+		if part.is_empty():
+			continue
+		var child := MultiMeshInstance3D.new()
+		child.multimesh = _multimesh(def.get_variant_mesh(lod, v), part)
+		child.material_override = def.get_variant_override(lod, v)
+		child.visibility_range_end = mmi.visibility_range_end
+		child.visibility_range_end_margin = mmi.visibility_range_end_margin
+		child.visibility_range_fade_mode = mmi.visibility_range_fade_mode
+		mmi.add_child(child, false, Node.INTERNAL_MODE_BACK)
 
 
 ## A cell leaves: hidden now, freed later by _drain_release (PERFORMANCE-01: freeing every leaving cell in the frame the camera
