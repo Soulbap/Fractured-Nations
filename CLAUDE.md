@@ -204,6 +204,15 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   (`generate.py build_cover_v2`, `stand.png`, scatter v2 in `ReferenceWorldBuilder._trees_v2`): one set of environmental
   parameters drives density, stand age, species and ground together; saplings (ids 22-23) have no collider. Procedural
   4-channel PNGs must be written with straight alpha (`oiio:UnassociatedAlpha`). Survey: `--visual02-test --only survey`.
+- **Environment (WORLD-VISUALS-01).** Trees, bushes, ferns, rocks and deadwood are built by `tools/blender/env/make_trees_v3.py` /
+  `make_props_v3.py` (cards: `make_cards_v3.py`, textures: `make_surfaces_v3.py`, CC0 sources: `fetch_polyhaven.py`, git-ignored)
+  and imported by `tools/terrain_ref/import_env_assets.gd`. A library id may have `VegetationMeshDef.variants`: the streamer draws
+  each stored instance as the variant `variant_of` (position hash) picks - never change chunk data to vary looks; keep every variant
+  inside the id's collider (trunk radius / old rock size). Trees have three LODs (`mid_range`); a tree id's far LOD is one
+  `impostor_v3` mesh reading its atlas tile from the instance colour alpha. Terrain textures are swapped in memory by `GroundLook`
+  (`terrain_assets.tres` untouched); the grass layer chooses one of eight plants per particle (`plant_types`) without changing
+  placement (Concealment mirrors placement). Light: `WorldLook._nordic_light` (AgX, eye adaptation). Check:
+  `--visual02-test --only survey,wv_streamer`; comparisons `--legacy-ground`, `--legacy-look`, `--veg-no-variants`.
 - **Military Development and the opening (GAMEPLAY-04A/B).** `MilitaryDevelopment` (`WarSim.dev`, data `assets/development/*.tres`,
   state `FactionState.dev`) is the only unlock authority: `structure_lock` / `weapon_lock` / `role_lock` for player and AI alike; scenario
   rule `development`. The New Game opening is scenario data (`ScenarioDef.intro`, `extra_objectives`, `structures`) checked against the
