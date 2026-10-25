@@ -8,7 +8,7 @@
 class_name Gameplay05SelfTest
 extends Gameplay04SelfTest
 
-const CHECKS5: Array[String] = ["p_state", "p_watch", "u_markers", "u_capture_name", "u_post_block", "u_strength", "v_tour", "q_perf", "u_bodies"]
+const CHECKS5: Array[String] = ["p_state", "p_watch", "u_markers", "u_capture_name", "u_post_block", "u_strength", "v_tour", "q_perf", "u_bodies", "b_build_resume", "n_edge", "u_capture", "u_orders", "n_roads"]
 ## Suffix of the tour's screenshots (before / after a visual change).
 var shot_tag := ""
 ## p_watch: time compression (--watch-speed=8).
@@ -318,11 +318,29 @@ func _sample_frames(seconds: float) -> Dictionary:
 	var tk0 := demo.sim.tick_usec.duplicate()
 	var t_end := Time.get_ticks_msec() + int(seconds * 1000.0)
 	var last := Time.get_ticks_usec()
+	var probe := _spike_probe()
+	var spikes := []
 	while Time.get_ticks_msec() < t_end:
 		await tree.process_frame
 		var now := Time.get_ticks_usec()
-		times.append((now - last) / 1000.0)
+		var ms := (now - last) / 1000.0
+		times.append(ms)
 		last = now
+		# GAMEPLAY-05B: what happened in a frame over 33 ms (deltas of the counters since the previous frame).
+		var p2 := _spike_probe()
+		if ms > 33.3 and spikes.size() < 40:
+			var e := {"ms": snappedf(ms, 0.1)}
+			for k in p2:
+				if p2[k] is float or p2[k] is int:
+					var dv: float = float(p2[k]) - float(probe.get(k, 0))
+					if absf(dv) > 0.0001:
+						e[k] = snappedf(dv, 0.01)
+			e["process_ms"] = snappedf(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, 0.01)
+			e["physics_ms"] = snappedf(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0, 0.01)
+			e["veg_worst_ms"] = p2.veg_worst_ms
+			e["route_ms"] = p2.route_ms
+			spikes.append(e)
+		probe = p2
 	var sorted := times.duplicate()
 	sorted.sort()
 	var n := sorted.size()
@@ -341,7 +359,26 @@ func _sample_frames(seconds: float) -> Dictionary:
 		"ms_max": snappedf(sorted[n - 1], 0.01), "frames_over_33ms": over, "sim_us_per_tick": per,
 		"draw_calls": Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), "objects": Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
 		"primitives": Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME), "vram_mb": roundi(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0),
-		"static_mb": roundi(Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0)}
+		"static_mb": roundi(Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0), "spikes": spikes}
+
+
+## Counters read every frame by the spike recorder: WorldSim cost per system (us, cumulative) and ticks, navmesh bakes,
+## vegetation chunks and the worst chunk activation this frame, merged character LODs built, route planning this frame,
+## render pipeline compilations (shaders), nodes, bodies.
+func _spike_probe() -> Dictionary:
+	var t: Dictionary = demo.sim.tick_usec
+	var veg = demo.vegetation
+	var worst := 0.0
+	if veg and "_worst_drain_ms" in veg:
+		worst = float(veg._worst_drain_ms)
+		veg._worst_drain_ms = 0.0
+	return {"ticks": int(t.ticks), "us_abstract": int(t.abstract), "us_squads": int(t.squads), "us_tactics": int(t.tactics), "us_war": int(t.war),
+		"us_brain": int(t.brain), "us_combat": int(t.combat), "us_vehicles": int(t.vehicles), "navmesh_bakes": demo.detail.bake_count if demo.detail else 0,
+		"veg_chunks": veg.chunks.size() if veg else 0, "veg_worst_ms": snappedf(worst, 0.01), "lod_merges": InfantryLodMerge._cache.size(),
+		"route_ms": snappedf(demo.sim.routing.last_frame_ms, 0.01), "bodies": demo.sim.bodies.size(),
+		"pipe_surface": int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_SURFACE)), "pipe_mesh": int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_MESH)),
+		"pipe_draw": int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_DRAW)), "pipe_spec": int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_SPECIALIZATION)),
+		"nodes": int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))}
 
 
 ## Frames per second over two real seconds.
@@ -383,6 +420,205 @@ func _u_bodies() -> Dictionary:
 			e["meshes"] = meshes
 		out.append(e)
 	return {"soldiers": out}
+
+
+# --- GAMEPLAY-05B ---------------------------------------------------------------------------------------------------------
+
+## B6: a squad building a site takes up a defence on its own (as on contact) which ends in a regroup; the tactics leave it on a
+## HOLD / REGROUP it was never given. It must go back to the site by itself and finish it. Fails if the squad never built
+## (precondition) or did not end on the tactics' hold / regroup (nothing tested).
+func _b_build_resume() -> Dictionary:
+	var pf := _war().player_faction
+	var sq: SquadState = _player_squads()[0]
+	_war().faction(pf).pool.add(&"supplies", 3000.0)
+	var cp := _player_cp()
+	var site := _place(&"fighting_position", _site_in_base(&"fighting_position", cp.position))
+	_expect(site != null, "b_build_resume: no site placed")
+	if site == null:
+		return {}
+	await _until(func() -> bool: return sq.tactic == SquadState.Tactic.BUILD and site.work_progress() > 0.02, 120.0, 4.0)
+	var built0 := sq.tactic == SquadState.Tactic.BUILD
+	var p0 := site.work_progress()
+	var order_building := sq.order
+	demo.sim.tactics.start(sq, SquadState.Tactic.DEFEND, SquadState.Owner.SQUAD, demo.sim.war.squad_center(sq), -1, "test: contact")
+	var prev_order := sq.prev_order
+	await _until(func() -> bool: return false, 15.0, 4.0)
+	demo.sim.tactics._finish(sq, "test: calm", SquadState.Tactic.REGROUP)
+	await _until(func() -> bool: return sq.tactic == SquadState.Tactic.NONE, 60.0, 4.0)
+	var order_after := sq.order
+	var t0 := demo.sim.state.time
+	await _until(func() -> bool: return not site.is_site() or (sq.tactic == SquadState.Tactic.BUILD and site.work_progress() > p0 + 0.05), 180.0, 4.0)
+	var out := {"built_first": built0, "p0": snappedf(p0, 0.01), "order_after_regroup": order_after, "resumed_s": roundi(demo.sim.state.time - t0),
+		"p1": snappedf(site.work_progress(), 0.01), "finished": not site.is_site(), "tactic": sq.tactic_name(), "why": sq.tactic_why,
+		"order_building": order_building, "prev_order": prev_order, "tactic_hold": demo.sim.tactics._meta(sq, "tactic_hold", null),
+		"eligible": demo.sim.tactics.build_eligible(sq), "status": sq.status, "site_why": String(site.work_record().get("why", "")),
+		"no_build_until": demo.sim.tactics._meta(sq, "no_build_until", 0.0), "now": roundi(demo.sim.state.time)}
+	_expect(built0, "b_build_resume: the squad never started building (precondition): %s" % str(out))
+	_expect(order_after == SquadState.Order.HOLD or order_after == SquadState.Order.REGROUP, "b_build_resume: the squad did not end on the tactics' hold / regroup (nothing tested): %s" % str(out))
+	_expect(out.finished or float(out.p1) > p0 + 0.05, "b_build_resume: the squad did not go back to the site: %s" % str(out))
+	return out
+
+
+## navinf_04 diagnosis: physics heights across the road edge where near-tier soldiers stall (-142, -1312), against the terrain
+## height (the navmesh's ground): where the road collider stands above the terrain and how high its edge is.
+func _n_edge() -> Dictionary:
+	var c := Vector3(-142.0, 0.0, -1312.0)
+	await _frame(c, 40.0, 0.0)
+	await _seconds(3.0)
+	var nrm := Vector3(0.89, 0.0, -0.46).normalized()
+	var space := demo.get_viewport().get_world_3d().direct_space_state
+	var rows := []
+	for i in range(-12, 13):
+		var p := c + nrm * (i * 0.5)
+		var th: float = demo.terrain.data.get_height(p)
+		var q := PhysicsRayQueryParameters3D.create(Vector3(p.x, th + 20.0, p.z), Vector3(p.x, th - 5.0, p.z))
+		var hit := space.intersect_ray(q)
+		var hy: float = hit.position.y if not hit.is_empty() else NAN
+		var who: String = String(hit.collider.name) if not hit.is_empty() else "-"
+		rows.append([i * 0.5, snappedf(th, 0.01), snappedf(hy, 0.01), snappedf(hy - th, 0.01), who])
+	return {"along_normal": rows}
+
+
+## Capture feedback: the squad is put into a neutral objective (Verket); the squad status, the world overlay (shot) and the map tag
+## (shot) say CAPTURING with the progress and what keeps it going; the squad is moved out: CAPTURE PAUSED and one message.
+func _u_capture() -> Dictionary:
+	var pf := _war().player_faction
+	var sq: SquadState = _player_squads()[0]
+	var o := _objective("Verket")
+	_expect(o != null and o.owner < 0, "u_capture: no neutral Verket (precondition)")
+	if o == null:
+		return {}
+	var tag := ("_" + shot_tag) if shot_tag != "" else ""
+	var put := func(at: Vector3) -> void:
+		var i := 0
+		for uid in sq.members:
+			var u := demo.sim.state.get_unit(uid)
+			demo.sim.state.halt(uid)
+			u.position = demo.on_ground(at.x + (i % 4) * 3.0, at.z + (i / 4) * 3.0, 0.0)
+			var b: Node3D = demo.sim.bodies.get(uid)
+			if b:
+				b.global_position = u.position + Vector3.UP * 0.3  # a near body writes its own position into the record
+			i += 1
+		# The squad's own order there too (else its formation slots pull the soldiers back).
+		demo.sim.squads.order_move([sq.id], demo.on_ground(at.x + 4.5, at.z + 1.5, 0.0))
+	put.call(o.position + Vector3(-10, 0, 10))
+	await _frame(o.position, 140.0, 0.0)
+	await _until(func() -> bool: return o.capture_progress > 0.15, 120.0, 4.0)
+	await _seconds(1.0)
+	var st1 := SquadPanel.squad_status(demo.sim, sq)
+	# The capture word itself (combat - ENGAGED / UNDER FIRE - rightly wins in the shown status; Verket is in sight of a South post).
+	var cap1 := SquadPanel.capture_status(demo.sim, sq)
+	var cs1 := demo.sim.war.capture_state(o, pf)
+	demo.rts.select_squads([sq.id])
+	_png("u_capture_rts" + tag)
+	demo.toggle_map()
+	demo.strategic_map.zoom = 0.35
+	demo.strategic_map.focus_on(o.position)
+	await _seconds(1.0)
+	_png("u_capture_map" + tag)
+	demo.toggle_map()
+	var n_ev := _war().events.size()
+	put.call(o.position + Vector3(o.radius + 150.0, 0, 0))
+	await _until(func() -> bool: return demo.sim.war.capture_state(o, pf).state == "paused", 30.0, 2.0)
+	await _seconds(1.0)
+	var cs2 := demo.sim.war.capture_state(o, pf)
+	var msgs := []
+	for i in range(n_ev, _war().events.size()):
+		if String(_war().events[i].kind) == "capture":
+			msgs.append(String(_war().events[i].text))
+	await _frame(o.position, 140.0, 0.0)
+	await _seconds(1.0)
+	_png("u_capture_paused" + tag)
+	var out := {"presence": o.presence, "squad_to_obj_m": roundi(WarSim._flat(demo.sim.war.squad_center(sq), o.position)), "war": demo.sim.war.enabled,
+		"owner": o.owner, "capture_faction": o.capture_faction, "contested": o.contested, "shown_status": st1.text, "capture_status": cap1.get("text", ""), "state1": cs1.state, "progress1": snappedf(float(cs1.progress), 0.01), "radius": roundi(o.radius),
+		"state2": cs2.state, "messages": msgs}
+	_expect(String(cap1.get("text", "")).begins_with("CAPTURING") and cs1.state == "capturing", "u_capture: no CAPTURING status: %s" % str(out))
+	_expect(cs2.state == "paused" and msgs.size() == 1 and String(msgs[0]).contains("%d m" % roundi(o.radius)), "u_capture: no single pause message with the radius: %s" % str(out))
+	return out
+
+
+## Command usability: an armed ASSAULT and an armed REARM show the line, distance and what the click will do (shots); the mouse on
+## the ASSAULT button shows its tooltip (shot). The tooltips say what the order does (text checked).
+func _u_orders() -> Dictionary:
+	var sq: SquadState = _player_squads()[0]
+	var c := demo.sim.war.squad_center(sq)
+	await _frame(c + Vector3(0, 0, -40), 90.0, 0.0)
+	demo.rts.select_squads([sq.id])
+	await _seconds(0.5)
+	var vs := demo.get_viewport().get_visible_rect().size
+	var tag := ("_" + shot_tag) if shot_tag != "" else ""
+	demo.rts.arm_tactic(SquadState.Tactic.ASSAULT)
+	Input.warp_mouse(Vector2(vs.x * 0.55, vs.y * 0.3))
+	await _seconds(0.6)
+	_png("u_orders_assault" + tag)
+	demo.rts.armed_tactic = -1
+	demo.rts.arm_tactic(RTSController.REARM)
+	Input.warp_mouse(Vector2(vs.x * 0.4, vs.y * 0.35))
+	await _seconds(0.6)
+	_png("u_orders_rearm" + tag)
+	demo.rts.armed_tactic = -1
+	var b: Control = demo.hud.tactical_panel._buttons[SquadState.Tactic.ASSAULT]
+	Input.warp_mouse(b.get_global_rect().get_center() * demo.get_viewport().get_final_transform().get_scale())
+	await _seconds(1.6)
+	_png("u_orders_tooltip" + tag)
+	var tips := {}
+	for e: Array in TacticalPanel.ENTRIES:
+		tips[String(e[3])] = String(e[5])
+	_expect(String(tips.get("Assault", "")).contains("fire and movement") and String(tips.get("Rearm", "")).contains("ammunition"), "u_orders: tooltips: %s" % str(tips))
+	return {"tooltips": tips.size(), "assault": tips.get("Assault", "")}
+
+
+## Road mesh against RoadNetwork across many roads near the camera: for road segments within 600 m of a few spots, physics rays
+## across the road find where the road collider ends and how high it is, compared with the RoadNetwork width and surface height
+## that RoadShoulders eases the terrain to; and how far the terrain just outside the mesh lies below the mesh edge (the lip).
+func _n_roads() -> Dictionary:
+	var spots: Array = [Vector3(-142, 0, -1312), demo.sim.war.squad_center(_player_squads()[0]), Vector3(-1300, 0, 5600), Vector3(800, 0, 2200)]
+	var rows := []
+	var space := demo.get_viewport().get_world_3d().direct_space_state
+	for sp: Vector3 in spots:
+		await _frame(sp, 60.0, 0.0)
+		await _seconds(3.0)
+		for r: RoadNetwork.Road in demo.sim.state.roads.world:
+			for i in range(0, r.points.size() - 1, 3):
+				var a := r.points[i]
+				var b := r.points[i + 1]
+				var m := a.lerp(b, 0.5)
+				if WarSim._flat(m, sp) > 120.0:
+					continue
+				var t := Vector3(b.x - a.x, 0, b.z - a.z).normalized()
+				var nrm := Vector3(-t.z, 0, t.x)
+				var hw := r.width * 0.5
+				for side: float in [-1.0, 1.0]:
+					var edge := -1.0
+					var edge_y := NAN
+					for k in range(0, 41):
+						var off := k * 0.1
+						var p := m + nrm * side * (hw - 1.0 + off)
+						var q := PhysicsRayQueryParameters3D.create(Vector3(p.x, m.y + 15.0, p.z), Vector3(p.x, m.y - 15.0, p.z))
+						var hit := space.intersect_ray(q)
+						if hit.is_empty() or not String(hit.collider.name).contains("road"):
+							break
+						edge = off - 1.0
+						edge_y = hit.position.y
+					if edge < -0.9:
+						continue
+					var out := m + nrm * side * (hw + edge + 0.25)
+					var th: float = demo.terrain.data.get_height(out)
+					var road_y := m.y
+					rows.append({"over_w": snappedf(edge, 0.05), "edge_dy": snappedf(edge_y - road_y, 0.01), "lip": snappedf(edge_y - th, 0.01),
+						"w": r.width, "cls": String(r.cls)})
+	var n := rows.size()
+	var lips := rows.map(func(x: Dictionary) -> float: return float(x.lip))
+	lips.sort()
+	var ow := rows.map(func(x: Dictionary) -> float: return float(x.over_w))
+	ow.sort()
+	var dy := rows.map(func(x: Dictionary) -> float: return float(x.edge_dy))
+	dy.sort()
+	var over_35 := lips.filter(func(x: float) -> bool: return x > 0.35).size()
+	var over_100 := lips.filter(func(x: float) -> bool: return x > 1.0).size()
+	return {"samples": n, "over_w_median": ow[n / 2] if n > 0 else null, "over_w_p90": ow[int(n * 0.9)] if n > 0 else null,
+		"edge_dy_median": dy[n / 2] if n > 0 else null, "lip_median": lips[n / 2] if n > 0 else null, "lip_p90": lips[int(n * 0.9)] if n > 0 else null,
+		"lip_max": lips[n - 1] if n > 0 else null, "lips_over_step_0_35": over_35, "lips_over_1m": over_100, "rows": rows.slice(0, 60)}
 
 
 static func _xz2(p: Vector3) -> Array:

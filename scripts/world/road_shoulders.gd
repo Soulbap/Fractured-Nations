@@ -18,6 +18,13 @@ const SHOULDER_MAX_M := 14.0
 const SLOPE := 0.3
 const UNDER_M := 0.08
 const MIN_CHANGE_M := 0.03
+## GAMEPLAY-05B: the road meshes (RoadManager) are wider than RoadNetwork's width - measured 1.9-2.0 m more on each side of the
+## secondary roads - and fall ~0.28 m towards their edge. The ramp began at RoadNetwork's edge, so the terrain dropped away under
+## the outer two metres of the mesh and its edge stood a median 0.46 m (up to 1.1 m) above the ground: soldiers in the ditch
+## stood against it (navinf_04, the player's squads beside cut roads). The terrain now follows the mesh's cross-fall out to its
+## edge and the ramp starts there.
+const MESH_EDGE_M := 2.0
+const MESH_EDGE_DROP_M := 0.28
 const BRIDGE_SKIP_M := 15.0
 const CACHE := "user://terrain/%s_road_shoulders_%s.bin"
 ## Vegetation cells (VegetationChunk cell size) whose ground was eased, and the terrain: instances there are put back on the
@@ -134,7 +141,8 @@ static func compute(terrain: Terrain3D, roads: RoadNetwork, spacing: float) -> D
 		if pts.size() < 2:
 			continue
 		var hw := r.width * 0.5
-		var reach := hw + SHOULDER_MAX_M
+		var hw_mesh := hw + MESH_EDGE_M
+		var reach := hw_mesh + SHOULDER_MAX_M
 		for i in pts.size() - 1:
 			if _near_bridge(r, pts, i):
 				continue
@@ -166,20 +174,24 @@ static func compute(terrain: Terrain3D, roads: RoadNetwork, spacing: float) -> D
 						continue
 					var road_y := lerpf(a.y, b.y, t)
 					var nh := road_y - UNDER_M
-					if d > hw:
+					var edge_y := road_y - UNDER_M - MESH_EDGE_DROP_M
+					if d > hw and d <= hw_mesh:
+						# Under the mesh's shoulder: its cross-fall.
+						nh = lerpf(road_y - UNDER_M, edge_y, (d - hw) / MESH_EDGE_M)
+					elif d > hw_mesh:
 						# The ramp across the band, along the perpendicular through this vertex, ends on the original terrain.
 						var foot := a2 + ab * t
 						var nrm := (q - foot) / d
-						var outer: float = terrain.data.get_height(Vector3(foot.x + nrm.x * (hw + SHOULDER_M), 0.0, foot.y + nrm.y * (hw + SHOULDER_M)))
+						var outer: float = terrain.data.get_height(Vector3(foot.x + nrm.x * (hw_mesh + SHOULDER_M), 0.0, foot.y + nrm.y * (hw_mesh + SHOULDER_M)))
 						var band := SHOULDER_M
 						if not is_nan(outer):
-							band = clampf(absf(outer - road_y) / SLOPE, SHOULDER_M, SHOULDER_MAX_M)
-							outer = terrain.data.get_height(Vector3(foot.x + nrm.x * (hw + band), 0.0, foot.y + nrm.y * (hw + band)))
-						var e := d - hw
+							band = clampf(absf(outer - edge_y) / SLOPE, SHOULDER_M, SHOULDER_MAX_M)
+							outer = terrain.data.get_height(Vector3(foot.x + nrm.x * (hw_mesh + band), 0.0, foot.y + nrm.y * (hw_mesh + band)))
+						var e := d - hw_mesh
 						if is_nan(outer) or e >= band:
 							continue
 						var u := e / band
-						nh = lerpf(road_y - UNDER_M, outer, lerpf(u, smoothstep(0.0, 1.0, u), 0.5))
+						nh = lerpf(edge_y, outer, lerpf(u, smoothstep(0.0, 1.0, u), 0.5))
 					if absf(nh - h) < MIN_CHANGE_M:
 						continue
 					seen[key] = true
@@ -210,7 +222,7 @@ static func _near_bridge(r: RoadNetwork.Road, pts: PackedVector3Array, i: int) -
 
 ## A short signature of the road set and the rules (the cache is rebuilt when either changes).
 static func _signature(roads: RoadNetwork, spacing: float) -> String:
-	var h := hash([SHOULDER_M, SHOULDER_MAX_M, SLOPE, UNDER_M, MIN_CHANGE_M, BRIDGE_SKIP_M, spacing, roads.world.size()])
+	var h := hash([SHOULDER_M, SHOULDER_MAX_M, SLOPE, UNDER_M, MIN_CHANGE_M, BRIDGE_SKIP_M, MESH_EDGE_M, MESH_EDGE_DROP_M, spacing, roads.world.size()])
 	for r: RoadNetwork.Road in roads.world:
 		if r.points.size() > 0:
 			h = hash([h, r.points.size(), r.points[0], r.points[r.points.size() - 1], r.width])

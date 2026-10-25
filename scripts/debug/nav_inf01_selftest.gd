@@ -271,7 +271,8 @@ func _nmarch(a: Vector3, b: Vector3, tier: String, max_s: float, opts := {}) -> 
 		"squad_replans": sim.squads.route_replanned - replans0, "route_skips": sim.squads.route_skips - skips0,
 		"route_stalls": sim.squads.route_stall_events - stalls0, "max_step_m": snappedf(jumps.max_step, 0.1), "jumps": jumps.n,
 		"reasons": rows.map(func(r: Dictionary) -> String: return r.why).filter(func(w: String) -> bool: return w != ""),
-		"stall_events": events, "members": rows, "block_log": sim.local_block_log.duplicate(true) if "local_block_log" in sim else []}
+		"stall_events": events, "members": rows, "block_log": sim.local_block_log.duplicate(true) if "local_block_log" in sim else [],
+		"body_stuck": SoldierBody.stuck_log.duplicate(true), "ledge_hops": SoldierBody.ledge_hops}
 
 
 func _stall_row(u: UnitState, sq: SquadState, goal: Vector3, t: float) -> Dictionary:

@@ -34,8 +34,10 @@ extends FPSController
 ## meshes 12-25 cm above it with a sharp edge: a capsule of radius 0.35 m cannot slide up such an edge (contact normal y 0.3-0.6),
 ## so every soldier whose path crossed a road verge stood still against it until the stuck logic gave up on the order.
 @export var step_height := 0.35
-## GAMEPLAY-04A: the highest edge a stuck soldier climbs over on its first unstick attempt (_hop_ledge).
-@export var ledge_hop_m := 0.95
+## GAMEPLAY-04A: the highest edge a stuck soldier climbs over on its first unstick attempt (_hop_ledge). GAMEPLAY-05B: 1.2 m - the
+## road mesh at the navinf_04 verge stands ~1 m above the slope below it (the collider is wider and ~0.2 m higher than the
+## RoadNetwork line the shoulders ease to), one step too high for 0.95 m.
+@export var ledge_hop_m := 1.2
 ## GAMEPLAY-04A: a soldier whose navmesh path ends under its feet walks straight at a goal farther than this (nearer, among
 ## the squad's formation slots, it waits for the path as before).
 @export var straight_fallback_m := 15.0
@@ -340,8 +342,17 @@ func _check_stuck(delta: float, remaining: float, reacting := false) -> void:
 		_stuck_at = global_position
 		nav.target_position = unit.react_target if reacting else unit.order_target
 		_unstick_left = unstick_s
-		_hop_ledge(unit.react_target if reacting else unit.order_target)
+		_hopped = _hop_ledge(unit.react_target if reacting else unit.order_target)
 	else:
+		# GAMEPLAY-05B: where and against what a soldier gave up (tests read stuck_log; bounded).
+		stuck_log.append({"id": unit.id, "pos": [snappedf(global_position.x, 0.1), snappedf(global_position.y, 0.1), snappedf(global_position.z, 0.1)],
+			"goal_m": snappedf(remaining, 0.1), "floor_n": get_floor_normal().snapped(Vector3.ONE * 0.01) if is_on_floor() else null,
+			"wall_n": get_wall_normal().snapped(Vector3.ONE * 0.01) if is_on_wall() else null, "hopped": _hopped, "reacting": reacting,
+			"next_d": snappedf(_next_distinct_dir().length(), 0.1), "real_v": get_real_velocity().snapped(Vector3.ONE * 0.01),
+			"safe_v": _safe_velocity.snapped(Vector3.ONE * 0.01), "floor_max_deg": snappedf(rad_to_deg(floor_max_angle), 0.1),
+			"nav_fin": nav.is_navigation_finished()})
+		if stuck_log.size() > 60:
+			stuck_log.pop_front()
 		_finish(remaining, reacting, "stuck: no progress after an unstick attempt")
 
 
@@ -386,27 +397,38 @@ func _apply_velocity(v: Vector3, delta: float) -> void:
 ## which needs a moving body, never fires): seen at road verges next to the New Game start, where a soldier stood against
 ## the road's edge 0.1 m below its surface for the rest of the order. On the first stuck stage the body is lifted over the
 ## edge towards its goal when the space above and ahead is free (the same test _step_up makes); otherwise nothing changes.
-func _hop_ledge(goal: Vector3) -> void:
-	if not is_on_wall():
-		return
-	var ahead := goal - global_position
-	ahead.y = 0.0
+func _hop_ledge(goal: Vector3) -> String:
+	# GAMEPLAY-05B: towards where the path goes next (the goal itself can lie past a bend), and an edge is found by testing the
+	# move, not by is_on_wall(): a soldier standing still against an edge often reports no wall contact (zero velocity, nothing to
+	# slide along), so the hop never fired and the second stuck stage dropped the order (navinf_04, 3 of 6 stuck at one verge).
+	var ahead := _next_distinct_dir()
 	if ahead.length_squared() < 0.01:
-		return
-	# The lowest lift that clears it, up to ledge_hop_m (road embankments stand up to ~0.7 m above the terrain beside them).
+		ahead = goal - global_position
+		ahead.y = 0.0
+	if ahead.length_squared() < 0.01:
+		return "no direction"
 	var motion := ahead.normalized() * 0.5
-	for h: float in [step_height + 0.15, 0.7, ledge_hop_m]:
+	# An edge is a contact steeper than the walkable limit (a plain slope ahead is ground, not an edge; the rule of _step_up).
+	var hit := KinematicCollision3D.new()
+	if not is_on_wall() and (not test_move(global_transform, motion * 0.6, hit) or hit.get_normal().y >= cos(floor_max_angle)):
+		return "no edge ahead"
+	# The lowest lift that clears it, up to ledge_hop_m (road embankments stand up to ~1 m above the slope beside them).
+	for h: float in [step_height + 0.15, 0.7, 0.95, ledge_hop_m]:
 		var lift := Vector3.UP * h
 		if test_move(global_transform, lift) or test_move(global_transform.translated(lift), motion):
 			continue
 		global_position += lift + motion
 		velocity.y = 0.0
 		ledge_hops += 1
-		return
+		return "hopped %.2f m" % h
+	return "edge higher than %.2f m or no room" % ledge_hop_m
 
 
 ## Times a stuck soldier was lifted over a low edge (_hop_ledge), for tests.
 static var ledge_hops := 0
+## GAMEPLAY-05B: the last soldiers that gave up an order as stuck (where, normals, what the hop found), for tests.
+static var stuck_log: Array = []
+var _hopped := ""
 
 
 ## Walks up a ledge the capsule would otherwise stand against: when the next move hits a wall (not a floor) and the same move
