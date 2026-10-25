@@ -118,7 +118,9 @@ func update(sim: WorldSim, u: UnitState) -> void:
 		_weapon.set_state(def.display_name + nades, u.mag, def.magazine_size, u.reserve, "AUTO" if u.fire_auto else "SEMI", reload)
 		_weapon.position = Vector2(vp.x - _weapon.size.x - FNUI.EDGE - 4, vp.y - _weapon.size.y - FNUI.EDGE - 4)
 	# Health and combat state.
-	_name.text = u.unit_name
+	# COMBAT-01: the posture beside the name (C crouch, Z prone); "getting down / up" while it changes.
+	var pst := "" if u.posture == Posture.STAND and Posture.settled(u, now) else ("  ·  " + (("getting down" if u.posture == Posture.PRONE else "getting up") if Posture.busy(u, now) else Posture.NAMES[u.posture].capitalize()))
+	_name.text = u.unit_name + pst
 	_health.set_health(u.health, u.max_health)
 	var supp := u.suppression_at(now)
 	# COMBAT-01: a restrained cue (the edges only, never most of the screen): sound and impacts carry the danger.

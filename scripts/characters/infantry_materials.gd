@@ -13,6 +13,9 @@ class_name InfantryMaterials
 extends RefCounted
 
 const TEX := "res://assets/characters/infantry/textures/"
+## COMBAT-01 edge light of cloth / helmets (StandardMaterial3D.rim) and the materials that get it.
+const RIM := 0.08
+const RIM_MATERIALS: Array[String] = ["Camo_", "Fabric_", "Webbing_", "Cordura_", "Helmet_", "Glove_"]
 
 ## name: [albedo colour (sRGB), roughness, metallic, albedo texture, normal texture, normal scale]
 const TABLE := {
@@ -48,6 +51,15 @@ const TABLE := {
 	"Fabric_Coyote": [Color(0.55, 0.47, 0.35), 0.90, 0.0, "", "fabric_ripstop_normal.png", 0.6],
 	"Polymer_Tan": [Color(0.62, 0.53, 0.38), 0.68, 0.0, "polymer_albedo.png", "polymer_normal.png", 0.7],
 	"Polymer_Plum": [Color(0.32, 0.14, 0.12), 0.60, 0.0, "polymer_albedo.png", "polymer_normal.png", 0.7],
+	# WEAPON-ASSETS-01 weapon finishes (same values as tools/blender/weapons/build_weapons.py WEAPON_MATERIALS).
+	"Weapon_Anodized": [Color(0.052, 0.052, 0.055), 0.48, 0.60, "polymer_albedo.png", "polymer_normal.png", 0.35],
+	"Weapon_Phosphate": [Color(0.080, 0.080, 0.076), 0.60, 0.65, "polymer_albedo.png", "polymer_normal.png", 0.45],
+	"Weapon_PaintBlack": [Color(0.036, 0.036, 0.038), 0.46, 0.25, "polymer_albedo.png", "polymer_normal.png", 0.30],
+	"Polymer_Green": [Color(0.27, 0.30, 0.22), 0.66, 0.0, "polymer_albedo.png", "polymer_normal.png", 0.6],
+	"Wood_Laminate": [Color(1, 1, 1), 0.62, 0.0, "wood_laminate_albedo.png", "wood_normal.png", 0.5],
+	"Launcher_OD": [Color(0.20, 0.215, 0.15), 0.72, 0.0, "polymer_albedo.png", "polymer_normal.png", 0.45],
+	"Launcher_Green": [Color(0.21, 0.26, 0.17), 0.62, 0.05, "polymer_albedo.png", "polymer_normal.png", 0.40],
+	"Composite_Dark": [Color(0.070, 0.074, 0.068), 0.52, 0.10, "polymer_albedo.png", "polymer_normal.png", 0.50],
 }
 
 ## Camouflage per faction index (WorldState faction ids) for the shared CHARACTER-01 pieces
@@ -102,6 +114,9 @@ static func proxy_material() -> StandardMaterial3D:
 		_proxy_material.vertex_color_use_as_albedo = true
 		_proxy_material.vertex_color_is_srgb = true
 		_proxy_material.roughness = 0.9
+		_proxy_material.rim_enabled = true
+		_proxy_material.rim = RIM
+		_proxy_material.rim_tint = 0.45
 	return _proxy_material
 
 
@@ -122,6 +137,12 @@ static func _build(key: String, faction: int) -> Material:
 		m.normal_texture = load(TEX + row[4])
 		m.normal_scale = row[5]
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	# COMBAT-01: cloth and helmets catch a little light round their edges (rim), so a backlit soldier reads as a figure in
+	# its uniform instead of a black cut-out. Subtle and lit only by the scene's light (no glow, no outline).
+	if RIM_MATERIALS.any(func(p: String) -> bool: return src.begins_with(p)):
+		m.rim_enabled = true
+		m.rim = RIM
+		m.rim_tint = 0.45
 	if key.begins_with("Patch_"):
 		m.albedo_color = WorldState.faction_color(faction)
 	return m

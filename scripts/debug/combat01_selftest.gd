@@ -24,11 +24,18 @@
 ##            (short, out of sight, with its reason); the player's squad holding where the player ordered does not (it says so).
 ## r_markers  the RTS contact markers of the selected squad: an enemy its soldiers see is marked where it is; moved out of
 ##            sight, the marker stays where it was last seen (never follows it) and fades; nothing is marked that nobody saw.
+## s_visibility one standing soldier seen from a first-person eye at 50 / 100 / 200 / 300 / 500 m, sun behind the viewer
+##            (front-lit) and against him (backlit), with the naked eye (75 deg) and through the sights (42 / 15 deg): each
+##            view rendered with and without the soldier; the pixels he changes and how much (luminance) measure how well
+##            he reads. Screenshots per distance.
+## p_ai_posture two teams of four (rifles, a machine gunner and a marksman each) 150 m apart fight for 30 s: which postures
+##            the AI takes, how often each soldier changes (no flicker: at most one change in posture_hold_s), and that
+##            moving soldiers stand.
 ## Prints "C1 <check> <json>", writes res://benchmarks/raw/combat01_test.json.
 class_name Combat01SelfTest
 extends Visual03SelfTest
 
-const CHECKS1: Array[String] = ["v_detect", "p_posture", "g_grass", "a_accuracy", "f_gunplay", "t_withdraw", "r_markers"]
+const CHECKS1: Array[String] = ["v_detect", "p_posture", "g_grass", "a_accuracy", "f_gunplay", "t_withdraw", "r_markers", "s_visibility", "p_ai_posture"]
 
 
 func run(args: PackedStringArray) -> void:
@@ -675,3 +682,192 @@ func _marker_near(cm: ContactMarkers, p: Vector3, r: float) -> bool:
 		if mi and mi.visible and Vector2(mi.global_position.x - p.x, mi.global_position.z - p.z).length() < r:
 			return true
 	return false
+
+
+## Pixels inside rect that differ between two renders (> 0.06 in luminance plus colour) and their mean difference.
+static func _img_diff(a: Image, b: Image, rect: Rect2i) -> Dictionary:
+	var n := 0
+	var sum := 0.0
+	var r := rect.intersection(Rect2i(0, 0, a.get_width(), a.get_height()))
+	for y in range(r.position.y, r.end.y):
+		for x in range(r.position.x, r.end.x):
+			var ca := a.get_pixel(x, y)
+			var cb := b.get_pixel(x, y)
+			var d := absf(ca.get_luminance() - cb.get_luminance()) + 0.5 * Vector3(ca.r - cb.r, ca.g - cb.g, ca.b - cb.b).length()
+			if d > 0.06:
+				n += 1
+				sum += d
+	return {"px": n, "contrast": snappedf(sum / maxf(n, 1.0), 0.001)}
+
+
+## The soldier's box on screen (feet to head, shoulders), a few pixels larger.
+func _screen_box(t: UnitState) -> Rect2i:
+	var pts: Array[Vector3] = []
+	for y: float in [0.0, 1.8]:
+		for sx: float in [-0.4, 0.4]:
+			pts.append(t.position + Vector3(sx, y, sx))
+	var lo := Vector2(INF, INF)
+	var hi := -lo
+	for p in pts:
+		var q := _tcam.unproject_position(p)
+		lo = lo.min(q)
+		hi = hi.max(q)
+	# unproject_position works in the logical canvas (stretch mode canvas_items: 1152 x 648); the image is the window's
+	var k := float(demo.get_viewport().get_texture().get_width()) / demo.get_viewport().get_visible_rect().size.x
+	lo *= k
+	hi *= k
+	return Rect2i(Vector2i(lo) - Vector2i(4, 4), Vector2i(hi - lo) + Vector2i(9, 9))
+
+
+func _s_visibility() -> Dictionary:
+	var sim := demo.sim
+	sim.brain.enabled = false
+	UnitVisuals.markers_visible = false
+	var c: Vector3 = _site.def
+	var sun := demo.world.get_node_or_null("Sun") as DirectionalLight3D
+	var to_sun := (sun.global_basis.z if sun else Vector3(0, 1, 1)).normalized()
+	var sun_h := Vector3(to_sun.x, 0, to_sun.z).normalized()
+	var tsq := _cs.spawn(1, c, -sun_h, 1, "C1V")
+	var t := sim.state.get_unit(tsq.members[0])
+	t.position = demo.on_ground(c.x, c.z, 0.0)
+	var tb := _body(t)
+	if tb:
+		tb.teleport(t.position, t.yaw)
+	await _physics(20)
+	var out := {"sun_elevation_deg": snappedf(rad_to_deg(asin(to_sun.y)), 0.1)}
+	# Per distance the open directions (a clear line through leaves too, no tree at the viewer): the one most towards the
+	# sun (the viewer has the sun at his back: front-lit) and the one most away from it (backlit).
+	var open_dir := func(d: float, sign_: float) -> Vector3:
+		var best := Vector3.ZERO
+		var best_dot := -INF
+		for k in 72:
+			var v := Vector3(cos(k * TAU / 72.0), 0, sin(k * TAU / 72.0))
+			var e := demo.on_ground(c.x + v.x * d, c.z + v.z * d, 1.62)
+			var sg := sim.combat.line.sight(e, t.position + Vector3.UP * 1.1)
+			if not sg.visible or int(sg.foliage) > 0 or sim.combat.line.foliage_layers(e + v * 6.0, e - v * 6.0) > 0:
+				continue
+			if v.dot(sun_h) * sign_ > best_dot:
+				best_dot = v.dot(sun_h) * sign_
+				best = v
+		return best
+	var angles := {}
+	for light: Array in [["frontlit", 1.0], ["backlit", -1.0]]:
+		var rows := {}
+		for d: float in [50.0, 100.0, 200.0, 300.0, 500.0]:
+			# The viewer stands d m from the target on the sun's side (front-lit) or the far side (backlit).
+			var v: Vector3 = open_dir.call(d, float(light[1]))
+			if v == Vector3.ZERO:
+				rows["%dm" % int(d)] = {"open": false}
+				continue
+			var aim := t.position + Vector3.UP * 1.1
+			var eye := demo.on_ground(c.x + v.x * d, c.z + v.z * d, 1.62)
+			var row := {"sun_angle_deg": snappedf(rad_to_deg(acos(clampf(v.dot(sun_h) * float(light[1]), -1.0, 1.0))), 1)}
+			for fov: float in ([75.0, 42.0] if d <= 200.0 else [75.0, 42.0, 15.0]):
+				_tcam.current = true
+				_tcam.fov = fov
+				_tcam.global_position = eye
+				_tcam.look_at(aim, Vector3.UP)
+				var view := sim.view_of(t.id) as Node3D
+				var home := t.position
+				for i in 4:
+					await tree.process_frame
+				var with_img := demo.get_viewport().get_texture().get_image()
+				# without him: the body (or proxy) moved far below the ground for a moment
+				if view is SoldierBody:
+					(view as SoldierBody).teleport(home + Vector3.DOWN * 80.0)
+				elif view:
+					view.global_position = home + Vector3.DOWN * 80.0
+				for i in 3:
+					await tree.process_frame
+				var without := demo.get_viewport().get_texture().get_image()
+				if view is SoldierBody:
+					(view as SoldierBody).teleport(home, t.yaw)
+				t.position = home
+				for i in 3:
+					await tree.process_frame
+				row["tier"] = "body" if view is SoldierBody else "proxy"
+				var box := _screen_box(t)
+				var dd := _img_diff(with_img, without, box)
+				dd["noise_px"] = _img_diff(with_img, without, Rect2i(box.position + Vector2i(box.size.x * 2 + 20, 0), box.size)).px
+				dd["box"] = [box.size.x, box.size.y]
+				row["fov%d" % int(fov)] = dd
+				if shots and (fov == 75.0 or fov == 15.0 and d >= 300.0):
+					DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_shot_dir))
+					var crop := with_img.get_region(Rect2i(with_img.get_width() / 2 - 320, with_img.get_height() / 2 - 180, 640, 360))
+					crop.save_png(ProjectSettings.globalize_path("%s/s_%s_%dm_fov%d.png" % [_shot_dir, light[0], int(d), int(fov)]))
+			rows["%dm" % int(d)] = row
+		out[light[0]] = rows
+	_tcam.fov = 50.0
+	return out
+
+
+func _p_ai_posture() -> Dictionary:
+	var sim := demo.sim
+	sim.brain.enabled = false
+	var c: Vector3 = _site.def
+	var dir: Vector3 = _site.dir
+	# a clear 150 m line near the site (as v_detect)
+	for k in 24:
+		var d2 := dir.rotated(Vector3.UP, k * TAU / 24.0)
+		var pa := demo.on_ground(c.x - d2.x * 75.0, c.z - d2.z * 75.0, 1.6)
+		var pb := demo.on_ground(c.x + d2.x * 75.0, c.z + d2.z * 75.0, 1.55)
+		if sim.combat.line.sight(pa, pb).visible:
+			dir = d2
+			break
+	var a := _cs.spawn(0, c - dir * 75.0, dir, 4, "C1PA")
+	var b := _cs.spawn(1, c + dir * 75.0, -dir, 4, "C1PB")
+	_keep_alive([a, b])
+	for sq: SquadState in [a, b]:
+		var m1 := sim.state.get_unit(sq.members[1])
+		var m2 := sim.state.get_unit(sq.members[2])
+		m1.weapon_id = &"lmg"
+		m1.mag = 100
+		m1.reserve = 400
+		m2.weapon_id = &"dmr"
+		m2.mag = 20
+		m2.reserve = 100
+	await _physics(10)
+	var units: Array = []
+	for sq: SquadState in [a, b]:
+		for id in sq.members:
+			units.append(sim.state.get_unit(id))
+	var last := {}
+	var changes := {}
+	var min_gap := INF
+	var at := {}
+	var moving_low := 0
+	var why_prone := {}
+	var time_in := [0, 0, 0]
+	sim.brain.enabled = true
+	var t0 := sim.state.time
+	while sim.state.time - t0 < 30.0:
+		await _physics(6)
+		for u: UnitState in units:
+			if last.has(u.id) and int(last[u.id]) != u.posture:
+				changes[u.unit_name] = int(changes.get(u.unit_name, 0)) + 1
+				if at.has(u.id):
+					min_gap = minf(min_gap, sim.state.time - float(at[u.id]))
+				at[u.id] = sim.state.time
+			last[u.id] = u.posture
+			time_in[Posture.current(u)] += 1
+			# faster than the posture allows (crouch walk 2.5 m/s, prone crawl 0.8 m/s)
+			if Posture.settled(u) and Vector2(u.velocity.x, u.velocity.z).length() > Posture.SPEED[u.posture] * u.speed + 0.3:
+				moving_low += 1
+			if u.posture == Posture.PRONE and Posture.settled(u) and not why_prone.has(u.unit_name):
+				why_prone[u.unit_name] = "supp %.2f, weapon %s, target %.0f m" % [u.suppression_at(sim.state.time), String(u.weapon_id),
+					CombatBrain._flat(u.position, u.target_last_pos) if u.target_last_pos.is_finite() else -1.0]
+	await _view(c + Vector3.UP * 2.0, 40.0, atan2(dir.x, dir.z) + PI * 0.5, 14.0)
+	_png("p_ai_posture")
+	var total := float(time_in[0] + time_in[1] + time_in[2])
+	var out := {"changes": changes, "min_gap_s": snappedf(min_gap, 0.01), "share": {"stand": snappedf(time_in[0] / total, 0.01),
+		"crouch": snappedf(time_in[1] / total, 0.01), "prone": snappedf(time_in[2] / total, 0.01)}, "running_low": moving_low,
+		"final": units.map(func(u: UnitState) -> String: return "%s %s %s" % [u.unit_name, String(u.weapon_id), Posture.NAMES[u.posture]]),
+		"brain_posture_changes": sim.brain.posture_changes, "first_prone": why_prone}
+	var most := 0
+	for k in changes:
+		most = maxi(most, int(changes[k]))
+	_expect(most <= 8, "p_ai_posture: a soldier changed posture %d times in 30 s (flicker)" % most)
+	_expect(moving_low == 0, "p_ai_posture: soldiers moved faster than their posture allows (%d samples)" % moving_low)
+	_expect(float(out.share.crouch) + float(out.share.prone) > 0.2, "p_ai_posture: the AI hardly left the standing posture in a fight")
+	sim.brain.enabled = false
+	return out
