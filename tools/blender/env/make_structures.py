@@ -9,8 +9,10 @@ Bridges are modules placed and scaled along each river crossing by ReferenceWorl
   bridge_timber   : 6 m long, 4.6 m wide timber deck for tracks
 Rural props: house (white/yellow timber house), barn (Falu-red låve with ramp), shed,
 road_post (brøytestikk), mailbox, fence (skigard section, 4 m).
-Flat colours + baked vertex AO; Godot keeps the colours (StandardMaterial3D) and tints
-instances (house colour variants).
+Bridges and small props: flat colours + baked vertex AO; Godot keeps the colours (StandardMaterial3D) and tints instances.
+VISUAL-02: house, barn, shed and fence are textured (tools/blender/env/make_building_textures.py, materials "Bld_*",
+UVs in texture tiles, white vertex colours); Godot draws them with shaders/environment/building.gdshader, where the
+instance colour paints only the siding (and the door), and AO comes from the height above the ground.
 """
 import math
 import os
@@ -100,6 +102,156 @@ def M_():
         "green": L.flat_material("Paint_Green", (0.14, 0.28, 0.16), 0.6),
         "stone": L.flat_material("Stone_Foundation", (0.45, 0.44, 0.42), 0.9),
     }
+
+
+# VISUAL-02 building materials: Blender name -> (albedo, normal, tile size in metres). Godot binds them by name
+# (tools/terrain_ref/import_env_assets.gd BUILDING).
+BLD = {
+    "lap": ("Bld_SidingLap", "bld_siding_lap", 2.0),
+    "board": ("Bld_SidingBoard", "bld_siding_board", 2.0),
+    "tile": ("Bld_RoofTile", "bld_roof_tile", 2.0),
+    "sheet": ("Bld_RoofSheet", "bld_roof_sheet", 2.0),
+    "stone": ("Bld_Stone", "bld_stone", 2.0),
+    "trim": ("Bld_Trim", "bld_siding_board", 2.0),
+    "wood": ("Bld_WoodGrey", "bld_wood_grey", 1.0),
+    "fence": ("Bld_FenceWood", "bld_wood_grey", 1.0),
+    "window": ("Bld_Window", "bld_window", 1.0),
+    "door": ("Bld_Door", "bld_door", 1.0),
+}
+
+
+def B_():
+    out = {}
+    for key, (name, tex, tile) in BLD.items():
+        m = L.image_material(name, tex + "_alb.png", tex + "_nrm.png", roughness=0.8)
+        m["tile_m"] = tile
+        out[key] = m
+    out["red_preview"] = None
+    return out
+
+
+class Builder(Boxer):
+    """Boxer with UVs in texture tiles (metres / the material's tile size) and white vertex colours."""
+
+    def box(self, c, size, mat, ao_bottom=1.0, rot_z=0.0, top_scale=1.0):
+        t = mat.get("tile_m", 1.0) if hasattr(mat, "get") else 1.0
+        n0 = len(self.mb.bm.faces)
+        super().box(c, size, mat, 1.0, rot_z, top_scale)
+        self._scale_uv(n0, 1.0 / t)
+
+    def _scale_uv(self, n0, k):
+        bm = self.mb.bm
+        bm.faces.ensure_lookup_table()
+        for f in list(bm.faces)[n0:]:
+            for loop in f.loops:
+                uv = loop[self.mb.uv].uv
+                loop[self.mb.uv].uv = (uv[0] * k, uv[1] * k)
+
+    def quad(self, verts, mat, uvs):
+        self.mb.face(verts, uvs, mat, [(1, 1, 1)] * len(verts))
+
+    def panel(self, c, w, h, axis, side, mat, sill=None):
+        """A textured panel (window / door, UV 0..1) on a wall: axis 'x' (wall along X, normal +-Y) or 'y'."""
+        cx, cy, cz = c
+        hw, hh = w / 2, h / 2
+        if axis == "y":
+            x = cx + side * 0.035
+            pts = [Vector((x, cy - side * hw, cz - hh)), Vector((x, cy + side * hw, cz - hh)),
+                   Vector((x, cy + side * hw, cz + hh)), Vector((x, cy - side * hw, cz + hh))]
+        else:
+            y = cy + side * 0.035
+            pts = [Vector((cx + side * hw, y, cz - hh)), Vector((cx - side * hw, y, cz - hh)),
+                   Vector((cx - side * hw, y, cz + hh)), Vector((cx + side * hw, y, cz + hh))]
+        self.quad(pts, mat, [(0, 1), (1, 1), (1, 0), (0, 0)])
+        if sill is not None:
+            if axis == "y":
+                self.box((cx + side * 0.09, cy, cz - hh - 0.04), (0.14, w + 0.16, 0.06), sill)
+            else:
+                self.box((cx, cy + side * 0.09, cz - hh - 0.04), (w + 0.16, 0.14, 0.06), sill)
+
+    def roof(self, length, width, rise, z, mat, overhang=0.45, thick=0.18):
+        """Gable roof along Y (two slabs, metric UVs along the ridge and down the slope) and the gable triangles' list."""
+        t = mat.get("tile_m", 1.0)
+        hl = length / 2 + overhang
+        hw = width / 2 + overhang
+        drop = overhang * rise / (width / 2)
+        slope = math.hypot(hw, rise + drop)
+        for side in (-1, 1):
+            e0 = Vector((side * hw, -hl, z - drop))
+            e1 = Vector((side * hw, hl, z - drop))
+            r0 = Vector((0, -hl, z + rise))
+            r1 = Vector((0, hl, z + rise))
+            quad = [e0, e1, r1, r0] if side > 0 else [e1, e0, r0, r1]
+            uvs = [(0, slope / t), (2 * hl / t, slope / t), (2 * hl / t, 0), (0, 0)]
+            if side < 0:
+                uvs = [(2 * hl / t, slope / t), (0, slope / t), (0, 0), (2 * hl / t, 0)]
+            self.quad(quad, mat, uvs)
+            under = [q - Vector((0, 0, thick)) for q in reversed(quad)]
+            self.quad(under, mat, [(0, 0), (0.1, 0), (0.1, 0.1), (0, 0.1)])
+            # Slab edge at the eave.
+            self.quad([e0 - Vector((0, 0, thick)), e1 - Vector((0, 0, thick)), e1, e0] if side > 0 else
+                      [e1 - Vector((0, 0, thick)), e0 - Vector((0, 0, thick)), e0, e1], mat, [(0, 0), (1, 0), (1, 0.05), (0, 0.05)])
+        gables = []
+        for end in (-1, 1):
+            tri = [Vector((-width / 2, end * length / 2, z)), Vector((width / 2, end * length / 2, z)),
+                   Vector((0, end * length / 2, z + rise))]
+            if end > 0:
+                tri.reverse()  # outward normal (+Y at the back gable, -Y at the front)
+            gables.append(tri)
+        return gables
+
+    def gable_walls(self, tris, mat):
+        t = mat.get("tile_m", 1.0)
+        for tri in tris:
+            n = (tri[1] - tri[0]).cross(tri[2] - tri[0])
+            uvs = [((v.x if abs(n.y) > abs(n.x) else v.y) / t, -v.z / t) for v in tri]
+            self.quad(tri, mat, uvs)
+
+
+def textured_building(name, B, lod, L_, W_, H_, rise, siding, roof_mat, windows, door=True, ramp=False, chimney=True,
+                      barn_doors=False):
+    """Gable building on the old footprint (same size, origin, front -Y): stone plinth, textured siding with corner boards,
+    roof with eave edges, window panels with sills (both LODs), a door, optional barn ramp and barn doors."""
+    b = Builder(name + "_LOD%d" % lod)
+    b.box((0, 0, -0.25), (W_ + 0.3, L_ + 0.3, 0.6), B["stone"])
+    b.box((0, 0, H_ / 2), (W_, L_, H_), siding)
+    tris = b.roof(L_, W_, rise, H_, roof_mat)
+    b.gable_walls(tris, siding)
+    # Windows on both long walls (and one in each gable of a house); doors on the front gable.
+    nwin, floors = windows
+    for side in (-1, 1):
+        for fl, z in enumerate([1.55, 4.25][:floors]):
+            for k in range(nwin):
+                t = (k + 0.5) / nwin - 0.5
+                b.panel((side * W_ / 2, t * L_ * 0.8, z), 1.0, 1.25, "y", side, B["window"], B["trim"] if lod == 0 else None)
+    if floors >= 2:
+        for end in (-1, 1):
+            b.panel((0, end * L_ / 2, H_ + rise * 0.35), 0.8, 1.0, "x", end, B["window"], B["trim"] if lod == 0 else None)
+    if door:
+        b.panel((0, -L_ / 2, 1.1), 1.1, 2.2, "x", -1, B["door"])
+    if barn_doors:
+        for side in (-1, 1):
+            b.panel((side * W_ / 2, 0, 1.7), 3.2, 3.4, "y", side, B["door"])
+    if lod == 0:
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                b.box((sx * W_ / 2, sy * L_ / 2, (H_ - 0.2) / 2), (0.2, 0.2, H_ - 0.2), B["trim"])
+        if ramp:
+            # Barn bridge (låvebru): earth ramp with stone walls and a timber deck to the upper floor.
+            top = H_ * 0.42
+            x0, x1, hw = W_ / 2, W_ / 2 + 7.0, 2.2
+            deck = [Vector((x1, -hw, 0.0)), Vector((x1, hw, 0.0)), Vector((x0, hw, top)), Vector((x0, -hw, top))]
+            b.quad(deck, B["wood"], [(0, 0), (4.4, 0), (4.4, 7.3), (0, 7.3)])
+            for s_ in (-1, 1):
+                side = [Vector((x1, s_ * hw, 0.0)), Vector((x0, s_ * hw, top)), Vector((x0, s_ * hw, -0.3)), Vector((x1, s_ * hw, -0.3))]
+                if s_ < 0:
+                    side.reverse()
+                b.quad(side, B["stone"], [(0, 0), (3.5, 0), (3.5, 0.6), (0, 0.6)])
+            b.panel((x0, 0, top + 1.5), 3.2, 3.0, "y", 1, B["door"])
+        if chimney:
+            b.box((W_ * 0.15, L_ * 0.2, H_ + rise * 0.8), (0.6, 0.6, 2.0), B["stone"])
+            b.box((W_ * 0.15, L_ * 0.2, H_ + rise * 0.8 + 1.03), (0.72, 0.72, 0.08), B["trim"])
+    return b.finish()
 
 
 def bridge_concrete(name, M, lod):
@@ -199,16 +351,19 @@ def gable_building(name, M, lod, L_, W_, H_, rise, wall, roof, trim, windows, do
 
 
 def house(name, M, lod):
-    return gable_building(name, M, lod, 11.0, 7.5, 5.6, 3.0, M["white"], M["roof_tile"], M["white"], (4, 2))
+    B = M["bld"]
+    return textured_building(name, B, lod, 11.0, 7.5, 5.6, 3.0, B["lap"], B["tile"], (4, 2))
 
 
 def barn(name, M, lod):
-    return gable_building(name, M, lod, 20.0, 10.0, 6.0, 4.6, M["red"], M["roof"], M["white"], (5, 1),
-                          door=True, ramp=True)
+    B = M["bld"]
+    return textured_building(name, B, lod, 20.0, 10.0, 6.0, 4.6, B["board"], B["sheet"], (5, 1), door=True, ramp=True,
+                             chimney=False, barn_doors=False)
 
 
 def shed(name, M, lod):
-    return gable_building(name, M, lod, 4.5, 3.2, 2.4, 1.4, M["red"], M["roof"], M["white"], (1, 1))
+    B = M["bld"]
+    return textured_building(name, B, lod, 4.5, 3.2, 2.4, 1.4, B["board"], B["sheet"], (1, 1), chimney=False)
 
 
 def culvert(name, M, lod):
@@ -256,19 +411,20 @@ def mailbox(name, M, lod):
 
 
 def fence(name, M, lod):
-    """Skigard: pairs of upright poles with slanted rails, 4 m section along Y."""
+    """Skigard: pairs of upright poles with slanted rails, 4 m section along Y (VISUAL-02: grey weathered wood texture)."""
     rnd = random.Random(9)
-    b = Boxer(name + "_LOD%d" % lod)
+    b = Builder(name + "_LOD%d" % lod)
+    W = M["bld"]["fence"]
     for y in (-2.0, 0.0, 2.0):
         for x in (-0.12, 0.12):
-            b.box((x, y, 0.65), (0.07, 0.07, 1.3), M["wood"], 0.7)
+            b.box((x, y, 0.65), (0.07, 0.07, 1.3), W)
     n = 9 if lod == 0 else 3
     for k in range(n):
         y = -2.0 + (k + 0.5) * 4.0 / n
         mb = b.mb
         p0 = Vector((0, y - 0.9, 0.15))
         p1 = Vector((0, y + 0.9, 1.15))
-        mb.tube([p0, p1], [0.04, 0.035], 4, M["wood"], uv_u=1, uv_v_m=1.0, col=(0.85, 0.85, 0.85))
+        mb.tube([p0, p1], [0.04, 0.035], 4, W, uv_u=0.25, uv_v_m=1.0, col=(1, 1, 1))
     return b.finish()
 
 
@@ -289,6 +445,7 @@ ASSETS = {
 def build(name, fn, preview):
     L.clear_scene()
     M = M_()
+    M["bld"] = B_()
     objs = [fn(name, M, 0), fn(name, M, 1)]
     if preview:
         L.setup_world(1.0)

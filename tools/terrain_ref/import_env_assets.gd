@@ -34,6 +34,21 @@ const BARK := {
 	"Bark_Birch": "bark_birch", "Bark_BirchBase": "bark_birch_base", "Bark_Log": "bark_spruce",
 }
 
+## VISUAL-02 settlement buildings and fences ("Bld_*" in tools/blender/env/make_structures.py) ->
+## shaders/environment/building.gdshader: texture, own paint colour, how much of the instance colour it takes, roughness.
+const BUILDING := {
+	"Bld_SidingLap": {"tex": "bld_siding_lap", "base": Color(0.96, 0.95, 0.92), "tint": 1.0, "rough": 0.82},
+	"Bld_SidingBoard": {"tex": "bld_siding_board", "base": Color(0.66, 0.18, 0.12), "tint": 0.25, "rough": 0.86},
+	"Bld_RoofTile": {"tex": "bld_roof_tile", "base": Color(1, 1, 1), "tint": 0.0, "rough": 0.78},
+	"Bld_RoofSheet": {"tex": "bld_roof_sheet", "base": Color(1, 1, 1), "tint": 0.0, "rough": 0.55},
+	"Bld_Stone": {"tex": "bld_stone", "base": Color(1, 1, 1), "tint": 0.0, "rough": 0.9},
+	"Bld_Trim": {"tex": "bld_siding_board", "base": Color(1.0, 0.99, 0.96), "tint": 0.0, "rough": 0.8},
+	"Bld_WoodGrey": {"tex": "bld_wood_grey", "base": Color(1, 1, 1), "tint": 0.0, "rough": 0.9},
+	"Bld_FenceWood": {"tex": "bld_wood_grey", "base": Color(1, 1, 1), "tint": 0.0, "rough": 0.9, "swap_uv": true},
+	"Bld_Window": {"tex": "bld_window", "base": Color(1, 1, 1), "tint": 0.0, "rough": 0.25},
+	"Bld_Door": {"tex": "bld_door", "base": Color(0.9, 0.88, 0.84), "tint": 0.7, "rough": 0.8},
+}
+
 var _mats := {}
 
 
@@ -187,6 +202,18 @@ func _material_for(mname: String, original: Material) -> Material:
 			sm.set_shader_parameter("moss_amount", 0.3)
 			sm.set_shader_parameter("rock_scale", 0.6)
 		mat = sm
+	elif BUILDING.has(mname):
+		var bd: Dictionary = BUILDING[mname]
+		var bm := ShaderMaterial.new()
+		bm.shader = load("res://shaders/environment/building.gdshader")
+		bm.set_shader_parameter("albedo_tex", _tex(bd.tex + "_alb"))
+		bm.set_shader_parameter("normal_tex", _tex(bd.tex + "_nrm"))
+		bm.set_shader_parameter("base_color", bd.base)
+		bm.set_shader_parameter("tint_strength", bd.tint)
+		bm.set_shader_parameter("roughness", bd.rough)
+		bm.set_shader_parameter("normal_depth", bd.get("normal", 0.7))
+		bm.set_shader_parameter("swap_uv", bd.get("swap_uv", false))
+		mat = bm
 	else:
 		# Structures and props: keep the Blender colours, add instance tint support.
 		var std := StandardMaterial3D.new()

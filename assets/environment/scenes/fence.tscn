@@ -3,10 +3,10 @@
 [ext_resource type="ArrayMesh" path="res://assets/environment/meshes/fence_lod0.res" id="1_yhy7m"]
 [ext_resource type="ArrayMesh" path="res://assets/environment/meshes/fence_lod1.res" id="2_b68u0"]
 
-[node name="Fence" type="Node3D" unique_id=1940588694]
+[node name="Fence" type="Node3D" unique_id=147769259]
 
-[node name="fence_LOD0" type="MeshInstance3D" parent="." unique_id=327916225]
+[node name="fence_LOD0" type="MeshInstance3D" parent="." unique_id=730853210]
 mesh = ExtResource("1_yhy7m")
 
-[node name="fence_LOD1" type="MeshInstance3D" parent="." unique_id=385020532]
+[node name="fence_LOD1" type="MeshInstance3D" parent="." unique_id=1644823878]
 mesh = ExtResource("2_b68u0")

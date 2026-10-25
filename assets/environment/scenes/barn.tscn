@@ -3,10 +3,10 @@
 [ext_resource type="ArrayMesh" path="res://assets/environment/meshes/barn_lod0.res" id="1_oq48v"]
 [ext_resource type="ArrayMesh" path="res://assets/environment/meshes/barn_lod1.res" id="2_dmt6n"]
 
-[node name="Barn" type="Node3D" unique_id=1261479505]
+[node name="Barn" type="Node3D" unique_id=1628533926]
 
-[node name="barn_LOD0" type="MeshInstance3D" parent="." unique_id=513027323]
+[node name="barn_LOD0" type="MeshInstance3D" parent="." unique_id=768881097]
 mesh = ExtResource("1_oq48v")
 
-[node name="barn_LOD1" type="MeshInstance3D" parent="." unique_id=1135937200]
+[node name="barn_LOD1" type="MeshInstance3D" parent="." unique_id=1617056356]
 mesh = ExtResource("2_dmt6n")

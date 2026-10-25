@@ -1,0 +1,20 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/environment/building.gdshader" id="1_iu4q0"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/bld_siding_board_alb.png" id="2_vesef"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/bld_siding_board_nrm.png" id="3_lnbps"]
+
+[resource]
+resource_name = "Bld_SidingBoard"
+render_priority = 0
+shader = ExtResource("1_iu4q0")
+shader_parameter/albedo_tex = ExtResource("2_vesef")
+shader_parameter/normal_tex = ExtResource("3_lnbps")
+shader_parameter/base_color = Color(0.66, 0.18, 0.12, 1)
+shader_parameter/tint_strength = 0.25
+shader_parameter/roughness = 0.86
+shader_parameter/normal_depth = 0.7
+shader_parameter/ao_height = null
+shader_parameter/ao_min = null
+shader_parameter/dirt = null
+shader_parameter/swap_uv = false
