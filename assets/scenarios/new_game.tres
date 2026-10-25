@@ -62,10 +62,10 @@ extra_objectives = Array[Dictionary]([{
 "kind": "outpost",
 "name": "Moen checkpoint",
 "owner": 1,
-"radius": 80.0,
+"radius": 70.0,
 "value": 1,
 "x": -1350.0,
-"z": 7380.0
+"z": 7315.0
 }])
 start_squads = Array[Dictionary]([{
 "faction": 0,
@@ -80,7 +80,7 @@ start_squads = Array[Dictionary]([{
 "station": "Moen checkpoint",
 "x": -1345.0,
 "yaw": 3.14,
-"z": 7395.0
+"z": 7310.0
 }])
 stashes = Array[Dictionary]([{
 "ammo": 40.0,
@@ -90,7 +90,7 @@ stashes = Array[Dictionary]([{
 "kind": "position",
 "name": "Moen checkpoint stores",
 "x": -1365.0,
-"z": 7370.0
+"z": 7305.0
 }, {
 "ammo": 120.0,
 "items": {
@@ -107,7 +107,7 @@ structures = Array[Dictionary]([{
 "type": "checkpoint_station",
 "x": -1380.0,
 "yaw": 0.0,
-"z": 7365.0
+"z": 7300.0
 }])
 intro = Array[Dictionary]([{
 "done": "moved:40",
@@ -152,7 +152,7 @@ intro = Array[Dictionary]([{
 "text": "Press F2 (Military Development) and start a project - Barracks & Personnel lets you recruit. It runs while you fight.",
 "title": "Plan your development"
 }])
-briefing = "1st Section, North. South has pushed into the valley and set up a checkpoint at Moen farm, 500 m north, on top of a supply cache we need. Clear it, take the supplies and dig in."
+briefing = "1st Section, North. South has pushed into the valley and set up a checkpoint at Moen farm, 450 m north, in front of a supply cache we need. Clear it, take the supplies and dig in."
 squad_size = 8
 fortify = PackedStringArray("Nordmoen HQ", "East HQ")
 ai_bases = true

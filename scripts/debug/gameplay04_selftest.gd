@@ -10,7 +10,7 @@ class_name Gameplay04SelfTest
 extends GameplaySelfTest
 
 ## Every check in run order. Checks that need another scenario are only run when named in --only.
-const CHECKS: Array[String] = ["a_setup", "a_ui", "a_phases", "a_persist", "a_skip", "a_road", "a_profile", "a_shoulders", "a_trees", "a_encounter", "b_lock", "b_start", "b_pause", "b_persist", "b_complete", "b_future", "b_ui", "b_ai", "b_dev_off", "c_arena", "c_gl", "c_recoilless", "c_carry", "c_fps", "c_persist", "c_ai_comp", "c_visual", "d_setup", "d_rearm", "d_field_equip", "d_deliver", "d_procure", "d_fallen", "d_persist", "d_ui"]
+const CHECKS: Array[String] = ["a_setup", "a_cache_safe", "a_ui", "a_phases", "a_persist", "a_skip", "a_road", "a_profile", "a_shoulders", "a_trees", "a_encounter", "b_lock", "b_start", "b_pause", "b_persist", "b_complete", "b_future", "b_ui", "b_ai", "b_dev_off", "c_arena", "c_gl", "c_recoilless", "c_carry", "c_fps", "c_persist", "c_ai_comp", "c_visual", "d_setup", "d_rearm", "d_field_equip", "d_deliver", "d_procure", "d_fallen", "d_persist", "d_ui", "e_offer", "e_complete", "e_recon", "e_persist", "e_ui"]
 const ONLY_NAMED: Array[String] = ["c_arena", "b_dev_off", "a_encounter", "a_road", "a_profile", "a_trees"]
 
 
@@ -110,6 +110,19 @@ func _a_setup() -> Dictionary:
 	_expect(not out.guard_free_for_ops, "a_setup: the South AI may send the checkpoint section away")
 	_expect((out.phases as Array).size() >= 5 and demo.sim.war.intro.current().get("id", "") == "command", "a_setup: phases %s" % str(out.phases))
 	_expect(seen == 0, "a_setup: the player soldiers see an enemy at minute zero")
+	return out
+
+
+## The checkpoint stands in front of the farm cache, not on it: in the first minute its fire team neither secures the
+## cache (it is outside its radius) nor lets anyone else do it (within 80 m of it).
+func _a_cache_safe() -> Dictionary:
+	await _until(func() -> bool: return false, 60.0, 4.0)
+	var c: Dictionary = {}
+	for x: Dictionary in _war().caches:
+		if x.name == "Moen farm cache":
+			c = x
+	var out := {"state": c.get("state", "?"), "faction": c.get("faction", -9), "taken_by": c.get("taken_by", -9), "progress": snappedf(float(c.get("progress", 0.0)), 0.01)}
+	_expect(c.get("state", "") == "intact" and int(c.get("taken_by", -1)) == -1, "a_cache_safe: the cache went: %s" % str(out))
 	return out
 
 
@@ -1438,6 +1451,130 @@ func _d_ui() -> Dictionary:
 	_expect(ep.visible and ep.pickers.size() == sq.members.size(), "d_ui: equipment screen %s" % str(out))
 	_png("d_equipment_screen")
 	ep.visible = false
+	return out
+
+
+# --- 04E opportunities ------------------------------------------------------------------------------------------------
+
+func _opps() -> Opportunities:
+	return demo.sim.war.opps
+
+
+## The introduction over: the world offers what is really there (a known cache, an enemy-held objective near), nothing is
+## spawned for it, at most four at once.
+func _end_intro() -> void:
+	_war().guide["intro_complete_at"] = snappedf(demo.sim.state.time, 0.1)
+
+
+func _e_offer() -> Dictionary:
+	var soldiers0 := demo.sim.state.count_of(UnitState.Kind.SOLDIER)
+	_expect(_opps().open().is_empty(), "e_offer: offers during the introduction")
+	_end_intro()
+	await _until(func() -> bool: return not _opps().open().is_empty(), 6.0, 2.0)
+	var open := _opps().open()
+	var kinds := open.map(func(o: Dictionary) -> String: return o.kind)
+	var out := {"offers": open.map(func(o: Dictionary) -> String: return "%s: %s" % [o.kind, o.title]), "soldiers": [soldiers0, demo.sim.state.count_of(UnitState.Kind.SOLDIER)]}
+	_expect(open.size() >= 2 and open.size() <= Opportunities.MAX_OPEN and kinds.has("supplies") and kinds.has("assault"), "e_offer: %s" % str(out))
+	_expect(soldiers0 == demo.sim.state.count_of(UnitState.Kind.SOLDIER), "e_offer: soldiers appeared with the offers")
+	_expect(not kinds.has("recon"), "e_offer: reconnaissance offered without the development")
+	return out
+
+
+## Achieved, accepted or not, they pay: the accepted assault when the objective is the player's, the ignored cache when it is
+## secured.
+func _e_complete() -> Dictionary:
+	if _opps().open().is_empty():
+		await _e_offer()
+	var war := _war()
+	var pf := war.player_faction
+	var assault: Dictionary = {}
+	var supplies: Dictionary = {}
+	for o: Dictionary in _opps().open():
+		if o.kind == "assault" and assault.is_empty():
+			assault = o
+		if o.kind == "supplies" and supplies.is_empty():
+			supplies = o
+	_opps().accept(int(assault.id))
+	var st0 := demo.sim.logistics.bases.faction_stock(pf)
+	war.objective(int(assault.ref)).owner = pf
+	for c: Dictionary in war.caches:
+		if int(c.id) == int(supplies.ref):
+			c.state = "depleted"
+			c.taken_by = pf
+	await _until(func() -> bool: return assault.state == "done" and supplies.state == "done", 6.0, 2.0)
+	var st1 := demo.sim.logistics.bases.faction_stock(pf)
+	var out := {"assault": assault.state, "supplies_opp": supplies.state, "gain": [roundi(float(st1.supplies) - float(st0.supplies)), roundi(float(st1.ammo) - float(st0.ammo))]}
+	_expect(assault.state == "done" and supplies.state == "done" and out.gain[0] >= 400 and out.gain[1] >= 100, "e_complete: %s" % str(out))
+	return out
+
+
+## Reconnaissance is offered only with its development, and done when a soldier has watched from within reach.
+func _e_recon() -> Dictionary:
+	var war := _war()
+	var pf := war.player_faction
+	_end_intro()
+	(war.faction(pf).dev.done as Array).append("reconnaissance")
+	for o: Dictionary in _opps().open():
+		_opps().dismiss(int(o.id))
+	await _until(func() -> bool: return _opps().open().any(func(o: Dictionary) -> bool: return o.kind == "recon"), 70.0, 8.0)
+	var recon: Dictionary = {}
+	for o: Dictionary in _opps().open():
+		if o.kind == "recon":
+			recon = o
+	_expect(not recon.is_empty(), "e_recon: no reconnaissance offered: %s" % str(_opps().open().map(func(o: Dictionary) -> String: return o.title)))
+	if recon.is_empty():
+		return {}
+	var u := demo.sim.state.get_unit(_player_squads()[0].members[0])
+	u.position = demo.on_ground(recon.pos.x + 150.0, recon.pos.z + 150.0, 0.0)
+	u.order = UnitState.Order.NONE
+	await _until(func() -> bool: return recon.state == "done", 30.0, 2.0)
+	_expect(recon.state == "done", "e_recon: not done after watching: %s" % str(recon))
+	return {"recon": recon.title, "state": recon.state}
+
+
+func _e_persist() -> Dictionary:
+	_end_intro()
+	await _until(func() -> bool: return not _opps().open().is_empty(), 6.0, 2.0)
+	var before := str(_opps().open().map(func(o: Dictionary) -> String: return "%d %s %s" % [o.id, o.kind, o.state]))
+	demo.construction.save()
+	var res := demo.construction.load_game()
+	await _physics(5)
+	var after := str(_opps().open().map(func(o: Dictionary) -> String: return "%d %s %s" % [o.id, o.kind, o.state]))
+	_expect(res.ok and before == after and before != "[]", "e_persist: %s -> %s" % [before, after])
+	return {"before": before, "after": after}
+
+
+## The tracker lists the offers with Accept; accepting one marks it (screenshot with --shots).
+func _e_ui() -> Dictionary:
+	_end_intro()
+	await _until(func() -> bool: return not _opps().open().is_empty(), 6.0, 2.0)
+	if demo.game.mode != GameController.Mode.RTS:
+		demo.game.enter_rts()
+	await _until(func() -> bool: return false, 26.0, 8.0)
+	await _physics(10)
+	var tr := demo.hud.tracker
+	var out := {"title": tr._title.text, "rows": tr._list.get_child_count()}
+	_expect(tr._panel.visible and tr._title.text == "Opportunities", "e_ui: tracker %s" % str(out))
+	var first: Dictionary = _opps().offered()[0] if not _opps().offered().is_empty() else {}
+	if not first.is_empty():
+		_opps().accept(int(first.id))
+		await _seconds(1.0)
+		out["target"] = tr.target_label
+		var texts := []
+		for c in tr._list.get_children():
+			texts.append([c.get_class(), c.is_queued_for_deletion(), (c as FNStatusIndicator).text_label.text if c is FNStatusIndicator else ((c.get_child(0) as FNStatusIndicator).text_label.text if c.get_child_count() > 0 and c.get_child(0) is FNStatusIndicator else "")])
+		out["children"] = texts
+		out["accepted"] = _opps().accepted().map(func(o: Dictionary) -> String: return o.title)
+		_expect(tr.target.is_finite(), "e_ui: the accepted opportunity has no marker")
+		await _frame(tr.target + Vector3(0, 0, -200), 400.0, 0.0)
+		await _seconds(2.0)
+	var geo := []
+	for c in tr._list.get_children():
+		geo.append([c.get_class(), c.visible, c.position.round(), c.size.round()])
+	out["geo"] = geo
+	out["all"] = _opps()._list().map(func(o: Dictionary) -> String: return "%d %s %s %s" % [o.id, o.kind, o.state, o.get("done_at", "")])
+	out["panel"] = [tr._panel.position.round(), tr._panel.size.round(), tr._list.size.round(), tr._brief.visible, tr._foot.visible]
+	_png("e_opportunities")
 	return out
 
 

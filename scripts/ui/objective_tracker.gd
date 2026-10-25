@@ -2,7 +2,8 @@
 ## - the situation while the first phase runs, the phases ticked off, the current one with what to do and how, and its
 ## distance - and a marker on its target in the tactical view. In first person it shrinks to the current objective. The x
 ## hides the guidance for this game (WarState.guide "off"; nothing in the world depends on it). Reads the records only.
-## GAMEPLAY-04E: after the introduction it lists the opportunities the player has accepted (Opportunities).
+## GAMEPLAY-04E: after the introduction it lists the open opportunities (Opportunities): accepted ones with what to do and a
+## marker, offered ones with Accept / put aside.
 class_name ObjectiveTracker
 extends Control
 
@@ -88,7 +89,7 @@ func _wanted() -> bool:
 	# The closing line stays for a while after the introduction; then the opportunities take the panel (04E).
 	if it.complete() and hud.sim.state.time - float(w.guide.get("intro_complete_at", 0.0)) < 25.0:
 		return true
-	return hud.war_sim.opps != null and not hud.war_sim.opps.accepted().is_empty()
+	return hud.war_sim.opps != null and not hud.war_sim.opps.open().is_empty()
 
 
 func _process(delta: float) -> void:
@@ -140,14 +141,17 @@ func _refresh() -> void:
 		_brief.text = "" if fps else "The introduction is over. Capture ground for income, take up the opportunities offered on the map (M) and develop your force (F2)."
 	else:
 		current_id = ""
-		_title.text = "Accepted tasks"
+		_title.text = "Opportunities"
 		_brief.text = ""
 		target = Vector3.INF
 		for o: Dictionary in hud.war_sim.opps.accepted():
-			rows.append({"title": o.title, "state": "current", "text": "" if fps else String(o.get("text", "")), "tips": []})
+			rows.append({"title": o.title, "state": "current", "text": "" if fps else String(o.get("text", "")), "tips": [], "opp": int(o.id), "accepted": true})
 			if not target.is_finite():
 				target = o.pos
 				target_label = String(o.title)
+		if not fps:
+			for o: Dictionary in hud.war_sim.opps.offered():
+				rows.append({"title": o.title, "state": "todo", "text": "", "tips": [], "opp": int(o.id), "accepted": false})
 	var dist := ""
 	if target.is_finite():
 		var from := _from()
@@ -174,7 +178,34 @@ func _refresh() -> void:
 				ind.set_status(&"idle", r.title, FNUI.INK_3)
 		ind.text_label.uppercase = false
 		ind.text_label.add_theme_font_override("font", FNUI.font("semibold"))
-		_list.add_child(ind)
+		if r.has("opp"):
+			# GAMEPLAY-04E: an opportunity row - accept (tracked and marked) or put aside.
+			var line := HBoxContainer.new()
+			line.add_theme_constant_override("separation", FNUI.S2)
+			ind.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			ind.custom_minimum_size = Vector2(W - 110.0, 0)
+			line.add_child(ind)
+			var oid: int = r.opp
+			if not r.accepted:
+				var acc := FNUI.action_button(&"check", "Accept", "Track this opportunity (marked on the way). The reward comes whenever it is done, accepted or not")
+				acc.pressed.connect(func() -> void:
+					hud.war_sim.opps.accept(oid)
+					_sig = ""
+					_timer = 0.0)
+				line.add_child(acc)
+			var drop := Button.new()
+			drop.text = "×"
+			drop.flat = true
+			drop.focus_mode = Control.FOCUS_NONE
+			drop.tooltip_text = "Put this aside (it is not offered again)"
+			drop.pressed.connect(func() -> void:
+				hud.war_sim.opps.dismiss(oid)
+				_sig = ""
+				_timer = 0.0)
+			line.add_child(drop)
+			_list.add_child(line)
+		else:
+			_list.add_child(ind)
 		if r.text != "":
 			var l := FNUI.label(r.text, FNUI.CAPTION + 1, FNUI.INK, "body")
 			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

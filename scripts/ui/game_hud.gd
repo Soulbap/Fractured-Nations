@@ -380,6 +380,9 @@ func _on_war_event(e: Dictionary) -> void:
 		"dev_start", "dev_cancel":
 			col = FNUI.ACCENT if e.kind == "dev_start" else FNUI.NEUTRAL
 			icon = &"development"
+		"opportunity", "opportunity_done":
+			col = FNUI.OK if e.kind == "opportunity_done" else FNUI.ARMED
+			icon = &"mission"
 		"rearm", "deliver", "equip":
 			col = FNUI.OK
 			icon = &"equipment" if e.kind == "equip" else &"cargo"
