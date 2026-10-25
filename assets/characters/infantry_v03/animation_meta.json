@@ -1,0 +1,332 @@
+{
+ "fps": 30,
+ "loco_frames": 32,
+ "gait": {
+  "Walk": {
+   "speed": 1.194,
+   "period": 1.1333
+  },
+  "Brisk": {
+   "speed": 1.826,
+   "period": 0.9333
+  },
+  "Jog": {
+   "speed": 3.293,
+   "period": 0.7583
+  },
+  "Run": {
+   "speed": 4.449,
+   "period": 0.675
+  },
+  "Sprint": {
+   "speed": 7.5,
+   "period": 0.6210000000000001
+  },
+  "CrouchWalk": {
+   "speed": 1.015,
+   "period": 1.1333
+  }
+ },
+ "clip_meta": {
+  "Walk_F": {
+   "take": "16_15",
+   "speed": 1.194,
+   "period": 1.1333,
+   "dir": [
+    -0.0,
+    1.0
+   ],
+   "carry": "patrol"
+  },
+  "Walk_B": {
+   "take": "09_12",
+   "speed": 1.148,
+   "period": 1.0917,
+   "dir": [
+    0.177,
+    -0.984
+   ],
+   "carry": "low"
+  },
+  "Walk_L": {
+   "take": "69_42",
+   "speed": 0.371,
+   "period": 0.9917,
+   "dir": [
+    -0.97,
+    -0.242
+   ],
+   "carry": "low"
+  },
+  "Walk_R": {
+   "take": "69_48",
+   "speed": 0.46,
+   "period": 1.0583,
+   "dir": [
+    0.992,
+    0.129
+   ],
+   "carry": "low"
+  },
+  "Brisk_F": {
+   "take": "16_21",
+   "speed": 1.826,
+   "period": 0.9333,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "carry": "low"
+  },
+  "Jog_F": {
+   "take": "35_17",
+   "speed": 3.293,
+   "period": 0.7583,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "carry": "ready"
+  },
+  "Run_F": {
+   "take": "16_46",
+   "speed": 4.449,
+   "period": 0.675,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "carry": "run"
+  },
+  "CrouchWalk_F": {
+   "take": "16_15",
+   "speed": 1.015,
+   "period": 1.1333,
+   "dir": [
+    -0.0,
+    1.0
+   ],
+   "carry": "patrol"
+  },
+  "CrouchWalk_B": {
+   "take": "09_12",
+   "speed": 0.976,
+   "period": 1.0917,
+   "dir": [
+    0.177,
+    -0.984
+   ],
+   "carry": "low"
+  },
+  "CrouchWalk_L": {
+   "take": "69_42",
+   "speed": 0.315,
+   "period": 0.9917,
+   "dir": [
+    -0.97,
+    -0.242
+   ],
+   "carry": "low"
+  },
+  "CrouchWalk_R": {
+   "take": "69_48",
+   "speed": 0.391,
+   "period": 1.0583,
+   "dir": [
+    0.992,
+    0.129
+   ],
+   "carry": "low"
+  },
+  "Jog_B": {
+   "take": "09_12",
+   "speed": 1.148,
+   "period": 1.0917,
+   "dir": [
+    0.177,
+    -0.984
+   ],
+   "carry": "ready"
+  },
+  "Jog_L": {
+   "take": "69_42",
+   "speed": 0.371,
+   "period": 0.9917,
+   "dir": [
+    -0.97,
+    -0.242
+   ],
+   "carry": "ready"
+  },
+  "Jog_R": {
+   "take": "69_48",
+   "speed": 0.46,
+   "period": 1.0583,
+   "dir": [
+    0.992,
+    0.129
+   ],
+   "carry": "ready"
+  },
+  "Run_B": {
+   "take": "09_12",
+   "speed": 1.148,
+   "period": 1.0917,
+   "dir": [
+    0.177,
+    -0.984
+   ],
+   "carry": "ready"
+  },
+  "Run_L": {
+   "take": "69_42",
+   "speed": 0.371,
+   "period": 0.9917,
+   "dir": [
+    -0.97,
+    -0.242
+   ],
+   "carry": "ready"
+  },
+  "Run_R": {
+   "take": "69_48",
+   "speed": 0.46,
+   "period": 1.0583,
+   "dir": [
+    0.992,
+    0.129
+   ],
+   "carry": "ready"
+  },
+  "Sprint_F": {
+   "take": "16_46",
+   "speed": 4.449,
+   "period": 0.675,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "carry": "port"
+  },
+  "Turn_L": {
+   "take": "69_16",
+   "turn_rate": -1.264,
+   "period": 0.725
+  },
+  "Turn_R": {
+   "take": "69_18",
+   "turn_rate": 0.946,
+   "period": 1.225
+  },
+  "Idle": {
+   "take": "77_02",
+   "period": 4.0
+  }
+ },
+ "clips": {
+  "CrouchWalk_F": {
+   "frames": 32,
+   "loop": true
+  },
+  "CrouchWalk_B": {
+   "frames": 32,
+   "loop": true
+  },
+  "CrouchWalk_L": {
+   "frames": 32,
+   "loop": true
+  },
+  "CrouchWalk_R": {
+   "frames": 32,
+   "loop": true
+  },
+  "Jog_B": {
+   "frames": 32,
+   "loop": true
+  },
+  "Jog_L": {
+   "frames": 32,
+   "loop": true
+  },
+  "Jog_R": {
+   "frames": 32,
+   "loop": true
+  },
+  "Run_B": {
+   "frames": 32,
+   "loop": true
+  },
+  "Run_L": {
+   "frames": 32,
+   "loop": true
+  },
+  "Run_R": {
+   "frames": 32,
+   "loop": true
+  },
+  "Sprint_F": {
+   "frames": 32,
+   "loop": true
+  },
+  "Walk_F": {
+   "frames": 32,
+   "loop": true
+  },
+  "Walk_B": {
+   "frames": 32,
+   "loop": true
+  },
+  "Walk_L": {
+   "frames": 32,
+   "loop": true
+  },
+  "Walk_R": {
+   "frames": 32,
+   "loop": true
+  },
+  "Brisk_F": {
+   "frames": 32,
+   "loop": true
+  },
+  "Jog_F": {
+   "frames": 32,
+   "loop": true
+  },
+  "Run_F": {
+   "frames": 32,
+   "loop": true
+  },
+  "Turn_L": {
+   "frames": 32,
+   "loop": true
+  },
+  "Turn_R": {
+   "frames": 32,
+   "loop": true
+  },
+  "Idle": {
+   "frames": 120,
+   "loop": true
+  },
+  "Ready_Idle": {
+   "frames": 120,
+   "loop": true
+  },
+  "Aim": {
+   "frames": 120,
+   "loop": true
+  },
+  "Fire": {
+   "frames": 6,
+   "loop": false
+  },
+  "Crouch_Idle": {
+   "frames": 120,
+   "loop": true
+  },
+  "Reload": {
+   "frames": 75,
+   "loop": false
+  }
+ }
+}

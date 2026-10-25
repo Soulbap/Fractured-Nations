@@ -1,5 +1,6 @@
-"""VISUAL-03 anatomical body: MakeHuman base mesh (MPFB 2, CC0 output) with the game-engine rig renamed to the
-shared infantry skeleton (Godot SkeletonProfileHumanoid names, CHARACTER_STANDARD §2).
+"""MakeHuman part of the shared infantry body (VISUAL-03): the MakeHuman base mesh (MPFB 2, CC0 output) with the
+game-engine rig renamed to the shared infantry skeleton (Godot SkeletonProfileHumanoid names, CHARACTER_STANDARD §2).
+char_body.py turns it into the game body (reference rest pose, regions, head, eyes).
 
 Needs the MPFB extension installed in the user's Blender (extensions repo user_default, module
 bl_ext.user_default.mpfb, version 2.0.18 used for VISUAL-03). Everything is generated from the parameters
@@ -17,6 +18,10 @@ MPFB = "bl_ext.user_default.mpfb"
 MACRO = {"gender": 1.0, "age": 0.5, "muscle": 0.62, "weight": 0.46, "proportions": 0.55, "height": 0.6,
          "cupsize": 0.5, "firmness": 0.5, "race": {"caucasian": 0.8, "african": 0.1, "asian": 0.1}}
 STATURE = 1.80
+# Detail targets on top of the macros. MakeHuman's average adult arm is ~10 cm short of the anthropometric
+# references (fingertips at 0.44 H standing instead of ~0.38 H, upper arm 0.27 m instead of ~0.33 m), which left the
+# support hand unable to reach a rifle's handguard: lengthen upper arm and forearm.
+DETAIL_TARGETS = {"arms/measure-upperarm-length-incr": 1.0, "arms/measure-lowerarm-length-incr": 0.15}
 
 # MPFB game_engine rig -> shared skeleton names.
 RENAME = {
@@ -53,13 +58,37 @@ def build_human(macro=None):
     # default body's joint positions). feet_on_ground=False: fit first, move after.
     body = HS.create_human(mask_helpers=True, detailed_helpers=True, extra_vertex_groups=True, feet_on_ground=False,
                            scale=0.1, macro_detail_dict=macro or MACRO)
-    # Bake the macro targets first: the rig is fitted to the joint helper cubes of the mesh basis.
+    import os
+    from importlib import import_module
+    LS = import_module(MPFB + ".services.locationservice").LocationService
+    for t, w in DETAIL_TARGETS.items():
+        TS.load_target(body, os.path.join(LS.get_mpfb_data("targets"), t + ".target.gz"), weight=w)
+    # Bake the targets first: the rig is fitted to the joint helper cubes of the mesh basis.
     TS.bake_targets(body)
     arm = HS.add_builtin_rig(body, "game_engine", import_weights=True)
-    # Drop the helper geometry (the mask modifier hides it).
+    # The eyeball helpers become their own object (char_body builds the eyes from them); the rest of the helper
+    # geometry is dropped (the mask modifier only hides it).
+    import bmesh
+    eyes = None
+    gi_e = [body.vertex_groups[n].index for n in ("helper-l-eye", "helper-r-eye") if n in body.vertex_groups]
+    if gi_e:
+        bm = bmesh.new()
+        bm.from_mesh(body.data)
+        dl = bm.verts.layers.deform.verify()
+        side_of = {}
+        for v in bm.verts:
+            for k, gi in enumerate(gi_e):
+                if gi in v[dl] and v[dl][gi] > 0.5:
+                    side_of[v.index] = k
+        bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.index not in side_of], context="VERTS")
+        me = bpy.data.meshes.new("EyeHelpers")
+        bm.to_mesh(me)
+        bm.free()
+        eyes = bpy.data.objects.new("EyeHelpers", me)
+        body.users_collection[0].objects.link(eyes)
+        eyes.parent = arm
     keep = body.vertex_groups.get("body")
     if keep is not None:
-        import bmesh
         bm = bmesh.new()
         bm.from_mesh(body.data)
         dl = bm.verts.layers.deform.verify()
@@ -90,6 +119,8 @@ def build_human(macro=None):
     body.select_set(True)
     bpy.context.view_layer.objects.active = arm
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    if eyes:
+        eyes.select_set(True)
     bpy.context.view_layer.objects.active = body
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     arm.name, arm.data.name = "InfantryRig", "InfantryRig"
@@ -104,9 +135,11 @@ def build_human(macro=None):
         bpy.context.view_layer.objects.active = arm
         bpy.ops.object.transform_apply(location=True, rotation=False, scale=False)
         body.select_set(True)
+        if eyes:
+            eyes.select_set(True)
         bpy.context.view_layer.objects.active = body
         bpy.ops.object.transform_apply(location=True, rotation=False, scale=False)
-    return arm, body
+    return arm, body, eyes
 
 
 def joint_table(arm):

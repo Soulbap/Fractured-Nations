@@ -1,518 +1,920 @@
-"""Procedural, IK-authored animation set for the shared infantry rig (CHARACTER-01).
+"""Infantry animation set (VISUAL-03): CMU motion capture for the body, a weapon-handling layer on top.
 
-Authoring rig (CTRL_* bones, not exported):
-  CTRL_Weapon  child of UpperChest; the carbine's pose (same frame as ATT_Weapon).
-  CTRL_HandR   child of CTRL_Weapon at the firing-hand grip  -> IK RightLowerArm + copy rot.
-  CTRL_HandL   child of CTRL_Weapon at the support-hand grip -> IK LeftLowerArm + copy rot.
-  CTRL_FootL/R child of Root, ankle targets                   -> IK LowerLeg + copy rot.
-  CTRL_KneeL/R, CTRL_ElbowL/R pole targets.
-Each clip is generated from a small gait model (feet planted at the gameplay speed, so
-there is no foot sliding when the game moves the body at that speed), then baked to FK
-keys on the deform + attachment bones with visual keying, and the constraints removed.
-In place: Root never moves (gameplay drives the body, no root motion).
-
-Locomotion clips are all LOCO_FRAMES long (one full gait cycle, left foot strike at
-frame 0) so they blend in phase; Godot scales playback so feet match the actual speed
-(see GAIT table, exported to assets/characters/infantry/animation_meta.json).
+Every clip starts from real capture (v03_mocap: retargeted, cut to a loop, in place, feet locked), so pelvis, legs,
+weight transfer and timing stay those of a person walking or running. The weapon layer then
+  * damps the thorax counter-rotation (a rifle carrier keeps the shoulders squarer than a free-armed walker) and
+    adds the carry's stance (bladed torso for ready / aim),
+  * places the rifle relative to the posed chest for the carry style (patrol, low ready, ready, run, port, crouch,
+    aim), letting it lag the chest's roll and pitch and move with the captured arm swing, so the weapon rides on the
+    body instead of being frozen in space,
+  * solves both arms analytically onto the grips (firing hand on the pistol grip = ATT_Weapon, support hand on the
+    handguard frame of char_weapon.support_frame) with natural elbow poles, and curls the fingers into a grip,
+  * for aim, turns the head onto the stock so the right eye is on the sight line.
+Crouch clips lower the captured walk (legs re-solved onto the same foot plants); aim, fire and reload are upper-body
+poses on the captured idle. Clip list: clip_list(). Gait meta (speed, period, direction) goes to
+animation_meta.json; the game plays loops at speed / stride.
 """
 import json
 import math
+import os
 
 import bpy
 from mathutils import Matrix, Quaternion, Vector
 
 import char_skeleton as S
 import char_weapon as W
+import v03_mocap as MC
 
 FPS = 30
 LOCO_FRAMES = 32
+IDLE_FRAMES = 120
+HERE = os.path.dirname(os.path.abspath(__file__))
+MOCAP_DIR = os.path.normpath(os.path.join(HERE, "..", "..", "..", "assets", "characters", "infantry", "mocap", "cmu"))
 
-# name: speed m/s, natural period s, duty factor, stance centre offset (m, + = forward),
-# swing lift m, hip drop m, bob m, forward lean deg, crouch
-GAIT = {
-    "Walk":   dict(speed=1.40, period=1.00, duty=0.60, offset=0.00, lift=0.09, drop=0.035, bob=0.018, lean=3.0),
-    "Jog":    dict(speed=3.00, period=0.78, duty=0.32, offset=-0.06, lift=0.13, drop=0.062, bob=0.026, lean=6.0),
-    "Run":    dict(speed=4.50, period=0.70, duty=0.22, offset=-0.09, lift=0.17, drop=0.075, bob=0.030, lean=9.0),
-    "Sprint": dict(speed=7.50, period=0.62, duty=0.16, offset=-0.10, lift=0.22, drop=0.085, bob=0.032, lean=15.0),
-    "CrouchWalk": dict(speed=1.20, period=1.05, duty=0.62, offset=0.02, lift=0.08, drop=0.300, bob=0.012, lean=16.0),
+# Carry styles: butt point relative to the right shoulder joint in the chest frame (x right, y forward, z up, m),
+# muzzle yaw (deg, + = inboard / to the left), pitch (deg, + = up), cant (deg, + = top to the right), how much the
+# rifle's orientation is stabilised against the chest's roll / pitch (0 = rides on the chest), the thorax counter
+# rotation kept (1 = as captured), the stance yaw of the chest (deg, - = support shoulder forward) and the elbow
+# poles (shoulder-relative, chest frame).
+CARRIES = {
+    "patrol": dict(butt=(-0.055, 0.135, -0.165), yaw=16, pitch=-36, cant=10, stab=0.45, counter=0.55, stance=-6,
+                   pole_r=(0.30, -0.20, -0.45), pole_l=(-0.30, 0.05, -0.50)),
+    "low": dict(butt=(-0.060, 0.150, -0.110), yaw=11, pitch=-27, cant=5, stab=0.45, counter=0.5, stance=-10,
+                pole_r=(0.30, -0.25, -0.40), pole_l=(-0.30, 0.05, -0.50)),
+    "ready": dict(butt=(-0.050, 0.150, -0.075), yaw=8, pitch=-14, cant=2, stab=0.5, counter=0.45, stance=-14,
+                  pole_r=(0.32, -0.20, -0.35), pole_l=(-0.28, 0.10, -0.50)),
+    "run": dict(butt=(-0.050, 0.140, -0.100), yaw=13, pitch=-22, cant=4, stab=0.35, counter=0.6, stance=-8,
+                pole_r=(0.30, -0.25, -0.40), pole_l=(-0.30, 0.05, -0.50)),
+    "port": dict(butt=(0.010, 0.120, -0.200), yaw=58, pitch=24, cant=55, stab=0.25, counter=0.7, stance=-4,
+                 pole_r=(0.35, -0.10, -0.40), pole_l=(-0.30, 0.00, -0.45)),
+    "crouch": dict(butt=(-0.055, 0.150, -0.090), yaw=9, pitch=-18, cant=3, stab=0.45, counter=0.45, stance=-14,
+                   pole_r=(0.32, -0.20, -0.35), pole_l=(-0.28, 0.10, -0.50)),
+    "aim": dict(butt=(-0.050, 0.070, 0.040), yaw=24, pitch=0, cant=0, stab=0.85, counter=0.25, stance=-24,
+                pole_r=(0.40, -0.05, -0.25), pole_l=(-0.20, 0.15, -0.55)),
 }
-DIRS = {"F": (0.0, 1.0), "B": (0.0, -1.0), "L": (-1.0, 0.0), "R": (1.0, 0.0)}
+# Posture per carry: mean forward lean of the thorax (deg from vertical) and head pitch (deg, - = looking down) the
+# clip is corrected to by a constant offset (the captured variation stays). None keeps the capture's own value.
+POSTURE = {"patrol": (4, -4), "low": (5, -4), "ready": (8, -2), "run": (None, 0), "port": (None, 0),
+           "crouch": (None, -2), "aim": (6, None)}
+BUTT_LOCAL = Vector((0, -W.STOCK_PULL + 0.008, W.BORE_Z - 0.030))
+SIGHT_Z = W.BORE_Z + 0.072          # red-dot sight line above the grip origin
+
+# Locomotion: clip -> (takes to try, motion, carry). The first take that has a clean stretch of that motion is used.
+LOCO = {
+    "Walk_F": (("16_15",), "forward", "patrol"),
+    "Walk_B": (("09_12", "41_02"), "backward", "low"),
+    "Walk_L": (("69_42", "69_43", "69_48"), "left", "low"),
+    "Walk_R": (("69_42", "69_43", "69_48"), "right", "low"),
+    "Brisk_F": (("16_21",), "forward", "low"),
+    "Jog_F": (("35_17",), "forward", "ready"),
+    "Run_F": (("16_46",), "forward", "run"),
+}
+# Faster backward / sideways clips reuse the walking ones (the game rarely strafes fast; playback rate follows the
+# speed). Sprint: the run with the rifle at port arms.
+DERIVED = {"Jog_B": "Walk_B", "Jog_L": "Walk_L", "Jog_R": "Walk_R", "Run_B": "Walk_B", "Run_L": "Walk_L",
+           "Run_R": "Walk_R"}
+TURNS = {"Turn_L": (("69_16", "69_17", "69_18", "69_19", "69_13"), "turn_left"),
+         "Turn_R": (("69_18", "69_19", "69_16", "69_17", "69_13"), "turn_right")}
+IDLE_TAKE = "77_02"
+CROUCH_DROP = 0.30                 # crouch walk: pelvis lowered (m)
 
 
-def _q(axis, deg):
+# ------------------------------------------------------------------------------------------------ helpers
+
+
+def _take(name):
+    path = os.path.join(MOCAP_DIR, name + ".bvh")
+    if not os.path.exists(path):
+        import zipfile
+        zipfile.ZipFile(os.path.join(MOCAP_DIR, "zip", name + ".zip")).extractall(MOCAP_DIR)
+    return path
+
+
+def _frame(fwd, up, origin):
+    return S.frame_matrix(Vector(fwd), Vector(up), Vector(origin))
+
+
+def _rot_about(axis, deg):
     return Quaternion(Vector(axis).normalized(), math.radians(deg))
 
 
-def smooth(t):
+def _set_world(pb, m):
+    pb.matrix = m
+    bpy.context.view_layer.update()
+
+
+def _rotate_world(arm, bone, q):
+    """Rotates a pose bone by world quaternion q about its head."""
+    pb = arm.pose.bones[bone]
+    m = pb.matrix.copy()
+    r = (q.to_matrix() @ m.to_3x3()).to_4x4()
+    r.translation = m.translation
+    _set_world(pb, r)
+
+
+def _yaw_of(m):
+    f = m.to_3x3() @ Vector((0, 0, 1))         # bone Z ~ forward for the spine bones? use projection fallback
+    return math.atan2(f.x, f.y)
+
+
+def _heading(arm, bone):
+    """Yaw of a bone's sideways axis turned to forward (robust for spine / pelvis whatever their roll)."""
+    pb = arm.pose.bones[bone]
+    r = pb.matrix.to_3x3()
+    rest = arm.data.bones[bone].matrix_local.to_3x3()
+    # the world direction that was +Y (forward) at rest
+    f = r @ (rest.inverted() @ Vector((0, 1, 0)))
+    return math.atan2(f.x, f.y)
+
+
+def two_bone(H, K, T, l1, l2, pole):
+    """Knee/elbow and end positions for root H reaching target T, bending towards `pole`."""
+    d = T - H
+    dl = max(1e-4, min(d.length, l1 + l2 - 1e-4))
+    dn = d.normalized()
+    a = (l1 * l1 - l2 * l2 + dl * dl) / (2 * dl)
+    h = math.sqrt(max(0.0, l1 * l1 - a * a))
+    p = (pole - H) - dn * (pole - H).dot(dn)
+    p = p.normalized() if p.length > 1e-6 else Vector((0, 0, -1))
+    return H + dn * a + p * h, H + dn * dl
+
+
+def _aim_bone(arm, bone, direction):
+    pb = arm.pose.bones[bone]
+    m = pb.matrix.copy()
+    q = m.to_3x3().col[1].normalized().rotation_difference(direction.normalized())
+    out = (q.to_matrix() @ m.to_3x3()).to_4x4()
+    out.translation = m.translation
+    _set_world(pb, out)
+
+
+def _basis(axis, palm):
+    axis = axis.normalized()
+    palm = (palm - axis * palm.dot(axis)).normalized()
+    return Matrix((axis, palm, axis.cross(palm))).transposed()
+
+
+class Rig:
+    """Rest data of the armature the layer needs."""
+
+    def __init__(self, arm):
+        self.arm = arm
+        b = arm.data.bones
+        self.rest = {x.name: x.matrix_local.copy() for x in b}
+        self.att_w = self.rest["ATT_Weapon"]
+        self.hand_r_in_w = self.att_w.inverted() @ self.rest["RightHand"]
+        ax, palm, _ = S.hand_frame(-1)
+        self.hand_l_basis_rest = _basis(ax, palm)
+        self.len = {}
+        for s in ("Left", "Right"):
+            self.len[s + "Arm"] = ((b[s + "LowerArm"].head_local - b[s + "UpperArm"].head_local).length,
+                                   (b[s + "Hand"].head_local - b[s + "LowerArm"].head_local).length)
+            self.len[s + "Leg"] = ((b[s + "LowerLeg"].head_local - b[s + "UpperLeg"].head_local).length,
+                                   (b[s + "Foot"].head_local - b[s + "LowerLeg"].head_local).length)
+        self.chest_rest = self.rest["UpperChest"]
+        self.sh_r_rest = b["RightUpperArm"].head_local.copy()
+        self.sh_l_rest = b["LeftUpperArm"].head_local.copy()
+        self.eye_r = None
+        self.carry_fit = fit_carries(self)
+
+
+# ------------------------------------------------------------------------------------------------ weapon layer
+
+
+def _reach(R, carry):
+    """Hand-to-shoulder distance over arm length for both hands with the chest at rest (1 = fully stretched)."""
+    Wm = carry_matrix(R, carry, R.chest_rest, R.sh_r_rest)
+    hr = (Wm @ R.hand_r_in_w).translation
+    ax_w, palm_w, _, grip_w = W.support_frame()
+    Rw = Wm.to_3x3()
+    wl = Wm @ grip_w - (Rw @ ax_w) * S.GRIP_IN_HAND[0] - (Rw @ palm_w) * S.GRIP_IN_HAND[1]
+    rr = (hr - R.sh_r_rest).length / sum(R.len["RightArm"])
+    rl = (wl - R.sh_l_rest).length / sum(R.len["LeftArm"])
+    return rr, rl
+
+
+def fit_carries(R, limit=0.93):
+    """Brings every carry within reach of this body's arms (the styles were authored on CHARACTER-01 proportions):
+    while a hand would have to stretch past `limit` of its arm length, the butt moves towards the chest centre and
+    back, and the muzzle turns inboard. Returns the reach before / after per carry."""
+    out = {}
+    for name, c in CARRIES.items():
+        before = _reach(R, name)
+        for _ in range(40):
+            rr, rl = _reach(R, name)
+            if max(rr, rl) <= limit:
+                break
+            bx, by, bz = c["butt"]
+            if rl > limit:
+                c["butt"] = (bx - 0.006, by - 0.003, bz)
+                c["yaw"] += 1.0
+            if rr > limit:
+                c["butt"] = (c["butt"][0], c["butt"][1] - 0.006, c["butt"][2] + 0.004)
+        out[name] = {"before": [round(x, 3) for x in before], "after": [round(x, 3) for x in _reach(R, name)],
+                     "butt": [round(x, 3) for x in c["butt"]], "yaw": c["yaw"]}
+    return out
+
+
+def carry_matrix(R, carry, chest_m, sh_r):
+    """Weapon frame (armature space) for a carry style on the posed chest frame `chest_m` (UpperChest pose matrix,
+    rotation part relative to rest = chest orientation), right shoulder joint sh_r."""
+    c = CARRIES[carry]
+    rot = chest_m.to_3x3() @ R.chest_rest.to_3x3().inverted()      # chest rotation since rest
+    fwd = Vector((0, 1, 0))
+    fwd = _rot_about((0, 0, 1), c["yaw"]) @ (_rot_about((1, 0, 0), c["pitch"]) @ fwd)
+    up = Vector((0, 0, 1))
+    up = _rot_about((0, 0, 1), c["yaw"]) @ (_rot_about((1, 0, 0), c["pitch"]) @ up)
+    up = _rot_about(fwd, c["cant"]) @ up
+    butt = sh_r + rot @ Vector(c["butt"])
+    fwd_w, up_w = rot @ fwd, rot @ up
+    right = fwd_w.cross(up_w).normalized()
+    up_w = right.cross(fwd_w).normalized()
+    origin = butt - (right * BUTT_LOCAL.x + fwd_w * BUTT_LOCAL.y + up_w * BUTT_LOCAL.z)
+    return _frame(fwd_w, up_w, origin)
+
+
+def _stabilise(m_chest_locked, rest_like, s):
+    """Blends the weapon orientation towards `rest_like` (the same carry on an upright chest with the chest's
+    heading) by s; position unchanged."""
+    q = m_chest_locked.to_quaternion().slerp(rest_like.to_quaternion(), s)
+    out = q.to_matrix().to_4x4()
+    out.translation = m_chest_locked.translation
+    return out
+
+
+def solve_arms(R, Wm, carry, chest_m, extra_l=None):
+    """Both arms onto the weapon frame Wm (armature space): right hand on the pistol grip, left on the support
+    grip (extra_l: override (axis, palm, grip) in weapon space)."""
+    arm = R.arm
+    c = CARRIES[carry]
+    rot = chest_m.to_3x3() @ R.chest_rest.to_3x3().inverted()
+    out = {}
+    # Right hand: the ATT_Weapon relation of the rest pose.
+    hr = Wm @ R.hand_r_in_w
+    ax_w, palm_w, thumb_w, grip_w = extra_l or W.support_frame()
+    Rw = Wm.to_3x3()
+    ax, palm = (Rw @ ax_w).normalized(), (Rw @ palm_w).normalized()
+    grip = Wm @ grip_w
+    wrist_l = grip - ax * S.GRIP_IN_HAND[0] - palm * S.GRIP_IN_HAND[1]
+    hl_rot = _basis(ax, palm) @ R.hand_l_basis_rest.inverted() @ R.rest["LeftHand"].to_3x3()
+    hl = hl_rot.to_4x4()
+    hl.translation = wrist_l
+    for side, target, pole_off in (("Right", hr, c["pole_r"]), ("Left", hl, c["pole_l"])):
+        ua, la, hb = arm.pose.bones[side + "UpperArm"], arm.pose.bones[side + "LowerArm"], arm.pose.bones[side + "Hand"]
+        H = ua.head.copy()
+        l1, l2 = R.len[side + "Arm"]
+        pole = H + rot @ Vector(pole_off)
+        Kn, An = two_bone(H, la.head.copy(), target.translation, l1, l2, pole)
+        _aim_bone(arm, side + "UpperArm", Kn - H)
+        _aim_bone(arm, side + "LowerArm", An - la.head)
+        m = target.copy()
+        m.translation = hb.head.copy()
+        _set_world(hb, m)
+        out[side] = (hb.head - target.translation).length
+    return out
+
+
+GRIP_CURL = {
+    "Right": {"Index": (8, 6, 4), "Middle": (70, 80, 50), "Ring": (74, 80, 48), "Little": (78, 78, 46)},
+    "Left": {"Index": (48, 58, 38), "Middle": (56, 66, 42), "Ring": (60, 68, 42), "Little": (64, 68, 40)},
+}
+TRIGGER_CURL = (30, 42, 22)
+THUMB_GRIP = {"Right": (18, 26, 22), "Left": (10, 18, 14)}
+
+
+def grip_fingers(arm, trigger=False):
+    for side, fingers in GRIP_CURL.items():
+        for f, angs in fingers.items():
+            if trigger and side == "Right" and f == "Index":
+                angs = TRIGGER_CURL
+            for seg, a in zip(("Proximal", "Intermediate", "Distal"), angs):
+                pb = arm.pose.bones[side + f + seg]
+                pb.rotation_mode = "QUATERNION"
+                pb.rotation_quaternion = _rot_about((1, 0, 0), a)
+        for seg, a in zip(("Metacarpal", "Proximal", "Distal"), THUMB_GRIP[side]):
+            pb = arm.pose.bones[side + "Thumb" + seg]
+            pb.rotation_mode = "QUATERNION"
+            pb.rotation_quaternion = _rot_about((1, 0, 0), a)
+    bpy.context.view_layer.update()
+
+
+def spine_layer(arm, carry, extra_yaw=0.0):
+    """Damps the thorax counter-rotation against the pelvis and adds the carry's stance yaw, spread over
+    Spine / Chest / UpperChest (world-Z rotations about each bone)."""
+    c = CARRIES[carry]
+    yp = _heading(arm, "Hips")
+    yc = _heading(arm, "UpperChest")
+    rel = (yc - yp + math.pi) % (2 * math.pi) - math.pi
+    # (a rotation by +a about Z lowers the heading atan2(x, y) by a)
+    corr = (1.0 - c["counter"]) * rel + math.radians(c["stance"] + extra_yaw)
+    for bone, share in (("Spine", 0.3), ("Chest", 0.35), ("UpperChest", 0.35)):
+        _rotate_world(arm, bone, Quaternion((0, 0, 1), corr * share))
+    # keep the head looking where it looked (the neck takes back the added torso yaw)
+    _rotate_world(arm, "Neck", Quaternion((0, 0, 1), -corr * 0.6))
+
+
+def _lean_and_head(arm):
+    """(thorax lean deg, head pitch deg) in the body's sagittal plane (heading of the pelvis)."""
+    y = _heading(arm, "Hips")
+    fwd = Vector((math.sin(y), math.cos(y), 0))
+    ch = arm.pose.bones["UpperChest"]
+    up = (ch.tail - arm.pose.bones["Spine"].head).normalized()
+    lean = math.degrees(math.atan2(up.dot(fwd), up.z))
+    hf = _bone_forward(arm, "Head")
+    pitch = math.degrees(math.atan2(hf.z, hf.dot(fwd)))
+    return lean, pitch, fwd
+
+
+def _bone_forward(arm, bone):
+    pb = arm.pose.bones[bone]
+    rest = arm.data.bones[bone].matrix_local.to_3x3()
+    return (pb.matrix.to_3x3() @ (rest.inverted() @ Vector((0, 1, 0)))).normalized()
+
+
+def posture_offsets(arm, frames, carry):
+    """Constant (lean, head) corrections that bring the clip's mean to the carry's POSTURE."""
+    want_lean, want_head = POSTURE.get(carry, (None, None))
+    sc = bpy.context.scene
+    ls, hs = [], []
+    for f in range(0, frames, max(1, frames // 16)):
+        sc.frame_set(f)
+        lean, pitch, _ = _lean_and_head(arm)
+        ls.append(lean)
+        hs.append(pitch)
+    dl = 0.0 if want_lean is None else want_lean - sum(ls) / len(ls)
+    dh = 0.0 if want_head is None else want_head - sum(hs) / len(hs)
+    return dl, dh
+
+
+def apply_posture(arm, dl, dh):
+    """Leans the thorax by dl (deg, + = forward) over Spine / Chest / UpperChest and pitches the head by dh after it
+    (the neck and head take back the thorax change first)."""
+    _, _, fwd = _lean_and_head(arm)
+    side = fwd.cross(Vector((0, 0, 1))).normalized()       # right
+    # rotation about `side` by +a tips the top backwards (up -> -fwd); forward lean is -a
+    for bone, share in (("Spine", 0.4), ("Chest", 0.3), ("UpperChest", 0.3)):
+        _rotate_world(arm, bone, Quaternion(side, math.radians(-dl * share)))
+    total = dh + dl          # thorax lean tipped the head with it
+    for bone, share in (("Neck", 0.45), ("Head", 0.55)):
+        _rotate_world(arm, bone, Quaternion(side, math.radians(total * share)))
+
+
+HEAD_LIMITS = {(1, 0, 0): (-22.0, 6.0), (0, 1, 0): (-14.0, 14.0), (0, 0, 1): (-20.0, 20.0)}
+
+
+def head_to_sight(arm, Wm):
+    """Cheek weld: turns neck and head (within HEAD_LIMITS, degrees about world X / Y / Z) so the right eye comes as
+    close to the sight line as it can. Returns the eye's remaining offset from the line (vector, armature space)."""
+    sight_o = Wm @ Vector((0, -0.05, SIGHT_Z))
+    sight_d = Wm.to_3x3() @ Vector((0, 1, 0))
+    eye_local = getattr(head_to_sight, "eye_local", None)
+    if eye_local is None:
+        return Vector()
+    hb = arm.pose.bones["Head"]
+
+    def off():
+        v = hb.matrix @ eye_local - sight_o
+        return v - sight_d * v.dot(sight_d)
+
+    acc = {k: 0.0 for k in HEAD_LIMITS}
+    best = off().length
+    for step in (6.0, 3.0, 1.5, 0.75):
+        for _ in range(8):
+            improved = False
+            for axis, (lo, hi) in HEAD_LIMITS.items():
+                for sgn in (1, -1):
+                    if not lo <= acc[axis] + sgn * step <= hi:
+                        continue
+                    for bn, share in (("Neck", 0.5), ("Head", 0.5)):
+                        _rotate_world(arm, bn, _rot_about(axis, sgn * step * share))
+                    e = off().length
+                    if e < best - 1e-5:
+                        best = e
+                        acc[axis] += sgn * step
+                        improved = True
+                    else:
+                        for bn, share in (("Head", 0.5), ("Neck", 0.5)):
+                            _rotate_world(arm, bn, _rot_about(axis, -sgn * step * share))
+            if not improved:
+                break
+    return off()
+
+
+def weapon_layer(R, carry, frames, sway=0.10, trigger=False, recoil=None, extra_yaw=0.0, aim_head=False,
+                 left_override=None):
+    """Applies the weapon layer to every frame of the armature's current action and keys the touched bones.
+    recoil(f) -> (back m, up deg) adds a firing kick. Returns validation numbers."""
+    arm = R.arm
+    sc = bpy.context.scene
+    act = arm.animation_data.action
+    keyed = ["Spine", "Chest", "UpperChest", "Neck", "Head", "LeftUpperArm", "LeftLowerArm", "LeftHand",
+             "RightUpperArm", "RightLowerArm", "RightHand"]
+    fingers = [b.name for b in arm.data.bones if any(f in b.name for f in ("Thumb", "Index", "Middle", "Ring", "Little"))]
+    # Captured right-hand swing relative to the chest, for the weapon's sway (mean removed).
+    hand_rel = []
+    for f in range(frames):
+        sc.frame_set(f)
+        ch = arm.pose.bones["UpperChest"].matrix
+        hand_rel.append(ch.inverted() @ arm.pose.bones["RightHand"].head)
+    mean = sum(hand_rel, Vector()) / len(hand_rel)
+    dl, dh = posture_offsets(arm, frames, carry)
+    errs = []
+    sight = []
+    poses = []
+    for f in range(frames):
+        sc.frame_set(f)
+        for pb in arm.pose.bones:
+            pb.rotation_mode = "QUATERNION"
+        apply_posture(arm, dl, dh)
+        spine_layer(arm, carry, extra_yaw)
+        ch = arm.pose.bones["UpperChest"].matrix.copy()
+        sh_r = arm.pose.bones["RightUpperArm"].head.copy()
+        Wm = carry_matrix(R, carry, ch, sh_r)
+        # Stabilise against the chest's pitch and roll but keep its heading.
+        yaw = _heading(arm, "UpperChest")
+        upright = Matrix.Translation(ch.translation) @ Quaternion((0, 0, 1), -yaw).to_matrix().to_4x4() @ \
+            Matrix.Translation(-ch.translation) @ R.chest_rest
+        upright.translation = ch.translation
+        Wu = carry_matrix(R, carry, upright, sh_r)
+        Wm = _stabilise(Wm, Wu, CARRIES[carry]["stab"])
+        # Sway with the captured arm swing (chest space -> world).
+        d = ch.to_3x3() @ ((hand_rel[f] - mean) * sway)
+        Wm.translation += d
+        if recoil:
+            back, up = recoil(f)
+            fwd = Wm.to_3x3() @ Vector((0, 1, 0))
+            rr = Wm.to_3x3() @ Vector((1, 0, 0))
+            q = Quaternion(rr, math.radians(up))
+            m3 = q.to_matrix() @ Wm.to_3x3()
+            t = Wm.translation - fwd * back
+            Wm = m3.to_4x4()
+            Wm.translation = t
+            # the shoulder and chest take the kick
+            _rotate_world(arm, "UpperChest", Quaternion(rr, math.radians(-up * 0.35)))
+        if aim_head:
+            # head to the stock as far as a shooter bends, then the rifle up to the eye (cheek weld)
+            rest_off = head_to_sight(arm, Wm)
+            if rest_off.length > 0.06:
+                rest_off = rest_off.normalized() * 0.06
+            Wm.translation += rest_off
+            sight.append((head_to_sight(arm, Wm)).length)
+        e = solve_arms(R, Wm, carry, ch, left_override)
+        errs.append((e["Right"], e["Left"]))
+        grip_fingers(arm, trigger)
+        poses.append({b: (arm.pose.bones[b].location.copy(), arm.pose.bones[b].rotation_quaternion.copy())
+                      for b in keyed + fingers})
+    for f, pose in enumerate(poses):
+        for b, (loc, rot) in pose.items():
+            pb = arm.pose.bones[b]
+            pb.location = loc
+            pb.rotation_quaternion = rot
+            pb.keyframe_insert("rotation_quaternion", frame=f, group=b)
+    # close the loop
+    for b, (loc, rot) in poses[0].items():
+        pb = arm.pose.bones[b]
+        pb.rotation_quaternion = rot
+        pb.keyframe_insert("rotation_quaternion", frame=frames, group=b)
+    return {"posture_fix_deg": [round(dl, 1), round(dh, 1)], "hand_err_mm_r": round(max(e[0] for e in errs) * 1000, 1), "hand_err_mm_l": round(max(e[1] for e in errs) * 1000, 1),
+            "sight_err_mm": round(max(sight) * 1000, 1) if sight else None}
+
+
+# ------------------------------------------------------------------------------------------------ clips
+
+
+class Builder:
+    def __init__(self, arm, weight_ref=None):
+        self.R = Rig(arm)
+        self.arm = arm
+        self.ref = weight_ref
+        self.actions = {}
+        self.meta = {}
+        self.checks = {}
+        self._src = {}
+
+    def _samples(self, take):
+        if take not in self._src:
+            src, f0, n, ft = MC.load_bvh(_take(take))
+            self._src[take] = (src, MC.sample(src, f0, n), ft)
+        return self._src[take]
+
+    def loco(self, clip, takes, motion, carry):
+        err = None
+        for take in takes:
+            src, samples, ft = self._samples(take)
+            try:
+                if motion == "forward":
+                    sub = samples
+                else:
+                    a, b = MC.find_window(samples, ft, motion)
+                    sub = samples[a:b + 1]
+                i0, i1, phase = MC.pick_cycle(sub)
+                break
+            except RuntimeError as e:
+                err = e
+        else:
+            raise err
+        reset_pose(self.arm)
+        act, speed, period, direction = MC.retarget_cycle(src, self.arm, sub, i0, i1, ft, LOCO_FRAMES, clip,
+                                                          phase=phase, align="travel" if motion == "forward" else "facing")
+        self._ground(act, LOCO_FRAMES)
+        before = MC.foot_slip(self.arm, act, LOCO_FRAMES, speed, period, direction)
+        lock = MC.foot_lock(self.arm, act, LOCO_FRAMES, speed, period, direction)
+        self.meta[clip] = {"take": take, "speed": round(speed, 3), "period": round(period, 4),
+                           "dir": [round(direction.x, 3), round(direction.y, 3)], "carry": carry}
+        self.checks[clip] = {"slip_before_lock": before, "slip": MC.foot_slip(self.arm, act, LOCO_FRAMES, speed, period, direction),
+                             "lock": lock}
+        return act
+
+    def _ground(self, act, frames):
+        """Puts the lowest sole point of the cycle on the floor (Hips location keys)."""
+        sc = bpy.context.scene
+        self.arm.animation_data.action = act
+        low = 1e9
+        for f in range(0, frames, 2):
+            sc.frame_set(f)
+            for s in ("Left", "Right"):
+                for b in ("Foot", "Toes"):
+                    pb = self.arm.pose.bones[s + b]
+                    low = min(low, pb.head.z - self.arm.data.bones[s + b].head_local.z)
+        hb = self.arm.data.bones["Hips"]
+        d_local = hb.matrix_local.to_3x3().inverted() @ Vector((0, 0, -low))
+        for fc in MC_fcurves(act, "Hips", "location"):
+            for kp in fc.keyframe_points:
+                kp.co.y += d_local[fc.array_index]
+                kp.handle_left.y += d_local[fc.array_index]
+                kp.handle_right.y += d_local[fc.array_index]
+            fc.update()
+
+    def crouchify(self, act, frames, drop=CROUCH_DROP, lean=18.0):
+        """Lowers the pelvis of a captured cycle and bends the legs onto the same foot plants."""
+        sc = bpy.context.scene
+        arm = self.arm
+        reset_pose(arm)
+        arm.animation_data.action = act
+        R = self.R
+        poses = []
+        for f in range(frames):
+            sc.frame_set(f)
+            feet = {s: (arm.pose.bones[s + "Foot"].head.copy(), arm.pose.bones[s + "Foot"].matrix.to_3x3().copy(),
+                        arm.pose.bones[s + "Toes"].rotation_quaternion.copy()) for s in ("Left", "Right")}
+            hb = arm.pose.bones["Hips"]
+            m = hb.matrix.copy()
+            m.translation.z -= drop
+            m.translation.y -= 0.06
+            _set_world(hb, m)
+            _rotate_world(arm, "Hips", Quaternion(Vector((1, 0, 0)), math.radians(-lean)))
+            _rotate_world(arm, "Spine", Quaternion(Vector((1, 0, 0)), math.radians(lean * 0.55)))
+            _rotate_world(arm, "Chest", Quaternion(Vector((1, 0, 0)), math.radians(lean * 0.2)))
+            for s in ("Left", "Right"):
+                a, frot, toes = feet[s]
+                ul, ll = arm.pose.bones[s + "UpperLeg"], arm.pose.bones[s + "LowerLeg"]
+                l1, l2 = R.len[s + "Leg"]
+                H = ul.head.copy()
+                pole = H + Vector((0.08 if s == "Right" else -0.08, 0.8, 0))
+                Kn, An = two_bone(H, ll.head.copy(), a, l1, l2, pole)
+                _aim_bone(arm, s + "UpperLeg", Kn - H)
+                _aim_bone(arm, s + "LowerLeg", An - ll.head)
+                fb = arm.pose.bones[s + "Foot"]
+                mm = frot.to_4x4()
+                mm.translation = fb.head.copy()
+                _set_world(fb, mm)
+            keys = ["Hips", "Spine", "Chest"] + [s + b for s in ("Left", "Right") for b in ("UpperLeg", "LowerLeg", "Foot")]
+            poses.append({b: (arm.pose.bones[b].location.copy(), arm.pose.bones[b].rotation_quaternion.copy()) for b in keys})
+        for f, pose in enumerate(poses + [poses[0]]):
+            for b, (loc, rot) in pose.items():
+                pb = arm.pose.bones[b]
+                pb.location, pb.rotation_quaternion = loc, rot
+                pb.keyframe_insert("rotation_quaternion", frame=f, group=b)
+                if b == "Hips":
+                    pb.keyframe_insert("location", frame=f, group=b)
+
+    def copy(self, name, src_name, carry=None):
+        """A new action from an existing one (keys copied), weapon layer applied again when carry is given."""
+        a = self.actions[src_name].copy()
+        a.name = name
+        a.use_fake_user = True
+        return a
+
+    def finish(self, name, act, carry, frames, loop=True, **kw):
+        reset_pose(self.arm)
+        self.arm.animation_data.action = act
+        res = self.weapon(carry, frames, **kw)
+        act["fn_frames"] = frames
+        act["fn_loop"] = loop
+        self.actions[name] = act
+        self.checks.setdefault(name, {})["weapon"] = res
+        return act
+
+    def weapon(self, carry, frames, **kw):
+        return weapon_layer(self.R, carry, frames, **kw)
+
+    def build_all(self, only=None):
+        want = lambda n: only is None or n in only  # noqa: E731
+        need = set()
+        for clip in LOCO:
+            if want(clip) or any(want(k) for k, v in DERIVED.items() if v == clip) or \
+                    (clip == "Run_F" and want("Sprint_F")) or (clip.startswith("Walk_") and want("CrouchWalk_" + clip[-1])):
+                need.add(clip)
+        bases = {}
+        for clip in LOCO:
+            if clip in need:
+                takes, motion, carry = LOCO[clip]
+                bases[clip] = self.loco(clip, takes, motion, carry)
+        # Crouch walks from the walks (before their weapon layer).
+        for d in "FBLR":
+            if "Walk_" + d in bases and want("CrouchWalk_" + d):
+                c = bases["Walk_" + d].copy()
+                c.name = "CrouchWalk_" + d
+                c.use_fake_user = True
+                self.crouchify(c, LOCO_FRAMES)
+                m = dict(self.meta["Walk_" + d])
+                m["speed"] = round(m["speed"] * 0.85, 3)        # shorter steps in a crouch: same cadence, 85 % stride
+                self.meta["CrouchWalk_" + d] = m
+                self.finish("CrouchWalk_" + d, c, "crouch", LOCO_FRAMES)
+        # Derived fast directional clips: copies of the walking keys before the layer, with a faster carry.
+        for name, base in DERIVED.items():
+            if want(name) and base in bases:
+                c = bases[base].copy()
+                c.name = name
+                c.use_fake_user = True
+                self.meta[name] = dict(self.meta[base], carry="ready")
+                self.finish(name, c, "ready", LOCO_FRAMES)
+        if want("Sprint_F") and "Run_F" in bases:
+            c = bases["Run_F"].copy()
+            c.name = "Sprint_F"
+            c.use_fake_user = True
+            self.meta["Sprint_F"] = dict(self.meta["Run_F"], carry="port")
+            self.finish("Sprint_F", c, "port", LOCO_FRAMES, sway=0.06)
+        for clip, act in bases.items():
+            if want(clip):
+                self.finish(clip, act, LOCO[clip][2], LOCO_FRAMES)
+            else:
+                bpy.data.actions.remove(act)
+        for clip, (takes, motion) in TURNS.items():
+            if not want(clip):
+                continue
+            err = None
+            for take in takes:
+                src, samples, ft = self._samples(take)
+                try:
+                    a, b = MC.find_window(samples, ft, motion, min_s=0.6)
+                    sub = samples[a:b + 1]
+                    try:
+                        i0, i1, phase = MC.pick_cycle(sub)
+                    except RuntimeError:
+                        # turning steps barely lift the feet: one second of the turn, looped by the end blend
+                        i0, i1, phase = 0, min(len(sub) - 1, int(round(1.0 / ft))), 0.0
+                    break
+                except RuntimeError as e:
+                    err = e
+            else:
+                raise err
+            reset_pose(self.arm)
+            act, speed, period, direction = MC.retarget_cycle(src, self.arm, sub, i0, i1, ft, LOCO_FRAMES, clip,
+                                                              phase=phase, align="facing", unwind=True)
+            self._ground(act, LOCO_FRAMES)
+            self.meta[clip] = {"take": take, "turn_rate": round(act["fn_turn_rate"], 3), "period": round(period, 4)}
+            self.finish(clip, act, "low", LOCO_FRAMES)
+        if any(want(n) for n in ("Idle", "Ready_Idle", "Crouch_Idle", "Aim", "Fire", "Reload")):
+            self.idles(want)
+        return self.actions
+
+    def idles(self, want):
+        src, samples, ft = self._samples(IDLE_TAKE)
+        n = len(samples)
+        span = int(round(IDLE_FRAMES / FPS / ft))
+        i0 = max(0, (n - span) // 2)
+        i1 = min(n - 1, i0 + span)
+        reset_pose(self.arm)
+        base, speed, period, _ = MC.retarget_cycle(src, self.arm, samples, i0, i1, ft, IDLE_FRAMES, "Idle_base",
+                                                   align="facing", in_place=True)
+        self._ground(base, IDLE_FRAMES)
+        MC.foot_lock(self.arm, base, IDLE_FRAMES, 0.0, period)
+        self.meta["Idle"] = {"take": IDLE_TAKE, "period": round(IDLE_FRAMES / FPS, 3)}
+        jobs = [("Idle", "low", {}), ("Ready_Idle", "ready", {}),
+                ("Aim", "aim", {"aim_head": True, "trigger": True, "sway": 0.0}),
+                ("Fire", "aim", {"aim_head": True, "trigger": True, "sway": 0.0, "recoil": _recoil})]
+        for name, carry, kw in jobs:
+            if not want(name):
+                continue
+            c = base.copy()
+            c.name = name
+            c.use_fake_user = True
+            frames = IDLE_FRAMES
+            if name == "Fire":
+                frames = FIRE_FRAMES
+                _trim(c, FIRE_FRAMES)
+            self.finish(name, c, carry, frames, loop=name != "Fire", **kw)
+        if want("Crouch_Idle"):
+            c = base.copy()
+            c.name = "Crouch_Idle"
+            c.use_fake_user = True
+            self.crouch_idle(c)
+            self.finish("Crouch_Idle", c, "crouch", IDLE_FRAMES)
+        if want("Reload"):
+            c = base.copy()
+            c.name = "Reload"
+            c.use_fake_user = True
+            _trim(c, RELOAD_FRAMES)
+            self.finish("Reload", c, "ready", RELOAD_FRAMES, loop=False, left_override=None)
+            reload_left_hand(self, c, RELOAD_FRAMES)
+        bpy.data.actions.remove(base)
+
+    def crouch_idle(self, act):
+        """Squat-crouch on the captured idle: left foot forward flat, right foot back on its ball."""
+        sc = bpy.context.scene
+        arm = self.arm
+        reset_pose(arm)
+        arm.animation_data.action = act
+        R = self.R
+        poses = []
+        for f in range(IDLE_FRAMES):
+            sc.frame_set(f)
+            hb = arm.pose.bones["Hips"]
+            m = hb.matrix.copy()
+            m.translation.z -= 0.40
+            m.translation.y -= 0.05
+            _set_world(hb, m)
+            _rotate_world(arm, "Hips", Quaternion(Vector((1, 0, 0)), math.radians(-24)))
+            _rotate_world(arm, "Spine", Quaternion(Vector((1, 0, 0)), math.radians(14)))
+            _rotate_world(arm, "Chest", Quaternion(Vector((1, 0, 0)), math.radians(4)))
+            for s, fwd, heel, toe_bend in (("Left", 0.20, 0.0, 0.0), ("Right", -0.20, 0.11, 40.0)):
+                ul, ll = arm.pose.bones[s + "UpperLeg"], arm.pose.bones[s + "LowerLeg"]
+                rest_a = arm.data.bones[s + "Foot"].head_local
+                x = rest_a.x * 1.15
+                target = Vector((x, rest_a.y + fwd, rest_a.z + heel))
+                l1, l2 = R.len[s + "Leg"]
+                H = ul.head.copy()
+                pole = H + Vector((0.15 if s == "Right" else -0.15, 0.9, 0.0))
+                Kn, An = two_bone(H, ll.head.copy(), target, l1, l2, pole)
+                _aim_bone(arm, s + "UpperLeg", Kn - H)
+                _aim_bone(arm, s + "LowerLeg", An - ll.head)
+                fb = arm.pose.bones[s + "Foot"]
+                mm = (Quaternion(Vector((1, 0, 0)), math.radians(-toe_bend)).to_matrix() @ R.rest[s + "Foot"].to_3x3()).to_4x4()
+                mm.translation = fb.head.copy()
+                _set_world(fb, mm)
+                tb = arm.pose.bones[s + "Toes"]
+                tb.rotation_quaternion = Quaternion(Vector((1, 0, 0)), math.radians(toe_bend))
+            keys = ["Hips", "Spine", "Chest"] + [s + b for s in ("Left", "Right") for b in ("UpperLeg", "LowerLeg", "Foot", "Toes")]
+            poses.append({b: (arm.pose.bones[b].location.copy(), arm.pose.bones[b].rotation_quaternion.copy()) for b in keys})
+        for f, pose in enumerate(poses + [poses[0]]):
+            for b, (loc, rot) in pose.items():
+                pb = arm.pose.bones[b]
+                pb.location, pb.rotation_quaternion = loc, rot
+                pb.keyframe_insert("rotation_quaternion", frame=f, group=b)
+                if b == "Hips":
+                    pb.keyframe_insert("location", frame=f, group=b)
+
+
+FIRE_FRAMES = 6
+RELOAD_FRAMES = 75
+
+
+def _recoil(f):
+    """Kick of one shot over FIRE_FRAMES: back (m) and muzzle rise (deg), recovered by the end."""
+    t = f / FIRE_FRAMES
+    k = math.sin(math.pi * min(1.0, t * 1.6)) if t < 0.62 else max(0.0, 1.0 - (t - 0.62) / 0.38) * 0.2
+    return 0.022 * k, 3.5 * k
+
+
+def _trim(act, frames):
+    """Drops keys after `frames` (one-shots cut from the idle base)."""
+    for fc in MC_fcurves(act):
+        for kp in list(fc.keyframe_points)[::-1]:
+            if kp.co.x > frames + 0.5:
+                fc.keyframe_points.remove(kp)
+
+
+def reload_left_hand(b, act, frames):
+    """Reload: the support hand leaves the handguard to the magazine, down to the left chest pouch, back with the new
+    magazine and onto the handguard; the rifle tips 25 deg to the left meanwhile. Keys the left arm only."""
+    arm = b.arm
+    R = b.R
+    sc = bpy.context.scene
+    reset_pose(arm)
+    arm.animation_data.action = act
+    ax_w, palm_w, thumb_w, grip_w = W.support_frame()
+    mag = Vector((0.0, 0.055, -0.07))                 # magazine well, weapon space
+    keys = ["LeftUpperArm", "LeftLowerArm", "LeftHand"]
+    poses = []
+    for f in range(frames + 1):
+        sc.frame_set(f)
+        t = f / frames
+        ch = arm.pose.bones["UpperChest"].matrix
+        hr = arm.pose.bones["RightHand"].matrix
+        Wm = hr @ R.hand_r_in_w.inverted()
+        pouch = ch @ (R.chest_rest.inverted() @ Vector((-0.09, 0.16, 1.18)))
+        # phase: 0-0.15 to mag, 0.15-0.35 mag out down to pouch, 0.35-0.55 new mag up, 0.55-0.75 insert, ->grip
+        g_hand = Wm @ grip_w
+        g_mag = Wm @ mag
+        if t < 0.15:
+            p = g_hand.lerp(g_mag, _ease(t / 0.15))
+        elif t < 0.35:
+            p = g_mag.lerp(pouch, _ease((t - 0.15) / 0.2))
+        elif t < 0.55:
+            p = pouch.lerp(g_mag - (Wm.to_3x3() @ Vector((0, 0, 0.06))), _ease((t - 0.35) / 0.2))
+        elif t < 0.75:
+            p = (g_mag - (Wm.to_3x3() @ Vector((0, 0, 0.06)))).lerp(g_mag, _ease((t - 0.55) / 0.2))
+        else:
+            p = g_mag.lerp(g_hand, _ease((t - 0.75) / 0.25))
+        ax = (Wm.to_3x3() @ ax_w).normalized()
+        palm = (Wm.to_3x3() @ palm_w).normalized()
+        wrist = p - ax * S.GRIP_IN_HAND[0] - palm * S.GRIP_IN_HAND[1]
+        ua, la, hb = arm.pose.bones["LeftUpperArm"], arm.pose.bones["LeftLowerArm"], arm.pose.bones["LeftHand"]
+        H = ua.head.copy()
+        l1, l2 = R.len["LeftArm"]
+        rot = ch.to_3x3() @ R.chest_rest.to_3x3().inverted()
+        Kn, An = two_bone(H, la.head.copy(), wrist, l1, l2, H + rot @ Vector((-0.30, 0.0, -0.50)))
+        _aim_bone(arm, "LeftUpperArm", Kn - H)
+        _aim_bone(arm, "LeftLowerArm", An - la.head)
+        hl = (_basis(ax, palm) @ R.hand_l_basis_rest.inverted() @ R.rest["LeftHand"].to_3x3()).to_4x4()
+        hl.translation = hb.head.copy()
+        _set_world(hb, hl)
+        poses.append({k: arm.pose.bones[k].rotation_quaternion.copy() for k in keys})
+    for f, pose in enumerate(poses):
+        for k, rot in pose.items():
+            pb = arm.pose.bones[k]
+            pb.rotation_quaternion = rot
+            pb.keyframe_insert("rotation_quaternion", frame=f, group=k)
+
+
+def reset_pose(arm):
+    """Rest pose on every bone: a clip only keys some channels, and Blender keeps the last value on the others."""
+    for pb in arm.pose.bones:
+        pb.rotation_mode = "QUATERNION"
+        pb.location = Vector()
+        pb.rotation_quaternion = Quaternion()
+        pb.scale = Vector((1, 1, 1))
+    bpy.context.view_layer.update()
+
+
+def _ease(t):
     t = max(0.0, min(1.0, t))
     return t * t * (3 - 2 * t)
 
 
-# ---------------------------------------------------------------------------- authoring rig
-
-
-def setup_controls(arm):
-    """Adds the CTRL_* bones and IK constraints. Rest frames are derived from the skeleton
-    and the weapon's support-hand frame so the solved hands land exactly on the grips."""
-    j = S.joints()
-    bpy.context.view_layer.objects.active = arm
-    bpy.ops.object.mode_set(mode="EDIT")
-    eb = arm.data.edit_bones
-
-    def ctrl(name, head, tail, parent, roll_vec=None, roll=None):
-        b = eb.new(name)
-        b.head, b.tail = head, tail
-        b.parent = eb[parent] if parent else None
-        b.use_deform = False
-        if roll_vec is not None:
-            b.align_roll(roll_vec)
-        if roll is not None:
-            b.roll = roll
-        return b
-
-    att = eb["ATT_Weapon"]
-    W0 = att.matrix.copy()
-    ctrl("CTRL_Weapon", att.head.copy(), att.tail.copy(), "UpperChest", roll=att.roll)
-    hr = eb["RightHand"]
-    ctrl("CTRL_HandR", hr.head.copy(), hr.tail.copy(), "CTRL_Weapon", roll=hr.roll)
-    # Support hand: weapon-space support frame -> armature space at the weapon's rest.
-    ax_w, palm_w, thumb_w, grip_w = W.support_frame()
-    R0 = W0.to_3x3()
-    ax, palm = (R0 @ ax_w).normalized(), (R0 @ palm_w).normalized()
-    grip = W0 @ grip_w
-    wrist = grip - ax * S.GRIP_IN_HAND[0] - palm * S.GRIP_IN_HAND[1]
-    ctrl("CTRL_HandL", wrist, wrist + ax * 0.093, "CTRL_Weapon", roll_vec=-palm)
-    for side, s in ((-1, "Left"), (1, "Right")):
-        fb = eb[s + "Foot"]
-        ctrl("CTRL_Foot" + s[0], fb.head.copy(), fb.tail.copy(), "Root", roll=fb.roll)
-        k = j[s + "LowerLeg"]
-        ctrl("CTRL_Knee" + s[0], k + Vector((0, 0.6, 0)), k + Vector((0, 0.65, 0)), "Root")
-        e = j[s + "LowerArm"]
-        ctrl("CTRL_Elbow" + s[0], e + Vector((side * 0.30, -0.25, -0.15)), e + Vector((side * 0.30, -0.30, -0.15)), "UpperChest")
-    bpy.ops.object.mode_set(mode="POSE")
-    pb = arm.pose.bones
-    for side, s in ((-1, "Left"), (1, "Right")):
-        c = s[0]
-        for limb, tgt, pole in (("LowerLeg", "CTRL_Foot", "CTRL_Knee"), ("LowerArm", "CTRL_Hand", "CTRL_Elbow")):
-            ik = pb[s + limb].constraints.new("IK")
-            ik.name = "FN_IK"
-            ik.target, ik.subtarget = arm, tgt + c
-            ik.pole_target, ik.pole_subtarget = arm, pole + c
-            ik.pole_angle = math.radians(-90 if limb == "LowerLeg" else 90)
-            ik.chain_count = 2
-        for bone, tgt in (("Foot", "CTRL_Foot"), ("Hand", "CTRL_Hand")):
-            cr = pb[s + bone].constraints.new("COPY_ROTATION")
-            cr.name = "FN_CR"
-            cr.target, cr.subtarget = arm, tgt + c
-    for b in pb:
-        b.rotation_mode = "QUATERNION"
-    bpy.ops.object.mode_set(mode="OBJECT")
-
-
-def remove_controls(arm):
-    bpy.context.view_layer.objects.active = arm
-    bpy.ops.object.mode_set(mode="POSE")
-    for pbn in arm.pose.bones:
-        for c in list(pbn.constraints):
-            pbn.constraints.remove(c)
-    bpy.ops.object.mode_set(mode="EDIT")
-    for b in list(arm.data.edit_bones):
-        if b.name.startswith("CTRL_"):
-            arm.data.edit_bones.remove(b)
-    bpy.ops.object.mode_set(mode="OBJECT")
-
-
-# ---------------------------------------------------------------------------- pose helpers
-
-
-class Poser:
-    """Sets bone poses from armature-space targets expressed as if all parents were at
-    rest (basis = rest^-1 @ target). Rotations are world-axis deltas about the bone head."""
-
-    def __init__(self, arm):
-        self.arm = arm
-        self.rest = {b.name: b.matrix_local.copy() for b in arm.data.bones}
-        self.keyed = set()
-
-    def rot(self, bone, q, loc=Vector()):
-        r = self.rest[bone]
-        h = r.translation
-        tgt = Matrix.Translation(h + loc) @ q.to_matrix().to_4x4() @ Matrix.Translation(-h) @ r
-        self.basis(bone, r.inverted() @ tgt)
-
-    def target(self, bone, m):
-        self.basis(bone, self.rest[bone].inverted() @ m)
-
-    def basis(self, bone, m):
-        pb = self.arm.pose.bones[bone]
-        loc, rot, _ = m.decompose()
-        pb.location = loc
-        pb.rotation_quaternion = rot
-        self.keyed.add(bone)
-
-    def local_rot(self, bone, q):
-        pb = self.arm.pose.bones[bone]
-        pb.location = Vector()
-        pb.rotation_quaternion = q
-        self.keyed.add(bone)
-
-    def key(self, frame):
-        for name in self.keyed:
-            pb = self.arm.pose.bones[name]
-            pb.keyframe_insert("location", frame=frame, group=name)
-            pb.keyframe_insert("rotation_quaternion", frame=frame, group=name)
-
-    def reset(self):
-        for pb in self.arm.pose.bones:
-            pb.location = Vector()
-            pb.rotation_quaternion = Quaternion()
-        self.keyed = set()
-
-
-def frame_m(fwd, up, origin):
-    return S.frame_matrix(Vector(fwd), Vector(up), Vector(origin))
-
-
-# ---------------------------------------------------------------------------- stance + weapon
-
-
-STANCE_YAW = -12.0
-STANCE_FWD = Matrix.Rotation(math.radians(STANCE_YAW), 3, "Z") @ Vector((0, 1, 0))      # torso bladed to the right (support shoulder forward), split over Chest/UpperChest
-
-
-def chest_stance_matrix(P, extra_spine=None, hips=None):
-    """Armature-space transform this frame applies to the UpperChest (rest -> posed)."""
-    m = Matrix.Identity(4)
-    if hips is not None:
-        q, loc = hips
-        h = P.rest["Hips"].translation
-        m = Matrix.Translation(h + loc) @ q.to_matrix().to_4x4() @ Matrix.Translation(-h)
-    rots = extra_spine or {}
-    for bone in ("Spine", "Chest", "UpperChest"):
-        q = rots.get(bone, Quaternion())
-        h = P.rest[bone].translation
-        m = m @ (Matrix.Translation(h) @ q.to_matrix().to_4x4() @ Matrix.Translation(-h))
-    return m
-
-
-def weapon_pose(kind, stance=None):
-    """Pose of the carbine grip frame for a carry style. The butt point is given on the
-    rest torso and follows the posed chest (stance); the aim direction stays in world."""
-    if kind == "sprint":
-        # Muzzle down-left across the body, stock high on the right chest.
-        butt = Vector((0.110, 0.125, 1.320))
-        fwd = Vector((-0.36, 0.62, -0.70)).normalized()
-        up = Vector((0.15, 0.55, 0.65))
-    elif kind == "crouch":
-        butt = Vector((0.100, 0.140, 1.330))
-        fwd = Vector((-math.sin(math.radians(9)), math.cos(math.radians(9)), -math.tan(math.radians(18)))).normalized()
-        up = Vector((0, 0.3, 1))
+def MC_fcurves(act, bone=None, prop=None):
+    curves = []
+    path = f'pose.bones["{bone}"].{prop}' if bone else None
+    if hasattr(act, "layers") and len(act.layers):
+        for lay in act.layers:
+            for st in lay.strips:
+                for cb in st.channelbags:
+                    curves += [fc for fc in cb.fcurves if path is None or fc.data_path == path]
     else:
-        # Low ready: stock in the shoulder pocket, muzzle 28 deg down, slightly inboard.
-        butt = Vector((0.105, 0.135, 1.350))
-        fwd = Vector((-math.sin(math.radians(11)), math.cos(math.radians(11)), -math.tan(math.radians(30)))).normalized()
-        up = Vector((0, 0.3, 1))
-    if stance is not None:
-        butt = stance @ butt
-        # Follow the chest's yaw (gait twist) but keep the aim pitch in world space.
-        cf = stance.to_3x3() @ Vector((0, 1, 0))
-        yaw = math.atan2(-cf.x, cf.y) - math.atan2(-STANCE_FWD.x, STANCE_FWD.y)
-        rz = Matrix.Rotation(yaw, 3, "Z")
-        fwd, up = rz @ fwd, rz @ up
-    up = (up - fwd * up.dot(fwd)).normalized()
-    butt_local = Vector((0, -W.STOCK_PULL + 0.008, W.BORE_Z - 0.030))
-    right = fwd.cross(up)
-    grip = butt - (right * butt_local.x + fwd * butt_local.y + up * butt_local.z)
-    return frame_m(fwd, up, grip)
+        curves = [fc for fc in act.fcurves if path is None or fc.data_path == path]
+    return curves
 
 
-# ---------------------------------------------------------------------------- finger grip
-
-
-def apply_grip_fingers(P):
-    """Static finger curls: right hand closes on the pistol grip with the index finger
-    straight along the receiver (trigger discipline), left hand wraps the handguard."""
-    # Curl = rotation about the finger bone's X (towards the palm), degrees per segment.
-    # Tuned on close-up renders: three fingers closed on the pistol grip, support fingers
-    # wrapped over the handguard. The firing index is lifted 22 deg towards the thumb so
-    # it lies along the receiver above the trigger guard.
-    curl = {
-        "Right": {"Index": (6, 4, 4), "Middle": (76, 86, 52), "Ring": (80, 86, 50), "Little": (84, 84, 48)},
-        "Left": {"Index": (56, 66, 42), "Middle": (62, 72, 46), "Ring": (66, 74, 46), "Little": (70, 74, 44)},
-    }
-    lift = {"Right": {"Index": 22.0}}
-    thumb = {"Right": (22, 34, 28), "Left": (12, 22, 18)}
-    for side, fingers in curl.items():
-        for f, angs in fingers.items():
-            for seg, a in zip(S.FINGER_SEGS, angs):
-                q = _q((1, 0, 0), -a)
-                if seg == "Proximal" and f in lift.get(side, {}):
-                    q = _q((0, 0, 1), lift[side][f]) @ q
-                P.local_rot(side + f + seg, q)
-        for seg, a in zip(S.THUMB_SEGS, thumb[side]):
-            P.local_rot(side + "Thumb" + seg, _q((1, 0, 0), -a))
-
-
-# ---------------------------------------------------------------------------- generators
-
-
-FOOT_X = 0.102
-
-
-def foot_target(P, side, pos_xy, lift, pitch_deg, yaw_deg=0.0):
-    """Ankle target for a foot whose sole contact is at pos_xy, pitched about the heel
-    (pitch > 0, toes up) or the ball (pitch < 0, heel up)."""
-    s = "Left" if side < 0 else "Right"
-    rest = P.rest[s + "Foot"]
-    ankle0 = rest.translation
-    heel0 = Vector((ankle0.x, ankle0.y - 0.045, 0.0))
-    ball0 = Vector((ankle0.x, ankle0.y + 0.135, 0.0))
-    pivot = heel0 if pitch_deg > 0 else ball0
-    q = _q((0, 0, 1), yaw_deg) @ _q((1, 0, 0), pitch_deg)
-    off = Vector((pos_xy[0] - ankle0.x + side * FOOT_X, pos_xy[1], lift))
-    m = Matrix.Translation(off) @ Matrix.Translation(pivot) @ q.to_matrix().to_4x4() @ Matrix.Translation(-pivot) @ rest
-    return m
-
-
-def gait_frame(P, g, d, phase, carry="low", crouch=False):
-    """Poses one frame of a gait cycle. g = GAIT entry, d = direction (x, y) in character
-    space, phase in [0, 1). Left foot strikes at phase 0, right at 0.5."""
-    S_ = g["speed"] * g["period"]               # stride (m per cycle)
-    beta = g["duty"]
-    reach = S_ * beta
-    dvec = Vector((d[0], d[1], 0))
-    lateral = abs(d[0]) > 0.5
-    feet = {}
-    for side, ph in ((-1, phase), (1, (phase + 0.5) % 1.0)):
-        if ph < beta:
-            u = ph / beta
-            s = reach * (0.5 - u)
-            lift = 0.0
-            pitch = 12.0 * (1 - smooth(u / 0.18)) if not crouch else 4.0 * (1 - smooth(u / 0.2))
-            if u > 0.62:
-                pitch = -38.0 * smooth((u - 0.62) / 0.38) * (0.6 if crouch else 1.0)
-        else:
-            q = (ph - beta) / (1 - beta)
-            s = -reach * 0.5 + reach * smooth(q)
-            lift = g["lift"] * math.sin(math.pi * min(1.0, q * 1.1)) ** 1.2
-            pitch = -38.0 * (1 - smooth(q / 0.3)) + 14.0 * smooth((q - 0.55) / 0.45) if q < 0.98 else 12.0
-            if crouch:
-                pitch *= 0.6
-        if not lateral:
-            pos = Vector((0, s * dvec.y + g["offset"] * dvec.y, 0))
-            if crouch:
-                pos.y += (0.10 if side < 0 else -0.06)
-        else:
-            # Side steps: feet stay staggered fore/aft so they never cross.
-            pos = Vector((s * dvec.x + g["offset"] * 0.3 * dvec.x, (0.07 if side < 0 else -0.07), 0))
-            pitch *= 0.5
-        if d[1] < -0.5:
-            pitch *= 0.6
-        feet[side] = (pos, lift, pitch)
-        P.target("CTRL_Foot" + ("L" if side < 0 else "R"), foot_target(P, side, (pos.x, pos.y), lift, pitch,
-                                                                            yaw_deg=side * -6.0 if not crouch else side * -12.0))
-        k = P.rest[("Left" if side < 0 else "Right") + "LowerLeg"].translation
-        P.target("CTRL_Knee" + ("L" if side < 0 else "R"), Matrix.Translation(Vector((k.x + side * 0.05, pos.y + 0.7, k.z))))
-    # Pelvis: lowest at mid-stance (run) / double support (walk), sway over the stance foot.
-    two = 2 * math.pi * phase
-    run_like = beta < 0.5
-    bob = g["bob"] * (math.cos(2 * two) if run_like else -math.cos(2 * two))
-    drop = g["drop"]
-    sway = 0.012 * math.cos(two) * (0.4 if run_like else 1.0)
-    yaw = 6.0 * math.cos(two) * (1.3 if run_like else 1.0)
-    if lateral:
-        yaw *= 0.3
-    lean = g["lean"] * (dvec.y if not lateral else 0.3)
-    hips_loc = Vector((sway if not lateral else sway * 0.5, -0.02 * math.sin(math.radians(lean)), -drop + bob))
-    if crouch:
-        hips_loc.y -= 0.06
-    hips_q = _q((0, 0, 1), yaw) @ _q((1, 0, 0), -lean * 0.45 - (22 if crouch else 0)) @ _q((0, 1, 0), -2.5 * math.cos(two))
-    P.rot("Hips", hips_q, hips_loc)
-    spine = {
-        "Spine": _q((0, 0, 1), -yaw * 0.5 + STANCE_YAW * 0.25) @ _q((1, 0, 0), -lean * 0.20 + (10 if crouch else 0)),
-        "Chest": _q((0, 0, 1), -yaw * 0.35 + STANCE_YAW * 0.35) @ _q((1, 0, 0), -lean * 0.20 + (6 if crouch else 0)),
-        "UpperChest": _q((0, 0, 1), -yaw * 0.15 + STANCE_YAW * 0.40) @ _q((1, 0, 0), -lean * 0.15 + 2.0 * math.cos(2 * two)),
-    }
-    for b, q in spine.items():
-        P.rot(b, q)
-    head_pitch = lean * 0.55 + (16 if crouch else 0) - 2.0 * math.cos(2 * two)
-    P.rot("Neck", _q((0, 0, 1), -STANCE_YAW * 0.45 + yaw * 0.2) @ _q((1, 0, 0), head_pitch * 0.4))
-    P.rot("Head", _q((0, 0, 1), -STANCE_YAW * 0.45 + yaw * 0.2) @ _q((1, 0, 0), head_pitch * 0.6))
-    P.rot("LeftShoulder", _q((0, 0, 1), -26) @ _q((0, 1, 0), 5))
-    P.rot("RightShoulder", _q((0, 0, 1), 4) @ _q((0, 1, 0), -4))
-    toes = {}
-    for side in (-1, 1):
-        pitch = feet[side][2]
-        P.rot(("Left" if side < 0 else "Right") + "Toes", _q((1, 0, 0), min(0.0, pitch) * -0.7))
-    set_weapon(P, carry, spine, (hips_q, hips_loc), bob_phase=two, bob=g["bob"] * 0.5)
-
-
-def set_weapon(P, carry, spine, hips, bob_phase=0.0, bob=0.0, sway=(0.0, 0.0)):
-    """Places CTRL_Weapon so the carbine is at the carry pose in the posed stance (spine
-    rotations of this frame without the per-frame bob), plus a small damped bob."""
-    stance = chest_stance_matrix(P, spine, hips)
-    W = weapon_pose(carry, stance)
-    tgt = stance.inverted() @ W
-    t = tgt.translation + Vector((sway[0], 0, -bob * 0.4 * math.cos(2 * bob_phase) + sway[1]))
-    tgt = Matrix.Translation(t) @ tgt.to_quaternion().to_matrix().to_4x4()
-    P.target("CTRL_Weapon", tgt)
-    for side, pole in ((-1, Vector((-0.42, -0.10, 0.95))), (1, Vector((0.50, -0.22, 1.00)))):
-        P.target("CTRL_Elbow" + ("L" if side < 0 else "R"), stance.inverted() @ Matrix.Translation(pole))
-    P.basis("CTRL_HandR", Matrix.Identity(4))   # children of CTRL_Weapon: rest offsets
-    P.basis("CTRL_HandL", Matrix.Identity(4))
-
-
-def idle_frame(P, phase, crouch=False):
-    """Standing (or crouched) ready idle: weight shift, breathing, small weapon drift."""
-    two = 2 * math.pi * phase
-    if crouch:
-        # Left foot forward flat, right foot back on the ball of the foot.
-        P.target("CTRL_FootL", foot_target(P, -1, (0.0, 0.20), 0.0, 0.0, yaw_deg=8))
-        P.target("CTRL_FootR", foot_target(P, 1, (0.03, -0.18), 0.0, -40.0, yaw_deg=-18))
-        hips_loc = Vector((0.015, -0.07, -0.335 + 0.004 * math.sin(two)))
-        hips_q = _q((0, 0, 1), -8) @ _q((1, 0, 0), -24)
-        spine = {"Spine": _q((0, 0, 1), STANCE_YAW * 0.25 + 3) @ _q((1, 0, 0), 12),
-                 "Chest": _q((0, 0, 1), STANCE_YAW * 0.35 + 2) @ _q((1, 0, 0), 6 + 0.8 * math.sin(two)),
-                 "UpperChest": _q((0, 0, 1), STANCE_YAW * 0.40) @ _q((1, 0, 0), 0.8 * math.sin(two))}
-        carry = "crouch"
-        head_p = 18
-    else:
-        P.target("CTRL_FootL", foot_target(P, -1, (-0.02, 0.06), 0.0, 0.0, yaw_deg=10))
-        P.target("CTRL_FootR", foot_target(P, 1, (0.04, -0.06), 0.0, 0.0, yaw_deg=-16))
-        shift = 0.018 * math.sin(two)
-        hips_loc = Vector((shift, 0.0, -0.022 - 0.004 * abs(math.sin(two))))
-        hips_q = _q((0, 0, 1), -6 + 1.5 * math.sin(two)) @ _q((0, 1, 0), -2.0 * math.sin(two))
-        breath = math.sin(two * 3.0)        # three breaths per idle cycle
-        spine = {"Spine": _q((0, 0, 1), STANCE_YAW * 0.25 + 2) @ _q((1, 0, 0), -1),
-                 "Chest": _q((0, 0, 1), STANCE_YAW * 0.35 + 2) @ _q((1, 0, 0), 0.8 * breath),
-                 "UpperChest": _q((0, 0, 1), STANCE_YAW * 0.40) @ _q((1, 0, 0), 1.2 * breath)}
-        carry = "low"
-        head_p = 3 + 1.5 * math.sin(two * 2)
-    for side in (-1, 1):
-        k = P.rest[("Left" if side < 0 else "Right") + "LowerLeg"].translation
-        P.target("CTRL_Knee" + ("L" if side < 0 else "R"), Matrix.Translation(Vector((k.x + side * 0.12, 0.8, k.z))))
-    P.rot("Hips", hips_q, hips_loc)
-    for b, q in spine.items():
-        P.rot(b, q)
-    look = 6.0 * math.sin(two * 2 + 0.6) if not crouch else 4.0 * math.sin(two)
-    P.rot("Neck", _q((0, 0, 1), -STANCE_YAW * 0.45 + look * 0.4) @ _q((1, 0, 0), head_p * 0.4))
-    P.rot("Head", _q((0, 0, 1), -STANCE_YAW * 0.45 + look * 0.6) @ _q((1, 0, 0), head_p * 0.6))
-    P.rot("LeftShoulder", _q((0, 0, 1), -26) @ _q((0, 1, 0), 5))
-    P.rot("RightShoulder", _q((0, 0, 1), 4) @ _q((0, 1, 0), -4))
-    P.rot("LeftToes", Quaternion())
-    P.rot("RightToes", _q((1, 0, 0), 30) if crouch else Quaternion())
-    set_weapon(P, carry, spine, (hips_q, hips_loc), sway=(0.004 * math.sin(two * 2), 0.003 * math.sin(two * 3)))
-
-
-# ---------------------------------------------------------------------------- clips
+# ------------------------------------------------------------------------------------------------ entry points
 
 
 def clip_list():
-    """(clip name, frames, loop, generator(P, phase))."""
-    out = [("Idle", 120, True, lambda P, ph: idle_frame(P, ph)),
-           ("Crouch_Idle", 120, True, lambda P, ph: idle_frame(P, ph, crouch=True))]
-    for gname in ("Walk", "Jog", "Run"):
-        for dn, dv in DIRS.items():
-            out.append((f"{gname}_{dn}", LOCO_FRAMES, True,
-                        lambda P, ph, g=GAIT[gname], d=dv: gait_frame(P, g, d, ph, "low")))
-    out.append(("Sprint_F", LOCO_FRAMES, True, lambda P, ph: gait_frame(P, GAIT["Sprint"], DIRS["F"], ph, "sprint")))
-    for dn, dv in DIRS.items():
-        out.append((f"CrouchWalk_{dn}", LOCO_FRAMES, True,
-                    lambda P, ph, d=dv: gait_frame(P, GAIT["CrouchWalk"], d, ph, "crouch", crouch=True)))
-    return out
+    return list(LOCO) + list(DERIVED) + ["Sprint_F"] + ["CrouchWalk_" + d for d in "FBLR"] + list(TURNS) + \
+        ["Idle", "Ready_Idle", "Crouch_Idle", "Aim", "Fire", "Reload"]
 
 
-def author_and_bake(arm, only=None):
-    """Creates every clip as a baked FK action. Returns {clip: action}."""
-    P = Poser(arm)
-    scene = bpy.context.scene
-    scene.render.fps = FPS
-    bake_bones = [b.name for b in arm.data.bones if b.use_deform]
-    actions = {}
-    bpy.context.view_layer.objects.active = arm
-    arm.select_set(True)
-    if arm.animation_data is None:
-        arm.animation_data_create()
-    for name, frames, loop, gen in clip_list():
-        if only and name not in only:
-            continue
-        src = bpy.data.actions.new(name + "_src")
-        arm.animation_data.action = src
-        for f in range(frames + 1):
-            P.reset()
-            apply_grip_fingers(P)
-            gen(P, (f % frames) / frames)
-            P.key(f)
-        bpy.ops.object.mode_set(mode="POSE")
-        for pbn in arm.pose.bones:
-            pbn.select = pbn.name in bake_bones
-        bpy.ops.nla.bake(frame_start=0, frame_end=frames, step=1, only_selected=True, visual_keying=True,
-                         clear_constraints=False, clear_parents=False, use_current_action=False,
-                         clean_curves=False, bake_types={"POSE"})
-        bpy.ops.object.mode_set(mode="OBJECT")
-        baked = arm.animation_data.action
-        baked.name = name
-        baked.use_fake_user = True
-        baked["fn_frames"] = frames
-        baked["fn_loop"] = loop
-        bpy.data.actions.remove(src)
-        actions[name] = baked
+def build_clips(arm, weight_ref=None, only=None):
+    """Builds every clip (or `only`); returns (actions, meta, checks)."""
+    sc = bpy.context.scene
+    sc.render.fps = FPS
+    eye = head_eye_local(arm)
+    head_to_sight.eye_local = eye
+    b = Builder(arm, weight_ref)
+    b.checks["carry_fit"] = b.R.carry_fit
+    b.build_all(set(only) if only else None)
+    for src, _, _ in b._src.values():
+        # the raw takes' actions would otherwise be exported as clips of the rig
+        act = src.animation_data.action if src.animation_data else None
+        bpy.data.objects.remove(src, do_unlink=True)
+        if act is not None:
+            bpy.data.actions.remove(act)
     arm.animation_data.action = None
-    P.reset()
-    return actions
+    for pb in arm.pose.bones:
+        pb.location = Vector()
+        pb.rotation_quaternion = Quaternion()
+    return b.actions, b.meta, b.checks
 
 
-def measure(arm, actions, weapon_obj=None):
-    """Validation numbers per clip: support-hand error to the handguard grip, foot slip in
-    stance (relative to the authored ground speed) and lowest foot height."""
-    import char_weapon as Wm
-    ax_w, palm_w, thumb_w, grip_w = Wm.support_frame()
-    out = {}
-    scene = bpy.context.scene
-    for name, act in actions.items():
-        arm.animation_data.action = act
-        frames = int(act["fn_frames"])
-        err_max = 0.0
-        for f in range(0, frames + 1, 2):
-            scene.frame_set(f)
-            pb = arm.pose.bones
-            att = arm.matrix_world @ pb["ATT_Weapon"].matrix
-            grip = att @ grip_w
-            lh = arm.matrix_world @ pb["LeftHand"].matrix
-            ax = lh.to_3x3() @ Vector((0, 1, 0))
-            palm = -(lh.to_3x3() @ Vector((0, 0, 1)))
-            hand_grip = lh.translation + ax * S.GRIP_IN_HAND[0] + palm * S.GRIP_IN_HAND[1]
-            err_max = max(err_max, (hand_grip - grip).length)
-        out[name] = {"support_hand_err_mm": round(err_max * 1000, 1)}
-        # Stance-foot slip: in place, a planted ankle must travel backwards at the clip's
-        # ground speed. Slip = |ankle velocity + v * dir| while the ankle is at stance height.
-        gname = name.split("_")[0]
-        if gname in GAIT and name.split("_")[-1] in DIRS:
-            g = GAIT[gname]
-            d = DIRS[name.split("_")[-1]]
-            slips = []
-            prev = {}
-            for f in range(frames + 1):
-                scene.frame_set(f)
-                for side in ("LeftFoot", "RightFoot"):
-                    p = (arm.matrix_world @ arm.pose.bones[side].head).copy()
-                    ph = ((f - 0.5) / frames + (0.0 if side == "LeftFoot" else 0.5)) % 1.0
-                    # Stance by the gait model, excluding heel-strike and toe-off frames.
-                    in_stance = 0.08 * g["duty"] < ph < 0.62 * g["duty"]
-                    if side in prev and in_stance:
-                        vel = (p - prev[side]) * (frames / g["period"])   # one frame = period / frames s
-                        slip = Vector((vel.x + d[0] * g["speed"], vel.y + d[1] * g["speed"], 0)).length
-                        slips.append(slip)
-                    prev[side] = p
-            if slips:
-                out[name]["stance_slip_mean_ms"] = round(sum(slips) / len(slips), 3)
-                out[name]["stance_slip_p90_ms"] = round(sorted(slips)[int(len(slips) * 0.9)], 3)
-    arm.animation_data.action = None
-    return out
+def head_eye_local(arm):
+    """Right eye position in the Head bone's rest space (char_body stored the eye centres)."""
+    import char_body as B
+    eyes = B._STATE.get("eyes")
+    if not eyes:
+        return None
+    right = max(eyes, key=lambda e: e[0][0])[0]
+    return arm.data.bones["Head"].matrix_local.inverted() @ Vector(right)
 
 
-def write_meta(path, actions):
-    meta = {"fps": FPS, "loco_frames": LOCO_FRAMES, "gait": GAIT,
-            "clips": {n: {"frames": int(a["fn_frames"]), "loop": bool(a["fn_loop"])} for n, a in actions.items()}}
+def write_meta(path, actions, meta):
+    """animation_meta.json: per-clip frames / loop and the gait table (speed, period, direction) the game uses."""
+    gait = {}
+    for k in ("Walk_F", "Brisk_F", "Jog_F", "Run_F", "Sprint_F", "CrouchWalk_F"):
+        if k in meta and "speed" in meta[k]:
+            gait[k.split("_")[0]] = {"speed": meta[k]["speed"], "period": meta[k]["period"]}
+    if "Sprint" in gait:
+        gait["Sprint"] = {"speed": 7.5, "period": gait["Run"]["period"] * 0.92}
+    out = {"fps": FPS, "loco_frames": LOCO_FRAMES, "gait": gait, "clip_meta": meta,
+           "clips": {n: {"frames": int(a["fn_frames"]), "loop": bool(a["fn_loop"])} for n, a in actions.items()}}
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(meta, f, indent=2)
+        json.dump(out, f, indent=1)

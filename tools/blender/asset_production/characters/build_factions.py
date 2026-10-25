@@ -12,6 +12,8 @@ Options:
     --export          write GLBs into assets/characters/infantry/factions/<fac>/ and equipment .tres
     --previews DIR    renders (A-pose and baked Idle pose) of every family into DIR
     --only F[,F]      nato | ru | cn
+    --root DIR        asset root (default assets/characters/infantry; VISUAL-03 stages in assets/characters/infantry_v03).
+                      A staging build reuses the canonical rifles and optics (they live in weapon space).
 """
 import importlib
 import json
@@ -50,9 +52,19 @@ for _m in (L, S, D, B, T, M, U, G, W, A, E, FT, FG, FW):
     importlib.reload(_m)
 
 INF = os.path.join(REPO, "assets", "characters", "infantry")
+ROOT = INF
 TEX_DIR = os.path.join(INF, "textures")
 OUT = os.path.join(INF, "factions")
 LOADOUT_DIR = os.path.join(INF, "loadouts")
+
+
+def set_root(root):
+    """Writes parts, equipment and loadouts under another root (VISUAL-03 staging)."""
+    global ROOT, OUT, LOADOUT_DIR
+    ROOT = os.path.join(REPO, root) if not os.path.isabs(root) else root
+    OUT = os.path.join(ROOT, "factions")
+    LOADOUT_DIR = os.path.join(ROOT, "loadouts")
+    os.makedirs(LOADOUT_DIR, exist_ok=True)
 
 # New shared library materials (mirrored in scripts/characters/infantry_materials.gd).
 NEW_MATERIALS = {
@@ -111,10 +123,10 @@ DISPLAY = {"NATO_rifleman": FAMILIES["nato"]["display"], "RU_rifleman": FAMILIES
 
 def parse_args():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-    o = {"export": False, "previews": None, "only": None}
+    o = {"export": False, "previews": None, "only": None, "root": None}
     i = 0
     while i < len(argv):
-        if argv[i] in ("--previews", "--only"):
+        if argv[i] in ("--previews", "--only", "--root"):
             o[argv[i][2:]] = argv[i + 1]
             i += 1
         elif argv[i] == "--export":
@@ -131,59 +143,46 @@ class Build:
 
 
 def stage_body(b):
-    """Same body / skeleton / weight reference as CHARACTER-01. The CHARACTER-01 textures
-    are regenerated into a temp dir (previews only) so the committed ones stay untouched."""
+    """The shared body (char_body, VISUAL-03); the CHARACTER-01 textures are regenerated into a temp dir (previews
+    only) so the committed ones stay untouched."""
     tmp = tempfile.mkdtemp(prefix="fn_fac_")
     tex = T.build_all(tmp)
-    tex["skin"] = os.path.join(tmp, "skin_head_albedo.png")
-    B.make_skin_texture(tex["skin"])
+    tex["skin_v03"] = os.path.join(TEX_DIR, "skin_head_v03_albedo.png")
     tex.update(FT.build(TEX_DIR))
     b.tex = tex
     b.mats = M.build(tex)
-    b.arm = S.build_armature(L.collection("Rig"))
     coll = L.collection("Body")
-    body = B.build_body(coll)
-    body.data.materials.append(b.mats["SkinBody"])
-    L.parent_to_armature(body, b.arm, auto=True)
-    L.limit_leg_weights(body)
-    hands = B.build_hands(coll)
-    hands.data.materials.append(b.mats["SkinBody"])
-    L.parent_to_armature(hands, b.arm, auto=True)
-    ref_coll = L.collection("Reference")
-    refs = []
-    for o in (body, hands):
-        c = o.copy()
-        c.data = o.data.copy()
-        ref_coll.objects.link(c)
-        refs.append(c)
-    b.weight_ref = L.join(refs, "WeightRef")
-    b.weight_ref.hide_render = True
+    res = B.build(coll, b.mats)
+    b.arm = res["arm"]
+    b.weight_ref = res["weight_ref"]
     b.weight_ref.hide_set(True)
-    for o in (body, hands):
-        o.hide_render = True
-        o.hide_set(True)
-    head = B.build_head(coll, b.mats["Skin"], b.mats["Eye"], b.mats["Iris"])
-    head.vertex_groups.clear()
-    vg = head.vertex_groups.new(name="Head")
-    vg.add(list(range(len(head.data.vertices))), 1.0, "REPLACE")
-    L._add_armature_mod(head, b.arm)
-    b.preview_only["body_head"] = head
-    # Shared boots and gloves, for previews only (already exported by CHARACTER-01).
+    for k, o in res["pieces"].items():
+        if k == "body_head":
+            b.preview_only["body_head"] = o
+        else:
+            o.hide_render = True
+            o.hide_set(True)
+    # Shared boots and gloves, for previews only (exported by build_infantry).
     sh = L.collection("Shared")
     for key, fn in (("uniform_boots", U.build_boots), ("uniform_gloves", U.build_gloves)):
         o = fn(sh, b.mats)
+        B.to_body_space(o)
         M.apply_box_uvs(o)
         L.transfer_weights(o, b.weight_ref, b.arm, smooth_iters=2)
         b.preview_only[key] = o
 
 
 def _skin(b, key, o, smooth=2):
+    B.to_body_space(o)
     M.apply_box_uvs(o)
     L.transfer_weights(o, b.weight_ref, b.arm, smooth_iters=smooth)
     b.pieces[key] = o
 
 
 def _rigid(b, key, o, bone):
+    if bone == "ATT_Head":
+        o.data.transform(B.head_fit_matrix())
+    B.to_body_space(o)
     M.apply_box_uvs(o)
     att = b.arm.data.bones[bone].matrix_local
     o.data.transform(att.inverted())
@@ -214,7 +213,7 @@ def stage_uniforms(b, fams):
             pads = FG.ru_kneepads(coll, b.mats)
             trousers = L.join([trousers, pads], "RU_trousers")
         _skin(b, fac + "_jacket", jacket)
-        L.limit_leg_weights(jacket, *L.JACKET_LEG_FADE)
+        L.limit_leg_weights(jacket, *B.leg_fade(L.JACKET_LEG_FADE))
         _skin(b, fac + "_trousers", trousers)
         b.log.setdefault("uniform_seconds", {})[fac] = round(time.time() - t, 1)
 
@@ -320,11 +319,24 @@ def write_equipment(key, glb_res, path):
         f.write(txt)
 
 
+def _res(path):
+    return "res://" + os.path.relpath(path, REPO).replace(os.sep, "/")
+
+
+def _canonical():
+    return os.path.normpath(ROOT) == os.path.normpath(os.path.join(REPO, "assets", "characters", "infantry"))
+
+
 def equipment_res(key):
+    """Equipment of this root when it was built here, else the canonical one (shared pieces, weapons)."""
     if key in PIECES:
         fac = key.split("_")[0]
-        return "res://assets/characters/infantry/factions/%s/equipment/%s.tres" % (fac, key)
-    return "res://assets/characters/infantry/equipment/%s.tres" % key
+        mine = os.path.join(OUT, fac, "equipment", key + ".tres")
+        canon = os.path.join(INF, "factions", fac, "equipment", key + ".tres")
+    else:
+        mine = os.path.join(ROOT, "equipment", key + ".tres")
+        canon = os.path.join(INF, "equipment", key + ".tres")
+    return _res(mine if os.path.exists(mine) else canon)
 
 
 def write_loadout(lo):
@@ -366,6 +378,8 @@ def stage_export(b, fams):
         if fac not in fams:
             continue
         sub = "weapons" if slot.startswith("weapon") else "parts"
+        if sub == "weapons" and not _canonical():
+            continue                       # staging reuses the canonical rifles / optics
         path = os.path.join(OUT, fac, sub, key + ".glb")
         obj = b.pieces[key]
         if mode == SKINNED:
@@ -394,13 +408,14 @@ def stage_export(b, fams):
             if key.endswith("_rifle"):
                 for e in extra:
                     bpy.data.objects.remove(e, do_unlink=True)
-        glb_res = "res://assets/characters/infantry/factions/%s/%s/%s.glb" % (fac, sub, key)
+        glb_res = _res(path)
         write_equipment(key, glb_res, os.path.join(OUT, fac, "equipment", key + ".tres"))
         out[key] = {"bytes": size, "lod_tris": tris}
     for lo in LOADOUTS:
         if lo.split("_")[0].lower() in fams:
             write_loadout(lo)
-    write_texture_imports()
+    if _canonical():
+        write_texture_imports()
     b.log["export"] = out
     blend = os.path.join(OUT, "blender", "factions.blend")
     os.makedirs(os.path.dirname(blend), exist_ok=True)
@@ -415,6 +430,8 @@ def stage_export(b, fams):
 def main():
     t0 = time.time()
     o = parse_args()
+    if o["root"]:
+        set_root(o["root"])
     fams = o["only"].split(",") if o["only"] else list(FAMILIES)
     b = Build()
     L.clear_scene()
@@ -431,9 +448,7 @@ def main():
         previews(b, o["previews"], fams, "apose")
         # Idle pose from the shared clip generator: checks that both hands sit on the
         # faction weapons (same grip / support-grip contract as the carbine).
-        A.setup_controls(b.arm)
-        b.actions = A.author_and_bake(b.arm, only=["Idle"])
-        A.remove_controls(b.arm)
+        b.actions, _, _ = A.build_clips(b.arm, b.weight_ref, only=["Idle"])
         b.arm.animation_data.action = b.actions["Idle"]
         bpy.context.scene.frame_set(0)
         previews(b, o["previews"], fams, "idle")

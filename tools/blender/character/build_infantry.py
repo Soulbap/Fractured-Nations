@@ -10,6 +10,8 @@ Options:
     --previews DIR   render Blender preview images into DIR
     --export         write GLBs into assets/characters/infantry/ and the .blend source
     --stage NAME     stop after a stage: body | uniform | gear | anim (default: everything)
+    --root DIR       asset root (default assets/characters/infantry); VISUAL-03 stages the new soldier in
+                     assets/characters/infantry_v03 until it is approved
 """
 import importlib
 import json
@@ -46,15 +48,22 @@ TEX_DIR = os.path.join(ASSET_DIR, "textures")
 BLEND_PATH = os.path.join(ASSET_DIR, "blender", "infantry.blend")
 
 
+def set_root(root):
+    """Writes the exported assets under another root (VISUAL-03 staging); textures stay shared."""
+    global ASSET_DIR, BLEND_PATH
+    ASSET_DIR = os.path.join(REPO, root) if not os.path.isabs(root) else root
+    BLEND_PATH = os.path.join(ASSET_DIR, "blender", "infantry.blend")
+
+
 def parse_args():
     argv = globals().get("ARGS")
     if argv is None:
         argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-    opts = {"previews": None, "export": False, "stage": "all", "only": None}
+    opts = {"previews": None, "export": False, "stage": "all", "only": None, "root": None}
     i = 0
     while i < len(argv):
         a = argv[i]
-        if a in ("--previews", "--stage", "--only"):
+        if a in ("--previews", "--stage", "--only", "--root"):
             opts[a[2:]] = argv[i + 1]
             i += 1
         elif a == "--export":
@@ -73,71 +82,38 @@ class Build:
 
 
 def stage_body(b):
+    """VISUAL-03: the MakeHuman body in the reference pose (char_body); pieces body_torso/arms/legs/feet/hands/head."""
     tex = T.build_all(TEX_DIR)
-    tex["skin"] = os.path.join(TEX_DIR, "skin_head_albedo.png")
-    B.make_skin_texture(tex["skin"])
+    tex["skin_v03"] = os.path.join(TEX_DIR, "skin_head_v03_albedo.png")
+    if not os.path.exists(tex["skin_v03"]):
+        L.save_png(tex["skin_v03"], __import__("numpy").full((8, 8, 3), 0.7))
     b.tex = tex
     b.mats = M.build(tex)
     b.coll_body = L.collection("Body")
-    b.coll_ref = L.collection("Reference")
-    b.arm = S.build_armature(L.collection("Rig"))
-    body = B.build_body(b.coll_body)
-    body.data.materials.append(b.mats["SkinBody"])
-    L.parent_to_armature(body, b.arm, auto=True)
-    L.limit_leg_weights(body)
-    hands = B.build_hands(b.coll_body)
-    hands.data.materials.append(b.mats["SkinBody"])
-    L.parent_to_armature(hands, b.arm, auto=True)
-    # Weight reference for garments: full body + hands, weights only, never exported.
-    ref = L.join([_dup(body, b.coll_ref), _dup(hands, b.coll_ref)], "WeightRef")
-    ref.hide_render = True
-    b.weight_ref = ref
-    parts = B.split_regions(body, b.coll_body)
-    parts["Hands"] = hands
-    for name, p in parts.items():
-        M.apply_box_uvs(p)
-        b.pieces["body_" + name.lower()] = p
-    head = B.build_head(b.coll_body, b.mats["Skin"], b.mats["Eye"], b.mats["Iris"])
-    _weight_head(head, b.arm)
-    b.pieces["body_head"] = head
+    res = B.build(b.coll_body, b.mats)
+    b.arm = res["arm"]
+    b.weight_ref = res["weight_ref"]
+    for k, p in res["pieces"].items():
+        if k != "body_head":
+            M.apply_box_uvs(p)
+        b.pieces[k] = p
+    img = B.make_skin_texture(tex["skin_v03"], res["pieces"]["body_head"])
+    for n in b.mats["SkinHead"].node_tree.nodes:     # save_png replaced the image datablock
+        if n.type == "TEX_IMAGE":
+            n.image = img
+    b.log["body"] = res["info"]
     b.log["body_tris"] = {k: L.tri_count(v) for k, v in b.pieces.items()}
-
-
-def _dup(obj, coll):
-    o = obj.copy()
-    o.data = obj.data.copy()
-    coll.objects.link(o)
-    return o
-
-
-def _weight_head(head, arm):
-    head.vertex_groups.clear()
-    gh = head.vertex_groups.new(name="Head")
-    gn = head.vertex_groups.new(name="Neck")
-    gu = head.vertex_groups.new(name="UpperChest")
-    for v in head.data.vertices:
-        z = v.co.z
-        if z >= 1.60:
-            gh.add([v.index], 1.0, "REPLACE")
-        elif z >= 1.53:
-            t = (z - 1.53) / 0.07
-            gh.add([v.index], t, "REPLACE")
-            gn.add([v.index], 1 - t, "REPLACE")
-        else:
-            t = max(0.0, (z - 1.47) / 0.06)
-            gn.add([v.index], t, "REPLACE")
-            gu.add([v.index], 1 - t, "REPLACE")
-    L._add_armature_mod(head, arm)
 
 
 def stage_uniform(b):
     coll = L.collection("Uniform_M23")
     uni = U.build_uniform(coll, b.mats)
     for k, o in uni.items():
+        B.to_body_space(o)
         M.apply_box_uvs(o)
         L.transfer_weights(o, b.weight_ref, b.arm, smooth_iters=2)
         if k == "jacket":
-            L.limit_leg_weights(o, *L.JACKET_LEG_FADE)
+            L.limit_leg_weights(o, *B.leg_fade(L.JACKET_LEG_FADE))
         b.pieces["uniform_" + k] = o
     b.log["uniform_tris"] = {k: L.tri_count(o) for k, o in uni.items()}
 
@@ -175,6 +151,9 @@ def stage_gear(b):
     for key, fn in mk.items():
         t = time.time()
         o = fn()
+        if key in RIGID and RIGID[key] == "ATT_Head":
+            o.data.transform(B.head_fit_matrix())
+        B.to_body_space(o)
         M.apply_box_uvs(o)
         b.pieces[key] = o
         b.log.setdefault("gear_seconds", {})[key] = round(time.time() - t, 1)
@@ -255,6 +234,8 @@ def preview_closeups(b, outdir, tag):
 def main():
     t0 = time.time()
     opts = parse_args()
+    if opts["root"]:
+        set_root(opts["root"])
     b = Build()
     L.clear_scene()
     stage_body(b)
@@ -284,10 +265,8 @@ def main():
         print("FNBUILD", json.dumps(b.log))
         return
     import char_anim as A
-    A.setup_controls(b.arm)
-    b.actions = A.author_and_bake(b.arm, only=opts["only"].split(",") if opts["only"] else None)
-    A.remove_controls(b.arm)
-    b.log["anim_check"] = A.measure(b.arm, b.actions)
+    b.actions, b.anim_meta, checks = A.build_clips(b.arm, b.weight_ref, only=opts["only"].split(",") if opts["only"] else None)
+    b.log["anim_check"] = checks
     b.log["t_anim"] = round(time.time() - t0, 1)
     if opts["previews"]:
         preview_poses(b, opts["previews"])
@@ -322,11 +301,12 @@ def stage_export(b):
     for k in RIGID_PIECES:
         size, tris = E.export_rigid(b.pieces[k], k, os.path.join(ASSET_DIR, "parts", k + ".glb"), lod_coll)
         out[k] = {"bytes": size, "lod_tris": tris}
-    for k in WEAPON_PIECES:
+    canonical = os.path.normpath(ASSET_DIR) == os.path.normpath(os.path.join(REPO, "assets", "characters", "infantry"))
+    for k in WEAPON_PIECES if canonical else []:      # weapons are in weapon space: a staging build reuses them
         extra = list(b.mounts.values()) if k == "carbine" else []
         size, tris = E.export_rigid(b.pieces[k], k, os.path.join(ASSET_DIR, "weapons", k + ".glb"), lod_coll, extra)
         out[k] = {"bytes": size, "lod_tris": tris}
-    A.write_meta(os.path.join(ASSET_DIR, "animation_meta.json"), b.actions)
+    A.write_meta(os.path.join(ASSET_DIR, "animation_meta.json"), b.actions, b.anim_meta)
     os.makedirs(os.path.dirname(BLEND_PATH), exist_ok=True)
     open(os.path.join(os.path.dirname(BLEND_PATH), ".gdignore"), "w").close()
     for o in lod_coll.objects:
@@ -337,19 +317,19 @@ def stage_export(b):
     b.log["export"] = out
 
 
-POSE_SHOTS = (("Idle", 0.0), ("Walk_F", 0.0), ("Run_F", 0.25), ("Sprint_F", 0.0), ("Crouch_Idle", 0.0), ("Run_L", 0.25))
+POSE_SHOTS = (("Idle", 0.0), ("Ready_Idle", 0.0), ("Aim", 0.0), ("Walk_F", 0.0), ("Walk_F", 0.5), ("Brisk_F", 0.25), ("Jog_F", 0.0), ("Run_F", 0.25), ("Sprint_F", 0.0), ("Crouch_Idle", 0.0), ("CrouchWalk_F", 0.25), ("Walk_L", 0.25), ("Walk_B", 0.25), ("Turn_L", 0.25), ("Reload", 0.3), ("Fire", 0.3))
 
 
 def preview_poses(b, outdir):
     """Renders both loadouts in key poses of the baked clips."""
-    for name in LOADOUTS:
+    for name in list(LOADOUTS)[:1]:
         show_loadout(b, name)
         b.arm.animation_data.action = b.actions.get("Idle")
         bpy.context.scene.frame_set(0)
         preview_sheet(b, outdir, f"idle_{name}", target=(0, 0.05, 0.93), frame=0)
         preview_closeups(b, outdir, f"idle_{name}")
     L.setup_render((560, 860))
-    for name in LOADOUTS:
+    for name in list(LOADOUTS)[:1]:
         show_loadout(b, name)
         shots = []
         for clip, frac in POSE_SHOTS:
@@ -360,7 +340,7 @@ def preview_poses(b, outdir):
             f = int(act["fn_frames"] * frac)
             for az in (20, 90):
                 shots.append(L.render_view(os.path.join(outdir, f"pose_{name}_{clip}_{az}.png"), (0, 0.1, 0.92), 2.9, az, 6, lens=50, frame=f))
-        L.contact_sheet(shots, os.path.join(outdir, f"pose_{name}_sheet.png"), 6)
+        L.contact_sheet(shots, os.path.join(outdir, f"pose_{name}_sheet.png"), 8)
     b.arm.animation_data.action = None
 
 

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="InfantryLoadout" load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://scripts/characters/infantry_loadout.gd" id="1_lo"]
+[ext_resource type="Script" path="res://scripts/characters/infantry_equipment.gd" id="2_eq"]
+[ext_resource type="Resource" path="res://assets/characters/infantry_v03/equipment/uniform_jacket.tres" id="3_uniform_jacket"]
+[ext_resource type="Resource" path="res://assets/characters/infantry_v03/equipment/uniform_trousers.tres" id="4_uniform_trousers"]
+[ext_resource type="Resource" path="res://assets/characters/infantry_v03/equipment/uniform_boots.tres" id="5_uniform_boots"]
+[ext_resource type="Resource" path="res://assets/characters/infantry_v03/equipment/uniform_gloves.tres" id="6_uniform_gloves"]
+[ext_resource type="Resource" path="res://assets/characters/infantry_v03/equipment/helmet_bare.tres" id="7_helmet_bare"]
+[ext_resource type="Resource" path="res://assets/characters/infantry_v03/equipment/eyepro.tres" id="8_eyepro"]
+[ext_resource type="Resource" path="res://assets/characters/infantry_v03/equipment/vest_heavy.tres" id="9_vest_heavy"]
+[ext_resource type="Resource" path="res://assets/characters/infantry_v03/equipment/belt_heavy.tres" id="10_belt_heavy"]
+[ext_resource type="Resource" path="res://assets/characters/infantry_v03/equipment/pack_ruck.tres" id="11_pack_ruck"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/carbine.tres" id="12_carbine"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/optic_reddot.tres" id="13_optic_reddot"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/foregrip.tres" id="14_foregrip"]
+[ext_resource type="Resource" path="res://assets/characters/infantry/equipment/laser.tres" id="15_laser"]
+
+[resource]
+script = ExtResource("1_lo")
+id = "B_heavy"
+display_name = "Heavy infantry (patrol load)"
+items = Array[ExtResource("2_eq")]([ExtResource("3_uniform_jacket"), ExtResource("4_uniform_trousers"), ExtResource("5_uniform_boots"), ExtResource("6_uniform_gloves"), ExtResource("7_helmet_bare"), ExtResource("8_eyepro"), ExtResource("9_vest_heavy"), ExtResource("10_belt_heavy"), ExtResource("11_pack_ruck"), ExtResource("12_carbine"), ExtResource("13_optic_reddot"), ExtResource("14_foregrip"), ExtResource("15_laser")])

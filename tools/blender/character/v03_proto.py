@@ -16,7 +16,7 @@ import bpy  # noqa: E402
 from mathutils import Quaternion, Vector  # noqa: E402
 
 import char_lib as L  # noqa: E402
-import v03_body as VB  # noqa: E402
+import char_body_mh as VB  # noqa: E402
 
 argv = sys.argv[sys.argv.index("--") + 1:]
 OUT = argv[0]
@@ -314,7 +314,7 @@ def render_motion(arm, act, name, speed, period, frames, cycles=2, views=(("side
 
 def main():
     L.clear_scene()
-    arm, body = VB.build_human()
+    arm, body, _eyes = VB.build_human()
     body.data.materials.clear()
     body.data.materials.append(skin_material())
     for p in body.data.polygons:
@@ -359,7 +359,7 @@ def main():
             samples = MC.sample(src, f0, n)
             i0, i1, phase = MC.pick_cycle(samples)
             strikes = [i0, i1]
-            act, speed, period = MC.retarget_cycle(src, arm, samples, i0, i1, ft, LOCO_FRAMES, clip, phase=phase)
+            act, speed, period, _dir = MC.retarget_cycle(src, arm, samples, i0, i1, ft, LOCO_FRAMES, clip, phase=phase)
             dz, low = ground_fix(arm, body, act, LOCO_FRAMES)
             slip = MC.foot_slip(arm, act, LOCO_FRAMES, speed, period)
             lock = MC.foot_lock(arm, act, LOCO_FRAMES, speed, period) if "--nolock" not in argv else None

@@ -433,9 +433,10 @@ def remove_empty_groups(obj):
         for g in v.groups:
             if g.weight > 0.0:
                 used.add(g.group)
-    for vg in list(obj.vertex_groups):
-        if vg.index not in used:
-            obj.vertex_groups.remove(vg)
+    # collect names first: removing a group renumbers the ones after it
+    drop = [vg.name for vg in obj.vertex_groups if vg.index not in used]
+    for n in drop:
+        obj.vertex_groups.remove(obj.vertex_groups[n])
 
 
 # --------------------------------------------------------------------------------------

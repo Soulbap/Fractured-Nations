@@ -195,15 +195,42 @@ def cycle_motion(samples, i0, i1, dt):
     return d, T
 
 
-def retarget_cycle(src, arm, samples, i0, i1, dt, frames, action_name, in_place=True, loop=True, phase=0.0):
-    """Bakes samples[i0..i1] into a new action on arm with `frames` keys (frame 0 == frame `frames` when loop)."""
+def facing_yaw(sample):
+    """Source facing (forward = up x right, from the hip joints) as a yaw angle (atan2(x, y))."""
+    r = sample["RightUpLeg"][1] - sample["LeftUpLeg"][1]
+    return math.atan2(-r.y, r.x)
+
+
+def retarget_cycle(src, arm, samples, i0, i1, dt, frames, action_name, in_place=True, loop=True, phase=0.0,
+                   align="travel", unwind=False):
+    """Bakes samples[i0..i1] into a new action on arm with `frames` keys (frame 0 == frame `frames` when loop).
+    align: "travel" turns the travel direction onto +Y (forward clips), "facing" turns the subject's facing onto +Y
+    (backward, sideways and turning clips). unwind: removes the facing's steady rotation over the cycle (turn in
+    place: the game turns the body, the clip keeps stepping around a constant facing).
+    Returns (action, speed m/s, period s, travel direction in clip space)."""
     corr = corrections(src, arm)
     srest = rest_frames(src, rest_facing(src))
     trest = {b.name: b.matrix_local.copy() for b in arm.data.bones}
     scale = leg_length(arm) / leg_length(src)
     travel, T = cycle_motion(samples, i0, i1, dt)
-    heading = math.atan2(travel.x, travel.y) if travel.length > 0.05 else 0.0
-    Rz = Quaternion((0, 0, 1), heading)            # rotates the travel direction onto +Y
+    yaws = [facing_yaw(x) for x in samples[i0:i1 + 1]]
+    for k in range(1, len(yaws)):                  # unwrap
+        while yaws[k] - yaws[k - 1] > math.pi:
+            yaws[k] -= 2 * math.pi
+        while yaws[k] - yaws[k - 1] < -math.pi:
+            yaws[k] += 2 * math.pi
+    if align == "facing":
+        heading = sum(yaws) / len(yaws) if not unwind else yaws[0]
+    else:
+        heading = math.atan2(travel.x, travel.y) if travel.length > 0.05 else 0.0
+    turn_total = (yaws[-1] - yaws[0]) if unwind else 0.0
+    Rz = Quaternion((0, 0, 1), heading)            # rotates the travel / facing direction onto +Y
+
+    def rz_at(t):
+        """Rotation at fractional sample offset t (0..i1-i0): Rz, minus the steady turn when unwinding."""
+        if not unwind:
+            return Rz
+        return Quaternion((0, 0, 1), heading + turn_total * t / max(1, i1 - i0))
     hip0 = samples[i0]["Hips"][1].copy()
     speed = travel.length / T * scale
     # Hip height: source hips relative to its ground (lowest foot over the clip), scaled.
@@ -228,20 +255,18 @@ def retarget_cycle(src, arm, samples, i0, i1, dt, frames, action_name, in_place=
             if tb not in corr:
                 continue
             q = A[sb][0].slerp(B[sb][0], u)
-            q = Rz @ q
+            q = rz_at(t) @ q
             tw = q @ srest[sb][0].inverted() @ corr[tb].inverted() @ trest[tb].to_quaternion()
             world[tb] = tw.normalized()
         hp = A["Hips"][1].lerp(B["Hips"][1], u)
-        rel = Rz @ (hp - hip0)
-        if in_place:
-            rel -= Rz @ travel * (t / (i1 - i0))
+        rel = rz_at(t) @ (hp - hip0 - travel * (t / (i1 - i0) if in_place else 0.0))
         hip_pos = Vector((rel.x * scale, rel.y * scale, (hp.z - ground) * scale + hip_off))
         poses.append((world, hip_pos))
     # Loop: spread the end-start difference (rotations and hip position) linearly over the cycle.
     if loop:
-        world_e, hip_e = _pose_at(samples, i1, Rz, corr, srest, trest), None
+        world_e, hip_e = _pose_at(samples, i1, rz_at(i1 - i0), corr, srest, trest), None
         hp = samples[i1]["Hips"][1]
-        rel = Rz @ (hp - hip0) - (Rz @ travel if in_place else Vector())
+        rel = rz_at(i1 - i0) @ (hp - hip0 - (travel if in_place else Vector()))
         hip_e = Vector((rel.x * scale, rel.y * scale, (hp.z - ground) * scale + hip_off))
         w0, h0 = poses[0]
         for k, (world, hp_) in enumerate(poses):
@@ -267,8 +292,46 @@ def retarget_cycle(src, arm, samples, i0, i1, dt, frames, action_name, in_place=
     act["fn_loop"] = loop
     act["fn_speed"] = speed
     act["fn_period"] = T
+    act["fn_turn_rate"] = turn_total / T if unwind else 0.0
     act.use_fake_user = True
-    return act, speed, T
+    d = Rz @ travel
+    direction = Vector((d.x, d.y)).normalized() if d.length > 1e-6 else Vector((0, 1))
+    return act, speed, T, direction
+
+
+def find_window(samples, dt, mode, min_s=1.2):
+    """(start, end) sample range of the longest stretch moving in `mode` (forward, backward, left, right) relative
+    to the subject's facing, or turning in place (turn_left / turn_right)."""
+    n = len(samples)
+    k = max(1, int(round(0.25 / dt)))
+    ok = []
+    for i in range(n):
+        a, b = samples[max(0, i - k)], samples[min(n - 1, i + k)]
+        tt = (min(n - 1, i + k) - max(0, i - k)) * dt
+        v = (b["Hips"][1] - a["Hips"][1]) / tt
+        y = facing_yaw(samples[i])
+        f = Vector((math.sin(y), math.cos(y), 0))
+        r = Vector((math.cos(y), -math.sin(y), 0))
+        vf, vr = v.dot(f), v.dot(r)
+        dy = facing_yaw(b) - facing_yaw(a)
+        dy = (dy + math.pi) % (2 * math.pi) - math.pi
+        sp = math.hypot(vf, vr)
+        good = {"forward": vf > 0.7 * sp and sp > 1.0, "backward": vf < -0.7 * sp and sp > 1.0,
+                "right": vr > 0.7 * sp and sp > 1.0, "left": vr < -0.7 * sp and sp > 1.0,
+                # yaw = atan2(x, y) grows turning from +Y towards +X, i.e. to the right
+                "turn_right": dy / tt > 0.35 and sp < 3.0, "turn_left": dy / tt < -0.35 and sp < 3.0}[mode]
+        ok.append(good)
+    best, cur = None, None
+    for i, g in enumerate(ok + [False]):
+        if g and cur is None:
+            cur = i
+        elif not g and cur is not None:
+            if best is None or i - cur > best[1] - best[0]:
+                best = (cur, i - 1)
+            cur = None
+    if best is None or (best[1] - best[0]) * dt < min_s:
+        raise RuntimeError("no %s stretch of %.1f s" % (mode, min_s))
+    return best
 
 
 def _pose_at(samples, i, Rz, corr, srest, trest):
@@ -316,13 +379,14 @@ def _apply_pose(arm, order, trest, world, hip_pos, hip_rest):
 CONTACT_H = 0.03       # a heel / ball point within 3 cm of the floor is in contact
 
 
-def foot_track(arm, act, frames, speed, period):
+def foot_track(arm, act, frames, speed, period, direction=None):
     """Per frame and foot: ankle position, contact point (heel or ball, whichever is lower relative to its rest
     height), its height, and its position in ground coordinates (in place clip played at `speed` along +Y)."""
     sc = bpy.context.scene
     arm.animation_data.action = act
     dt = period / frames
     out = {"Left": [], "Right": []}
+    dv = (Vector(direction) if direction is not None else Vector((0, 1))).normalized() * speed
     for f in range(frames):
         sc.frame_set(f)
         for side in out:
@@ -331,7 +395,7 @@ def foot_track(arm, act, frames, speed, period):
             heel = a - Vector((0, 0, ft.bone.head_local.z))           # ankle over the heel, rest ankle height
             ball = toe.head - Vector((0, 0, toe.bone.head_local.z))
             p = heel if heel.z <= ball.z else ball
-            g = Vector((p.x, p.y + speed * dt * f))
+            g = Vector((p.x, p.y)) + dv * (dt * f)
             out[side].append({"ankle": a, "pt": p.copy(), "h": p.z, "g": g, "kind": "heel" if p is heel else "ball"})
     return out
 
@@ -359,11 +423,12 @@ def contact_segments(track, frames):
     return segs
 
 
-def foot_slip(arm, act, frames, speed, period):
+def foot_slip(arm, act, frames, speed, period, direction=None):
     """Horizontal speed of the contact point over ground while it stays in contact (m/s): mean, p90, max; plus
     the fraction of the cycle each foot is in contact."""
-    tr = foot_track(arm, act, frames, speed, period)
+    tr = foot_track(arm, act, frames, speed, period, direction)
     dt = period / frames
+    loop = (Vector(direction) if direction is not None else Vector((0, 1))).normalized() * speed * period
     res = {}
     for side, t in tr.items():
         sl = []
@@ -372,7 +437,7 @@ def foot_slip(arm, act, frames, speed, period):
         for i in range(frames):
             j = (i + 1) % frames
             if t[i]["h"] < lim and t[j]["h"] < lim and t[i]["kind"] == t[j]["kind"]:
-                gj = t[j]["g"] + (Vector((0, speed * period)) if j < i else Vector((0, 0)))
+                gj = t[j]["g"] + (loop if j < i else Vector((0, 0)))
                 sl.append((gj - t[i]["g"]).length / dt)
         sl.sort()
         res[side] = {"floor_cm": round(hmin * 100, 1), "contact_frac": round(sum(1 for x in t if x["h"] < lim) / frames, 2),
@@ -403,12 +468,14 @@ def _aim(pb, new_dir):
     pb.matrix = out
 
 
-def foot_lock(arm, act, frames, speed, period, blend=2):
+def foot_lock(arm, act, frames, speed, period, direction=None, blend=2):
     """Pins each contact segment's contact point to one ground position (mean over the segment), moving the ankle
     by the same offset with two-bone IK; the foot keeps its orientation. Blends in/out over `blend` frames."""
     sc = bpy.context.scene
-    tr = foot_track(arm, act, frames, speed, period)
+    tr = foot_track(arm, act, frames, speed, period, direction)
     dt = period / frames
+    dvec = (Vector(direction) if direction is not None else Vector((0, 1))).normalized() * speed
+    loop = dvec * period
     report = {}
     for side, t in tr.items():
         ul, ll, ft = arm.pose.bones[side + "UpperLeg"], arm.pose.bones[side + "LowerLeg"], arm.pose.bones[side + "Foot"]
@@ -422,7 +489,7 @@ def foot_lock(arm, act, frames, speed, period, blend=2):
             bl = blend if ln >= 8 else 1
             idx = [(s0 + k) % frames for k in range(ln)]
             wrap = [i < s0 for i in idx]
-            g = [t[i]["g"] + (Vector((0, speed * period)) if w else Vector((0, 0))) for i, w in zip(idx, wrap)]
+            g = [t[i]["g"] + (loop if w else Vector((0, 0))) for i, w in zip(idx, wrap)]
             # One lock per contact point: the heel and the ball are different points of the foot (rolling over
             # from heel to ball must not drag the ball to where the heel was).
             locks = {}
@@ -433,9 +500,10 @@ def foot_lock(arm, act, frames, speed, period, blend=2):
             for k, (i, w) in enumerate(zip(idx, wrap)):
                 lock = locks[t[i]["kind"]]
                 wgt = min(1.0, (k + 1) / (bl + 1), (ln - k) / (bl + 1))
-                gl = lock - (Vector((0, speed * period)) if w else Vector((0, 0)))
+                gl = lock - (loop if w else Vector((0, 0)))
                 pt = t[i]["pt"] - Vector((0, 0, hmin))
-                want_pt = Vector((gl.x, gl.y - speed * dt * i, max(0.0, pt.z)))
+                gx = gl - dvec * (dt * i)
+                want_pt = Vector((gx.x, gx.y, max(0.0, pt.z)))
                 target[i] = target[i] + (want_pt - pt) * wgt
         moved = []
         for f, tgt in sorted(target.items()):

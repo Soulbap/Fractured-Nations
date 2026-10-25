@@ -28,6 +28,13 @@ def _cut_beyond(P, point, normal, keep_radius_center, r):
     return D.intersect(beyond, near)
 
 
+def neck_shift():
+    """(forward offset, radius factor) of the body's neck at the collar against the CHARACTER-01 neck."""
+    j = S.joints()
+    ny = (j["Neck"].y + j["Head"].y) / 2 - (-0.028 + -0.012) / 2
+    return ny, getattr(B, "NECK_R", 0.058) / 0.058
+
+
 def jacket_sdf(P, seed=31):
     j = S.joints()
     X, Y, Z = P
@@ -61,12 +68,14 @@ def jacket_sdf(P, seed=31):
         a = D.smax(a, -_cut_beyond(P, _v(wr - fdir * 0.012), _v(fdir), _v(wr), 0.14), 0.004)
         arms = a if arms is None else D.smin(arms, a, 0.01)
     d = D.smin(d, arms, 0.035)
-    # Neck opening and stand-up collar.
-    neck = D.round_cone(P, (0, -0.030, 1.40), (0, -0.018, 1.70), 0.061, 0.056)
+    # Neck opening and stand-up collar, around the body's neck (VISUAL-03: ny = how far this neck sits ahead of
+    # the CHARACTER-01 one; nr = its radius over the authored 0.058 m).
+    ny, nr = neck_shift()
+    neck = D.round_cone(P, (0, -0.030 + ny, 1.40), (0, -0.018 + ny, 1.70), 0.061 * nr, 0.056 * nr)
     d = D.smax(d, -neck, 0.006)
     d = D.smax(d, Z - 1.535, 0.008)
-    collar = D.round_cone(P, (0, -0.030, 1.455), (0, -0.022, 1.548), 0.080, 0.071)
-    collar = D.smax(collar, -D.round_cone(P, (0, -0.030, 1.40), (0, -0.018, 1.62), 0.062, 0.057), 0.002)
+    collar = D.round_cone(P, (0, -0.030 + ny, 1.455), (0, -0.022 + ny, 1.548), 0.080 * nr, 0.071 * nr)
+    collar = D.smax(collar, -D.round_cone(P, (0, -0.030 + ny, 1.40), (0, -0.018 + ny, 1.62), 0.062 * nr, 0.057 * nr), 0.002)
     collar = D.smax(collar, Z - 1.548, 0.004)
     d = D.smin(d, collar, 0.01)
     # Front zip placket.

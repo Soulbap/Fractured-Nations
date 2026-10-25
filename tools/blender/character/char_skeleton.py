@@ -26,8 +26,24 @@ def _arm_dir(side):
     return Vector((side * math.cos(a), 0.0, -math.sin(a)))
 
 
+_JOINTS = None
+
+
+def set_joints(j):
+    """VISUAL-03: the built body's joints in reference space (char_body.build); joints() returns them from then on."""
+    global _JOINTS
+    _JOINTS = j
+
+
 def joints():
-    """Joint positions for both sides. side = -1 left (-X), +1 right (+X)."""
+    """Joint positions of the current body in reference space (see char_body: the MakeHuman body's joints with
+    heights mapped onto the CHARACTER-01 layout); the CHARACTER-01 layout until a body is built."""
+    return dict(_JOINTS) if _JOINTS is not None else ref_joints()
+
+
+def ref_joints():
+    """CHARACTER-01 reference layout: the space every garment and gear piece is authored in.
+    side = -1 left (-X), +1 right (+X)."""
     j = {
         "Root": Vector((0, 0, 0)),
         "Hips": Vector((0, 0.0, 0.975)),
