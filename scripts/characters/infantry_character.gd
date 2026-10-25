@@ -12,11 +12,19 @@
 ## a local move vector that drives a BlendTree (idle <-> 2D locomotion blend space, stand
 ## <-> crouch). Locomotion clips are one gait cycle each and play at the rate that makes
 ## the authored stride match the actual speed, so feet stay planted at any speed.
+## VISUAL-03 set (motion capture + weapon layer, see tools/blender/character/char_anim.py): relaxed / ready idle, walk,
+## brisk walk, jog, run, sprint, crouch, turn-in-place clips; aim (upper body, turned to the target by
+## InfantryAimModifier), fire and reload as upper-body layers, all blended over short times so nothing snaps.
 class_name InfantryCharacter
 extends Node3D
 
-const RIG_SCENE := preload("res://assets/characters/infantry/rig/infantry_rig.glb")
-const META_PATH := "res://assets/characters/infantry/animation_meta.json"
+## Shipped assets; VISUAL-03 stages the new soldier in infantry_v03/ (switched on with --soldier-v03) until approved.
+const ASSET_ROOT := "res://assets/characters/infantry/"
+const ASSET_ROOT_V03 := "res://assets/characters/infantry_v03/"
+## Bones the upper-body layers (aim, fire, reload) drive; the legs and pelvis stay with locomotion.
+const UPPER_BONES := ["Spine", "Chest", "UpperChest", "Neck", "Head"]
+const UPPER_SIDE := ["Shoulder", "UpperArm", "LowerArm", "Hand"]
+const FINGERS := ["Thumb", "Index", "Middle", "Ring", "Little"]
 
 ## LOD switch distances (m from the camera): LOD0 close/FPS, LOD1 medium, LOD2 far RTS.
 const LOD_DISTANCES := [0.0, 12.0, 28.0]
@@ -59,12 +67,36 @@ var _last_yaw := NAN
 var _yaw_rate := 0.0
 var _frame_skip := 0
 var _skip_delta := 0.0
+## VISUAL-03 layer inputs (set by the owner every frame): ready stance, aim point (INF = rifle not raised), reloading.
+var alert := false
+var aim_point := Vector3.INF
+var reloading := false
+var _alert_amount := 0.0
+var _aim_amount := 0.0
+var _turn_amount := 0.0
+var _aim_mod: InfantryAimModifier
+var _was_reloading := false
 
 static var _tree_root: AnimationNodeBlendTree
+static var _rig_scene: PackedScene
+static var _v03 := false          # the rig has the VISUAL-03 clip set
+static var _turn_rate := 1.5      # rad/s the turn clips turn at (meta)
+static var _lat_stride := 0.0     # stride (m per cycle) of the sideways clips; 0 = use the forward table
 static var _strides := {}       # speed -> stride table (sorted speeds) for stand / crouch
 static var _loops_set := false
 ## Accumulated animation update time (usec) of all characters, for profiling.
 static var anim_usec := 0
+
+
+## Root of the soldier assets in use (rig, loadouts, meta).
+static func asset_root() -> String:
+	return ASSET_ROOT_V03 if "--soldier-v03" in OS.get_cmdline_user_args() else ASSET_ROOT
+
+
+static func rig_scene() -> PackedScene:
+	if _rig_scene == null:
+		_rig_scene = load(asset_root() + "rig/infantry_rig.glb")
+	return _rig_scene
 
 
 static func enabled() -> bool:
@@ -81,7 +113,7 @@ func setup(p_loadout: InfantryLoadout, p_faction: int, merge_lods := true) -> vo
 	loadout = p_loadout
 	faction = p_faction
 	_clear()
-	rig = RIG_SCENE.instantiate()
+	rig = rig_scene().instantiate()
 	rig.name = "Rig"
 	add_child(rig)
 	skeleton = _find(rig, func(n: Node) -> bool: return n is Skeleton3D)
@@ -223,7 +255,7 @@ func _register_mesh(mi: MeshInstance3D) -> void:
 
 
 func _setup_animation() -> void:
-	_prepare_shared()
+	_prepare_shared(anim_player)
 	anim_tree = AnimationTree.new()
 	anim_tree.name = "AnimationTree"
 	add_child(anim_tree)
@@ -232,25 +264,38 @@ func _setup_animation() -> void:
 	anim_tree.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	anim_tree.active = true
 	_set_loops()
+	if _v03:
+		_aim_mod = InfantryAimModifier.new()
+		_aim_mod.name = "AimModifier"
+		_aim_mod.influence = 0.0
+		skeleton.add_child(_aim_mod)
 	if is_inside_tree():
 		_apply_params(0.0, true)
 		anim_tree.advance(0.0)
 
 
-static func _prepare_shared() -> void:
+static func _prepare_shared(player: AnimationPlayer) -> void:
 	if _tree_root:
 		return
 	var gait: Dictionary = GAIT_FALLBACK.duplicate()
-	if FileAccess.file_exists(META_PATH):
-		var meta: Variant = JSON.parse_string(FileAccess.get_file_as_string(META_PATH))
-		if meta is Dictionary and meta.has("gait"):
-			for k in meta.gait:
-				gait[k] = [float(meta.gait[k].speed), float(meta.gait[k].period)]
-	_strides = {
-		"stand": [[gait.Walk[0], gait.Walk[0] * gait.Walk[1]], [gait.Jog[0], gait.Jog[0] * gait.Jog[1]], [gait.Run[0], gait.Run[0] * gait.Run[1]],
-				[gait.Sprint[0], gait.Sprint[0] * gait.Sprint[1]]],
-		"crouch": [[gait.CrouchWalk[0], gait.CrouchWalk[0] * gait.CrouchWalk[1]]],
-	}
+	var meta_path := asset_root() + "animation_meta.json"
+	var meta: Variant = JSON.parse_string(FileAccess.get_file_as_string(meta_path)) if FileAccess.file_exists(meta_path) else null
+	if meta is Dictionary and meta.has("gait"):
+		for k in meta.gait:
+			gait[k] = [float(meta.gait[k].speed), float(meta.gait[k].period)]
+	_v03 = player.has_animation("Aim")
+	if _v03 and meta is Dictionary and meta.get("clip_meta", {}).has("Turn_L"):
+		_turn_rate = maxf(0.3, absf(float(meta.clip_meta.Turn_L.get("turn_rate", 1.5))))
+	if _v03 and meta is Dictionary and meta.get("clip_meta", {}).has("Walk_L"):
+		# the captured side steps are short: sideways the clip plays faster instead of letting the feet slide
+		var lm: Dictionary = meta.clip_meta.Walk_L
+		_lat_stride = float(lm.get("speed", 0.0)) * float(lm.get("period", 0.0))
+	var stand := [[gait.Walk[0], gait.Walk[0] * gait.Walk[1]]]
+	if gait.has("Brisk"):
+		stand.append([gait.Brisk[0], gait.Brisk[0] * gait.Brisk[1]])
+	for k in ["Jog", "Run", "Sprint"]:
+		stand.append([gait[k][0], gait[k][0] * gait[k][1]])
+	_strides = {"stand": stand, "crouch": [[gait.CrouchWalk[0], gait.CrouchWalk[0] * gait.CrouchWalk[1]]]}
 	var walk: float = gait.Walk[0]
 	var jog: float = gait.Jog[0]
 	var run: float = gait.Run[0]
@@ -259,10 +304,13 @@ static func _prepare_shared() -> void:
 	loco.sync = true
 	loco.min_space = Vector2(-run, -run)
 	loco.max_space = Vector2(run, gait.Sprint[0])
-	for p in [["Walk_F", Vector2(0, walk)], ["Walk_B", Vector2(0, -walk)], ["Walk_L", Vector2(-walk, 0)], ["Walk_R", Vector2(walk, 0)],
+	var pts := [["Walk_F", Vector2(0, walk)], ["Walk_B", Vector2(0, -walk)], ["Walk_L", Vector2(-walk, 0)], ["Walk_R", Vector2(walk, 0)],
 			["Jog_F", Vector2(0, jog)], ["Jog_B", Vector2(0, -jog)], ["Jog_L", Vector2(-jog, 0)], ["Jog_R", Vector2(jog, 0)],
 			["Run_F", Vector2(0, run)], ["Run_B", Vector2(0, -run)], ["Run_L", Vector2(-run, 0)], ["Run_R", Vector2(run, 0)],
-			["Sprint_F", Vector2(0, gait.Sprint[0])]]:
+			["Sprint_F", Vector2(0, gait.Sprint[0])]]
+	if gait.has("Brisk") and player.has_animation("Brisk_F"):
+		pts.append(["Brisk_F", Vector2(0, gait.Brisk[0])])
+	for p in pts:
 		loco.add_blend_point(_anim(p[0]), p[1])
 	var cloco := AnimationNodeBlendSpace2D.new()
 	cloco.sync = true
@@ -282,14 +330,84 @@ static func _prepare_shared() -> void:
 	t.add_node("crouch", AnimationNodeBlend2.new(), Vector2(600, 200))
 	t.connect_node("scale", 0, "loco")
 	t.connect_node("cscale", 0, "cloco")
-	t.connect_node("move", 0, "idle")
-	t.connect_node("move", 1, "scale")
 	t.connect_node("cmove", 0, "cidle")
 	t.connect_node("cmove", 1, "cscale")
+	t.connect_node("move", 1, "scale")
 	t.connect_node("crouch", 0, "move")
 	t.connect_node("crouch", 1, "cmove")
-	t.connect_node("output", 0, "crouch")
+	if not _v03:
+		t.connect_node("move", 0, "idle")
+		t.connect_node("output", 0, "crouch")
+		_tree_root = t
+		return
+	# VISUAL-03: relaxed <-> ready idle, turning in place, then the upper-body layers.
+	var upper := _upper_paths(player)
+	t.add_node("ready", _anim("Ready_Idle"), Vector2(0, -150))
+	t.add_node("alert", AnimationNodeBlend2.new(), Vector2(200, -100))
+	t.connect_node("alert", 0, "idle")
+	t.connect_node("alert", 1, "ready")
+	t.add_node("turn_l", _anim("Turn_L"), Vector2(0, -300))
+	t.add_node("turn_r", _anim("Turn_R"), Vector2(0, -400))
+	t.add_node("tscale_l", AnimationNodeTimeScale.new(), Vector2(150, -300))
+	t.add_node("tscale_r", AnimationNodeTimeScale.new(), Vector2(150, -400))
+	t.connect_node("tscale_l", 0, "turn_l")
+	t.connect_node("tscale_r", 0, "turn_r")
+	var turn := AnimationNodeBlend3.new()
+	t.add_node("turn", turn, Vector2(300, -200))
+	t.connect_node("turn", 0, "tscale_l")
+	t.connect_node("turn", 1, "alert")
+	t.connect_node("turn", 2, "tscale_r")
+	t.connect_node("move", 0, "turn")
+	t.add_node("aim_pose", _anim("Aim"), Vector2(600, 400))
+	var aim := AnimationNodeBlend2.new()
+	_filter(aim, upper)
+	t.add_node("aim", aim, Vector2(800, 200))
+	t.connect_node("aim", 0, "crouch")
+	t.connect_node("aim", 1, "aim_pose")
+	var fire := AnimationNodeOneShot.new()
+	fire.fadein_time = 0.02
+	fire.fadeout_time = 0.08
+	_filter(fire, upper)
+	t.add_node("fire_pose", _anim("Fire"), Vector2(800, 400))
+	t.add_node("fire", fire, Vector2(1000, 200))
+	t.connect_node("fire", 0, "aim")
+	t.connect_node("fire", 1, "fire_pose")
+	var reload := AnimationNodeOneShot.new()
+	reload.fadein_time = 0.2
+	reload.fadeout_time = 0.25
+	_filter(reload, upper)
+	t.add_node("reload_pose", _anim("Reload"), Vector2(1000, 400))
+	t.add_node("reload", reload, Vector2(1200, 200))
+	t.connect_node("reload", 0, "fire")
+	t.connect_node("reload", 1, "reload_pose")
+	t.connect_node("output", 0, "reload")
 	_tree_root = t
+
+
+## Track paths of the upper-body bones in the rig's clips (filters of the upper-body layers).
+static func _upper_paths(player: AnimationPlayer) -> Array[NodePath]:
+	var names := {}
+	for n in UPPER_BONES:
+		names[n] = true
+	for side in ["Left", "Right"]:
+		for n in UPPER_SIDE:
+			names[side + n] = true
+		for f in FINGERS:
+			for seg in ["Metacarpal", "Proximal", "Intermediate", "Distal"]:
+				names[side + f + seg] = true
+	var out: Array[NodePath] = []
+	var anim := player.get_animation("Aim")
+	for i in anim.get_track_count():
+		var p := anim.track_get_path(i)
+		if p.get_subname_count() > 0 and names.has(String(p.get_subname(0))):
+			out.append(p)
+	return out
+
+
+static func _filter(node: AnimationNode, paths: Array[NodePath]) -> void:
+	node.filter_enabled = true
+	for p in paths:
+		node.set_filter_path(p, true)
 
 
 static func _anim(clip: String) -> AnimationNodeAnimation:
@@ -304,8 +422,15 @@ func _set_loops() -> void:
 	for lib_name in anim_player.get_animation_library_list():
 		var lib := anim_player.get_animation_library(lib_name)
 		for n in lib.get_animation_list():
-			lib.get_animation(n).loop_mode = Animation.LOOP_LINEAR
+			# one-shots of the VISUAL-03 set play once
+			lib.get_animation(n).loop_mode = Animation.LOOP_NONE if n in ["Fire", "Reload"] else Animation.LOOP_LINEAR
 	_loops_set = true
+
+
+## VISUAL-03: one shot (recoil) on the upper body; ignored while the rifle is not raised.
+func fire() -> void:
+	if anim_tree and _v03 and _aim_amount > 0.3:
+		anim_tree.set("parameters/fire/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
 ## Stride (m per gait cycle) at speed v by linear interpolation of the authored clips.
@@ -388,25 +513,30 @@ func _apply_params(delta: float, snap: bool) -> void:
 	v.y = 0.0
 	var local := global_basis.orthonormalized().inverse() * v
 	var target := Vector2(local.x, -local.z)
-	# Turning on the spot: step sideways in the turn direction.
 	var yaw := global_rotation.y
 	if not is_nan(_last_yaw) and delta > 0.0:
 		_yaw_rate = lerpf(_yaw_rate, wrapf(yaw - _last_yaw, -PI, PI) / delta, clampf(delta * 10.0, 0.0, 1.0))
 	_last_yaw = yaw
-	if target.length() < 0.3 and absf(_yaw_rate) > 1.2:
+	# Turning on the spot: the turn clips (VISUAL-03), else the CHARACTER-01 side step.
+	if not _v03 and target.length() < 0.3 and absf(_yaw_rate) > 1.2:
 		target = Vector2(-signf(_yaw_rate) * 0.8, 0.0)
-	var k := 1.0 if snap else clampf(delta * 8.0, 0.0, 1.0)
+	# Blend steps use at most 1/20 s per frame: after a hitch the pose still eases instead of snapping.
+	delta = minf(delta, 0.05)
+	var k := 1.0 if snap else clampf(delta * 6.0, 0.0, 1.0)      # accelerate / brake over ~0.3 s
 	_move = _move.lerp(target, k)
 	var speed := _move.length()
 	var moving := clampf((speed - 0.15) / 0.6, 0.0, 1.0)
-	_move_amount = lerpf(_move_amount, moving, 1.0 if snap else clampf(delta * 10.0, 0.0, 1.0))
-	_crouch_amount = move_toward(_crouch_amount, 1.0 if crouched else 0.0, 1.0 if snap else delta * 4.0)
+	_move_amount = lerpf(_move_amount, moving, 1.0 if snap else clampf(delta * 8.0, 0.0, 1.0))
+	_crouch_amount = move_toward(_crouch_amount, 1.0 if crouched else 0.0, 1.0 if snap else delta * 3.0)
 	var table: Array = _strides.crouch if crouched else _strides.stand
 	var min_speed: float = table[0][0]
 	var dir := _move.normalized() if speed > 0.01 else Vector2(0, 1)
 	var pos := dir * maxf(speed, min_speed)
 	# Playback rate: gait cycles per second x clip length, so the stride matches the speed.
-	var cycles := maxf(speed, 0.35) / stride_at(maxf(speed, min_speed), table)
+	var stride := stride_at(maxf(speed, min_speed), table)
+	if _lat_stride > 0.05 and not crouched:
+		stride = lerpf(stride, _lat_stride, clampf(absf(dir.x), 0.0, 1.0))
+	var cycles := maxf(speed, 0.35) / stride
 	anim_tree.set("parameters/loco/blend_position", pos)
 	anim_tree.set("parameters/cloco/blend_position", dir * maxf(speed, _strides.crouch[0][0]))
 	anim_tree.set("parameters/scale/scale", cycles * LOCO_CLIP_S)
@@ -414,12 +544,39 @@ func _apply_params(delta: float, snap: bool) -> void:
 	anim_tree.set("parameters/move/blend_amount", _move_amount)
 	anim_tree.set("parameters/cmove/blend_amount", _move_amount)
 	anim_tree.set("parameters/crouch/blend_amount", _crouch_amount)
+	if not _v03:
+		return
+	var step := 1.0 if snap else delta
+	_alert_amount = move_toward(_alert_amount, 1.0 if alert or aim_point.is_finite() else 0.0, step * 2.5)
+	_aim_amount = move_toward(_aim_amount, 1.0 if aim_point.is_finite() and not reloading else 0.0, step * 4.0)
+	var turning := clampf((absf(_yaw_rate) - 0.5) / 0.7, 0.0, 1.0) * (1.0 - _move_amount)
+	_turn_amount = move_toward(_turn_amount, -signf(_yaw_rate) * turning, step * 5.0)
+	var trate := clampf(absf(_yaw_rate) / _turn_rate, 0.6, 2.0)
+	anim_tree.set("parameters/alert/blend_amount", _alert_amount)
+	anim_tree.set("parameters/turn/blend_amount", _turn_amount)
+	anim_tree.set("parameters/tscale_l/scale", trate)
+	anim_tree.set("parameters/tscale_r/scale", trate)
+	anim_tree.set("parameters/aim/blend_amount", _aim_amount)
+	if reloading and not _was_reloading:
+		anim_tree.set("parameters/reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	_was_reloading = reloading
+	if _aim_mod:
+		_aim_mod.influence = _aim_amount
+		if aim_point.is_finite():
+			var chest := global_position + Vector3.UP * 1.4
+			var d := global_basis.orthonormalized().inverse() * (aim_point - chest)
+			var want_yaw := clampf(atan2(-d.x, -d.z), -1.2, 1.2)
+			var want_pitch := clampf(atan2(d.y, Vector2(d.x, d.z).length()), -0.8, 0.8)
+			var s := 1.0 if snap else clampf(delta * 8.0, 0.0, 1.0)
+			_aim_mod.yaw = lerpf(_aim_mod.yaw, want_yaw, s)
+			_aim_mod.pitch = lerpf(_aim_mod.pitch, want_pitch, s)
 
 
 ## Current animation state for tests/diagnostics.
 func anim_state() -> Dictionary:
 	return {"move": _move, "move_amount": _move_amount, "crouch": _crouch_amount,
-		"rate": anim_tree.get("parameters/scale/scale") if anim_tree else 0.0}
+		"rate": anim_tree.get("parameters/scale/scale") if anim_tree else 0.0,
+		"alert": _alert_amount, "aim": _aim_amount, "turn": _turn_amount, "v03": _v03}
 
 
 # ------------------------------------------------------------------------------ helpers

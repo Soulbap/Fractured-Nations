@@ -1,9 +1,11 @@
 # VISUAL-03 — Soldier character, anatomy, rigging & animation overhaul
 
-Status: **approval gate (Phase 3–5 prototype)**. The in-game soldier is unchanged. This report covers the audit of
-the CHARACTER-01 soldier, the reference research, the Kenney evaluation and the anatomical prototype with a
-corrected rig and motion-capture locomotion previews. Equipment (Phase 6) and Godot integration (Phase 8–9) wait
-for the product owner's approval of anatomy, proportions and basic locomotion.
+Status: **second approval checkpoint.** The anatomy prototype (§4) was approved on 2026-10-25. Since then the full
+soldier has been built — rifle handling over the motion capture, the whole clip set, uniforms and equipment refitted to
+the new body for all three factions, the Godot animation tree with aim / fire / reload layers and turning clips — and
+validated in the VISUAL-02 world (§8–§10). It is **staged**: the new assets live in `assets/characters/infantry_v03/`
+and are used only when the game is started with `--soldier-v03`; without the flag the game plays exactly as before.
+Replacing the shipped soldier waits for the product owner's approval of §8–§11.
 
 ## 1. Diagnosis of the current soldier (Phase 1)
 
@@ -214,3 +216,169 @@ No game code changed in this phase, so no Godot test suite was run (change-impac
 * `v03_proto.py` body build, measurement, stills, stress poses, mocap retarget + foot lock + gait / slip
   measurement for the chosen clips, motion renders; all outputs looked at.
 * Kenney evaluation scripts (scratch, read-only on the collection).
+
+---
+
+# Part 2 — the full soldier (after the anatomy approval)
+
+## 8. Implementation
+
+### 8.1 One body for every builder (`char_body.py`, `char_body_mh.py`, `char_skeleton.py`)
+
+The MakeHuman body replaces the SDF body in the shared pipeline (no parallel body is kept):
+
+* **Arms lengthened.** In the dressed tests the support hand could not reach the handguard. Measured: upper arm 0.267 m
+  against ~0.33 m (de Leva / Drillis), fingertips at 0.44 H standing instead of ~0.38 H. The rifle itself is in
+  proportion (0.84 m overall, 0.28 m grip–butt, 0.56 m grip–muzzle: an HK416 / M4 with the stock out). MakeHuman's own
+  targets `measure-upperarm-length-incr` (1.0) and `measure-lowerarm-length-incr` (0.15) fix it: upper arm 0.334 m.
+* **Reference rest pose.** The body is reposed so limbs point like CHARACTER-01's A-pose (feet under the hips, arms
+  45° down, palms to the thighs) and the pose is applied as rest. Every garment and gear builder is authored around that
+  layout; with the same limb directions they can run unchanged.
+* **Reference space.** Builders work in a space whose heights are mapped piecewise-linearly onto the CHARACTER-01
+  landmarks (ground, ankle, knee, hip joint, shoulder joint, crown); `torso_sdf`, `leg_sdf`, `arm_sdf`, `foot_sdf`,
+  `hand_sdf` now measure the real body there: an OpenVDB level set of the body (4 mm; hands 1.5 mm), split between
+  torso, neck, arms, hands, legs and feet by nearest bone. A finished piece goes back with `to_body_space`. Collars
+  follow the new neck (`neck_shift`); helmets and eyewear are fitted to the measured cranium (`head_fit_matrix`).
+* **Head.** Head + neck are their own piece with a cylindrical UV and a painted skin texture (short military cut,
+  brows, lips, beard shadow), material `SkinHead` (`skin_head_v03_albedo.png`); eyeballs with iris at MakeHuman's eye
+  helpers. `ATT_*` points are placed on the body (CHARACTER_STANDARD §3).
+* Fixed on the way: `char_lib.remove_empty_groups` removed vertex groups by index while the indices shifted (the head
+  lost all its weights and the helmet floated); MakeHuman's helper groups (`body`, `joint-*`, `scalp` ...) are stripped
+  before weight transfer.
+
+Result: the whole CHARACTER-01 / ASSET-PRODUCTION-01 set (13 shared pieces, NATO / RU / CN uniforms, helmets, vests,
+armour, packs) rebuilds on the new body without per-piece rework; weapons are unchanged (weapon space).
+
+### 8.2 Weapon handling over the motion capture (`char_anim.py`, `v03_mocap.py`)
+
+Every clip starts from captured motion; the rifle layer is added on top, per frame:
+
+1. **Posture** — a *constant* correction brings the clip's mean thorax lean and head pitch to the carry's target
+   (the idle take looked down 30°); the captured variation stays.
+2. **Spine** — the thorax counter-rotation is damped (a rifle carrier keeps the shoulders squarer: 25–70 % kept per
+   carry) and the carry's stance yaw is added (bladed for ready / aim), spread over Spine / Chest / UpperChest.
+3. **Rifle** — placed on the *posed* chest for the carry (patrol, low ready, ready, run, port arms, crouch, aim): butt
+   relative to the right shoulder joint, muzzle yaw / pitch / cant; its orientation is partly stabilised against the
+   chest's roll and pitch and it moves with 10 % of the captured right-hand swing, so it rides on the body (bob and
+   pump in the jog and run) instead of being frozen.
+4. **Arms** — two-bone IK onto the grips (firing hand on the pistol grip = `ATT_Weapon`, support hand on the handguard
+   frame), with elbow poles per carry; hands take the grip frames; fingers curl into a grip (index along the receiver,
+   on the trigger in aim / fire).
+5. **Aim** — the butt in the shoulder pocket, then a cheek weld: neck and head turn (within limits of 22° pitch, 14°
+   roll, 20° yaw) to bring the right eye to the sight line, and the rifle rises the last centimetres to the eye
+   (remaining distance 36 mm, 7 mm in Fire).
+6. **Reach fit** — carries whose grips the arms cannot reach (styles were authored on CHARACTER-01 proportions) move
+   their butt inboard / back and turn the muzzle inboard until both hands reach within 93 % of the arm length.
+
+Clips (all in `assets/characters/infantry_v03/animation_meta.json`):
+
+| Clip | Source | Carry | Notes |
+|---|---|---|---|
+| Idle / Ready_Idle | CMU 77_02 (weight shift), 4 s loop | low / ready | relaxed and combat-ready stance |
+| Walk_F, Brisk_F | 16_15 (1.19 m/s), 16_21 (1.83 m/s) | patrol / low | |
+| Jog_F, Run_F | 35_17 (3.29 m/s), 16_46 (4.45 m/s) | ready / run | |
+| Sprint_F | 16_46 | port arms | rifle across the chest |
+| Walk_B | 09_12 backward stretch | low | |
+| Walk_L / Walk_R | 69_42 / 69_48 sideways stretches | low | captured side steps (0.4 m/s) |
+| Jog_* / Run_* B/L/R | the walking B/L/R keys | ready | (see §11) |
+| CrouchWalk_F/B/L/R | the walks, pelvis −0.30 m, legs re-solved onto the same footfalls | crouch | |
+| Crouch_Idle | the idle, squat on the forefoot of the trailing foot | crouch | |
+| Turn_L / Turn_R | 69_16 / 69_18 turn-in-place, the turn unwound | low | the game turns the body |
+| Aim | the idle legs + aim carry + cheek weld | aim | upper body layer |
+| Fire | 6 frames: 22 mm kick, 3.5° rise, chest takes 35 % | aim | one-shot |
+| Reload | 2.5 s: support hand to the magazine, chest pouch, back | ready | one-shot |
+
+Every clip ends with both hands on their grips (largest error 0.9 mm, support hand) — `build_log.json` `anim_check`.
+
+### 8.3 Godot (`scripts/characters/infantry_character.gd`, `infantry_aim_modifier.gd`, `soldier_body.gd`)
+
+* **Staging.** `InfantryCharacter.asset_root()` is `res://assets/characters/infantry_v03/` with `--soldier-v03`, else
+  the shipped root; the rig, `animation_meta.json` and `InfantryLoadout.dir()` follow it. `tools/visual03/stage_loadouts.py`
+  mirrors all 27 loadouts and the rebuilt equipment into the staging root (weapons stay shared).
+  `tools/visual03/check_loadouts.gd` builds every loadout: all 27 build with all 26 clips (the `*_hmg` loadouts' missing
+  optic / muzzle mount is the same with the shipped soldier).
+* **Tree.** Relaxed ↔ ready idle (`alert`), turning in place by the turn clips (blend by yaw rate, played at the
+  rate the body turns) instead of the CHARACTER-01 side-step trick, the locomotion blend space (walk, brisk, jog, run,
+  sprint; crouch), then upper-body layers filtered to the spine, arms and fingers: **Aim** (blend), **Fire** (one-shot,
+  20 ms in), **Reload** (one-shot). Blend weights ease (move 0.2–0.3 s, crouch 0.33 s, aim 0.25 s, ready 0.4 s); a
+  frame's blend step is capped at 1/20 s so a hitch eases instead of snapping. Playback rate keeps the stride matched to
+  the speed, sideways with the side steps' own stride.
+* **Aim direction.** `InfantryAimModifier` (SkeletonModifier3D) turns Spine / Chest / UpperChest towards the aim point
+  (yaw ±69°, pitch ±46°) with the aim blend as its influence; arms, head and rifle follow as children, so the soldier
+  aims where the AI aims while its legs keep walking where it goes.
+* **From the record, read-only.** `SoldierBody._character_layers`: aim point = the target the soldier tracks (seen in
+  the last 6 s) or shot at in the last 2.5 s; ready stance while the AI is not idle, watching or under fire; reload
+  while `reload_until` runs; a recoil one-shot per new shot (`shot_counter`). The possessed body shows none of it.
+
+### 8.4 Movement speed (kept at 4.5 m/s)
+
+`WorldSim.pace_of / move_speed` (walk 1.3, brisk 1.8, jog 3.3, run 4.5 m/s, chosen from the state the AI already writes:
+reaction / fire taken -> run, assault / flank / bound / withdraw -> run, other tactics -> jog, operations past the
+approach -> run, garrison -> walk, else the pace the order chose, else jog; both tiers; `SquadState.pace` saved; RTS
+Ctrl / Alt + right-click = run / walk) is **off by default**: per the product owner, movement speeds, tactical approaches
+and combat balance belong to COMBAT-01. Without `--paces` every soldier moves at 4.5 m/s as before (the animation set
+has all four gaits either way). Impact review before switching it off: one `--ai-strat-test a_assault` run took Haugen
+at the old pace and withdrew at the new one (17 losses against 10); `e_withdraw` and `--ai-squad-test c_flank / k_persist`
+fail the same with and without the paces (site / tactics, not pace). Single stochastic runs; not pursued in VISUAL-03.
+
+## 9. Validation
+
+### 9.1 Blender (`tools/visual03/blender_previews.py`)
+
+`docs/visual03/blender/<clip>.mp4`: the dressed soldier (NATO-class kit, carbine with red dot and grip) travelling at the
+clip's speed over a 1 m checker floor, side and three-quarter views, real time: Idle, Ready_Idle, Walk_F, Brisk_F,
+Jog_F, Run_F, Sprint_F, Walk_B, Walk_L, CrouchWalk_F, Crouch_Idle, Turn_L, Aim, Fire, Reload.
+
+### 9.2 Godot, VISUAL-02 world (`--soldier-v03 --paces --visual03-test --shots`)
+
+`scripts/debug/visual03_selftest.gd`; recordings in `docs/visual03/godot/video/*.mp4`, stills in `docs/visual03/godot/`:
+
+| Test | What ran | Result |
+|---|---|---|
+| A individual | one soldier: walk / jog / run orders, stop, turn on the spot | speeds 1.30 / 3.30 / 4.50 m/s through the real controller; turn clip used (blend 1.0); PASS |
+| B squad | eight soldiers: jog 60 m, a 90 deg change of direction at a run, a walk | formation kept, all eight at 1.30 m/s on the walk; animation of 8 characters 156 us per frame (about 20 us each), frame 3.35 ms; PASS |
+| C combat | two fire teams of four 70 m apart, AI on (kept alive) | 264 shots, rifles raised (aim blend 1.0) and firing at their targets; PASS (120 m apart in tall grass they never saw each other) |
+| D terrain | four soldiers up and down a 16 % slope on open ground | feet on the slope, no floating; PASS |
+| E transitions | stand, move, stop, crouch, stand, raise, move aiming, fire x4, reload, lower | no blend weight changes by more than 0.40 in one frame (the move blend after a screenshot hitch); PASS |
+| F views | first person from another soldier 3 m away; RTS at 15, 40, 110 m | `f_fps_close.jpg`, `f_rts_*.jpg`; LODs switch as before |
+
+The in-engine foot-slip numbers the test prints are not usable (bone positions sampled in process frames while the
+body moves in physics frames, with screenshot hitches); foot contact was judged from the recordings and from the Blender
+measurement of the planted contact point after locking (walk p90 0.17-1.9 m/s: most frames still, single touchdown /
+lift-off frames slip).
+
+## 10. Before / after
+
+* Body: `docs/visual03/compare_body_rest.jpg`; walk / run: `compare_walk_side.jpg`, `compare_run_side.jpg`.
+* In game: the default run (CHARACTER-01 soldier) against `--soldier-v03`, same views as `docs/visual03/godot/f_*.jpg`.
+
+## 11. Remaining visual defects
+
+* **Sideways and backward at speed.** The captured side steps are slow (0.4 m/s); faster sideways movement plays them
+  faster (no sliding, a quick shuffle). Jog / run backward and sideways reuse the walking keys. A faster strafe capture
+  is the fix (the AI faces its direction of travel, so this shows mainly when aiming while moving).
+* **Foot contact** at touchdown / lift-off of jog and run: single frames where the contact moves from heel to ball.
+* **Turn clips** are one second of a turning take looped: the step pattern repeats on long turns.
+* **Reload** is a support-hand cycle on a fixed rifle; the magazine itself does not move.
+* **Aim**: the sight line ends ~36 mm from the eye after the head search (the rifle closes most of it).
+* **Radio whip antenna** of the vests can cross the face when the head is turned onto the stock.
+* **Chest** reads soft in frontal light (MakeHuman muscle 0.62).
+* `*_hmg` loadouts (shipped and staged): the heavy MG has no optic / muzzle mount (outside VISUAL-03).
+
+## 12. Tests performed (part 2)
+
+* Blender: `build_infantry.py --export --root assets/characters/infantry_v03` (+ previews), `build_factions.py --export
+  --root ...`, `blender_previews.py`; `anim_check` numbers in `assets/characters/infantry_v03/build_log.json`.
+* Godot: `check_scripts.gd` (181 scripts), `--import`, `tools/visual03/check_loadouts.gd` with and without `--soldier-v03`,
+  `--visual03-test` A-F (PASS).
+* Shared systems touched (WorldSim movement, SquadControl orders): with the paces off the movement code returns the old
+  speed; `--ai-squad-test --only c_flank,d_assault,f_withdraw,k_persist` and `--ai-strat-test --only a_assault,e_withdraw,
+  j_persist` were run during the impact review (§8.4). No full suite.
+
+## 13. Replacing the shipped soldier (after approval)
+
+1. `build_infantry.py --export` and `build_factions.py --export` without `--root` (writes the canonical root), or move
+   `assets/characters/infantry_v03/*` over `assets/characters/infantry/` and run `stage_loadouts.py`-equivalent path fixes.
+2. Drop `ASSET_ROOT_V03` / `--soldier-v03`, the old SDF garment references in CHARACTER_STANDARD, and the `Skin`
+   material; update `docs/CHARACTER_STANDARD.md` (body source, rest pose, clip set, layers).
+3. Re-import, `check_loadouts.gd`, `--visual03-test` (without `--soldier-v03`), the character lab.

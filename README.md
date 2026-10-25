@@ -11,11 +11,12 @@ branches are contained in `develop` and stay as history. Next milestone: **NAVIG
 obstacle navigation). See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-In progress: **VISUAL-03** (soldier anatomy, rig and animation) — at the approval gate. The CHARACTER-01 soldier was
-diagnosed (blob-built body, idle with 30° bent knees, walking pelvis rotating the wrong way, a run whose legs never reach in
-front of the body); a reference-backed prototype on a MakeHuman (MPFB) body with CMU motion-capture walk / jog / run, foot
-locking and stress-tested skinning waits for approval. The game still uses the old soldier. See
-[docs/VISUAL-03_REPORT.md](docs/VISUAL-03_REPORT.md).
+In progress: **VISUAL-03** (soldier anatomy, rig and animation) — at the second approval checkpoint. A new soldier on a
+MakeHuman (MPFB) body with CMU motion-capture locomotion and a rifle-handling layer (carries, cheek weld, aim / fire /
+reload layers, turning clips), uniforms and kit of all three factions refitted to it, validated in the game (squad of
+eight, combat, slopes, transitions, FPS / RTS views). It is staged in `assets/characters/infantry_v03/`: start the game
+with `--soldier-v03` to see it; without the flag the shipped soldier is used. Movement paces (walk / brisk / jog / run)
+exist behind `--paces` and are off (4.5 m/s as before) until COMBAT-01. See [docs/VISUAL-03_REPORT.md](docs/VISUAL-03_REPORT.md).
 
 Newest finished: **BRIDGE-NAV-01** (on `develop`) — a soldier ordered beside a bridge deck (Rv1 approach) slid down the steep
 fill under it and walked in circles below. Three fixes: a slot on unstandable ground beside a deck goes onto the deck; the terrain

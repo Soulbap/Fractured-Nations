@@ -221,6 +221,12 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   90° so its quad diagonal is Terrain3D's (mesh, navmesh faces); `Terrain3DData.get_height` is neither triangulation (measure walking
   surfaces with rays). A squad slot beside a deck on wet / too-steep ground goes onto the deck (`SquadControl._free_ground`);
   `SoldierBody._ground_waypoint` reaches waypoints on the ground plane (navmesh heights can be ~1.5 m off).
+- **Soldier v03 (VISUAL-03, staged).** The new soldier (MakeHuman body `char_body_mh` / `char_body`, CMU mocap + rifle layer
+  `char_anim` / `v03_mocap`) is built with `build_infantry.py --export --root assets/characters/infantry_v03` and
+  `build_factions.py --export --root ...`, mirrored by `tools/visual03/stage_loadouts.py`, and used in Godot only with
+  `--soldier-v03` (`InfantryCharacter.asset_root()`) until approved. Garments are authored in CHARACTER-01 *reference space*
+  and moved onto the body with `char_body.to_body_space`. Movement paces (`WorldSim.pace_of`) are opt-in with `--paces`.
+  Validation: `--soldier-v03 --paces --visual03-test [--shots]` (A-F), `tools/visual03/check_loadouts.gd`.
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are

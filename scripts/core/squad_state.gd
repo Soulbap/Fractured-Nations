@@ -57,6 +57,9 @@ var follow_squad_id := -1
 var formation := Formation.LINE
 ## Distance between neighbouring formation slots (m).
 var spacing := 3.0
+## VISUAL-03: pace the owner chose for the current move order (UnitState.Pace; -1 = the context decides, see
+## WorldSim.pace_of). Saved.
+var pace := -1
 ## Members given an individual order since the last squad order; the squad order does
 ## not drive them until the next squad order or a regroup.
 var detached := PackedInt32Array()
@@ -208,7 +211,7 @@ func to_dict() -> Dictionary:
 		"follow_unit": follow_unit_id, "follow_squad": follow_squad_id,
 		"formation": formation, "spacing": spacing, "detached": Array(detached),
 		"status": status, "blocked": Array(blocked), "fallen": Array(fallen), "roe": roe,
-		"op": op_id, "route": Array(route), "route_i": route_i, "route_wait": [route_wait_goal, route_wait_kind, route_wait_form], "station": station_objective, "cargo": cargo.duplicate(), "rearm_at": rearm_at, "rearm_s": rearm_s, "garrison_base": garrison_base, "defence_line": defence_line,
+		"op": op_id, "route": Array(route), "route_i": route_i, "route_wait": [route_wait_goal, route_wait_kind, route_wait_form], "station": station_objective, "cargo": cargo.duplicate(), "rearm_at": rearm_at, "rearm_s": rearm_s, "garrison_base": garrison_base, "defence_line": defence_line, "pace": pace,
 		"teams": teams.map(func(t: PackedInt32Array) -> Array: return Array(t)), "team_leaders": Array(team_leaders), "team_roles": Array(team_roles),
 		"tactic": tactic, "tactic_owner": tactic_owner, "tactic_phase": tactic_phase, "tactic_since": tactic_since,
 		"tactic_phase_since": tactic_phase_since, "tactic_target": tactic_target, "tactic_contact": tactic_contact, "tactic_site": tactic_site,
@@ -233,6 +236,7 @@ static func from_dict(d: Dictionary) -> SquadState:
 	s.follow_squad_id = d.get("follow_squad", -1)
 	s.formation = d.get("formation", Formation.LINE)
 	s.spacing = d.get("spacing", 3.0)
+	s.pace = int(d.get("pace", -1))
 	s.detached = PackedInt32Array(d.get("detached", []))
 	s.status = d.get("status", Status.IDLE)
 	s.blocked = PackedInt32Array(d.get("blocked", []))

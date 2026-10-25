@@ -187,6 +187,7 @@ func _physics_process(delta: float) -> void:
 		# Soldiers holding cover crouch behind it (COMBAT-02 tactic -> CHARACTER-01 pose).
 		# GAMEPLAY-01B: soldiers at work on a construction site kneel at it (the work pose).
 		character.crouched = not player_controlled and (unit.tactic == UnitState.Tactic.IN_COVER or unit.work_until > sim.state.time)
+		_character_layers()
 
 
 ## GAMEPLAY-01C: in a fortification slot the body stands exactly where the record says (on a tower platform too), without
@@ -232,7 +233,7 @@ func _ai_step(delta: float) -> void:
 			_finish(remaining, reacting)
 		elif path_len == 0 and sim.detail and not sim.detail.nav_covers(goal):
 			dbg_branch = "no_path_off_nav"
-			desired = flat.normalized() * walk_speed
+			desired = flat.normalized() * _ai_speed()
 			_face(flat.normalized(), delta)
 		elif path_len == 0:
 			dbg_branch = "no_path"
@@ -249,7 +250,7 @@ func _ai_step(delta: float) -> void:
 				# heading for it. Leaving the camera's detail radius hands the unit to
 				# the abstract tier, which finishes the walk (the order is never dropped).
 				var far_dir := flat.normalized()
-				desired = far_dir * walk_speed
+				desired = far_dir * _ai_speed()
 				_face(far_dir, delta)
 			else:
 				_finish(remaining, reacting, "navmesh path ends short of the target")
@@ -274,7 +275,7 @@ func _ai_step(delta: float) -> void:
 				dir = flat
 			if dir.length_squared() > 1e-4:
 				dir = dir.normalized()
-				desired = dir * walk_speed
+				desired = dir * _ai_speed()
 				_face(dir, delta)
 			else:
 				_empty_path_s += delta
@@ -478,6 +479,40 @@ func _step_up(delta: float) -> void:
 	global_position += Vector3.UP * step_height + motion
 	velocity.y = 0.0
 	apply_floor_snap()
+
+
+## VISUAL-03: what the character's upper-body layers show, from the record the AI writes: the rifle raised at the target
+## the soldier tracks (or shot at in the last seconds), the ready stance while it is alerted, a reload while one runs and a
+## recoil per shot. Read-only: the record stays the authority.
+var _seen_shots := -1
+
+
+func _character_layers() -> void:
+	if player_controlled or sim == null:
+		character.aim_point = Vector3.INF
+		character.alert = false
+		character.reloading = false
+		_seen_shots = unit.shot_counter
+		return
+	var now := sim.state.time
+	character.reloading = unit.reload_until >= now
+	var tracking := unit.target_id >= 0 and now - unit.target_seen_at < 6.0
+	var shooting := now - unit.last_shot_at < 2.5
+	if unit.target_last_pos.is_finite() and (tracking or shooting):
+		character.aim_point = unit.target_last_pos + Vector3.UP * unit.target_aim_y
+	else:
+		character.aim_point = Vector3.INF
+	character.alert = unit.ai_state != UnitState.AiState.IDLE or now < unit.watch_until or now < unit.under_fire_until
+	if unit.shot_counter != _seen_shots:
+		if _seen_shots >= 0:
+			character.fire()
+		_seen_shots = unit.shot_counter
+
+
+## VISUAL-03: an AI-driven body moves at its record's pace (WorldSim.move_speed), the same as the abstract tier; the
+## possessed body keeps the FPS controller's walk / sprint.
+func _ai_speed() -> float:
+	return sim.move_speed(unit) if sim and unit else walk_speed
 
 
 func _face(dir: Vector3, delta: float) -> void:

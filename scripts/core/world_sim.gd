@@ -316,7 +316,8 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 		if not is_nan(h0) and not is_nan(h1):
 			climb = slope_speed(h1 - h0)
 	climb *= carry_speed(u)
-	var step := minf(u.speed * abstract_friction * climb * delta, dist)
+	var v := move_speed(u)
+	var step := minf(v * abstract_friction * climb * delta, dist)
 	if structures and _step_blocked(u.position, dir, step):
 		var invalid: Dictionary = _local_routes.get(u.id, {})
 		if bool(invalid.get("cached", false)):
@@ -328,7 +329,7 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 			u.move_state = UnitState.MoveState.MOVING
 		return
 	u.position += dir * step
-	u.velocity = dir * u.speed * abstract_friction * climb
+	u.velocity = dir * v * abstract_friction * climb
 	u.yaw = atan2(-dir.x, -dir.z)
 	u.move_state = UnitState.MoveState.MOVING
 	_settle_height(u)
@@ -718,6 +719,53 @@ static func _flat(a: Vector3, b: Vector3) -> float:
 
 ## Height of an abstract unit: the terrain, or the bridge deck it stands on; a unit beside
 ## a bridge above the river (a formation's outer file) moves onto the deck.
+## VISUAL-03: the pace a soldier moves at right now, read from the state that already says how urgent its movement is
+## (no separate locomotion decision): a cover reaction or fire taken -> run; the squad's assault, flank, bound or
+## withdrawal -> run; other squad tactics (defend, reposition, regroup, suppress, build) -> jog; an operation past its
+## approach (deploy, support, assault, secure, withdraw) -> run, its approach -> jog on the march and run over the last
+## APPROACH_RUN_M, in transport -> jog; a squad garrisoning a
+## base -> walk; otherwise the pace the order chose (SquadState.pace), else jog (ordinary RTS movement). Both tiers.
+func pace_of(u: UnitState) -> int:
+	if u.is_reacting() or state.time < u.under_fire_until:
+		return UnitState.Pace.RUN
+	var sq := state.squad_of(u.id)
+	if sq == null:
+		return UnitState.Pace.JOG
+	match sq.tactic:
+		SquadState.Tactic.ASSAULT, SquadState.Tactic.FLANK, SquadState.Tactic.BOUND, SquadState.Tactic.WITHDRAW:
+			return UnitState.Pace.RUN
+		SquadState.Tactic.DEFEND, SquadState.Tactic.REPOSITION, SquadState.Tactic.REGROUP, SquadState.Tactic.SUPPRESS, 				SquadState.Tactic.BUILD:
+			return UnitState.Pace.JOG
+	if sq.op_id >= 0 and state.war:
+		var op: OperationState = state.war.operations.get(sq.op_id)
+		if op and op.stage >= OperationState.Stage.DEPLOY and op.stage < OperationState.Stage.DONE:
+			return UnitState.Pace.RUN
+		# The approach: a jog on the march, a run over the last APPROACH_RUN_M before the target (within rifle range of
+		# the defence; jogging that stretch left an assault exposed for a third longer than the CHARACTER-01 pace).
+		if op and op.stage == OperationState.Stage.APPROACH and _flat(u.position, op.target_pos) < APPROACH_RUN_M:
+			return UnitState.Pace.RUN
+		if op:
+			return UnitState.Pace.JOG
+	if sq.pace >= 0:
+		return sq.pace
+	if sq.garrison_base >= 0:
+		return UnitState.Pace.WALK
+	return UnitState.Pace.JOG
+
+
+const APPROACH_RUN_M := 500.0
+## VISUAL-03: the paces are opt-in (--paces) until COMBAT-01 settles movement speeds and tactics: without the flag every
+## soldier moves at `speed` (4.5 m/s) as before; the walk / brisk / jog / run clips are in the animation set either way.
+static var PACES := "--paces" in OS.get_cmdline_user_args()
+
+
+## VISUAL-03: ground speed of a soldier at its current pace (before grade and carried load); vehicles keep `speed`.
+func move_speed(u: UnitState) -> float:
+	if u.kind != UnitState.Kind.SOLDIER or not PACES:
+		return u.speed
+	return minf(UnitState.PACE_SPEED[pace_of(u)], u.speed)
+
+
 ## GAMEPLAY-04C: share of the walking speed a soldier keeps with what he carries (WeaponDef.move_speed_mult: the heavy machine
 ## gun and its belt). Both tiers.
 func carry_speed(u: UnitState) -> float:

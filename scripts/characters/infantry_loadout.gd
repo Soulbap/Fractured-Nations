@@ -6,7 +6,10 @@
 class_name InfantryLoadout
 extends Resource
 
-const DIR := "res://assets/characters/infantry/loadouts/"
+## VISUAL-03: the loadouts of the active asset root (InfantryCharacter.asset_root(): the staged new soldier with
+## --soldier-v03, else the shipped one).
+static func dir() -> String:
+	return InfantryCharacter.asset_root() + "loadouts/"
 
 @export var id := ""
 @export var display_name := ""
@@ -17,7 +20,7 @@ static var _cache := {}
 
 static func by_id(loadout_id: String) -> InfantryLoadout:
 	if not _cache.has(loadout_id):
-		var path := DIR + loadout_id + ".tres"
+		var path := dir() + loadout_id + ".tres"
 		_cache[loadout_id] = load(path) if ResourceLoader.exists(path) else null
 	return _cache[loadout_id]
 

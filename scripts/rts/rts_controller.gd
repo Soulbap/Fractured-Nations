@@ -305,7 +305,13 @@ func order_move(hit: Vector3) -> int:
 			return tn
 	var sqs := selected_squads()
 	_player_takes(sqs)
-	var n := sim.squads.order_move(sqs, hit) if not sqs.is_empty() else 0
+	# VISUAL-03 (with --paces): squads jog on ordinary orders; Ctrl+right-click = run, Alt+right-click = walk.
+	var pace := -1
+	if Input.is_key_pressed(KEY_CTRL):
+		pace = UnitState.Pace.RUN
+	elif Input.is_key_pressed(KEY_ALT):
+		pace = UnitState.Pace.WALK
+	var n := sim.squads.order_move(sqs, hit, pace) if not sqs.is_empty() else 0
 	var loose := loose_selected()
 	if not loose.is_empty():
 		var at := hit if sqs.is_empty() else hit + _beside_squads(sqs)

@@ -32,8 +32,13 @@ var yaw := 0.0
 var velocity := Vector3.ZERO
 var health := 100.0
 var max_health := 100.0
-## Ground speed in m/s used by the abstract tier; bodies use their own controller speed.
+## Top ground speed in m/s (a run). VISUAL-03: how fast a soldier actually moves is its pace (WorldSim.move_speed), the
+## same in both tiers; `speed` stays the ceiling (and what target leads assume).
 var speed := 4.5
+## VISUAL-03: locomotion paces and their speeds (m/s): patrol walk, brisk walk, jog (ordinary orders), run (assaults,
+## withdrawals, movement under fire). The animation set has a captured gait at each.
+enum Pace { WALK, BRISK, JOG, RUN }
+const PACE_SPEED: Array[float] = [1.3, 1.8, 3.3, 4.5]
 var order := Order.NONE
 var order_target := Vector3.ZERO
 var move_state := MoveState.IDLE

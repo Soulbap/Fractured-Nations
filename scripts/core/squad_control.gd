@@ -165,7 +165,7 @@ func _stop_for_bridge(sq: SquadState, b: RoadNetwork.Bridge) -> void:
 
 ## Moves squads to a point: each keeps its formation, facing the direction of travel;
 ## several squads stand side by side across that direction.
-func order_move(squad_ids: Array, target: Vector3) -> int:
+func order_move(squad_ids: Array, target: Vector3, pace := -1) -> int:
 	var sqs := _squads(squad_ids)
 	if sqs.is_empty() or not target.is_finite():
 		return 0
@@ -193,6 +193,7 @@ func order_move(squad_ids: Array, target: Vector3) -> int:
 		x += widths[i] + squad_gap
 		sq.order = SquadState.Order.MOVE
 		sq.order_target = centre
+		sq.pace = pace
 		sq.order_yaw = yaw
 		sq.follow_unit_id = -1
 		sq.follow_squad_id = -1

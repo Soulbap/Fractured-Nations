@@ -434,6 +434,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--campaign-test" in args:
 		_campaign_selftest = CampaignSelfTest.new(self)
 		_campaign_selftest.run.call_deferred(args)
+	elif "--visual03-test" in args:
+		_gameplay_selftest = Visual03SelfTest.new(self)
+		_gameplay_selftest.run.call_deferred(args)
 	elif "--visual02-test" in args:
 		_gameplay_selftest = Visual02SelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)
