@@ -23,7 +23,7 @@ Norwegian; code, comments and docs are English.
   (`../fractured-nations-*`) are only kept until the product owner approves removing them
   (status: [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md)). Do not develop there.
 - **Session workflow:** open this project → read this file and the roadmap ([docs/AI_ROADMAP.md](docs/AI_ROADMAP.md),
-  COMBAT-01 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
+  ASSET-INTEGRATION-01 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
   targeted tests + visual Godot validation → update the report / README → commit to `develop`.
 - Each milestone ends with a report in `docs/<MILESTONE>_REPORT.md` and an updated README.
 
@@ -244,6 +244,16 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   (`Viewmodel` + `InfantryCharacter`); new weapons follow `docs/CHARACTER_STANDARD.md` §3.1 (sight line z 0.172, `ATT_Muzzle`
   at the muzzle, glass `Lens`, `WeaponDef.ads_fov`). RTS contact markers (`ContactMarkers`) read only the selected soldiers'
   perception records. AI aim profile `c01` (`--aim=g05b` for the old one).
+- **Named weapons and vehicles (ASSET-INTEGRATION-01).** A weapon piece carries its hold (`InfantryEquipment.aim_eye` = sight
+  line x / height and eye relief, `support_grip`, `hold_shift`; table in `tools/asset_integration/make_weapon_data.py`, which also
+  writes the 16 `assets/combat/weapons/<id>.tres`, the development roles `assets/combat/roles/dev/dev_<id>.tres` - a subfolder
+  so the equipment screen never lists them - and the `<FAM>_w_<id>` loadouts). `InfantryGripIK` (after the aim / flinch
+  modifiers) straightens the head onto the bore, brings the weapon's sight line to the right eye and solves both arms onto the
+  weapon's grips for every weapon while aiming; never pose a weapon in SoldierBody. A secondary launcher is
+  `WeaponDef.held_piece`. Vehicles of the pack are `VehicleDefs.pack_ids()` (`articulated`, `tracked`, `drivable`; the economy's
+  `BaseSim.VEHICLES` and `all_ids()` stay truck / APC); `VehicleVisual` poses their GLB pivots from the sidecar's axes. The
+  Development Scenario's armoury (`DevArmoury`, rule `dev_armoury`, F10) gives roles through `CombatSim.give_role`. Tests:
+  `--asset-integration-test [--shots] [--only r_registry,w_weapons,f_fps,p_posture,v_switch,v_vehicles,v_drive,v_transport,s_persist]`.
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are

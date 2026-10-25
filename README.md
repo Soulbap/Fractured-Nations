@@ -10,7 +10,17 @@ stable branch, updated only with the product owner's approval), one canonical de
 branches are contained in `develop` and stay as history. See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest finished: **COMBAT-01** (combat visibility, gunplay, tactical AI and postures, on `develop`) — soldiers stand,
+Newest finished: **ASSET-INTEGRATION-01** (on `develop`) — the 16 WEAPON-ASSETS-01 weapons and 6 VEHICLE-ASSETS-01
+vehicles work in the existing systems: weapon definitions, development roles and loadouts; a hold modifier that makes every
+soldier look along the sight (the eye on the weapon's own sight line, head along the bore) and puts the hands on each
+weapon's grips (pistols at arm's length, launchers on the shoulder); first person with each weapon's sight line and
+see-through / magnified optics; vehicles with spinning and steering wheels, track wheels, turrets, guns, RWS, doors that
+open while a squad boards, rotors; driving, transport and saves through the existing vehicle code (the NH90 is a landed
+transport - no flight model). In the Development Scenario **F10** opens the armoury (weapons to the selected soldier,
+**[ / ]** in first person; vehicles at the camera focus; doors / turret / rotor / drive). New Game is unchanged. See
+[docs/ASSET-INTEGRATION-01_REPORT.md](docs/ASSET-INTEGRATION-01_REPORT.md).
+
+Before that: **COMBAT-01** (combat visibility, gunplay, tactical AI and postures, on `develop`) — soldiers stand,
 crouch (**C**) and go prone (**Z**) as one saved state that hits, sight, speed, aim, animation (new prone clips) and the AI
 all use; dense grass mildly delays the AI noticing a low soldier; rifles have a credible chance at 200-300 m and the
 marksman rifle a clear edge; an original sound set with distance layers and sound travel time, cracks and whizzes of rounds
@@ -634,8 +644,8 @@ reference photos and notes per vehicle: `assets/military/vehicles/_references/`.
   editable sources `assets/military/blender/vehicles/<id>.blend`.
 * Build: `blender -b --factory-startup --python tools/blender/vehicles/build_vehicles.py -- --export --save-blend [--only id,..] [--previews DIR --details --lods] [--qa]`.
 * Check in Godot: `tools/vehicle_assets/run_vehicle_lab.sh --validate | --shots` (screenshots in
-  `docs/vehicle_assets01/godot/`). Not yet used by gameplay (`VehicleDefs` still drives the
-  LOGISTICS-01 truck / APC).
+  `docs/vehicle_assets01/godot/`). In gameplay since ASSET-INTEGRATION-01 (`VehicleDefs.pack_ids()`, articulated
+  `VehicleVisual`; development armoury only - the economy still builds the LOGISTICS-01 truck / APC).
 
 ### Weapon pack (WEAPON-ASSETS-01)
 
