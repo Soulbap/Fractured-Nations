@@ -306,4 +306,10 @@ parcel edges at all — the shader now works around them; a generator-side soft 
 
 ## 18. Commits
 
-See git log on `develop` (VISUAL-02 commits).
+| Commit | Content |
+|---|---|
+| `4101d0b` | straight alpha in the texture writers; regenerated terrain and foliage textures |
+| `0b852ca` | ground shader (`GroundLook`), grass colour match, `--visual02-test` |
+| `b6e3337` | textured houses, barns, sheds, fences; building shader |
+| `f7e7aa5` | cover model v2, scatter v2, candidate world tooling, generator alpha fix |
+| `d4e1a69` | report, README, screenshots |
