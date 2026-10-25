@@ -60,6 +60,12 @@ var flank_max_detour := 2.3
 ## A flank must expose the maneuver team this much less than going straight in.
 var flank_gain := 0.2
 var reposition_cooldown_s := 25.0
+## COMBAT-01: most of a squad pinned with nobody firing back for this long is a hopeless position (local withdrawal).
+var pinned_hopeless_s := 8.0
+## COMBAT-01: an advance that loses this many soldiers while gaining less than stall_gain_m in stall_window_s has stalled.
+var stall_casualties := 2
+var stall_gain_m := 15.0
+var stall_window_s := 25.0
 var reposition_limit := 3
 ## Fire missions are refreshed for this long each time (s).
 var mission_s := 3.0
@@ -493,14 +499,31 @@ func _consider(sq: SquadState, a: Dictionary) -> void:
 	var threat: Vector3 = a.threat_pos
 	var eff: float = a.eff
 	var parts: Dictionary = a.parts
-	# WITHDRAW: the squad cannot take much more.
+	# WITHDRAW: the squad cannot take much more. COMBAT-01: first a short, local move out of the fire (45-100 m, out of the
+	# believed enemy's sight where there is such ground) - not a retreat across the map; a squad pinned down with nobody able
+	# to fire back for pinned_hopeless_s counts as hopeless too. Never against a hold the player ordered.
+	var pinned_n := int(a.pinned)
+	if pinned_n * 10 >= int(a.n) * 6 and int(a.engaged) == 0:
+		if float(_meta(sq, "pinned_since", INF)) == INF:
+			_set_meta(sq, "pinned_since", now)
+	else:
+		_set_meta(sq, "pinned_since", INF)
+	var hopeless_pin: bool = now - float(_meta(sq, "pinned_since", INF)) >= pinned_hopeless_s
 	var weak: bool = eff < withdraw_eff or (float(a.cas) >= 0.4 and float(a.supp) >= 0.4 and eff < 0.55) \
-			or (float(a.enemy_est) > int(a.n) * 2.2 and eff < 0.6 and int(a.engaged) > 0)
+			or (float(a.enemy_est) > int(a.n) * 2.2 and eff < 0.6 and int(a.engaged) > 0) or hopeless_pin
+	if weak and player_hold(sq):
+		rej.append("withdraw: holding where the player ordered (the player decides)")
+		weak = false
 	if weak:
-		var f := _fallback_point(sq, a)
+		var f := _fallback_point(sq, a, true)
+		var local := f.is_finite()
+		if not local:
+			f = _fallback_point(sq, a)
 		if f.is_finite():
-			cands.append({"t": SquadState.Tactic.WITHDRAW, "score": 0.8 + (withdraw_eff - eff) * 2.0, "target": f,
-				"why": "effectiveness %.2f (size %.2f, suppression %.2f, ammo %.2f): break contact" % [eff, parts.size, parts.suppression, parts.ammo]})
+			var cause := withdraw_cause(a, hopeless_pin)
+			cands.append({"t": SquadState.Tactic.WITHDRAW, "score": 0.8 + (withdraw_eff - eff) * 2.0 + (0.3 if hopeless_pin else 0.0), "target": f,
+				"why": "%s withdrawal %.0f m - %s (effectiveness %.2f: size %.2f, suppression %.2f, ammo %.2f)" % ["local" if local else "fighting",
+					_flat(a.center, f), cause, eff, parts.size, parts.suppression, parts.ammo]})
 		else:
 			rej.append("withdraw: no fallback position clear of known enemy")
 	# SUPPRESS: a reported but unseen enemy within reach.
@@ -593,6 +616,9 @@ func start(sq: SquadState, tactic: int, owner: int, target := Vector3.INF, conta
 	sq.tactic_since = now
 	_set_meta(sq, "approach_best", INF)
 	_set_meta(sq, "approach_best_at", now)
+	if plan.tactic == SquadState.Tactic.ASSAULT:
+		_set_meta(sq, "stall_at", -1.0)
+		_set_meta(sq, "stall_flanked", false)
 	if sq.tactic == SquadState.Tactic.DEFEND:
 		sq.defence_line = 0
 	sq.tactic_phase_since = now
@@ -2223,7 +2249,9 @@ func _run_assault(sq: SquadState, a: Dictionary, now: float) -> void:
 				return
 			if not support.is_empty():
 				_fire_on(support, target, _spread_for(sq), mission_s)
-			if now - sq.tactic_phase_since < (3.0 if not support.is_empty() else 0.0):
+			# COMBAT-01: support fire gets a moment to land - unless nobody sees or shoots at the squad (no reason to wait).
+			var quiet_now: bool = int(a.seen_n) == 0 and int(a.under_fire) == 0
+			if now - sq.tactic_phase_since < (3.0 if not support.is_empty() and not quiet_now else 0.0):
 				return
 			if _pinned_frac(assault) >= 0.7 and now - sq.tactic_phase_since < 30.0:
 				sq.tactic_rejected = "assault waits: %d%% of the assault element is pinned" % roundi(_pinned_frac(assault) * 100.0)
@@ -2232,8 +2260,13 @@ func _run_assault(sq: SquadState, a: Dictionary, now: float) -> void:
 			sq.tactic_phase_since = now
 			sq.tactic_leg = 0
 			sq.tactic_dest = Vector3.INF
+			_set_meta(sq, "stall_cas", sq.fallen.size())
+			_set_meta(sq, "stall_d", d)
+			_set_meta(sq, "stall_at", now)
 			sq.tactic_why = "%s; support is firing, the assault element advances" % sq.tactic_why.split("; support")[0]
 		PH_MOVE:
+			if _assault_stalled(sq, a, d, now):
+				return
 			var quiet_march: bool = int(a.seen_n) == 0 and int(a.under_fire) == 0
 			var step := (42.0 if sq.tactic_ext else 28.0) * (2.2 if quiet_march else 1.0)
 			if sq.teams.size() < 2:
@@ -2264,6 +2297,48 @@ func _run_assault(sq: SquadState, a: Dictionary, now: float) -> void:
 				_advance(sq, a, team, target, now, step)
 		PH_OCCUPY:
 			_occupy(sq, a, target, now)
+
+
+## COMBAT-01: an advance that keeps losing soldiers without gaining ground has stalled (attackers walking into free
+## defensive fire): the squad tries a flank once, else breaks the assault off (_fail: withdraw / hold / report back).
+func _assault_stalled(sq: SquadState, a: Dictionary, d: float, now: float) -> bool:
+	if float(_meta(sq, "stall_at", -1.0)) < 0.0:
+		_set_meta(sq, "stall_cas", sq.fallen.size())
+		_set_meta(sq, "stall_d", d)
+		_set_meta(sq, "stall_at", now)
+		return false
+	if d < float(_meta(sq, "stall_d", d)) - stall_gain_m or now - float(_meta(sq, "stall_at", now)) > stall_window_s:
+		_set_meta(sq, "stall_cas", sq.fallen.size())
+		_set_meta(sq, "stall_d", d)
+		_set_meta(sq, "stall_at", now)
+		return false
+	if sq.fallen.size() - int(_meta(sq, "stall_cas", sq.fallen.size())) < stall_casualties:
+		return false
+	var why := "assault stalled: %d lost in %.0f s for %.0f m gained" % [sq.fallen.size() - int(_meta(sq, "stall_cas", 0)), now - float(_meta(sq, "stall_at", now)),
+		maxf(float(_meta(sq, "stall_d", d)) - d, 0.0)]
+	_set_meta(sq, "stall_at", -1.0)
+	if not bool(_meta(sq, "stall_flanked", false)) and sq.teams.size() >= 2:
+		_set_meta(sq, "stall_flanked", true)
+		var owner := sq.tactic_owner
+		var res := start(sq, SquadState.Tactic.FLANK, owner, sq.tactic_target, sq.tactic_contact, why + "; flanking instead")
+		if res.ok:
+			sq.tactic_why = why + "; flanking instead"
+			return true
+	_fail(sq, a, why)
+	return true
+
+
+## COMBAT-01 support before movement: at least one soldier of the covering team is firing (or able to: not pinned, not
+## reloading) - else a moving team under fire waits a few seconds for it.
+func _cover_ready(sq: SquadState, team: int) -> bool:
+	if team < 0 or team >= sq.teams.size():
+		return true
+	var now := sim.state.time
+	for u: UnitState in _units(sq, team):
+		if not u.is_reloading() and u.suppression_at(now) < sim.brain.pinned_at \
+				and (u.ai_state == UnitState.AiState.ENGAGING or (u.fire_at.is_finite() and now < u.fire_until)):
+			return true
+	return _units(sq, team).is_empty()
 
 
 func _team_dist(sq: SquadState, team: int, target: Vector3) -> float:
@@ -2355,6 +2430,9 @@ func _advance(sq: SquadState, a: Dictionary, team: int, target: Vector3, now: fl
 		return
 	if _pinned_frac(units) >= pinned_go and now - sq.tactic_leg_since < _pinned_wait(sq):
 		sq.tactic_rejected = "advance waits: %d%% of the element is pinned" % roundi(_pinned_frac(units) * 100.0)
+		return
+	if team >= 0 and int(a.under_fire) > 0 and not _cover_ready(sq, 1 - team) and now - sq.tactic_leg_since < 6.0:
+		sq.tactic_rejected = "advance waits: the covering team is not firing yet"
 		return
 	var dest := _next_dest(centre, target - _dir_to(centre, target) * 14.0, step_m)
 	if not dest.is_finite():
@@ -2566,9 +2644,34 @@ func _run_regroup(sq: SquadState, a: Dictionary, now: float) -> void:
 
 # --- Fallback position --------------------------------------------------------------------------------------------------------
 
+## COMBAT-01: why a squad withdraws, in a word or two the HUD can show.
+func withdraw_cause(a: Dictionary, hopeless_pin := false) -> String:
+	if hopeless_pin:
+		return "pinned, no firing position"
+	if float(a.cas) >= 0.4:
+		return "heavy casualties"
+	if float(a.supp) >= 0.45:
+		return "heavy suppression"
+	if float(a.enemy_est) > int(a.n) * 2.2:
+		return "outnumbered"
+	if float(a.ammo) < 0.3:
+		return "low ammunition"
+	return "losing the firefight"
+
+
+## COMBAT-01: the squad holds where the player told it to (an ordinary HOLD of the player's faction, not one the tactics
+## gave themselves): its own tactics do not take it away from there.
+func player_hold(sq: SquadState) -> bool:
+	if sq.order != SquadState.Order.HOLD or bool(_meta(sq, "tactic_hold", false)) or sim.state.war == null:
+		return false
+	var f := sim.state.war.faction(sq.faction)
+	return f != null and f.player
+
+
 ## A place to withdraw to: away from the believed threat, on walkable ground, hidden from the
 ## threat if possible, clear of every contact the faction holds (and of the line there).
-func _fallback_point(sq: SquadState, a: Dictionary) -> Vector3:
+## COMBAT-01 local: 45-100 m and hidden from the threat, or INF (the caller then looks farther).
+func _fallback_point(sq: SquadState, a: Dictionary, local := false) -> Vector3:
 	var centre: Vector3 = a.center
 	var threat: Vector3 = a.threat_pos
 	var back := _dir_to(threat, centre) if threat.is_finite() else -_dir_from_yaw(sq.order_yaw)
@@ -2580,7 +2683,7 @@ func _fallback_point(sq: SquadState, a: Dictionary) -> Vector3:
 	var line := sim.combat.line
 	var scored: Array = []
 	for ang: float in [0.0, 25.0, -25.0, 50.0, -50.0, 80.0, -80.0]:
-		for dist: float in [110.0, 150.0, 190.0]:
+		for dist: float in ([45.0, 70.0, 100.0] if local else [110.0, 150.0, 190.0]):
 			var p := pos.nearest_valid(centre + back.rotated(Vector3.UP, deg_to_rad(ang)) * dist, 12.0)
 			if not p.is_finite():
 				continue
@@ -2592,6 +2695,8 @@ func _fallback_point(sq: SquadState, a: Dictionary) -> Vector3:
 			if bad:
 				continue
 			var hidden: bool = threat.is_finite() and not line.sight(threat + Vector3.UP * 1.5, p + Vector3.UP * 1.0).visible
+			if local and not hidden:
+				continue
 			scored.append({"p": p, "score": (2.5 if hidden else 0.0) - 0.01 * dist - absf(ang) * 0.012})
 	scored.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return x.score > y.score)
 	for s: Dictionary in scored.slice(0, 4):
@@ -2853,11 +2958,38 @@ func _owner_text(sq: SquadState) -> String:
 	return "nobody"
 
 
-## Short text for the squad list / HUD.
+## Short text for the squad list / HUD. COMBAT-01: with what holds it up or why it withdraws, and "pinned" / "taking
+## cover" when that is what the soldiers are doing.
 func short_text(sq: SquadState) -> String:
+	var tag := status_tag(sq)
 	if sq.tactic == SquadState.Tactic.NONE:
+		return tag
+	var s := "%s · %s" % [sq.tactic_name(), _phase_name(sq)]
+	return s + (" · " + tag if tag != "" else "")
+
+
+## COMBAT-01: one short reason for the player: why the squad withdraws, what it waits for, or what its soldiers do.
+func status_tag(sq: SquadState) -> String:
+	if sq.tactic == SquadState.Tactic.WITHDRAW:
+		for k in ["pinned, no firing position", "heavy casualties", "heavy suppression", "outnumbered", "low ammunition", "losing the firefight", "assault stalled"]:
+			if sq.tactic_why.contains(k):
+				return k
+	if sq.tactic != SquadState.Tactic.NONE and sq.tactic_rejected.contains("waits"):
+		return "waiting: " + sq.tactic_rejected.get_slice("waits: ", 1)
+	var a := assessment(sq)
+	if a.is_empty() or int(a.n) == 0:
 		return ""
-	return "%s · %s" % [sq.tactic_name(), _phase_name(sq)]
+	if int(a.pinned) * 2 >= int(a.n):
+		return "pinned"
+	var covering := 0
+	for u: UnitState in _units(sq):
+		if u.tactic == UnitState.Tactic.SEEK_COVER:
+			covering += 1
+	if covering * 2 >= int(a.n):
+		return "taking cover"
+	if int(a.engaged) > 0:
+		return "engaging"
+	return ""
 
 
 func summary() -> Dictionary:

@@ -90,6 +90,27 @@ writes it as `<id>_Mag_LOD*` children of the weapon. `InfantryCharacter._hang_ma
 machine guns) reloads with the same hand motion and nothing moves. The reload is shared by every rifle: the support
 hand closes round the magazine at `char_anim.MAG_GRIP` (weapon space).
 
+### 3.1 First-person view: muzzle, sight line, optics (COMBAT-01)
+
+First person shows the soldier's **own arms holding the weapon** (`scripts/combat/viewmodel.gd`): an
+`InfantryCharacter` of the loadout with only the jacket sleeves, gloves, hands and the `weapon*` slot pieces visible,
+posed by `Aim` (`Fire` and `Reload` layers on top). It is placed every frame from the **weapon's own frame**, not from
+fixed offsets, so a new weapon works as long as it follows the weapon-space rules above:
+
+| What | Taken from | Rule for a new weapon |
+|---|---|---|
+| Sight line | weapon root (the `weapon` slot piece) at **z = 0.172 m** (`Viewmodel.SIGHT_Y` = `char_anim.SIGHT_Z`), along +Y | the optic's aiming axis (red-dot tube / scope axis, iron-sight line) must lie at z = 0.172 m above the grip origin, on x = 0 |
+| Aiming | the sight line laid on the camera axis, `Viewmodel.EYE_RELIEF` = 0.24 m in front of the eye | the rear of the optic must sit at least ~0.10 m in front of that point (eye relief), or the camera ends up inside the eyepiece |
+| Hip | the same shouldered hold moved `HIP_OFFSET` (0.075 right, 0.12 down, 0.14 forward) and turned `HIP_TURN` (pitch 1°, yaw 4° in, roll −5°) | nothing per weapon (a very long or heavy weapon may later want its own offset) |
+| Muzzle flash, tracer start | the `ATT_Muzzle` node (barrel tip, bore axis z = 0.074); the player's own flash is drawn 0.12 m in front of it, **unlit** | `ATT_Muzzle` at the real muzzle end, beyond every other part of the weapon (a suppressor piece moves the flash: give it its own muzzle node at its front) |
+| Optic glass | material **`Lens`** | the glass must use `Lens`: first person replaces it - dark, reflecting glass at the hip, nearly clear only while aiming (`Viewmodel._lens`); `Lens_Tinted` stays opaque |
+| Optic housing | material `Metal_Black` on `weapon_optic` pieces | first person cuts the faces across the bore of a **red-dot tube** (radius 0.0195 m at 0.058 above the mount, `_sight_housing`); a scope's tube must leave its own see-through bore (no face across the axis) |
+| Magnification | `WeaponDef.ads_fov` (deg) | 42 for a red dot / iron sight; a magnified optic its own value (the DMR scope 15) |
+
+Do not place geometry in front of `ATT_Muzzle` along the bore (the flash would form inside it), and keep the optic's
+objective lens behind the muzzle end. Check a new weapon with `--combat01-test --shots --only f_gunplay`
+(`docs/combat01/f_hip.png`, `f_ads_rifle.png`, `f_own_flash.png`).
+
 ## 4. Equipment pieces
 
 A piece is one glTF file with up to three meshes named `<id>_LOD0`, `<id>_LOD1`, `<id>_LOD2`,
@@ -175,6 +196,13 @@ cheek weld when aiming). Gaits: `animation_meta.json` → `gait`.
 | `Aim` | 120 | yes | upper body: rifle shouldered, eye on the sight line (`char_anim.SIGHT_Z`) |
 | `Fire` | 6 | no | upper body: one shot's kick from the aim pose |
 | `Reload` | 75 | no | upper body: support hand draws the magazine (`ATT_Magazine`), stows it at the belt, inserts the new one |
+| `Prone_Idle`, `Prone_Aim` | 60 | yes | COMBAT-01, full body, procedural (`char_prone.py`): flat on the elbows, rifle at low ready / cheek weld |
+| `Prone_Fire` | 6 | no | the kick from `Prone_Aim` |
+| `ProneCrawl_F` | 40 | yes | low crawl, 0.81 m/s (`gait.ProneCrawl`) |
+| `Stand_To_Prone`, `Prone_To_Stand` | 30 / 33 | no | getting down / up (kneel, hands down, flat), seeked by the game to the record's posture progress |
+
+Prone geometry (hips above the origin, head ~0.65 m in front at ~0.40 m, feet ~0.86 m behind) is measured on the clips
+(`build_log.json` → `anim_check.prone.layout`) and must agree with `scripts/combat/posture.gd` (hit volumes, eye).
 
 * Naming: `<State>_<Dir>`, Dir ∈ F, B, L, R. Exported as glTF animations with the action
   names; Godot keeps the names and loops every clip except `Fire` and `Reload`.
