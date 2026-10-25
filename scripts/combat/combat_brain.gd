@@ -76,9 +76,11 @@ var engage_range := 350.0
 var reaction_s := 0.45
 var reaction_per_100m_s := 0.15
 ## Aim error (degrees, one standard deviation) on top of the weapon's spread: base,
-## growth with distance, and a penalty while the shooter walks.
-var aim_error_base_deg := 0.25
-var aim_error_per_100m_deg := 0.20
+## growth with distance, and a penalty while the shooter walks. GAMEPLAY-05B: the growth with distance was 0.20 deg per 100 m,
+## which made the miss in metres grow with the square of the distance (one sigma 4 m at 300 m: rifles hit nothing beyond 200 m);
+## now 0.05 (a smaller, farther target is still harder to hold). Values from AIM_PROFILES.
+var aim_error_base_deg := 0.26
+var aim_error_per_100m_deg := 0.05
 var aim_error_moving_deg := 1.2
 ## GAMEPLAY-04C aim settling: on a new target (or after moving) the aim error is this many times its settled value and falls
 ## to it over the weapon's aim_time_s (WeaponDef), scaled by the soldier's proficiency. aim_time_default_s for weapons without one.
@@ -147,7 +149,7 @@ var suppression_per_hit := 0.30
 ## suppression_aim_mult x the value, acquisition slows by suppression_acquire_s x it.
 var suppressed_at := 0.35
 var pinned_at := 0.6
-var suppression_aim_mult := 2.2
+var suppression_aim_mult := 4.0
 var suppression_acquire_s := 0.9
 ## Fire missions at a reported position: burst size, pause between bursts (s) and the
 ## fraction of a full load below which they slow down / stop (a magazine is always kept).
@@ -228,6 +230,38 @@ const MAX_EVENTS := 200
 
 func _init(p_sim: WorldSim) -> void:
 	sim = p_sim
+	_apply_aim_args(OS.get_cmdline_user_args())
+
+
+## GAMEPLAY-05B aim profiles (the distance growth of the aim error and the suppression penalty). "g05b" is the game's; "g04" is
+## the GAMEPLAY-04 model, kept for before / after measurements (--aim=g04). --aim-base= / --aim-per100= / --aim-supp= override
+## single values (balance experiments only).
+## "weapon_aim": WeaponDef id -> aim factor replacing WeaponDef.aim_mult (with the flatter distance growth the machine guns' bursts
+## became precise at 100 m - 49 % - so they hold a wider aim; they stay suppression weapons).
+const AIM_PROFILES := {
+	"g04": {"base": 0.25, "per100": 0.20, "supp": 2.2, "weapon_aim": {}},
+	"g05b": {"base": 0.26, "per100": 0.05, "supp": 4.0, "weapon_aim": {&"lmg": 1.3, &"gpmg": 1.3}},
+}
+var weapon_aim := {}
+var aim_profile := "g05b"
+
+
+func _apply_aim_args(args: PackedStringArray) -> void:
+	for a in args:
+		if a.begins_with("--aim=") and AIM_PROFILES.has(a.trim_prefix("--aim=")):
+			aim_profile = a.trim_prefix("--aim=")
+	var pr: Dictionary = AIM_PROFILES[aim_profile]
+	aim_error_base_deg = pr.base
+	aim_error_per_100m_deg = pr.per100
+	suppression_aim_mult = pr.supp
+	weapon_aim = pr.weapon_aim
+	for a in args:
+		if a.begins_with("--aim-base="):
+			aim_error_base_deg = float(a.trim_prefix("--aim-base="))
+		elif a.begins_with("--aim-per100="):
+			aim_error_per_100m_deg = float(a.trim_prefix("--aim-per100="))
+		elif a.begins_with("--aim-supp="):
+			suppression_aim_mult = float(a.trim_prefix("--aim-supp="))
 
 
 ## Hearing, hits and deaths feed the soldiers' awareness; membership changes rebuild the
@@ -1474,7 +1508,7 @@ func aim_settle_mult(u: UnitState, wdef: WeaponDef) -> float:
 	var t_aim := (wdef.aim_time_s if wdef and wdef.aim_time_s > 0.0 else aim_time_default_s) * lerpf(1.4, 0.6, clampf(u.proficiency, 0.0, 1.0))
 	var since := maxf(u.aim_since, u.moved_at)
 	var k := clampf((sim.state.time - since) / maxf(t_aim, 0.05), 0.0, 1.0)
-	return lerpf(aim_first_mult, aim_settled_mult, k) * (wdef.aim_mult if wdef else 1.0)
+	return lerpf(aim_first_mult, aim_settled_mult, k) * (float(weapon_aim.get(wdef.id, wdef.aim_mult)) if wdef else 1.0)
 
 
 ## GAMEPLAY-04C: aim error of a soldier against a trained one (proficiency 0.5 -> 1.0; a recruit 0 -> 1.35, a veteran 1 -> 0.65).

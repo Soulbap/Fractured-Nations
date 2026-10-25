@@ -758,7 +758,11 @@ func _c_arena() -> Dictionary:
 		if sim.combat.weapon(c[1]) == null or (not pick.is_empty() and not pick.has(c[0])):
 			continue
 		var rows := []
-		for s in ARENA_SEEDS:
+		var seeds: Array = ARENA_SEEDS
+		for a in OS.get_cmdline_user_args():
+			if a.begins_with("--arena-seeds="):
+				seeds = Array(a.trim_prefix("--arena-seeds=").split(",")).map(func(x: String) -> int: return int(x))
+		for s in seeds:
 			sim.state.world_seed = int(s)
 			rows.append(await _arena_run(cs, c, target_at, dir, side))
 		out.cases[c[0]] = _arena_sum(rows)
