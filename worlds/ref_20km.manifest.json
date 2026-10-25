@@ -1,10 +1,10 @@
 {
  "manifest_version": 1,
  "world_id": "ref_20km",
- "created_utc": "2026-10-23T11:42:36Z",
+ "created_utc": "2026-10-25T11:38:23Z",
  "created_from": "C:/Users/Hafnor/Desktop/Game Dev/fractured-nations",
- "repository_commit": "b70c836c6fa3d4bd1e308b743493e472e4d6febc",
- "generator_last_change": "ba641417edf063fe9eaa6f8d40a21dc0b3205bab chore(world): ref_20km checksum manifest, manifest tool, design document",
+ "repository_commit": "d00ebb93d958e7c5034af0a518d1fe82a8686b7e",
+ "generator_last_change": "f7e7aa54adf30c895aa78d983a190b4ce660decc VISUAL-02: cover model v2 and the candidate world tooling",
  "dimensions_m": [
   20000.0,
   20000.0
@@ -18,19 +18,19 @@
   "base_height": 150.0,
   "source_directory": "res://worlds/ref_20km/source"
  },
- "provenance": "NAV-INF-01: terrain smoothed beside the paved roads and raised to 3 cm under the road surface (tools/terrain_ref/flush_roads.gd)",
+ "provenance": "VISUAL-02: candidate cover adopted (cover_v2 vegetation, colour and ground maps; stand.png; new vegetation chunks; settlement overrides rebuilt). Relief, roads, scene unchanged.",
  "roles": {
   "generated": {
    "files": 520,
-   "bytes": 1121148911
+   "bytes": 935712691
   },
   "source": {
-   "files": 10,
-   "bytes": 1297462518
+   "files": 11,
+   "bytes": 1301025584
   },
   "editor_metadata": {
-   "files": 5,
-   "bytes": 4802
+   "files": 6,
+   "bytes": 5744
   },
   "analysis": {
    "files": 2,
@@ -38,7 +38,7 @@
   },
   "preview": {
    "files": 2,
-   "bytes": 4844737
+   "bytes": 3748184
   },
   "config": {
    "files": 1,
@@ -46,8 +46,8 @@
   }
  },
  "totals": {
-  "files": 540,
-  "bytes": 2423873621
+  "files": 542,
+  "bytes": 2240904856
  },
  "files": [
   {
@@ -59,13 +59,13 @@
   {
    "path": "worlds/ref_20km/source/color.rgba8",
    "size": 419430400,
-   "sha256": "18e3fd47a13a647d9e308b78ae058d34693b041238e00152ba7b35a99ef49871",
+   "sha256": "64f0ecac56e9cf93bab2b2885b25e1363730e7f1e659a73a509b1e1430f82a5c",
    "role": "source"
   },
   {
    "path": "worlds/ref_20km/source/control.r32",
    "size": 419430400,
-   "sha256": "3ccdda85c49d68e03c52a33aeb3f7f810a18dfdebbf558461fd0d58e2232ccb9",
+   "sha256": "191b9535fc3a0053da45db6d27b3f27ef4b9fd8edbaaef6fb35823d8da249366",
    "role": "source"
   },
   {
@@ -82,8 +82,8 @@
   },
   {
    "path": "worlds/ref_20km/source/info.png",
-   "size": 597786,
-   "sha256": "b3eb718cda89ca3a6844589f0ff594b34a777224e4d56454b5e890f3de751359",
+   "size": 539320,
+   "sha256": "04e94078c36eb4cf5f38e20dc406691702160f30933e897ef84cd351aefc3de1",
    "role": "source"
   },
   {
@@ -130,8 +130,8 @@
   },
   {
    "path": "worlds/ref_20km/source/preview_macro.png",
-   "size": 4636672,
-   "sha256": "af13bd0c3ca58900d5558ec50b96e76cb3f812a5083257d3b4e4cabc4b6be82e",
+   "size": 3540119,
+   "sha256": "563fb96ba04e59efeecd5bd0a5ce451873615f79c84f20771223bec5c07d98b5",
    "role": "preview"
   },
   {
@@ -153,9 +153,21 @@
    "role": "source"
   },
   {
+   "path": "worlds/ref_20km/source/stand.png",
+   "size": 2516841,
+   "sha256": "2a86727862160be69fc52a9d36507c09d57ecdb2a258b1f6d896f82963c6fe40",
+   "role": "source"
+  },
+  {
+   "path": "worlds/ref_20km/source/stand.png.import",
+   "size": 942,
+   "sha256": "d86449b419012507a79e6a5d35765a725a5a09287e38f35e0c7a9ff0eaed56ca",
+   "role": "editor_metadata"
+  },
+  {
    "path": "worlds/ref_20km/source/vegetation.png",
-   "size": 4020014,
-   "sha256": "4a62d139749914566fc3fcd661ac358541c452f1b2778b8efc945ac4951a038a",
+   "size": 5124705,
+   "sha256": "d02c443bcea4b62906578c12ca5f5b0efc908a3993e68e32a2e5028d415ecdcc",
    "role": "source"
   },
   {
@@ -172,602 +184,602 @@
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01-01.res",
-   "size": 5637233,
-   "sha256": "cd93a787a767acf399a15d24ace55896b724bdc695e2ae37af8eae72c5cd792c",
+   "size": 4796168,
+   "sha256": "546bef20a71155822e58a818cbe3d6f792bbc3e32220b3a79c868b58a09f9b31",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01-02.res",
-   "size": 6025198,
-   "sha256": "1c9fd892c22453d8a8551b22b262abd06363b8c55c21860bc65ac5edff5d649d",
+   "size": 5007349,
+   "sha256": "fb10ba2dd71d3b2dc21715ea58eb486a73aa926831411a68682b625004d98062",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01-03.res",
-   "size": 6559831,
-   "sha256": "3ab6840efba0083cf739e2c92737849a049d65ec74f54144d624c3d459b8cf47",
+   "size": 4842103,
+   "sha256": "6064f7f9de42fbc35662bc519da84ae8ff4628360fde77bcb5d5c47b7f963947",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01-04.res",
-   "size": 6045938,
-   "sha256": "e4b3d5fc0257a8fc11f7b76cb4eb30e1e973f22472a9b26cf10f0c9498850dba",
+   "size": 4879807,
+   "sha256": "4bbbf5224e3a533bf74d60227c329c0142a405d0583d07e1127546da012e37ae",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01-05.res",
-   "size": 6138851,
-   "sha256": "00c3b90bf3f8011fe9e1caa0e6f51220c47e1aaf4b1a4523b3700a026d3c36e8",
+   "size": 5076653,
+   "sha256": "1e74be2ec856a30e08d6326aa1cf5bbcae9d2bd378aa94a2b9a6d36ea3e1fa2b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01_00.res",
-   "size": 6565831,
-   "sha256": "40561888d5ceb28aa573dc947e0736a3e816f58539308e7bdfafd986ae78b61c",
+   "size": 4496819,
+   "sha256": "5bf3a6e0cec88d0855342e51bdab5f42af2f5a45fcd0a8702c3dbf48b1e338ca",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01_01.res",
-   "size": 4694446,
-   "sha256": "eb49fc2df93bf0343019f28d6fb1f331d976902f4d73c0875cc0656f992e7d2e",
+   "size": 4329458,
+   "sha256": "2c1cfc87861465d0345d19882f2be824657037bd96847c8ca44cb082693a84f6",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01_02.res",
-   "size": 4135150,
-   "sha256": "2931e8eed72cd865f33e3651a3ed1dc96ab994689537b6df2f28f301c43b99c7",
+   "size": 4119433,
+   "sha256": "e0f79b491086b1110f61367abb5d4a315aea16f443c337cdc931d60802b0d081",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01_03.res",
-   "size": 5139412,
-   "sha256": "34b828dff2e040efeea0b11953573cfeca58a9c39a2984d8cfccc07000471925",
+   "size": 4419677,
+   "sha256": "b5093b5b2279b5775c458f12f7fddafd87b88b02be4f9678e43b87d34ccaafa3",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-01_04.res",
-   "size": 6502669,
-   "sha256": "18dfe4fa8c867b5fd383b9a2278739a36ce332919abd40fde27214f7abfdcf17",
+   "size": 4793866,
+   "sha256": "54bd9221bff732ebb3099ab7c896ef498ccc642215f0c9054c67a5aae0ea62ec",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02-01.res",
-   "size": 6547732,
-   "sha256": "334c82a5bfde8ec19c9c2b9907f3bbec62fff758641d13811f82822a7383e7c8",
+   "size": 4419029,
+   "sha256": "24a31c7e5cfd483e5ef6c1c7cc5023e8bd7e887bf937e4cebd8f58128b9e1cfe",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02-02.res",
-   "size": 6782663,
-   "sha256": "d3e780150a0dd47b6dd0ce7aaaa6a6c87c85e97aaeb9b28d9a9e88d12025ca53",
+   "size": 4263259,
+   "sha256": "d74854ca5828401cb7b3e52ed720656a85fd271f0e604130bcf4f5df84234b37",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02-03.res",
-   "size": 6466309,
-   "sha256": "f4cc145f9b60f6fdaf4deed4621d3927f9f31cb18a1c491d6a19f67f1dbb96b4",
+   "size": 4976081,
+   "sha256": "af100c9e7bd7ab7d4725801c54b06f7df0383ded43fdb7f5577f0694d73be1c4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02-04.res",
-   "size": 6004639,
-   "sha256": "15be4cc407c0afda778a333cef93e0861376fed67eb44f308a6897592d340400",
+   "size": 4513772,
+   "sha256": "768d1bc7f0604189a67eabfd40a8af2129632ee913ceee7c6f35a8929b5af875",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02-05.res",
-   "size": 6256132,
-   "sha256": "db601f6e33a7b7a65e230e2095a27206dedd39a320556d4bdb596dc806849e91",
+   "size": 4856779,
+   "sha256": "2587c940460d46f509b22eca7cadcad40022a68efef885c85323c70daa3a0cb8",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02_00.res",
-   "size": 6401573,
-   "sha256": "1d1e243335045d7b8c95b024faa914664a99fc140447663b0a07ad1a983fd359",
+   "size": 4367439,
+   "sha256": "7cec334d094709e57155024eb908ba7f78ade45438dd892c93bf70bba6d82579",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02_01.res",
-   "size": 6136808,
-   "sha256": "2745f547e3794c6f7876425ec4ef8b2715569a05ad0d496f33d8d61c4ad0e977",
+   "size": 4630900,
+   "sha256": "4b3a5214d542f4b8b4e2b167f663023460d8ecba4eb272925d01176707910c51",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02_02.res",
-   "size": 4998809,
-   "sha256": "f7fe551fd6443c8ab38481d14a6d57b0d3899755801abf38e3d9c79e8b55b36c",
+   "size": 4315433,
+   "sha256": "e1faecba2e6c23a41fbc2ba0fb7f852d9c083aa10c7e83b5afa1dcafd83fe3e6",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02_03.res",
-   "size": 5702492,
-   "sha256": "0873f60c6b8afaae74eea935ff07a0ddafd0e2347106980dc9d8a88a62a103bb",
+   "size": 4566529,
+   "sha256": "c1ed0365d890facdbe72ed478766d66a2586bf4371666c7c32c1ef632619e80c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-02_04.res",
-   "size": 6901130,
-   "sha256": "13a33095fb2dc1b7f332016928b2283093dd94165d9c8be02bffa24c524b6a7a",
+   "size": 4220357,
+   "sha256": "9a37f9a853e9e6b2da895e3e249186bc0384cc476ae0f548ddaba13f4527f8f6",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-03-01.res",
-   "size": 6360293,
-   "sha256": "a1e631e74464a90e16fafed3e9ec4f969201308b26840dac906dedb3ad6f304a",
+   "size": 4424078,
+   "sha256": "73564c0cd46b661d608424dae26697a8db831d3315d4ae273688bc79a9837297",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-03-02.res",
-   "size": 6713530,
-   "sha256": "c3be50f6197eebcb3f5f8c33cf17f73b4905f9b20b756b9cde70a97a4f80ad3a",
+   "size": 4518761,
+   "sha256": "bc409a5ed1a42f10a0ad1b89dc575512c5aeaacb693b5b8a89bff43b8777665e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-03-03.res",
-   "size": 7514554,
-   "sha256": "0730cd46527dae2b2c04596819b66e8d3294431e5846a91b53115febb1b403b4",
+   "size": 5856934,
+   "sha256": "49e54565c047b8eca0af7e42729418879b366b37cd3fe880083ead2376551dc2",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-03-04.res",
-   "size": 6484724,
-   "sha256": "1f7562b94697ad52b38e73a5b36c852bd25597269f295c961f87f72c714ac8f4",
+   "size": 4977827,
+   "sha256": "da829e194a3c28e88e76c1f86a79b7ebecf9261fb628fd699c1a41a95d65db97",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-03-05.res",
-   "size": 6433268,
-   "sha256": "4968c9d55f249ce5e835198af90971aecfb40c17587e9a0ce1f76f0d41445163",
+   "size": 4710071,
+   "sha256": "fc237245be0a56611d1b0bf8312e39c236285c360dcc9ac21759b12de3d580a4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-03_00.res",
-   "size": 6321175,
-   "sha256": "44ecde198603fd41259fd850846c16d3ed8d57c3a4f2f5caa7eb7208c673e3f1",
+   "size": 4593125,
+   "sha256": "3468f08b9147009bfaaa4d1e61220cf8f5c301ac382d294f4899b01936fb9234",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-03_01.res",
-   "size": 6285253,
-   "sha256": "f6dc5a261ba4f454cdf10c967b46d619bd7da87f50e738e92a52d57a32197c7b",
+   "size": 4479582,
+   "sha256": "c193067c1e6ca44598240f8390454dcc8075b7160c0d6c60eab4c3536939ef26",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-03_02.res",
-   "size": 6636956,
-   "sha256": "fc5bb806fcb7ecb51c62f5670193f0a56c7a22ec781981d3349b48c05f665ac1",
+   "size": 4509413,
+   "sha256": "345bcf3a4b76d3070b17816859643cdc5b2d481b6a74a31c4ce34262a16a9f4b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-03_03.res",
-   "size": 6554075,
-   "sha256": "179cff82b2ca0c4f85dc1b72bb70db613d5072ce0df2a578af5b5ee5046f13bd",
+   "size": 4467721,
+   "sha256": "d0fdcf5fd5f3559f316e838c2047b15ca66b2f023da8d75b0df4158ac6d0856e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-03_04.res",
-   "size": 7003291,
-   "sha256": "86f84b15b2c417788ae8b3677d764e15c77a47d4c91fb9773d1b7014b12adc22",
+   "size": 4282759,
+   "sha256": "719d9e6a88a494f9aafd4cd3278025101debd95cf773dd77b6f33f4b13ef3437",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-04-01.res",
-   "size": 6952459,
-   "sha256": "7af441d36fcb1fbef17a75e33ad1fe2d0a71fa9fb25389931b93eed308c43963",
+   "size": 5708788,
+   "sha256": "0238f093b26ca914ec4b1cc9d5205f48d8f644d0e82280d04b9ce94ea3efadb8",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-04-02.res",
-   "size": 6341314,
-   "sha256": "fe59431255926bd6dd365f2e6b53b9b9af5b0c22f55ca350dcc845ebbd349027",
+   "size": 4682106,
+   "sha256": "babae8e9fe765e7818363f784061fac390b4b46a05b786572474e8ab82c28d5b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-04-03.res",
-   "size": 6585807,
-   "sha256": "e389061a1075d54bb10bf387a4edb6686e4f706d2628f9f35afc553ed1e8d136",
+   "size": 5164410,
+   "sha256": "e883cbf97dab7eccb2421df4ce953c1844eb29ac712aa8515f8f3338cc016c9e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-04-04.res",
-   "size": 6410888,
-   "sha256": "7cc62cd6393f2c2c532248671dc9be7340a5d3d93b8f28c32a845ece5162df46",
+   "size": 4572893,
+   "sha256": "4b012a1d623cdde3455db7a26f068e4a019fcb9bbf1015bcaed586596d3bbb1f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-04-05.res",
-   "size": 7091175,
-   "sha256": "e56e1b1b9795b0d49921b239aa15be4a156cbe5478fe7e35b53ad09134c06038",
+   "size": 4229656,
+   "sha256": "5ca6fb7fc139a7d6bafcd8550e8aea5debc66625d1423d9707f5c3be9c97afad",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-04_00.res",
-   "size": 6400841,
-   "sha256": "60c12d5f578dbeb3292ea9c4d57c33c9bd8fde243056106856508262bda96f63",
+   "size": 4655532,
+   "sha256": "eb27d6928d07daeae56d290dd921eb73d862d12e22af1f8e5cebab99ef33a705",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-04_01.res",
-   "size": 7139897,
-   "sha256": "90269d4f5d0035de47fcb3573acd3d54835a438c53828a0d33a47d17d6115dce",
+   "size": 5357169,
+   "sha256": "435a0f1b22b234271dddda1b23a8d2e236dc74db5132a053fdaf51d8d2bc52bc",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-04_02.res",
-   "size": 6337173,
-   "sha256": "6cc7009613775d9de452f1df7067f8bf515f24744de880e70e4c96943c26f19b",
+   "size": 4847862,
+   "sha256": "42bcb026a0f653b522d7ffa6a49d56c66c0cf22625518bbafe3fc2a2796dbba3",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-04_03.res",
-   "size": 5582987,
-   "sha256": "46c5915720f1bc84cd1d4cd92351b77aaf406cfa25296af133cc208685ccc4ca",
+   "size": 4444786,
+   "sha256": "5686f49847c5e81d05ac0313b6b351db1a60c0ef1210a5b7c77319a909bcca54",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-04_04.res",
-   "size": 6904002,
-   "sha256": "df5d64e076ffb746f0a1cd6049161732716a6b29359111b104a5dfb7e1dc922b",
+   "size": 4404515,
+   "sha256": "f45167751364a31a694a8904f1cf134e3ade5cf2ff3376de6df6f5ae10b22731",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-05-01.res",
-   "size": 7187668,
-   "sha256": "6003a88f10fa0a2c3d86a61844ca71b8baf25a9974780db796b36b5415f77bfb",
+   "size": 5867806,
+   "sha256": "d0cd7b2d8714ab3e41e0e4852881d95639bf43c2cbf1345d4c2fa895e2e3f67f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-05-02.res",
-   "size": 6421096,
-   "sha256": "8be636f35d7858eea2ffb8750d1ffd112fdb5ab32b6f72eecaef33550037b036",
+   "size": 4392576,
+   "sha256": "cd56fd392ad38137a24b7765654871faa698b00fd5d3068dce6538b70c63c42c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-05-03.res",
-   "size": 6437386,
-   "sha256": "40f6bea943e3969133d774535f785c40335a85be04c0a1a6ccefacfa139b18b7",
+   "size": 4318946,
+   "sha256": "d2977a07d11a180a3db9aca2cbdff7a5cb7596f746dc94d1678bc73802eab2e8",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-05-04.res",
-   "size": 6885037,
-   "sha256": "7024b1ef176101f16a833381188833bd8cef5b81a10669d8f3bfd526f7d5c965",
+   "size": 4141493,
+   "sha256": "3db23e66e62c93251da1a18f77733d77cde881392091d71c13e22ab24101e466",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-05-05.res",
-   "size": 6989564,
-   "sha256": "58ceacbfc6efdbe8877c875b93a4906b11b6afb2cf6909dd604ac95398a1e34e",
+   "size": 4138174,
+   "sha256": "57df774f05ef33a3cd5b4e11e61c86c2d6119e2fb875baf5e7e1666bcf759bd8",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-05_00.res",
-   "size": 7134758,
-   "sha256": "f6ddbca69074d029db39ad1643014ef283cf447d4507a9f64a3718a2f2857c72",
+   "size": 4521238,
+   "sha256": "ecb03f00edb586143b06ba97ddb44996335401d6f09382803ee44124551cdfb8",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-05_01.res",
-   "size": 7014378,
-   "sha256": "f01c0d98b72e64e267d4a85ec2563749cb5c561d95af5192cb47b8168f17de74",
+   "size": 4188378,
+   "sha256": "9fe95257a15a1a054d18db9e6e329f64f9a55acf7f3581ea87b402b81c0f7cae",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-05_02.res",
-   "size": 6875729,
-   "sha256": "f9d23c1195989c20d3f6af6309c4ba889e04e6faa296b6c9c40edb44001848f5",
+   "size": 4449088,
+   "sha256": "f5ed08d19637239911750c7e4685d242afb66e09248e6ff3c901cf4875e3fbeb",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-05_03.res",
-   "size": 7009028,
-   "sha256": "6232a400dcb13fc08d412d5f2ad022d2e29e18120be7c4a117385f432ca7ddbe",
+   "size": 4340601,
+   "sha256": "90da08d753cc536cc0b166e005976109faac02a5f1537ec95823d712fb73537e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d-05_04.res",
-   "size": 6893776,
-   "sha256": "6e1738b14d2725c6cd8eb6368cf4e10f81ab7c029268cdc34af402a70a9c4a9f",
+   "size": 4208535,
+   "sha256": "b73cd97e3c6906478f78ea39d4f88f4db8ee2a3fdc76fc76acb1a6ebe383e39a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00-01.res",
-   "size": 6449858,
-   "sha256": "e32e43014c14109895d1df335cb50351c2d0d01e674183414c7d8c03c5ec9783",
+   "size": 4969340,
+   "sha256": "0d95ea8929e5f36670e2be6a20b717045a86bbc18c68bf7527b90a645e5d1f0d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00-02.res",
-   "size": 6411137,
-   "sha256": "adb9674ff31c6b7c128c960909a8cd043e15c73b41668b0303d1b5fb29899411",
+   "size": 4894818,
+   "sha256": "791e392dfddeb9a554c094dbec6503706ef605efeabfbcaa769e7ec86e656cff",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00-03.res",
-   "size": 5595683,
-   "sha256": "cc152f57f3008c6dfce4c6c11914c9c74eb3ae6c48601f6e931da0292671d780",
+   "size": 5027058,
+   "sha256": "2a17edf23d74ff51f36603c504ee96a49d0bc2989de9b76ce148601145be3a8b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00-04.res",
-   "size": 6195359,
-   "sha256": "64c568df6d7aa643bdea68775aa6540eda1c66c3d22ad2161636cbfdd2d4d8e6",
+   "size": 4916663,
+   "sha256": "fe687ea002b8f838c90942badd1db0813c44b42db5c82e41c6d0ea4c7f3ec2f2",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00-05.res",
-   "size": 6846209,
-   "sha256": "f043b004e2d772d3da4302e079958aff1934a211de1de4a4ffcc86e58e74ed88",
+   "size": 5284492,
+   "sha256": "f3a0e1a4fa0b898ebec8c72423cd8df55b2aff7ae9ed153df42d42a68b0e12d8",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00_00.res",
-   "size": 5972786,
-   "sha256": "e9cda82def09a341f1a40749d8c8b96fae3d1722d18a1b8ef44a6c8f39c1008c",
+   "size": 4874036,
+   "sha256": "58b381c15f17d51d55f7acc6fdbb1d78452fd923e54e35641d4c816f6dcf2431",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00_01.res",
-   "size": 6180459,
-   "sha256": "70187fa1fea1a6a7a131979d795b1837e68ff45660c9bef599fb9b126f8ce66d",
+   "size": 4653863,
+   "sha256": "a177738a2cba9d86e704a17a879447faeb83ffa078aa3ad217494b1cee07ef9a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00_02.res",
-   "size": 5705909,
-   "sha256": "d93c02b078228915ccff2c04c92dd3501e29321d617a90888758039a2d78c744",
+   "size": 4733812,
+   "sha256": "61d32d21aaf63fec40e6897924e32998127c2c64b9eb483e90fbe6b1e4528372",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00_03.res",
-   "size": 5809499,
-   "sha256": "ee595be4b9a0f6f9d3f0f6f744622ce78a5ff6cb3c0e4dd03c82eb88f340625e",
+   "size": 4953024,
+   "sha256": "441556bc78c06718091a265531f5ba0ea8a7bc266f1c2d8e8c86e21917f15885",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_00_04.res",
-   "size": 6459406,
-   "sha256": "73d421417b550fdcc71fc034cfdf7592c8180efd89d881f32c1018dbc67c5974",
+   "size": 4771543,
+   "sha256": "f2f1a7f4da92024b110eaae54ab11a1550921199e97a63208e7a2436221160ed",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_01-01.res",
-   "size": 4745884,
-   "sha256": "98ef09e33d5b4aadae29f0ad6ca603f640a0336f58bc3b5bc777107c2cf4b51d",
+   "size": 4144528,
+   "sha256": "3c20e49599c2648b06377724272863e578ad702663f80af4769f3ba6f684acf8",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_01-02.res",
-   "size": 6611010,
-   "sha256": "03f709dcf6ed80d86c443384ffe0ed3f4d42b34c68d293b2601f932bfdd2149a",
+   "size": 4630011,
+   "sha256": "d83711ec59c937ff894ab154960d7e0073e4f0bfbd141e1c8a1fea1a70e5a474",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_01-03.res",
-   "size": 6760419,
-   "sha256": "07bd83db3ede974fa125f8ea4da1ddc85052306926f84a5b3122074bf6884550",
+   "size": 4964527,
+   "sha256": "d9d2f312b986b61af4b6dc054dfc9c6bad802cd0fe50e49bbaf9f229a8d17703",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_01-04.res",
-   "size": 6792477,
-   "sha256": "c55af0bdf4a1517a979acf4434c5040f982d6d630edbd37bc91607ac5b404b71",
+   "size": 5020260,
+   "sha256": "d2a9a9b7edf274fde9e3f9a32b96802e0a8c645168c8d6c6a2a5bfcc775bb0de",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_01-05.res",
-   "size": 6721206,
-   "sha256": "bb2375d5cba9986a2421d0a1a67ddea05ae6b10855067cd75f80bf0c378d22a2",
+   "size": 4895352,
+   "sha256": "b2a12a6bf264df61ebd180852c1f1826630970047e04a5d3fcb97f83b81d41bc",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_01_00.res",
-   "size": 6049919,
-   "sha256": "ce77a026ac1854da192eb5f2f86814887ed9b37f789bbe4153f338c6ae87a878",
+   "size": 4907510,
+   "sha256": "33b0d555a8683333f9f9b28552ef7aaa5d5115efff54ca582ab59b6a0dac1f0a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_01_01.res",
-   "size": 5068989,
-   "sha256": "35353ab309aa4318b217cb8a622554793e9169988dee17fa4cf8e9fed2a5f699",
+   "size": 4601844,
+   "sha256": "a3205fdc90419b1610f4aaea8b91547e893c65a983e9aa6fb4bd522f0c271582",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_01_02.res",
-   "size": 4208550,
-   "sha256": "ad313c2490d509731c9ca066e247384b2a0ef43e578d1b4c55910cab6f9fbf34",
+   "size": 4377350,
+   "sha256": "8ac732c5a940b79ef551fb6c7a9497ac7247d6f5693dd7c3a0219e071f500c73",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_01_03.res",
-   "size": 6009386,
-   "sha256": "4a5d67dcfe5091058d37c9d8ec0a0b709bb3b8ed9fb45f4c643c001d1979a6f3",
+   "size": 4452274,
+   "sha256": "4517e9edf7136ed4241dd7ffe92c857eacfe145680e4faf0712c2bff9cc14644",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_01_04.res",
-   "size": 6933126,
-   "sha256": "e12d35dc83c3e3bbaa408b638933eec7489530fd077b5f0d69991e966f37fd32",
+   "size": 4297558,
+   "sha256": "e81801d4f39c544dde0ef33a04b84fad5e6184f93e2fcb5cba7e039356719f90",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_02-01.res",
-   "size": 4132224,
-   "sha256": "2bea5ca31046759dd18afd3c2234376143a48116cc29a96e420edad0ed39ebfc",
+   "size": 3993980,
+   "sha256": "a210f6079463bb209739b459ee5bf8142c51c5f334ab3c12fb132d53b62c4208",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_02-02.res",
-   "size": 6311403,
-   "sha256": "c2cbe0ec1413b67d0b5b9af09fae6960542eb4faa6dbcd3d410f3674c2fbc997",
+   "size": 4225817,
+   "sha256": "0cacfcbf5eb937f2dec7286be75b367b427685605085cccb7806d196084ac7e5",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_02-03.res",
-   "size": 6784409,
-   "sha256": "4a30516f8dcb8f9e0611f7511443c85db5c0c2cd27997bd3c75729849daf0e2e",
+   "size": 4140363,
+   "sha256": "ad4832bf4a92c46e3a92293ba141837210a405f7bc233b9e7e3fc8d20bec122d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_02-04.res",
-   "size": 7413387,
-   "sha256": "0159d9550fe8cb3c99d3265e7b3b2451d33ce741f2fb7461be229b6972a1d2f9",
+   "size": 5078537,
+   "sha256": "d9f204f7807c9ae40b91a69f2b90acd915857b589339acc1a6fddc7c06463ab1",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_02-05.res",
-   "size": 5925105,
-   "sha256": "70fc32b9cd5ff8b2890b8eea6fa43bbcf149e285b4bdf37420f3e4282cddb6f3",
+   "size": 5396445,
+   "sha256": "5dfa8e9f069ce630702a117bdf3312a089d8ce6968c1733d40d392d560deccca",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_02_00.res",
-   "size": 5876595,
-   "sha256": "91079408d24db918add9b1f4aee37ca4f93a691d1de67ce5b93d576d3743296f",
+   "size": 4476220,
+   "sha256": "9f0e9acb2eef3ba6505b7192d72aae96ebc5b30fac98ce4fdbc3fe61b9038e37",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_02_01.res",
-   "size": 6724993,
-   "sha256": "c3096c428b56265d30977a126ccc9c25baa2e6164196c72635d6fa20ad06635f",
+   "size": 4415806,
+   "sha256": "a53db0aa8bd976d3651bc98a243e4fbe674e3d67267dfc3bdc33b8887bf15d60",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_02_02.res",
-   "size": 6613253,
-   "sha256": "9fc2b1dc59f62e4726e239a86a2247ecdc244a831cb0c7d3689dbab10c43a19d",
+   "size": 4266111,
+   "sha256": "7e301e63ddaa0adadc160670296004140d774604dd2eb5664ed449fb8c01d00f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_02_03.res",
-   "size": 6993426,
-   "sha256": "b61b079ea89599a8468763f5e3a7c6ffe56523b7ae3aec90ef3f80c9e5d5ee18",
+   "size": 5197089,
+   "sha256": "38f5690faf7167af70693e16b0819bdba25695fd9ac22831929021a0ee4c7f9c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_02_04.res",
-   "size": 6779528,
-   "sha256": "3b9009d8bd1c4b74274ee33ff752ee04d3d9d1886305d2a767b71022258f1a38",
+   "size": 4559272,
+   "sha256": "32c6e0cd377f6674f65678bfe97a306fc893188a24459460bd24b9a871bdc58d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_03-01.res",
-   "size": 6618823,
-   "sha256": "79202bf1912d7f5583d190529fd23db6716cd2565dbcdbd7a1c7a88de900cf88",
+   "size": 4280155,
+   "sha256": "a3b75c3876d9d61d3900fc8e46698e61c1f45fbba894458681f212e3d44bcf5e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_03-02.res",
-   "size": 6326234,
-   "sha256": "29c6efc6b3b8c9d49eddda55f78ff3d6cff96491df63a5e16065835793c60838",
+   "size": 4432472,
+   "sha256": "1f722ae0b644539a60dcbcff88df866b1f186769c0fc0e128e0189659fb846d6",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_03-03.res",
-   "size": 7030558,
-   "sha256": "d46fbc083cf4c4b979a4d797e377c37d308f5185ee585aa2e121fa6b02d7e63d",
+   "size": 4968840,
+   "sha256": "cacf6789b2c77b64d3d724306c7433a6ab334f1406cea44a2342fdb797e57fd9",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_03-04.res",
-   "size": 6523113,
-   "sha256": "8adb113b0304ed7ec84495160bc672bae5428ea90edb6d8b3b9cae561bee2e03",
+   "size": 5769168,
+   "sha256": "73077276e023cc1237899f881287ddb76ec6af19960a826059f3aff0359631b4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_03-05.res",
-   "size": 7055812,
-   "sha256": "48eaeac221dceb7fba3f6317646a3bae1f93d2e0fb8bd20867fa950f999357dd",
+   "size": 6185826,
+   "sha256": "4db1eaf6bcd6a0b8f07f513c32a6cd5b37c33373e8ee9b4f2c2456c8289dc138",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_03_00.res",
-   "size": 6511503,
-   "sha256": "5d986baa721ad42ad1ac0e66f0a1a533dff0488c35a1798d95497790fa8034b7",
+   "size": 4279607,
+   "sha256": "b98f3d752f3868b874dcca99fe7ea95bb3dd6fa25f9e94cd6848404be01e05b3",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_03_01.res",
-   "size": 6975564,
-   "sha256": "e9d83a96c91bcfcce8e890f7cf12f71994444244349ddaef5b69c6e58f741135",
+   "size": 5561266,
+   "sha256": "bab70911b566b656c961b8156082db34de2d59355145ef658e8e14f2c002b0bf",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_03_02.res",
-   "size": 6990382,
-   "sha256": "c558251a57cd6b5bfb5939621277a82a2b18ae78053d26d6d96e673e419113a1",
+   "size": 5214665,
+   "sha256": "b72f3bff5cc99bef8b88ba5f49e2892553cf5501ca34bf387a9e4bd82ab6d5bc",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_03_03.res",
-   "size": 6652306,
-   "sha256": "30e8127ed19335d6a9c711ece5d4e551472ea944746118e5e279bfd293f7b38c",
+   "size": 5121501,
+   "sha256": "3f44dbf5704b06a06e9148cfc02251d230b4837780739168cc5fb91b47e52873",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_03_04.res",
-   "size": 7057839,
-   "sha256": "05f1efdc383fa81124068b26d2d0c3a8e247840917ab3ec8989bab7423fb6b17",
+   "size": 4256872,
+   "sha256": "cb35839b883475cababdd9ce7392dc1e60406617f58faa780efaa70410d697ec",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_04-01.res",
-   "size": 6867676,
-   "sha256": "6d7666e3aa751af580c10eff095658321bf1e24a2d456b85287906c3be65f80e",
+   "size": 4244210,
+   "sha256": "85e76d4951a13727b91ea7f9b976c6f7ed20b795260e0aff6a27a4fe3769893e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_04-02.res",
-   "size": 6546001,
-   "sha256": "74cb37ff1d3b00c6c014aa5e657098b2f03226501b600eb2e31a96a4875602d6",
+   "size": 4497664,
+   "sha256": "fec9f0233dd48aebaf06478a0582fcff4123068f06bddecdbff59ee6a2dec6c4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_04-03.res",
-   "size": 6505563,
-   "sha256": "ed67d9ee5aaaaf646f52ced7ec51e86b89ee8e845edde55b89638550c473196a",
+   "size": 5500628,
+   "sha256": "2eb3d47784d06ba45a41f92d13c8bf2fd5096189b5caf987942e632cb36979b4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_04-04.res",
-   "size": 6509224,
-   "sha256": "14e9180b0345fd69ed74f0eb65e1dff50a30e0b40fbbbc813a043b66f8a8e17b",
+   "size": 5763720,
+   "sha256": "0553ac523989754c17857f25c61fa366ffcb5e8c01f05e2388deaa8dfbd40967",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_04-05.res",
-   "size": 7090505,
-   "sha256": "6aa7cd2aa9051e871c8c45a1f95b5afa9c186c43a521711ece17763b4d271d7a",
+   "size": 4881571,
+   "sha256": "c45cc84923d880d90c32763fbdfba66107f202a61418f2eb63a6c2d2b543c4f4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_04_00.res",
-   "size": 6295563,
-   "sha256": "9642cd5803e372a6f84caf45457bd9ea229dae899975aa3071cb3a547906b990",
+   "size": 4381287,
+   "sha256": "1439ca92ab2d6c8ad61ca31d86821076fa147b18a1cf1d51b3879b62044c3048",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_04_01.res",
-   "size": 6504001,
-   "sha256": "520ab46386592c4c1e682ec2a51325eb7efcae558af3faabf5172389ef68507e",
+   "size": 4922431,
+   "sha256": "024c59dd89b0aa37aa048b2128952c068be367d84a4b1cef9f88ef15a5136df1",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_04_02.res",
-   "size": 6341659,
-   "sha256": "6b8e887d76e7d9505527d0f049630d6a02995b052dcc565c38a3840a74b3c199",
+   "size": 5019991,
+   "sha256": "c32aa8b3fec38d290651bfaa787e1942afe63dae5b1983b9b849e11589411039",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_04_03.res",
-   "size": 6471109,
-   "sha256": "78e800a17173763785ed47b71c6f79bed60b70e7d2c4feafade90d2d4ba1b455",
+   "size": 4336087,
+   "sha256": "ccf3194ffbb579294cff786b052823a302751971dfb9c615b74356150b9abbe4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/terrain/terrain3d_04_04.res",
-   "size": 7026301,
-   "sha256": "e71e75b98b07d7d37998aec958e5c198e85a76c17c02915818017a8b9af2b731",
+   "size": 4165284,
+   "sha256": "71efc45f737421088d5a9897ab9e34e1ccdfc3728ea115215ac9e1b0196f1b4d",
    "role": "generated"
   },
   {
@@ -785,2407 +797,2407 @@
   {
    "path": "worlds/ref_20km/vegetation/mask.res",
    "size": 16000598,
-   "sha256": "4f9db9f69dd84a862c37d0cb21487a73231c029026564dfa0007b8250e802a4f",
+   "sha256": "f3db1b95ae81cb0a40d1c7d7022bc4723f026d3afaded53ef79566e52f3ed7e9",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_-1.res",
-   "size": 1154714,
-   "sha256": "d5d9769b59d09929b512a0fd093e51a0d1ea26a1fdc511d630151b827bb17e7f",
+   "size": 1111582,
+   "sha256": "86d92f56ef8028df3461c109699c830b96ff780f811c73a9edd6047f9e71f213",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_-10.res",
-   "size": 724538,
-   "sha256": "837f75e513aa0db687b43f5e28d7097667784feb19a112cbeb303441b4e4cafc",
+   "size": 912498,
+   "sha256": "edb0a3e15cd285be9e5864700723d0d43c3052f10e1537d4b8ad8c00b91a841d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_-2.res",
-   "size": 1188606,
-   "sha256": "5cbd662dbfc78934e3ac69634fa65e45cc1d6a0e490850622b2ecbafb1f374c2",
+   "size": 1147086,
+   "sha256": "de4c9a9b6a6f994814ce3360ac95c725912383f63110b5dc37e66d5887e94650",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_-3.res",
-   "size": 1293758,
-   "sha256": "83d0bc62de724204ef8f3fcffd572c6e0a789cd7c3b9a89bfd87f9657a42f8ec",
+   "size": 1200782,
+   "sha256": "2bcb9ae75ebd8ddcfacfc7c2cd3a40b5d3cfcbcc5fec472590178c200777b8bd",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_-4.res",
-   "size": 866862,
-   "sha256": "7c82b88ea0001e93c0606f50f568741e13bde32a981e39b1198702df4db8ad9d",
+   "size": 1209278,
+   "sha256": "be0a21bbea2a17ef6d19ab2431722d046786bfd9943906dc3a94b1e2c0ccf963",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_-5.res",
-   "size": 1257898,
-   "sha256": "072a7b064b3f48f998027ca1ed99a602e05dd805ec2a671a353fbd81231c38b9",
+   "size": 1190222,
+   "sha256": "485c9d7424e687f59f447e8abc37b02d4fa25bc2323218f069f4bd8534211431",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_-6.res",
-   "size": 1257006,
-   "sha256": "dc2e886208560a226670ba640aea0a2ec52647f82c4663898dd45891687f2c53",
+   "size": 1130254,
+   "sha256": "a57d13a80a5d1919e2bb0d4e16afd5600e231263066cf5d24c55f857c2b91e9c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_-7.res",
-   "size": 1217950,
-   "sha256": "ee7720db415fec59cd68a70a2e44212b326984108c4b4892bf1fd3b31994ff87",
+   "size": 1220126,
+   "sha256": "ed0f130431e43602ee13f4c302b3de0e10c4f911273fca6f3cfd882eb9a6ab2c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_-8.res",
-   "size": 1153390,
-   "sha256": "2d682453dc910b2114386bec0aec66dedada0287135e5202afa5164563bb14ea",
+   "size": 1175966,
+   "sha256": "c3fc53a3870da2242457c9e515fc54ae5a058d77e0871ab4f5cc0e676880a1fa",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_-9.res",
-   "size": 1321486,
-   "sha256": "aacd3bc42a0e54f258dd126a653e1bfaed3406b77a9417dbde5c42452662a136",
+   "size": 1166462,
+   "sha256": "33c18cbad9f40f5537fb6d0c210121e08a915793edc5c7675b1e8908b687dde6",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_0.res",
-   "size": 1190862,
-   "sha256": "0197efe6f8a92691d165a922d3bb59c97a23a166cdb21f970c0e0a17728c4829",
+   "size": 1163166,
+   "sha256": "f77cf00490fba5d278a2fa2b332c3b4a3ac1a5221f25d5290fcda2493db70242",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_1.res",
-   "size": 1355342,
-   "sha256": "262f0a1f815860f9b5915e3f0d799c66de1257efda1f9c77d293ef0e5edc0625",
+   "size": 1163038,
+   "sha256": "2400148e0aafd328c11d724fc9267b574bbb6c3e6a493e5f49a491af155e8be7",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_2.res",
-   "size": 1140478,
-   "sha256": "ea02d9e428cb0de67553b2de8c468bd010600bbecefabf2d670fa80123247101",
+   "size": 1144446,
+   "sha256": "0f1de1d972e30e36ba7d7b8f540776b0d7a07aaafeea7bf606bba23cd3844228",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_3.res",
-   "size": 838222,
-   "sha256": "324080d21f1559116d18934dd584cab175014d661f46176f1075dc8b969498d5",
+   "size": 1171662,
+   "sha256": "efde12445671fb598040c52d629878cf25b588d5e7c34debb432e188db5504eb",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_4.res",
-   "size": 1092638,
-   "sha256": "9b4e2e5eae024fa54ff1f3d36d770297494326a2df5ee04cf4ed7cb702ad032a",
+   "size": 1203934,
+   "sha256": "958b5c20910bbf16103ae79fe229b8a64aec33533b2f1c3e851441785c65e693",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_5.res",
-   "size": 895710,
-   "sha256": "d2a1c396959142dada3fd7158899f5ab208336a25c59a5dedc9c07afb8bc021f",
+   "size": 1221006,
+   "sha256": "ef952aa08f6bb4012ae18128143ce22b37b51b1c279ba8fb39f30200156be378",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_6.res",
-   "size": 1123166,
-   "sha256": "262be5af59c3e3f254d5137bac9fd6a378520c88cc35a98ef63f41fc330beff8",
+   "size": 1200190,
+   "sha256": "21e8e32f0dec24dfc9bda519824e0cd5f4f944dabf3329bf7ca102276b7a6d8e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_7.res",
-   "size": 1010734,
-   "sha256": "b4b553b1a676a7ca2d060eef0570fd072f240dbfded274147cac1fd838b271c2",
+   "size": 1150254,
+   "sha256": "25c9c5c6387a7d5e3d0d93198b46315d04f52315ed559551c8d4102c29ebcf6f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_8.res",
-   "size": 910366,
-   "sha256": "f5495fc1b8a8ee3ccd627d59694f2b83864900338787fbf1bfee5b5fee91ed05",
+   "size": 1220942,
+   "sha256": "c64dd65356ad79bb4d42eead3a6a185451e6f5c9250dd94de8afbd10c6c2a26d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-10_9.res",
-   "size": 539282,
-   "sha256": "208bee2df1b6a9a0d133a1809fa7ddb75136c614938ed8bab651c8965e8f3c53",
+   "size": 921826,
+   "sha256": "bfbe5c2468733e1421fb9476873098458721ebf53a1449441253b1726bfa8caf",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_-1.res",
-   "size": 995246,
-   "sha256": "50953c05e7b303a671563bc655e038bbab9a22091cd37ae1189e6f551a0f2954",
+   "size": 474314,
+   "sha256": "9c3b0c21a20a9af0deed4b0a45921c320de60127323d926d3f6a772d7e85c9da",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_-10.res",
-   "size": 738766,
-   "sha256": "aeaf297e9ceab7475ca603d49896f73c134dce6fd2ca7348a0d6c78eeda7bcc5",
+   "size": 1117150,
+   "sha256": "e27f31778ca7e62cb34c276a87d33a62cc9f5268de964489f5eaea3a14753e16",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_-2.res",
-   "size": 270798,
-   "sha256": "4151448a3b55d1dcbdeb7c1013d33334cf5f180c34909903d5460f7a5d52c8eb",
+   "size": 151870,
+   "sha256": "96bbdec22395661d1329314418d5c753821103ccd2c78d014a511a092541755c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_-3.res",
-   "size": 530622,
-   "sha256": "dd2331555eae1108d090bacd2918b28a2e17677bd09189383f3021fa40ae2157",
+   "size": 119726,
+   "sha256": "f65fa5ad3b0a9e8b1637994bf4c8f5b153cac124ad03f910ec353a6c9da2fdf7",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_-4.res",
-   "size": 846910,
-   "sha256": "98af6aecdf053133c8702c3a9fb2e48e7aea0172ff0643b143d83a9d71d17224",
+   "size": 522910,
+   "sha256": "5eed8ce2b11c91ccee138c860c8b030ac3d41164ffa2b63042e0aac9487f33e0",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_-5.res",
-   "size": 1119902,
-   "sha256": "3cd3a9e760b24a976249339ba9a784c6ccc1b9a6f2d4a5dec85cde7b220da504",
+   "size": 1052362,
+   "sha256": "befc7472de86fa654cfadef02427571468f6785f5df093dcc9a0c211e07c9a08",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_-6.res",
-   "size": 1774190,
-   "sha256": "dd5b28f223527e1faa386c88a041e11b8867dc8b629dc358b188b75525aaba20",
+   "size": 412878,
+   "sha256": "7e9bdd76a81cccd1d4faaa0e821f1d7083dfdae7484b066d574736e538e88b1a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_-7.res",
-   "size": 299242,
-   "sha256": "e0024ab85a256b1aebb84416ca1492aecd08fc3c4e13f2742707461e59827a2d",
+   "size": 143274,
+   "sha256": "6d6b85793b9f8f380c38c9d02e99cf08931817e024ba4fd6ed1cb018a4a0ef9e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_-8.res",
-   "size": 906094,
-   "sha256": "692516ca5bc0817a2ad0840e09da4b6258442c7586a8018d0201f5cd59fae0ae",
+   "size": 218286,
+   "sha256": "2bcf210c97bf5c3df861391c5513654579c13bd78927f6d29143c37c6a653e27",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_-9.res",
-   "size": 1718862,
-   "sha256": "ad6ca8f669b674a2bd4b8e7a166441a5f89b634cee89f58818752597130a9f03",
+   "size": 825614,
+   "sha256": "acd2b3bae0764ecfbdafdf8dd988e7d6140fd795dda2d6d4264f64cc2fcfaa4b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_0.res",
-   "size": 1842030,
-   "sha256": "12d252194f5a3d5f90173e1081a9b215f3f4ec6a5f70f9ef7d738583b5923483",
+   "size": 1610350,
+   "sha256": "f30615a6069c00c60fd49c6e1b6dc5b8a8d1f3ca555421ec27aa09828df4d1fa",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_1.res",
-   "size": 774694,
-   "sha256": "03dd900a85388b7ed9d23fa7033bf0516ad5409b44b8ce28ad8d1e0d6bc6144e",
+   "size": 1523470,
+   "sha256": "98361ea594765a1d40ccc67e77a29098a70be77aac3cd8294dac782e9eb7c0b0",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_2.res",
-   "size": 960542,
-   "sha256": "3a09d4fd1b4f382f005c067b1681436e72863eade55e204f247b804a8d004e8e",
+   "size": 943706,
+   "sha256": "9ae320ffc64dc2a6cc36f3a5751088f6a143b4c57787a0f11b54d269413c7e19",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_3.res",
-   "size": 197978,
-   "sha256": "afa48ffaddf7877955c43f4c969b2979629ab563379a441199c712d41f1e76bf",
+   "size": 469330,
+   "sha256": "25b4f5a425203da32cfa8f011d80e677f0cb4818bdd9703cec9c9ff7e4bf4a91",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_4.res",
-   "size": 127786,
-   "sha256": "d2e43400047da7c0c2e2ce3167013a7a78628de68d2607808889583a460c5316",
+   "size": 254106,
+   "sha256": "33be063c65dbbe9ef35accf7e639aaa82bf0e8a9de370888add15a8ac062abca",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_5.res",
-   "size": 168838,
-   "sha256": "577d504c6590ad04e8883e7eba2c24ff47a74af758b028f3a56b375f3032dd07",
+   "size": 167850,
+   "sha256": "d81ade38cc7e636df7e4ca1cf6c736f2411d21e472395f1f23e7f08c5d1c054c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_6.res",
-   "size": 434574,
-   "sha256": "8a0b6da43cf0ff6bf4fc5a15762df8214a7fef07f6c40fd594011d4876ebc977",
+   "size": 131934,
+   "sha256": "182268a8576ccd1b8afff52bacb5a1d00e4566831a0105a2846634a3f45ddc20",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_7.res",
-   "size": 1712478,
-   "sha256": "39823b786c4dac0fe53af80f5f7612644969487ab82a9c95265374aec0e77ed1",
+   "size": 628078,
+   "sha256": "c350446891c974458021489254fe6553f196283d55bd36ad5eb9c14e72b5068e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_8.res",
-   "size": 971002,
-   "sha256": "1974f5de9e23a0db55444668449c0efeafaca337617e21840b21255f9f1a159d",
+   "size": 1467950,
+   "sha256": "9e3f1c3296b9f3761f7894d4ff15b5bab25853892543e69a392760ec7f78acad",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-1_9.res",
-   "size": 998298,
-   "sha256": "17660df6d6ac62dbc63df3663770905a7c69b835578f1a3bd34c1d566f0b5c8b",
+   "size": 998670,
+   "sha256": "f74b5f7ab774faeb32bff9b11f7399b446b8783f4db1b42281abf70a7724b880",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_-1.res",
-   "size": 1064126,
-   "sha256": "487611b05ad33201bfcbfcf8e1e3d09e3bdd88ee160dfb5f03895a78716e4139",
+   "size": 1301118,
+   "sha256": "b57f1c521034b91f914a54274bc3246e39f777ea5af50200e9613131092aea45",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_-10.res",
-   "size": 856894,
-   "sha256": "17cb19367b1983a0010419da5663de0099b02737d36d538c1f7ac4a8f63ab7ca",
+   "size": 964062,
+   "sha256": "0d7fec13491ecc8daa02fbf648dd73073d0d8d8b3b9e56a0ec4c9ea25b5767c5",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_-2.res",
-   "size": 400122,
-   "sha256": "ef31f9a1f4babdb281e50ccfa39bfb039bfef3787757734f03332273c16f33fd",
+   "size": 538058,
+   "sha256": "8f895bce12cd90f774b0a96009ad185ad76ce3dbbb6c8f5d45febca68e8a4039",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_-3.res",
-   "size": 981422,
-   "sha256": "7c5a7602a684a9da8410d6e6ddd2ec94c787a7d88f593d00009bc0e15bd9b247",
+   "size": 570102,
+   "sha256": "02e0adf02f782874562fb4aef6d7520532bcc3c45bde54838fdff52107618f27",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_-4.res",
-   "size": 1834878,
-   "sha256": "122d7ea9f1d90744e0cea76a1789c4875291e588613d4492fc9cb972644df8b9",
+   "size": 617854,
+   "sha256": "ee276533818559a58d841b024b2014f6d3b0504c6fca50c1824b94b0f033eca4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_-5.res",
-   "size": 1207806,
-   "sha256": "ac8688fab55906d9135d041920e5ab94569d1d8821858c6b3a075fc874b5146e",
+   "size": 305550,
+   "sha256": "8d0d63f3a3f1a627d959cc7fe44876d40621846c1179e5f22333cb8fb0a7a525",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_-6.res",
-   "size": 1655310,
-   "sha256": "9f92cc0c57cc2dddb46fa94c479b303f9e0021587a16047705a074b5d368c751",
+   "size": 1516126,
+   "sha256": "419571e71d49376a2f2b80cc21b84d2d107729d28ceb32a6a3a27757ca274e04",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_-7.res",
-   "size": 1703758,
-   "sha256": "c47bd2b11eb115df633308910bd8f7da28077dbdeec68ef2e242dc8b54bf9fa6",
+   "size": 755806,
+   "sha256": "947cd8c006061875aded4327c10ca98babc412f00348777ac8cc995589b0f956",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_-8.res",
-   "size": 720622,
-   "sha256": "219e8ce75561425ff788d99d4a315e13298b657d9574df4f2247da327cd10870",
+   "size": 995818,
+   "sha256": "f9ba141199dd630d7e5c764ddd99a833b882ee581e4cf7866e9970fdd83e2058",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_-9.res",
-   "size": 372734,
-   "sha256": "1678d9de1f66daf80e0a2be3787a99bb078d5b305a0fb34332e0464ad36a6298",
+   "size": 674670,
+   "sha256": "47dfb7d478396eb57409271fb540df504d53b71269f15826eae7f665ff40c8d7",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_0.res",
-   "size": 1389294,
-   "sha256": "e391adecf1757ef93a0672aa4729728a103c927193085b64cf934a18ecd6e696",
+   "size": 1542814,
+   "sha256": "c47a76f22fb8505631d0a02d15f4dc1227781651fa829a4992412de8cf65ebb4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_1.res",
-   "size": 824106,
-   "sha256": "eacbabf45dc9288a607a99d42383b79943cf3a88e71de9ff3bd7db88ea62c3f8",
+   "size": 1465582,
+   "sha256": "e1596599b628446e199ad5bdee213931f5fd57fc1f839eec7e8b53856d36138f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_2.res",
-   "size": 152194,
-   "sha256": "91fc0978879c99572eeb763e2bf623003ed1471746871c94c01fb3421990cc7c",
+   "size": 447682,
+   "sha256": "3e772168c4614ea44594917cf5a4ad8bb2975c0f9a69d0771d6bf616b0a9bc89",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_3.res",
-   "size": 246946,
-   "sha256": "dc7a1916120e11a578e61943769ecc745c8b3b9019930b5dc5cb8cc6bde23dab",
+   "size": 130670,
+   "sha256": "a49959402928ce2066588637232e4c7c2a3b5495bc7e0b1b5c3024504e5255cb",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_4.res",
-   "size": 180002,
-   "sha256": "15a10849ed3045ce71ee0906b74131c0d7dba7b708b2c17ed97c462dad09adc8",
+   "size": 135370,
+   "sha256": "8e446b418579f1d0005f3694e52d2d0a19ac077142acd8b6d41fd29062105f86",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_5.res",
-   "size": 98942,
-   "sha256": "c271c99d9ec1fb1f5ba2029ed3272bee83bc4f79f704d9ee413fc939cd5d03f9",
+   "size": 136646,
+   "sha256": "b5285ff4033ec02793281d137d304f00c88bcc63ea69431e98fed71d15822606",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_6.res",
-   "size": 110358,
-   "sha256": "32dcfc7bd84198b4c127151757fb27ae1eae56085d96d91426de461eb4de6554",
+   "size": 97934,
+   "sha256": "98487df21cbb506b84df3b19d59f8168853939c3c5011e0f406ec4c049543f1e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_7.res",
-   "size": 698994,
-   "sha256": "9a6b53ea6a0c655efb373b24606ec5aeeae7172117b3e8ee6902977739335bfa",
+   "size": 673974,
+   "sha256": "88de84c874687858cdd2d5026e6068277fcd4ac24b98d8c288b1358fc1f0cd32",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_8.res",
-   "size": 1329214,
-   "sha256": "bf291308922096296f44bee4ca5d26284aa644d24e253477a143447e8531da18",
+   "size": 1543310,
+   "sha256": "3bf1cd2a758928895a23cfb41c1d5d3f22a43f3d3358bae61c3423cdd6b6857a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-2_9.res",
-   "size": 1316142,
-   "sha256": "c91f68b9e3235780da059e2c542561bbca04dc4b54e2e66f01af8d0230c9f44e",
+   "size": 1160990,
+   "sha256": "df5cf439f41c10979ab08bcaec2c47511ec87977cf8eabd0e9c9674a1ea87c62",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_-1.res",
-   "size": 1755966,
-   "sha256": "f9d93b6bac4d57f7054fdfc4963d222eedbebe9410ec3872eab97b185529d154",
+   "size": 1527022,
+   "sha256": "7660f0603718e89ab6c0f717b4e7ca704de082d30481a7995255455d8b496c21",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_-10.res",
-   "size": 750038,
-   "sha256": "9de5e77ec9acbb76e26aeceaef26eddbd623146382ad1acdce80c421d722f311",
+   "size": 1083070,
+   "sha256": "5e64983e56f2e9af0212bb381b941b194a59c70b8abbb08536f82bbd2da7a075",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_-2.res",
-   "size": 1742286,
-   "sha256": "9dfc6f52bddbf69be4971cbfa3f40eab3aab97d6818cf197b0471acd30a4116e",
+   "size": 1575358,
+   "sha256": "7f48503086d5a30faa343a10684dc926a86dad1d74086dc66bcb3e4aa521019a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_-3.res",
-   "size": 1696494,
-   "sha256": "8aa3345d0304db1d496b20eb72ab5cfb3eb684c88d19aa4a70353d16889f47b1",
+   "size": 1586974,
+   "sha256": "58bb347b47a156d15818fa2ec8c2750c3145482db9f771c357e6725e115fd0eb",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_-4.res",
-   "size": 1364782,
-   "sha256": "9e61ebc855cf9eee5b6bb41c817457dc3cd3cd6d7aed4f501aea14c974801f56",
+   "size": 1563726,
+   "sha256": "e96f86b332040b192fe3a1f2b06bb137e49e98552a2c9e20521e50da38e0a86d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_-5.res",
-   "size": 807710,
-   "sha256": "a2284f6e9df407580a5f70cd750b0bf07f3d57a115b8ff95ffa20bc308ca17b2",
+   "size": 1396478,
+   "sha256": "b116bfe56492784a42e3969015e2a74fc73a587aa7d664d3cf3f9e153a05b6b4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_-6.res",
-   "size": 1208638,
-   "sha256": "9934374b767476f44c2f0725bd2fafdcebbd067c6547fec531866166c0fb8deb",
+   "size": 1464942,
+   "sha256": "f0b32afb28df168fae655e62f83d0e498539fbe1049b13314fd3cb994380a612",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_-7.res",
-   "size": 1178110,
-   "sha256": "6557ca5ef151cc2bb048e4cb54dc80bc93c76eac212f908ce5b009a13c9ec248",
+   "size": 1242526,
+   "sha256": "e6bb08d6d06efbdc08e0d8e1b9a08fdb58c6137a6674ba850e7563175d083b0e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_-8.res",
-   "size": 768202,
-   "sha256": "e3898e8b38af3ffa56c680316b13c5fdf02d1de8550cf07e347b0b02c324d28f",
+   "size": 152250,
+   "sha256": "3ec9f1f411c1a973310fe9d98f9d95bdacf048d1a931df6783742d71706ba5a0",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_-9.res",
-   "size": 1303198,
-   "sha256": "a12de00768d3d5a981d80ff2b74cdf018c3ef1e9897d8b8fcecec24fd57f4592",
+   "size": 833326,
+   "sha256": "0bbebe7669c4c04d1a0f5369feab4b43728a88de89dca12b76d6162496e47a87",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_0.res",
-   "size": 1633950,
-   "sha256": "f669d7f01fe48698e57e9fe50688a6c4ed0db7a5e1befbe5ad8621e937378c47",
+   "size": 1538638,
+   "sha256": "b127fbc1e78c9166ef40e8ed0890779a584f326cb45259adeab27161832189f6",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_1.res",
-   "size": 1746494,
-   "sha256": "8ffa26089f95efced8c356b487377f08cd47962a7029ae0d7708f2490db93528",
+   "size": 1529534,
+   "sha256": "bf5a391b70e0dbaa609deb6a7ab38380ced5df06bd6060dce32ebaaeb5f4760b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_2.res",
-   "size": 1265930,
-   "sha256": "cf79d0f444b819f13bcfaa5d5f2b8a7cc5cde4e90a0323aec1419f6decf1cdac",
+   "size": 1443310,
+   "sha256": "cf4dc09c89c0330a4566a76a854aa393b2078b078dba5c380e4d43d39cd9b9dd",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_3.res",
-   "size": 614726,
-   "sha256": "6bbc3c00bd98809ac47a6b9b3e208f4f8424a92b6461c21aed32d4f62b47ba76",
+   "size": 670726,
+   "sha256": "5cc15e747b0915d46934d2d1eda9a6ebb60be6d70247625ad7295c30f000df40",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_4.res",
-   "size": 237510,
-   "sha256": "309b2f21f2e1a02ebada9f604a748a368849ad39636e73bef9cee9ee68e0ad93",
+   "size": 250498,
+   "sha256": "131d466474470610db0cc71eb5b3c63a51f841d644f17051c12c1682d5041ccc",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_5.res",
-   "size": 153098,
-   "sha256": "8ba2528a63229d2bfd5d6254f62d7733d3d0d7948ab7d704dbbc219d08354adf",
+   "size": 111090,
+   "sha256": "ffcd022ad6b91792244bc24e9b4db967c76e3c793541d92b68d0593c6efe5830",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_6.res",
-   "size": 270318,
-   "sha256": "9404df95bd5216da0fe0aa67da452c42eba4c8578c9fe9cf7c9db8dbd2e5ad81",
+   "size": 316042,
+   "sha256": "c9d35dbe61cc80b3b9d61473579ca343e8415f9a66d5e287e6f447fda2649df8",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_7.res",
-   "size": 919490,
-   "sha256": "c82e7e9bfbccfa95f84a5b6c887b16b07ac024bfecc3c3016a0bc5f2dd7b14c3",
+   "size": 1113822,
+   "sha256": "16e8b99a73ac969163e8d57daf722fcf8329e101a61de50d748db191d55c26eb",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_8.res",
-   "size": 1639150,
-   "sha256": "514da54c44b4cd5886b9132a27a278de84c45365dd06b618dca4ac1981755984",
+   "size": 1554734,
+   "sha256": "3954fc14ae3e08866b1c7dbf8178b7c061d69989564c1e82d4ccb2bc30e0defb",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-3_9.res",
-   "size": 1093006,
-   "sha256": "82cbe6abdb142c4b7c6fdeb16eac3ecf570de1c165d468251a82a9090b945987",
+   "size": 1179454,
+   "sha256": "112691cb4dc973110a33e397ddf68843d7d96807e6ea66995e0fe07fe5bfc87f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_-1.res",
-   "size": 730126,
-   "sha256": "ed4b461e977a47cb28847d260757d9a1381b189351c1cddaa9c2d24fc12b817c",
+   "size": 1129518,
+   "sha256": "8d4c1eb35771f689e056bc877d1b33dfdf4418d7e249a5eba0621bf8c225e29b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_-10.res",
-   "size": 1366110,
-   "sha256": "41c88a5389bae2c463ddf785cee676e9d174b34e3cd6edd3f7e70dc90901c455",
+   "size": 1172142,
+   "sha256": "3f21b300b9c21e0151ac6b831fda76de2b68f217351aca008a7a5d973f89ab73",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_-2.res",
-   "size": 1394238,
-   "sha256": "b4484b444cc99ff99afb080354720cd3095c1c809338cc2edfc00957a33708cb",
+   "size": 1579182,
+   "sha256": "d02fcadc78f70d8d30d1111f4d84d8176bcc6673f687212d74a0526f30d90cd5",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_-3.res",
-   "size": 1420142,
-   "sha256": "46555de4b5b7247582a6d1478c036e9fc4462dc633c8dc3036a084f8c0541679",
+   "size": 1548926,
+   "sha256": "b241cff88e979845c873b72b9fa30c23eada48277662c3e31d1c892a8f28e19f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_-4.res",
-   "size": 1568510,
-   "sha256": "22194428a75bcd471b84847b991b21a42c5d52b2e67b6fe216349c696279458f",
+   "size": 1562814,
+   "sha256": "5ba90a34f89d85fd33bc5bb48671d6e60fd817275ca848f6041f46308714f1bf",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_-5.res",
-   "size": 1048142,
-   "sha256": "5509edaa31770e9fed47979700ecce82913ff1bcc6e3535582f871614e2818a0",
+   "size": 1126494,
+   "sha256": "063daa4bd521f9a39e932d813f9db261af6504c1e3fb2d0a9a44267731ea2f9e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_-6.res",
-   "size": 1445774,
-   "sha256": "937c4d15b4c13f40963f26098a6804eade0cc57446d0c381042e6d7d197490a8",
+   "size": 1452686,
+   "sha256": "1173cdcf81bacbc01ac5eff1d45626c19c2cfc3092e1052ac3a3b925d70edff1",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_-7.res",
-   "size": 1615774,
-   "sha256": "b0cbed06280ef1321c4a6a6f9d62e9ba2337fa7d365d8df176c156bc1afd71b3",
+   "size": 1369038,
+   "sha256": "204541268ae46f3d40e8768154ab10180d6377412ad3f6b32c2407714545c472",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_-8.res",
-   "size": 530278,
-   "sha256": "5d65abfb572fafa4036ea1fd47b7cc32404163bb2e58acab3012a63452ffa3ef",
+   "size": 227834,
+   "sha256": "ab76f6a82bcbee39b5248dcd49e58ac7cab3973d3a5a57d6152b451692ee5b5f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_-9.res",
-   "size": 633218,
-   "sha256": "756ba50f45ae9819949dcbd0333656f849b09124332ee6d2765c3ebaeef7da4d",
+   "size": 864566,
+   "sha256": "8941027cc4bee1913cd5ff3625aa5cf6fec470452a6d55e66c421f670454dc68",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_0.res",
-   "size": 1328094,
-   "sha256": "4c5cdf54181ed70c100267c5161294414e9254a9f6939f841b3feeeecd8146b7",
+   "size": 1310894,
+   "sha256": "28075a53caa7df81998295c85127e051ee5ee6128000bfec2de329e82a72167c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_1.res",
-   "size": 1373070,
-   "sha256": "d5dba32a82cb1f2434ef19bfafda3c8691f9ee81a899df2872a6914f97ca3c63",
+   "size": 1430254,
+   "sha256": "46c902ad6fb6019cd9fea88fc6c37b1bd6cbe478b42f010cd1f0984ad4126dc3",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_2.res",
-   "size": 1148778,
-   "sha256": "5244f61d62150c7190d3b219bd4cedc1000d729ce50196e0ba307288202cb3a9",
+   "size": 1323146,
+   "sha256": "45ecf2bc4941920befbd969f7e4c4d4064c0670009c61a2401c05244b4474818",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_3.res",
-   "size": 920638,
-   "sha256": "063e5778170415c34a26ddc9fa9b98bb201661bff6a35f4466bb106bd3e4050e",
+   "size": 1134846,
+   "sha256": "7ab76bb5eb6b71dc9915b335ca6b8e6a101b655bcde21dae3ebdaf3ed27aaa51",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_4.res",
-   "size": 1624814,
-   "sha256": "685ce9b82717ba8ef69b9cddcc5db433ce6c81efe0d70506c0f9b812e2eed052",
+   "size": 903938,
+   "sha256": "1a641d81b62d6a3c050503e77dd06b82792ed124eb056532f46910d15fe73ae4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_5.res",
-   "size": 952158,
-   "sha256": "885f0f996fce21eaa28165c1512dda6ed2a0869fd9a86a26389632268881ec42",
+   "size": 234026,
+   "sha256": "70491eb364828debcbeb50282c2b636489c95d26a7083f1080c38fce3fb66307",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_6.res",
-   "size": 1429630,
-   "sha256": "97c9ed92473ebbacc8e5990b7acb1a184842115014475f0d4d81303a87351665",
+   "size": 1379166,
+   "sha256": "7a67426ed136842e9139c99e7518f7a589eb837b9483c20bf4dce314ed0b9f28",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_7.res",
-   "size": 1360942,
-   "sha256": "ea0849e086919eec8f092aabcbb0ded178f1c0ee341cce027bacf8315ef750c9",
+   "size": 1579454,
+   "sha256": "dd817abc2266c4d6a9621c2fe6763eff3af0ea8f878b4b603411aa0b473a98ec",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_8.res",
-   "size": 1662622,
-   "sha256": "ebdf17a358ed2274d712a0a5f50dd2d820ebf2273688c576373a9d5c7b6f3907",
+   "size": 1564398,
+   "sha256": "9eff4b876ff54ee8d01e1f4d6228e533887fbd537184d97f84eabbee00e5161f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-4_9.res",
-   "size": 1461150,
-   "sha256": "555892c8c2c1a9f907e6cc2494e9d501b4f228aff4dd79b82f951861de271f83",
+   "size": 1186862,
+   "sha256": "2e2da82279bce91819a08fc31bb016780b07f8c29e474b685dbc1e6a64b3d883",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_-1.res",
-   "size": 1001246,
-   "sha256": "8e1769d094b9d5d790951784b9768361a39bd81d139b289aceebb8ee23d54376",
+   "size": 1341566,
+   "sha256": "eb59a8febaa7804aa92159c70de5394f564401307c7c22f063f8a3999bf94b52",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_-10.res",
-   "size": 1073066,
-   "sha256": "738b560a4a8f6afd4fc27bd15cd72337aaa2fd0f283a4a1aa0f32156b245b4d0",
+   "size": 1139054,
+   "sha256": "ba76a3955ab44e944d11906c254c1d7ffc6a97061d7898528c71c1d14ff21846",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_-2.res",
-   "size": 1356478,
-   "sha256": "2a4d7b5a43529bee4867f6b8d24f932790edc90f3ce276b912a61e2ae107e0b5",
+   "size": 1496606,
+   "sha256": "d02d99b9c223f6065a5a7ba7f460dfee1e1bdf7e5c6228b37045df4365baaeca",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_-3.res",
-   "size": 1572398,
-   "sha256": "88bda0eb6ebd1e0cac47a79ee7c8a1e02dbecfa972ec5b5ec1524d3f4fb37c5e",
+   "size": 1536382,
+   "sha256": "3df9ba060ec1a2c27e430fa688d5b8893841725b1e2336cfb683e50cf07e9ad5",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_-4.res",
-   "size": 1667006,
-   "sha256": "f164522e5a4458ab0513f8b3bc9967a76e1c400fc82312d0ca6028a2d4cb0452",
+   "size": 1549086,
+   "sha256": "b20704b85db9de6283ac2776ea788fb8fdcb1955e7631df145cd3e4406dc927f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_-5.res",
-   "size": 1765150,
-   "sha256": "4452a47a141d1da938b949fc3d0129b37dc7d4c89a2e200b1c26fef626ea866f",
+   "size": 1528686,
+   "sha256": "526a4ffaa79e9421b0bc08a8a3f8d43c4a6698bea392ed8eca8760ce21926170",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_-6.res",
-   "size": 1526222,
-   "sha256": "6669d2a3668b8e86d3b49aefb821115cb48f47de4f98e7a2e441c702b267f526",
+   "size": 1100846,
+   "sha256": "ed4e09943a3575f8c1f907392a2ac4c14c8752b0b78b5e1c28b96d8554eaea22",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_-7.res",
-   "size": 1528654,
-   "sha256": "e75f4d831cdc67215d1f2a2774b9dd6cbac564bb6c53785785d1be5089875293",
+   "size": 1382414,
+   "sha256": "b9490efae8fa3fe54d66841e8a6b7e38a927465e29d33bade1bf65152b707ef6",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_-8.res",
-   "size": 956286,
-   "sha256": "10429c78b711a0053a0d3d593684665e0e740a6eba58f6b3c0fed16639ed68cf",
+   "size": 1445214,
+   "sha256": "b6cd775b40cf356626821dc529e8c3ef9838e3fff55c2bd9ecf9131bad4590c7",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_-9.res",
-   "size": 920510,
-   "sha256": "fff8f72a95719152435f4032788b5ba04346f9066251ee045ecf42ac3ea44db8",
+   "size": 593406,
+   "sha256": "56aac9c39671d189a5b60c4e36b6ec399c737f84bb48cc40c7970ffdc4f9a2d5",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_0.res",
-   "size": 1347454,
-   "sha256": "8ced9313d4d4815b17a6354b2f619305a428ac9ea867816c644d15df944e4625",
+   "size": 1375070,
+   "sha256": "11902355458294a5cc502d19e92a725d72d270b324bc599c0f9337a51c11aefe",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_1.res",
-   "size": 1102306,
-   "sha256": "a5c438b37e1bd784eaf65a36c4acf8dd0146c52d00981a3fc57642a2f184c587",
+   "size": 1252434,
+   "sha256": "162149a2eded95385716336c623997cd555a4db7a60a72ac597eeb797e8660b7",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_2.res",
-   "size": 1143906,
-   "sha256": "0f1dc05f8008b3b485598ce3eb646248aa8214732dc21cacddfbe6a30c1430e3",
+   "size": 1246002,
+   "sha256": "da7c2cbb4edc4787628d7813bf2b46e3eb3193014a12fdf410b7f345e98f862e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_3.res",
-   "size": 1633038,
-   "sha256": "767d4617ba141fe4e7d370d1a9e743cf7263500b97b11d28adeaae3c1bd7f93b",
+   "size": 1516638,
+   "sha256": "b32ccea5a685b6a3f5cdad47ea0f9bec3b4c0e91e7ed0e85323506b65f1a63f4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_4.res",
-   "size": 1684574,
-   "sha256": "42564a6abf7ebc46a42f990727670ed1e63796efd66ffbe8b164283d8a7b4b4e",
+   "size": 1425438,
+   "sha256": "7c6c24efece42cec303855e792dc74970ac505d81fe08c4c61884d568e789b5d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_5.res",
-   "size": 1293102,
-   "sha256": "da4eb8862ff89a61918a2bfdd193dcbc0a529f8437796bd9f79799bf0ac55227",
+   "size": 1244942,
+   "sha256": "73994b5cd179bdebb9713f9141f977da7fc74c70745cff4e4894a222542b7762",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_6.res",
-   "size": 1505422,
-   "sha256": "d2c4380c02451256520a3ea5490fe4b613f2b21e8305724c2c6c38cae4c951df",
+   "size": 1549406,
+   "sha256": "2e4b7a68c3bf00ed235f23b6bd992060918ad43865e95eb6d47406a00ab6040d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_7.res",
-   "size": 1635614,
-   "sha256": "2a48ed32219996f2487f04e37014eeef4b827b65239604e8d124bdb3cd4479f4",
+   "size": 1592350,
+   "sha256": "ea72369b508625098715cc200b4549ff3ad634906d8d209b0dd27df5307cca08",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_8.res",
-   "size": 1682030,
-   "sha256": "9b989d04041b5de15bec413aec06c2ac74fca542ea5f7f49724ddc039c77d859",
+   "size": 1577294,
+   "sha256": "24c7e1192a9815c8740a4ee7f7aa75f639654966a458efa467fb53b6c46c640d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-5_9.res",
-   "size": 1233022,
-   "sha256": "9778871c28569ac7d13e0526c80585a29ffb3782c953bf0b88a7f62a16664946",
+   "size": 1208270,
+   "sha256": "842f90257c8ed78d4ce0d8fafbaa58872a29e149a025a4763a77194e0cd578fd",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_-1.res",
-   "size": 1473806,
-   "sha256": "9facf0e0b464103f023a763d9be0199b501da67465e7c56b09474a005d0ccad1",
+   "size": 1532718,
+   "sha256": "d67a4e6016cf99068323795860a01cff0298b713dd2cb47ec4f9930ba70009db",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_-10.res",
-   "size": 1087374,
-   "sha256": "14b5e908190add424b7557a67e5902c86f2bc112e6e4056f2d4b155c08cf8a16",
+   "size": 1146078,
+   "sha256": "bf9b62fb4ac6bac403257148f26a70afc68436fd3f234399a38a1d1a8b048b0b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_-2.res",
-   "size": 1665950,
-   "sha256": "567955e032ba11f88bd42327b30464b206deb54b83c9e08ce86af49a3565850e",
+   "size": 1533038,
+   "sha256": "f9359767cc1184b806dede50009e29dd5fc05ab963572902a8e787598a459e4a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_-3.res",
-   "size": 1501854,
-   "sha256": "913d274922c0286ec6a10a9bb2ab35f5de6b318434a21d364137c0c1049fe7a1",
+   "size": 1204302,
+   "sha256": "10e865c4c708efa8711cf9d2311ac564bda41638b6d175454d4264af96412a05",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_-4.res",
-   "size": 1276142,
-   "sha256": "6921247eda4a7ed9456253efde8868b2c4bb039b2907abfb3225e8b7819082bc",
+   "size": 1491822,
+   "sha256": "d9d3c901b19149c913a84fd83fefca42338d1f10fef3a54347cca1629d9b7bbf",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_-5.res",
-   "size": 1319294,
-   "sha256": "5454421d806adca79157a7ae95ac017f5ff0c49dc890dacc69c593e1092fd90e",
+   "size": 1363790,
+   "sha256": "c00940c025b2073200872f11ae518426942f14d2537459a1df989c5082eec59f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_-6.res",
-   "size": 1436958,
-   "sha256": "7d792160d5207b04ff810f52ffc8d67fbcc256d65e15148193267f53ba5e0a03",
+   "size": 869886,
+   "sha256": "5e9842ec3396dcdf1f9cb5b99e4bc18d44c7bb626e7ee8432e87a1c2a7654ec6",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_-7.res",
-   "size": 1309166,
-   "sha256": "cd70b25d6c16579afbe8783303c7fd3b156fe026872332f86951343d58bfd504",
+   "size": 1284942,
+   "sha256": "263c59802fe47c8fc4001e97c5e03787f1c6db11821ab04f2822f8a2e7b32ec0",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_-8.res",
-   "size": 1219134,
-   "sha256": "7da557b9adb826a0f8eab8d0aa1a976638c98d8a11a7d229343859a8e939d31a",
+   "size": 1568158,
+   "sha256": "bed45c52aee3ed0e40a9f0ac7640fbc7fb1579e353e577704f02631f07510f78",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_-9.res",
-   "size": 1563886,
-   "sha256": "2d9babdb94bae9f02f761c829004c4706596d1b0d58e4194e36134b88900b73d",
+   "size": 1060986,
+   "sha256": "2c792d67020464e0d5b9ecebe26e381a31c7633a7908c6d383ff49b1b1687f78",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_0.res",
-   "size": 1023150,
-   "sha256": "395ebc20639036ac795811ab548715b948fa0eeaf2c1d71a9a0cc2ef08797d71",
+   "size": 1550094,
+   "sha256": "1acfafa1bae36780e6f15c6b932356c7ab163028f49121e1204682d7122167d9",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_1.res",
-   "size": 1276974,
-   "sha256": "29a3e096ad4590dae1103a3f70da53fbb8129b36aca6a5c64555b730dbe36c4a",
+   "size": 1063278,
+   "sha256": "c985d3139836251f0366eb8e1de1a984ec812bf9b3436d22dc6a253b7f09e0c1",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_2.res",
-   "size": 1695518,
-   "sha256": "7acafa672f2ef987c9441837f76847c07edf78ef67aacd029691b1dac472962a",
+   "size": 1486014,
+   "sha256": "2a8bb1ba1649cc598b799361c1ed4b0d18c598222ce58643366bfc41a49d6366",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_3.res",
-   "size": 1698382,
-   "sha256": "caf7400ea9e75728d1ab4730379ca6f5b18bee16f8924691de5c4016d724c28b",
+   "size": 1531982,
+   "sha256": "bafd990d3946017d3d3528a708cb4d005f8ecf9d4bb87e9bbfc3f89ce689f1f0",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_4.res",
-   "size": 1379390,
-   "sha256": "64426086e613affe8531c045c67c6dd76929b3f1795c508c68569ddc263ee4cd",
+   "size": 1528766,
+   "sha256": "393772de6358f6b8502028c071111f59a495aa55b1fec555e5c311f4fc6b5c28",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_5.res",
-   "size": 1570846,
-   "sha256": "4a517949720f2a258c6140c67372c70c13d5adfd80a6c716ba7bf8fb5cba2d90",
+   "size": 1523646,
+   "sha256": "a3b8bbbf017e0a15f4b0739bdf30fe24569bd5d2a03ef7561f3f377c5dc77180",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_6.res",
-   "size": 1503062,
-   "sha256": "fdaed5891dfa9ffeadbed8594ae0383d607ebfcb7d51ea4b4c86b45e90aa126f",
+   "size": 1503098,
+   "sha256": "0a07fdbff1bddbae55f92fbcedaaab24471c66a4d197419c748396d21ed7568d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_7.res",
-   "size": 1260782,
-   "sha256": "d5a1a1bf641db746791756648d73dacfee6bf26725ff6f08bbe2e972ca122dac",
+   "size": 1221182,
+   "sha256": "f19bc2dc5220129b856c2c385865a65a7d0d8d0f164bbee031b61336ba2b026a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_8.res",
-   "size": 1202526,
-   "sha256": "40a9ce3a2873578ef7026dd753d2d856d6b75123996d3d9455082b3b7e212b09",
+   "size": 1609086,
+   "sha256": "601ca194f4d827ea57b1f6c56f1d38b1a2fb28829897ec958c93eab56d679e75",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-6_9.res",
-   "size": 1388606,
-   "sha256": "21eb39b3691382fa87ec9f080920cb178e8bd81d662d6bd1dddd3735ca721994",
+   "size": 1205582,
+   "sha256": "961cbd376cf1d91bdfb18c9fe8dcaa106cfd19c4a65292c99678d7a5488a2aae",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_-1.res",
-   "size": 1631886,
-   "sha256": "d49ff9fea1fbbbe2a05f4a592218263dbb6c4a3d32dbb9425157ed3337dca138",
+   "size": 1085774,
+   "sha256": "12e02b1a4c4bd0360feb809239eda3ac8893b74d3e2aed4dce5c1cf64240c477",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_-10.res",
-   "size": 1045902,
-   "sha256": "ad1833d00c833327da5ee0c86598684eb69007a83c043a64a40725cadebff565",
+   "size": 1196190,
+   "sha256": "e637af809c15c611d149978d8d872fef01be47f9e4b770cd214d9dcf6986dc43",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_-2.res",
-   "size": 1555998,
-   "sha256": "ebb0c2ea72dff6a49da5b1f0fe25c42c0edef1f14c58601c170611f3056569d7",
+   "size": 1482590,
+   "sha256": "52a467aed453fe0c20ac8ac085463efab0ae01889cdc05e503c96d29701c113f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_-3.res",
-   "size": 820094,
-   "sha256": "f273d4d9eb85526dc0f6eaf1357760f320e69afe2c9fc555cdddc480d86bf167",
+   "size": 717598,
+   "sha256": "065162866399f6029b6c13535b933e5a89ab831c4c9f0df08483b6b4052bd5f5",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_-4.res",
-   "size": 1772782,
-   "sha256": "9b6465f076c4faca23f2f00c6fe7adec2f9521e29338710cbcd4c7de85aff409",
+   "size": 1403278,
+   "sha256": "b46a9a00172a1df70cf13070d2ee9c5204bd4bd156e4cbaf473d283fe0e4fa24",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_-5.res",
-   "size": 821998,
-   "sha256": "eba46779f0b19613c11d67d7e3de93a3add40614b6a0fe75486ef064b5fccf43",
+   "size": 1472638,
+   "sha256": "d3b6ea87fb75afaaac975ff107759718f3c2d7a865d4608fc1bc62205829c92f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_-6.res",
-   "size": 1647262,
-   "sha256": "164ae6df013e7aa933c4f56679f9bf070981a02034dbd6cb67187ab745c82575",
+   "size": 1291246,
+   "sha256": "9df15b1180162b18d16bd85da542cbc0bc090696b15a417c3a3461703749d9ce",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_-7.res",
-   "size": 1698446,
-   "sha256": "0dc71028fec005045297aa1b3172374c5981652c5dbbaeb7cfc849de3f6ce108",
+   "size": 1555214,
+   "sha256": "39d3f28aed82e4f295f076830a509f38d59423fac4092febbf688fdaebaea982",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_-8.res",
-   "size": 1137950,
-   "sha256": "60da52edef26e2f8fedb45736a1a9291513d610e64e3cba9c22f539e17255f6d",
+   "size": 1089102,
+   "sha256": "aa779587fe185baee6fc23c460a8ef18f1b7d280e9fbc82ba4cad03c65f06d9c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_-9.res",
-   "size": 1523038,
-   "sha256": "ca4606564a96e39885814189ad3ddea9892605fafc058b55d93c73a59af301ba",
+   "size": 1595630,
+   "sha256": "6807e9e1c5fd222d64c6692be563f019191b728281b8af646fa1f6a53c2d1d56",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_0.res",
-   "size": 1407838,
-   "sha256": "7f675aa6a1d521ab1b397e659eee821de48f13b2605b50e49f32bafe2585895a",
+   "size": 1460622,
+   "sha256": "621fc2110677a049a277de3ab596fd6fad57b20eb3315d3a432f0dd1a2fc055c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_1.res",
-   "size": 1459454,
-   "sha256": "e8271fb603a3d015388ba0131fb8631f662262d3088c1284cdd8ae0755e1a736",
+   "size": 932942,
+   "sha256": "0f2b0f859f952b19678cc6991cfcd195d98547b2469aeabd95cbe9d802a15807",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_2.res",
-   "size": 1278334,
-   "sha256": "aed3c56ff93c9f29818037a29e400ab1cf356b41c2657863d188479f04133fc7",
+   "size": 1434014,
+   "sha256": "704d8f5048613251308bb1dd735c0cbd954ae08dc8c3f3db9f137016f84ffce2",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_3.res",
-   "size": 1501982,
-   "sha256": "ae901d573595e56c482b95399da3fc30808a7c8895cebdc6b5e171d7dba73ed6",
+   "size": 1451966,
+   "sha256": "5a6f705c614401924f45cad89190ed1e8308fc519f76736c7d6ec65c9086ea71",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_4.res",
-   "size": 1381566,
-   "sha256": "26c91e3d9f7e6857db7b6dc347a96f38e7980d25361b9990392fcc8d4606084b",
+   "size": 1269950,
+   "sha256": "fc34ab5152fe7876c6a8f24d3932f3f12b28ca38889322c3e0162fef963e7eee",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_5.res",
-   "size": 1252062,
-   "sha256": "7211dff80286ce1d0459ace5d3d8624e3d8a874967d2545c0064e687b0d10b99",
+   "size": 710506,
+   "sha256": "5120eb50a03c5dea0f7dbad374d1443fbf3a4a38dc62de229818a0b5a881d137",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_6.res",
-   "size": 1119378,
-   "sha256": "42d129bd8b97ac36b1866de38226b25ecbc8010e43eda5be467b1600587aac18",
+   "size": 1114754,
+   "sha256": "bd3f99788b77dcc5440986e3443ce4cd2bae6172a170246de33fd572a48357bb",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_7.res",
-   "size": 83650,
-   "sha256": "6b9ccb993ea3deb1bac7c6f41da1c02b18b3fffaeadd80a92f42acf706244825",
+   "size": 94866,
+   "sha256": "585aa52fd540e87fa00aed8911de3790ee0a90dae76c492330ce02bd24663ddf",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_8.res",
-   "size": 1354158,
-   "sha256": "a549284a22bf31ce4e33c16a06de21037078e35215b24bcca608e0976617548a",
+   "size": 1585598,
+   "sha256": "3bdc5996b1ddca34969f648faa572d246afd9823ee924ee6d91cb3343023aca6",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-7_9.res",
-   "size": 1360430,
-   "sha256": "e5a8268439da480c17d21890b34a7e53559e737c4d50322144a177c8cd2fec41",
+   "size": 1179134,
+   "sha256": "4110295f8d0b59479805d1b697ef8cd14e2acfe16823f0c6effae3379a0a8ad2",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_-1.res",
-   "size": 1563038,
-   "sha256": "2a3baab63532e5e4d6c62980d7ec3a6db77f20ca7e1528a49110d6af64eaba0e",
+   "size": 959902,
+   "sha256": "f0bbe21dee842b6e0c5ebfc4dc192ec0a21a008762e4b3571ec3aa3d9442e079",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_-10.res",
-   "size": 1364350,
-   "sha256": "eae9fcaf1ea0ddbcc0ead90ffa84943dd9775802d79598d8e82841b7bef5e6a4",
+   "size": 1183550,
+   "sha256": "af3d388caa935301419a5e2e1e599e5e1dbd265b3b0fdae3d2c91959b77943d5",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_-2.res",
-   "size": 1605486,
-   "sha256": "34782c04b7f7804180d449711b7b2865944725da35ba3a949d0bf071d157dc92",
+   "size": 1248478,
+   "sha256": "879b65b0ecaf9b05ff674754d703144df9b8f22e566e8d7307015730ddd92506",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_-3.res",
-   "size": 1230414,
-   "sha256": "44366cb9a906f0cefa1a35d91cf7a034b54b4feb1a6f2e8ecb2aba96088dbfb4",
+   "size": 1553822,
+   "sha256": "4cb5514eec81b1a576c1e78a85dbb1eba4997e0f6878298e25ca650015b24755",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_-4.res",
-   "size": 1371742,
-   "sha256": "a70294414ebdabe8593a2f6a3a9a7f1eb975115ef0ce8c3bde211d12a6aae57e",
+   "size": 1453294,
+   "sha256": "1b95e5b745534df6773ec8929bd8f4472abb9932d52061043a613e53c8c074d0",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_-5.res",
-   "size": 1333054,
-   "sha256": "aac3c0085bd4fdca031ac5b308b2f15541a9d4f7620ae22b8f64b41864004810",
+   "size": 1096846,
+   "sha256": "a69c39fc0cce8dd7f3eb475618030b8117d65125eaf10b0c1c662dbe7c39ef3d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_-6.res",
-   "size": 1380750,
-   "sha256": "d02cc158c03fab5e985ca6168804e1bf3869cbd861add099d8ec80871f39255a",
+   "size": 1583438,
+   "sha256": "ae13e5e6170fa1538069fac68662c41b6a933efe22facad48021b71b17bc3485",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_-7.res",
-   "size": 1543854,
-   "sha256": "ea90dbb7169f3d2b9abc162e961ab738c061a5396916340a508297cb01a1da7f",
+   "size": 1618302,
+   "sha256": "398cb23feebf1e07d4f48124635ca1a6a59c9832df24c64e66a54852fb92f4f6",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_-8.res",
-   "size": 1120414,
-   "sha256": "91c857ea72ab94745d01feef384eac6624bb1a3970b12dc7e2cadd934af67864",
+   "size": 1257342,
+   "sha256": "da3951cef387d7f21f8918d9ce6c5e383a519c5787881ecdfd6834cad8e96a8a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_-9.res",
-   "size": 1661326,
-   "sha256": "62a64b2d535ee7aca25fe252c12dd98010f0062c4364a3584d0f21280b6c0669",
+   "size": 1581038,
+   "sha256": "65df06ec3df74412258abdea972cf5aceeae825873c9d9a281e6f3256f6d0442",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_0.res",
-   "size": 1104826,
-   "sha256": "340d0c9b07015c69de5ccf7eeaf2143474800e5c0091070c94c16896c7a00375",
+   "size": 1242190,
+   "sha256": "2f14e7b48bb4b2550c9902891ab6b4a9ff92518689b6fae404400ce346776da3",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_1.res",
-   "size": 1088478,
-   "sha256": "89a7bd7abced10d4365a3f6986abb72916101477d8c39c59281646abd38fc30d",
+   "size": 1179054,
+   "sha256": "1f761994a107bff4635b95515fa09c238a9fab4492f1323ed518101a395399f4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_2.res",
-   "size": 1377582,
-   "sha256": "d70264d6b47d80d6544284d1ebc2ae1c53e71891f24009d6a6588d94558a5707",
+   "size": 1528110,
+   "sha256": "e42d5a4581476d781943f0b2c5640d8f5b1e25424953d3217b6d2a2ee37b43e8",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_3.res",
-   "size": 1688286,
-   "sha256": "bf8b2242fa3e302f905fac98c0f502c1a6feb84c929a54538b7c430f4f041e22",
+   "size": 1435118,
+   "sha256": "1fd00ccd6f214ccf79b7ad3885bd82fcf2dfc2399f2775497452d8d85ebde1f2",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_4.res",
-   "size": 1285566,
-   "sha256": "63cbd6c0d1c2177869c64c737b967bc89b21793612995b4aea7a5c0fb127969c",
+   "size": 1550638,
+   "sha256": "6e107a9ee56cd2dd54a7fcc435401eb1d6018e23b3ae6dd7a7d3768fd9ee289a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_5.res",
-   "size": 1475598,
-   "sha256": "8b25ea0b488d7046a119ab02b1500cb28f20907d300e369248175bcc15b58f95",
+   "size": 1503726,
+   "sha256": "d39139ef46a14b43a9bd5dbdfeecca9c6984560d06a3f531a9393e7d0cd212da",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_6.res",
-   "size": 1431846,
-   "sha256": "9c613167a9627b778206f6dffb3eda081c516fd035b96096b2f1a517470525e1",
+   "size": 1433654,
+   "sha256": "66ada59bfef3624395c57a49a38b35da63c1254a02f0d39122f5c8b12f08a1f4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_7.res",
-   "size": 862938,
-   "sha256": "a293438d80c04a0547b34f592bafa0515622c8907dc20a8941e0ed746a6d8c44",
+   "size": 912074,
+   "sha256": "668defdc23908fef617af6375dae9040b9a0d1740f299ee8a4242a345febf119",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_8.res",
-   "size": 1744094,
-   "sha256": "01b72864e9154a94c688b7fae5f7cd8423b20af4e699315608f379392a956dd0",
+   "size": 1609614,
+   "sha256": "37c4c9daa30f01b2aacf4e065b20387f3154f6974cd0ba02bde9ee285c62fda5",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-8_9.res",
-   "size": 1338014,
-   "sha256": "ba0c7993a616b29bf08fb066078baabee2c90526ed7818bcd67ca414243ded0f",
+   "size": 1179662,
+   "sha256": "ca78b98de8b4bb18c4bb37f1fd596237c2731e855289fea7970b9370a99abe5a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_-1.res",
-   "size": 1551646,
-   "sha256": "e20d79d8c74c9789251db030d0c176caa8a4022299134612d820c4b5185c3595",
+   "size": 956174,
+   "sha256": "08d27c5492b773fefa2215caac58792b531c02ce9cba375233d8a8328e509b7e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_-10.res",
-   "size": 1225758,
-   "sha256": "0800372148672ee90aced17ef9cafaafa61d4298a9c4579061aa46d5dac6c3c3",
+   "size": 1200894,
+   "sha256": "cbc28146e3170d62e52d359210f4c2e9521b5675e53ef0c13f28f054ce754e8b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_-2.res",
-   "size": 1145374,
-   "sha256": "219d0fd84c6ebcae0c758ec7d41376f96c82bfac0086e092db6095c25a372f6e",
+   "size": 739166,
+   "sha256": "38413cd411851fc046265d5882704f1893af06e4b70828c6be8a8c38c790aac1",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_-3.res",
-   "size": 1137966,
-   "sha256": "437be77ea6bd1873e5f33378028342ba95e4e7cedd76ac493570cc3263fbb193",
+   "size": 1457022,
+   "sha256": "eca775a71ad0c3e3e5beebbdd2cc079d3e559528a14b3ee8d42b9eb590504a5d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_-4.res",
-   "size": 1294270,
-   "sha256": "061af08bdfd3cf6fed9ccc72dee98abade604b5d67bbe896c79eb581087d2703",
+   "size": 1393278,
+   "sha256": "e158d5d9c3160b99a9c09b27eaae4bd29a2b1cde740a2fc0fe620b6a70be5a25",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_-5.res",
-   "size": 1417166,
-   "sha256": "49b2b15217351c11a18d7124869536fdc91d16d99c708484ef8d94c22ac3446e",
+   "size": 953674,
+   "sha256": "5cf8ac22d548e4d0400eb4206cb23be8b828d5c2f2f1070f8dd110367a80b6ee",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_-6.res",
-   "size": 1602238,
-   "sha256": "9885211520987103fff32c446271a9653eee091bb24b1dc00784a72785628ebc",
+   "size": 1528318,
+   "sha256": "2a7a8ef53f4c865faaa965be4d9224c4eecde03e5653eac25e4fe1dbb98c889e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_-7.res",
-   "size": 1299710,
-   "sha256": "a2be91414a6fad7ee8663a783ccd8e85adcfdead80ee0a21b4c17f2bc343caa6",
+   "size": 1558350,
+   "sha256": "07ec0de12f8ab935b626300e32a7dd259c112a39642c51d7a88058dbbf8d71f9",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_-8.res",
-   "size": 1593950,
-   "sha256": "4dbe49eb16e4761e94baab4a1d8ecbd19688a563ce3d6f18c85fb413597b453e",
+   "size": 1575230,
+   "sha256": "ee79b1ac23b9a75f5e34cc8282a2e4781f561712f11b50fc0dedfe003651da7e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_-9.res",
-   "size": 1651774,
-   "sha256": "397b67e5b9839b0f078e9d53faed2c3877e9366b096b6ab849bd679170c07911",
+   "size": 1578590,
+   "sha256": "2c3ba3ed65852bac61e3623792ad5e36be5fae47ed149048ac7998ec18a3c412",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_0.res",
-   "size": 1454910,
-   "sha256": "4d08763b46246ec2feb94fbccc416cf2082390b0dec2031f5bcb722dbe07d180",
+   "size": 1504942,
+   "sha256": "8215ee86c79f3cdf8a829e95ce84232a92892a5e6270dea9edec5f1bf8d74edd",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_1.res",
-   "size": 1508766,
-   "sha256": "cda3037fcdb292b302374482928ac9b626edc7bf7bb1c169c5c723626bb3fb3b",
+   "size": 1524510,
+   "sha256": "5d1795be2eca8b6fffc8a9e7f5d8fdf07b5e5eee6f6f3d8fdd02f0273c157968",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_2.res",
-   "size": 1224590,
-   "sha256": "59c5f0760ed961a9ea67e2bf47b26095e93edde71b63cf0921dc47c80ee1b3b2",
+   "size": 1523086,
+   "sha256": "1113c36ea900e5edfc7ae9b6959b1487082389e4fe1b8c783f15a3ea9918acd2",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_3.res",
-   "size": 1359246,
-   "sha256": "0430885f3a1b150aea02f9e26cabb43cb7f16a48696a2c335b28d5a69072b5e9",
+   "size": 1564014,
+   "sha256": "dd0db579d95a05d24436cb53c134eac797e69772d582bec9dd3be70dee322884",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_4.res",
-   "size": 1572190,
-   "sha256": "ad2c75dd63241318b5080cbe783753c012e1e40e54ecb341240b340d2129c2c0",
+   "size": 1554718,
+   "sha256": "45f482c0d4715bb9cef2ceb42835125c247ca2ea7b9ec0bff94365ee46ac17c5",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_5.res",
-   "size": 872058,
-   "sha256": "047f706920514cb1e9aaac533c09ff8c5ca7fcde23644e899b8be4258b8b1bee",
+   "size": 895146,
+   "sha256": "60d67541b08cd84391c3374b26c7be5221165b7d24506760ed5c6c262da0e42a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_6.res",
-   "size": 1587262,
-   "sha256": "3579cf3a515fd8aa95f125f9060d7b2efd467ea9b569878f0609e4f00a8be99f",
+   "size": 1581246,
+   "sha256": "889094fdbec13b6bec8592c7c397203f86590f4f044e50a7affa18fe0ea13d2f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_7.res",
-   "size": 1610366,
-   "sha256": "5a164a6b60bf4cdb93521636aee0f6fac621db8cc311e16ffb4b485afc20210c",
+   "size": 1509838,
+   "sha256": "fc8ede19e9297e7ad90456f577f7ed1742504fbce817c9f16f3eb68a9453923d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_8.res",
-   "size": 1665758,
-   "sha256": "e70e5cb8ba080b5dc28975a4a4d8609d0b4a4face5c08db2d2d97fa0a4857296",
+   "size": 1596702,
+   "sha256": "6a54c8dddd82e22d2f378d8a678200098e9fb695e983d28a32fc66a92a36d3ae",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_-9_9.res",
-   "size": 1195342,
-   "sha256": "c72b78eb05e58a62c6c684c961471f1fbb8506b8354d5e7cafb18cb9e541f59f",
+   "size": 1194094,
+   "sha256": "2ccf491537ed73d5d335d37e2a044f1d5935b6767e58cc5463190544a15610a6",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_-1.res",
-   "size": 567990,
-   "sha256": "be823d9ed50cbde152f8ba1cf68164e1fc4c538c64f845d763a34866ef70cb26",
+   "size": 776346,
+   "sha256": "2e39262ef8bf864c8656923ad412b79130654292edce4f08e6d6bb93328ec042",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_-10.res",
-   "size": 1126414,
-   "sha256": "2e83033d56a75321d760d1e9b64e84ff6fc8f01f070b66bd7723ba629c415720",
+   "size": 1011198,
+   "sha256": "088f8f1df41910393d658b6445b60543a5c0bc11a2442f465e031a08a7a8fbad",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_-2.res",
-   "size": 1110462,
-   "sha256": "275787a3e64b54919a72a364742741f77bc88ec5e1cfc533bd0b702479596f29",
+   "size": 413050,
+   "sha256": "7fefb5ea919ce0e2d6b19212754c69c4870fd2c07df318ce851573b607450031",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_-3.res",
-   "size": 1447310,
-   "sha256": "7051956f062165d26c7e9e076bc47b038b5d7b30564a490bd6f022b098c5a645",
+   "size": 546382,
+   "sha256": "a8236c74e3d704996bd2f8ffdeaeb9c1ccee029bb5e9ec4dda240e11fe0a2a8d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_-4.res",
-   "size": 608606,
-   "sha256": "61bf5577051300656db3e37a2eddfb8fde9a5726558080f9b499ca71a91e6c71",
+   "size": 1153422,
+   "sha256": "aab4a3b421eb0d1779ae0393ae1c12fe1a2ad4cfc1741240d24f8b4b0fea7670",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_-5.res",
-   "size": 1016526,
-   "sha256": "fb12e751abbec87787c397ef044937fb51056559f1c753be3d21c2c785a5197b",
+   "size": 1088318,
+   "sha256": "05e78ca58085044d530cb5304775c166a3289650ba685ca38ed80922fd83baa4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_-6.res",
-   "size": 824558,
-   "sha256": "00f2062d4826c8874961e1ad67c74943512dd2932d1cad047ed39bd638d64f7d",
+   "size": 323454,
+   "sha256": "b148dd1cf1cc3c2b43cbc859825655f857ab2ee87fa0faaa66d048b8ab7bba0c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_-7.res",
-   "size": 454926,
-   "sha256": "c5cae00b5bb6db258fd162457305e8a341718a2136d36ec6dd4098446b7fc700",
+   "size": 489022,
+   "sha256": "8c99d270c6fb86f8832714a0874e6b47d08d0c1a719bf381884e7eaca516a71d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_-8.res",
-   "size": 1681950,
-   "sha256": "106c4c79d1d7f7a60d00806d92e9cb43cb4959bd3a2e4352e75d0e398e8dc66b",
+   "size": 514990,
+   "sha256": "e7e01d58b93b58f833bae97037470feaf4043d47390d18d62758d9b6e0257b16",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_-9.res",
-   "size": 1272622,
-   "sha256": "adb74c7fcf1199209dd96dc57e65f536f0f0a469725bc94744c818e3c2d8c2ea",
+   "size": 575118,
+   "sha256": "3149e1c476fbf21b205e5a3aced7f36008053cec095832026d8e08810c5ef6d0",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_0.res",
-   "size": 549082,
-   "sha256": "07deea8be2b7a385d41f0c7d6891649c87ec35dd24a74141b6056e166df19f46",
+   "size": 894902,
+   "sha256": "578646a6c47d2c234d2ce352b8feec56a3336a9a5b4b24de936b5b0d911c609a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_1.res",
-   "size": 824638,
-   "sha256": "83fcf0ad0b5e5b96713f122422e8241a8ff6daffcc4318d3b308cc5831f5730b",
+   "size": 1558238,
+   "sha256": "7b1768b09131bb17921182238c861cf1ec95dcf89b7784552f4a8accc77b21b0",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_2.res",
-   "size": 1632750,
-   "sha256": "f8cd4f8e0a46e459ce014ca9b6fbbc8cb8d9df1f97e5c50865305ab4cbf96afe",
+   "size": 1578958,
+   "sha256": "7bd7bffd0ebb3d38bbc7f4270e80d271efdbf2f3c667fb4ee3f86ae7a6cb5049",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_3.res",
-   "size": 1619230,
-   "sha256": "5eb211dfc432e16af0b4d269b6345932e5ce81f5ff233f15a1dc0c8a952c53e8",
+   "size": 1570974,
+   "sha256": "2e0a8095e6bda6dc4f286cd3851d976f7119ed6dccb0af10a2f9aa19201d8f4c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_4.res",
-   "size": 1104710,
-   "sha256": "c6cfc8ad5328395342f46c5b45ac2804e18806b73c493a9f77f77e57af4116ef",
+   "size": 993738,
+   "sha256": "b70865305c2cfd5796fb04ede44454aa4d2a612c4f9e7823686045f234ac87fa",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_5.res",
-   "size": 525906,
-   "sha256": "75505f52dc1214dd2e16367914a9c7cadcb88cb8c0401d5e052c934a93e17e2a",
+   "size": 193614,
+   "sha256": "7bcb48cea1cf94b8866c893975bb83934e3b4718ab04af14c8720edae693bc89",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_6.res",
-   "size": 744606,
-   "sha256": "943e499eafcabca7aea4bc89292c7d5ef2c0e226a0573d4b4f8d7d64421c63a8",
+   "size": 193638,
+   "sha256": "083e217fbdd54f3ffa33b10d6a786850b00748c65c92c6bed49d4520281c1ac5",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_7.res",
-   "size": 233354,
-   "sha256": "3757a4fa8f2b8cb9293c1352db2e2144ecc907b4363bceef559290324eb99065",
+   "size": 674322,
+   "sha256": "0eb97e60d3c89618606169846dd282b03a66036ec3db14b6381e4d85a3e72cbd",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_8.res",
-   "size": 869670,
-   "sha256": "6b31bf29b4085b4187739fdf00f66742acf204bcb66d71440c9ad06f49e77715",
+   "size": 1201054,
+   "sha256": "18d8a0f9ca516c7bf2065747ab9b1f92e05358cc3fdb03414a33278dfa1938bb",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_0_9.res",
-   "size": 696958,
-   "sha256": "54d5115857dbf6496c286f34be0c558ed8e5650bea69463b18fc48bed49370f7",
+   "size": 1128746,
+   "sha256": "82dc14b585746501429a09f9d6bacaf5c6ffc3ac65d2f98d99ea3bcb4b5ab6a3",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_-1.res",
-   "size": 1142286,
-   "sha256": "265cb1dd47e31ef40651bef1781096463e4e5c4f38784ed06f868dff4ad94345",
+   "size": 1522750,
+   "sha256": "192b0132edfd63bd782ed932e522547f655346f6b2101888b197e4a230c13643",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_-10.res",
-   "size": 814814,
-   "sha256": "c10c318e737b5b17b66c4d71ee1215b5cbda5665f73bc5069ab0dc4dac1e12ef",
+   "size": 219150,
+   "sha256": "f9fac6ddede922cbd333c4fa498b8e001faae4100842a4b905901422b2e99c14",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_-2.res",
-   "size": 1629966,
-   "sha256": "36ff0c2f22d670ae9e97350cbcb7d6e2c23ce2bf095c3a8c18850e7c178f0f21",
+   "size": 1517758,
+   "sha256": "e7bba52b5833cc37becbeef98b21725a0fa63e8c2898d9ac293814d7548ebe3f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_-3.res",
-   "size": 1240254,
-   "sha256": "99fa506c72dd4250c801758370af0c8c9cee4d1e4fea49a73b8d0ec223adcbe9",
+   "size": 1588814,
+   "sha256": "8db8ba0d5dc315e3b32f3c84c53449af4e79899a050b442e40b74a7cbb58caf4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_-4.res",
-   "size": 1222734,
-   "sha256": "ca8fb991a3fb8cf2e2f3aab884f553afa5890ad73df8e70724a8dc9279ee25bd",
+   "size": 1534078,
+   "sha256": "55f712fc41c21818e2bacca8b37e290df7de4643af65c034e790e5836330444c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_-5.res",
-   "size": 168302,
-   "sha256": "b9c8b57c3b08db1be5b95b7396a7d31ccacc37192225c7be90bb77df947c8b5f",
+   "size": 392158,
+   "sha256": "383021c3d360df8abb905432f5e8fb0bbbf9618f2690f002eae110a2bd80b668",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_-6.res",
-   "size": 989662,
-   "sha256": "cc2ec4482932d1ff66020265d550fdfca3d48dc0ad7aad2d9a0dbe531cf61ff5",
+   "size": 960814,
+   "sha256": "1459379c1f5c5f3785ebe1b17d3373e1c664c5e38b5933b820df80127c083f01",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_-7.res",
-   "size": 1545310,
-   "sha256": "bf32fa85c33ec16ed3a6eb322c966d8b261b737013ea03320ada6c084d0f45d1",
+   "size": 1481182,
+   "sha256": "60e1aa2d021ede7775c2cee42819ec97112dc47a687437deb961f199cc4d43a1",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_-8.res",
-   "size": 981950,
-   "sha256": "6c6db3cd8f5bd193bdd5e58a7c5e30c35548105e1321333b69dcf4b4c3038c09",
+   "size": 1375630,
+   "sha256": "226b7f3df54d4ddb37101eda47bb8046886ebfbba0b06845935ac4d6c5f4975b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_-9.res",
-   "size": 1507294,
-   "sha256": "65b210a4530a5f77d2b9bf66157af94ec1d033f4c4ee487e67c3fe1ee5f487f8",
+   "size": 795102,
+   "sha256": "0daa528fa6c75ee535d8f3ca433ef356524a394ac22df6c09962ced5a17def85",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_0.res",
-   "size": 1342766,
-   "sha256": "03c5c10a9de5985d28b3656fc12c6f272b1f789d1cdbc8952a3d14b4cd5d8f96",
+   "size": 1556846,
+   "sha256": "7e34896689c158cdf962c95b8e026f297861889fb6a19dc33826b83ea164444d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_1.res",
-   "size": 802218,
-   "sha256": "9ab3a2023a1daa8013b0ec13ef0100eba91f301d713aaf0e87d57e4dcf53e64e",
+   "size": 627358,
+   "sha256": "31cff5aef5ec77782f1b5df3753d75c6f767d949e81ff60fe9c64fdd7306fe53",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_2.res",
-   "size": 1260382,
-   "sha256": "a76532e7fcbeab1819680d8a8da8dfab5fda46eefa8832c5da5adff996a787a4",
+   "size": 891886,
+   "sha256": "0726e57219c0fe2554869a39923c3e4cc8c26207f9b93a243254d145f07bcdca",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_3.res",
-   "size": 396842,
-   "sha256": "f196ef868cea694392966008d74ab65f6b3c9d545c355ce51239f79d26351114",
+   "size": 386310,
+   "sha256": "94383221dadb26ad3e7e8095523cdae1ddba11c76a915c9611009a313a1ecdb4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_4.res",
-   "size": 156978,
-   "sha256": "a123f1b1addea455a0fe1f3e47cf8501f9df052feae9db2b0e00f1a93aeeacc1",
+   "size": 255350,
+   "sha256": "bfe3a1ea19a776578d97e5065125d422ed22b8dea024b89e4d5d10767bd94faf",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_5.res",
-   "size": 1122238,
-   "sha256": "a117d9be51651c4b7a40f3fd054fffb4adcc6917cb0d37efe7412f6478cf037b",
+   "size": 578242,
+   "sha256": "7c1a909bb59855176f1603d609abbc246bee0102be8a206f26343ca184bb00ed",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_6.res",
-   "size": 1089258,
-   "sha256": "1521720cac900cbdca230dcf0bd4224d3d29e400b3f71a2532a4fb8d371da26b",
+   "size": 1096094,
+   "sha256": "d30395bf4f2e6e5ed0f13eba33e7f7d386ca4de262e1f942ce1e05a483e86f30",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_7.res",
-   "size": 1456826,
-   "sha256": "d877869e8c4bd24938bf4c8cd74f1728cb25e0c421a1835f2991f2b3b7be01dc",
+   "size": 1534270,
+   "sha256": "27848ee33d1d27fcf6e76c570f6c8f0d4b4e32f122f69873fec11a726894051c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_8.res",
-   "size": 1761294,
-   "sha256": "5275e83aca77a886e888ce5a211342ea30bb746af293f7db2b576875c1b3922f",
+   "size": 1597982,
+   "sha256": "26df2efa057fc7a9b42eff589d5cbc8426c6c3992f0d05516d6243497ab650e1",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_1_9.res",
-   "size": 1148862,
-   "sha256": "3b7191ebc5695bbd4ce7b24ea3872e49efd3c37e70e532669dfd4dbe34f0f7d1",
+   "size": 1179598,
+   "sha256": "7bd68ce19fdf58ffd8a37763cd511d884e9b5d85c016ddeafd439041d0c5790d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_-1.res",
-   "size": 418570,
-   "sha256": "fa2fab14309366d45b0c9c0765ce9c3bbad421bea0f2655a8b1313a0beae197b",
+   "size": 777826,
+   "sha256": "a34a4a04d302f105b35e087cf79df0a19b7ba1eb5126119dd47553d723b5dff6",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_-10.res",
-   "size": 580666,
-   "sha256": "9125f2f2dc5411d3c334a8ef5eff205e7eab3d8d80ab4b3bc166eaed7d5cf132",
+   "size": 1138718,
+   "sha256": "30107a0d8e83b6aa37a5ae2d6a784a8c2d8ff44708dc79156f0d6c18759625a5",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_-2.res",
-   "size": 1232030,
-   "sha256": "ca75bb91ed9afb17468cf2053b98bf1d0b17f381ea3188bc83734f9e0301c495",
+   "size": 1237214,
+   "sha256": "57f0047c3ac32b61d9bb65f5aa7caee4b0492b048a6f23bd449538e840fd3eaa",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_-3.res",
-   "size": 1516110,
-   "sha256": "848d2e31daf6af2ac2abb7bd1326d3736b7fe7db73047e345e26c3845b14f845",
+   "size": 1578622,
+   "sha256": "b75d349e7ffe6757ed3f6421e695150d1de861e02a15150185fce3702e3c3aa4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_-4.res",
-   "size": 1479358,
-   "sha256": "99a2d7c3b81f6a0904cb5c52516789ad2633ab58d6d8bfe02edcc3f28371d329",
+   "size": 1500238,
+   "sha256": "18295c47fbda114a6c70eafbbc897f897df73bf9fafe53f200886935c233322d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_-5.res",
-   "size": 934046,
-   "sha256": "e67155d63cef68a6fd3e62ea97572bcf0e88a0dc684e832cfe2fd3ab3b1d71fd",
+   "size": 943230,
+   "sha256": "835da5a312de2327d74ff5ccf5b9a4e4d7fa62d87b660065ef4134ce0c8bcc8a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_-6.res",
-   "size": 1336542,
-   "sha256": "4b8b9d170c9b95d6aec122729141ff1e4a8000518a433cac2a7ce013b01ff118",
+   "size": 354058,
+   "sha256": "c5283ae661e0767bd0c8d830cccdfc0d0c93b84c1e6324ec3cb7f9689dc9543d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_-7.res",
-   "size": 1559454,
-   "sha256": "119ecc4d67e5921472a4e421eb60e2c82e72d2e666c2536ce800321a5105e122",
+   "size": 1530062,
+   "sha256": "d3a88757cad2f07e36aaa113fdf6939d106f1b450aeaeb786db732e9aa88f558",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_-8.res",
-   "size": 1454222,
-   "sha256": "96da8a1af65d061d3fbe822a399cdf9a404fe03ae6c7b0d4cbc3ffe2bd042050",
+   "size": 839438,
+   "sha256": "9f2404189adc6152d26063b759d49048e51f806c74bb05f31f41131775f09973",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_-9.res",
-   "size": 1314942,
-   "sha256": "4a6e156b6a0bc8fafa50a81460e4f378503464b023366b3b9ee439a1111dd67b",
+   "size": 1573566,
+   "sha256": "2944e0f3a9acaed20009180bd0845d6ef1ca8ab8011b5da9ac15b35b5fb1757c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_0.res",
-   "size": 1405642,
-   "sha256": "cddfaa11c93c66a01938280c0867f37737e38ac39c1818829baeb77cb4a259bd",
+   "size": 1141722,
+   "sha256": "a5a82886915166fba1ebf514c8f92a19a36c4c1e015b98d4ca75a725d9047ccc",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_1.res",
-   "size": 1525662,
-   "sha256": "1584f17f823017607f96dd84afc2075ec795c22d22b1360581e25e6dbca5d1ad",
+   "size": 183170,
+   "sha256": "c1568fbfa222195ecbb3682e542dae3050ec164330c60ef47ec81c04c2aa38b1",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_2.res",
-   "size": 325246,
-   "sha256": "6c9063571059f1ad28639e3ef3cabe324f62259ff53cae90b3f1d221cfb12100",
+   "size": 169910,
+   "sha256": "d3cb51c825550e7c20690e2e92b50ca18e6d6fb9631b6d041e8b9394e5ae6b0f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_3.res",
-   "size": 137210,
-   "sha256": "0a358182568e3728b7ae8c5a8d2aa6da7ee8461291a0b0326f0ec36a772bd0a9",
+   "size": 119946,
+   "sha256": "cb81afe7f156a8a7a6bbb9d04233a14883f130bfaa8a31282bb29d754dc3ad79",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_4.res",
-   "size": 174642,
-   "sha256": "426641bad2b785843b2ef83510ec0c7f1748a78424dcd70951f54c5cc0eaf266",
+   "size": 254130,
+   "sha256": "49089c8684639e034d7ad9c582d8ded9c2ff27e228c17e3eec3beb50f39fcd33",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_5.res",
-   "size": 200410,
-   "sha256": "fa3b75163b1062d99aa6f85ac8617975c3283ce441a8220c656fe7eb2f783722",
+   "size": 209142,
+   "sha256": "6119e6dda4406347d4f38e4ac54b39b4867e054617391db7a2c2066691b5b981",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_6.res",
-   "size": 1073766,
-   "sha256": "cdaeef135552c4906b85977801a90342f71b4de8f83d1a19dca1b61cd018b3db",
+   "size": 792398,
+   "sha256": "e7883c4087b5702f00fe6a3c0b8d07fa2a7f4740d7d9fbfeef0b754435c7f78c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_7.res",
-   "size": 1737518,
-   "sha256": "3d043473a677b81650c3be2b1edc33716b1b2ed53aac80a3d07f057380e4d731",
+   "size": 1509582,
+   "sha256": "423babf54a55745bc49188955fa406e440ca1344b1678bcad2176a6937303cb4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_8.res",
-   "size": 1367582,
-   "sha256": "76a8a2bc92c68b7d293e036824fc43c1c5f7c2408936aa0906fd70049892a6c3",
+   "size": 1582174,
+   "sha256": "2c8a44797949ec0cc9d3de22c1d1a14b52913698e1d9166a7a5e80538ccae92e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_2_9.res",
-   "size": 1081614,
-   "sha256": "94105f505ce5efd4e2c4243da6c507a2d5daf3bd73452a20c0fdd11b861a152a",
+   "size": 1197982,
+   "sha256": "efaea1859f65c795ef7056adeef558053b8701d2e9cf7a243bdd400407867968",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_-1.res",
-   "size": 136002,
-   "sha256": "8c1b528b5899ecdc6e730f90e2cd292a924f4f4854dc1135d0e7a5f35a38a34b",
+   "size": 124178,
+   "sha256": "228c8ec003cf9eceb14f7cf073e03cb698ed197e1a61e769cc8326e688b3a105",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_-10.res",
-   "size": 1343790,
-   "sha256": "bf92f4acd68af149b28207b956bef4a5d0c171687b91af03ddebe61bdfd236c3",
+   "size": 1176718,
+   "sha256": "98604bd92495ad82284bafca8f53fb9909500ca195cf602295ab262ec96863de",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_-2.res",
-   "size": 187958,
-   "sha256": "d254755014098ef331e2ec1c491faaad5af853185c954fcae7745fa227296f34",
+   "size": 163518,
+   "sha256": "6a0561813ba25cc13258a4bb96241e86e7adfd18e1e3536320bf75f476533c86",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_-3.res",
-   "size": 1062526,
-   "sha256": "0cf7c8fa6df9cc9006eba398edeca11ba0ff03604a8b6857ba97388be79b7a5f",
+   "size": 1226542,
+   "sha256": "2b54cfe152284bfe777190909c078f13b49c0d19daeee59586772134e9c918af",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_-4.res",
-   "size": 1145582,
-   "sha256": "351326761100720f8afcedd66690511ba17e5b53535a613a73dd6e632cbdbe9c",
+   "size": 1522238,
+   "sha256": "502c56c6a79a51ae906f226077777ec025b636225e0785c8e076718aee9cf823",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_-5.res",
-   "size": 1821790,
-   "sha256": "c2bf8f890218e5987e66a77c07c480a4498fa08440a806a395c0d1bd9f97acea",
+   "size": 1460830,
+   "sha256": "f61173e8b8784f2fb21b943343c5869573742235cb23fffaad26c16d2f738ba4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_-6.res",
-   "size": 1432574,
-   "sha256": "56cbf7e1b8e1c60fe4f0db2c78e6f0ce87d9ddc7bd67fef87c750971222a5659",
+   "size": 1075790,
+   "sha256": "efbb58082badd65990d62a0a2e681601e4e54938ea996fa66b42485418ce9559",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_-7.res",
-   "size": 1657678,
-   "sha256": "3a9045fe3bcd1b9b03b3a235b32d7de82dfd62b59290b877c7f38bb9375fe36b",
+   "size": 1577470,
+   "sha256": "86ea9623b212fc992b5ff94b9df7551709f2c12f7cb9f4136f78eec4b8a2fac6",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_-8.res",
-   "size": 1384862,
-   "sha256": "ea6e944450f8d7b3cb24db7e537d8d5441e4b892a83f91d31ca796e7f087dab1",
+   "size": 983022,
+   "sha256": "b947b89299143926ac043e1fdc12da6310ba08e27a168c908b2d0ea16a1160aa",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_-9.res",
-   "size": 1030270,
-   "sha256": "f5be366bb47bedae2790cdf95118675fcfaedb2f80255ffa37589155311cb3cf",
+   "size": 896734,
+   "sha256": "66b90f71ab916cc4c748ba4d2fc937e20719bb0b24ac2c2a38b6c8721dac786e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_0.res",
-   "size": 425182,
-   "sha256": "8802fb77bc635a0b4f604662851e6de98d568802bf14b4054d553c8d0ef0377b",
+   "size": 489170,
+   "sha256": "d556e4feef3974110ec54f0401cb69648bd71db151e84c9a68f70634e590f921",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_1.res",
-   "size": 472414,
-   "sha256": "a5a68d9eaa4127252c81780a8624abfaeca3828a0f9f1e3239e9c695afb6439a",
+   "size": 630110,
+   "sha256": "969c0fad04e4eb5ddfdb6672e638a9243f3a40e32437bf304eb9317a41ad2659",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_2.res",
-   "size": 1196246,
-   "sha256": "27c572138adb5085788d3704d28187079b1d5c0a19d41650764b93b74f66fcf4",
+   "size": 448074,
+   "sha256": "266b13cded7552e2cda2093cf70feabbf29c7c484f320d9945f6584302fd39ee",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_3.res",
-   "size": 327638,
-   "sha256": "e126002efc29b0cb681f71fdc888a0d0454731421b4a2b70c02b3449349635ce",
+   "size": 579390,
+   "sha256": "620bec5d95a68c03dd56d921241a3c72bc52dc590e31b24d914e2b90a0e3926f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_4.res",
-   "size": 309506,
-   "sha256": "1dcb73afc11815e31e9b367b36eb9a4c33be53126a67673facd4f948a3675cf4",
+   "size": 455466,
+   "sha256": "699c84d6ded63e2b0c099ef8b90898a121125be956868d966afdc0b367f1697e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_5.res",
-   "size": 168010,
-   "sha256": "d5b8a343dd3f116a2dee3b92c9713b6b0e21269650c4f3ff6f4c22c0ff79ccb8",
+   "size": 720618,
+   "sha256": "1265edb0e0c9ad4c53c972d66324d83adaedf3f041bd51be949bdda17534d393",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_6.res",
-   "size": 576890,
-   "sha256": "ed7d4451aa32accc179783f4c7ae377bc8d18399508b62de0623829cecb4f018",
+   "size": 1415950,
+   "sha256": "d719247e11f628a57e0e99ab804dbdb8cf1e1ca579250b5c86b05688b1a01573",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_7.res",
-   "size": 1285038,
-   "sha256": "4fc559c077be3a4f9585699fceb642f52378538dcbbd393ae3fedf67891e27f9",
+   "size": 1432046,
+   "sha256": "3de92f66125891bb8c374e10f0ceeb0101e9a36b2a5789f06b2ab40946acb7ab",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_8.res",
-   "size": 820638,
-   "sha256": "0137038e2c5a94c1b5aa0c450d4f29fb4f64935dc3a2176a651ac08e33ac9b78",
+   "size": 1127966,
+   "sha256": "607968ff3dd2daff32f2123316f32a6a97a98f0efd4b6edf285a6ec8525ff8d1",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_3_9.res",
-   "size": 1211550,
-   "sha256": "ba477894cb2aeb89cdaa12536b7ee4218aa755f50c42314e5a4d7256c94d3130",
+   "size": 1191150,
+   "sha256": "c3ea5032e889f0a82cab82520932bf73d7536d24a600f0075a4a553c08f51272",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_-1.res",
-   "size": 101010,
-   "sha256": "a13ba3774c55470e1119997e9ad348f4db09d602a6244b68bd0c1001353fc6c0",
+   "size": 77050,
+   "sha256": "84431dc64a2317f55d7eeeb12ea43b5454cee3bb319567d68f94ca52fbcc2d7f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_-10.res",
-   "size": 450910,
-   "sha256": "35b6f070e0b444580f75b2e4a236003361c083f0096d34d17a1f0139caf00133",
+   "size": 402526,
+   "sha256": "ec1d52d76796a992961a7e8015be206ce9882e2b939d2f651daf5a12b8c59f2c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_-2.res",
-   "size": 136782,
-   "sha256": "f5286ac4edb94721a202254e8b2efc64e698e44edb7e44ea2b819d8f3a5c293e",
+   "size": 108082,
+   "sha256": "d807e4dc1cc6e10156de0d14ee7f8bce7685d4694ef34efede8c358186cd9674",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_-3.res",
-   "size": 1381374,
-   "sha256": "4f7fd51c7714f1821e9daefed8806ad319d7eaf49505a97cc0e93882c250260c",
+   "size": 1097386,
+   "sha256": "18727c1b02a3352cd043f23f469a50c5b0542b62d9fe10c5f0a685a557edb764",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_-4.res",
-   "size": 1142254,
-   "sha256": "63cfbb7abe4fbadad2e367a2ef19117970e3419a82cf4d81927f927ee83e0aed",
+   "size": 1458830,
+   "sha256": "1dbabd7bbb7eecc9564fc4d9c7566dacbe032c99f3451281db28612e8babb8cc",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_-5.res",
-   "size": 1733790,
-   "sha256": "0afea247fe465fb73705a8e49404bce3be2ffa80044a2c42ade9853d78f584e1",
+   "size": 1496558,
+   "sha256": "27d700489e258e149731de6c0dcbf582611c1101340f45905d16f3e765b224b1",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_-6.res",
-   "size": 1074094,
-   "sha256": "7801e4631d8361c49376bf5d2caac24d53006196296b723e034d793e4e9e2a00",
+   "size": 1534814,
+   "sha256": "669d318396ee5067bb940759cf66015d6080931de26db26b1bb9522f2aa83713",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_-7.res",
-   "size": 1608958,
-   "sha256": "18cfb257a71d211a8e877290ebf7c4299a0c77aac44fa8825a34249f63f1312b",
+   "size": 1538942,
+   "sha256": "769d98c0f75e48684f476e388fff3de385b9f94b41be0cafb51c5e8290e7de9f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_-8.res",
-   "size": 1615518,
-   "sha256": "0bb7e3a11dc6ec601ad2db41168f0834ceb67ada3db962cb07a8fd14277c091c",
+   "size": 1490830,
+   "sha256": "ff82175328e21ff0fd653074023e6e37ad7b6559601002e8286ba8b8fb498c8d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_-9.res",
-   "size": 1137406,
-   "sha256": "699b4394131718f98717f6ff0ff698ac4213942e7db890c5a519b11d150e3ee7",
+   "size": 960638,
+   "sha256": "86e52eb4be082a6e57e17f140bd65cdda89ac0daf98b4f5f4db7f8833aca9ccc",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_0.res",
-   "size": 865214,
-   "sha256": "069dbbcd50183a6516cc6536b6d01d4f25707ba55f29ebfef0edacaaefc5e00b",
+   "size": 739378,
+   "sha256": "9b7bd147bf7db641b3541f5dee13c9f79e4ad6cd2c9ebbf25bf9b0eac85f6237",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_1.res",
-   "size": 1001758,
-   "sha256": "66e493112f1fb6cb73d4db32911cb4bad636b589f00a8279d490e9957487c0e8",
+   "size": 1596126,
+   "sha256": "9f49a89907f59ee8f11eacbc0fc0da42a80b73f1c127f73b5bd7d4422488ecf8",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_2.res",
-   "size": 1563534,
-   "sha256": "4a7e42b54bc188666c386b3d75a6a9cdf6f52c60b27f479782000afdb4c8b500",
+   "size": 1510142,
+   "sha256": "e16ea347d7e7cd3b8b62a3d0bffdba503890066bc92eb80bf834b021c1779233",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_3.res",
-   "size": 1829886,
-   "sha256": "ddaeb67dea405922aa82906c8880f74ce17261ccd03604bc6aad524997cca160",
+   "size": 1543038,
+   "sha256": "c7b3cade2e48c5d437dd822be92abe822f0a7a38835f6b6670cee65d117f7569",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_4.res",
-   "size": 1770574,
-   "sha256": "2aafb6069d8d053d5c9127e1c2c585cb5b8b45b686631f8002bedbab4d79f3b0",
+   "size": 1561966,
+   "sha256": "dc8acee00913cf7587b0e29c4063fbb5d2731233bd0b1f6767d2335b92c01a74",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_5.res",
-   "size": 1499134,
-   "sha256": "eb9129bd71d98bfdbbfe061eaf978d88d6f0839f899d3cbc78d162e1780ec01f",
+   "size": 1545982,
+   "sha256": "03874bbe1006ef3d768194ad390d38fc174dd1090b6ce370cb801ee076c0d271",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_6.res",
-   "size": 1586766,
-   "sha256": "14fc9302b23eab4b89c51d757fd755f91268498a131b88349e7c6d615d5b77f2",
+   "size": 1536894,
+   "sha256": "323d03333882ed0441dab60b46bc380e61367ba443b9bde0907a61e83df5e5ad",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_7.res",
-   "size": 1491230,
-   "sha256": "135cfe4323dd696ce064c931fbc32400c9c0049a9ccbea61fe4067e19afd26ed",
+   "size": 1479918,
+   "sha256": "1feebb9806c41abaf4108ea7ee0e344d58e93b8103fcf9dac3470474965a8eed",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_8.res",
-   "size": 1449582,
-   "sha256": "908831abd94f99c88cc5fac1d1c392e6bf2b7c02b41b4c75ec20a22aa6092c39",
+   "size": 1314718,
+   "sha256": "9c4e412fb3c3859369f63feeaa0b54daf8e034410668c85b4a29d6e87fc83860",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_4_9.res",
-   "size": 667614,
-   "sha256": "92fdb3c523194b322086af9ea4bd8ea6b715dfb935776ce383af6159e13445b4",
+   "size": 1182414,
+   "sha256": "9f507315e5eb418c3023594b8520a3a718ca21349cdb55ceaae47907fa02e04b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_-1.res",
-   "size": 426866,
-   "sha256": "7ee348a19a9c20186c875edef524d710c7f735eda6b40c3bc2ee18c07e50a31d",
+   "size": 620982,
+   "sha256": "c7ae28d535e30f7b438581c9edd12363d599faa10b471e54053a37a20458494d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_-10.res",
-   "size": 224862,
-   "sha256": "af0ca6057d13de0ac6f08340534b01eb11b16a861c0ae415375e31f25139ab8e",
+   "size": 216970,
+   "sha256": "1158df1652c4f8494cc0fd357bac0c3041cc712ccaf34de2320239c0cbd6c9fa",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_-2.res",
-   "size": 126698,
-   "sha256": "87bfa4286a6751a5cac5058d60065fd1a99e8f278738b94c072ba840c4cec4bc",
+   "size": 231126,
+   "sha256": "d7e9030b6d8ba0c87b1edc1e5b6e296786c6070aca1884156f043ee03b4e8f6d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_-3.res",
-   "size": 1428094,
-   "sha256": "dd4cee13e31edb0d4b2ccdd503894dd192a0f908d2dc1670e8308f7f0cc2ac99",
+   "size": 1513294,
+   "sha256": "8eeaa49d1bbbc824ec2dba91903da3fee49d78da8f1d563f62698d1e7b58e381",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_-4.res",
-   "size": 1101550,
-   "sha256": "221eb48ab6272fedcae32efbb067aadf5b4cff3e9197d2312f1a7c2ab1aa2325",
+   "size": 1521870,
+   "sha256": "0319bfb36cfcf06a13582ab802719ce6b477dc7e1226442ad7390f77b99bf684",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_-5.res",
-   "size": 1173038,
-   "sha256": "8724ec41a38d933e280028e529d0c98c4cca98c0c9c73740abb42865286bb774",
+   "size": 1535902,
+   "sha256": "18417ac5688191262e8282af00ecc141a7ba83c34ff5b454223531d472c50505",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_-6.res",
-   "size": 1661534,
-   "sha256": "a5e7a712d6157851f3aff3b36da10219697bef580273d62bf4244bfe93303395",
+   "size": 1548142,
+   "sha256": "a530f38cd16e9909901b5eddbc1c9851659a47a438fac1fa08fa6fd1cf91b4ed",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_-7.res",
-   "size": 1657662,
-   "sha256": "1c84abf264352352add79f784ac5870b3714a4c95592f68f2bb49bc2efc33f8b",
+   "size": 1446702,
+   "sha256": "c142b1e1ffe61d723208bd29e78205c506c5038626dc9c640430de68e7449445",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_-8.res",
-   "size": 1208494,
-   "sha256": "1027c875e2f807aedcb34413293c84a6ffd0f55499275c012df38b15393bf45c",
+   "size": 895838,
+   "sha256": "2e2669fb1e89b2b4c8f601853dfdd63b3180c314fcab474270ed9b0f2222d96e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_-9.res",
-   "size": 379230,
-   "sha256": "0bb7898fa9dca67ee7d8aabeea93b33ddb034e605388482327bd4511a65e5267",
+   "size": 341534,
+   "sha256": "2d8d40bdc3e9274a3033fba746b3a28e7fa0c95eccf3ec999e363c2e5c2a7886",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_0.res",
-   "size": 955422,
-   "sha256": "7481cda29d92ed8c6f83377004eccd713d65589e8f7e5807c10bcfc45724b322",
+   "size": 942526,
+   "sha256": "00dc71d3fa7cee92f7d9c0dead3185047c4d33a6601a54e2fd7dc2b70405563d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_1.res",
-   "size": 1139838,
-   "sha256": "b9c57be822a7a07c98d0dcf9943df4cdea189e6b1a16f817ec5bfb3ea21c1c0d",
+   "size": 1481726,
+   "sha256": "b2c8d2bd939ecaa1a646488d968cb0ff1bfd4cb02005e922ddec4f8cacc38adc",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_2.res",
-   "size": 1499982,
-   "sha256": "41bf21731372ef6561f59154a6ca12089677bec80f36f5f580ac6c10400c62f5",
+   "size": 1529134,
+   "sha256": "125c014422d60d9190bd5128d5c5c1bc99c16b109f6e302888fc0f8070c101bd",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_3.res",
-   "size": 1790958,
-   "sha256": "fef98e49fd68ebffe26961fee17cd7f8446d91acbd4fcc6af6089e6bfee635a4",
+   "size": 1552862,
+   "sha256": "eaad6c54dcd2fb423e8ef9beaa63549985bb17c5ada457d8bc6c28d1539cbc5f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_4.res",
-   "size": 1577326,
-   "sha256": "b26ec18b4d6d3bfadf2216444dddec80547ca7a10e1bbbb0fbd658674dd8afbe",
+   "size": 1492574,
+   "sha256": "ec6d3bca94238125bdd236c7b24f8844c6ad718111a68a917c5077648151c94d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_5.res",
-   "size": 1534046,
-   "sha256": "56d9dc4cca1343a26e274f3b7763d8e71297d06d1ef490c5725018f6e7167554",
+   "size": 1561086,
+   "sha256": "0c8d59dad58fae4aa26cd7e845398581cc00483fdfd623548102116fcadf91df",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_6.res",
-   "size": 1750894,
-   "sha256": "7124df4fa92a0bc1dd2211f0a7016a8e7a5c8935bfce8b59dfb0a55b09277d03",
+   "size": 1411070,
+   "sha256": "f269b72213bbae76b2449613dc06ac6f28ea7d243c63914de5ac298feb123ad3",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_7.res",
-   "size": 1532270,
-   "sha256": "74628a4ad196a18e5582822c4807e792972310eb1896a1a7c399c4e2cda71b9e",
+   "size": 1083806,
+   "sha256": "e50534680a4564bcf90945009865abcac42ecee2d89c6766f8396fc766e0cc74",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_8.res",
-   "size": 1410782,
-   "sha256": "432a40bd53bf397aaa106222e5189140dcfdfa41db6357c681f61870416f592e",
+   "size": 1563534,
+   "sha256": "5f1f270c5ab4014afa92f056585a8dabdacd4c82e63b309da70cef1ebe83ce8f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_5_9.res",
-   "size": 1230206,
-   "sha256": "3a26bb5d1bb50623735621ab0970bae475266ef6bcaaec2b668f2be7d8b44a31",
+   "size": 1201662,
+   "sha256": "ce2253a0c824f8cd74af085ded9567c3fde21e9da3d3d1efd7d5fd82115ee08f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_-1.res",
-   "size": 1432894,
-   "sha256": "a1c9dcd5ee8abd83c477bb8efbcaf42cde446b1c7806fb4d4ff33d81a12d23a0",
+   "size": 1568318,
+   "sha256": "7ee35cfaed70bf0b866cdf745fe3729dc951eb26130cc4dd1f0a10a05dd4aa52",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_-10.res",
-   "size": 788030,
-   "sha256": "cd8e95359f2813ae34bbe682357a9c96386424a7220b208407adb1db9dbd51d7",
+   "size": 713230,
+   "sha256": "3faf0ffca784e41208c4363ddf368fcc4fea09ada0ec1eb748685e89895d5b67",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_-2.res",
-   "size": 1400670,
-   "sha256": "33b43cece785c2be2d6d46d22b3879a5fbdee334c377e346fc26bbd347c38b22",
+   "size": 1509358,
+   "sha256": "77666924a5a2ad82ffd2e1cdb2bc8703e02871a95a439d46fb1fc7ec1c349bc6",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_-3.res",
-   "size": 1216286,
-   "sha256": "885bc858a3f2b784116634686fdb661a20da0d8c3ab5d9a948c26bd9c4fc5c57",
+   "size": 1529646,
+   "sha256": "dfed5c85e129f9cc2757039da5ad8f065bcccad14a17b9ce3d8b0160f0a2234d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_-4.res",
-   "size": 1260574,
-   "sha256": "622a2c11d6ec22fb03c84b3e781d1d8ae330fdc33270e6aae6dd13eb5675171d",
+   "size": 1189294,
+   "sha256": "459b56eb80390eb32c00ef90d419f3e937179df1f12de9918564afb79b43f9dc",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_-5.res",
-   "size": 1456414,
-   "sha256": "bd5df6409e29cdc4fcefdb0b07f5a9dee976b9f8225da444bf835f058a0ae53c",
+   "size": 1562302,
+   "sha256": "656935e9f5b796aafa9330431dbf4b63b71b4b14b904910c579f35daffaa5b08",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_-6.res",
-   "size": 1657054,
-   "sha256": "971d9742e422750acdbbd1dcae2f4268dab9ef27e348946f3069500d03e9c342",
+   "size": 1508542,
+   "sha256": "1236248873052063787ad131751e47e8ac4b477081db09ba3b4164ae7b8d5992",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_-7.res",
-   "size": 1489358,
-   "sha256": "5a206386ed1dae78857ba2c710f5e0b2b3e7b5140797400f9be9c91e48889fd2",
+   "size": 1210654,
+   "sha256": "7631d730346aa9f61718756702322c6073b49505803d147b63b950bf5bf91e98",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_-8.res",
-   "size": 886158,
-   "sha256": "88e61fa17857fee21183a18b068920d39bdd76a7ca475e0be539373b7453678b",
+   "size": 605710,
+   "sha256": "ad778efa6ab991afd175b5dc94afc1e560a298050397d3e04a84eb5b34ff235b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_-9.res",
-   "size": 844942,
-   "sha256": "45ce77811733fc21a02b223aa6146fce47ad42967012197ca21d81bb739b2497",
+   "size": 654142,
+   "sha256": "889c84c7ded6072f475138bc687fd7ea0fde8c91678449dafd889b91d290d06b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_0.res",
-   "size": 1563246,
-   "sha256": "0e27601f266d8d8362a074d1af2cbfaf0405cfd61e0c691d9ec435eb63df1fed",
+   "size": 1577118,
+   "sha256": "498d4cb0210f5e054ae17ca2301eb54c47f5961f687ccc129e82f5b92dac14ad",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_1.res",
-   "size": 1684110,
-   "sha256": "b159e4b64ac92bb42d215e582455dee7bde9aeb5e2d66ab019e86bf43d9ebe37",
+   "size": 1561998,
+   "sha256": "7ebc4df83e9a44913896c33a73b9590a8b1d71d64976340e28ddbd6b8cccb6c0",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_2.res",
-   "size": 1247806,
-   "sha256": "48b546e8623537d8158d8495e83abed457cfdd82cb7d098c25955dea8e23a81e",
+   "size": 1495694,
+   "sha256": "b123485fdc8700848cdd7f9bdcf5b73fb307533dce24b51255201ffd3f2c691c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_3.res",
-   "size": 1427374,
-   "sha256": "47f4d322e78aa3026dbcf68c71d3424879d1765df22ab34980d5cd89fdf52ef2",
+   "size": 1040158,
+   "sha256": "99266d4f81566dd7f8ab76f6b297e45b26f1d8efefab86923b71c1e6adda14f8",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_4.res",
-   "size": 1694414,
-   "sha256": "c2b5dddd82324c4e4d4eab048cb6484dedfe6d167c2d2f8f88cd3f2fadda3230",
+   "size": 1422062,
+   "sha256": "7a6eae22a9961ed2d22070b3db3bd3f69c6d7ef664c65083cbbace545daf7bea",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_5.res",
-   "size": 1324254,
-   "sha256": "0a7566f3db6cc451453aab9e3458e39c0417adb73d140c7c1faecfbd487f334f",
+   "size": 1178094,
+   "sha256": "d2a2409a753972051c902872c46538f21e02a8b1e4c62845577cc3fa0b3dd92b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_6.res",
-   "size": 1392334,
-   "sha256": "bf287fb3fd3ddcef1a8d1137f456e8c6f15412087343fd62208e352935c33fb0",
+   "size": 825614,
+   "sha256": "557af56a044861e6da4672da5f071e3412344dd9f66005614aa8290e4ad54122",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_7.res",
-   "size": 1744526,
-   "sha256": "56f671c303f65d2e59d71bc7012d39df8cdeaa06a342efbe043c7d0b897594e0",
+   "size": 1387950,
+   "sha256": "1ac98eb3f2fb0b037dcf0a69141f03dfbd28d54fb186c3eaaf16c2dbc4c5d538",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_8.res",
-   "size": 1756686,
-   "sha256": "1156d680b452856ad7f4f60025e5f36050051d50df3ace27ea9302936afc8c75",
+   "size": 1544302,
+   "sha256": "94a4bb5c1e6f709035bedd00281099df19a8e64180b9c0072c04986cfca4586f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_6_9.res",
-   "size": 1092286,
-   "sha256": "6d5034cc21df7ee13543a6a5c7349e97f15ec99ca353d46456542e5df6270a66",
+   "size": 1202814,
+   "sha256": "ebd750f42fa17f18a8aa9dfd9bb17f4f7599797d00c8b0d2a1bb282f70514b3f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_-1.res",
-   "size": 1617182,
-   "sha256": "0c5e04c1a6025fbce4ffe5b350b74f7165ca96a3d4243beb0bb10443f06acc29",
+   "size": 1379054,
+   "sha256": "585bcc9d044d9c757535c11334839d52b0d9ce6ea236a195c9f5601509a7fe60",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_-10.res",
-   "size": 1055934,
-   "sha256": "1950600d60e8ee6d162478598e7a7551578565dbc3a74db0c677c20b760143e0",
+   "size": 1012766,
+   "sha256": "f81217007eea5dc37ffb0d62f556bdfd76ceb40f168a0aede3a939f78f71697d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_-2.res",
-   "size": 1179038,
-   "sha256": "9be83946542f560b2c44643489f4e3b18a09efa56c5c904f78722bcb6d67d577",
+   "size": 1546558,
+   "sha256": "06cc67fcd10f7737e441ca05face8f4f3d0cb9250ae4ea53431c6866ccc70fd2",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_-3.res",
-   "size": 1422910,
-   "sha256": "d68249e74d5e1cfbe7514d4d15e62e8dfc04cf71f8925a3352ca62ae79838a68",
+   "size": 1208126,
+   "sha256": "3dfed26e8f5fb578c9fe582a0a9e605d936db72862a218c957e2f046396208c1",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_-4.res",
-   "size": 364622,
-   "sha256": "493b1dbea4a0f43131e8dc439d25606fc95918fbb1a2ebd5a3af88fa6618100f",
+   "size": 467838,
+   "sha256": "0d37922bb254c43d61f987950b60239fa70469a8b86f577313a986c5394e4513",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_-5.res",
-   "size": 1204846,
-   "sha256": "3f11f693112306390e06f1755f38c15f785a0f618cf2ff55fe9c0467fcabe049",
+   "size": 1010574,
+   "sha256": "25c86f01f9ef41d49df71c9ad7052ca73af4cc8e3c940c8e8cad34aa9eb88bc2",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_-6.res",
-   "size": 897386,
-   "sha256": "3460e1e869c81e8532fd720a81732a5893c4177540696eecad267799facbfacf",
+   "size": 971786,
+   "sha256": "b00f2090ce19d9d2bf93a5e025c43656c9d277d1021dcf92266c1969d5e44e12",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_-7.res",
-   "size": 350046,
-   "sha256": "b77e3b318476ea252598c6c8c265a358a1c08466ba7a05530b6643e096131aa6",
+   "size": 342062,
+   "sha256": "a9605fd426cdb5ac713b0ef981414568490ad475041a7fc3ae3922668ddb7c1c",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_-8.res",
-   "size": 443246,
-   "sha256": "d7dd260184775a5922fcb3ac49c1c0b518773457ce7513b93ddb3d6837582862",
+   "size": 405166,
+   "sha256": "7863a07391cafaed3d795618421e70753561327a22dea1c55867f0e6b23dbb15",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_-9.res",
-   "size": 1260574,
-   "sha256": "eb0f19732485a3a566231ecc5d64f98f5bad51cf1e7992b401d8c558f0ad2521",
+   "size": 1035646,
+   "sha256": "2f59cd584cc95e1b16e924b761167b78b19defb9b29d35cb71b2fa99d100c2ec",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_0.res",
-   "size": 979566,
-   "sha256": "92193655aa14ce493d561c540b2a03c1fc9d672381a60230c75ad7fde79d01d3",
+   "size": 969054,
+   "sha256": "7d84aa6b4c512ab12a05a28e41706a2abfd6a0eeb9c6b08e67584064e425b389",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_1.res",
-   "size": 1554350,
-   "sha256": "e51fd5d19c347badca13b34aa5fb3e58eb5a69a97325a454d18f2a1a0ec4548c",
+   "size": 1562622,
+   "sha256": "196306decedf8246c24a8b952d85b18f4c260e0008ab34e9301018408e41163b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_2.res",
-   "size": 827006,
-   "sha256": "297f687d851e58377ab12a31ed7413660a9cb44a522cde2c245d63fd714466c3",
+   "size": 1469838,
+   "sha256": "245f2bd82581e86737c49b264133f4ce6345bdc5bfbcd0412f08a689721704e6",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_3.res",
-   "size": 1283678,
-   "sha256": "c55d18cbd2ae8d0b8ba2e9c4af1e9a26fab59c49c415e20f2bff7fdf3e62d053",
+   "size": 1049342,
+   "sha256": "e63f10ea5f74d6932131c9b5b5935d9532b333247fb568a7d08d294c1d8f8fcb",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_4.res",
-   "size": 1372142,
-   "sha256": "c60026f6a26b4d4d548c97c288dc3086ae91aa3f9168c391bbd62d6e75043cb1",
+   "size": 1139790,
+   "sha256": "2840022ae284be2108752bf7a7ec0c526d105415cfbca46feab39b62189ca0ce",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_5.res",
-   "size": 1495502,
-   "sha256": "d81e11876218a4084ee783c4e245c2e7f03fd8a2cb3c1738a40134739d04942a",
+   "size": 1543086,
+   "sha256": "d664e4fecded0c7e84f6fcd53d23165652c942524d6cbf6f59a268179be9a704",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_6.res",
-   "size": 1121994,
-   "sha256": "a64f4a25d4a25e622eed88176f79dbab77010ed7e8e4f5bf4467cd95196439cd",
+   "size": 1432830,
+   "sha256": "2621e11e8d834b7caa4111f6993f1f54d58f03720df86c3ddd7060ac386053ed",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_7.res",
-   "size": 1493294,
-   "sha256": "6d15b0cf8e653e8c58da78fca5b0891b4fead3016939aa7b6059354b16feca37",
+   "size": 1595726,
+   "sha256": "1cdebc74970aa13bd69f1a93d74a284ad71e4c23496c23a9d273c704f4a2a75b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_8.res",
-   "size": 1399070,
-   "sha256": "356e46100badc83d8c2e8f78e43628e3f662dfe9a92bbd0ea8cc9f08b4aa2f24",
+   "size": 1537966,
+   "sha256": "29bfb2ba4e430830d73c624b1266a5ee992d10fd91b53fdd87d000cba1da095a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_7_9.res",
-   "size": 1046030,
-   "sha256": "65cd3d8abf8171a6aecf7abadbd6f5a72ab5c2b06eb483f33f236378c7cbc5c8",
+   "size": 1174158,
+   "sha256": "2021e59a2c5494c4dfa1ad6192b0d3b2421040556c0a0b61fe300b480787cca2",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_-1.res",
-   "size": 1382158,
-   "sha256": "fbf4a81008337f0a97b44b7d6faff28256d86460fac2779c435068c2630ec583",
+   "size": 1533166,
+   "sha256": "d1efa6636e8406d5a8afd5dadb483c78259d040a37deeb3382abd77046945fc4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_-10.res",
-   "size": 1246718,
-   "sha256": "810c61783b9c787b25683f0a42272c251804f366c97306d66218c53b64c99d55",
+   "size": 1182990,
+   "sha256": "65c6a8e9c95265dcb180630ec091e1a2606f096e40fdfd7d7a2b56b9f8099ec3",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_-2.res",
-   "size": 1614510,
-   "sha256": "7ba8163eb8a8957dad157bd6a455945297705606b239a131b688f07159c00ece",
+   "size": 1541294,
+   "sha256": "015d09f4f9edbc583d893c277142cfe666a9ee3b4f871fe83798e02e2d7f795f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_-3.res",
-   "size": 754286,
-   "sha256": "2eb6988c7292391904656fb42fb922bec9ddf3b1886371216858eadd9a2f184e",
+   "size": 1030174,
+   "sha256": "accc7d85cadb22dbf51e8b032174ab8459da780d843c13332e2cf24f8220a9da",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_-4.res",
-   "size": 1352862,
-   "sha256": "43fd17130047351c1c1d1e0cdf8909d9eb054f07664d017fedb899eff2088a18",
+   "size": 1377854,
+   "sha256": "ee4dc762cc277f05a1f37f5ba043ce9d800fc7c9627aa2f698c1ee193f219755",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_-5.res",
-   "size": 1340942,
-   "sha256": "48270341a480ffd4e9a94d83942583fe223c0c9216558356bfd8ff90479b37da",
+   "size": 1193434,
+   "sha256": "a28e22c8d65b0dd0cec8265c87d3e1b51b8f45d9f22b46e57373de70b8cfb8fa",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_-6.res",
-   "size": 559150,
-   "sha256": "664142f73b7927babb5448985c4862caa5c6b87cb49bbb4f869729dad4961ac5",
+   "size": 713966,
+   "sha256": "b3423b00b549a3ed176e670482a67a20bf5be04c3120ff35e78a11ccec502ca0",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_-7.res",
-   "size": 615870,
-   "sha256": "424ca8f99225de8437c306ca9c4ed2d107860a8d71014be21d868362b4a46186",
+   "size": 482158,
+   "sha256": "9fd5f3119504223cef0fd703284645a8cb5e19db5bc2d88becf77f6beece20fa",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_-8.res",
-   "size": 900158,
-   "sha256": "6fe1198dbad22f0f2149b7ee7fe75c196e54127b9376233d2292c099cba98e2d",
+   "size": 696270,
+   "sha256": "a252feab061bb9d6fcd764c219ef65b1057b3d8242ec6d560f9d80e17869cc29",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_-9.res",
-   "size": 1704686,
-   "sha256": "bd21b229b3e770cb686fe09fb72ef871a1b4950713243e6723c4afb0bd9ee163",
+   "size": 1382702,
+   "sha256": "8b8f0315ca0ab921ecaa825f92eda7efe37831cebe4e8c70c43602aec3e74965",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_0.res",
-   "size": 1492414,
-   "sha256": "8812e10e762a3dc0ad31965ab6bf508a8e71e34285dc39a90b2f8eeeca66c555",
+   "size": 1427646,
+   "sha256": "f1f2dbd118527a5c73e08a3c5450630732461093a68cdca1d55ec9d536ec7737",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_1.res",
-   "size": 1616206,
-   "sha256": "8830cb5c3859501273f4a88bdcb2755e257b5f01af1d8ca80bee1556022aac19",
+   "size": 1102894,
+   "sha256": "99ebc5b84efbf0efbaf41db8d6228a9f768512ea8ca61631a058e8ee74de8966",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_2.res",
-   "size": 1186174,
-   "sha256": "33918d77b3d21ba42f4c054646373ac90b47d86050dc75378c1e228766e0d3f0",
+   "size": 1197454,
+   "sha256": "f81e30d82811bee87b3e3d5a8dc39bb5c48e7906d7a18732cc4fa9f61e2e582d",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_3.res",
-   "size": 1444622,
-   "sha256": "337fc50d35e859e804f1b09fde04c62eb367db1b5218408c66ac483fe895d1fa",
+   "size": 1413758,
+   "sha256": "bf9e8c67d1604b4fce499722a979c4e9f0c3139cc232c64b998abfb6109f84a3",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_4.res",
-   "size": 1486590,
-   "sha256": "b20816855095f619862bd790ad41356360ea3fef08adfac75d074f400e172d9d",
+   "size": 1231742,
+   "sha256": "d94dcb007518e0f1fa7c0f8178b1c069a81b028b34ab1a503ad50fe7e39cfc58",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_5.res",
-   "size": 1164910,
-   "sha256": "cfc18cc802185a7f966fa4701ed9d6b4d4e49a0225e8a19fdf8b918368dbb72a",
+   "size": 1020782,
+   "sha256": "6e570c8d5dff88f1ce59768d7e449a73c73ea3015000d8ef3c5a2ab6cd47a2a5",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_6.res",
-   "size": 1331502,
-   "sha256": "e3b170ad1508513327fac451271a33a227a08c30764816f8f9c77b4f0a85f1fd",
+   "size": 1545470,
+   "sha256": "77e299dbe5a0aebceb5eeb3b61c06bb3ad7dfd5f6f8ad3f062f88037a7f48879",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_7.res",
-   "size": 1626814,
-   "sha256": "4a6d32886cde05ee781fc01e10774fe6ecb41c1681c2c92bd00250ccb4a5a1e1",
+   "size": 1484974,
+   "sha256": "591a04c44192e6a067dbab5e6c1b93e26d09362a6e453cc3d7ad3396e24ff13e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_8.res",
-   "size": 1604174,
-   "sha256": "88f57df962fd43372c902f81ff876b5715dc8bb84fb903475c7f7c57d69222a6",
+   "size": 1521982,
+   "sha256": "0d0c46b6ffef93c31d2d755379cb072e68eb69b87419618451bac3d16209adb9",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_8_9.res",
-   "size": 1159950,
-   "sha256": "4f5cab0eca2e7ef5416b03d9e9cfe362cc4d341085623b931874a073c1d39069",
+   "size": 1192430,
+   "sha256": "7e7a8aa4e39046d19e6803bfeffc646ef8ad929a6b33e3c67a58c5a5fde7dadb",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_-1.res",
-   "size": 1443118,
-   "sha256": "ac47abbebbc72d61812ec09cc4c6bcf6e07096417c3b1d40994bed1260e77e38",
+   "size": 1151134,
+   "sha256": "85db36cae386b0de722278e6fdd89d5a1f6217246e58f462f2351d646a2cdfc4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_-10.res",
-   "size": 873214,
-   "sha256": "6931a9bbabc48fc0a3a6c8e494f6a7d354d21f44729669212b9c25a50fb6d328",
+   "size": 931490,
+   "sha256": "fcf3ca64ae3a6233397e47409ffe70f69a7eb0f51f23d87c6ff255cec782d881",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_-2.res",
-   "size": 1072254,
-   "sha256": "6d84b2e6626d48c5c8d61d2a57506912f03caa30c596353a5a1ab02ac1a9f924",
+   "size": 1215150,
+   "sha256": "5376ebd4e224e17343214a75739749d1c8da442f46b618468df5ca6f42fd16c8",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_-3.res",
-   "size": 1008894,
-   "sha256": "64d88dfd1e31ec818819d56f498a5981785419e4f39dfa23869d1179427c8733",
+   "size": 1223310,
+   "sha256": "e1f77769d982a7f649a094bf6ea854ed839778cfb5efa78b1d2ad8fde1a3a3a5",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_-4.res",
-   "size": 1043310,
-   "sha256": "8c0fb39a44708820a00870960e5d9f69a528ada82643948f818606628c0e44a7",
+   "size": 1168702,
+   "sha256": "10f7896757220049c29d9e8404c990e17d76d435ba4149402f3f49fc8101c399",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_-5.res",
-   "size": 737742,
-   "sha256": "1bfa5c5ebf55834608a9ed188d1df726b7e27793e5e6d3f835dc60636b600afe",
+   "size": 718846,
+   "sha256": "68804d2cf454f877c6a9824eac2155751dbda254053bb176fc72af85e9486b5f",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_-6.res",
-   "size": 319854,
-   "sha256": "93d83be7bfad0153c3b68288d20723bbd3f11ab4fc9029812df995c8bd66fa5f",
+   "size": 301454,
+   "sha256": "24bfa572ae818a745532f95a515043993246fd1579842acdf9067448d220b40a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_-7.res",
-   "size": 761438,
-   "sha256": "8f247ab805534b09d8f46412b8a5c9c67f3735fcd8d70e07e0016c4030303c45",
+   "size": 538174,
+   "sha256": "da5e7bb0b8d89e65b2f45285df08536621bce2ec04e6fbf5c4eae1bb8dfa3e84",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_-8.res",
-   "size": 1035070,
-   "sha256": "2e5a2582a1617f6e7fc5ed48cad7752bca66800bd64128a32e87386e87d07a9c",
+   "size": 971406,
+   "sha256": "6eabc9dfbccbbb3bdb7344a83543ab004386e03bbd76db1af8e6b63e000ab43a",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_-9.res",
-   "size": 1181182,
-   "sha256": "1121b6abf70ed8362398d74dd795ea8521d430b1a5d75dda09add03170debad5",
+   "size": 1125486,
+   "sha256": "c2438373ac56723bef704e4bcf3bf0a86c363de4c38295437b5907ad1e44e985",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_0.res",
-   "size": 768622,
-   "sha256": "1c0d7a17c9f3ea935d639dadc90a6c27ad4d52d70e9a7df1dc0a8b7c51b34ed8",
+   "size": 1214366,
+   "sha256": "a926b110c014849b8c0e2d085356136ba652670e7995422db09c7906e7bd3f14",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_1.res",
-   "size": 1252318,
-   "sha256": "77d0051497d9bdb6b1f44068b1aa23427c9969c6c856558189648ad50aa2f595",
+   "size": 1097550,
+   "sha256": "094ed13926bedce8057d523262160f865319bc745f36ae7d13b9ce0023917682",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_2.res",
-   "size": 1173790,
-   "sha256": "1e95e992807a75174943ff4c9f2008af8c628dfb1eb618dc264204749b6e90fa",
+   "size": 1001646,
+   "sha256": "e09a7ae0efa1a7cac559e1b7db3a5d7d3b4abc220253f83f587ccee835507118",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_3.res",
-   "size": 974698,
-   "sha256": "10b6d22aae4e5e9c1008b12fe1d2d0d41a407325a0f3ed34865097f46e0943f3",
+   "size": 1218798,
+   "sha256": "7b8c0635a6aaac1da5acf5ae41429662a31a0d7124131079a13ed0388c1fd282",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_4.res",
-   "size": 1165646,
-   "sha256": "2b9cb56958e67671787e78fcaf6c1b9274532668d7f1a7aee68199e47d7ecfa4",
+   "size": 1148686,
+   "sha256": "d9c23b21a4726397d6b91723f3977bea72a9568b02008c28c1574ed0cb43261e",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_5.res",
-   "size": 780750,
-   "sha256": "8c5a3a6ae5c6defa655d375ecf4c5a16693208ca58f2413eb61cab24d435db3a",
+   "size": 604170,
+   "sha256": "c6eaec8e8f038d387057ecb87ec5117efb96c4c1cdf98c7ceb2b12600e393c51",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_6.res",
-   "size": 1048510,
-   "sha256": "bc7a972d233fbb3da92a3a2c8d36ef0c8cebed43b4afaf87d49704fb7b274597",
+   "size": 1195582,
+   "sha256": "3f3a6cee31bba37d9c84584f987052c40b1af6d68c4bc7f818d140a10efe5cc4",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_7.res",
-   "size": 1135542,
-   "sha256": "950a6bb118f276a14b2c4fcce3460ec780b4d1a4addf45b77eaaeb8241fb332a",
+   "size": 1172286,
+   "sha256": "384fb6b86f899046d4d2b9edf74cdf30a6fce0fd2ab45bdb406c1ffb29bc0bbe",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_8.res",
-   "size": 1171802,
-   "sha256": "fdebe2fb2c3958575bcc48e7832cca84785435f07bb3edf1113dd5c3f62e4932",
+   "size": 1168766,
+   "sha256": "1b27a3d260d04bb995826cc21f9462892842047f016e2cbde1dfec89d769b45b",
    "role": "generated"
   },
   {
    "path": "worlds/ref_20km/vegetation/veg_9_9.res",
-   "size": 1062386,
-   "sha256": "9285701e53de296646bb2c2cb9dffbf97a3f50375cb5ee0b69a71b6a88b5dfdd",
+   "size": 931698,
+   "sha256": "2a5e03a600384447e5899c7043b029809d2dc95a3d02349366cb952715eb28c4",
    "role": "generated"
   },
   {

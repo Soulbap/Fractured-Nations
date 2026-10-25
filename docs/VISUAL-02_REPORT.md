@@ -274,6 +274,28 @@ Other recommendations: (a) keep `cover_v2` as the cover model of any future worl
 parcel edges at all — the shader now works around them; a generator-side soft parcel edge would let the shader drop its warp;
 (c) roads (§16).
 
+### 14.1 Adopted (product owner's approval, 2026-10-25)
+
+The candidate was copied over `ref_20km` (`source/{vegetation,info,stand,color,control,preview_macro}`, `terrain/`,
+`vegetation/`, `worlds/settlements/ref_20km.overrides.json`); new manifest (542 files, `verify` OK). The replaced files are in
+`../fractured-nations-backups/2026-10-25_VISUAL-02_pre_adoption/` (512 files, checked against the previous manifest). The
+user's own `worlds/ref_20km.overrides.json` has 3 records on old generated houses: they are now unresolved (bound to the old
+chunk hashes) and touch nothing.
+
+Tests on the adopted world ([RUN], same working tree, which also holds the parallel PERFORMANCE-01 session's uncommitted code
+changes, among them `road_shoulders.gd`):
+
+| Suite | Result |
+|---|---|
+| `--navigation-n1b-test` n1b_01..10 | PASS 01, 02, 04, 06, 09, 10 · FAIL 05 (APC and truck choose the same routes), 07 (0 isolated roads found: precondition), 08 (convoy truck blocked by the building) · ERROR 03 (base lacks fuel point / depot: scenario, not terrain) |
+| `--ai-war-test` r_yard, r_exit, r_lanes, r_offroad, r_gaps, r_obstacles, r_convoy | PASS yard, exit, lanes, gaps, convoy · FAIL r_offroad (= n1b_05), r_obstacles (truck does not get round a building) |
+| `--nav-inf-test` navinf_01..12 | 01, 02, 03, 06, 07, 09 PASS · 04, 05, 08 FAIL (all soldiers arrive, `failures` 0; 05: "precondition: the strategic route has fewer than 3 waypoints") · 10-12 still running when this was written |
+
+**Not classified**: no baseline run of the same code on the previous world was made (stopped on the product owner's request),
+so it is open whether the vehicle failures (off-road choice, building bypass) come from the new trees or from the road /
+shoulder changes in the shared working tree. n1b_03 and n1b_07 / navinf_05 are preconditions that do not depend on trees.
+To decide: put the backup back into `worlds/ref_20km/` and run `--ai-war-test --only r_offroad,r_obstacles`.
+
 ## 15. Gameplay compatibility
 
 - Reference world: no navigation input changed (no chunk, height, road or collider). Logs of all survey runs free of errors.

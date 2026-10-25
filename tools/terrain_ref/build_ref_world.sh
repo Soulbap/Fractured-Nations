@@ -18,7 +18,10 @@ GODOT="${GODOT:-../Godot_v4.7.2-stable_win64_console.exe}"
 GODOT_GUI="${GODOT_GUI:-../Godot_v4.7.2-stable_win64.exe}"
 BLENDER="${BLENDER:-/c/Program Files/Blender Foundation/Blender 5.2/blender.exe}"
 BPY="${BPY:-/c/Program Files/Blender Foundation/Blender 5.2/5.2/python/bin/python.exe}"
-LAYOUT=tools/terrain_ref/layout_ref03.json
+# VISUAL-02: the vegetation cover of ref_20km comes from cover_v2 (layout_ref03_visual02.json). A full rebuild regenerates
+# the relief and roads too (not bit-identical to the edited world); to change only the cover use
+# tools/visual02/build_candidate.gd (docs/VISUAL-02_REPORT.md, section 14).
+LAYOUT=tools/terrain_ref/layout_ref03_visual02.json
 SRC=worlds/ref_20km/source
 export PYTHONIOENCODING=utf-8
 
