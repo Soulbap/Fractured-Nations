@@ -1,4 +1,6 @@
 // River and lake surface for reference worlds (WORLD-TERRAIN-01).
+// WORLD-VISUALS-01: Nordic fresh water - dark, slightly humic (brown) in the shallows, clear enough near the bank to see the
+// bottom; the colour now depends on the view angle (looking down into it: the water's own colour, grazing: the sky).
 // Depth-tinted, alpha by water depth (shallow banks fade into the terrain), two scrolling
 // normal maps; rivers flow along UV.x (the ribbon is built with UV.x = distance / 20 m).
 shader_type spatial;
@@ -33,9 +35,10 @@ void fragment() {
 	float d = water_depth * clamp(abs(dot(normalize(VERTEX), VIEW)), 0.15, 1.0);
 
 	float t = clamp(d / depth_scale, 0.0, 1.0);
-	ALBEDO = mix(shallow_color, deep_color, t);
-	ROUGHNESS = 0.06;
+	float facing = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
+	ALBEDO = mix(shallow_color, deep_color, t) * mix(0.8, 1.0, facing);
+	ROUGHNESS = 0.05;
 	METALLIC = 0.0;
-	SPECULAR = 0.55;
-	ALPHA = clamp(d / edge_fade_m, 0.0, 1.0) * mix(0.75, 0.97, t);
+	SPECULAR = 0.5;
+	ALPHA = clamp(d / edge_fade_m, 0.0, 1.0) * mix(0.45, 0.97, t * t * (3.0 - 2.0 * t));
 }

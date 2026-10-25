@@ -133,6 +133,16 @@ uniform vec3 soil_color : source_color = vec3(0.50, 0.42, 0.31);
 uniform vec3 straw_color : source_color = vec3(1.10, 1.00, 0.72);
 // 4. rock
 uniform vec3 lichen_color : source_color = vec3(0.86, 0.88, 0.76);
+// WORLD-VISUALS-01: road verges - the grass layer's road mask (1 on roads and their margin, soft edge beyond) becomes a
+// gravel shoulder with a worn, irregular grass edge. GroundLook passes the mask (GrassLayer.mask_applied); off without it.
+uniform highp sampler2D road_mask : filter_linear, repeat_disable;
+uniform bool verge_enabled = false;
+uniform vec2 road_mask_origin = vec2(-10000.0);
+uniform float road_mask_size_m = 20000.0;
+uniform float verge_gravel_layer = 5.0;
+uniform float verge_uv_scale = 0.42;
+uniform vec3 verge_tint : source_color = vec3(0.95, 0.9, 0.82);
+uniform float verge_dirt_layer = 2.0;
 
 // Varyings & Types
 
@@ -643,6 +653,21 @@ void fragment() {
 	ALBEDO = mix(ALBEDO, mix(vec3(dot(ALBEDO, vec3(0.299, 0.587, 0.114))), ALBEDO, open_saturation) * open_brightness, open_all);
 	float heath_w = (1.0 - smoothstep(0.42, 0.62, dot(color_map.rgb, vec3(0.3, 0.5, 0.2)))) * open_all * (1.0 - clamp(mat.kind.x, 0.0, 1.0));
 	ALBEDO *= mix(vec3(1.0), heath_tint, heath_w);
+
+	// WORLD-VISUALS-01: gravel verge along roads (under the road mesh it is hidden; beyond it a 1-2 m shoulder fraying into
+	// the grass). Noise shifts the edge so it is not a ruled line.
+	if (verge_enabled) {
+		float rm = textureLod(road_mask, (wp - road_mask_origin) / road_mask_size_m, 0.0).r;
+		if (rm > 0.01) {
+			float vn = texture(v2_noise, wp / 3.1 + vec2(0.21, 0.67)).r * 0.6 + texture(v2_noise, wp / 0.9).r * 0.4;
+			// Only the outer band of the mask's margin (the mask is 1 for several metres beyond the road line).
+			float verge = smoothstep(0.62, 0.9, rm + (vn - 0.5) * 0.3);
+			vec3 gravel = texture(_texture_array_albedo, vec3(wp * verge_uv_scale, verge_gravel_layer)).rgb * verge_tint;
+			vec3 dirt = texture(_texture_array_albedo, vec3(wp * 0.38, verge_dirt_layer)).rgb * _texture_color_array[2].rgb;
+			gravel = mix(gravel, dirt, smoothstep(0.4, 0.75, vn)) * mix(0.85, 1.05, vn);
+			ALBEDO = mix(ALBEDO, gravel, verge);
+		}
+	}
 
 	// VISUAL-02 (3): forest floor becomes canopy with distance (crowns ~8 m, groups ~35 m, stands ~180 m).
 	float can_t = smoothstep(canopy_start, canopy_end, v_vertex_xz_dist) * canopy_max;

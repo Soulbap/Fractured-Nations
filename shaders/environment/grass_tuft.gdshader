@@ -10,6 +10,15 @@ uniform sampler2D tuft_tex : source_color, filter_linear_mipmap, repeat_disable;
 // Under the canopy (dark colour-map tint) the tufts become dwarf shrubs (blueberry,
 // lingonberry) instead of meadow grass.
 uniform sampler2D forest_tex : source_color, filter_linear_mipmap, repeat_disable;
+// WORLD-VISUALS-01: the ground plant atlas (4 x 2 tiles, tools/blender/env/make_cards_v3.py); the particle shader puts the
+// tile index in the integer part of INSTANCE_CUSTOM.g (plant_types). Without it the two textures above are used as before.
+uniform sampler2D plant_atlas : source_color, filter_linear_mipmap, repeat_disable;
+uniform sampler2D plant_atlas_normal : hint_normal, filter_linear_mipmap, repeat_disable;
+uniform bool use_atlas = false;
+// Per tile: how much of the ground colour tint it takes (flowers and berries keep their colour better).
+uniform float atlas_tint = 0.45;
+// Meadow grass tiles (0 - 2) are darker than the open ground they must match at the edge of the grass ring.
+uniform float atlas_grass_gain = 1.4;
 uniform float forest_lum_lo = 0.42;
 uniform float forest_lum_hi = 0.62;
 uniform vec2 wind_direction = vec2(1.0, 1.0);
@@ -33,6 +42,7 @@ uniform float open_saturation = 0.74;
 uniform float tuft_gain = 1.7;
 
 varying vec4 data;
+varying float v_tile;
 // The ground colour depends only on the instance (its origin and colour-map tint): computed once per vertex.
 varying vec3 v_ground;
 
@@ -40,7 +50,8 @@ void vertex() {
 	// Mesh spans y = -0.45 .. 0.55 (position_offset lifts the base onto the ground).
 	data[2] = clamp(VERTEX.y + 0.45, 0.0, 1.0);
 	data[2] *= data[2];
-	data.rg = INSTANCE_CUSTOM.rg;
+	data.rg = vec2(INSTANCE_CUSTOM.r, fract(INSTANCE_CUSTOM.g));
+	v_tile = floor(INSTANCE_CUSTOM.g);
 	vec3 w_vertex = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	vec2 v_world = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xz;
 	vec3 cmc = COLOR.rgb;
@@ -69,10 +80,20 @@ void vertex() {
 void fragment() {
 	float lum = dot(COLOR.rgb, vec3(0.3, 0.5, 0.2));
 	float forest = 1.0 - smoothstep(forest_lum_lo, forest_lum_hi, lum);
-	vec4 t = forest > 0.5 ? texture(forest_tex, UV) : texture(tuft_tex, UV);
+	vec4 t;
+	float tint_k = tint_strength;
+	if (use_atlas) {
+		float tile = clamp(v_tile, 0.0, 7.0);
+		vec2 tuv = (clamp(UV, vec2(0.004), vec2(0.996)) + vec2(mod(tile, 4.0), floor(tile / 4.0))) * vec2(0.25, 0.5);
+		t = texture(plant_atlas, tuv);
+		t.rgb *= tile < 2.5 ? atlas_grass_gain : 1.0;
+		tint_k = atlas_tint;
+	} else {
+		t = forest > 0.5 ? texture(forest_tex, UV) : texture(tuft_tex, UV);
+	}
 	ALBEDO = t.rgb * tint * (0.85 + 0.3 * data.r);
 	vec3 cmc = v_ground;
-	ALBEDO *= mix(vec3(1.0), pow(cmc, vec3(2.2)) * 1.6, tint_strength);
+	ALBEDO *= mix(vec3(1.0), pow(cmc, vec3(2.2)) * 1.6, tint_k);
 	if (ground_match > 0.0) {
 		vec3 g = mix(vec3(dot(ALBEDO, vec3(0.299, 0.587, 0.114))), ALBEDO, mix(1.0, open_saturation, ground_match));
 		ALBEDO = g * mix(1.0, tuft_gain, ground_match);

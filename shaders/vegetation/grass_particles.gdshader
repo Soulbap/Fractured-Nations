@@ -51,6 +51,14 @@ uniform float condition_dither_range : hint_range(0.0, 1.0, 0.01) = 0.15;
 uniform float surface_slope_min : hint_range(0.0, 1.0, 0.01) = 0.87;
 uniform float distance_fade_amount : hint_range(0.0, 1.0, 0.01) = 0.5;
 
+group_uniforms plant_types;
+// WORLD-VISUALS-01: which plant of the ground atlas (shaders/environment/grass_tuft.gdshader, 4 x 2 tiles) a particle draws -
+// 0 meadow grass, 1 grass with flowers, 2 wavy hair-grass, 3 heather, 4 bilberry, 5 lingonberry, 6 fern, 7 sedge / cotton
+// grass - from the terrain texture under it, the colour map's forest tint and two noise scales. Only the look: where a
+// particle stands and how tall it is (what Concealment reads) do not depend on it. Off (-1) keeps the single tuft.
+uniform bool plant_types = false;
+uniform float type_patch_scale = 0.045;
+
 group_uniforms private;
 uniform float max_dist = 1.;
 uniform vec3 camera_position = vec3(0.);
@@ -249,6 +257,36 @@ void start() {
 		cull(pos);
 	}
 
+	// Plant type (look only), carried in the integer part of CUSTOM.g.
+	float ptype = 0.0;
+	if (plant_types) {
+		float n1 = textureLod(main_noise, pos.xz * type_patch_scale, 0.0).r;
+		float n2 = textureLod(main_noise, pos.xz * type_patch_scale * 0.23 + vec2(0.37, 0.71), 0.0).r;
+		float pick = fract(r.x * 7.13 + r.z * 3.71);
+		int tex = blend >= 0.5 ? over : base;
+		float forest = clamp((0.66 - lum) * 4.0, 0.0, 1.0);
+		if (tex == 6) {
+			ptype = pick < 0.75 ? 7.0 : 2.0;
+		} else if (forest > 0.5 || tex == 4) {
+			// Boreal floor: bilberry carpet, lingonberry and heather on dry ground, fern in moist patches, hair-grass in gaps.
+			if (n1 > 0.66) {
+				ptype = pick < 0.6 ? 6.0 : 4.0;
+			} else if (n2 < 0.28) {
+				ptype = pick < 0.5 ? 5.0 : (pick < 0.75 ? 3.0 : 4.0);
+			} else {
+				ptype = pick < 0.78 ? 4.0 : (pick < 0.9 ? 5.0 : 2.0);
+			}
+		} else if (tex == 3 && lum < 0.62) {
+			ptype = pick < 0.6 ? 3.0 : (pick < 0.85 ? 2.0 : 5.0);
+		} else if (tex == 1 || tex == 5) {
+			ptype = pick < 0.5 ? 2.0 : 3.0;
+		} else {
+			// Meadow: grass, flowers in patches, hair-grass on the dry side.
+			float flowers = smoothstep(0.55, 0.75, n1);
+			ptype = pick < flowers * 0.45 ? 1.0 : (pick > 0.88 - 0.25 * (1.0 - n2) ? 2.0 : 0.0);
+		}
+	}
+
 	// Exclusion mask: roads, base pads and other excluded surfaces.
 	if (mask_enabled) {
 		vec2 muv = (pos.xz - mask_origin) / mask_size_m;
@@ -273,6 +311,7 @@ void start() {
 	TRANSFORM[3].xyz = pos.xyz + offset;
 
 	CUSTOM.rg = r.rg;
+	CUSTOM.g = min(r.g, 0.999) + ptype;
 	CUSTOM[3] = scale.y;
 }
 

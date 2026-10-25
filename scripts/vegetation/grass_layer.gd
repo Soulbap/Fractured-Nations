@@ -13,6 +13,9 @@
 class_name GrassLayer
 extends Node3D
 
+## WORLD-VISUALS-01: the exclusion mask texture was (re)built; the ground shader draws road verges from it.
+signal mask_applied(texture: Texture2D, origin: Vector2, size_m: float)
+
 @export var terrain: Terrain3D
 @export var mask: VegetationMask
 @export var enabled := true:
@@ -174,6 +177,20 @@ func _connect_data() -> void:
 	_update_map_parameters()
 
 
+## Sets a parameter of the particle (placement) shader of the running grid; kept when the grid is rebuilt.
+func set_process_param(param: StringName, value: Variant) -> void:
+	if process_material:
+		process_material.set_shader_parameter(param, value)
+	if _mat:
+		_mat.set_shader_parameter(param, value)
+	_last_pos = Vector3(INF, INF, INF)
+
+
+## A parameter of the running grid's particle shader (null before the grid exists).
+func get_process_param(param: StringName) -> Variant:
+	return _mat.get_shader_parameter(param) if _mat else null
+
+
 ## Pushes the current mask to the particle shader (call after changing `mask`).
 func apply_mask() -> void:
 	_apply_mask()
@@ -184,10 +201,12 @@ func _apply_mask() -> void:
 	if _mat == null:
 		return
 	if mask and mask.image:
-		_mat.set_shader_parameter("exclusion_mask", mask.make_texture())
+		var tex := mask.make_texture()
+		_mat.set_shader_parameter("exclusion_mask", tex)
 		_mat.set_shader_parameter("mask_origin", mask.origin)
 		_mat.set_shader_parameter("mask_size_m", mask.size_m())
 		_mat.set_shader_parameter("mask_enabled", true)
+		mask_applied.emit(tex, mask.origin, mask.size_m())
 	else:
 		_mat.set_shader_parameter("mask_enabled", false)
 
