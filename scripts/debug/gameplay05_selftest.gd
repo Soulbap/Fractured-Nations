@@ -8,7 +8,7 @@
 class_name Gameplay05SelfTest
 extends Gameplay04SelfTest
 
-const CHECKS5: Array[String] = ["p_state", "p_watch", "u_markers", "u_capture_name", "u_post_block", "u_strength", "v_tour", "q_perf", "u_bodies", "b_build_resume", "n_edge", "u_capture", "u_orders", "n_roads"]
+const CHECKS5: Array[String] = ["p_state", "p_watch", "u_markers", "u_capture_name", "u_post_block", "u_strength", "v_tour", "q_perf", "u_bodies", "b_build_resume", "n_edge", "u_capture", "u_orders", "n_roads", "p_veg"]
 ## Suffix of the tour's screenshots (before / after a visual change).
 var shot_tag := ""
 ## p_watch: time compression (--watch-speed=8).
@@ -619,6 +619,195 @@ func _n_roads() -> Dictionary:
 	return {"samples": n, "over_w_median": ow[n / 2] if n > 0 else null, "over_w_p90": ow[int(n * 0.9)] if n > 0 else null,
 		"edge_dy_median": dy[n / 2] if n > 0 else null, "lip_median": lips[n / 2] if n > 0 else null, "lip_p90": lips[int(n * 0.9)] if n > 0 else null,
 		"lip_max": lips[n - 1] if n > 0 else null, "lips_over_step_0_35": over_35, "lips_over_1m": over_100, "rows": rows.slice(0, 60)}
+
+
+# --- PERFORMANCE-01 ---------------------------------------------------------------------------------------------------------
+
+## Vegetation streaming frame times under controlled events (1920x1080, vsync off): a still camera (baseline), chunks unloaded
+## on purpose while the camera stands still, 60 cells freed in one frame, camera jumps between two areas 3 km apart, and a
+## camera driving along a road at 25 m/s. Per phase: frame-time statistics; for every frame over 33 ms, what the streamer did in it
+## (counter deltas). --veg-phases=baseline,unload,free,jump,drive picks phases.
+func _p_veg() -> Dictionary:
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	var veg = demo.vegetation
+	demo.sim.brain.enabled = false
+	var phases: PackedStringArray = ["baseline", "unload", "free", "jump", "drive", "pan", "flick", "views"]
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--veg-phases="):
+			phases = a.trim_prefix("--veg-phases=").split(",")
+	var start := demo.sim.war.squad_center(_player_squads()[0])
+	await _frame(start, 80.0, 0.0)
+	await _until(func() -> bool: return veg.is_settled(), 30.0, 1.0)
+	await _seconds(2.0)
+	var out := {}
+	if phases.has("baseline"):
+		out["baseline"] = await _veg_frames(240, Callable())
+	if phases.has("unload"):
+		var rows := []
+		var locs: Array = veg.chunks.keys()
+		for i in mini(4, locs.size()):
+			var loc: Vector2i = locs[i]
+			var act0: int = veg.active.size()
+			var t0 := Time.get_ticks_usec()
+			veg.unload_chunk(loc)
+			var call_us := Time.get_ticks_usec() - t0
+			var fr := await _veg_frames(60, Callable())
+			rows.append({"chunk": [loc.x, loc.y], "call_us": call_us, "cells_freed": act0 - int(veg.active.size()), "frames": fr})
+			veg.refresh()
+			await _until(func() -> bool: return veg.is_settled(), 30.0, 1.0)
+			await _seconds(1.0)
+		out["unload"] = rows
+	if phases.has("free"):
+		var keys: Array = veg.active.keys()
+		keys.sort_custom(func(a: Vector3i, b: Vector3i) -> bool: return a.x + a.y > b.x + b.y)
+		var t0 := Time.get_ticks_usec()
+		for k in keys.slice(0, 60):
+			veg._deactivate(k)
+		var call_us := Time.get_ticks_usec() - t0
+		out["free"] = {"cells": mini(60, keys.size()), "call_us": call_us, "frames": await _veg_frames(60, Callable())}
+		veg.refresh()
+		await _until(func() -> bool: return veg.is_settled(), 30.0, 1.0)
+	if phases.has("jump"):
+		var far := start + Vector3(3000.0, 0, 0)
+		var jumps := []
+		for i in 6:
+			var to := far if i % 2 == 0 else start
+			jumps.append(await _veg_frames(240, func(_k: int) -> void: if _k == 0: demo.rts_camera.frame(to, 0.0, 80.0)))
+		out["jump"] = _veg_merge(jumps)
+	if phases.has("drive"):
+		await _frame(start, 60.0, 0.0)
+		await _until(func() -> bool: return veg.is_settled(), 30.0, 1.0)
+		var t_start := Time.get_ticks_msec()
+		out["drive"] = await _veg_frames(1200, func(_k: int) -> void:
+			var dist := 25.0 * (Time.get_ticks_msec() - t_start) / 1000.0
+			demo.rts_camera.frame(start + Vector3(dist * 0.8, 0, -dist * 0.6), 0.0, 60.0))
+	if phases.has("pan"):
+		# Fast RTS panning (Shift at a high zoom): 300 m/s for 10 s, out and back.
+		await _frame(start, 150.0, 0.0)
+		await _until(func() -> bool: return veg.is_settled(), 30.0, 1.0)
+		var t_pan := Time.get_ticks_msec()
+		out["pan"] = await _veg_frames(1200, func(_k: int) -> void:
+			var t := (Time.get_ticks_msec() - t_pan) / 1000.0
+			var dist := 300.0 * (t if t < 5.0 else 10.0 - t)
+			demo.rts_camera.frame(start + Vector3(dist, 0, dist * 0.3), 0.0, 150.0))
+	if phases.has("flick"):
+		# Out 600 m and straight back before the leaving cells are freed: they must be shown again (reused), and the vegetation
+		# must end exactly as it was.
+		await _frame(start, 80.0, 0.0)
+		await _until(func() -> bool: return veg.is_settled() and int(veg.get_stats().release_queued) == 0, 30.0, 1.0)
+		var before_keys: Array = veg.active.keys()
+		before_keys.sort()
+		var r0 := int(veg.counters.get("cells_reused", 0))
+		var fr := await _veg_frames(240, func(_k: int) -> void:
+			if _k == 0:
+				demo.rts_camera.frame(start + Vector3(600.0, 0, 0), 0.0, 80.0)
+			elif _k == 6:
+				demo.rts_camera.frame(start, 0.0, 80.0))
+		await _until(func() -> bool: return veg.is_settled() and int(veg.get_stats().release_queued) == 0, 30.0, 1.0)
+		var after_keys: Array = veg.active.keys()
+		after_keys.sort()
+		var hidden := 0
+		for k in after_keys:
+			if not (veg.active[k] as Node3D).visible:
+				hidden += 1
+		fr["reused"] = int(veg.counters.get("cells_reused", 0)) - r0
+		fr["same_cells"] = before_keys == after_keys
+		fr["hidden_active"] = hidden
+		out["flick"] = fr
+	if phases.has("views"):
+		# First person, the map, back to the tactical view: no hitch, the same vegetation afterwards.
+		await _frame(start, 80.0, 0.0)
+		await _until(func() -> bool: return veg.is_settled(), 30.0, 1.0)
+		var k0: Array = veg.active.keys()
+		k0.sort()
+		var sq: SquadState = _player_squads()[0]
+		var fr2 := await _veg_frames(600, func(_k: int) -> void:
+			if _k == 0:
+				demo.game.possess(sq.leader_id)
+			elif _k == 200:
+				demo.toggle_map()
+			elif _k == 350:
+				demo.toggle_map()
+			elif _k == 400:
+				demo.game.enter_rts()
+				demo.rts_camera.frame(start, 0.0, 80.0))
+		await _until(func() -> bool: return veg.is_settled() and int(veg.get_stats().release_queued) == 0, 30.0, 1.0)
+		var k1: Array = veg.active.keys()
+		k1.sort()
+		fr2["same_cells"] = k0 == k1
+		out["views"] = fr2
+	out["streamer_end"] = veg.get_stats()
+	out["counters"] = veg.counters.duplicate()
+	out["static_mb"] = roundi(Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0)
+	out["vram_mb"] = roundi(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0)
+	demo.sim.brain.enabled = true
+	return out
+
+
+## n frames: statistics, and the streamer's counter deltas in every frame over 33 ms. per_frame(k) runs before frame k.
+func _veg_frames(n: int, per_frame: Callable) -> Dictionary:
+	var veg = demo.vegetation
+	var times := PackedFloat32Array()
+	var spikes := []
+	var c0: Dictionary = veg.counters.duplicate()
+	var last := Time.get_ticks_usec()
+	var prev: Dictionary = veg.counters.duplicate()
+	var qmax := 0
+	var rmax := 0
+	var bake0: int = demo.detail.bake_count if demo.detail else 0
+	for k in n:
+		if per_frame.is_valid():
+			per_frame.call(k)
+		await tree.process_frame
+		var now := Time.get_ticks_usec()
+		var ms := (now - last) / 1000.0
+		last = now
+		times.append(ms)
+		var cur: Dictionary = veg.counters
+		qmax = maxi(qmax, maxi(veg._queue.size() - veg._queue_pos, 0))
+		rmax = maxi(rmax, maxi(veg._release.size() - veg._release_pos, 0) if "_release" in veg else 0)
+		if ms > 33.3 and spikes.size() < 30:
+			var e := {"ms": snappedf(ms, 0.1), "process_ms": snappedf(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, 0.1),
+				"physics_ms": snappedf(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0, 0.1),
+				"navmesh_bakes": (demo.detail.bake_count - bake0) if demo.detail else 0}
+			for key in cur:
+				var dv := int(cur[key]) - int(prev[key])
+				if dv != 0:
+					e[key] = dv
+			spikes.append(e)
+		prev = cur.duplicate()
+		bake0 = demo.detail.bake_count if demo.detail else 0
+	var sorted := times.duplicate()
+	sorted.sort()
+	var sum := 0.0
+	var o16 := 0
+	var o33 := 0
+	for x in sorted:
+		sum += x
+		o16 += 1 if x > 16.7 else 0
+		o33 += 1 if x > 33.3 else 0
+	var d := {}
+	for key in veg.counters:
+		d[key] = int(veg.counters[key]) - int(c0[key])
+	return {"frames": n, "ms_avg": snappedf(sum / n, 0.01), "ms_p95": snappedf(sorted[int(n * 0.95)], 0.01), "ms_p99": snappedf(sorted[int(n * 0.99)], 0.01),
+		"ms_max": snappedf(sorted[n - 1], 0.01), "over_16_7": o16, "over_33": o33, "queue_max": qmax, "release_queue_max": rmax, "counters": d, "spikes": spikes}
+
+
+func _veg_merge(rows: Array) -> Dictionary:
+	var out := {"runs": rows.size(), "ms_avg": 0.0, "ms_p95": 0.0, "ms_p99": 0.0, "ms_max": 0.0, "over_16_7": 0, "over_33": 0, "queue_max": 0, "counters": {}, "spikes": []}
+	for r: Dictionary in rows:
+		out.ms_avg += float(r.ms_avg) / rows.size()
+		out.ms_p95 = maxf(out.ms_p95, r.ms_p95)
+		out.ms_p99 = maxf(out.ms_p99, r.ms_p99)
+		out.ms_max = maxf(out.ms_max, r.ms_max)
+		out.over_16_7 += int(r.over_16_7)
+		out.over_33 += int(r.over_33)
+		out.queue_max = maxi(out.queue_max, int(r.queue_max))
+		for k in r.counters:
+			out.counters[k] = int(out.counters.get(k, 0)) + int(r.counters[k])
+		(out.spikes as Array).append_array(r.spikes)
+	out.ms_avg = snappedf(out.ms_avg, 0.01)
+	return out
 
 
 static func _xz2(p: Vector3) -> Array:

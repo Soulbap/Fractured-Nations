@@ -43,6 +43,15 @@ signal clearings_changed(cells: Array)
 @export var chunk_keep_margin_m := 600.0
 ## Relative hysteresis for the near/far LOD switch.
 @export var lod_hysteresis := 0.15
+## PERFORMANCE-01: cells leaving the range are hidden at once and freed at most this many per frame (more when the queue is long:
+## it always empties within release_frames frames). A cell wanted again before it is freed is shown again instead of rebuilt.
+@export var releases_per_frame := 8
+@export var release_frames := 30
+## PERFORMANCE-01: chunks the loader finished are taken into use at most this many per frame (storing one places its instances on
+## the eased terrain and hashes it for the overrides: ~2-4 ms), and far chunks are unloaded at most this many per frame. After a
+## camera jump 11-13 chunks finished in the same frame and 12-15 were unloaded in it: frames of 54-86 ms.
+@export var stores_per_frame := 2
+@export var unloads_per_frame := 2
 
 ## Vector3i(cell.x, cell.y, mesh_id) -> MultiMeshInstance3D
 var active := {}
@@ -66,10 +75,23 @@ var _last_obs: Array[Vector3] = []
 var _dirty := true
 ## Worst CPU time spent activating cells in one frame since the last get_stats().
 var _worst_drain_ms := 0.0
+## PERFORMANCE-01: lifecycle counters (cumulative; tests and the profiler read them).
+var counters := {"chunk_loads": 0, "chunk_unloads": 0, "cells_activated": 0, "cells_freed": 0, "free_us": 0, "free_us_max_frame": 0,
+	"unload_us": 0, "cells_reused": 0, "release_queue_max": 0, "store_us": 0, "store_us_max": 0, "unloads_cancelled": 0}
+## Chunks waiting to be unloaded (Vector2i -> true), at most unloads_per_frame a frame; cancelled when wanted again.
+var _unload_pending := {}
+## PERFORMANCE-01: hidden cells waiting to be freed: [key, MultiMeshInstance3D] in order, and key -> instance for the ones that may
+## be shown again (left the range by camera movement; data unchanged). Freed by _drain_release.
+var _release: Array = []
+var _release_pos := 0
+var _reusable := {}
+## --veg-immediate-free: the old behaviour (every leaving cell freed in the same frame), for comparisons only.
+var _immediate_free := false
 
 
 func _ready() -> void:
 	top_level = true
+	_immediate_free = "--veg-immediate-free" in OS.get_cmdline_user_args()
 	_init_overrides()
 	# Instantiate the mesh assets now, not during the first activation.
 	if library:
@@ -91,6 +113,8 @@ func _process(_delta: float) -> void:
 		_dirty = false
 		_update_sets(obs)
 	_drain_queue()
+	_drain_release()
+	_drain_unloads()
 
 
 ## Forces a full re-evaluation on the next frame (e.g. after data changed).
@@ -113,11 +137,15 @@ func _init_overrides() -> void:
 ## Unloads one chunk (and its active cells). It is read again, and its override baseline
 ## rehashed, the next time it is needed.
 func unload_chunk(loc: Vector2i) -> void:
+	var t0 := Time.get_ticks_usec()
+	if chunks.has(loc):
+		counters.chunk_unloads += 1
 	for key in active.keys():
 		if VegetationChunk.chunk_of(Vector3(key.x * cell_size_m, 0, key.y * cell_size_m), chunk_size_m) == loc:
 			_deactivate(key)
 	if chunks.erase(loc) and overrides:
 		overrides.on_chunk_unloaded(loc)
+	counters.unload_us += Time.get_ticks_usec() - t0
 
 
 ## The chunk file changed on disk: drop the loaded copy and bypass the resource cache on the next read.
@@ -155,7 +183,9 @@ func get_stats() -> Dictionary:
 		cells[Vector2i(key.x, key.y)] = true
 	var out := {"active_mmis": active.size(), "active_cells": cells.size(), "active_instances": inst,
 		"loaded_chunks": chunks.size(), "loading_chunks": _loading.size(),
-		"queued": maxi(_queue.size() - _queue_pos, 0), "worst_activation_ms": snappedf(_worst_drain_ms, 0.01)}
+		"queued": maxi(_queue.size() - _queue_pos, 0), "worst_activation_ms": snappedf(_worst_drain_ms, 0.01),
+		"release_queued": maxi(_release.size() - _release_pos, 0), "reusable": _reusable.size(), "unload_pending": _unload_pending.size(),
+		"loaded_waiting": _loading.size()}
 	_worst_drain_ms = 0.0
 	return out
 
@@ -303,6 +333,7 @@ func _store_chunk(loc: Vector2i, res: Resource) -> void:
 		chunk_size_m = ch.chunk_size_m
 	RoadShoulders.fix_chunk(ch)  # GAMEPLAY-04A: instances on the eased road shoulders back on the ground
 	chunks[loc] = ch
+	counters.chunk_loads += 1
 	if overrides:
 		overrides.on_chunk_loaded(loc)
 	_dirty = true
@@ -323,12 +354,20 @@ func _request_chunk(loc: Vector2i) -> void:
 
 
 func _poll_loading() -> void:
+	var stored := 0
 	for loc in _loading.keys():
 		var path: String = _loading[loc]
 		match ResourceLoader.load_threaded_get_status(path):
 			ResourceLoader.THREAD_LOAD_LOADED:
+				if stored >= stores_per_frame and not _immediate_free:
+					continue  # PERFORMANCE-01: the rest next frame (it stays loaded in the loader)
+				stored += 1
 				_loading.erase(loc)
+				var t0 := Time.get_ticks_usec()
 				_store_chunk(loc, ResourceLoader.load_threaded_get(path))
+				var us := Time.get_ticks_usec() - t0
+				counters.store_us += us
+				counters.store_us_max = maxi(counters.store_us_max, us)
 			ResourceLoader.THREAD_LOAD_FAILED, ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
 				_loading.erase(loc)
 				_missing[loc] = true
@@ -348,9 +387,14 @@ func _update_sets(obs: Array[Vector3]) -> void:
 				wanted[Vector2i(cx, cz)] = true
 	for loc in wanted:
 		_request_chunk(loc)
+		if _unload_pending.erase(loc):
+			counters.unloads_cancelled += 1
 	for loc in chunks.keys():
 		if not wanted.has(loc) and _square_distance(obs, Vector2(loc) * chunk_size_m, chunk_size_m) > r + chunk_keep_margin_m:
-			unload_chunk(loc)
+			if _immediate_free:
+				unload_chunk(loc)
+			else:
+				_unload_pending[loc] = true
 
 	# Desired (cell, mesh) set with distances.
 	var desired := {}
@@ -382,7 +426,7 @@ func _update_sets(obs: Array[Vector3]) -> void:
 
 	for key in active.keys():
 		if not desired.has(key):
-			_deactivate(key)
+			_deactivate(key, true)
 	_queue.clear()
 	_queue_pos = 0
 	for key in desired:
@@ -438,6 +482,21 @@ func _drain_queue() -> void:
 
 
 func _activate(key: Vector3i, dist: float) -> void:
+	# PERFORMANCE-01: still hidden in the release queue (the camera came back): show it again.
+	var back: MultiMeshInstance3D = _reusable.get(key)
+	if back:
+		_reusable.erase(key)
+		if is_instance_valid(back):
+			var d := library.get_def(key.z)
+			var l := 0 if dist < d.near_range else 1
+			if l != int(back.get_meta("lod", l)):
+				back.multimesh.mesh = d.get_mesh(l)
+				_apply_lod(back, d, l)
+			back.visible = true
+			active[key] = back
+			active_lod[key] = l
+			counters.cells_reused += 1
+			return
 	var cell := Vector2i(key.x, key.y)
 	var by_mesh := _effective_cell(cell)
 	if not by_mesh.has(key.z):
@@ -461,6 +520,7 @@ func _activate(key: Vector3i, dist: float) -> void:
 	_apply_lod(mmi, def, lod)
 	add_child(mmi, false, Node.INTERNAL_MODE_BACK)
 	active[key] = mmi
+	counters.cells_activated += 1
 	active_lod[key] = lod
 
 
@@ -486,16 +546,84 @@ func _apply_lod(mmi: MultiMeshInstance3D, def: VegetationMeshDef, lod: int) -> v
 	mmi.material_override = def.get_material_override(lod)
 
 
-func _deactivate(key: Vector3i) -> void:
+## A cell leaves: hidden now, freed later by _drain_release (PERFORMANCE-01: freeing every leaving cell in the frame the camera
+## crossed a threshold, or a chunk unloaded, gave 40-48 ms frames). reusable: it left by camera movement and its data is unchanged,
+## so it may be shown again if wanted before it is freed (clearings and override changes rebuild instead).
+func _deactivate(key: Vector3i, reusable := false) -> void:
 	var mmi: MultiMeshInstance3D = active[key]
+	var lod: int = active_lod.get(key, 0)
 	active.erase(key)
 	active_lod.erase(key)
-	if is_instance_valid(mmi):
-		mmi.free()
+	if not is_instance_valid(mmi):
+		return
+	if _immediate_free:
+		_free_cell(mmi)
+		return
+	mmi.visible = false
+	mmi.set_meta("lod", lod)
+	_release.append([key, mmi])
+	if reusable:
+		_reusable[key] = mmi
+	else:
+		_reusable.erase(key)
+	counters.release_queue_max = maxi(counters.release_queue_max, _release.size() - _release_pos)
+
+
+func _free_cell(mmi: MultiMeshInstance3D) -> void:
+	var t0 := Time.get_ticks_usec()
+	mmi.free()
+	counters.free_us += Time.get_ticks_usec() - t0
+	counters.cells_freed += 1
+
+
+## PERFORMANCE-01: unloads at most unloads_per_frame of the chunks that drifted far away (a chunk wanted again meanwhile was taken
+## off the list in _update_sets). The cells of a pending chunk that are beyond the range were already released with the others.
+func _drain_unloads() -> void:
+	var n := 0
+	for loc in _unload_pending.keys():
+		if n >= unloads_per_frame:
+			break
+		_unload_pending.erase(loc)
+		if chunks.has(loc):
+			unload_chunk(loc)
+			n += 1
+
+
+## Frees hidden cells: releases_per_frame, or more when the queue would not empty within release_frames frames. Entries shown again
+## (reused) or replaced are skipped; the queue cannot grow without bound.
+func _drain_release() -> void:
+	var left := _release.size() - _release_pos
+	if left <= 0:
+		return
+	var n := maxi(releases_per_frame, ceili(float(left) / maxf(release_frames, 1)))
+	var t0 := Time.get_ticks_usec()
+	while _release_pos < _release.size() and n > 0:
+		var e: Array = _release[_release_pos]
+		_release_pos += 1
+		var key: Vector3i = e[0]
+		var mmi: MultiMeshInstance3D = e[1]
+		if not is_instance_valid(mmi) or active.get(key) == mmi:
+			continue  # shown again (reused)
+		if _reusable.get(key) == mmi:
+			_reusable.erase(key)
+		_free_cell(mmi)
+		n -= 1
+	if _release_pos >= _release.size():
+		_release.clear()
+		_release_pos = 0
+	counters.free_us_max_frame = maxi(counters.free_us_max_frame, Time.get_ticks_usec() - t0)
 
 
 func _deactivate_all() -> void:
 	for key in active.keys():
 		_deactivate(key)
 	_queue.clear()
+	# Switched off: everything goes now (nothing should linger hidden).
+	for i in range(_release_pos, _release.size()):
+		var mmi: MultiMeshInstance3D = _release[i][1]
+		if is_instance_valid(mmi) and active.get(_release[i][0]) != mmi:
+			_free_cell(mmi)
+	_release.clear()
+	_release_pos = 0
+	_reusable.clear()
 	_queue_pos = 0
