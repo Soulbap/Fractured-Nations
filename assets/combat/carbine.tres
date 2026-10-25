@@ -36,3 +36,7 @@ recoil_pitch_deg = 0.5
 recoil_yaw_deg = 0.3
 aim_mult = 1.15
 needs_discovery = true
+recoil_recover = 0.72
+recoil_recover_s = 0.11
+recoil_yaw_bias = 0.3
+viewmodel_kick = 0.9

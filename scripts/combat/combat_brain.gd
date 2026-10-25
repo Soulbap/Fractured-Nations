@@ -269,9 +269,12 @@ func _init(p_sim: WorldSim) -> void:
 const AIM_PROFILES := {
 	"g04": {"base": 0.25, "per100": 0.20, "supp": 2.2, "weapon_aim": {}},
 	"g05b": {"base": 0.26, "per100": 0.05, "supp": 4.0, "weapon_aim": {&"lmg": 1.3, &"gpmg": 1.3}},
+	# COMBAT-01: a settled, trained rifleman has a credible chance at 200-300 m (about one in five / one in ten aimed shots
+	# standing, more prone), the marksman rifle a clear edge; a fresh aim is rougher (first) but no longer twice as rough.
+	"c01": {"base": 0.16, "per100": 0.035, "supp": 4.0, "first": 1.6, "weapon_aim": {&"lmg": 1.3, &"gpmg": 1.3, &"dmr": 0.55}},
 }
 var weapon_aim := {}
-var aim_profile := "g05b"
+var aim_profile := "c01"
 
 
 func _apply_aim_args(args: PackedStringArray) -> void:
@@ -283,6 +286,7 @@ func _apply_aim_args(args: PackedStringArray) -> void:
 	aim_error_per_100m_deg = pr.per100
 	suppression_aim_mult = pr.supp
 	weapon_aim = pr.weapon_aim
+	aim_first_mult = float(pr.get("first", 2.0))
 	for a in args:
 		if a.begins_with("--aim-base="):
 			aim_error_base_deg = float(a.trim_prefix("--aim-base="))

@@ -117,6 +117,16 @@ enum Delivery { HITSCAN, PROJECTILE }
 ## Camera kick per shot in first person (degrees up, random sideways).
 @export var recoil_pitch_deg := 0.55
 @export var recoil_yaw_deg := 0.25
+## COMBAT-01 first-person recoil: the share of the kick the view recovers on its own after the shot (0 = stays up, 1 = back
+## where it was), how fast (time constant, s), and the sideways drift's bias (+ = to the right) so a burst climbs the same
+## way each time with a little variation. Posture and aiming down the sight steady it (SoldierBody._recoil).
+@export var recoil_recover := 0.7
+@export var recoil_recover_s := 0.12
+@export var recoil_yaw_bias := 0.35
+## How hard the first-person weapon kicks back (Viewmodel.kick).
+@export var viewmodel_kick := 1.0
+## COMBAT-01: first-person field of view aiming down the sight (deg): the red dot 42, a magnified marksman optic far less.
+@export var ads_fov := 42.0
 
 
 func fire_interval() -> float:

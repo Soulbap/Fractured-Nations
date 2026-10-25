@@ -68,6 +68,7 @@ var viewmodel: Viewmodel
 ## that captures the mouse must not fire).
 var _trigger_armed := false
 var _fov_hip := 75.0
+var _base_sens := 0.0025
 var _progress_ref := Vector3.INF
 var _progress_t := 0.0
 var _stuck_stage := 0
@@ -89,6 +90,7 @@ var _wp_first := Vector3.INF
 
 func _ready() -> void:
 	ensure_combat_actions()
+	_base_sens = mouse_sensitivity
 	player_controlled = false
 	super()
 	nav.velocity_computed.connect(_on_velocity_computed)
@@ -174,6 +176,7 @@ func _physics_process(delta: float) -> void:
 			may_sprint = unit.posture == Posture.STAND and Posture.settled(unit, sim.state.time if sim else NAN)
 		super(delta)
 		_player_eye(delta)
+		_recoil_recover(delta)
 		# Let the avoidance simulation know where the player is heading.
 		if nav.avoidance_enabled:
 			nav.velocity = Vector3(velocity.x, 0.0, velocity.z)
@@ -579,7 +582,12 @@ func _player_weapon(delta: float) -> void:
 	var aiming := captured and Input.is_action_pressed("aim")
 	if viewmodel:
 		viewmodel.aiming = aiming
-	camera.fov = lerpf(camera.fov, 42.0 if aiming else _fov_hip, clampf(delta * 12.0, 0.0, 1.0))
+		viewmodel.reloading = unit.is_reloading()
+	# COMBAT-01: the weapon's sight decides the zoom (a marksman optic magnifies); the mouse slows with it.
+	var wd := sim.combat.weapon(unit.sec_id if unit.sec_active else unit.weapon_id)
+	var ads := wd.ads_fov if wd else 42.0
+	camera.fov = lerpf(camera.fov, ads if aiming else _fov_hip, clampf(delta * 12.0, 0.0, 1.0))
+	mouse_sensitivity = _base_sens * clampf(camera.fov / maxf(_fov_hip, 1.0), 0.25, 1.0)
 	if not captured:
 		return
 	_player_posture()
@@ -616,14 +624,46 @@ func _player_weapon(delta: float) -> void:
 		_recoil()
 
 
+## COMBAT-01 first-person recoil: the view kicks up (and drifts sideways with the weapon's bias plus a little seeded
+## variation), then recovers recoil_recover of it over recoil_recover_s - a burst climbs predictably and a single aimed
+## shot comes back close to where it was. Crouched, prone and aiming down the sight kick less. Only the camera's view moves
+## (the player's own aim, as with any mouse movement); nothing is forced on the player by incoming fire.
+var _recoil_pitch := 0.0
+var _recoil_yaw := 0.0
+var _recoil_def: WeaponDef
+
+
 func _recoil() -> void:
 	var def := sim.combat.weapon(unit.sec_id if unit.sec_active else unit.weapon_id)
 	if def == null:
 		return
-	head.rotation.x = clampf(head.rotation.x + deg_to_rad(def.recoil_pitch_deg), -deg_to_rad(max_pitch_deg), deg_to_rad(max_pitch_deg))
-	rotate_y(deg_to_rad(randf_range(-def.recoil_yaw_deg, def.recoil_yaw_deg)))
+	var k := Posture.steady(unit, sim.state.time) * (0.8 if Input.is_action_pressed("aim") else 1.0)
+	if unit.posture == Posture.PRONE and sim.combat.settle_factor(unit, def) < 1.0:
+		k *= 0.6
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([unit.id, unit.shot_counter, 31])
+	var up := deg_to_rad(def.recoil_pitch_deg) * k * rng.randf_range(0.85, 1.1)
+	var side := deg_to_rad(def.recoil_yaw_deg) * k * (def.recoil_yaw_bias + rng.randf_range(-1.0, 1.0))
+	head.rotation.x = clampf(head.rotation.x + up, -deg_to_rad(max_pitch_deg), deg_to_rad(max_pitch_deg))
+	rotate_y(-side)
+	_recoil_pitch += up * def.recoil_recover
+	_recoil_yaw += side * def.recoil_recover * 0.6
+	_recoil_def = def
 	if viewmodel:
-		viewmodel.kick()
+		viewmodel.kick(def.viewmodel_kick * lerpf(1.0, k, 0.6))
+
+
+## The recovering part of the kick, eased out each tick.
+func _recoil_recover(delta: float) -> void:
+	if _recoil_def == null or (absf(_recoil_pitch) < 1e-5 and absf(_recoil_yaw) < 1e-5):
+		return
+	var f := 1.0 - exp(-delta / maxf(_recoil_def.recoil_recover_s, 0.02))
+	var dp := _recoil_pitch * f
+	var dy := _recoil_yaw * f
+	_recoil_pitch -= dp
+	_recoil_yaw -= dy
+	head.rotation.x = clampf(head.rotation.x - dp, -deg_to_rad(max_pitch_deg), deg_to_rad(max_pitch_deg))
+	rotate_y(dy)
 
 
 ## COMBAT-01: the first-person eye follows the record's posture (Posture.eye_local), eased so a change reads as a movement.

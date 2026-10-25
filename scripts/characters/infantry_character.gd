@@ -83,6 +83,8 @@ var _alert_amount := 0.0
 var _aim_amount := 0.0
 var _turn_amount := 0.0
 var _aim_mod: InfantryAimModifier
+var _flinch_mod: InfantryAimModifier
+var _flinch := Vector2.ZERO
 var _was_reloading := false
 
 static var _tree_root: AnimationNodeBlendTree
@@ -298,6 +300,11 @@ func _setup_animation() -> void:
 	_aim_mod.name = "AimModifier"
 	_aim_mod.influence = 0.0
 	skeleton.add_child(_aim_mod)
+	# COMBAT-01: a hit flinch on the same spine bones, independent of the aim (decays in ~0.3 s).
+	_flinch_mod = InfantryAimModifier.new()
+	_flinch_mod.name = "FlinchModifier"
+	_flinch_mod.influence = 1.0
+	skeleton.add_child(_flinch_mod)
 	if is_inside_tree():
 		_apply_params(0.0, true)
 		anim_tree.advance(0.0)
@@ -513,6 +520,14 @@ func fire() -> void:
 		anim_tree.set("parameters/%s/request" % ("p_fire" if _prone_amount > 0.5 else "fire"), AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
+## COMBAT-01: a short flinch away from a hit coming from world direction `from` (strength 0..1): the upper body twists and
+## rocks back, then recovers. Presentation only (the record already took the damage).
+func flinch(from: Vector3, strength := 1.0) -> void:
+	var local := global_basis.orthonormalized().inverse() * from
+	var side := signf(local.x) if absf(local.x) > 0.05 else 1.0
+	_flinch = Vector2(-side * 0.28, 0.22 if local.z < 0.0 else -0.12) * clampf(strength, 0.2, 1.0)
+
+
 ## Stride (m per gait cycle) at speed v by linear interpolation of the authored clips.
 static func stride_at(v: float, table: Array) -> float:
 	if v <= table[0][0]:
@@ -637,6 +652,10 @@ func _apply_params(delta: float, snap: bool) -> void:
 	_was_reloading = reloading
 	if _has_prone:
 		_apply_prone(delta, snap, speed)
+	if _flinch_mod:
+		_flinch = _flinch.move_toward(Vector2.ZERO, delta * 1.6)
+		_flinch_mod.yaw = _flinch.x
+		_flinch_mod.pitch = _flinch.y
 	if _aim_mod:
 		# prone, the whole body points the rifle: the spine turns only a little towards the aim point
 		_aim_mod.influence = _aim_amount * (1.0 - 0.75 * _prone_amount)

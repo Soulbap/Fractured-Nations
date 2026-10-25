@@ -121,7 +121,8 @@ func update(sim: WorldSim, u: UnitState) -> void:
 	_name.text = u.unit_name
 	_health.set_health(u.health, u.max_health)
 	var supp := u.suppression_at(now)
-	_vignette.modulate.a = clampf((supp - 0.08) * 1.1, 0.0, 0.75)
+	# COMBAT-01: a restrained cue (the edges only, never most of the screen): sound and impacts carry the danger.
+	_vignette.modulate.a = clampf((supp - 0.1) * 0.7, 0.0, 0.45)
 	if supp > 0.3:
 		_state.set_status(&"suppression", "Suppressed", FNUI.ALERT)
 	elif u.under_fire_until >= now:

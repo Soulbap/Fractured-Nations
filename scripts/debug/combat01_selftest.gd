@@ -13,11 +13,18 @@
 ## g_grass    grass concealment: one observer 100 m from one target in the densest grass near the site, the target
 ##            standing, crouched, prone, prone and firing, and standing on bare ground: time to notice each (the target
 ##            holds fire and its posture; one deterministic run each).
+## a_accuracy the AI's aim model measured directly (no world, no stochastic battle): 600 deterministic shots per case of the
+##            real CombatBrain aim error and CombatSim spread at a soldier's real hit volumes, per weapon, distance,
+##            shooter posture / skill and target posture; first aimed shot and settled. --aim=g05b for the old profile.
+## f_gunplay  first person: the possessed soldier fires rifle, marksman rifle and machine gun (recoil kick and recovery,
+##            sight zoom), an enemy team 70 m away fires at him (cracks / whizzes heard where rounds pass, impacts around
+##            him, his view never moved by it), hits make AI soldiers flinch; then the same fight from the tactical camera
+##            at 350 m and 700 m (muzzle flickers, tracers). Screenshots of each.
 ## Prints "C1 <check> <json>", writes res://benchmarks/raw/combat01_test.json.
 class_name Combat01SelfTest
 extends Visual03SelfTest
 
-const CHECKS1: Array[String] = ["v_detect", "p_posture", "g_grass"]
+const CHECKS1: Array[String] = ["v_detect", "p_posture", "g_grass", "a_accuracy", "f_gunplay"]
 
 
 func run(args: PackedStringArray) -> void:
@@ -365,4 +372,170 @@ func _g_grass() -> Dictionary:
 		_expect(float(cs.prone.noticed_after_s) > 0.0, "prone in grass never noticed at 100 m in 15 s: %s" % JSON.stringify(cs.prone))
 	if cs.get("prone_firing") is Dictionary:
 		_expect(float(cs.prone_firing.noticed_after_s) >= 0.0 and float(cs.prone_firing.noticed_after_s) < 1.5, "firing from the grass not noticed: %s" % JSON.stringify(cs.prone_firing))
+	return out
+
+
+## Hit rate of n shots: shooter (weapon, proficiency, posture, settled or a fresh aim) at a target (posture) d m away.
+func _hit_rate(wid: StringName, d: float, prof: float, sp: int, tp: int, settled: bool, n := 600) -> float:
+	var sim := demo.sim
+	var def := sim.combat.weapon(wid)
+	var now := sim.state.time
+	var sh := UnitState.new()
+	sh.id = 990001
+	sh.weapon_id = wid
+	sh.proficiency = prof
+	sh.position = Vector3(0, 0, 0)
+	Posture.set_now(sh, sp)
+	sh.moved_at = now - 30.0
+	# a first shot leaves when the reaction time is over (CombatBrain.aim_ready_at)
+	sh.aim_since = now - (30.0 if settled else sim.brain.reaction_s + sim.brain.reaction_per_100m_s * d / 100.0)
+	sh.last_shot_at = now - 30.0
+	var tg := UnitState.new()
+	tg.id = 990002
+	tg.position = Vector3(0, 0, -d)
+	tg.yaw = PI  # facing the shooter
+	Posture.set_now(tg, tp)
+	var hits := 0
+	for i in n:
+		sh.shot_counter = i * 7
+		var origin := Posture.eye(sh, now)
+		var aim := Posture.aim_point(tg, false, now)
+		var dir := sim.brain._aim_error(sh, (aim - origin).normalized(), d)
+		var spread := sim.combat.current_spread(sh, def)
+		dir = CombatSim.spread_direction(dir, spread, 12345, sh.id, sh.shot_counter + 1)
+		if Posture.hit(origin, origin + dir * (d + 5.0), tg, now).zone != LineOfFire.Zone.NONE:
+			hits += 1
+	return float(hits) / n
+
+
+func _a_accuracy() -> Dictionary:
+	var out := {"profile": demo.sim.brain.aim_profile, "cases": {}}
+	var rows := [["rifle trained standing", &"rifle", 0.5, Posture.STAND], ["rifle trained prone", &"rifle", 0.5, Posture.PRONE],
+		["rifle veteran crouched", &"rifle", 0.9, Posture.CROUCH], ["carbine trained standing", &"carbine", 0.5, Posture.STAND],
+		["dmr trained prone", &"dmr", 0.5, Posture.PRONE], ["dmr trained standing", &"dmr", 0.5, Posture.STAND],
+		["lmg trained prone", &"lmg", 0.5, Posture.PRONE], ["lmg trained standing", &"lmg", 0.5, Posture.STAND]]
+	for r: Array in rows:
+		var row := {}
+		for d: float in [50.0, 100.0, 200.0, 300.0, 500.0]:
+			row["%dm" % int(d)] = "%d%% / %d%%" % [roundi(_hit_rate(r[1], d, r[2], r[3], Posture.STAND, false) * 100.0), roundi(_hit_rate(r[1], d, r[2], r[3], Posture.STAND, true) * 100.0)]
+		out.cases[r[0]] = row
+	out["rifle trained standing vs prone target (settled)"] = {"100m": roundi(_hit_rate(&"rifle", 100.0, 0.5, Posture.STAND, Posture.PRONE, true) * 100.0),
+		"200m": roundi(_hit_rate(&"rifle", 200.0, 0.5, Posture.STAND, Posture.PRONE, true) * 100.0)}
+	out["note"] = "first aimed shot % / settled %, standing target unless noted"
+	return out
+
+
+func _f_gunplay() -> Dictionary:
+	var sim := demo.sim
+	var c: Vector3 = _site.def
+	var dir: Vector3 = _site.dir
+	var pf := sim.state.war.player_faction if sim.state.war else 0
+	var ef := 1 if pf != 1 else 2
+	sim.brain.enabled = false
+	UnitVisuals.markers_visible = false
+	var mine := _cs.spawn(pf, c, dir, 1, "C1F")
+	var foe := _cs.spawn(ef, c + dir * 70.0, -dir, 3, "C1E")
+	_keep_alive([mine, foe])
+	var u := sim.state.get_unit(mine.members[0])
+	await _physics(30)
+	var out := {}
+	var ok: bool = demo.game.possess(u.id)
+	_expect(ok, "f_gunplay: could not possess")
+	if not ok:
+		return out
+	await _seconds(1.0)
+	var b := _body(u)
+	b.rotation.y = atan2(-dir.x, -dir.z)
+	b.head.rotation.x = deg_to_rad(-1.0)
+	await _seconds(0.6)
+	_png("f_hip")
+	Input.action_press("aim")
+	await _seconds(0.8)
+	_png("f_ads_rifle")
+	Input.action_release("aim")
+	await _seconds(0.6)
+	var fx := demo.combat_fx
+	var weapons := {}
+	for w: StringName in [&"rifle", &"dmr", &"lmg"]:
+		var def := sim.combat.weapon(w)
+		u.weapon_id = w
+		u.mag = def.magazine_size
+		u.reserve = def.reserve_start
+		u.fire_auto = def.default_mode == WeaponDef.FireMode.AUTO
+		u.reload_until = -1.0
+		await _physics(10)
+		var p0 := b.head.rotation.x
+		# one shot: the kick, and how much is left 0.5 s later
+		Input.action_press("fire")
+		await _physics(2)
+		Input.action_release("fire")
+		var kick := rad_to_deg(b.head.rotation.x - p0)
+		await _seconds(0.5)
+		var left := rad_to_deg(b.head.rotation.x - p0)
+		var row := {"kick_deg": snappedf(kick, 0.01), "after_0.5s_deg": snappedf(left, 0.01)}
+		if u.fire_auto:
+			var p1 := b.head.rotation.x
+			Input.action_press("fire")
+			await _seconds(0.6)
+			Input.action_release("fire")
+			row["burst_0.6s_climb_deg"] = snappedf(rad_to_deg(b.head.rotation.x - p1), 0.01)
+			await _seconds(0.6)
+			row["burst_after_0.6s_deg"] = snappedf(rad_to_deg(b.head.rotation.x - p1), 0.01)
+		Input.action_press("aim")
+		await _seconds(0.6)
+		row["ads_fov"] = snappedf(b.camera.fov, 0.1)
+		if w == &"dmr":
+			_png("f_ads_dmr")
+		Input.action_release("aim")
+		await _seconds(0.4)
+		weapons[String(w)] = row
+		b.head.rotation.x = deg_to_rad(-1.0)
+	out["player"] = weapons
+	# Muzzle flash of the player's own shot.
+	u.weapon_id = &"rifle"
+	u.mag = 30
+	Input.action_press("fire")
+	await _physics(1)
+	await tree.process_frame
+	_png("f_own_flash")
+	Input.action_release("fire")
+	# The enemy team fires at the player (their brains on, ours stays player controlled); the player watches them.
+	await _seconds(1.0)  # the own shot's recoil has recovered
+	var cracks0: int = fx.cracks
+	var flinch0: int = fx.flinches
+	var view0 := b.head.rotation.x
+	sim.brain.enabled = true
+	await _seconds(6.0)
+	_png("f_incoming")
+	out["incoming"] = {"cracks": fx.cracks - cracks0, "view_moved_deg": snappedf(rad_to_deg(b.head.rotation.x - view0), 0.001)}
+	_expect(fx.cracks - cracks0 > 0, "f_gunplay: no crack heard from 6 s of incoming fire")
+	_expect(absf(b.head.rotation.x - view0) < 0.0001, "f_gunplay: incoming fire moved the player's view")
+	# The player shoots back: flinches on the enemy.
+	b.head.look_at(sim.state.get_unit(foe.members[0]).position + Vector3.UP * 1.2)
+	b.head.rotation.y = 0.0
+	var t0 := sim.state.get_unit(foe.members[0])
+	b.rotation.y = atan2(-(t0.position.x - u.position.x), -(t0.position.z - u.position.z))
+	var e := Posture.aim_point(t0, false) - b.camera.global_position
+	b.head.rotation.x = atan2(e.y, Vector2(e.x, e.z).length())
+	u.mag = 30
+	Input.action_press("fire")
+	await _seconds(1.0)
+	Input.action_release("fire")
+	out["flinches"] = fx.flinches - flinch0
+	# The fight from the tactical camera.
+	demo.game.enter_rts()
+	await _seconds(0.5)
+	for dist: float in [350.0, 700.0]:
+		var ff: int = fx.far_flashes
+		var ai0: int = sim.brain.ai_shots
+		var mid := c + dir * 35.0
+		await _view(mid + Vector3.UP * 2.0, dist, atan2(dir.x, dir.z) + PI * 0.5, 6.0)
+		await _seconds(2.0)
+		_png("f_fight_%dm" % int(dist))
+		var states := []
+		for id in foe.members + mine.members:
+			var q := sim.state.get_unit(id)
+			states.append("%s t%d %s %s" % [q.ai_state_name(), q.target_id, q.ai_reason, Posture.NAMES[q.posture]])
+		out["view_%dm" % int(dist)] = {"far_flashes": fx.far_flashes - ff, "ai_shots": sim.brain.ai_shots - ai0, "states": states}
+	sim.brain.enabled = false
 	return out

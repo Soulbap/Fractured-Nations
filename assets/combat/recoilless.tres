@@ -33,3 +33,7 @@ recoil_pitch_deg = 3.5
 recoil_yaw_deg = 0.8
 viewmodel_scene = ExtResource("2_vm")
 needs_discovery = true
+recoil_recover = 0.4
+recoil_recover_s = 0.3
+recoil_yaw_bias = 0.0
+viewmodel_kick = 2.0
