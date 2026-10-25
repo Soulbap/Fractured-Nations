@@ -1,0 +1,1877 @@
+{
+ "_comment": "Geographic layout of 'Referansekart 03' (docs/terrain01/reference_map_03.png). Coordinates are kilometres in the reference frame: x east 0..20, y north 0..20, (0,0) = south-west corner. Heights in metres. Regenerate with tools/terrain_ref/generate.py.",
+ "name": "ref_20km",
+ "seed": 3031,
+ "settlement_layer": true,
+ "demo_spawn_plateaus": [
+  "Nordvest-moen",
+  "Sørmoen",
+  "Østmoen"
+ ],
+ "size_m": 20000.0,
+ "full_res": 10240,
+ "macro_res": 2048,
+ "drain_res": 512,
+ "regional": {
+  "valley_rise_m": 170.0,
+  "valley_rise_km": 2.4,
+  "north_rise_m": 110.0,
+  "large_noise_m": 55.0,
+  "large_noise_km": 7.0,
+  "hills_m": 195.0,
+  "hills_km": 1.6,
+  "default_hilliness": 0.7,
+  "floodplain_km": [
+   0.35,
+   1.9
+  ],
+  "detail_m": 1.6,
+  "detail_rocky_m": 4.0
+ },
+ "river": {
+  "name": "Hovedelva",
+  "points_km": [
+   [
+    7.7,
+    20.1
+   ],
+   [
+    8.2,
+    19.2
+   ],
+   [
+    8.9,
+    18.2
+   ],
+   [
+    9.4,
+    17.3
+   ],
+   [
+    10.0,
+    16.8
+   ],
+   [
+    10.9,
+    16.0
+   ],
+   [
+    11.3,
+    15.1
+   ],
+   [
+    10.9,
+    14.3
+   ],
+   [
+    9.95,
+    13.8
+   ],
+   [
+    9.9,
+    13.0
+   ],
+   [
+    10.2,
+    12.3
+   ],
+   [
+    10.0,
+    11.6
+   ],
+   [
+    10.1,
+    10.8
+   ],
+   [
+    10.4,
+    9.9
+   ],
+   [
+    10.6,
+    9.2
+   ],
+   [
+    11.4,
+    8.4
+   ],
+   [
+    12.15,
+    7.5
+   ],
+   [
+    11.9,
+    6.6
+   ],
+   [
+    11.2,
+    5.5
+   ],
+   [
+    10.6,
+    4.6
+   ],
+   [
+    10.5,
+    4.0
+   ],
+   [
+    10.9,
+    3.2
+   ],
+   [
+    10.8,
+    2.4
+   ],
+   [
+    10.2,
+    1.4
+   ],
+   [
+    10.0,
+    0.6
+   ],
+   [
+    9.8,
+    -0.1
+   ]
+  ],
+  "width_m": [
+   42.0,
+   70.0
+  ],
+  "level_m": [
+   148.0,
+   54.0
+  ],
+  "channel_depth_m": 3.2,
+  "bank_m": 9.0,
+  "floodplain_above_m": 2.2
+ },
+ "lakes": [
+  {
+   "name": "Fjellvatnet",
+   "center_km": [
+    18.1,
+    14.85
+   ],
+   "radii_km": [
+    0.5,
+    0.38
+   ],
+   "rot_deg": -20,
+   "depth_m": 14
+  },
+  {
+   "name": "Langvatnet",
+   "center_km": [
+    5.85,
+    7.9
+   ],
+   "radii_km": [
+    0.36,
+    0.66
+   ],
+   "rot_deg": 10,
+   "depth_m": 12
+  },
+  {
+   "name": "Storvatnet",
+   "center_km": [
+    3.25,
+    2.5
+   ],
+   "radii_km": [
+    1.05,
+    0.62
+   ],
+   "rot_deg": 4,
+   "depth_m": 18,
+   "islands_km": [
+    [
+     3.25,
+     1.95,
+     0.12
+    ]
+   ]
+  },
+  {
+   "name": "Tjernet",
+   "center_km": [
+    1.2,
+    4.4
+   ],
+   "radii_km": [
+    0.34,
+    0.4
+   ],
+   "rot_deg": 0,
+   "depth_m": 8
+  }
+ ],
+ "zones": [
+  {
+   "type": "farmland",
+   "name": "Øst-sletta",
+   "center_km": [
+    14.3,
+    10.8
+   ],
+   "radii_km": [
+    2.4,
+    1.6
+   ],
+   "rot_deg": 15,
+   "strength": 0.85
+  },
+  {
+   "type": "farmland",
+   "name": "Sentraldalen nord",
+   "center_km": [
+    11.4,
+    14.6
+   ],
+   "radii_km": [
+    1.0,
+    0.8
+   ],
+   "rot_deg": 0,
+   "strength": 0.7
+  },
+  {
+   "type": "farmland",
+   "name": "Jordbruksdalen sør",
+   "center_km": [
+    8.4,
+    5.2
+   ],
+   "radii_km": [
+    2.0,
+    3.4
+   ],
+   "rot_deg": -10,
+   "strength": 0.75
+  },
+  {
+   "type": "farmland",
+   "name": "Sørøst-jordet",
+   "center_km": [
+    12.6,
+    5.6
+   ],
+   "radii_km": [
+    1.4,
+    2.4
+   ],
+   "rot_deg": 5,
+   "strength": 0.75
+  },
+  {
+   "type": "farmland",
+   "name": "Nordvest-gardene",
+   "center_km": [
+    6.6,
+    18.0
+   ],
+   "radii_km": [
+    1.3,
+    0.8
+   ],
+   "rot_deg": -30,
+   "strength": 0.5
+  },
+  {
+   "type": "rocky",
+   "name": "Nordvest-åsen",
+   "center_km": [
+    4.6,
+    15.6
+   ],
+   "radii_km": [
+    1.6,
+    0.9
+   ],
+   "rot_deg": 20,
+   "peak_m": 300
+  },
+  {
+   "type": "rocky",
+   "name": "Vestheia",
+   "center_km": [
+    2.1,
+    10.6
+   ],
+   "radii_km": [
+    1.7,
+    0.75
+   ],
+   "rot_deg": -5,
+   "peak_m": 290
+  },
+  {
+   "type": "rocky",
+   "name": "Sørvest-knausen",
+   "center_km": [
+    2.8,
+    6.4
+   ],
+   "radii_km": [
+    1.0,
+    0.8
+   ],
+   "rot_deg": 30,
+   "peak_m": 280
+  },
+  {
+   "type": "rocky",
+   "name": "Østheia",
+   "center_km": [
+    17.5,
+    6.0
+   ],
+   "radii_km": [
+    1.4,
+    1.0
+   ],
+   "rot_deg": -35,
+   "peak_m": 300
+  },
+  {
+   "type": "rocky",
+   "name": "Søråsen",
+   "center_km": [
+    15.9,
+    2.5
+   ],
+   "radii_km": [
+    1.0,
+    0.8
+   ],
+   "rot_deg": 10,
+   "peak_m": 260
+  },
+  {
+   "type": "massif",
+   "name": "Nordfjellet",
+   "axis_km": [
+    [
+     15.0,
+     20.3
+    ],
+    [
+     16.2,
+     18.7
+    ],
+    [
+     17.3,
+     17.5
+    ],
+    [
+     18.6,
+     16.3
+    ],
+    [
+     20.3,
+     15.4
+    ]
+   ],
+   "halfwidth_km": 2.7,
+   "peak_m": 600,
+   "passes_km": [
+    [
+     16.9,
+     18.4,
+     0.55
+    ],
+    [
+     18.9,
+     16.5,
+     0.55
+    ]
+   ]
+  }
+ ],
+ "settlements": [
+  {
+   "name": "Sentrum",
+   "kind": "town",
+   "center_km": [
+    9.1,
+    11.8
+   ],
+   "radius_km": 0.55
+  },
+  {
+   "name": "Østby",
+   "kind": "town",
+   "center_km": [
+    13.25,
+    8.1
+   ],
+   "radius_km": 0.36
+  },
+  {
+   "name": "Nordvik",
+   "kind": "village",
+   "center_km": [
+    5.0,
+    18.6
+   ],
+   "radius_km": 0.18
+  },
+  {
+   "name": "Elvetun",
+   "kind": "village",
+   "center_km": [
+    7.0,
+    17.5
+   ],
+   "radius_km": 0.2
+  },
+  {
+   "name": "Bruvoll",
+   "kind": "village",
+   "center_km": [
+    9.55,
+    16.3
+   ],
+   "radius_km": 0.16
+  },
+  {
+   "name": "Vestli",
+   "kind": "village",
+   "center_km": [
+    1.8,
+    14.3
+   ],
+   "radius_km": 0.18
+  },
+  {
+   "name": "Åsbygda",
+   "kind": "village",
+   "center_km": [
+    3.5,
+    12.8
+   ],
+   "radius_km": 0.16
+  },
+  {
+   "name": "Kvernes",
+   "kind": "village",
+   "center_km": [
+    1.3,
+    11.6
+   ],
+   "radius_km": 0.16
+  },
+  {
+   "name": "Haugen",
+   "kind": "village",
+   "center_km": [
+    8.4,
+    14.4
+   ],
+   "radius_km": 0.16
+  },
+  {
+   "name": "Nordre",
+   "kind": "village",
+   "center_km": [
+    11.5,
+    19.4
+   ],
+   "radius_km": 0.18
+  },
+  {
+   "name": "Elvebakken",
+   "kind": "village",
+   "center_km": [
+    10.7,
+    18.4
+   ],
+   "radius_km": 0.15
+  },
+  {
+   "name": "Fjellfoten",
+   "kind": "village",
+   "center_km": [
+    12.9,
+    17.8
+   ],
+   "radius_km": 0.16
+  },
+  {
+   "name": "Lia",
+   "kind": "village",
+   "center_km": [
+    13.2,
+    15.4
+   ],
+   "radius_km": 0.16
+  },
+  {
+   "name": "Ødegård",
+   "kind": "village",
+   "center_km": [
+    14.25,
+    11.9
+   ],
+   "radius_km": 0.2
+  },
+  {
+   "name": "Strand",
+   "kind": "village",
+   "center_km": [
+    3.2,
+    4.7
+   ],
+   "radius_km": 0.2
+  },
+  {
+   "name": "Sørli",
+   "kind": "village",
+   "center_km": [
+    6.2,
+    4.5
+   ],
+   "radius_km": 0.17
+  },
+  {
+   "name": "Moen",
+   "kind": "village",
+   "center_km": [
+    8.5,
+    2.9
+   ],
+   "radius_km": 0.18
+  },
+  {
+   "name": "Verket",
+   "kind": "industrial",
+   "center_km": [
+    9.65,
+    3.85
+   ],
+   "radius_km": 0.2
+  },
+  {
+   "name": "Skogli",
+   "kind": "village",
+   "center_km": [
+    6.0,
+    10.1
+   ],
+   "radius_km": 0.16
+  },
+  {
+   "name": "Sørhaug",
+   "kind": "village",
+   "center_km": [
+    12.8,
+    6.4
+   ],
+   "radius_km": 0.15
+  },
+  {
+   "name": "Sletta",
+   "kind": "village",
+   "center_km": [
+    12.7,
+    4.3
+   ],
+   "radius_km": 0.16
+  },
+  {
+   "name": "Østmark",
+   "kind": "village",
+   "center_km": [
+    16.7,
+    3.7
+   ],
+   "radius_km": 0.17
+  },
+  {
+   "name": "Grensen",
+   "kind": "village",
+   "center_km": [
+    19.2,
+    4.6
+   ],
+   "radius_km": 0.15
+  },
+  {
+   "name": "Østre",
+   "kind": "village",
+   "center_km": [
+    19.0,
+    7.9
+   ],
+   "radius_km": 0.16
+  },
+  {
+   "name": "Bakken",
+   "kind": "village",
+   "center_km": [
+    15.6,
+    9.2
+   ],
+   "radius_km": 0.16
+  },
+  {
+   "name": "Vestvatn",
+   "kind": "village",
+   "center_km": [
+    3.9,
+    8.3
+   ],
+   "radius_km": 0.14
+  }
+ ],
+ "plateaus": [
+  {
+   "name": "Flyslette øst",
+   "center_km": [
+    17.85,
+    13.25
+   ],
+   "radii_km": [
+    1.35,
+    0.5
+   ],
+   "rot_deg": -33
+  },
+  {
+   "name": "Nordvest-moen",
+   "center_km": [
+    2.9,
+    17.6
+   ],
+   "radii_km": [
+    0.5,
+    0.42
+   ],
+   "rot_deg": 0
+  },
+  {
+   "name": "Vestmoen",
+   "center_km": [
+    2.6,
+    8.9
+   ],
+   "radii_km": [
+    0.45,
+    0.4
+   ],
+   "rot_deg": 20
+  },
+  {
+   "name": "Sørmoen",
+   "center_km": [
+    6.9,
+    6.3
+   ],
+   "radii_km": [
+    0.5,
+    0.42
+   ],
+   "rot_deg": -15
+  },
+  {
+   "name": "Sørøst-moen",
+   "center_km": [
+    14.0,
+    1.6
+   ],
+   "radii_km": [
+    0.5,
+    0.4
+   ],
+   "rot_deg": 0
+  },
+  {
+   "name": "Østmoen",
+   "center_km": [
+    17.9,
+    9.8
+   ],
+   "radii_km": [
+    0.55,
+    0.42
+   ],
+   "rot_deg": 25
+  },
+  {
+   "name": "Fjellmoen",
+   "center_km": [
+    13.9,
+    18.6
+   ],
+   "radii_km": [
+    0.45,
+    0.4
+   ],
+   "rot_deg": 0
+  },
+  {
+   "name": "Midtmoen",
+   "center_km": [
+    6.4,
+    14.4
+   ],
+   "radii_km": [
+    0.42,
+    0.36
+   ],
+   "rot_deg": 10
+  }
+ ],
+ "roads": [
+  {
+   "name": "Rv1 vest-sørøst",
+   "class": "primary",
+   "waypoints_km": [
+    [
+     0.0,
+     15.6
+    ],
+    [
+     1.5,
+     14.95
+    ],
+    [
+     2.7,
+     14.3
+    ],
+    [
+     4.5,
+     13.3
+    ],
+    [
+     6.3,
+     12.8
+    ],
+    [
+     7.3,
+     11.9
+    ],
+    [
+     7.56,
+     11.25
+    ],
+    [
+     7.9,
+     10.0
+    ],
+    [
+     8.3,
+     9.1
+    ],
+    [
+     9.6,
+     8.3
+    ],
+    [
+     10.4,
+     6.9
+    ],
+    [
+     11.15,
+     5.45
+    ],
+    [
+     12.65,
+     4.92
+    ],
+    [
+     13.8,
+     4.8
+    ],
+    [
+     15.4,
+     4.5
+    ],
+    [
+     16.7,
+     4.25
+    ],
+    [
+     18.0,
+     3.4
+    ],
+    [
+     19.0,
+     2.4
+    ],
+    [
+     20.0,
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "Rv2 nord-øst",
+   "class": "primary",
+   "waypoints_km": [
+    [
+     4.2,
+     20.0
+    ],
+    [
+     5.2,
+     19.0
+    ],
+    [
+     6.3,
+     18.0
+    ],
+    [
+     7.0,
+     17.5
+    ],
+    [
+     8.9,
+     17.2
+    ],
+    [
+     10.1,
+     16.75
+    ],
+    [
+     10.7,
+     16.465
+    ],
+    [
+     12.1,
+     15.8
+    ],
+    [
+     12.8,
+     14.5
+    ],
+    [
+     14.2,
+     13.9
+    ],
+    [
+     15.6,
+     13.4
+    ],
+    [
+     16.7,
+     12.3
+    ],
+    [
+     17.9,
+     11.4
+    ],
+    [
+     20.0,
+     10.9
+    ]
+   ]
+  },
+  {
+   "name": "Fv nord-sentrum",
+   "class": "secondary",
+   "waypoints_km": [
+    [
+     7.0,
+     17.5
+    ],
+    [
+     6.9,
+     16.6
+    ],
+    [
+     7.3,
+     15.4
+    ],
+    [
+     8.4,
+     14.4
+    ],
+    [
+     8.75,
+     13.0
+    ],
+    [
+     9.1,
+     11.8
+    ]
+   ]
+  },
+  {
+   "name": "Fv sentrum-sør",
+   "class": "secondary",
+   "waypoints_km": [
+    [
+     9.1,
+     11.8
+    ],
+    [
+     9.35,
+     10.4
+    ],
+    [
+     9.6,
+     8.3
+    ],
+    [
+     9.45,
+     6.5
+    ],
+    [
+     9.4,
+     5.3
+    ],
+    [
+     9.65,
+     3.85
+    ],
+    [
+     8.5,
+     2.9
+    ],
+    [
+     8.35,
+     1.5
+    ],
+    [
+     8.2,
+     0.0
+    ]
+   ]
+  },
+  {
+   "name": "Fv sentrum-øst",
+   "class": "secondary",
+   "waypoints_km": [
+    [
+     9.1,
+     11.8
+    ],
+    [
+     10.1,
+     11.15
+    ],
+    [
+     11.5,
+     10.1
+    ],
+    [
+     13.25,
+     8.1
+    ],
+    [
+     15.6,
+     7.7
+    ],
+    [
+     17.5,
+     7.95
+    ],
+    [
+     19.0,
+     7.9
+    ],
+    [
+     20.0,
+     8.3
+    ]
+   ]
+  },
+  {
+   "name": "Fv sentrum-vest",
+   "class": "secondary",
+   "waypoints_km": [
+    [
+     9.1,
+     11.8
+    ],
+    [
+     7.56,
+     11.25
+    ],
+    [
+     6.0,
+     10.1
+    ],
+    [
+     3.6,
+     10.6
+    ],
+    [
+     1.3,
+     11.6
+    ],
+    [
+     0.0,
+     11.9
+    ]
+   ]
+  },
+  {
+   "name": "Fv sørvest",
+   "class": "secondary",
+   "waypoints_km": [
+    [
+     0.0,
+     6.5
+    ],
+    [
+     1.6,
+     5.8
+    ],
+    [
+     3.2,
+     4.7
+    ],
+    [
+     4.8,
+     4.5
+    ],
+    [
+     6.2,
+     4.5
+    ],
+    [
+     7.6,
+     3.6
+    ],
+    [
+     8.5,
+     2.9
+    ]
+   ]
+  },
+  {
+   "name": "Fv sør-tverr",
+   "class": "secondary",
+   "waypoints_km": [
+    [
+     8.5,
+     2.9
+    ],
+    [
+     10.0,
+     2.6
+    ],
+    [
+     11.6,
+     2.8
+    ],
+    [
+     13.2,
+     3.0
+    ],
+    [
+     14.6,
+     3.3
+    ],
+    [
+     16.7,
+     3.7
+    ],
+    [
+     18.0,
+     4.3
+    ],
+    [
+     19.2,
+     4.6
+    ],
+    [
+     20.0,
+     4.8
+    ]
+   ]
+  },
+  {
+   "name": "Fv øst nord-sør",
+   "class": "secondary",
+   "waypoints_km": [
+    [
+     14.2,
+     13.9
+    ],
+    [
+     14.25,
+     11.9
+    ],
+    [
+     13.7,
+     9.6
+    ],
+    [
+     13.25,
+     8.1
+    ],
+    [
+     12.8,
+     6.4
+    ],
+    [
+     12.65,
+     4.92
+    ],
+    [
+     12.7,
+     4.3
+    ],
+    [
+     13.2,
+     3.0
+    ]
+   ]
+  },
+  {
+   "name": "Fv vest-lia",
+   "class": "secondary",
+   "waypoints_km": [
+    [
+     0.0,
+     8.1
+    ],
+    [
+     2.0,
+     8.2
+    ],
+    [
+     3.9,
+     8.3
+    ],
+    [
+     5.0,
+     9.2
+    ],
+    [
+     6.0,
+     10.1
+    ]
+   ]
+  },
+  {
+   "name": "Lv nordvest",
+   "class": "local",
+   "waypoints_km": [
+    [
+     1.5,
+     14.95
+    ],
+    [
+     1.4,
+     17.0
+    ],
+    [
+     1.6,
+     18.8
+    ],
+    [
+     2.4,
+     20.0
+    ]
+   ]
+  },
+  {
+   "name": "Lv innsjø",
+   "class": "local",
+   "waypoints_km": [
+    [
+     3.2,
+     4.7
+    ],
+    [
+     4.0,
+     6.0
+    ],
+    [
+     4.9,
+     7.0
+    ],
+    [
+     4.7,
+     8.4
+    ],
+    [
+     3.9,
+     8.3
+    ]
+   ]
+  },
+  {
+   "name": "Lv fjellvatn",
+   "class": "local",
+   "waypoints_km": [
+    [
+     15.6,
+     13.4
+    ],
+    [
+     16.9,
+     14.2
+    ],
+    [
+     17.6,
+     14.4
+    ],
+    [
+     18.6,
+     15.5
+    ],
+    [
+     18.95,
+     16.5
+    ],
+    [
+     19.4,
+     17.6
+    ],
+    [
+     20.0,
+     18.7
+    ]
+   ]
+  },
+  {
+   "name": "Lv nordre",
+   "class": "local",
+   "waypoints_km": [
+    [
+     10.7,
+     16.465
+    ],
+    [
+     10.7,
+     18.4
+    ],
+    [
+     11.5,
+     19.4
+    ],
+    [
+     11.8,
+     20.0
+    ]
+   ]
+  },
+  {
+   "name": "Lv fjellfoten",
+   "class": "local",
+   "waypoints_km": [
+    [
+     12.1,
+     15.8
+    ],
+    [
+     13.2,
+     15.4
+    ]
+   ]
+  },
+  {
+   "name": "Lv fjellfoten nord",
+   "class": "local",
+   "waypoints_km": [
+    [
+     10.7,
+     18.4
+    ],
+    [
+     12.9,
+     17.8
+    ],
+    [
+     13.9,
+     18.6
+    ],
+    [
+     15.0,
+     19.2
+    ],
+    [
+     16.0,
+     19.0
+    ]
+   ]
+  },
+  {
+   "name": "Lv fjellpass",
+   "class": "track",
+   "waypoints_km": [
+    [
+     13.2,
+     15.4
+    ],
+    [
+     14.5,
+     16.4
+    ],
+    [
+     15.9,
+     17.4
+    ],
+    [
+     16.9,
+     18.4
+    ],
+    [
+     17.5,
+     19.3
+    ],
+    [
+     17.9,
+     20.0
+    ]
+   ]
+  },
+  {
+   "name": "Lv åsbygda",
+   "class": "local",
+   "waypoints_km": [
+    [
+     3.5,
+     12.8
+    ],
+    [
+     3.6,
+     10.6
+    ]
+   ]
+  },
+  {
+   "name": "Lv kvernes",
+   "class": "local",
+   "waypoints_km": [
+    [
+     1.3,
+     11.6
+    ],
+    [
+     1.8,
+     14.3
+    ],
+    [
+     1.5,
+     14.95
+    ]
+   ]
+  },
+  {
+   "name": "Lv nordvik",
+   "class": "local",
+   "waypoints_km": [
+    [
+     5.0,
+     18.6
+    ],
+    [
+     3.9,
+     17.9
+    ],
+    [
+     2.9,
+     17.6
+    ],
+    [
+     1.4,
+     17.0
+    ]
+   ]
+  },
+  {
+   "name": "Lv haugen",
+   "class": "local",
+   "waypoints_km": [
+    [
+     8.4,
+     14.4
+    ],
+    [
+     6.4,
+     14.4
+    ],
+    [
+     4.5,
+     13.3
+    ]
+   ]
+  },
+  {
+   "name": "Lv bruvoll",
+   "class": "local",
+   "waypoints_km": [
+    [
+     8.9,
+     17.2
+    ],
+    [
+     9.55,
+     16.3
+    ]
+   ]
+  },
+  {
+   "name": "Lv bakken",
+   "class": "local",
+   "waypoints_km": [
+    [
+     15.6,
+     7.7
+    ],
+    [
+     15.6,
+     9.2
+    ],
+    [
+     17.9,
+     9.8
+    ],
+    [
+     17.9,
+     11.4
+    ]
+   ]
+  },
+  {
+   "name": "Lv østheia",
+   "class": "track",
+   "waypoints_km": [
+    [
+     19.0,
+     7.9
+    ],
+    [
+     18.6,
+     6.4
+    ],
+    [
+     17.9,
+     5.0
+    ],
+    [
+     16.7,
+     4.25
+    ]
+   ]
+  },
+  {
+   "name": "Lv søråsen",
+   "class": "track",
+   "waypoints_km": [
+    [
+     13.2,
+     3.0
+    ],
+    [
+     14.0,
+     1.6
+    ],
+    [
+     15.2,
+     1.2
+    ],
+    [
+     16.6,
+     0.0
+    ]
+   ]
+  },
+  {
+   "name": "Lv sørmoen",
+   "class": "local",
+   "waypoints_km": [
+    [
+     6.2,
+     4.5
+    ],
+    [
+     6.9,
+     6.3
+    ],
+    [
+     7.9,
+     7.0
+    ],
+    [
+     8.3,
+     9.1
+    ]
+   ]
+  },
+  {
+   "name": "Lv storvatn",
+   "class": "track",
+   "waypoints_km": [
+    [
+     3.2,
+     4.7
+    ],
+    [
+     1.6,
+     3.4
+    ],
+    [
+     1.2,
+     1.5
+    ],
+    [
+     2.6,
+     0.8
+    ],
+    [
+     5.0,
+     1.2
+    ],
+    [
+     6.6,
+     2.0
+    ],
+    [
+     7.6,
+     3.6
+    ]
+   ]
+  },
+  {
+   "name": "Lv tjernet",
+   "class": "track",
+   "waypoints_km": [
+    [
+     1.6,
+     5.8
+    ],
+    [
+     0.9,
+     5.0
+    ],
+    [
+     0.0,
+     4.2
+    ]
+   ]
+  },
+  {
+   "name": "Lv vestheia",
+   "class": "track",
+   "waypoints_km": [
+    [
+     2.0,
+     8.2
+    ],
+    [
+     2.6,
+     8.9
+    ],
+    [
+     1.0,
+     9.6
+    ],
+    [
+     0.0,
+     9.9
+    ]
+   ]
+  },
+  {
+   "name": "Lv nordvest-skog",
+   "class": "track",
+   "waypoints_km": [
+    [
+     3.5,
+     12.8
+    ],
+    [
+     4.4,
+     15.0
+    ],
+    [
+     5.6,
+     16.6
+    ],
+    [
+     5.0,
+     18.6
+    ]
+   ]
+  },
+  {
+   "name": "Lv sørøst-skog",
+   "class": "track",
+   "waypoints_km": [
+    [
+     11.6,
+     2.8
+    ],
+    [
+     12.0,
+     1.2
+    ],
+    [
+     11.6,
+     0.0
+    ]
+   ]
+  },
+  {
+   "name": "Lv østmoen",
+   "class": "track",
+   "waypoints_km": [
+    [
+     19.0,
+     7.9
+    ],
+    [
+     17.9,
+     9.8
+    ]
+   ]
+  },
+  {
+   "name": "Lv midtskog",
+   "class": "track",
+   "waypoints_km": [
+    [
+     7.3,
+     15.4
+    ],
+    [
+     6.4,
+     14.4
+    ],
+    [
+     5.4,
+     12.6
+    ],
+    [
+     6.0,
+     10.1
+    ]
+   ]
+  }
+ ],
+ "road_classes": {
+  "primary": {
+   "lane_m": 3.5,
+   "lanes": 2,
+   "shoulder_m": 1.5,
+   "max_grade": 0.07,
+   "mesh": true,
+   "slope_cost": 260.0,
+   "min_radius_m": 60.0
+  },
+  "secondary": {
+   "lane_m": 3.0,
+   "lanes": 2,
+   "shoulder_m": 1.0,
+   "max_grade": 0.09,
+   "mesh": true,
+   "slope_cost": 200.0,
+   "min_radius_m": 45.0
+  },
+  "local": {
+   "lane_m": 4.5,
+   "lanes": 1,
+   "shoulder_m": 0.8,
+   "max_grade": 0.11,
+   "mesh": false,
+   "slope_cost": 150.0,
+   "min_radius_m": 28.0
+  },
+  "track": {
+   "lane_m": 3.6,
+   "lanes": 1,
+   "shoulder_m": 0.6,
+   "max_grade": 0.14,
+   "mesh": false,
+   "slope_cost": 110.0,
+   "min_radius_m": 18.0
+  },
+  "street": {
+   "lane_m": 2.75,
+   "lanes": 2,
+   "shoulder_m": 0.5,
+   "max_grade": 0.12,
+   "mesh": false,
+   "slope_cost": 100.0
+  }
+ },
+ "vegetation": {
+  "forest_km": 1.1,
+  "forest_bias": 0.42,
+  "farmland_forest": -1.2,
+  "treeline_m": [
+   640.0,
+   830.0
+  ],
+  "field_cell_m": [
+   360.0,
+   240.0
+  ]
+ },
+ "_comment_visual02": "VISUAL-02 candidate: layout_ref03 plus 'cover_v2' (tools/terrain_ref/generate.py build_cover_v2). Relief, rivers, lakes, roads, settlements and plateaus are unchanged; only the vegetation cover, the colour map and the control map's ground differ. Zones are soft ellipses (km, reference frame) that bias the forest type; the environment (moisture, dryness, elevation, farmland) does the rest.",
+ "cover_v2": {
+  "stand_m": 240.0,
+  "clearcut_share": 0.07,
+  "opening_km": 2.6,
+  "zones": [
+   {
+    "type": "spruce_forestry",
+    "name": "Sorvest-skogen",
+    "center_km": [
+     5.2,
+     5.6
+    ],
+    "radii_km": [
+     2.4,
+     1.6
+    ],
+    "rot_deg": 20
+   },
+   {
+    "type": "spruce_forestry",
+    "name": "Nordost-lia",
+    "center_km": [
+     14.8,
+     15.2
+    ],
+    "radii_km": [
+     2.4,
+     1.3
+    ],
+    "rot_deg": -25
+   },
+   {
+    "type": "spruce_forestry",
+    "name": "Sorost-skogen",
+    "center_km": [
+     17.6,
+     2.0
+    ],
+    "radii_km": [
+     2.2,
+     1.6
+    ],
+    "rot_deg": 0
+   },
+   {
+    "type": "spruce_forestry",
+    "name": "Vestskogen",
+    "center_km": [
+     3.0,
+     13.6
+    ],
+    "radii_km": [
+     1.8,
+     1.2
+    ],
+    "rot_deg": 10
+   },
+   {
+    "type": "pine_moor",
+    "name": "Vestheia",
+    "center_km": [
+     2.1,
+     10.6
+    ],
+    "radii_km": [
+     2.2,
+     1.3
+    ],
+    "rot_deg": -5
+   },
+   {
+    "type": "pine_moor",
+    "name": "Nordvest-asen",
+    "center_km": [
+     4.6,
+     15.8
+    ],
+    "radii_km": [
+     2.0,
+     1.2
+    ],
+    "rot_deg": 20
+   },
+   {
+    "type": "pine_moor",
+    "name": "Ostheia",
+    "center_km": [
+     17.6,
+     6.2
+    ],
+    "radii_km": [
+     1.9,
+     1.4
+    ],
+    "rot_deg": -35
+   },
+   {
+    "type": "pine_moor",
+    "name": "Sorasen",
+    "center_km": [
+     15.9,
+     2.6
+    ],
+    "radii_km": [
+     1.2,
+     1.0
+    ],
+    "rot_deg": 10,
+    "strength": 0.8
+   },
+   {
+    "type": "wetland",
+    "name": "Storvatn-myrene",
+    "center_km": [
+     3.0,
+     2.6
+    ],
+    "radii_km": [
+     2.1,
+     1.4
+    ],
+    "rot_deg": 4
+   },
+   {
+    "type": "wetland",
+    "name": "Tjernet",
+    "center_km": [
+     1.2,
+     4.4
+    ],
+    "radii_km": [
+     1.0,
+     1.1
+    ],
+    "rot_deg": 0
+   },
+   {
+    "type": "wetland",
+    "name": "Langvatnet",
+    "center_km": [
+     5.9,
+     7.9
+    ],
+    "radii_km": [
+     1.0,
+     1.4
+    ],
+    "rot_deg": 10,
+    "strength": 0.8
+   },
+   {
+    "type": "mountain_birch",
+    "name": "Nordfjellet",
+    "center_km": [
+     17.4,
+     17.6
+    ],
+    "radii_km": [
+     3.6,
+     1.9
+    ],
+    "rot_deg": -38
+   }
+  ]
+ }
+}

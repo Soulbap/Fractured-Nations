@@ -73,3 +73,7 @@ __pycache__/
 
 # AI-SQUAD-01 local run logs
 /logs/
+# VISUAL-02 candidate world (tools/visual02/build_candidate.gd): generated next to ref_20km, never committed
+/worlds/settlements/*_visual02*
+/scenes/game/world_ref_20km_visual02.tscn
+/worlds/ref_20km_visual02/world_config.tres

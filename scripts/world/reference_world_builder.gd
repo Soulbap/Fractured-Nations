@@ -43,7 +43,10 @@ const M_SHED := 18
 const M_FENCE := 19
 const M_MAILBOX := 20
 const M_ROADPOST := 21
-const ALL_MESHES: Array[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
+## VISUAL-02: young trees on clear-cuts (the Spruce B / Birch B meshes, small, no collider: infantry and vehicles pass).
+const M_SAPLING_SPRUCE := 22
+const M_SAPLING_BIRCH := 23
+const ALL_MESHES: Array[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
 
 const WATER_SHADER := "res://shaders/world/water.gdshader"
 
@@ -965,6 +968,111 @@ func _near_building(p: Vector3, margin: float) -> bool:
 	return false
 
 
+## VISUAL-02 tree placement for cover_v2 worlds (worker thread). Instead of one candidate per tree_s grid point with
+## probability = density (even spacing everywhere), candidates on a finer grid are accepted by density x a clumping
+## noise (groups and gaps at ~15-60 m), with a minimum distance between trunks; tree size follows the stand's age
+## (regrowth small, mature large), edges hold smaller trees, clear-cuts get saplings and a few retained seed trees.
+func _trees_v2(cell: Vector2i, gen: ReferenceTerrainGenerator, data: Terrain3DData, rng: RandomNumberGenerator,
+		by_mesh: Dictionary, lim: float, cos_tree: float) -> void:
+	var x0 := cell.x * CELL_M
+	var z0 := cell.y * CELL_M
+	var s: float = _sc_cfg.tree_s
+	var c := s * 0.62
+	var accept_scale := (c * c) / (s * s)
+	var clump := FastNoiseLite.new()
+	clump.seed = int(_sc_cfg.seed) + 907
+	clump.frequency = 1.0 / 17.0
+	clump.fractal_octaves = 2
+	var gaps := FastNoiseLite.new()
+	gaps.seed = int(_sc_cfg.seed) + 911
+	gaps.frequency = 1.0 / 60.0
+	gaps.fractal_octaves = 2
+	# Accepted trunks of this cell: Vector3(x, z, min distance) in a 4 m hash.
+	var placed := {}
+	var z := z0 + c * 0.5
+	while z < z0 + CELL_M:
+		var x := x0 + c * 0.5
+		while x < x0 + CELL_M:
+			var p := Vector3(x + rng.randf_range(-0.45, 0.45) * c, 0, z + rng.randf_range(-0.45, 0.45) * c)
+			x += c
+			var roll := rng.randf()
+			if absf(p.x) > lim or absf(p.z) > lim:
+				continue
+			var v := gen.vegetation_at(p.x, p.z)
+			var info := gen.info_at(p.x, p.z)
+			var st := gen.stand_at(p.x, p.z)
+			if info.a > 0.25:
+				continue
+			var dens := v.r
+			var garden := info.b > 0.5
+			if garden:
+				dens = 0.14
+			var cut := st.a > 0.5 and not garden
+			# Groups and gaps: 0.35..1.65 around the stand density (the mean stays the density).
+			var k := clampf(1.0 + 0.9 * clump.get_noise_2d(p.x, p.z) + 0.45 * gaps.get_noise_2d(p.x, p.z), 0.25, 1.9)
+			var sapling := false
+			if cut:
+				# Clear-cut: saplings in patches, a retained seed tree now and then.
+				if roll < 0.5 * accept_scale * k:
+					sapling = true
+				elif roll > 0.5 * accept_scale * k + 0.012 * accept_scale:
+					continue
+			elif roll > dens * k * accept_scale:
+				continue
+			if _sc_road.distance(p) < 5.0 or _sc_major.distance(p) < 9.0 or _near_building(p, 9.0):
+				continue
+			var n := data.get_normal(p)
+			if not n.is_finite() or n.y < cos_tree:
+				continue
+			var age := st.r
+			var edge := st.g
+			# Size class by age; edges and rock keep trees smaller.
+			var size := 1.0
+			if sapling:
+				size = rng.randf_range(0.22, 0.48)
+			elif age < 0.3:
+				size = lerpf(0.42, 0.7, age / 0.3) * rng.randf_range(0.85, 1.15)
+			elif age < 0.6:
+				size = lerpf(0.68, 0.95, (age - 0.3) / 0.3) * rng.randf_range(0.85, 1.15)
+			else:
+				size = lerpf(0.9, 1.2, (age - 0.6) / 0.4) * rng.randf_range(0.82, 1.18)
+			size *= (1.0 - 0.25 * edge) * (1.0 - 0.3 * info.r)
+			# Minimum trunk distance grows with size (crowns do not interpenetrate).
+			var md := (1.4 if sapling else 2.2) * maxf(size, 0.4)
+			var hk := Vector2i(floori(p.x / 4.0), floori(p.z / 4.0))
+			var clash := false
+			for dx in range(-1, 2):
+				for dz in range(-1, 2):
+					for q: Vector3 in placed.get(hk + Vector2i(dx, dz), []):
+						var dd := Vector2(q.x - p.x, q.y - p.z).length()
+						if dd < maxf(md, q.z):
+							clash = true
+							break
+					if clash:
+						break
+				if clash:
+					break
+			if clash:
+				continue
+			if not placed.has(hk):
+				placed[hk] = []
+			placed[hk].append(Vector3(p.x, p.z, md))
+			p.y = data.get_height(p) - 0.15
+			var sp := rng.randf()
+			var mesh_id := M_SPRUCE_A
+			if sapling:
+				mesh_id = M_SAPLING_BIRCH if sp < v.b + 0.25 else M_SAPLING_SPRUCE
+			elif sp < v.g:
+				mesh_id = M_PINE_A if rng.randf() < 0.7 else M_PINE_B
+			elif sp < v.g + v.b:
+				mesh_id = M_BIRCH_A if rng.randf() < 0.55 else M_BIRCH_B
+			else:
+				mesh_id = M_SPRUCE_B if (size < 0.75 and rng.randf() < 0.6) or rng.randf() < 0.15 else M_SPRUCE_A
+			var xf := _xf(rng, p, size * 0.94, size * 1.06, Vector3.UP)
+			VegetationChunk.append_to(by_mesh, mesh_id, xf, _tint(rng, 0.13))
+		z += c
+
+
 ## One cell of scatter (worker thread, read-only access to shared data).
 func _scatter_cell_task(i: int) -> void:
 	var cell := _sc_cells[i]
@@ -984,49 +1092,52 @@ func _scatter_cell_task(i: int) -> void:
 	# Trees.
 	var s: float = cfg.tree_s
 	var z := ceilf(z0 / s) * s
-	while z < z1:
-		var x := ceilf(x0 / s) * s
-		while x < x1:
-			var p := Vector3(x + rng.randf_range(-0.48, 0.48) * s, 0, z + rng.randf_range(-0.48, 0.48) * s)
-			x += s
-			var roll := rng.randf()
-			if absf(p.x) > lim or absf(p.z) > lim:
-				continue
-			var v := gen.vegetation_at(p.x, p.z)
-			var info := gen.info_at(p.x, p.z)
-			var dens := v.r
-			if info.b > 0.5:
-				# Garden and street trees in settlements (kept clear of the buildings).
-				dens = 0.14
-			if roll > dens or info.a > 0.25:
-				continue
-			if _sc_road.distance(p) < 5.0 or _sc_major.distance(p) < 9.0 or _near_building(p, 9.0):
-				continue
-			var n := data.get_normal(p)
-			if not n.is_finite() or n.y < cos_tree:
-				continue
-			p.y = data.get_height(p) - 0.15
-			var sp := rng.randf()
-			var mesh_id := M_SPRUCE_A
-			var smin := 0.7
-			var smax := 1.25
-			if sp < v.g:
-				mesh_id = M_PINE_A if rng.randf() < 0.75 else M_PINE_B
-				smin = 0.8
-				smax = 1.25
-			elif sp < v.g + v.b:
-				mesh_id = M_BIRCH_A if rng.randf() < 0.6 else M_BIRCH_B
-				smin = 0.75
-				smax = 1.2
-			else:
-				# Smaller spruce at forest edges and as understorey.
-				mesh_id = M_SPRUCE_B if (dens < 0.5 and rng.randf() < 0.5) or rng.randf() < 0.18 else M_SPRUCE_A
-				smin = 0.65
-				smax = 1.3
-			# Trees near the treeline and on rock grow smaller.
-			var stunt := 1.0 - 0.35 * info.r
-			VegetationChunk.append_to(by_mesh, mesh_id, _xf(rng, p, smin * stunt, smax * stunt, Vector3.UP), _tint(rng, 0.1))
-		z += s
+	if gen.has_stand():
+		_trees_v2(cell, gen, data, rng, by_mesh, lim, cos_tree)
+	else:
+		while z < z1:
+			var x := ceilf(x0 / s) * s
+			while x < x1:
+				var p := Vector3(x + rng.randf_range(-0.48, 0.48) * s, 0, z + rng.randf_range(-0.48, 0.48) * s)
+				x += s
+				var roll := rng.randf()
+				if absf(p.x) > lim or absf(p.z) > lim:
+					continue
+				var v := gen.vegetation_at(p.x, p.z)
+				var info := gen.info_at(p.x, p.z)
+				var dens := v.r
+				if info.b > 0.5:
+					# Garden and street trees in settlements (kept clear of the buildings).
+					dens = 0.14
+				if roll > dens or info.a > 0.25:
+					continue
+				if _sc_road.distance(p) < 5.0 or _sc_major.distance(p) < 9.0 or _near_building(p, 9.0):
+					continue
+				var n := data.get_normal(p)
+				if not n.is_finite() or n.y < cos_tree:
+					continue
+				p.y = data.get_height(p) - 0.15
+				var sp := rng.randf()
+				var mesh_id := M_SPRUCE_A
+				var smin := 0.7
+				var smax := 1.25
+				if sp < v.g:
+					mesh_id = M_PINE_A if rng.randf() < 0.75 else M_PINE_B
+					smin = 0.8
+					smax = 1.25
+				elif sp < v.g + v.b:
+					mesh_id = M_BIRCH_A if rng.randf() < 0.6 else M_BIRCH_B
+					smin = 0.75
+					smax = 1.2
+				else:
+					# Smaller spruce at forest edges and as understorey.
+					mesh_id = M_SPRUCE_B if (dens < 0.5 and rng.randf() < 0.5) or rng.randf() < 0.18 else M_SPRUCE_A
+					smin = 0.65
+					smax = 1.3
+				# Trees near the treeline and on rock grow smaller.
+				var stunt := 1.0 - 0.35 * info.r
+				VegetationChunk.append_to(by_mesh, mesh_id, _xf(rng, p, smin * stunt, smax * stunt, Vector3.UP), _tint(rng, 0.1))
+			z += s
 
 	# Understorey: juniper, deciduous shrubs, ferns; also along roads and field edges.
 	s = cfg.bush_s
@@ -1049,6 +1160,12 @@ func _scatter_cell_task(i: int) -> void:
 			var c_jun := 0.06 + 0.25 * v.g * edge + 0.15 * info.r * (1.0 - v.r)
 			var c_shrub := 0.04 + 0.3 * v.a * (1.0 - info.r) + 0.2 * edge * v.b + (0.35 if d < 14.0 else 0.0)
 			var c_fern := 0.25 * v.r * (1.0 - v.g) * (1.0 - info.r)
+			if gen.has_stand():
+				# VISUAL-02: raspberry / willow scrub and ferns on clear-cuts, more juniper on dry moors.
+				var st := gen.stand_at(p.x, p.z)
+				c_shrub += 0.3 * st.a
+				c_fern += 0.12 * st.a
+				c_jun += 0.12 * st.b * (1.0 - v.r)
 			var roll := rng.randf()
 			var mesh_id := -1
 			if roll < c_jun:
@@ -1077,9 +1194,15 @@ func _scatter_cell_task(i: int) -> void:
 			if absf(p.x) > lim or absf(p.z) > lim:
 				continue
 			var v := gen.vegetation_at(p.x, p.z)
-			if v.r < 0.45 or _sc_road.distance(p) < 5.0 or _sc_major.distance(p) < 8.0:
+			# VISUAL-02: clear-cuts are full of stumps; old stands have more fallen logs.
+			var st := gen.stand_at(p.x, p.z) if gen.has_stand() else Color(0.6, 0, 0, 0)
+			if (v.r < 0.45 and st.a < 0.5) or _sc_road.distance(p) < 5.0 or _sc_major.distance(p) < 8.0:
 				continue
 			var roll := rng.randf()
+			if st.a > 0.5:
+				roll *= 0.45
+			elif gen.has_stand() and roll < 0.16:
+				roll /= 0.6 + 0.8 * st.r
 			var n := data.get_normal(p)
 			if not n.is_finite() or n.y < 0.8:
 				continue
@@ -1116,6 +1239,10 @@ func _scatter_cell_task(i: int) -> void:
 			var roll := rng.randf()
 			p.y = data.get_height(p)
 			if roll < c_out:
+				# VISUAL-02 (cover_v2 worlds): no outcrop meshes on steep rock faces (the rock texture is the face; a mound on a
+				# 35 degree slope shows its underside).
+				if gen.has_stand() and steep > 0.15:
+					continue
 				p.y -= 0.6
 				VegetationChunk.append_to(by_mesh, M_OUTCROP, _xf(rng, p, 0.7, 1.8, n.lerp(Vector3.UP, 0.4).normalized()), _tint(rng, 0.06))
 			elif roll < c_out + c_boulder:

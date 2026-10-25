@@ -10,6 +10,9 @@ var _res := 10240
 var _veg: Image
 ## RGBA8 2048^2: rockiness, field, settlement, water proximity.
 var _info: Image
+## VISUAL-02 (cover_v2 worlds only), RGBA8 2048^2: stand age (0 clear-cut .. 1 mature), forest edge band, dryness,
+## clear-cut flag. Null in worlds generated without it (the scatter then plants the old way).
+var _stand: Image
 var _map_px := 2048
 var _map_scale := 1.0 # map pixels per metre
 
@@ -21,6 +24,8 @@ func _init(config: WorldConfig) -> void:
 	_res = rc.source_resolution
 	_veg = Image.load_from_file(_src.path_join("vegetation.png"))
 	_info = Image.load_from_file(_src.path_join("info.png"))
+	if FileAccess.file_exists(_src.path_join("stand.png")):
+		_stand = Image.load_from_file(_src.path_join("stand.png"))
 	if _veg:
 		_map_px = _veg.get_width()
 	_map_scale = _map_px / cfg.snapped_size()
@@ -61,6 +66,15 @@ func vegetation_at(x: float, z: float) -> Color:
 ## r = rockiness, g = field, b = settlement, a = water proximity.
 func info_at(x: float, z: float) -> Color:
 	return _sample(_info, x, z)
+
+
+func has_stand() -> bool:
+	return _stand != null
+
+
+## r = stand age (0 clear-cut, ~0.25 regrowth, 1 mature), g = forest edge band, b = dryness, a = clear-cut.
+func stand_at(x: float, z: float) -> Color:
+	return _sample(_stand, x, z)
 
 
 ## -1..1 like the procedural generator (0.12 + density keeps the old thresholds usable).

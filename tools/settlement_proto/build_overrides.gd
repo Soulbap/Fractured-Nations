@@ -9,12 +9,17 @@
 ##   - trees, bushes and rocks under the new buildings and on the new roads: removed,
 ##   - the new buildings (kind "added", with their colour).
 ## The vegetation chunks are only read. Run:
-##   Godot --headless --path . --script res://tools/settlement_proto/build_overrides.gd
+##   Godot --headless --path . --script res://tools/settlement_proto/build_overrides.gd [-- --world=ref_20km_visual02]
+## --world (VISUAL-02): another vegetation set of the same settlements (a candidate world in worlds/<world>/): its records
+## are computed against that world's chunks and written to worlds/settlements/<world>.overrides.json, with a copy of the
+## settlement data as <world>.json (SettlementLayer looks the layer up by the vegetation folder's name).
 extends SceneTree
 
-const WORLD := "res://worlds/ref_20km"
-const VEG_DIR := WORLD + "/vegetation/"
-const LAYER := "res://worlds/settlements/ref_20km"
+const SETTLEMENTS := "res://worlds/settlements/ref_20km"
+
+var WORLD := "res://worlds/ref_20km"
+var VEG_DIR := WORLD + "/vegetation/"
+var LAYER := SETTLEMENTS
 const OLD_BUILDINGS := [16, 17, 18, 20]
 const RADIUS := {16: 9.0, 17: 13.0, 18: 4.5}
 const CELL := 32.0
@@ -26,7 +31,17 @@ var _seg_grid := {}
 
 
 func _init() -> void:
-	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(LAYER + ".json"))
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--world="):
+			var w := a.trim_prefix("--world=")
+			WORLD = "res://worlds/" + w
+			VEG_DIR = WORLD + "/vegetation/"
+			LAYER = "res://worlds/settlements/" + w
+			if LAYER != SETTLEMENTS:
+				var cp := FileAccess.open(LAYER + ".json", FileAccess.WRITE)
+				cp.store_string(FileAccess.get_file_as_string(SETTLEMENTS + ".json"))
+				cp.close()
+	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SETTLEMENTS + ".json"))
 	var records := {}
 	var sites: Array = d.sites
 	var blds: Array = d.buildings

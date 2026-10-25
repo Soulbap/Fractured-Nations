@@ -174,6 +174,10 @@ def write_png(path, arr):
     h, w = arr.shape[:2]
     ch = 1 if arr.ndim == 2 else arr.shape[2]
     spec = oiio.ImageSpec(w, h, ch, oiio.UINT8)
+    # Our 4th channel is data (wetness, water, height, roughness), not coverage: without this OIIO treats the pixels as
+    # premultiplied and divides RGB by alpha when it writes a PNG (VISUAL-02: vegetation.png, info.png and the packed
+    # terrain textures had saturated RGB wherever alpha was small).
+    spec.attribute("oiio:UnassociatedAlpha", 1)
     out = oiio.ImageOutput.create(path)
     out.open(path, spec)
     out.write_image(arr)
@@ -1052,6 +1056,180 @@ class Generator:
         log("cover: forest %.0f%%, fields %.0f%%, bog %.1f%%" % (
             100.0 * float((dens > 0.4).mean()), 100.0 * float(field.mean()), 100.0 * float(bog.mean())))
 
+
+    # ------------------------------------------------------------------ VISUAL-02 cover model
+    def zone_weights(self, X, Y):
+        """Soft weights (0..1) of the layout's landscape zones (cover_v2.zones), per zone type."""
+        out = {}
+        for z in self.L["cover_v2"].get("zones", []):
+            q = ellipse_q(X, Y, z["center_km"], z["radii_km"], z.get("rot_deg", 0.0))
+            q = q + 0.18 * fbm(X / 1.3 + 3.1, Y / 1.3, self.seed + 301, 3)
+            w = (1.0 - smoothstep(0.55, 1.25, q)) * z.get("strength", 1.0)
+            out[z["type"]] = np.maximum(out.get(z["type"], 0.0), w)
+        return out
+
+    def stands(self, X, Y):
+        """Forestry stands (analytic, any resolution): warped blocks of ~stand_m metres in staggered rows, each with a
+        random 0..1 (its age class) and the distance to the stand edge in metres."""
+        sm = self.L["cover_v2"].get("stand_m", 260.0) / 1000.0
+        wx = X + 0.30 * fbm(X / 1.7, Y / 1.7, self.seed + 311, 3)
+        wy = Y + 0.30 * fbm(X / 1.7 + 4.2, Y / 1.7 - 1.3, self.seed + 312, 3)
+        # One orientation per ~2 km block (a spatially varying angle would shear the grid into slivers).
+        bi = np.floor(wx / 2.1)
+        bj = np.floor(wy / 2.1)
+        bh = ((bi * 92837111).astype(np.int64) ^ (bj * 689287499).astype(np.int64) ^ (self.seed * 7)) & 0xFFFF
+        ang = ((bh % 180) - 90) * (math.pi / 360.0)
+        u = (wx * np.cos(ang) + wy * np.sin(ang)) / sm
+        v = (-wx * np.sin(ang) + wy * np.cos(ang)) / (sm * 0.7)
+        vi = np.floor(v)
+        shift = 0.5 * np.mod(vi, 2) + 0.3 * np.mod(vi, 3)
+        ui = np.floor(u + shift)
+        hsh = ((ui * 73856093).astype(np.int64) ^ (vi * 19349663).astype(np.int64) ^ (self.seed * 83492791)) & 0xFFFF
+        rnd = ((hsh % 997) / 997.0).astype(np.float32)
+        fu = u + shift - ui
+        fv = v - vi
+        edge = np.minimum(np.minimum(fu, 1 - fu) * sm, np.minimum(fv, 1 - fv) * sm * 0.7) * 1000.0
+        return rnd, edge.astype(np.float32)
+
+    def build_cover_v2(self):
+        """VISUAL-02 vegetation cover. One set of environmental parameters - elevation, slope, moisture, distance to the
+        river, rockiness, farmland / settlement influence and a few landscape zones from the layout - drives forest
+        density, age (forestry stands with clear-cuts and regrowth), species and the open land together, so a moist valley,
+        a dry pine moor or a farmed valley floor differ in trees, ground and colour at once."""
+        L, X, Y, s = self.L, self.X, self.Y, self.seed
+        vg = L["vegetation"]
+        cv = L["cover_v2"]
+        gy, gx = np.gradient(self.h, self.pitch_km * 1000.0)
+        slope = np.degrees(np.arctan(np.hypot(gx, gy)))
+        self.slope_macro = slope
+        Z = self.zone_weights(X, Y)
+        zero = np.zeros(X.shape, dtype=np.float32)
+        z_spruce, z_pine = Z.get("spruce_forestry", zero), Z.get("pine_moor", zero)
+        z_wet, z_mtn = Z.get("wetland", zero), Z.get("mountain_birch", zero)
+        tl = vg["treeline_m"]
+
+        # Moisture and dryness.
+        low = 1.0 - smoothstep(0.0, 0.8, self.H)
+        wet = np.clip(self.stream * 0.85 + (1.0 - smoothstep(3.0, 11.0, slope)) * 0.3 * low
+                      + 0.22 * fbm(X / 0.8, Y / 0.8, s + 65, 3) + 0.35 * z_wet
+                      + 0.25 * (1.0 - smoothstep(0.1, 0.5, self.d_river)), 0, 1)
+        wet = np.where(self.lake_mask > 0.5, 1.0, wet).astype(np.float32)
+        dry = np.clip(0.55 * self.rock + 0.35 * smoothstep(260.0, 620.0, self.h) + 0.6 * z_pine
+                      + 0.25 * smoothstep(14.0, 30.0, slope) - 0.6 * wet + 0.15 * fbm(X / 1.4, Y / 1.4, s + 321, 3), 0, 1)
+
+        # Where forest can stand: almost everywhere outside farmland, settlements, lakes, bog and steep rock; natural
+        # openings are rarer and larger than the old two-scale blobs.
+        # Farmed land round the villages follows the terrain and a warped outline, not a disc.
+        near_settle = 1.0 - smoothstep(0.6, 2.2, self._settle_dist() + 0.7 * fbm(X / 1.1, Y / 1.1, s + 335, 3)
+                                       + 0.9 * smoothstep(0.35, 0.8, self.H))
+        cultural = np.clip(np.maximum(self.farm, near_settle * 0.85), 0, 1)
+        ok = cv.get("opening_km", 2.4)
+        n_big = fbm(self.wx / ok, self.wy / ok, s + 331, 4)
+        n_mid = fbm(X / 0.55, Y / 0.55, s + 332, 3)
+        forest = 0.95 + 0.55 * n_big + 0.22 * n_mid
+        # Farmland and villages: woodlots and tree belts along streams instead of continuous forest.
+        lots = smoothstep(0.22, 0.45, fbm(X / 0.6, Y / 0.6, s + 333, 3) + 0.55 * self.stream + 0.25 * self.rock)
+        forest = forest * (1.0 - cultural) + (lots - 0.25) * cultural
+        forest -= 1.1 * self.open_sites + 1.5 * self.settle
+        forest -= 0.9 * (1.0 - smoothstep(0.06, 0.45, self.d_river)) * low
+        forest -= 0.5 * z_wet * smoothstep(0.55, 0.85, wet)
+        forest *= 1.0 - smoothstep(tl[0], tl[1], self.h + 70.0 * fbm(X / 0.6, Y / 0.6, s + 63, 3))
+        forest *= 1.0 - smoothstep(34.0, 44.0, slope)
+        forest = np.where(self.lake_mask > 0.5, -1.0, forest)
+        inside = smoothstep(0.0, 0.35, np.clip(forest, -1, 1)).astype(np.float32)
+
+        # Forestry stands: age 0 = fresh clear-cut, ~0.25 regrowth, 0.5 middle-aged, 1 mature / old. Clear-cuts are common
+        # in the spruce forestry zone, rare elsewhere, absent on the moors and in the mountain birch.
+        rnd, sedge = self.stands(X, Y)
+        p_cut = np.clip(cv.get("clearcut_share", 0.06) + 0.12 * z_spruce - 0.08 * (z_pine + z_mtn) - 0.06 * cultural, 0, 0.3)
+        age = np.where(rnd < p_cut, 0.04 * rnd / np.maximum(p_cut, 1e-3),
+                       np.clip((rnd - p_cut) / np.maximum(1.0 - p_cut, 1e-3), 0, 1) ** 0.8)
+        age = np.where(cultural > 0.6, np.maximum(age, 0.55), age)
+        # Old open stands on rocky / dry ground.
+        age = np.maximum(age, 0.75 * smoothstep(0.55, 0.9, dry))
+        self.cut = ((age < 0.06) & (inside > 0.5)).astype(np.float32)
+
+        # Density by stand age and site: regrowth closes up, old stands thin, moors and mountain birch stay open.
+        a_den = np.where(age < 0.06, 0.08, np.interp(age, [0.06, 0.25, 0.55, 1.0], [0.55, 0.85, 0.82, 0.68]))
+        site = 1.0 - 0.35 * smoothstep(0.5, 1.0, dry) - 0.12 * z_pine - 0.4 * z_mtn - 0.35 * smoothstep(0.55, 0.85, wet) * (1 - z_spruce)
+        dens = inside * a_den * site
+        # Soft forest edges: a 20-60 m band of thinner, younger trees (not a wall of trunks).
+        edge_band = smoothstep(0.0, 0.6, inside) * (1.0 - smoothstep(0.6, 1.0, blur(inside, 3)))
+        dens = dens * (1.0 - 0.45 * edge_band)
+        # Stand boundaries read as slight gaps / density changes.
+        dens = dens * (0.88 + 0.12 * smoothstep(0.0, 12.0, sedge))
+
+        # Fields (the same parcel model as before, on the new open farmland).
+        lowH = 1.0 - smoothstep(0.35, 0.7, self.H)
+        farm_like = np.maximum(np.maximum(self.farm, near_settle * 0.8), lowH * 0.6)
+        fieldable = (farm_like > 0.35) & (slope < 9.0) & (self.lake_mask < 0.5) & (self.settle < 0.5) \
+            & (self.d_river > 0.06) & (forest < 0.25 + 0.5 * self.farm)
+        self.fieldable = blur(fieldable.astype(np.float32), 1)
+        self.field_thr = (0.4 + 0.4 * farm_like).astype(np.float32)
+        prnd, pedge, hedgy = self.parcels(X, Y)
+        self.forest_pre = dens.astype(np.float32)
+        field = fieldable & (prnd < self.field_thr)
+        hedge = fieldable & (pedge < 7.0) & hedgy
+        dens = np.where(field, 0.0, dens)
+        dens = np.where(hedge, np.maximum(dens, 0.55), dens)
+        self.field = field
+        self.forest_dens = np.clip(dens, 0, 1).astype(np.float32)
+
+        # Species: pine on dry, rocky, high and moor ground; birch on wet ground, edges, regrowth, near farms and towards
+        # the treeline; spruce (the remainder) in moist valleys and the forestry zone.
+        young = 1.0 - smoothstep(0.15, 0.45, age)
+        pine = np.clip(0.08 + 0.75 * dry + 0.3 * z_pine - 0.35 * wet - 0.25 * z_spruce
+                       + 0.12 * fbm(X / 1.1, Y / 1.1, s + 66, 3), 0.03, 0.92)
+        birch = np.clip(0.06 + 0.45 * edge_band + 0.5 * wet * (1 - self.rock) + 0.35 * young + 0.3 * cultural
+                        + 0.7 * z_mtn + 0.5 * smoothstep(tl[0] - 150, tl[1], self.h) + 0.15 * fbm(X / 0.9, Y / 0.9, s + 67, 3)
+                        - 0.2 * z_spruce, 0.0, 0.95)
+        birch = np.minimum(birch, 1.0 - pine)
+        boggy = wet + 0.35 * z_wet * smoothstep(-0.2, 0.3, fbm(X / 0.4, Y / 0.4, s + 341, 3))
+        bog = (boggy > 0.62) & (slope < 5.0) & (~field) & (self.settle < 0.2) & (self.lake_mask < 0.5) & (self.d_river > 0.15)
+        # Open bog: the trees thin out to scattered pine and birch.
+        self.forest_dens = np.where(bog, self.forest_dens * 0.25, self.forest_dens).astype(np.float32)
+        self.wet, self.bog = wet, bog
+        self.pine, self.birch = pine.astype(np.float32), birch.astype(np.float32)
+        self.age = age.astype(np.float32)
+        self.edge_band = edge_band.astype(np.float32)
+        self.dry = dry.astype(np.float32)
+        log("cover v2: forest %.0f%% (dense %.0f%%), clear-cuts %.1f%%, fields %.0f%%, bog %.1f%%" % (
+            100.0 * float((self.forest_dens > 0.25).mean()), 100.0 * float((self.forest_dens > 0.7).mean()),
+            100.0 * float(self.cut.mean()), 100.0 * float(field.mean()), 100.0 * float(bog.mean())))
+
+    # VISUAL-02 field palette: mostly leys (grass for silage / hay, the common Nordic field), some grain, little tilled soil;
+    # each parcel stays one flat colour (the ground shader reads the parcel's colour as its identity).
+    CROPS_V2 = np.array([[0.66, 0.76, 0.52], [0.60, 0.72, 0.48], [0.71, 0.78, 0.55], [0.64, 0.74, 0.50],
+                         [0.88, 0.84, 0.62], [0.84, 0.82, 0.64], [0.68, 0.59, 0.47], [0.70, 0.75, 0.55]], dtype=np.float32)
+
+    def tint_of_v2(self, X, Y, dens, field, rnd, alpine, bog, pine, birch, age, wet, cut):
+        """Colour-map multiplier for the VISUAL-02 cover: meadow by moisture, forest by species and age, clear-cuts,
+        ley-dominant fields, alpine heath, bog."""
+        s = self.seed
+        dryish = smoothstep(0.25, 0.75, 1.0 - wet)
+        meadow = np.array([0.74, 0.80, 0.66], dtype=np.float32) * (1 - dryish[..., None]) \
+            + np.array([0.84, 0.83, 0.70], dtype=np.float32) * dryish[..., None]
+        mv = 0.05 * fbm(X / 0.3, Y / 0.3, s + 71, 3)
+        tint = meadow + np.stack([mv * 1.1, mv, -mv * 0.4], axis=-1)
+        spruce_c = np.array([0.34, 0.44, 0.30], dtype=np.float32)
+        pine_c = np.array([0.46, 0.50, 0.34], dtype=np.float32)
+        birch_c = np.array([0.54, 0.62, 0.38], dtype=np.float32)
+        sp = np.clip(1.0 - pine - birch, 0, 1)
+        fc = spruce_c * sp[..., None] + pine_c * pine[..., None] + birch_c * birch[..., None]
+        fc = fc * (0.92 + 0.16 * smoothstep(0.1, 0.5, age))[..., None]
+        # Open dry pine moor: lichen and heather between the trees lighten the stand.
+        fc = fc + (np.array([0.70, 0.70, 0.56], dtype=np.float32) - fc) * (0.45 * smoothstep(0.5, 0.95, pine) * (1.0 - smoothstep(0.3, 0.8, dens)))[..., None] * (1.0 + 0.10 * (1.0 - smoothstep(0.1, 0.4, age)))[..., None]
+        w = smoothstep(0.04, 0.45, dens)[..., None]
+        tint = tint + (fc - tint) * w
+        cut_c = np.array([0.80, 0.74, 0.58], dtype=np.float32)
+        tint = tint + (cut_c - tint) * (cut * (1.0 - w[..., 0]))[..., None] * 0.85
+        ci = (rnd * 977).astype(np.int64) % len(self.CROPS_V2)
+        tint = np.where(field[..., None], self.CROPS_V2[ci], tint)
+        a = (alpine * (1 - dens))[..., None] * 0.7
+        tint = tint + (np.array([0.90, 0.86, 0.74], dtype=np.float32) - tint) * a
+        tint = np.where(bog[..., None], tint * np.array([0.98, 0.88, 0.66], dtype=np.float32), tint)
+        return np.clip(tint, 0.0, 1.0)
+
     # ------------------------------------------------------------------ outputs
     def write_macro_outputs(self):
         R = self.R
@@ -1068,7 +1246,15 @@ class Generator:
         write_png(os.path.join(self.out, "info.png"), info)
         alpine = smoothstep(self.L["vegetation"]["treeline_m"][0] - 80, self.L["vegetation"]["treeline_m"][1], self.h)
         rnd, _, _ = self.parcels(self.X, self.Y)
-        self.tint = self.tint_of(self.X, self.Y, self.forest_dens, self.field, rnd, alpine, self.bog)
+        if "cover_v2" in self.L:
+            # VISUAL-02: stand map for the scatter - R age (0 clear-cut .. 1 mature), G forest edge band, B dryness,
+            # A clear-cut flag.
+            stand = np.stack([to_u8(self.age), to_u8(self.edge_band), to_u8(self.dry), to_u8(self.cut)], axis=2)
+            write_png(os.path.join(self.out, "stand.png"), stand)
+            self.tint = self.tint_of_v2(self.X, self.Y, self.forest_dens, self.field, rnd, alpine, self.bog,
+                                        self.pine, self.birch, self.age, self.wet, self.cut)
+        else:
+            self.tint = self.tint_of(self.X, self.Y, self.forest_dens, self.field, rnd, alpine, self.bog)
 
     def preview(self, name="preview_macro.png"):
         """Satellite-style preview: hillshade x cover colours, water, roads."""
@@ -1177,6 +1363,9 @@ class Generator:
                 "settle": self.settle, "rough": rough.astype(np.float32), "wet": self.wet,
                 "alpine": smoothstep(self.L["vegetation"]["treeline_m"][0] - 60, self.L["vegetation"]["treeline_m"][1] + 40, self.h).astype(np.float32),
                 "lake": self.lake_mask}
+        v2 = "cover_v2" in self.L
+        if v2:
+            maps.update({"pine": self.pine, "birch": self.birch, "age": self.age, "cut": self.cut})
         prev_tail = None
         for r0 in range(0, full, strip):
             # One-row halo above and below for slope.
@@ -1343,7 +1532,11 @@ class Generator:
             Mc["field"] = field.astype(np.float32)
             ctrl = self._control(XX[core], ZZ[core], sc, Mc, dS[core], wS[core], cS[core], river_px[core], dR[core], Hc,
                                  bank_px[core])
-            tint = self.tint_of(Xk, Yk, Mc["forest"], field, rnd, Mc["alpine"], Mc["bog"] > 0.5)
+            if v2:
+                tint = self.tint_of_v2(Xk, Yk, Mc["forest"], field, rnd, Mc["alpine"], Mc["bog"] > 0.5, Mc["pine"],
+                                       Mc["birch"], Mc["age"], Mc["wet"], Mc["cut"])
+            else:
+                tint = self.tint_of(Xk, Yk, Mc["forest"], field, rnd, Mc["alpine"], Mc["bog"] > 0.5)
             rgba = np.concatenate([to_u8(tint), np.full(tint.shape[:2] + (1,), 128, dtype=np.uint8)], axis=2)
             fh.write(Hc.astype("<f4").tobytes())
             fc.write(ctrl.astype("<u4").tobytes())
@@ -1372,6 +1565,12 @@ class Generator:
         base = np.where(is_forest, TEX_FOREST, base)
         over = np.where(is_forest, TEX_GRASS, TEX_FOREST)
         blend = np.where(is_forest, 1.0 - fb, fb)
+        # VISUAL-02 clear-cuts: grass with bare patches (slash, ruts), no forest floor.
+        if "cut" in M:
+            cutm = (M["cut"] > 0.5) & (M["forest"] < 0.3)
+            base = np.where(cutm, TEX_GRASS, base)
+            over = np.where(cutm, TEX_DIRT, over)
+            blend = np.where(cutm, np.clip(0.15 + 0.45 * smoothstep(0.1, 0.7, n2) * smoothstep(-0.2, 0.4, n1), 0, 0.7), blend)
         # Fields.
         fld = M["field"] > 0.5
         base = np.where(fld, TEX_FIELD, base)
@@ -1588,7 +1787,10 @@ def main():
     g.flatten_sites()
     g.build_lakes()
     g.drainage()
-    g.build_cover()
+    if "cover_v2" in layout:
+        g.build_cover_v2()
+    else:
+        g.build_cover()
     g.route_roads()
     g.write_macro_outputs()
     g.preview()
