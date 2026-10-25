@@ -75,6 +75,7 @@ var _navigation_n1c1_perf: NavigationN1C1PerfTest
 var _navigation_n1c1_selftest: NavigationN1C1SelfTest
 var _ew02_selftest: EW02SelfTest
 var _nav_inf01_selftest: NavInf01SelfTest
+var _road_quality_selftest: RoadQualitySelfTest
 var _nav_perf_bc_selftest: NavPerfBCSelfTest
 ## NAVIGATION N1-C1: red barrier bars and a label on bridges that are closed or disabled (debug indicator only).
 var bridge_markers: BridgeMarkers
@@ -397,6 +398,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--nav-inf-test" in args:
 		_nav_inf01_selftest = NavInf01SelfTest.new(self)
 		_nav_inf01_selftest.run.call_deferred(args)
+	elif "--road-quality-test" in args:
+		_road_quality_selftest = RoadQualitySelfTest.new(self)
+		_road_quality_selftest.run.call_deferred(args)
 	elif "--ew02-test" in args:
 		_ew02_selftest = EW02SelfTest.new(self)
 		_ew02_selftest.run.call_deferred(args)
@@ -464,9 +468,12 @@ func _start_sandbox() -> void:
 	var layer := "_settlements" if SettlementLayer.enabled(config.world_name) else ""
 	# GAMEPLAY-04A: road shoulders eased into the road surface (memory only); the route grid reads the eased terrain.
 	if not "--no-road-shoulders" in OS.get_cmdline_user_args():
-		RoadShoulders.apply(terrain, sim.state.roads, config.world_name, config.vertex_spacing)
+		# ROAD-QUALITY-01: fitted to the road colliders below Roads; the route grid is cached per shoulder signature (it reads the
+		# eased terrain, so a change of the easing must not reuse a grid built on the old one).
+		var sh := RoadShoulders.apply(terrain, sim.state.roads, config.world_name, config.vertex_spacing, world.get_node_or_null("Roads"))
 		RoadShoulders.refix_loaded(vegetation)
-		layer += "_shoulders"
+		RoadShoulders.mask_grass(world.get_node_or_null("Grass") as GrassLayer)
+		layer += "_shoulders_%s" % sh.get("signature", "")
 	routes.setup(terrain, config.half_size(), src, "user://strategic/%s_grid%s.bin" % [config.world_name, layer], sim.state.roads)
 	sim.war.setup(routes)
 	sim.vehicles.setup(routes)

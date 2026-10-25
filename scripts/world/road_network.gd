@@ -46,6 +46,10 @@ class Road:
 	var width := 0.0
 	## Bridge spans as [first, last] point indices (world roads only).
 	var bridges: Array = []
+	## ROAD-QUALITY-01: the world road has a Road Generator mesh (roads.json "mesh"; its collider is the surface soldiers walk
+	## on), and the point indices of its culverts.
+	var mesh := false
+	var culverts: Array = []
 	var built := false
 	var travel_cost := 0.45
 	var bounds := Rect2()
@@ -163,6 +167,8 @@ func load_world(src: String) -> int:
 				road.points.append(Vector3(p[0], p[1], p[2]))
 			road.width = float(r.lane_m) * float(r.lanes) + 2.0 * float(r.shoulder_m)
 			road.bridges = r.get("bridges", [])
+			road.mesh = bool(r.get("mesh", false))
+			road.culverts = r.get("culverts", [])
 			road.travel_cost = WORLD_COST.get(road.cls, 0.45)
 			road.update_bounds()
 			world.append(road)

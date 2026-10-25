@@ -374,6 +374,7 @@ func _a_shoulders() -> Dictionary:
 	var fpi := VegetationChunk.FLOATS_PER_INSTANCE
 	var checked := 0
 	var off_ground := 0
+	var under_road := 0
 	var worst := 0.0
 	for loc in veg.chunks:
 		var ch: VegetationChunk = veg.chunks[loc]
@@ -389,6 +390,13 @@ func _a_shoulders() -> Dictionary:
 						continue
 					checked += 1
 					var off := buf[k + 7] - h
+					# ROAD-QUALITY-01: plants on a vertex under a road collider are kept under the asphalt on purpose.
+					if RoadShoulders.under_road.get(Vector2i(roundi(buf[k + 3] / RoadShoulders._spacing), roundi(buf[k + 11] / RoadShoulders._spacing)), false):
+						under_road += 1
+						if off > -RoadShoulders.UNDER_ROAD_SINK_M + 0.05:
+							off_ground += 1
+							worst = maxf(worst, absf(off))
+						continue
 					if off > 0.1 or off < -0.25:
 						off_ground += 1
 						worst = maxf(worst, absf(off))
@@ -397,7 +405,7 @@ func _a_shoulders() -> Dictionary:
 	await _frame(start + Vector3(-15, 0, 35), 35.0, 2.4)
 	await _seconds(1.5)
 	_png("a_road_shoulder")
-	return {"touched_cells": RoadShoulders.touched.size(), "instances_checked": checked, "off_ground": off_ground, "worst_m": snappedf(worst, 0.01)}
+	return {"touched_cells": RoadShoulders.touched.size(), "instances_checked": checked, "off_ground": off_ground, "under_road": under_road, "worst_m": snappedf(worst, 0.01)}
 
 
 ## Walking through woods near the start (the product owner saw soldiers walk into trunks and slide round them): the squad is
