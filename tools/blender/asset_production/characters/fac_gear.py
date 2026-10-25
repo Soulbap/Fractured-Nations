@@ -240,8 +240,8 @@ def build_ru_armor(coll, mats, voxel=0.0032):
     pouches = L.new_object("RU_pouches", bm_p, coll, [mats["Camo_EMR"]])
     hard = L.new_object("RU_hard", bm_h, coll, [mats["Polymer_Black"]])
     bm = bmesh.new()
-    # Radio whip antenna from the chest radio over the left shoulder.
-    L.tube_along(bm, [(-0.098, yr + 0.02, 1.41), (-0.115, yr - 0.03, 1.55), (-0.125, yr - 0.08, 1.66)], [0.005, 0.004, 0.003], segs=6)
+    # Short radio whip from the chest radio, bent out over the left shoulder below head height (clear of the face when aiming).
+    L.tube_along(bm, [(-0.098, yr + 0.02, 1.41), (-0.150, yr - 0.01, 1.50), (-0.195, yr - 0.06, 1.57)], [0.005, 0.004, 0.003], segs=6)
     ant = L.new_object("RU_antenna", bm, coll, [mats["Rubber_Black"]])
     parts = [armor, pouches, hard, ant]
     _smooth(parts)

@@ -81,16 +81,24 @@ def export_skinned(arm, obj, name, path, coll):
 
 
 def export_rigid(obj, name, path, coll, extra_children=()):
-    """Temporarily unparents obj to the origin (its mesh is already in attachment space)."""
+    """Temporarily unparents obj to the origin (its mesh is already in attachment space). A detachable magazine (child
+    marked fn_magazine, char_weapon.split_magazine) goes with its own LODs as <name>_Mag_LOD*, children of LOD0."""
     saved = (obj.parent, obj.parent_type, obj.parent_bone, obj.matrix_world.copy())
     obj.parent = None
     obj.matrix_world = Matrix.Identity(4)
     obj.name = name
+    mags = []
+    for m in [c for c in obj.children if c.get("fn_magazine")]:
+        m.name = name + "_Mag"
+        mags += make_lods(m, coll)
     lods = make_lods(obj, coll)
     for l in lods[1:]:
         l.parent = None
         l.matrix_world = Matrix.Identity(4)
-    size = _export(path, lods + list(extra_children), skins=False)
+    size = _export(path, lods + mags + list(extra_children), skins=False)
+    for m in mags[1:]:
+        m.hide_render = True
+        m.hide_set(True)
     obj.parent, obj.parent_type, obj.parent_bone = saved[0], saved[1], saved[2]
     obj.matrix_world = saved[3]
     for l in lods[1:]:

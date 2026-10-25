@@ -1,25 +1,25 @@
 {
- "t_body": 29.1,
+ "t_body": 16.7,
  "uniform_seconds": {
-  "nato": 15.5,
-  "ru": 15.5,
-  "cn": 15.2
+  "nato": 28.8,
+  "ru": 27.8,
+  "cn": 30.9
  },
- "t_uniform": 75.3,
+ "t_uniform": 104.2,
  "gear_seconds": {
-  "nato": 20.3,
-  "ru": 22.3,
-  "cn": 32.2
+  "nato": 31.3,
+  "ru": 31.8,
+  "cn": 48.2
  },
  "weapon_tris": {
-  "nato_rifle": 4948,
+  "nato_rifle": 4552,
   "nato_optic": 720,
-  "ru_rifle": 4440,
+  "ru_rifle": 3977,
   "ru_optic": 352,
-  "cn_rifle": 4772,
+  "cn_rifle": 4376,
   "cn_optic": 512
  },
- "t_gear": 159.3,
+ "t_gear": 231.2,
  "tris": {
   "nato_jacket": 10044,
   "nato_trousers": 8000,
@@ -34,16 +34,16 @@
   "cn_helmet": 5240,
   "cn_vest": 6476,
   "cn_pack": 4164,
-  "nato_rifle": 4948,
+  "nato_rifle": 4552,
   "nato_optic": 720,
-  "ru_rifle": 4440,
+  "ru_rifle": 3977,
   "ru_optic": 352,
-  "cn_rifle": 4772,
+  "cn_rifle": 4376,
   "cn_optic": 512
  },
  "export": {
   "nato_jacket": {
-   "bytes": 813508,
+   "bytes": 863692,
    "lod_tris": [
     10044,
     3012,
@@ -51,7 +51,7 @@
    ]
   },
   "nato_trousers": {
-   "bytes": 578116,
+   "bytes": 589540,
    "lod_tris": [
     8000,
     2400,
@@ -59,7 +59,7 @@
    ]
   },
   "nato_helmet": {
-   "bytes": 305768,
+   "bytes": 311320,
    "lod_tris": [
     5814,
     1744,
@@ -67,23 +67,23 @@
    ]
   },
   "nato_vest": {
-   "bytes": 559948,
+   "bytes": 586740,
    "lod_tris": [
-    7108,
-    2132,
-    459
+    7106,
+    2130,
+    438
    ]
   },
   "nato_rifle": {
-   "bytes": 516408,
+   "bytes": 544496,
    "lod_tris": [
-    4948,
-    1484,
-    238
+    4552,
+    1364,
+    216
    ]
   },
   "nato_optic": {
-   "bytes": 71184,
+   "bytes": 71188,
    "lod_tris": [
     720,
     216,
@@ -91,7 +91,7 @@
    ]
   },
   "ru_jacket": {
-   "bytes": 784616,
+   "bytes": 831668,
    "lod_tris": [
     10044,
     3012,
@@ -99,7 +99,7 @@
    ]
   },
   "ru_trousers": {
-   "bytes": 820420,
+   "bytes": 833816,
    "lod_tris": [
     10368,
     3110,
@@ -107,27 +107,27 @@
    ]
   },
   "ru_helmet": {
-   "bytes": 258340,
+   "bytes": 257288,
    "lod_tris": [
     4864,
     1458,
-    315
+    314
    ]
   },
   "ru_armor": {
-   "bytes": 657348,
+   "bytes": 723292,
    "lod_tris": [
-    8508,
-    2552,
-    546
+    8492,
+    2535,
+    528
    ]
   },
   "ru_rifle": {
-   "bytes": 457824,
+   "bytes": 480484,
    "lod_tris": [
-    4440,
-    1332,
-    213
+    3977,
+    1193,
+    188
    ]
   },
   "ru_optic": {
@@ -139,7 +139,7 @@
    ]
   },
   "cn_jacket": {
-   "bytes": 784620,
+   "bytes": 831672,
    "lod_tris": [
     10044,
     3012,
@@ -147,7 +147,7 @@
    ]
   },
   "cn_trousers": {
-   "bytes": 578108,
+   "bytes": 589528,
    "lod_tris": [
     8000,
     2400,
@@ -155,7 +155,7 @@
    ]
   },
   "cn_helmet": {
-   "bytes": 267504,
+   "bytes": 271736,
    "lod_tris": [
     5240,
     1572,
@@ -163,37 +163,37 @@
    ]
   },
   "cn_vest": {
-   "bytes": 557640,
+   "bytes": 636108,
    "lod_tris": [
-    6476,
-    1942,
-    416
+    6471,
+    1930,
+    401
    ]
   },
   "cn_pack": {
-   "bytes": 206444,
+   "bytes": 218836,
    "lod_tris": [
     4164,
     1248,
-    270
+    267
    ]
   },
   "cn_rifle": {
-   "bytes": 500384,
+   "bytes": 531972,
    "lod_tris": [
-    4772,
-    1430,
-    233
+    4376,
+    1312,
+    209
    ]
   },
   "cn_optic": {
-   "bytes": 53632,
+   "bytes": 53296,
    "lod_tris": [
     512,
     200,
-    60
+    59
    ]
   }
  },
- "t_total": 161.6
+ "t_total": 233.7
 }

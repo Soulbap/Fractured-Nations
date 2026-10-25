@@ -1,9 +1,10 @@
-# Infantry character asset standard (CHARACTER-01)
+# Infantry character asset standard (CHARACTER-01, body and animation VISUAL-03)
 
 The rules every infantry asset follows so that new uniforms, equipment and weapons fit the
 shared character without touching the rig, the animation set or the code. The reference
 implementation is `tools/blender/character/` (Blender 5.2.2) and `scripts/characters/`
-(Godot 4.7.2). See `docs/CHARACTER-01_REPORT.md` for background and measurements.
+(Godot 4.7.2). Background and measurements: `docs/CHARACTER-01_REPORT.md` (pieces, LODs, materials) and
+`docs/VISUAL-03_REPORT.md` (body, rig, motion capture, weapon handling).
 
 ## 1. Scale, orientation, rest pose
 
@@ -12,15 +13,19 @@ implementation is `tools/blender/character/` (Blender 5.2.2) and `scripts/charac
 | Units | 1 Blender unit = 1 m |
 | Up / forward | Blender **Z up, character faces +Y**; the character's left side is −X. glTF export maps +Y to Godot **−Z** (Godot forward), so nothing is rotated on import |
 | Origin | Between the feet on the ground plane (z = 0) |
-| Height | 1.80 m standing (crown 1.80 m, eyes 1.69 m, hip joints 0.93 m, shoulder joints 1.45 m) |
-| Rest pose | **A-pose**: arms 45° below horizontal, elbows slightly bent, palms facing the thighs, feet under the hips, toes forward |
+| Body | MakeHuman body (MPFB 2.0.18, Blender extension `bl_ext.user_default.mpfb`, `char_body_mh.py`), muscular adult male, arms lengthened by the `DETAIL_TARGETS` |
+| Height | 1.80 m standing; body joints ankle 0.071, knee 0.513, hip 0.971, shoulder 1.448 m (`build_log.json` → `body.warp_body`) |
+| Rest pose | **A-pose** (`char_body.repose_to_reference`): arms 45° below horizontal, elbows slightly bent, palms facing the thighs, feet under the hips, toes forward |
 
-Every mesh is modelled **in place on the rest pose** in character space. Rigid pieces are
+**Reference space.** Garments and gear are authored in the CHARACTER-01 reference space (ankle 0.088, knee 0.505, hip
+0.932, shoulder 1.452, crown 1.80 m) and moved onto the body by `char_body.to_body_space`, a piecewise height warp between
+those landmarks; the garment SDFs measure the real body there (`char_body.body_sdf`, an OpenVDB level set of the
+MakeHuman mesh). Helmets and eyewear are fitted to the measured head by `char_body.head_fit_matrix`. Rigid pieces are
 then moved into their attachment space (section 3) by the build script.
 
 ## 2. Skeleton
 
-60 bones, one hierarchy for every loadout. Names are exactly Godot's
+61 bones, one hierarchy for every loadout: the MPFB game-engine rig renamed to Godot's
 `SkeletonProfileHumanoid` names (53 of its 56 bones; `LeftEye`, `RightEye`, `Jaw` are not
 used), so Godot maps it to the humanoid profile without a BoneMap.
 
@@ -32,7 +37,7 @@ Root
    │                  ├─ Left/RightShoulder ─ UpperArm ─ LowerArm ─ Hand
    │                  │      Hand ─ Thumb{Metacarpal,Proximal,Distal}
    │                  │      Hand ─ {Index,Middle,Ring,Little}{Proximal,Intermediate,Distal}
-   │                  │      RightHand ─ ATT_Weapon      LeftHand ─ ATT_Hand_L
+   │                  │      RightHand ─ ATT_Weapon ─ ATT_Magazine      LeftHand ─ ATT_Hand_L
    │                  ├─ ATT_Chest
    │                  └─ ATT_Back
    ├─ ATT_Hip_L, ATT_Hip_R
@@ -44,8 +49,9 @@ Root
 * Deformation bones carry weights; `ATT_*` bones are flagged *deform* (so the glTF exporter
   keeps them) but carry no weights.
 * `Root` never moves: all clips are **in place** (no root motion). Gameplay moves the body.
-* Authoring-only bones `CTRL_*` (IK targets, poles, weapon control) exist while clips are
-  generated and are deleted before export.
+* Clips are solved in Python (two-bone IK onto the weapon, foot locks) and keyed directly; there are no helper or
+  control bones. A bone's pose is only ever written as rotation + position (`char_anim._set_world`): a matrix with
+  scale or shear would leave it on the unkeyed scale channel.
 
 ## 3. Attachment points
 
@@ -56,6 +62,7 @@ Root
 | `ATT_Back` | UpperChest | (0, −0.150, 1.300) | backpacks, back-mounted kit |
 | `ATT_Hip_L` / `ATT_Hip_R` | Hips | (∓0.185, −0.010, 1.000) | holsters, hip pouches |
 | `ATT_Weapon` | RightHand | grip centre in the palm | primary weapon (its grip origin) |
+| `ATT_Magazine` | ATT_Weapon | = ATT_Weapon | the weapon's detachable magazine; only the `Reload` clip moves it (with the support hand) |
 | `ATT_Hand_L` | LeftHand | grip point of the support hand | handheld items |
 
 All character-aligned points have an **identity rest rotation in Blender** (bone Y =
@@ -71,9 +78,17 @@ Weapon mount points are nodes inside the weapon glTF (weapon space):
 | `ATT_RailRight` | (0.026, 0.330, 0.074) | laser / light |
 | `ATT_Muzzle` | (0, 0.560, 0.074) | suppressor, flash |
 | `GRIP_Support` | (0, 0.165, 0.074) | support-hand pose (Y = hand axis, Z = back of hand) |
+| `<id>_Mag_LOD0/1/2` | origin at the magwell | the detachable magazine (meshes) |
 
 Weapon space: origin = pistol-grip centre (where the hand closes), +Y muzzle, +Z up,
-bore axis at z = 0.074 m.
+bore axis at z = 0.074 m, optic sight line at z = 0.172 m (`ATT_Optic` + 0.058; every rifle optic and the DMR scope).
+
+**Detachable magazine.** A weapon whose magazine comes out on reload builds it as its own loose parts and splits them
+off with `char_weapon.split_magazine` (builders: `fac_weapons.WB.magazine`, the carbine and the DMR); `char_export.export_rigid`
+writes it as `<id>_Mag_LOD*` children of the weapon. `InfantryCharacter._hang_magazine` moves those meshes onto
+`ATT_Magazine`, keeping their place, so they ride in the well except during `Reload`. A weapon without them (belt-fed
+machine guns) reloads with the same hand motion and nothing moves. The reload is shared by every rifle: the support
+hand closes round the magazine at `char_anim.MAG_GRIP` (weapon space).
 
 ## 4. Equipment pieces
 
@@ -128,9 +143,9 @@ material of the same name, so all pieces and soldiers share ~20 materials.
 
 | Level | Distance | Content | Typical cost (loadout A / B) |
 |---|---|---|---|
-| LOD0 | 0–14 m | every piece separate, full materials | ~61k / 65k tris, ~35 surfaces |
-| LOD1 | 14–42 m | all pieces merged at runtime, one surface per material | ~18k / 20k tris, ~16 surfaces |
-| LOD2 | 42 m–demotion | merged, one vertex-coloured surface | ~3.9k / 4.2k tris, 1 surface |
+| LOD0 | 0–12 m | every piece separate, full materials | ~61k / 65k tris, ~35 surfaces |
+| LOD1 | 12–28 m | all pieces merged at runtime, one surface per material | ~18k / 20k tris, ~16 surfaces |
+| LOD2 | 28 m–demotion | merged, one vertex-coloured surface | ~3.9k / 4.2k tris, 1 surface |
 | Proxy | abstract tier | static Idle-pose mesh, one surface | ~4.2k tris, 1 surface, no skeleton |
 
 Blender writes `_LOD1` (30 %) and `_LOD2` (6.5 %) by collapse decimation
@@ -141,41 +156,60 @@ characters beyond 45 m is advanced every third frame.
 
 ## 7. Animation
 
+Motion capture (CMU, `assets/characters/infantry/mocap/`, retargeted by `v03_mocap.py`) under a procedural weapon layer
+(`char_anim.weapon_layer`: posture, rifle carry on the chest, both hands on the weapon by two-bone IK, finger grips,
+cheek weld when aiming). Gaits: `animation_meta.json` → `gait`.
+
 | Clip | Frames @30 fps | Loop | Notes |
 |---|---|---|---|
-| `Idle`, `Crouch_Idle` | 120 | yes | low-ready weapon carry |
-| `Walk_F/B/L/R` | 32 | yes | 1.40 m/s, one gait cycle |
-| `Jog_F/B/L/R` | 32 | yes | 3.00 m/s, bridges walk and run in the blend space |
-| `Run_F/B/L/R` | 32 | yes | 4.50 m/s (gameplay walk speed) |
-| `Sprint_F` | 32 | yes | 7.50 m/s, weapon across the chest |
-| `CrouchWalk_F/B/L/R` | 32 | yes | 1.20 m/s |
+| `Idle` | 120 | yes | relaxed, rifle at patrol |
+| `Ready_Idle` | 120 | yes | ready stance, rifle at low ready (alert blend) |
+| `Crouch_Idle` | 120 | yes | squat crouch |
+| `Walk_F/B/L/R` | 32 | yes | 1.19 m/s forward (captured), one gait cycle |
+| `Brisk_F` | 32 | yes | 1.83 m/s |
+| `Jog_F/B/L/R` | 32 | yes | 3.29 m/s forward; B/L/R reuse the walking keys |
+| `Run_F/B/L/R` | 32 | yes | 4.45 m/s forward (the gameplay speed 4.5 m/s); B/L/R reuse the walking keys |
+| `Sprint_F` | 32 | yes | the run with the rifle at port arms, played up to 7.5 m/s |
+| `CrouchWalk_F/B/L/R` | 32 | yes | 1.02 m/s |
+| `Turn_L`, `Turn_R` | 32 | yes | stepping turn on the spot (blended by yaw rate) |
+| `Aim` | 120 | yes | upper body: rifle shouldered, eye on the sight line (`char_anim.SIGHT_Z`) |
+| `Fire` | 6 | no | upper body: one shot's kick from the aim pose |
+| `Reload` | 75 | no | upper body: support hand draws the magazine (`ATT_Magazine`), stows it at the belt, inserts the new one |
 
 * Naming: `<State>_<Dir>`, Dir ∈ F, B, L, R. Exported as glTF animations with the action
-  names; Godot keeps the names and the character sets every clip to loop.
+  names; Godot keeps the names and loops every clip except `Fire` and `Reload`.
 * All locomotion clips are **one gait cycle, left foot strike at frame 0**, so any two blend
   in phase. Speed and natural period per gait are written to
   `assets/characters/infantry/animation_meta.json`; the AnimationTree plays locomotion at
   `speed / stride(speed) × clip length` so planted feet match any speed.
-* Clips are authored with IK (`char_anim.py`): feet planted at the clip speed, both hands on
-  the weapon (firing hand on `ATT_Weapon`, support hand on `GRIP_Support`), then baked to FK
-  with visual keying. A new clip is a new generator function in `char_anim.clip_list()`.
+* `Aim`, `Fire` and `Reload` are upper-body layers in Godot (filtered to the spine, arms, hands and `ATT_Magazine`);
+  `InfantryAimModifier` turns the spine to the aim point. Blend steps are capped per frame, so a long frame never snaps.
 * New weapons keep the same grip convention (origin at the pistol grip, `GRIP_Support`
-  node); if the support grip moves more than a few cm, regenerate the clips with the new
+  node, sight line at z = 0.172); if the support grip moves more than a few cm, rebuild the clips with the new
   `support_frame()` so the support hand stays on it.
 
 ## 8. Blender build and export
 
 ```
-blender -b --factory-startup --python tools/blender/character/build_infantry.py -- --export [--previews DIR]
+blender -b --python tools/blender/character/build_infantry.py -- --export [--previews DIR]
+blender -b --python tools/blender/asset_production/characters/build_factions.py -- --export
+blender -b --python tools/blender/asset_production/characters/build_gameplay04_weapons.py -- --export
 ```
 
-About 2–3 minutes on the reference machine. It regenerates textures, body, uniform, gear,
-weapon, clips and LODs, writes:
+Without `--factory-startup`: the body needs the MPFB extension from the user preferences. About 3 minutes each on the
+reference machine. `build_infantry` regenerates textures, body, uniform, gear, the carbine, clips and LODs;
+`build_factions` the faction uniforms, armour, rifles and optics; `build_gameplay04_weapons` / `build_support_weapons`
+the DMR, GPMG, launchers and LMG. `--root DIR` writes a trial build elsewhere (the shipped files stay untouched).
+`build_infantry` writes:
 
 * `assets/characters/infantry/rig/infantry_rig.glb`: armature, body regions, all clips
 * `assets/characters/infantry/parts/*.glb`, `assets/characters/infantry/weapons/*.glb`
 * `assets/characters/infantry/blender/infantry.blend`: editable source (`.gdignore`d)
-* `animation_meta.json`, `build_log.json` (triangle counts, timings, validation numbers)
+* `animation_meta.json`, `build_log.json` (triangle counts, timings, validation numbers: hand error on the grips,
+  sight error and rifle shift of the aim, magazine travel, foot slip)
+
+Checks on the built `.blend`: `tools/visual03/check_clearance.py` (antennas against the face over the clips),
+`tools/visual03/pose_stills.py` (stills of chosen clip frames), `tools/visual03/blender_previews.py` (MP4 per clip).
 
 glTF settings (`char_export._export`): GLB, +Y up, `export_apply=False` (armature kept),
 skins on, deform bones only, tangents on, materials exported **without images**,
@@ -193,8 +227,9 @@ animations as actions with forced sampling, no cameras/lights.
    automatically from `UnitState.loadout` (`SoldierBody._use_infantry_character`);
    the project setting `fractured_nations/characters/use_infantry_character` (or
    `-- --old-soldier`) switches back to the WORLD-CORE-01 placeholder.
-5. Check in `scenes/characters/character_lab.tscn` (`benchmarks/char01/run_char_lab.sh
-   --checks | --shots | "--perf 60"`).
+5. Check every loadout: `Godot_console.exe --headless --path . --script res://tools/visual03/check_loadouts.gd` (pieces,
+   attach points, clips, magazines on `ATT_Magazine`), and in game `--paces --visual03-test [--shots]` (A-F), or the lab
+   `scenes/characters/character_lab.tscn` (`benchmarks/char01/run_char_lab.sh --checks | --shots | "--perf 60"`).
 
 ## 10. Adding a third configuration (worked example)
 

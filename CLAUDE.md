@@ -23,7 +23,7 @@ Norwegian; code, comments and docs are English.
   (`../fractured-nations-*`) are only kept until the product owner approves removing them
   (status: [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md)). Do not develop there.
 - **Session workflow:** open this project → read this file and the roadmap ([docs/AI_ROADMAP.md](docs/AI_ROADMAP.md),
-  the next milestone is **NAVIGATION N1**) → read the systems you will touch (owners below) → implement →
+  the next milestone is **COMBAT-01**, combat visibility and gunplay; its scope is defined with the product owner first) → read the systems you will touch (owners below) → implement →
   targeted tests + visual Godot validation → update the report / README → commit to `develop`.
 - Each milestone ends with a report in `docs/<MILESTONE>_REPORT.md` and an updated README.
 
@@ -221,12 +221,14 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   90° so its quad diagonal is Terrain3D's (mesh, navmesh faces); `Terrain3DData.get_height` is neither triangulation (measure walking
   surfaces with rays). A squad slot beside a deck on wet / too-steep ground goes onto the deck (`SquadControl._free_ground`);
   `SoldierBody._ground_waypoint` reaches waypoints on the ground plane (navmesh heights can be ~1.5 m off).
-- **Soldier v03 (VISUAL-03, staged).** The new soldier (MakeHuman body `char_body_mh` / `char_body`, CMU mocap + rifle layer
-  `char_anim` / `v03_mocap`) is built with `build_infantry.py --export --root assets/characters/infantry_v03` and
-  `build_factions.py --export --root ...`, mirrored by `tools/visual03/stage_loadouts.py`, and used in Godot only with
-  `--soldier-v03` (`InfantryCharacter.asset_root()`) until approved. Garments are authored in CHARACTER-01 *reference space*
-  and moved onto the body with `char_body.to_body_space`. Movement paces (`WorldSim.pace_of`) are opt-in with `--paces`.
-  Validation: `--soldier-v03 --paces --visual03-test [--shots]` (A-F), `tools/visual03/check_loadouts.gd`.
+- **Soldier (VISUAL-03).** MakeHuman body (`char_body_mh` / `char_body`, MPFB extension: build without `--factory-startup`),
+  CMU mocap + rifle layer (`char_anim` / `v03_mocap`), built into `assets/characters/infantry/` by `build_infantry.py --export`,
+  `build_factions.py --export`, `build_gameplay04_weapons.py --export` (`--root DIR` for trial builds; standard:
+  `docs/CHARACTER_STANDARD.md`). Garments are authored in CHARACTER-01 *reference space* and moved onto the body with
+  `char_body.to_body_space`. A detachable magazine is a split child of the weapon (`char_weapon.split_magazine`,
+  `<weapon>_Mag_LOD*`) that `InfantryCharacter._hang_magazine` puts on `ATT_Magazine`; only `Reload` moves that bone. Write
+  bone poses through `char_anim._set_world` (rotation + position only). Movement paces (`WorldSim.pace_of`) are opt-in with
+  `--paces`. Validation: `--paces --visual03-test [--shots]` (A-F), `tools/visual03/check_loadouts.gd`, `check_clearance.py`.
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are

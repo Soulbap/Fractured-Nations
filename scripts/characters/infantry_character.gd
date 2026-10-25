@@ -12,15 +12,14 @@
 ## a local move vector that drives a BlendTree (idle <-> 2D locomotion blend space, stand
 ## <-> crouch). Locomotion clips are one gait cycle each and play at the rate that makes
 ## the authored stride match the actual speed, so feet stay planted at any speed.
-## VISUAL-03 set (motion capture + weapon layer, see tools/blender/character/char_anim.py): relaxed / ready idle, walk,
-## brisk walk, jog, run, sprint, crouch, turn-in-place clips; aim (upper body, turned to the target by
-## InfantryAimModifier), fire and reload as upper-body layers, all blended over short times so nothing snaps.
+## Clip set (VISUAL-03: motion capture + weapon layer, see tools/blender/character/char_anim.py): relaxed / ready idle,
+## walk, brisk walk, jog, run, sprint, crouch, turn-in-place clips; aim (upper body, turned to the target by
+## InfantryAimModifier), fire and reload as upper-body layers, all blended over short times so nothing snaps. A weapon's
+## detachable magazine (<weapon>_Mag_LOD* meshes) hangs on the ATT_Magazine bone, which the reload carries in the hand.
 class_name InfantryCharacter
 extends Node3D
 
-## Shipped assets; VISUAL-03 stages the new soldier in infantry_v03/ (switched on with --soldier-v03) until approved.
 const ASSET_ROOT := "res://assets/characters/infantry/"
-const ASSET_ROOT_V03 := "res://assets/characters/infantry_v03/"
 ## Bones the upper-body layers (aim, fire, reload) drive; the legs and pelvis stay with locomotion.
 const UPPER_BONES := ["Spine", "Chest", "UpperChest", "Neck", "Head"]
 const UPPER_SIDE := ["Shoulder", "UpperArm", "LowerArm", "Hand"]
@@ -79,7 +78,6 @@ var _was_reloading := false
 
 static var _tree_root: AnimationNodeBlendTree
 static var _rig_scene: PackedScene
-static var _v03 := false          # the rig has the VISUAL-03 clip set
 static var _turn_rate := 1.5      # rad/s the turn clips turn at (meta)
 static var _lat_stride := 0.0     # stride (m per cycle) of the sideways clips; 0 = use the forward table
 static var _strides := {}       # speed -> stride table (sorted speeds) for stand / crouch
@@ -88,14 +86,9 @@ static var _loops_set := false
 static var anim_usec := 0
 
 
-## Root of the soldier assets in use (rig, loadouts, meta).
-static func asset_root() -> String:
-	return ASSET_ROOT_V03 if "--soldier-v03" in OS.get_cmdline_user_args() else ASSET_ROOT
-
-
 static func rig_scene() -> PackedScene:
 	if _rig_scene == null:
-		_rig_scene = load(asset_root() + "rig/infantry_rig.glb")
+		_rig_scene = load(ASSET_ROOT + "rig/infantry_rig.glb")
 	return _rig_scene
 
 
@@ -207,7 +200,35 @@ func _add_piece(it: InfantryEquipment) -> void:
 		for m in _find_all(inst, func(n: Node) -> bool: return String(n.name).begins_with("ATT_") or String(n.name).begins_with("GRIP_")):
 			mounts["%s:%s" % [it.slot, m.name]] = m
 		nodes.append(inst)
+		if it.attach == "ATT_Weapon":
+			var mag := _hang_magazine(inst)
+			if mag:
+				nodes.append(mag)
 	pieces[it.id] = nodes
+
+
+## Moves the weapon's detachable magazine meshes (<weapon>_Mag_LOD*) onto the ATT_Magazine bone, keeping their place:
+## the bone rests on ATT_Weapon, and the reload clip carries it in the support hand. Returns the holder (null: none).
+func _hang_magazine(weapon: Node3D) -> Node3D:
+	var mags := _find_all(weapon, func(n: Node) -> bool: return n is MeshInstance3D and String(n.name).contains("_Mag_LOD"))
+	var bone := _attach_point("ATT_Magazine")
+	if mags.is_empty() or bone == null:
+		return null
+	var holder := Node3D.new()
+	holder.name = "Magazine"
+	bone.add_child(holder)
+	holder.transform = weapon.transform
+	for mi: Node3D in mags:
+		var xf := mi.transform
+		var n := mi.get_parent()
+		while n != weapon:
+			xf = (n as Node3D).transform * xf
+			n = n.get_parent()
+		mi.owner = null
+		mi.get_parent().remove_child(mi)
+		holder.add_child(mi)
+		mi.transform = xf
+	return holder
 
 
 func _attach_point(spec: String) -> Node3D:
@@ -264,11 +285,10 @@ func _setup_animation() -> void:
 	anim_tree.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	anim_tree.active = true
 	_set_loops()
-	if _v03:
-		_aim_mod = InfantryAimModifier.new()
-		_aim_mod.name = "AimModifier"
-		_aim_mod.influence = 0.0
-		skeleton.add_child(_aim_mod)
+	_aim_mod = InfantryAimModifier.new()
+	_aim_mod.name = "AimModifier"
+	_aim_mod.influence = 0.0
+	skeleton.add_child(_aim_mod)
 	if is_inside_tree():
 		_apply_params(0.0, true)
 		anim_tree.advance(0.0)
@@ -278,15 +298,14 @@ static func _prepare_shared(player: AnimationPlayer) -> void:
 	if _tree_root:
 		return
 	var gait: Dictionary = GAIT_FALLBACK.duplicate()
-	var meta_path := asset_root() + "animation_meta.json"
+	var meta_path := ASSET_ROOT + "animation_meta.json"
 	var meta: Variant = JSON.parse_string(FileAccess.get_file_as_string(meta_path)) if FileAccess.file_exists(meta_path) else null
 	if meta is Dictionary and meta.has("gait"):
 		for k in meta.gait:
 			gait[k] = [float(meta.gait[k].speed), float(meta.gait[k].period)]
-	_v03 = player.has_animation("Aim")
-	if _v03 and meta is Dictionary and meta.get("clip_meta", {}).has("Turn_L"):
+	if meta is Dictionary and meta.get("clip_meta", {}).has("Turn_L"):
 		_turn_rate = maxf(0.3, absf(float(meta.clip_meta.Turn_L.get("turn_rate", 1.5))))
-	if _v03 and meta is Dictionary and meta.get("clip_meta", {}).has("Walk_L"):
+	if meta is Dictionary and meta.get("clip_meta", {}).has("Walk_L"):
 		# the captured side steps are short: sideways the clip plays faster instead of letting the feet slide
 		var lm: Dictionary = meta.clip_meta.Walk_L
 		_lat_stride = float(lm.get("speed", 0.0)) * float(lm.get("period", 0.0))
@@ -335,12 +354,7 @@ static func _prepare_shared(player: AnimationPlayer) -> void:
 	t.connect_node("move", 1, "scale")
 	t.connect_node("crouch", 0, "move")
 	t.connect_node("crouch", 1, "cmove")
-	if not _v03:
-		t.connect_node("move", 0, "idle")
-		t.connect_node("output", 0, "crouch")
-		_tree_root = t
-		return
-	# VISUAL-03: relaxed <-> ready idle, turning in place, then the upper-body layers.
+	# Relaxed <-> ready idle, turning in place, then the upper-body layers.
 	var upper := _upper_paths(player)
 	t.add_node("ready", _anim("Ready_Idle"), Vector2(0, -150))
 	t.add_node("alert", AnimationNodeBlend2.new(), Vector2(200, -100))
@@ -384,9 +398,9 @@ static func _prepare_shared(player: AnimationPlayer) -> void:
 	_tree_root = t
 
 
-## Track paths of the upper-body bones in the rig's clips (filters of the upper-body layers).
+## Track paths of the upper-body bones in the rig's clips (filters of the upper-body layers), the magazine bone too.
 static func _upper_paths(player: AnimationPlayer) -> Array[NodePath]:
-	var names := {}
+	var names := {"ATT_Magazine": true}
 	for n in UPPER_BONES:
 		names[n] = true
 	for side in ["Left", "Right"]:
@@ -396,11 +410,12 @@ static func _upper_paths(player: AnimationPlayer) -> Array[NodePath]:
 			for seg in ["Metacarpal", "Proximal", "Intermediate", "Distal"]:
 				names[side + f + seg] = true
 	var out: Array[NodePath] = []
-	var anim := player.get_animation("Aim")
-	for i in anim.get_track_count():
-		var p := anim.track_get_path(i)
-		if p.get_subname_count() > 0 and names.has(String(p.get_subname(0))):
-			out.append(p)
+	for clip in ["Aim", "Reload"]:
+		var anim := player.get_animation(clip)
+		for i in anim.get_track_count():
+			var p := anim.track_get_path(i)
+			if p.get_subname_count() > 0 and names.has(String(p.get_subname(0))) and not p in out:
+				out.append(p)
 	return out
 
 
@@ -422,14 +437,14 @@ func _set_loops() -> void:
 	for lib_name in anim_player.get_animation_library_list():
 		var lib := anim_player.get_animation_library(lib_name)
 		for n in lib.get_animation_list():
-			# one-shots of the VISUAL-03 set play once
+			# the one-shots play once
 			lib.get_animation(n).loop_mode = Animation.LOOP_NONE if n in ["Fire", "Reload"] else Animation.LOOP_LINEAR
 	_loops_set = true
 
 
-## VISUAL-03: one shot (recoil) on the upper body; ignored while the rifle is not raised.
+## One shot (recoil) on the upper body; ignored while the rifle is not raised.
 func fire() -> void:
-	if anim_tree and _v03 and _aim_amount > 0.3:
+	if anim_tree and _aim_amount > 0.3:
 		anim_tree.set("parameters/fire/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
@@ -517,9 +532,6 @@ func _apply_params(delta: float, snap: bool) -> void:
 	if not is_nan(_last_yaw) and delta > 0.0:
 		_yaw_rate = lerpf(_yaw_rate, wrapf(yaw - _last_yaw, -PI, PI) / delta, clampf(delta * 10.0, 0.0, 1.0))
 	_last_yaw = yaw
-	# Turning on the spot: the turn clips (VISUAL-03), else the CHARACTER-01 side step.
-	if not _v03 and target.length() < 0.3 and absf(_yaw_rate) > 1.2:
-		target = Vector2(-signf(_yaw_rate) * 0.8, 0.0)
 	# Blend steps use at most 1/20 s per frame: after a hitch the pose still eases instead of snapping.
 	delta = minf(delta, 0.05)
 	var k := 1.0 if snap else clampf(delta * 6.0, 0.0, 1.0)      # accelerate / brake over ~0.3 s
@@ -544,8 +556,6 @@ func _apply_params(delta: float, snap: bool) -> void:
 	anim_tree.set("parameters/move/blend_amount", _move_amount)
 	anim_tree.set("parameters/cmove/blend_amount", _move_amount)
 	anim_tree.set("parameters/crouch/blend_amount", _crouch_amount)
-	if not _v03:
-		return
 	var step := 1.0 if snap else delta
 	_alert_amount = move_toward(_alert_amount, 1.0 if alert or aim_point.is_finite() else 0.0, step * 2.5)
 	_aim_amount = move_toward(_aim_amount, 1.0 if aim_point.is_finite() and not reloading else 0.0, step * 4.0)
@@ -576,7 +586,7 @@ func _apply_params(delta: float, snap: bool) -> void:
 func anim_state() -> Dictionary:
 	return {"move": _move, "move_amount": _move_amount, "crouch": _crouch_amount,
 		"rate": anim_tree.get("parameters/scale/scale") if anim_tree else 0.0,
-		"alert": _alert_amount, "aim": _aim_amount, "turn": _turn_amount, "v03": _v03}
+		"alert": _alert_amount, "aim": _aim_amount, "turn": _turn_amount}
 
 
 # ------------------------------------------------------------------------------ helpers

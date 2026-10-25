@@ -12,6 +12,8 @@ axis at z = BORE_Z. Accessory mount points are empties exported as glTF nodes:
   ATT_RailRight   right rail, front
   ATT_Muzzle      muzzle face
   GRIP_Support    support-hand pose (Y = hand axis, Z = back of hand), for animation/IK
+A detachable magazine is its own child object (split_magazine), exported as <weapon>_Mag_LOD*: the game hangs it on the
+ATT_Magazine bone, which the reload clip moves with the support hand.
 """
 import math
 
@@ -116,17 +118,58 @@ def build_carbine(coll, mats):
     box((0.006, 0.040, 0.008), (0, by + 0.070, z - 0.088), 0.002, mat=M_METAL)               # sling loop
     # Curved polymer magazine: four segments along an arc.
     mag_top = Vector((0, 0.073, z - 0.075))
+    n0 = len(bm.verts)
     for i in range(5):
         ang = -4 - i * 4.0
         c = mag_top + Vector((0, 0.004 + i * 0.0055, -0.016 - i * 0.032))
         box((0.024, 0.064 - i * 0.0015, 0.036), c, 0.004, mat=M_POLY, rot=rx(ang))
     box((0.028, 0.064, 0.010), mag_top + Vector((0, 0.030, -0.175)), 0.004, mat=M_POLY, rot=rx(-22))
+    mag_verts = range(n0, len(bm.verts))
     me_obj = L.new_object("Carbine", bm, coll, [mats["Metal_Black"], mats["Polymer_Black"], mats["Metal_Worn"], mats["Metal_Worn"]])
     me_obj.data.materials[0] = mats["Metal_Black"]
     for p in me_obj.data.polygons:
         p.use_smooth = True
     L.shade_smooth(me_obj, 35)
+    split_magazine(me_obj, mag_verts, mag_top)
     return me_obj
+
+
+MAG_TOP = Vector((0, 0.073, BORE_Z - 0.075))     # carbine magwell (magazine origin)
+
+
+def split_magazine(weapon, verts, top=MAG_TOP):
+    """Moves the vertices `verts` (indices, whole loose parts: the magazine as it was built) of `weapon` into a child
+    object (origin at `top`, the magwell) marked fn_magazine, which export_rigid writes as <weapon>_Mag_LOD*."""
+    keep = set(verts)
+    if not keep:
+        return None
+    top = Vector(top)
+    bm = bmesh.new()
+    bm.from_mesh(weapon.data)
+    mb = bm.copy()
+    bm.verts.ensure_lookup_table()
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.index in keep], context="VERTS")
+    bm.to_mesh(weapon.data)
+    bm.free()
+    mb.verts.ensure_lookup_table()
+    bmesh.ops.delete(mb, geom=[v for v in mb.verts if v.index not in keep], context="VERTS")
+    for v in mb.verts:
+        v.co -= top
+    me = bpy.data.meshes.new(weapon.name + "_Mag")
+    mb.to_mesh(me)
+    mb.free()
+    for m in weapon.data.materials:
+        me.materials.append(m)
+    mag = bpy.data.objects.new(weapon.name + "_Mag", me)
+    for c in weapon.users_collection:
+        c.objects.link(mag)
+    mag.parent = weapon
+    mag.matrix_parent_inverse = Matrix.Identity(4)
+    mag.location = top
+    mag["fn_magazine"] = True
+    for p in me.polygons:
+        p.use_smooth = True
+    return mag
 
 
 def mount_empties(coll, weapon):

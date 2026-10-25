@@ -1,15 +1,16 @@
-## VISUAL-03 in-game validation of the new soldier (run with --soldier-v03 so the staged rig and loadouts are used) on
-## the VISUAL-02 world, through the real bodies, controller, squad orders and AI.
+## VISUAL-03 in-game validation of the soldier on the VISUAL-02 world, through the real bodies, controller, squad orders
+## and AI (--paces: the walk / jog / run orders the checks give; the game itself runs without them).
 ##
-##   Godot.exe --path . --fullscreen --log-file v3.log res://scenes/game/world_ref_20km.tscn -- --soldier-v03 --paces --visual03-test [--shots] [--only a_loco,b_squad,c_combat,d_terrain,e_trans,f_views] [--shot-dir=res://docs/visual03/godot]
+##   Godot.exe --path . --fullscreen --log-file v3.log res://scenes/game/world_ref_20km.tscn -- --paces --visual03-test [--shots] [--only a_loco,b_squad,c_combat,d_terrain,e_trans,f_views] [--shot-dir=res://docs/visual03/godot]
 ##
 ## a_loco     one soldier walks, jogs, runs (squad order paces), stops and turns on the spot
 ## b_squad    eight soldiers in formation: jog, a change of direction at a run, a walk
 ## c_combat   two fire teams 120 m apart with the AI on: rifles raised, aiming and firing in different directions
 ## d_terrain  a squad up and down a slope and over uneven ground
-## e_trans    one soldier: stand -> move -> stop -> crouch -> stand -> aim -> move aiming -> fire -> reload
+## e_trans    one soldier: stand -> move -> stop -> crouch -> stand -> aim -> move aiming -> fire -> reload (the magazine
+##            leaves the well with the support hand and is back in it afterwards)
 ## f_views    the same soldier from first-person range (another soldier's eyes) and RTS distances
-## Every check records frame sequences (rec/<check>_<view>_NNN.png, assembled into GIFs by tools/visual03/make_godot_gifs.py),
+## Every check records frame sequences (rec/<check>_NNN.png, encoded to MP4 by tools/visual03/encode_mp4.py),
 ## stills, and numbers: the character's animation state, speeds by pace, foot slip of the planted foot in the engine.
 ## Prints "V3 <check> <json>", writes res://benchmarks/raw/visual03_test.json.
 class_name Visual03SelfTest
@@ -37,7 +38,6 @@ func run(args: PackedStringArray) -> void:
 		failures.append("watchdog: test did not finish")
 		_finish())
 	await _physics(30)
-	_expect(InfantryCharacter.asset_root() == InfantryCharacter.ASSET_ROOT_V03, "run with --soldier-v03 (the staged soldier)")
 	_expect(WorldSim.PACES, "run with --paces (walk / jog / run orders)")
 	_cs = CombatScenario.new(demo)
 	_site = _cs.find_site()
@@ -448,7 +448,24 @@ func _e_trans() -> Dictionary:
 		u.last_shot_at = demo.sim.state.time
 		log.append_array(await _record("e_6_fire_%d" % i, 0.25, 1, view))
 	u.reload_until = demo.sim.state.time + 2.6
-	log.append_array(await _record("e_7_reload", 3.0, 2, view))
+	# the magazine bone's distance from the weapon bone (0 = seated in the well)
+	var mag_off := func() -> float:
+		var ch := _char(u)
+		if ch == null or not ch.attachments.has("ATT_Magazine") or not ch.attachments.has("ATT_Weapon"):
+			return -1.0
+		return (ch.attachments.ATT_Magazine as Node3D).global_position.distance_to((ch.attachments.ATT_Weapon as Node3D).global_position)
+	var mag_view := func() -> Dictionary:
+		var st: Dictionary = view.call()
+		st["mag"] = mag_off.call()
+		return st
+	var rl: Array = await _record("e_7_reload", 3.0, 2, mag_view)
+	log.append_array(rl)
+	var mag_max := 0.0
+	for r in rl:
+		mag_max = maxf(mag_max, float(r.get("mag", -1.0)))
+	var mag_end: float = mag_off.call()
+	_expect(mag_max > 0.15, "the magazine did not leave the well during the reload (%.3f m)" % mag_max)
+	_expect(mag_end >= 0.0 and mag_end < 0.01, "the magazine is not back in the well after the reload (%.3f m)" % mag_end)
 	u.target_id = -1
 	u.target_seen_at = -1.0e9
 	u.target_last_pos = Vector3.INF
@@ -477,7 +494,8 @@ func _e_trans() -> Dictionary:
 				step = maxf(step, absf(float(log[i][k]) - float(log[i - 1][k])))
 	_expect(step <= 0.45, "e_trans: a blend weight jumped by %.2f in one frame (snap)" % step)
 	demo.sim.brain.enabled = true
-	return {"max_blend_step": snappedf(step, 0.01), "max_blend_rate_per_s": snappedf(rate, 0.1), "worst": worst, "frames": log.size()}
+	return {"max_blend_step": snappedf(step, 0.01), "max_blend_rate_per_s": snappedf(rate, 0.1), "worst": worst, "frames": log.size(),
+		"mag_out_m": snappedf(mag_max, 0.001), "mag_end_m": snappedf(mag_end, 0.001)}
 
 
 func _f_views() -> Dictionary:

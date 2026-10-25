@@ -7,7 +7,7 @@ cite it: *The data used in this project was obtained from mocap.cs.cmu.edu. The 
 NSF EIA-0196217.* The conversion adds no restrictions. Index of the takes: `cmu-mocap-index-text.txt` in the mirror.
 
 The first frame of every take is the T-pose calibration pose (skipped by `v03_mocap.load_bvh`). Unpacked `.bvh`
-files are git-ignored; `tools/blender/character/v03_proto.py` unpacks what it needs.
+files are git-ignored; `char_anim._take` unpacks what the build needs.
 
 | Take | Content | Used for |
 |---|---|---|

@@ -12,8 +12,8 @@ Options:
     --export          write GLBs into assets/characters/infantry/factions/<fac>/ and equipment .tres
     --previews DIR    renders (A-pose and baked Idle pose) of every family into DIR
     --only F[,F]      nato | ru | cn
-    --root DIR        asset root (default assets/characters/infantry; VISUAL-03 stages in assets/characters/infantry_v03).
-                      A staging build reuses the canonical rifles and optics (they live in weapon space).
+    --root DIR        asset root (default assets/characters/infantry): a scratch root keeps the shipped files untouched
+                      (trial builds); it reuses the shipped rifles and optics (they live in weapon space).
 """
 import importlib
 import json
@@ -59,7 +59,7 @@ LOADOUT_DIR = os.path.join(INF, "loadouts")
 
 
 def set_root(root):
-    """Writes parts, equipment and loadouts under another root (VISUAL-03 staging)."""
+    """Writes parts, equipment and loadouts under another root (trial builds)."""
     global ROOT, OUT, LOADOUT_DIR
     ROOT = os.path.join(REPO, root) if not os.path.isabs(root) else root
     OUT = os.path.join(ROOT, "factions")
@@ -396,8 +396,8 @@ def stage_export(b, fams):
                 extra = FW.mount_empties(L.collection("ExportMounts"), obj, "rifle_" + fac)
                 bad = [e.name for e in extra if "." in e.name]
                 assert not bad, "mount names not exact: %s" % bad
-            # Accessories parented to the rifle must not ride along into the rifle GLB.
-            kids = [c for c in obj.children if c.type == "MESH"]
+            # Accessories parented to the rifle must not ride along into the rifle GLB (its magazine does).
+            kids = [c for c in obj.children if c.type == "MESH" and not c.get("fn_magazine")]
             saved = [(c, c.parent, c.matrix_world.copy()) for c in kids]
             for c in kids:
                 c.parent = None

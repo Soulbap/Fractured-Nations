@@ -60,7 +60,15 @@ class WB:
         for p in o.data.polygons:
             p.use_smooth = True
         L.shade_smooth(o, smooth)
+        if getattr(self, "mag", None):
+            W.split_magazine(o, range(*self.mag[:2]), self.mag[2])
         return o
+
+    def magazine(self, top, build):
+        """Builds the detachable magazine (build() adds its parts) as its own object, origin `top`."""
+        n0 = len(self.bm.verts)
+        build()
+        self.mag = (n0, len(self.bm.verts), top)
 
 
 def rail(w, y0, y1, z, mat="Metal_Black", top=True):
@@ -130,7 +138,7 @@ def build_rifle_nato(coll, mats):
     w.box((0.042, 0.020, 0.135), (0, by + 0.010, z - 0.032), "Polymer_Black", 0.008, segs=2)
     w.box((0.006, 0.040, 0.008), (0.022, by + 0.070, z - 0.010), "Metal_Black", 0.002)
     # Tan ribbed polymer magazine (straighter than an AK magazine).
-    mag_curve(w, (0, 0.074, z - 0.090), 5, 0.034, 0.064, 0.025, 2.5, "Polymer_Tan", ribs=True)
+    w.magazine((0, 0.074, z - 0.090), lambda: mag_curve(w, (0, 0.074, z - 0.090), 5, 0.034, 0.064, 0.025, 2.5, "Polymer_Tan", ribs=True))
     return w.obj("Rifle_NATO", coll)
 
 
@@ -175,7 +183,7 @@ def build_rifle_ru(coll, mats):
     w.box((0.020, 0.024, 0.024), (0, -0.098, z + 0.034), "Metal_Black", 0.003)
     # Plum curved magazine (strong AK curve) and magwell.
     w.box((0.030, 0.072, 0.014), (0, 0.072, z - 0.046), "Metal_Black", 0.003)
-    mag_curve(w, (0, 0.074, z - 0.068), 6, 0.032, 0.070, 0.024, 6.0, "Polymer_Plum", ribs=True, start_angle=-2.0)
+    w.magazine((0, 0.074, z - 0.068), lambda: mag_curve(w, (0, 0.074, z - 0.068), 6, 0.032, 0.070, 0.024, 6.0, "Polymer_Plum", ribs=True, start_angle=-2.0))
     # Ergonomic pistol grip (angled).
     w.box((0.030, 0.044, 0.110), (0, -0.012, -0.010), "Polymer_Black", 0.010, rot=rx(-22), segs=2)
     w.box((0.032, 0.048, 0.010), (0, -0.032, -0.062), "Polymer_Black", 0.004, rot=rx(-22))
@@ -265,7 +273,7 @@ def build_rifle_cn(coll, mats):
     w.box((0.038, 0.110, 0.074), (0, by + 0.060, z - 0.056), "Polymer_OD", 0.010, rot=rx(16), segs=2)
     w.box((0.044, 0.020, 0.150), (0, by + 0.008, z - 0.036), "Polymer_Black", 0.008, segs=2)
     # 5.8 mm magazine: gentle curve, ribbed.
-    mag_curve(w, (0, 0.074, z - 0.092), 5, 0.034, 0.066, 0.026, 3.0, "Polymer_Black", ribs=True)
+    w.magazine((0, 0.074, z - 0.092), lambda: mag_curve(w, (0, 0.074, z - 0.092), 5, 0.034, 0.066, 0.026, 3.0, "Polymer_Black", ribs=True))
     return w.obj("Rifle_CN", coll)
 
 

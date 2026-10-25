@@ -57,7 +57,11 @@ CARRIES = {
 POSTURE = {"patrol": (4, -4), "low": (5, -4), "ready": (8, -2), "run": (None, 0), "port": (None, 0),
            "crouch": (None, -2), "aim": (6, None)}
 BUTT_LOCAL = Vector((0, -W.STOCK_PULL + 0.008, W.BORE_Z - 0.030))
-SIGHT_Z = W.BORE_Z + 0.072          # red-dot sight line above the grip origin
+# Sight line above the grip origin: the red dot's tube axis on the optic rail (ATT_Optic + 0.058), the same height as the
+# faction optics and the DMR scope (fac_weapons OPTIC_Z + SIGHT_H). VISUAL-03 part 2 measured against BORE_Z + 0.072,
+# 26 mm low, so the cheek weld aimed the eye under the dot.
+SIGHT_Z = W.MOUNTS["ATT_Optic"].z + 0.058
+AIM_SHIFT_MAX = 0.05               # the rifle moves at most this far (m) to meet the eye after the head has turned
 
 # Locomotion: clip -> (takes to try, motion, carry). The first take that has a clean stretch of that motion is used.
 LOCO = {
@@ -99,7 +103,10 @@ def _rot_about(axis, deg):
 
 
 def _set_world(pb, m):
-    pb.matrix = m
+    # rotation and position only: a matrix with scale or shear would leave it on the bone's (unkeyed) scale channel,
+    # where it stays from frame to frame (a forearm grew 4 % and the hand missed the grip by 12 mm)
+    loc, rot, _ = m.decompose()
+    pb.matrix = Matrix.LocRotScale(loc, rot, None)
     bpy.context.view_layer.update()
 
 
@@ -190,6 +197,17 @@ def _reach(R, carry):
     wl = Wm @ grip_w - (Rw @ ax_w) * S.GRIP_IN_HAND[0] - (Rw @ palm_w) * S.GRIP_IN_HAND[1]
     rr = (hr - R.sh_r_rest).length / sum(R.len["RightArm"])
     rl = (wl - R.sh_l_rest).length / sum(R.len["LeftArm"])
+    return rr, rl
+
+
+def _reach_pose(R, arm, Wm):
+    """As _reach, for the rifle at Wm and the current pose's shoulders."""
+    hr = (Wm @ R.hand_r_in_w).translation
+    ax_w, palm_w, _, grip_w = W.support_frame()
+    Rw = Wm.to_3x3()
+    wl = Wm @ grip_w - (Rw @ ax_w) * S.GRIP_IN_HAND[0] - (Rw @ palm_w) * S.GRIP_IN_HAND[1]
+    rr = (hr - arm.pose.bones["RightUpperArm"].head).length / sum(R.len["RightArm"])
+    rl = (wl - arm.pose.bones["LeftUpperArm"].head).length / sum(R.len["LeftArm"])
     return rr, rl
 
 
@@ -362,6 +380,16 @@ def apply_posture(arm, dl, dh):
 HEAD_LIMITS = {(1, 0, 0): (-22.0, 6.0), (0, 1, 0): (-14.0, 14.0), (0, 0, 1): (-20.0, 20.0)}
 
 
+def sight_offset(arm, Wm):
+    """The right eye's offset from the sight line (perpendicular to it, armature space)."""
+    eye_local = getattr(head_to_sight, "eye_local", None)
+    if eye_local is None:
+        return Vector()
+    v = arm.pose.bones["Head"].matrix @ eye_local - Wm @ Vector((0, -0.05, SIGHT_Z))
+    d = Wm.to_3x3() @ Vector((0, 1, 0))
+    return v - d * v.dot(d)
+
+
 def head_to_sight(arm, Wm):
     """Cheek weld: turns neck and head (within HEAD_LIMITS, degrees about world X / Y / Z) so the right eye comes as
     close to the sight line as it can. Returns the eye's remaining offset from the line (vector, armature space)."""
@@ -373,8 +401,7 @@ def head_to_sight(arm, Wm):
     hb = arm.pose.bones["Head"]
 
     def off():
-        v = hb.matrix @ eye_local - sight_o
-        return v - sight_d * v.dot(sight_d)
+        return sight_offset(arm, Wm)
 
     acc = {k: 0.0 for k in HEAD_LIMITS}
     best = off().length
@@ -420,11 +447,15 @@ def weapon_layer(R, carry, frames, sway=0.10, trigger=False, recoil=None, extra_
     dl, dh = posture_offsets(arm, frames, carry)
     errs = []
     sight = []
+    shifts = []
     poses = []
-    for f in range(frames):
+
+    def place(f):
+        """Posture, spine and the carried rifle (stabilised, swaying, kicked) for frame f: (Wm, chest matrix)."""
         sc.frame_set(f)
         for pb in arm.pose.bones:
             pb.rotation_mode = "QUATERNION"
+            pb.scale = Vector((1, 1, 1))
         apply_posture(arm, dl, dh)
         spine_layer(arm, carry, extra_yaw)
         ch = arm.pose.bones["UpperChest"].matrix.copy()
@@ -432,14 +463,12 @@ def weapon_layer(R, carry, frames, sway=0.10, trigger=False, recoil=None, extra_
         Wm = carry_matrix(R, carry, ch, sh_r)
         # Stabilise against the chest's pitch and roll but keep its heading.
         yaw = _heading(arm, "UpperChest")
-        upright = Matrix.Translation(ch.translation) @ Quaternion((0, 0, 1), -yaw).to_matrix().to_4x4() @ \
-            Matrix.Translation(-ch.translation) @ R.chest_rest
+        upright = Matrix.Translation(ch.translation) @ Quaternion((0, 0, 1), -yaw).to_matrix().to_4x4() @             Matrix.Translation(-ch.translation) @ R.chest_rest
         upright.translation = ch.translation
         Wu = carry_matrix(R, carry, upright, sh_r)
         Wm = _stabilise(Wm, Wu, CARRIES[carry]["stab"])
         # Sway with the captured arm swing (chest space -> world).
-        d = ch.to_3x3() @ ((hand_rel[f] - mean) * sway)
-        Wm.translation += d
+        Wm.translation += ch.to_3x3() @ ((hand_rel[f] - mean) * sway)
         if recoil:
             back, up = recoil(f)
             fwd = Wm.to_3x3() @ Vector((0, 1, 0))
@@ -451,15 +480,37 @@ def weapon_layer(R, carry, frames, sway=0.10, trigger=False, recoil=None, extra_
             Wm.translation = t
             # the shoulder and chest take the kick
             _rotate_world(arm, "UpperChest", Quaternion(rr, math.radians(-up * 0.35)))
+        return Wm, ch
+
+    # Cheek weld fit: the mean offset (chest space) still left between eye and sight line after the head has turned
+    # moves the rifle once for the whole clip (the butt sits that much lower / further in on the shoulder); per frame the
+    # rifle then only closes what the capture's own motion adds (at most AIM_SHIFT_MAX).
+    fit = Vector()
+    if aim_head:
+        res = []
+        for f in range(frames):
+            Wm, ch = place(f)
+            res.append(ch.to_3x3().inverted() @ head_to_sight(arm, Wm))
+        fit = sum(res, Vector()) / len(res)
+    for f in range(frames):
+        Wm, ch = place(f)
         if aim_head:
+            Wm.translation += ch.to_3x3() @ fit
             # head to the stock as far as a shooter bends, then the rifle up to the eye (cheek weld)
             rest_off = head_to_sight(arm, Wm)
-            if rest_off.length > 0.06:
-                rest_off = rest_off.normalized() * 0.06
+            shifts.append(rest_off.length)
+            if rest_off.length > AIM_SHIFT_MAX:
+                rest_off = rest_off.normalized() * AIM_SHIFT_MAX
             Wm.translation += rest_off
-            sight.append((head_to_sight(arm, Wm)).length)
+            # back along the bore (the sight line stays on the eye) while a hand would have to stretch too far
+            for _ in range(16):
+                if max(_reach_pose(R, arm, Wm)) <= 0.97:
+                    break
+                Wm.translation -= Wm.to_3x3() @ Vector((0, 0.005, 0))
+            sight.append(sight_offset(arm, Wm).length)
+        reach = _reach_pose(R, arm, Wm)
         e = solve_arms(R, Wm, carry, ch, left_override)
-        errs.append((e["Right"], e["Left"]))
+        errs.append((e["Right"], e["Left"], reach))
         grip_fingers(arm, trigger)
         poses.append({b: (arm.pose.bones[b].location.copy(), arm.pose.bones[b].rotation_quaternion.copy())
                       for b in keyed + fingers})
@@ -475,7 +526,11 @@ def weapon_layer(R, carry, frames, sway=0.10, trigger=False, recoil=None, extra_
         pb.rotation_quaternion = rot
         pb.keyframe_insert("rotation_quaternion", frame=frames, group=b)
     return {"posture_fix_deg": [round(dl, 1), round(dh, 1)], "hand_err_mm_r": round(max(e[0] for e in errs) * 1000, 1), "hand_err_mm_l": round(max(e[1] for e in errs) * 1000, 1),
-            "sight_err_mm": round(max(sight) * 1000, 1) if sight else None}
+            "reach_at_worst": [round(x, 3) for x in max(errs, key=lambda e: max(e[0], e[1]))[2]],
+            "sight_err_mm": round(max(sight) * 1000, 1) if sight else None,
+            "sight_err_mean_mm": round(sum(sight) / len(sight) * 1000, 1) if sight else None,
+            "rifle_to_eye_mm": round(max(shifts) * 1000, 1) if shifts else None,
+            "aim_fit_mm": [round(x * 1000, 1) for x in fit] if aim_head else None}
 
 
 # ------------------------------------------------------------------------------------------------ clips
@@ -717,7 +772,7 @@ class Builder:
             c.use_fake_user = True
             _trim(c, RELOAD_FRAMES)
             self.finish("Reload", c, "ready", RELOAD_FRAMES, loop=False, left_override=None)
-            reload_left_hand(self, c, RELOAD_FRAMES)
+            self.checks["Reload"]["magazine"] = reload_left_hand(self, c, RELOAD_FRAMES)
         bpy.data.actions.remove(base)
 
     def crouch_idle(self, act):
@@ -785,40 +840,67 @@ def _trim(act, frames):
                 fc.keyframe_points.remove(kp)
 
 
+# Reload: the support hand on the magazine (weapon space): fist round the lower body of the magazine from its left side,
+# fingers up towards the magwell, palm against it. The same point serves every rifle (the magazine rides on the hand).
+MAG_GRIP = Vector((0.0, 0.088, -0.095))
+MAG_AXIS = Vector((0.0, -0.20, 1.0)).normalized()
+MAG_PALM = Vector((1.0, 0.15, 0.0))
+MAG_PULL = 0.085                                   # magazine drawn out of the well before it moves away (m)
+# phase ends (fraction of the clip): reach, grab, pull out, to the pouch, swap, back under the well, insert, seat, back
+RELOAD_PHASES = (0.12, 0.16, 0.26, 0.42, 0.48, 0.62, 0.72, 0.76, 1.0)
+
+
 def reload_left_hand(b, act, frames):
-    """Reload: the support hand leaves the handguard to the magazine, down to the left chest pouch, back with the new
-    magazine and onto the handguard; the rifle tips 25 deg to the left meanwhile. Keys the left arm only."""
+    """Reload: the support hand leaves the handguard for the magazine, draws it out of the well, takes it to the left
+    belt pouch (stowed, the new one drawn), brings it back under the well, inserts it and returns to the handguard.
+    Keys the left arm and the ATT_Magazine bone, which carries the weapon's detachable magazine with the hand from the
+    grab to the seat (identity = in the well before and after, so the magazine and rifle stay together)."""
     arm = b.arm
     R = b.R
     sc = bpy.context.scene
     reset_pose(arm)
     arm.animation_data.action = act
     ax_w, palm_w, thumb_w, grip_w = W.support_frame()
-    mag = Vector((0.0, 0.055, -0.07))                 # magazine well, weapon space
     keys = ["LeftUpperArm", "LeftLowerArm", "LeftHand"]
-    poses = []
+    t_reach, t_grab, t_pull, t_pouch, t_swap, t_under, t_in, t_seat, _ = RELOAD_PHASES
+    poses, mags = [], []
+    offset = None
+    pm = arm.pose.bones["ATT_Magazine"]
     for f in range(frames + 1):
         sc.frame_set(f)
         t = f / frames
         ch = arm.pose.bones["UpperChest"].matrix
         hr = arm.pose.bones["RightHand"].matrix
         Wm = hr @ R.hand_r_in_w.inverted()
-        pouch = ch @ (R.chest_rest.inverted() @ Vector((-0.09, 0.16, 1.18)))
-        # phase: 0-0.15 to mag, 0.15-0.35 mag out down to pouch, 0.35-0.55 new mag up, 0.55-0.75 insert, ->grip
+        W3 = Wm.to_3x3()
+        pouch = ch @ (R.chest_rest.inverted() @ Vector((-0.115, 0.235, 1.07)))
         g_hand = Wm @ grip_w
-        g_mag = Wm @ mag
-        if t < 0.15:
-            p = g_hand.lerp(g_mag, _ease(t / 0.15))
-        elif t < 0.35:
-            p = g_mag.lerp(pouch, _ease((t - 0.15) / 0.2))
-        elif t < 0.55:
-            p = pouch.lerp(g_mag - (Wm.to_3x3() @ Vector((0, 0, 0.06))), _ease((t - 0.35) / 0.2))
-        elif t < 0.75:
-            p = (g_mag - (Wm.to_3x3() @ Vector((0, 0, 0.06)))).lerp(g_mag, _ease((t - 0.55) / 0.2))
+        seat = Wm @ MAG_GRIP
+        drawn = seat - W3 @ Vector((0, 0, MAG_PULL))
+        on_mag = 1.0
+        if t < t_reach:
+            k = _ease(t / t_reach)
+            p, on_mag = g_hand.lerp(seat, k), k
+        elif t < t_grab:
+            p = seat
+        elif t < t_pull:
+            p = seat.lerp(drawn, _ease((t - t_grab) / (t_pull - t_grab)))
+        elif t < t_pouch:
+            p = drawn.lerp(pouch, _ease((t - t_pull) / (t_pouch - t_pull)))
+        elif t < t_swap:
+            p = pouch
+        elif t < t_under:
+            p = pouch.lerp(drawn, _ease((t - t_swap) / (t_under - t_swap)))
+        elif t < t_in:
+            p = drawn.lerp(seat, _ease((t - t_under) / (t_in - t_under)))
+        elif t < t_seat:
+            p = seat
         else:
-            p = g_mag.lerp(g_hand, _ease((t - 0.75) / 0.25))
-        ax = (Wm.to_3x3() @ ax_w).normalized()
-        palm = (Wm.to_3x3() @ palm_w).normalized()
+            k = _ease((t - t_seat) / (1.0 - t_seat))
+            p, on_mag = seat.lerp(g_hand, k), 1.0 - k
+        ax = (W3 @ ax_w).normalized().lerp((W3 @ MAG_AXIS).normalized(), on_mag).normalized()
+        palm = (W3 @ palm_w).normalized().lerp((W3 @ MAG_PALM).normalized(), on_mag).normalized()
+        palm = (palm - ax * palm.dot(ax)).normalized()
         wrist = p - ax * S.GRIP_IN_HAND[0] - palm * S.GRIP_IN_HAND[1]
         ua, la, hb = arm.pose.bones["LeftUpperArm"], arm.pose.bones["LeftLowerArm"], arm.pose.bones["LeftHand"]
         H = ua.head.copy()
@@ -831,11 +913,25 @@ def reload_left_hand(b, act, frames):
         hl.translation = hb.head.copy()
         _set_world(hb, hl)
         poses.append({k: arm.pose.bones[k].rotation_quaternion.copy() for k in keys})
+        # the magazine: in the well until the grab, then rigidly in the hand until it is seated again
+        attw = arm.pose.bones["ATT_Weapon"].matrix
+        if t_grab <= t < t_seat:
+            if offset is None:
+                offset = hb.matrix.inverted() @ attw
+            _set_world(pm, hb.matrix @ offset)
+        else:
+            _set_world(pm, attw.copy())
+        mags.append((pm.location.copy(), pm.rotation_quaternion.copy()))
     for f, pose in enumerate(poses):
         for k, rot in pose.items():
             pb = arm.pose.bones[k]
             pb.rotation_quaternion = rot
             pb.keyframe_insert("rotation_quaternion", frame=f, group=k)
+        pm.location, pm.rotation_quaternion = mags[f]
+        pm.keyframe_insert("location", frame=f, group="ATT_Magazine")
+        pm.keyframe_insert("rotation_quaternion", frame=f, group="ATT_Magazine")
+    seat_err = max((m[0].length for m in mags[:int(t_grab * frames)] + mags[int(t_seat * frames) + 1:]), default=0.0)
+    return {"mag_travel_m": round(max(m[0].length for m in mags), 3), "mag_rest_err_mm": round(seat_err * 1000, 2)}
 
 
 def reset_pose(arm):

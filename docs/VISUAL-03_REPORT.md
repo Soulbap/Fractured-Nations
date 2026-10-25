@@ -1,16 +1,16 @@
 # VISUAL-03 — Soldier character, anatomy, rigging & animation overhaul
 
-Status: **second approval checkpoint.** The anatomy prototype (§4) was approved on 2026-10-25. Since then the full
-soldier has been built — rifle handling over the motion capture, the whole clip set, uniforms and equipment refitted to
-the new body for all three factions, the Godot animation tree with aim / fire / reload layers and turning clips — and
-validated in the VISUAL-02 world (§8–§10). It is **staged**: the new assets live in `assets/characters/infantry_v03/`
-and are used only when the game is started with `--soldier-v03`; without the flag the game plays exactly as before.
-Replacing the shipped soldier waits for the product owner's approval of §8–§11.
+Status: **complete (2026-10-25).** The anatomy prototype (§4) and the full soldier (§8–§11) were approved. Part 3
+(§14–§18) made three requested corrections (the magazine moves in the reload, the eye on the sight line, the radio
+antennas clear of the face) and **replaced the shipped soldier**: the new soldier is built into
+`assets/characters/infantry/` and is the game's soldier without any flag; the staging root and `--soldier-v03` are gone.
+Movement stays at 4.5 m/s; the walk / brisk / jog / run paces stay behind `--paces` (off by default) for COMBAT-01.
 
 ## 1. Diagnosis of the current soldier (Phase 1)
 
-Tool: `tools/blender/character/visual03_audit.py` opens the shipped `assets/characters/infantry/blender/infantry.blend`
-read-only and writes renders and gait numbers to `docs/visual03/before/` (`before_gait.json`).
+Tool: `tools/blender/character/visual03_audit.py` opened the then shipped `assets/characters/infantry/blender/infantry.blend`
+read-only and wrote renders and gait numbers to `docs/visual03/before/` (`before_gait.json`). Both were removed with the
+replacement (§16); they are in the history at `b46253c`.
 
 ### 1.1 Pipeline as found
 
@@ -270,7 +270,7 @@ Every clip starts from captured motion; the rifle layer is added on top, per fra
 6. **Reach fit** — carries whose grips the arms cannot reach (styles were authored on CHARACTER-01 proportions) move
    their butt inboard / back and turn the muzzle inboard until both hands reach within 93 % of the arm length.
 
-Clips (all in `assets/characters/infantry_v03/animation_meta.json`):
+Clips (all in `assets/characters/infantry/animation_meta.json`):
 
 | Clip | Source | Carry | Notes |
 |---|---|---|---|
@@ -382,3 +382,100 @@ lift-off frames slip).
 2. Drop `ASSET_ROOT_V03` / `--soldier-v03`, the old SDF garment references in CHARACTER_STANDARD, and the `Skin`
    material; update `docs/CHARACTER_STANDARD.md` (body source, rest pose, clip set, layers).
 3. Re-import, `check_loadouts.gd`, `--visual03-test` (without `--soldier-v03`), the character lab.
+
+# Part 3 — corrections and replacement (after the second approval)
+
+## 14. Corrections
+
+### 14.1 The magazine moves in the reload
+
+* **Rig.** A new attachment bone `ATT_Magazine` (child of `ATT_Weapon`, the same rest frame; `char_skeleton.attachments`,
+  `char_body._add_attachments`). No clip but `Reload` keys it, so everywhere else the magazine sits in the well.
+* **Weapons.** The detachable magazine is built as its own parts and split off into a child object
+  (`char_weapon.split_magazine`; `fac_weapons.WB.magazine` for the NATO / RU / CN rifles, the carbine, the DMR), exported
+  as `<weapon>_Mag_LOD0/1/2` (`char_export.export_rigid`). Belt-fed machine guns (LMG, GPMG) have none: their reload is
+  the same hand motion with nothing moving, as before.
+* **Clip.** `char_anim.reload_left_hand`, 2.5 s: the support hand goes from the handguard to the magazine (0.12), grips
+  it (0.16), draws it 85 mm down out of the well (0.26), takes it to the left belt pouch (0.42; stowed, the new one
+  drawn), brings it back under the well (0.62), inserts it (0.72), seats it (0.76) and returns to the handguard. From
+  the grip to the seat `ATT_Magazine` is keyed rigidly in the hand (offset taken at the grip), so hand, magazine and
+  rifle stay together; one point on the magazine (`MAG_GRIP`) serves every rifle. Build log: magazine travel 0.32 m,
+  seated error before and after 0.0 mm.
+* **Godot.** `InfantryCharacter._hang_magazine` moves the `_Mag_LOD*` meshes onto a `BoneAttachment3D` on
+  `ATT_Magazine`, keeping their place; the reload layer's filter includes the bone. The merged distance LODs and the
+  proxy pick it up through the attachment like any rigid piece. In game (`e_trans`): the magazine is 0.32 m out of the
+  well during the reload and 0.000 m from its seat afterwards.
+
+### 14.2 The eye on the sight line
+
+* **The measurement was wrong.** Part 2 measured the eye against `BORE_Z + 0.072`, 26 mm below the red dot's axis
+  (`ATT_Optic` + 0.058 = 0.172 m above the grip; the faction optics and the DMR scope sit on the same line). Against
+  the real line the eye was 75–110 mm off after the head search.
+* **Cheek weld fit.** The head still turns first (within the same limits: 22° pitch, 14° roll, 20° yaw). The mean
+  offset that remains over the clip then moves the rifle once for the whole clip (the butt sits that much lower and
+  further in on the shoulder: 88 mm in Aim, 72 mm in Fire), and per frame the rifle closes only what the capture's own
+  motion adds (at most 50 mm, measured 33 mm in Aim, 6 mm in Fire). Arms that would stretch past 97 % pull the rifle
+  back along the bore, which leaves the sight line on the eye.
+* **Result.** Sight error 0.0 mm in every frame of `Aim` and `Fire` (was 36 mm against the wrong line); both hands on
+  the grips (0.0 mm).
+* **A bug found on the way.** Setting a bone's matrix with scale or shear left the scale on the bone's unkeyed scale
+  channel, where it stayed from frame to frame: with the cheek weld's pre-pass a forearm grew 4 % and the support hand
+  missed its grip by 12 mm. `char_anim._set_world` now writes rotation and position only, and every frame starts from
+  unit scale. Every clip's hand error is now 0.0 mm (was up to 0.9 mm).
+
+### 14.3 The radio antennas clear of the face
+
+The whips stood up beside the head to 1.63–1.66 m; aiming turns the face towards the left shoulder (stance yaw), so
+they could cross it. They are now bent out and back over the left shoulder and end at 1.47–1.57 m
+(`char_gear.build_vest` side and chest radio, `fac_gear` RU armour). Nearest antenna-to-head distance over the clips
+(`tools/visual03/check_clearance.py`, deformed meshes, every second frame):
+
+| Piece | Aim before → after | Fire | Ready_Idle | Reload |
+|---|---|---|---|---|
+| vest_heavy (chest radio) | 41.6 → 62.1 mm | 57.5 → 82.3 | 65.7 → 97.2 | 65.8 → 101.7 |
+| vest_standard / nato_vest (side radio) | 148 / 154 → 193 / 191 mm | → 197 / 194 | → 186 / 185 | → 179 / 179 |
+| ru_armor (chest radio) | 62.0 → 63.7 mm | 62.9 → 94.2 | 61.1 → 104.3 | 61.2 → 112.9 |
+
+## 15. Replacement of the shipped soldier
+
+* **Assets.** `build_infantry.py --export`, `build_factions.py --export` and `build_gameplay04_weapons.py --export` wrote
+  the new soldier into `assets/characters/infantry/` (rig, parts, weapons, faction parts and rifles, the DMR, the
+  sources in `blender/`). Loadouts and equipment resources are unchanged (same ids, same paths). The weapon builders'
+  preview bodies (`build_gameplay04_weapons`, `build_support_weapons`) now build the new body as well.
+* **Default.** `InfantryCharacter` loads only `ASSET_ROOT`; `ASSET_ROOT_V03`, `asset_root()`, `--soldier-v03` and
+  `InfantryLoadout.dir()` are gone, and with them the CHARACTER-01 animation tree (side-step turning) the rig no longer
+  needs. The `Skin` material and `skin_head_albedo.png` (the CHARACTER-01 head) are no longer used and were removed.
+* **Kept.** 4.5 m/s for every soldier; `--paces` off by default; the Blender sources (`blender/*.blend`) and the whole
+  build chain; `--root` on the builders for trial builds into a scratch folder.
+
+## 16. Removed
+
+`assets/characters/infantry_v03/` (the staging root), `tools/visual03/stage_loadouts.py`, `make_godot_gifs.py`,
+`make_previews.py`, `tools/blender/character/v03_proto.py` and its `blender/v03_proto.blend` (the approval-gate
+prototype, superseded by `build_infantry`), `visual03_audit.py` (audited the CHARACTER-01 blend), and the CHARACTER-01
+diagnostics `preview_hips.py`, `diag_weights.py`, `measure_silhouette.py` (they called the removed SDF body).
+
+## 17. Tests performed (part 3)
+
+Chosen for what changed: the rig (a new bone), the clips (aim, reload, every clip's hand solve), the weapons (split
+magazines), the vests (antennas), `InfantryCharacter` (default root, tree, magazine), the materials.
+
+* Blender: the three builds above; `anim_check` in `build_log.json` (hands 0.0 mm in every clip, sight 0.0 mm,
+  magazine travel 0.32 m / seated 0.0 mm); `check_clearance.py` on the soldier and faction blends (§14.3);
+  `pose_stills.py` stills of Aim and eight Reload frames; `blender_previews.py` → `docs/visual03/blender/Aim.mp4`,
+  `Fire.mp4`, `Reload.mp4`, `Ready_Idle.mp4` (re-rendered).
+* Godot: `--import`; `check_scripts.gd` (181 scripts, 0 failed); `check_loadouts.gd`: 27 loadouts, 21 magazines on
+  `ATT_Magazine`, the only problems the known `*_hmg` optic / muzzle mount (§11); `--paces --visual03-test --shots
+  --only e_trans,f_views` with the default soldier: PASS (magazine out 0.32 m, back 0.000 m; largest blend step 0.40;
+  `docs/visual03/godot/video/e_*.mp4` re-recorded); `--sandbox-test --only characters`: PASS (eight soldiers animated at
+  4.5 m/s, near / far, the proxy meshes built with the magazines).
+* Not rerun: A–D (movement, squads, combat, slopes: no change to locomotion or the controller); no combat series, no
+  full suite.
+
+## 18. Remaining visual defects
+
+Unchanged from §11, minus the three corrected ones: fast sideways / backward movement plays the slow captured side
+steps faster; single-frame heel-to-ball contact shifts at jog / run touchdown; the turn clip's step pattern repeats on
+long turns; the chest reads soft in frontal light; the `*_hmg` loadouts' missing optic / muzzle mount. New, minor: the
+`Aim` and `Fire` rifles sit about 17 mm apart (each clip has its own fitted offset), so a burst starts with a
+small settle; the magazine passes in front of the belt pouch rather than into it (no pouch flap).

@@ -1,7 +1,7 @@
 """VISUAL-03 Blender previews of the dressed soldier with the rifle: every clip rendered with the character travelling at
 the clip's speed over a 1 m checker floor (camera follows; planted feet must stand still on the checker), side and
 three-quarter views side by side, encoded to MP4 with Blender's FFmpeg.
-    blender -b assets/characters/infantry_v03/blender/infantry.blend --python tools/visual03/blender_previews.py -- OUT_DIR [--only Walk_F,...]
+    blender -b assets/characters/infantry/blender/infantry.blend --python tools/visual03/blender_previews.py -- OUT_DIR [--only Walk_F,...]
 """
 import json
 import math
@@ -18,11 +18,11 @@ import char_lib as L  # noqa: E402
 argv = sys.argv[sys.argv.index("--") + 1:]
 OUT = os.path.abspath(argv[0])
 ONLY = argv[argv.index("--only") + 1].split(",") if "--only" in argv else None
-META = json.load(open(os.path.join(HERE, "..", "..", "assets", "characters", "infantry_v03", "animation_meta.json"), encoding="utf-8"))
+META = json.load(open(os.path.join(HERE, "..", "..", "assets", "characters", "infantry", "animation_meta.json"), encoding="utf-8"))
 CLIPS = ["Idle", "Ready_Idle", "Walk_F", "Brisk_F", "Jog_F", "Run_F", "Sprint_F", "Walk_B", "Walk_L", "CrouchWalk_F",
          "Crouch_Idle", "Turn_L", "Aim", "Fire", "Reload"]
 KEEP = ("uniform_jacket", "uniform_trousers", "uniform_boots", "uniform_gloves", "Char_Head", "helmet_covered", "eyepro",
-        "vest_standard", "belt_standard", "pack_assault", "carbine", "optic_reddot", "foregrip")
+        "vest_standard", "belt_standard", "pack_assault", "carbine", "optic_reddot", "foregrip", "carbine_Mag")
 TMP = os.path.join(OUT, "_frames")
 
 
@@ -31,8 +31,7 @@ def show():
         if o.type != "MESH":
             continue
         base = o.name.rsplit("_LOD", 1)[0]
-        # the staging build keeps the shipped weapons, so the carbine and its parts keep their build names
-        vis = (o.name.endswith("_LOD0") and base in KEEP) or o.name in ("Char_Head_LOD0", "Carbine", "Optic_RedDot", "Foregrip")
+        vis = (o.name.endswith("_LOD0") and base in KEEP) or o.name == "Char_Head_LOD0"
         o.hide_render = not vis
 
 
@@ -86,6 +85,18 @@ def main():
     os.makedirs(TMP, exist_ok=True)
     arm = bpy.data.objects["InfantryRig"]
     show()
+    # the detachable magazine rides on ATT_Magazine, as in the game
+    mag = bpy.data.objects.get("carbine_Mag_LOD0")
+    if mag:
+        # with ATT_Magazine on ATT_Weapon (identity) the magazine keeps its place relative to the bone it moves to
+        if arm.animation_data:
+            arm.animation_data.action = None
+        pm = arm.pose.bones["ATT_Magazine"]
+        pm.location, pm.rotation_mode, pm.rotation_quaternion = (0, 0, 0), "QUATERNION", (1, 0, 0, 0)
+        bpy.context.view_layer.update()
+        m = mag.matrix_world.copy()
+        mag.parent, mag.parent_type, mag.parent_bone = arm, "BONE", "ATT_Magazine"
+        mag.matrix_world = m
     L.setup_render((420, 620))
     checker()
     sc = bpy.context.scene

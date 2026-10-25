@@ -248,26 +248,16 @@ def lmg_mounts(coll, weapon):
 
 
 def stage_body():
-    """The CHARACTER-01 body and skeleton (previews: the hands must close on the LMG's grip and handguard)."""
+    """The soldier's body and skeleton (char_body, VISUAL-03), for the previews: the hands must close on the grips. The
+    textures go to a temp dir so the committed ones stay untouched."""
     tmp = tempfile.mkdtemp(prefix="fn_sw_")
     tex = T.build_all(tmp)
-    tex["skin"] = os.path.join(tmp, "skin_head_albedo.png")
-    B.make_skin_texture(tex["skin"])
+    tex["skin_v03"] = os.path.join(INF, "textures", "skin_head_v03_albedo.png")
     mats = M.build(tex)
-    arm = S.build_armature(L.collection("Rig"))
-    coll = L.collection("Body")
-    body = B.build_body(coll)
-    body.data.materials.append(mats["SkinBody"])
-    L.parent_to_armature(body, arm, auto=True)
-    hands = B.build_hands(coll)
-    hands.data.materials.append(mats["SkinBody"])
-    L.parent_to_armature(hands, arm, auto=True)
-    head = B.build_head(coll, mats["Skin"], mats["Eye"], mats["Iris"])
-    head.vertex_groups.clear()
-    vg = head.vertex_groups.new(name="Head")
-    vg.add(list(range(len(head.data.vertices))), 1.0, "REPLACE")
-    L._add_armature_mod(head, arm)
-    return arm, mats, [body, hands, head]
+    res = B.build(L.collection("Body"), mats)
+    res["weight_ref"].hide_set(True)
+    res["weight_ref"].hide_render = True
+    return res["arm"], mats, list(res["pieces"].values())
 
 
 def place(arm, o, bone):

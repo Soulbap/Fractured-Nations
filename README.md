@@ -7,18 +7,18 @@ RTS and 2D-map views.
 `C:\Users\Hafnor\Desktop\Game Dev\fractured-nations`, one active development branch **`develop`** (`main` is the
 stable branch, updated only with the product owner's approval), one canonical development world **`ref_20km`**
 (main scene `scenes/game/world_ref_20km.tscn`, checked with `worlds/ref_20km.manifest.json`). All earlier feature
-branches are contained in `develop` and stay as history. Next milestone: **NAVIGATION N1** (baseline, off-road and
-obstacle navigation). See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
+branches are contained in `develop` and stay as history. Next milestone: **COMBAT-01** (combat visibility and gunplay
+overhaul; scope to be defined with the product owner). See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-In progress: **VISUAL-03** (soldier anatomy, rig and animation) — at the second approval checkpoint. A new soldier on a
-MakeHuman (MPFB) body with CMU motion-capture locomotion and a rifle-handling layer (carries, cheek weld, aim / fire /
-reload layers, turning clips), uniforms and kit of all three factions refitted to it, validated in the game (squad of
-eight, combat, slopes, transitions, FPS / RTS views). It is staged in `assets/characters/infantry_v03/`: start the game
-with `--soldier-v03` to see it; without the flag the shipped soldier is used. Movement paces (walk / brisk / jog / run)
-exist behind `--paces` and are off (4.5 m/s as before) until COMBAT-01. See [docs/VISUAL-03_REPORT.md](docs/VISUAL-03_REPORT.md).
+Newest finished: **VISUAL-03** (soldier anatomy, rig and animation, on `develop`) — the game's soldier is new: a
+MakeHuman (MPFB) body with CMU motion-capture locomotion and a rifle-handling layer (carries, cheek weld with the eye on
+the sight line, aim / fire / reload layers with the magazine coming out in the support hand, turning clips), uniforms and
+kit of all three factions refitted to it, validated in the game (squad of eight, combat, slopes, transitions, FPS / RTS
+views). Movement paces (walk / brisk / jog / run) exist behind `--paces` and are off (4.5 m/s as before) until COMBAT-01.
+See [docs/VISUAL-03_REPORT.md](docs/VISUAL-03_REPORT.md) and [docs/CHARACTER_STANDARD.md](docs/CHARACTER_STANDARD.md).
 
-Newest finished: **BRIDGE-NAV-01** (on `develop`) — a soldier ordered beside a bridge deck (Rv1 approach) slid down the steep
+Before that: **BRIDGE-NAV-01** (on `develop`) — a soldier ordered beside a bridge deck (Rv1 approach) slid down the steep
 fill under it and walked in circles below. Three fixes: a slot on unstandable ground beside a deck goes onto the deck; the terrain
 collision is now triangulated like the Terrain3D mesh and the navmesh (it used the other diagonal, up to 1.95 m off at sharp edges);
 waypoints the navmesh puts above a hollow count as reached on the ground. All 12 road-following legs and all 13 bridge tests pass; two

@@ -154,13 +154,15 @@ def build_vest(coll, mats, layout, voxel=0.003):
     pouches = L.new_object("Vest_pouches", bm_p, coll, [pouch_mat])
     hard = L.new_object("Vest_hard", bm_m, coll, [mats["Polymer_Black"]])
     parts += [pouches, hard]
-    # Antenna (thin flexible whip) for the radio.
+    # Antenna (thin flexible whip) for the radio. It is bent out and back over the left shoulder, below head height: aiming
+    # turns the face towards the left shoulder (stance yaw), and a whip standing up beside the head crossed the face.
     bm = bmesh.new()
     if lay["side_radio"]:
         x = xs(-0.01, 1.16, -1) - 0.020
-        pts = [(x - 0.004, -0.030, 1.27), (x - 0.010, -0.050, 1.40), (x - 0.006, -0.085, 1.55), (x + 0.004, -0.120, 1.66)]
+        pts = [(x - 0.004, -0.035, 1.27), (x - 0.010, -0.085, 1.36), (x - 0.012, -0.150, 1.43), (x - 0.008, -0.220, 1.47)]
     else:
-        pts = [(-0.105, ya, 1.455), (-0.115, ya - 0.03, 1.55), (-0.125, ya - 0.065, 1.63)]
+        yr = yf(-0.085, 1.39) + 0.002
+        pts = [(-0.105, yr + 0.010, 1.455), (-0.150, yr - 0.010, 1.500), (-0.195, yr - 0.050, 1.560)]
     L.tube_along(bm, pts, [0.0055, 0.0045, 0.0035, 0.003][:len(pts)], segs=6)
     ant = L.new_object("Vest_antenna", bm, coll, [mats["Rubber_Black"]])
     parts.append(ant)

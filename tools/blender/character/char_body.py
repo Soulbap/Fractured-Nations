@@ -411,7 +411,7 @@ def _add_attachments(arm):
     bpy.ops.object.mode_set(mode="EDIT")
     eb = arm.data.edit_bones
     for aname, (parent, pos, _, _) in S.attachments().items():
-        if aname == "ATT_Weapon":
+        if aname in ("ATT_Weapon", "ATT_Magazine"):
             f, u, o = S.weapon_frame_from_hand(1)
             m = S.frame_matrix(f, u, to_body(o))
         elif aname == "ATT_Hand_L":

@@ -141,6 +141,7 @@ def attachments():
         "ATT_Hip_L": ("Hips", Vector((-0.185, -0.010, 1.000)), None, None),
         "ATT_Hip_R": ("Hips", Vector((0.185, -0.010, 1.000)), None, None),
         "ATT_Weapon": ("RightHand", None, None, None),     # set from grip pose
+        "ATT_Magazine": ("ATT_Weapon", None, None, None),  # = ATT_Weapon at rest; the reload clip moves it with the hand
         "ATT_Hand_L": ("LeftHand", None, None, None),      # set from hand frame
     }
 
@@ -244,7 +245,7 @@ def build_armature(coll, name="InfantryRig"):
             b.align_roll(-palm)       # bone Z points out of the back of the hand
     # Attachment bones
     for aname, (parent, pos, fwd, upv) in attachments().items():
-        if aname == "ATT_Weapon":
+        if aname in ("ATT_Weapon", "ATT_Magazine"):
             f, u, o = weapon_frame_from_hand(1)
             m = frame_matrix(f, u, o)
         elif aname == "ATT_Hand_L":

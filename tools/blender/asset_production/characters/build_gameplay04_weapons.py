@@ -92,26 +92,16 @@ def parse_args():
 
 
 def stage_body():
-    """The CHARACTER-01 body and skeleton (as build_support_weapons.stage_body: the hands must close on the grips)."""
+    """The soldier's body and skeleton (char_body, VISUAL-03), for the previews: the hands must close on the grips. The
+    textures go to a temp dir so the committed ones stay untouched."""
     tmp = tempfile.mkdtemp(prefix="fn_g4w_")
     tex = T.build_all(tmp)
-    tex["skin"] = os.path.join(tmp, "skin_head_albedo.png")
-    B.make_skin_texture(tex["skin"])
+    tex["skin_v03"] = os.path.join(INF, "textures", "skin_head_v03_albedo.png")
     mats = M.build(tex)
-    arm = S.build_armature(L.collection("Rig"))
-    coll = L.collection("Body")
-    body = B.build_body(coll)
-    body.data.materials.append(mats["SkinBody"])
-    L.parent_to_armature(body, arm, auto=True)
-    hands = B.build_hands(coll)
-    hands.data.materials.append(mats["SkinBody"])
-    L.parent_to_armature(hands, arm, auto=True)
-    head = B.build_head(coll, mats["Skin"], mats["Eye"], mats["Iris"])
-    head.vertex_groups.clear()
-    vg = head.vertex_groups.new(name="Head")
-    vg.add(list(range(len(head.data.vertices))), 1.0, "REPLACE")
-    L._add_armature_mod(head, arm)
-    return arm, mats, [body, hands, head]
+    res = B.build(L.collection("Body"), mats)
+    res["weight_ref"].hide_set(True)
+    res["weight_ref"].hide_render = True
+    return res["arm"], mats, list(res["pieces"].values())
 
 
 def place(arm, o, bone):
@@ -160,8 +150,9 @@ def build_dmr(coll, mats):
     # Lower receiver, magwell and the 20-round straight magazine, trigger group, pistol grip at the origin.
     w.box((0.034, 0.200, 0.044), (0, 0.000, z - 0.046), "Metal_Black", 0.004)
     w.box((0.040, 0.078, 0.060), (0, 0.072, z - 0.064), "Metal_Black", 0.005)
-    w.box((0.032, 0.070, 0.120), (0, 0.075, z - 0.150), "Metal_Black", 0.004)                     # straight magazine
-    w.box((0.036, 0.074, 0.012), (0, 0.075, z - 0.213), "Polymer_Black", 0.003)
+    w.magazine((0, 0.075, z - 0.090), lambda: (                                                     # straight magazine
+        w.box((0.032, 0.070, 0.120), (0, 0.075, z - 0.150), "Metal_Black", 0.004),
+        w.box((0.036, 0.074, 0.012), (0, 0.075, z - 0.213), "Polymer_Black", 0.003)))
     w.box((0.006, 0.060, 0.006), (0, 0.030, z - 0.086), "Metal_Black", 0.002)
     w.box((0.004, 0.008, 0.020), (0, 0.032, z - 0.068), "Metal_Worn", 0.0015, rot=rx(15))
     w.box((0.030, 0.042, 0.106), (0, -0.002, -0.004), "Polymer_Black", 0.010, rot=rx(-20), segs=2)

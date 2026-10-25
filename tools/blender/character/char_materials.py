@@ -27,7 +27,6 @@ MATERIALS = {
     "Lens_Tinted":         ((0.30, 0.22, 0.10), 0.05, 0.5, None, None, 1.0, 1.0),
     "Patch":               ((0.30, 0.55, 1.00), 0.60, 0.0, None, None, 1.0, 1.0),
     "Rubber_Black":        ((0.035, 0.035, 0.035), 0.85, 0.0, None, None, 1.0, 1.0),
-    "Skin":                ((1.00, 1.00, 1.00), 0.60, 0.0, "skin", None, 1.0, 1.0),
     "SkinBody":            ((0.76, 0.58, 0.47), 0.60, 0.0, None, None, 1.0, 1.0),
     "SkinHead":            ((1.00, 1.00, 1.00), 0.58, 0.0, "skin_v03", None, 1.0, 1.0),   # VISUAL-03 head UV
     "Eye":                 ((0.70, 0.66, 0.62), 0.25, 0.0, None, None, 1.0, 1.0),
@@ -57,7 +56,7 @@ def apply_box_uvs(obj):
     tiles = [tile_of(m.name) if m else 0.5 for m in me.materials]
     for p in me.polygons:
         t = tiles[p.material_index] if p.material_index < len(tiles) else 0.5
-        if me.materials and me.materials[p.material_index] and me.materials[p.material_index].name in ("Skin", "SkinHead"):
+        if me.materials and me.materials[p.material_index] and me.materials[p.material_index].name == "SkinHead":
             continue
         n = p.normal
         ax = max(range(3), key=lambda i: abs(n[i]))
@@ -70,3 +69,6 @@ def apply_box_uvs(obj):
             else:
                 u, v = co.x, co.y * math.copysign(1, n.z)
             uv[li].uv = (u / t, v / t)
+    for c in obj.children:
+        if c.get("fn_magazine"):
+            apply_box_uvs(c)

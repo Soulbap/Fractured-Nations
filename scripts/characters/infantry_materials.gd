@@ -36,9 +36,8 @@ const TABLE := {
 	"Lens_Tinted": [Color(0.30, 0.22, 0.10), 0.05, 0.5, "", "", 1.0],
 	"Patch": [Color(0.30, 0.55, 1.0), 0.60, 0.0, "", "", 1.0],
 	"Rubber_Black": [Color(0.035, 0.035, 0.035), 0.85, 0.0, "", "", 1.0],
-	"Skin": [Color(1, 1, 1), 0.60, 0.0, "skin_head_albedo.png", "", 1.0],
 	"SkinBody": [Color(0.76, 0.58, 0.47), 0.60, 0.0, "", "", 1.0],
-	# VISUAL-03 head (its own UV layout and texture).
+	# the head (VISUAL-03: its own UV layout and texture)
 	"SkinHead": [Color(1, 1, 1), 0.58, 0.0, "skin_head_v03_albedo.png", "", 1.0],
 	"Eye": [Color(0.80, 0.77, 0.72), 0.20, 0.0, "", "", 1.0],
 	"Iris": [Color(0.10, 0.12, 0.13), 0.10, 0.0, "", "", 1.0],

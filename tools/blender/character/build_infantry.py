@@ -10,8 +10,8 @@ Options:
     --previews DIR   render Blender preview images into DIR
     --export         write GLBs into assets/characters/infantry/ and the .blend source
     --stage NAME     stop after a stage: body | uniform | gear | anim (default: everything)
-    --root DIR       asset root (default assets/characters/infantry); VISUAL-03 stages the new soldier in
-                     assets/characters/infantry_v03 until it is approved
+    --root DIR       asset root (default assets/characters/infantry): a scratch root keeps the shipped files
+                     untouched (trial builds); the weapons are only written to the default root
 """
 import importlib
 import json
@@ -49,7 +49,7 @@ BLEND_PATH = os.path.join(ASSET_DIR, "blender", "infantry.blend")
 
 
 def set_root(root):
-    """Writes the exported assets under another root (VISUAL-03 staging); textures stay shared."""
+    """Writes the exported assets under another root (trial builds); textures stay shared."""
     global ASSET_DIR, BLEND_PATH
     ASSET_DIR = os.path.join(REPO, root) if not os.path.isabs(root) else root
     BLEND_PATH = os.path.join(ASSET_DIR, "blender", "infantry.blend")
