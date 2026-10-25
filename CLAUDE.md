@@ -217,6 +217,10 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   series on both profiles. Capture state is `WarSim.capture_state(o, f)` - every UI surface reads it. A HOLD / REGROUP issued by
   the tactics themselves is marked `tactic_hold` (not the player's order; the squad may build again). `RoadShoulders` eases the
   terrain to the road *mesh* (`MESH_EDGE_M`), which is wider than `RoadNetwork.width`.
+- **Terrain collision and slots beside bridges (BRIDGE-NAV-01).** `TerrainCollisionStreamer` turns each HeightMapShape3D chunk
+  90° so its quad diagonal is Terrain3D's (mesh, navmesh faces); `Terrain3DData.get_height` is neither triangulation (measure walking
+  surfaces with rays). A squad slot beside a deck on wet / too-steep ground goes onto the deck (`SquadControl._free_ground`);
+  `SoldierBody._ground_waypoint` reaches waypoints on the ground plane (navmesh heights can be ~1.5 m off).
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are

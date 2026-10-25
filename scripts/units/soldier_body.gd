@@ -81,6 +81,10 @@ var _unstick_left := 0.0
 var _in_fort := false
 var dbg_desired := 0.0
 var dbg_next_dist := -1.0
+## BRIDGE-NAV-01: the path waypoint reached on the ground (_ground_waypoint), and which path it belongs to.
+var _wp_idx := 0
+var _wp_size := -1
+var _wp_first := Vector3.INF
 
 
 func _ready() -> void:
@@ -251,7 +255,8 @@ func _ai_step(delta: float) -> void:
 				_finish(remaining, reacting, "navmesh path ends short of the target")
 		else:
 			dbg_branch = "path"
-			var dir := next - global_position
+			var wp := _ground_waypoint()
+			var dir := (wp if wp.is_finite() else next) - global_position
 			dir.y = 0.0
 			dbg_next_dist = dir.length()
 			# AI-WAR-LOGISTICS-01 (movement parity): the agent's next path point can lie under the soldier's feet
@@ -297,11 +302,37 @@ func _ai_step(delta: float) -> void:
 		_apply_velocity(desired, delta)
 
 
+## BRIDGE-NAV-01: the waypoint to steer for. The agent counts a waypoint reached within path_desired_distance in 3D, but the
+## navmesh's heights are off by up to ~1.5 m where a long polygon edge spans a hollow: a corner that high above the ground is
+## never reached, and a soldier who walked on under it turned back to it, forth and back on the spot (Rv1 bridge approach).
+## A waypoint is therefore reached on the ground too (flat distance), remembered until the agent moves on or the path changes.
+## The last point is never skipped. INF without a path.
+func _ground_waypoint() -> Vector3:
+	var path := nav.get_current_navigation_path()
+	if path.is_empty():
+		return Vector3.INF
+	var i0 := maxi(nav.get_current_navigation_path_index(), 0)
+	if path.size() != _wp_size or path[0] != _wp_first or i0 > _wp_idx:
+		_wp_size = path.size()
+		_wp_first = path[0]
+		_wp_idx = i0
+	while _wp_idx < path.size() - 1:
+		var d := path[_wp_idx] - global_position
+		d.y = 0.0
+		if d.length() > nav.path_desired_distance:
+			break
+		_wp_idx += 1
+	return path[mini(_wp_idx, path.size() - 1)]
+
+
 ## The first point of the current navigation path, from the agent's own index on, that lies more than 0.6 m
 ## away on the ground (as a flat vector from the soldier); ZERO when there is none.
 func _next_distinct_dir() -> Vector3:
 	var path := nav.get_current_navigation_path()
-	for k in range(maxi(nav.get_current_navigation_path_index(), 0), path.size()):
+	var i0 := maxi(nav.get_current_navigation_path_index(), 0)
+	if path.size() == _wp_size and path.size() > 0 and path[0] == _wp_first:
+		i0 = maxi(i0, _wp_idx)
+	for k in range(i0, path.size()):
 		var d := path[k] - global_position
 		d.y = 0.0
 		if d.length() > 0.6:

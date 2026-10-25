@@ -17,7 +17,14 @@ front of the body); a reference-backed prototype on a MakeHuman (MPFB) body with
 locking and stress-tested skinning waits for approval. The game still uses the old soldier. See
 [docs/VISUAL-03_REPORT.md](docs/VISUAL-03_REPORT.md).
 
-Newest finished: **ROAD-QUALITY-01** (on `develop`) — main roads and the ground beside them. The road meshes are wider and higher than the
+Newest finished: **BRIDGE-NAV-01** (on `develop`) — a soldier ordered beside a bridge deck (Rv1 approach) slid down the steep
+fill under it and walked in circles below. Three fixes: a slot on unstandable ground beside a deck goes onto the deck; the terrain
+collision is now triangulated like the Terrain3D mesh and the navmesh (it used the other diagonal, up to 1.95 m off at sharp edges);
+waypoints the navmesh puts above a hollow count as reached on the ground. All 12 road-following legs and all 13 bridge tests pass; two
+road-edge crossings now need one ledge hop (the road shoulders were fitted to the old surface; follow-up). See
+[docs/BRIDGE-NAV-01_REPORT.md](docs/BRIDGE-NAV-01_REPORT.md).
+
+Before that, **ROAD-QUALITY-01** (on `develop`) — main roads and the ground beside them. The road meshes are wider and higher than the
 line the terrain was fitted to, so their edges hung up to 1–4 m over the ground at junctions, on embankments and between roads
 running side by side. The terrain is now fitted to the road surface itself (measured with rays at game start, in memory; world
 files untouched): edges higher than a soldier's step went from 88 to 1 on 137 km of main road, and soldiers cross from road to

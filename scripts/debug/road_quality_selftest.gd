@@ -512,7 +512,10 @@ func _leg(a: Vector3, b: Vector3, n := 1, max_s := 45.0) -> Dictionary:
 	for id in ids:
 		var u := _u(id)
 		var d := _flat(u.position, b)
-		var ok := u.move_state == UnitState.MoveState.ARRIVED and d <= (ARRIVE_M if n == 1 else 25.0)
+		# BRIDGE-NAV-01: a single soldier is judged at the slot the order put him on (beside a bridge deck, on ground nobody
+		# stands on, that is the deck); a squad within 25 m of the point.
+		var slot := u.order_target if n == 1 and u.order_target.is_finite() else b
+		var ok := u.move_state == UnitState.MoveState.ARRIVED and _flat(u.position, slot) <= (ARRIVE_M if n == 1 else 25.0)
 		if ok:
 			arrived += 1
 		# A stall counts on the way only: standing at the end of the walk (inside the arrival radius, on its formation slot) is
@@ -527,7 +530,7 @@ func _leg(a: Vector3, b: Vector3, n := 1, max_s := 45.0) -> Dictionary:
 				tr.stall = float(st[1])
 				tr.stall_at = [snappedf((st[0] as Vector3).x, 0.1), snappedf((st[0] as Vector3).z, 0.1)]
 		max_stall = maxf(max_stall, float(tr.stall))
-		rows.append({"d": snappedf(d, 0.1), "ms": u.move_state, "why": u.nav_reason, "body": u.has_body, "pos": [snappedf(u.position.x, 0.1), snappedf(u.position.y, 0.01), snappedf(u.position.z, 0.1)],
+		rows.append({"d": snappedf(d, 0.1), "slot": [snappedf(slot.x, 0.1), snappedf(slot.y, 0.01), snappedf(slot.z, 0.1)], "ms": u.move_state, "why": u.nav_reason, "body": u.has_body, "pos": [snappedf(u.position.x, 0.1), snappedf(u.position.y, 0.01), snappedf(u.position.z, 0.1)],
 			"stall_s": snappedf(float(track[id].stall), 0.1), "stall_at": track[id].stall_at,
 			"reasons": (track[id].reasons as Dictionary).keys()})
 	var stuck_new := SoldierBody.stuck_log.size() - stuck0

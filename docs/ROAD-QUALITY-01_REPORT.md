@@ -155,7 +155,7 @@ and change the landscape; per the brief they stay as obstacles. The plan's 22 m 
 |---|---|---|
 | Fv øst nord–sør (3571, 460), crossing towards +z | arrives, but stands 3.1 s on the road on the way | navmesh height error (§5): a path point ~0.5 m under the soldier, < 15 m from the goal; not an edge (lip 0.11 m). Before the fix this site passed — the new terrain changed the navmesh polygons |
 | Elvetun squad, one member | gives up one stuck stage 4 m from its start (−3022, −7472), recovers, arrives | settlement ground at the spawn point, before and after alike; not at the road |
-| Rv1 bridge approach, along the verge (1096, 4484) → (1141, 4524) | never arrives | the goal lies beside the bridge deck above the river bank; the soldier misses the bridge and walks in circles below it (as the product owner observed). A bridge navigation case, not a road edge |
+| Rv1 bridge approach, along the verge (1096, 4484) → (1141, 4524) | never arrives | the goal lies beside the bridge deck above the river bank; the soldier misses the bridge and walks in circles below it (as the product owner observed). A bridge navigation case, not a road edge. **Fixed in BRIDGE-NAV-01** ([report](BRIDGE-NAV-01_REPORT.md)) |
 | navinf_04 verge, squad of 6 | 4 of 6 arrive; two take a long detour (100 m) and one gives up there | the far side is a 52° slope (natural); formation slots on it are partly unreachable |
 | Fv sentrum–sør / Rv1 parallel roads | steep bank between the roads | 4.7 m height difference across ~3 m between the edges: natural obstacle |
 | Culverts (8 km of culvert zones) | lips 0.2–0.37 m | stream channel kept beside the road |

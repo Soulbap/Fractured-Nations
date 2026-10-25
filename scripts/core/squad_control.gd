@@ -43,6 +43,8 @@ var route_skips := 0
 ## round cliffs) instead of a straight walk; a stalled route leg is re-planned from where
 ## the squad is (at most route_replans times per order) before the waypoint is skipped.
 var route_min_m := 150.0
+## BRIDGE-NAV-01: a slot within this distance of a deck edge on water or on a bank too steep to stand on goes onto the deck.
+const DECK_SIDE_M := 6.0
 var route_replans := 3
 var routed_orders := 0
 var route_replanned := 0
@@ -865,6 +867,14 @@ func _assign(sq: SquadState, ids: Array, slots: Array, yaw: float) -> Array:
 
 func _free_ground(p: Vector3) -> Vector3:
 	var q := _ground(p)
+	# BRIDGE-NAV-01: beside a bridge deck, ground nobody stands on - the river, or the bank under the abutment steeper than
+	# infantry climbs - is no slot: the order means the deck. Left on such a bank face, the slot's nearest navmesh point was the
+	# bare lip of the bank; the soldier slid off it to the river bank below, climbed back and slid again (Rv1 approach).
+	var roads := sim.state.roads
+	if roads.bridge_at(q, DECK_SIDE_M) != null and is_nan(roads.deck_height(q)) and (_steep(q) or not _usable(q)):
+		var deck := roads.onto_deck(q)
+		if deck.is_finite():
+			return deck + Vector3.UP * 0.25
 	if _usable(q):
 		return q
 	for r: float in [1.5, 3.0, 4.5, 6.0]:
@@ -878,6 +888,16 @@ func _free_ground(p: Vector3) -> Vector3:
 	if on.is_finite():
 		return on + Vector3.UP * 0.25
 	return q
+
+
+## True when the terrain at p is steeper than infantry climbs (central differences over 1 m).
+func _steep(p: Vector3) -> bool:
+	if sim.terrain == null:
+		return false
+	var d := sim.terrain.data
+	var gx := (d.get_height(p + Vector3(1, 0, 0)) - d.get_height(p - Vector3(1, 0, 0))) * 0.5
+	var gz := (d.get_height(p + Vector3(0, 0, 1)) - d.get_height(p - Vector3(0, 0, 1))) * 0.5
+	return Vector2(gx, gz).length() > WorldSim.INFANTRY_MAX_GRADE
 
 
 func _usable(p: Vector3) -> bool:

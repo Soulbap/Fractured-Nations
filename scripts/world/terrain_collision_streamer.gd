@@ -112,12 +112,16 @@ func _build(k: Vector2i) -> void:
 	var x0 := k.x * chunk_m
 	var z0 := k.y * chunk_m
 	var lo := INF
+	# BRIDGE-NAV-01: the shape is turned 90 degrees about Y (local x = world -z, local z = world x), so its fixed quad diagonal
+	# runs from (x0, z0) to (x1, z1) like Terrain3D's mesh and the navmesh faces. Unturned, the collision split every cell along the
+	# other diagonal: on smooth ground a few centimetres, at a sharp bank lip up to a whole cell's drop (1.95 m) below the surface
+	# the navmesh walks on, so soldiers on a path along the lip slid down the bank.
 	for j in n:
 		for i in n:
 			var h: float = terrain.data.get_height(Vector3(x0 + i * spacing, 0.0, z0 + j * spacing))
 			if is_nan(h):
 				h = -1000.0
-			data[j * n + i] = h
+			data[i * n + (n - 1 - j)] = h
 			lo = minf(lo, h)
 	var shape := HeightMapShape3D.new()
 	shape.map_width = n
@@ -130,7 +134,7 @@ func _build(k: Vector2i) -> void:
 	cs.shape = shape
 	cs.disabled = false
 	# A height map shape is centred on its middle sample; scaled to the vertex spacing.
-	cs.transform = Transform3D(Basis.from_scale(Vector3(spacing, 1.0, spacing)), Vector3(x0 + (n - 1) * 0.5 * spacing, 0.0, z0 + (n - 1) * 0.5 * spacing))
+	cs.transform = Transform3D(Basis(Vector3.UP, PI * 0.5) * Basis.from_scale(Vector3(spacing, 1.0, spacing)), Vector3(x0 + (n - 1) * 0.5 * spacing, 0.0, z0 + (n - 1) * 0.5 * spacing))
 	_chunks[k] = cs
 	built += 1
 	build_usec += Time.get_ticks_usec() - t0
