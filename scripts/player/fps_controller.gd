@@ -40,6 +40,10 @@ signal possession_changed(controlled: bool)
 
 ## Desired movement in local XZ (x = strafe, y = forward), -1..1.
 var move_intent := Vector2.ZERO
+## COMBAT-01: share of the walk / sprint speed the body may use (crouched, prone, getting down) and whether it may sprint
+## or jump (set by the owner every tick; 1 / true for a plain explorer).
+var speed_scale := 1.0
+var may_sprint := true
 var sprint_intent := false
 var jump_intent := false
 var flying := false
@@ -116,11 +120,11 @@ func _read_player_intent() -> void:
 func _walk(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
-	elif jump_intent:
+	elif jump_intent and may_sprint:
 		velocity.y = jump_velocity
 	var wish := (transform.basis * Vector3(move_intent.x, 0, -move_intent.y))
 	wish.y = 0
-	wish = wish.normalized() * (sprint_speed if sprint_intent else walk_speed) * minf(move_intent.length(), 1.0)
+	wish = wish.normalized() * (sprint_speed if sprint_intent and may_sprint else walk_speed) * speed_scale * minf(move_intent.length(), 1.0)
 	var control := 1.0 if is_on_floor() else air_control
 	var horiz := Vector3(velocity.x, 0, velocity.z).lerp(wish, clampf(acceleration * control * delta, 0.0, 1.0))
 	velocity.x = horiz.x

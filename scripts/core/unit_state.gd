@@ -87,6 +87,13 @@ var sec_raised_at := -1.0
 var sec_shown_until := -1.0
 ## GAMEPLAY-03D: flat on the ground against a grenade until this time (sim): a burst reaches him lower and weaker. Saved.
 var down_until := -1.0
+## COMBAT-01: combat posture (Posture.STAND / CROUCH / PRONE), the posture it is changing from and when the change began
+## (Posture.TRANSITION_S). The only posture state: hits, sight, speed, aim and the character all read it. Saved.
+var posture := 0
+var posture_from := 0
+var posture_at := -1.0e9
+## COMBAT-01: the AI keeps its last posture choice at least until this time (no stance flicker). Saved.
+var posture_hold_until := -1.0e9
 ## Last grenade throw (sim time): one grenade per soldier at a time.
 var nade_at := -1.0e9
 ## Simulation time (WorldState.time) from which the next shot may leave the barrel.
@@ -212,7 +219,8 @@ func to_dict() -> Dictionary:
 		"player_controlled": player_controlled, "has_body": has_body, "loadout": loadout,
 		"veh": veh.to_dict() if veh else null, "vehicle_id": vehicle_id, "resupply": resupply_src,
 		"alive": alive, "weapon_id": weapon_id, "role": role, "grenades": grenades, "sec_id": sec_id, "sec_ammo": sec_ammo,
-		"sec_active": sec_active, "sec_ready_at": sec_ready_at, "sec_raised_at": sec_raised_at, "sec_shown_until": sec_shown_until, "down_until": down_until, "nade_at": nade_at, "mag": mag, "reserve": reserve, "fire_auto": fire_auto,
+		"sec_active": sec_active, "sec_ready_at": sec_ready_at, "sec_raised_at": sec_raised_at, "sec_shown_until": sec_shown_until, "down_until": down_until, "posture": posture, "posture_from": posture_from,
+		"posture_at": posture_at, "posture_hold_until": posture_hold_until, "nade_at": nade_at, "mag": mag, "reserve": reserve, "fire_auto": fire_auto,
 		"next_shot_at": next_shot_at, "reload_until": reload_until, "shot_counter": shot_counter,
 		"bloom": bloom, "last_shot_at": last_shot_at, "died_at": died_at, "killer_id": killer_id,
 		"ai_state": ai_state, "target_id": target_id, "target_seen_at": target_seen_at, "target_last_pos": target_last_pos,
@@ -267,6 +275,10 @@ func copy_combat_from(d: Dictionary) -> void:
 	sec_raised_at = d.get("sec_raised_at", -1.0)
 	sec_shown_until = d.get("sec_shown_until", -1.0)
 	down_until = d.get("down_until", -1.0)
+	posture = int(d.get("posture", 0))
+	posture_from = int(d.get("posture_from", posture))
+	posture_at = d.get("posture_at", -1.0e9)
+	posture_hold_until = d.get("posture_hold_until", -1.0e9)
 	nade_at = d.get("nade_at", -1.0e9)
 	mag = d.get("mag", 0)
 	reserve = d.get("reserve", 0)

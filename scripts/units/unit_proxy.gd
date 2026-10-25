@@ -20,6 +20,7 @@ var _marker: MeshInstance3D
 var _vehicle_visual: VehicleVisual
 ## COMBAT-01a: the marker shows a casualty (lying, dark, no ring) once the unit is dead.
 var _shows_dead := false
+var _shown_posture := 0
 
 
 func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
@@ -41,7 +42,8 @@ func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
 		# CHARACTER-01: static posed far-view mesh of the unit's loadout (one draw call); refresh_look swaps it.
 		if unit.loadout == "":
 			unit.loadout = InfantryLoadout.default_for(unit.id, unit.faction)
-		var pm := InfantryProxyMesh.get_mesh(unit.loadout, unit.faction)
+		var pm := InfantryProxyMesh.get_mesh(unit.loadout, unit.faction, Posture.current(unit))
+		_shown_posture = Posture.current(unit)
 		if pm:
 			_marker.mesh = pm
 			mat = null
@@ -76,6 +78,14 @@ func _exit_tree() -> void:
 
 func _process(_delta: float) -> void:
 	_follow()
+	# COMBAT-01: the far mesh shows the record's posture (standing, crouched, prone).
+	if not unit.is_vehicle() and unit.alive and InfantryCharacter.enabled() and unit.loadout != "":
+		var p := Posture.current(unit)
+		if p != _shown_posture:
+			_shown_posture = p
+			var pm := InfantryProxyMesh.get_mesh(unit.loadout, unit.faction, p)
+			if pm:
+				_marker.mesh = pm
 	if not unit.alive and not _shows_dead:
 		_show_dead()
 	if ring.visible:
@@ -104,6 +114,6 @@ func _follow() -> void:
 ## GAMEPLAY-04D: the record's loadout changed (re-equipped): the far-view mesh of the new loadout.
 func refresh_look() -> void:
 	if unit and not unit.is_vehicle() and InfantryCharacter.enabled() and unit.loadout != "":
-		var pm := InfantryProxyMesh.get_mesh(unit.loadout, unit.faction)
+		var pm := InfantryProxyMesh.get_mesh(unit.loadout, unit.faction, _shown_posture)
 		if pm:
 			_marker.mesh = pm

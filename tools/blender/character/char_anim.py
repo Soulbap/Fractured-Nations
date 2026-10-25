@@ -80,6 +80,8 @@ DERIVED = {"Jog_B": "Walk_B", "Jog_L": "Walk_L", "Jog_R": "Walk_R", "Run_B": "Wa
 TURNS = {"Turn_L": (("69_16", "69_17", "69_18", "69_19", "69_13"), "turn_left"),
          "Turn_R": (("69_18", "69_19", "69_16", "69_17", "69_13"), "turn_right")}
 IDLE_TAKE = "77_02"
+# COMBAT-01 posture clips (char_prone).
+PRONE_CLIPS = ["Prone_Idle", "Prone_Aim", "Prone_Fire", "ProneCrawl_F", "Stand_To_Prone", "Prone_To_Stand"]
 CROUCH_DROP = 0.30                 # crouch walk: pelvis lowered (m)
 
 
@@ -732,6 +734,10 @@ class Builder:
             self.finish(clip, act, "low", LOCO_FRAMES)
         if any(want(n) for n in ("Idle", "Ready_Idle", "Crouch_Idle", "Aim", "Fire", "Reload")):
             self.idles(want)
+        if any(want(n) for n in PRONE_CLIPS):
+            # COMBAT-01: prone and the change of posture (char_prone; needs Ready_Idle for the standing end).
+            import char_prone as P
+            P.Prone(self).build(want)
         return self.actions
 
     def idles(self, want):
@@ -967,7 +973,7 @@ def MC_fcurves(act, bone=None, prop=None):
 
 def clip_list():
     return list(LOCO) + list(DERIVED) + ["Sprint_F"] + ["CrouchWalk_" + d for d in "FBLR"] + list(TURNS) + \
-        ["Idle", "Ready_Idle", "Crouch_Idle", "Aim", "Fire", "Reload"]
+        ["Idle", "Ready_Idle", "Crouch_Idle", "Aim", "Fire", "Reload"] + PRONE_CLIPS
 
 
 def build_clips(arm, weight_ref=None, only=None):
@@ -1005,7 +1011,7 @@ def head_eye_local(arm):
 def write_meta(path, actions, meta):
     """animation_meta.json: per-clip frames / loop and the gait table (speed, period, direction) the game uses."""
     gait = {}
-    for k in ("Walk_F", "Brisk_F", "Jog_F", "Run_F", "Sprint_F", "CrouchWalk_F"):
+    for k in ("Walk_F", "Brisk_F", "Jog_F", "Run_F", "Sprint_F", "CrouchWalk_F", "ProneCrawl_F"):
         if k in meta and "speed" in meta[k]:
             gait[k.split("_")[0]] = {"speed": meta[k]["speed"], "period": meta[k]["period"]}
     if "Sprint" in gait:

@@ -13,23 +13,27 @@ const POSE_CLIP := "Idle"
 static var _cache := {}
 
 
-static func get_mesh(loadout_id: String, faction: int) -> ArrayMesh:
-	var key := "%s/%d" % [loadout_id, faction]
+## COMBAT-01: one mesh per posture (POSTURE_CLIPS: standing, crouched, prone), built on first use.
+const POSTURE_CLIPS: Array[String] = ["Idle", "Crouch_Idle", "Prone_Aim"]
+
+
+static func get_mesh(loadout_id: String, faction: int, posture := 0) -> ArrayMesh:
+	var key := "%s/%d/%d" % [loadout_id, faction, posture]
 	if _cache.has(key):
 		return _cache[key]
 	var lo := InfantryLoadout.by_id(loadout_id)
-	var mesh: ArrayMesh = _build(lo, faction) if lo else null
+	var mesh: ArrayMesh = _build(lo, faction, POSTURE_CLIPS[posture]) if lo else null
 	_cache[key] = mesh
 	return mesh
 
 
-static func _build(lo: InfantryLoadout, faction: int) -> ArrayMesh:
+static func _build(lo: InfantryLoadout, faction: int, clip := POSE_CLIP) -> ArrayMesh:
 	# Assemble the character off-tree (no rendering, no processing) to reuse the exact
 	# piece placement logic, then evaluate the pose from the animation data directly.
 	var c := InfantryCharacter.new()
 	c.setup(lo, faction, false)
 	var sk := c.skeleton
-	var pose := _pose_globals(sk, c.anim_player.get_animation(POSE_CLIP))
+	var pose := _pose_globals(sk, c.anim_player.get_animation(clip if c.anim_player.has_animation(clip) else POSE_CLIP))
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	st.set_material(InfantryMaterials.proxy_material())

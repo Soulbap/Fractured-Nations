@@ -164,6 +164,33 @@ var cover_radius_post := 3.5
 var self_defence_s := 6.0
 var self_defence_m := 100.0
 
+# --- Concealment and posture (COMBAT-01) ---------------------------------------------
+## Grass at the target slows noticing it (never hides it): the share of its shape the grass covers (Concealment, against
+## Posture.top) times conceal_base_s + conceal_per_150m_s x distance / 150 m. A smaller shape is noticed a little later even
+## on bare ground (posture_notice_s per 100 m). Within notice_close_m nothing delays; a moving target is noticed sooner, a
+## firing one much sooner, one the soldier was told / heard about somewhat sooner; one it saw in the last notice_recall_s
+## is picked up again at once. false = the binary COMBAT-01b rule (--no-concealment).
+var conceal_on := true
+var concealment := Concealment.new()
+var conceal_base_s := 1.0
+var conceal_per_150m_s := 4.5
+var posture_notice_s: Array[float] = [0.0, 0.25, 0.8]
+var notice_close_m := 15.0
+var notice_moving_mult := 0.45
+var notice_firing_mult := 0.15
+var notice_told_mult := 0.6
+var notice_recall_s := 12.0
+## Posture choice of the AI (COMBAT-01): crouch in cover and when alert, prone when pinned in the open or when a machine gun
+## / marksman rifle engages from prone_engage_m; each choice is kept posture_hold_s at least (prone longer).
+var posture_ai := true
+var prone_engage_m := 120.0
+var posture_hold_s := 3.0
+var prone_hold_s := 6.0
+## observer id -> {target id: [seconds in view so far, last seen, last acquired]} (runtime: a perception detail, not saved).
+var _spot := {}
+var notice_waits := 0
+var posture_changes := 0
+
 # --- Measurements ---------------------------------------------------------------------
 var suppression_events := 0
 var mission_shots := 0
@@ -231,6 +258,7 @@ const MAX_EVENTS := 200
 func _init(p_sim: WorldSim) -> void:
 	sim = p_sim
 	_apply_aim_args(OS.get_cmdline_user_args())
+	conceal_on = not "--no-concealment" in OS.get_cmdline_user_args()
 
 
 ## GAMEPLAY-05B aim profiles (the distance growth of the aim error and the suppression penalty). "g05b" is the game's; "g04" is
@@ -342,6 +370,8 @@ func update(delta: float) -> void:
 		budget -= _perceive(u, budget)
 		if tactics_enabled:
 			_tactics(u)
+		if posture_ai and u.alive and not u.player_controlled:
+			_choose_posture(u)
 	var tp := Time.get_ticks_usec()
 	prof.perceive += tp - tq
 	prof_max.perceive = maxi(prof_max.perceive, tp - tq)
@@ -446,7 +476,7 @@ func _perceive(u: UnitState, budget: int) -> int:
 		tried += 1
 		var s := _see(eye, c, 1.55)
 		used += s.checks
-		if s.visible:
+		if s.visible and _noticed(u, c, now):
 			best = c
 			best_aim = s.aim_y
 			break
@@ -456,6 +486,7 @@ func _perceive(u: UnitState, budget: int) -> int:
 		u.target_seen_at = now
 		u.target_last_pos = cur.position
 		u.target_visible = true
+		_remember_seen(u, cur.id, now)
 		_report_seen(u, cur)
 	elif cur:
 		u.target_visible = false
@@ -508,6 +539,7 @@ func _candidates(u: UnitState, max_d: float, k: int) -> Array:
 
 ## Sight from an eye to a soldier: first the height that was visible last time, then
 ## the other one (head 1.55 m / torso 1.1 m). {visible, aim_y, checks, blocker}
+## COMBAT-01: aim_y stays the marker (1.55 head, 1.1 torso); the points are the target's posture's (Posture.aim_point).
 func _see(eye: Vector3, t: UnitState, first_y: float) -> Dictionary:
 	var ys: Array[float] = [1.55, 1.1]
 	if first_y <= 1.3:
@@ -516,7 +548,7 @@ func _see(eye: Vector3, t: UnitState, first_y: float) -> Dictionary:
 	var blocker := ""
 	for y in ys:
 		var t0 := Time.get_ticks_usec()
-		var r := sim.combat.line.sight(eye, t.position + Vector3.UP * y)
+		var r := sim.combat.line.sight(eye, Posture.aim_point(t, y > 1.3))
 		sight_usec += Time.get_ticks_usec() - t0
 		sight_checks += 1
 		checks += 1
@@ -524,7 +556,7 @@ func _see(eye: Vector3, t: UnitState, first_y: float) -> Dictionary:
 			# Seen at the head: the torso may still be visible (better target).
 			if y > 1.3:
 				var t1 := Time.get_ticks_usec()
-				var r2 := sim.combat.line.sight(eye, t.position + Vector3.UP * 1.1)
+				var r2 := sim.combat.line.sight(eye, Posture.aim_point(t, false))
 				sight_usec += Time.get_ticks_usec() - t1
 				sight_checks += 1
 				checks += 1
@@ -536,8 +568,55 @@ func _see(eye: Vector3, t: UnitState, first_y: float) -> Dictionary:
 	return {"visible": false, "aim_y": first_y, "checks": checks, "blocker": blocker}
 
 
+## COMBAT-01: a candidate the soldier can see is noticed once it has been in view for acquire_delay in total: every
+## perception update that sees it adds the time since the last look (at most notice_glimpse_s), so glimpses add up while the
+## soldier's attention sweeps; out of view for notice_forget_s the count starts again.
+var notice_glimpse_s := 0.5
+var notice_forget_s := 6.0
+
+
+func _noticed(u: UnitState, t: UnitState, now: float) -> bool:
+	var seen: Dictionary = _spot.get(u.id, {})
+	var e: Array = seen.get(t.id, [0.0, now, -INF])
+	var gap := now - float(e[1])
+	if gap > notice_forget_s:
+		e[0] = 0.0
+	e[0] = float(e[0]) + minf(gap, notice_glimpse_s)
+	e[1] = now
+	seen[t.id] = e
+	_spot[u.id] = seen
+	if now - float(e[2]) <= notice_recall_s:
+		return true
+	if float(e[0]) >= acquire_delay(u, t, now):
+		return true
+	notice_waits += 1
+	return false
+
+
+## How long a soldier needs to notice t, which it can see (s): grass at t against t's height, the distance, t's posture,
+## movement and fire. Concealment.grass_height is a cached map lookup; no sight line is added.
+func acquire_delay(u: UnitState, t: UnitState, now: float) -> float:
+	if not conceal_on:
+		return 0.0
+	var d := _flat(u.position, t.position)
+	if d <= notice_close_m:
+		return 0.0
+	var top := Posture.top(t, now)
+	var hidden := smoothstep(0.08, 0.75, concealment.grass_height(t.position) / maxf(top, 0.1))
+	var delay := hidden * (conceal_base_s + conceal_per_150m_s * minf(d / 150.0, 1.5)) + posture_notice_s[Posture.current(t, now)] * d / 100.0
+	delay *= clampf((d - notice_close_m) / 15.0, 0.0, 1.0)
+	if Vector2(t.velocity.x, t.velocity.z).length() > 0.5:
+		delay *= notice_moving_mult
+	if now - t.last_shot_at < 2.5:
+		delay *= notice_firing_mult
+	elif u.watch_until >= now:
+		delay *= notice_told_mult
+	return delay
+
+
 func _acquire(u: UnitState, t: UnitState, aim_y: float) -> void:
 	var now := sim.state.time
+	_remember_seen(u, t.id, now)
 	if t.id != u.target_id:
 		if u.target_id > 0:
 			target_switches += 1
@@ -558,6 +637,12 @@ func _acquire(u: UnitState, t: UnitState, aim_y: float) -> void:
 	u.target_last_pos = t.position
 	u.target_visible = true
 	_report_seen(u, t)
+
+
+func _remember_seen(u: UnitState, tid: int, now: float) -> void:
+	var seen: Dictionary = _spot.get(u.id, {})
+	seen[tid] = [0.0, now, now]
+	_spot[u.id] = seen
 
 
 ## AI-INTEL-01: a soldier that really sees an enemy (the line of sight was just checked)
@@ -647,7 +732,8 @@ func _on_shot(shot: Dictionary) -> void:
 		for u: UnitState in units_near_segment(a, b, miss_m):
 			if u.faction != s.faction and u.alive:
 				# Vertical check too: a shot far overhead does not count.
-				var pts := Geometry3D.get_closest_points_between_segments(origin, end, u.position, u.position + Vector3.UP * 1.8)
+				var ax := Posture.span(u)
+				var pts := Geometry3D.get_closest_points_between_segments(origin, end, ax[0], ax[1])
 				var miss: float = pts[0].distance_to(pts[1])
 				if miss <= miss_m and u.player_controlled:
 					# GAMEPLAY-02D: the possessed soldier's record keeps its suppression too - only the HUD reads it (the
@@ -923,6 +1009,7 @@ func _tactics(u: UnitState) -> void:
 				u.tactic_since = now
 				u.react_target = u.anchor_pos
 				u.react_state = UnitState.ReactState.MOVING
+				Posture.for_move(u, _flat(u.position, u.anchor_pos), now)
 				u.cover_note = "calm: back to the held position"
 		UnitState.Tactic.SEEK_COVER:
 			if _searches.has(u.id):
@@ -951,6 +1038,7 @@ func _tactics(u: UnitState) -> void:
 					u.tactic_since = now
 					u.react_target = anchor
 					u.react_state = UnitState.ReactState.MOVING
+					Posture.for_move(u, _flat(u.position, anchor), now)
 					u.cover_pos = Vector3.INF
 					u.cover_note = "calm: back to the held position"
 				else:
@@ -967,6 +1055,71 @@ func _tactics(u: UnitState) -> void:
 				u.clear_reaction()
 			elif threatened and now >= u.tactic_cooldown_until:
 				u.clear_reaction()
+
+
+## COMBAT-01: the posture an AI soldier fights in, from what it already knows (its order, reaction, target, suppression):
+## standing when idle or in a fortification slot, crouched when alert or in cover, prone when pinned in the open or when a
+## machine gun / marksman rifle engages a distant target - never while moving (Posture.for_move decided that when the move
+## began), never where the ground does not suit it, never just before its squad moves on. A choice holds posture_hold_s
+## (prone prone_hold_s) before the next one; getting down / up takes its own time (Posture.TRANSITION_S).
+func _choose_posture(u: UnitState) -> void:
+	var now := sim.state.time
+	var moving := (u.order == UnitState.Order.MOVE and u.move_state == UnitState.MoveState.MOVING) \
+		or (u.is_reacting() and u.react_state == UnitState.ReactState.MOVING)
+	if moving or Posture.busy(u, now):
+		return
+	var want := Posture.STAND
+	var mode := order_mode(u)
+	if now < u.down_until:
+		want = Posture.PRONE
+	elif mode != "fort":
+		var supp := u.suppression_at(now)
+		var engaged := u.target_id > 0 and now - u.target_seen_at < 4.0
+		var alert := engaged or now < u.under_fire_until or now < u.watch_until or supp >= suppressed_at \
+			or (u.fire_at.is_finite() and now < u.fire_until)
+		if u.tactic == UnitState.Tactic.IN_COVER or alert:
+			want = Posture.CROUCH
+		if alert and u.tactic != UnitState.Tactic.IN_COVER:
+			var wdef := sim.combat.weapon(u.weapon_id)
+			var steady_weapon := wdef != null and (wdef.role == &"lmg" or wdef.role == &"dmr")
+			var far := engaged and u.target_last_pos.is_finite() and _flat(u.position, u.target_last_pos) >= prone_engage_m
+			# Down when pinned in the open; a gun / marksman down for a distant target; once down, up again only when
+			# the fire has eased (hysteresis).
+			var keep := u.posture == Posture.PRONE and (supp >= 0.3 or (far and steady_weapon))
+			if (supp >= pinned_at or (far and steady_weapon) or keep) and not _moves_soon(u, mode) and prone_ground_ok(u):
+				want = Posture.PRONE
+	if want == u.posture or (now < u.posture_hold_until and now >= u.down_until):
+		return
+	if Posture.request(u, want, now):
+		posture_changes += 1
+		u.posture_hold_until = now + (prone_hold_s if want == Posture.PRONE else posture_hold_s)
+		_event(u, Posture.NAMES[want])
+
+
+## The squad is about to move this soldier (an assault, flank, bound or withdrawal it is not holding a post in).
+func _moves_soon(u: UnitState, mode: String) -> bool:
+	if mode == "dash":
+		return true
+	var sq := sim.state.squad_of(u.id)
+	if sq == null or mode == "post":
+		return false
+	return sq.tactic in [SquadState.Tactic.ASSAULT, SquadState.Tactic.FLANK, SquadState.Tactic.BOUND, SquadState.Tactic.WITHDRAW, SquadState.Tactic.REGROUP]
+
+
+## Ground a soldier can lie on where it stands, facing as it does: not too steep, not wet, not on a bridge deck, no
+## structure under the head or the legs (the prone body reaches ~0.8 m forward and ~1 m back; Posture.span).
+func prone_ground_ok(u: UnitState) -> bool:
+	if sim.terrain:
+		var n: Vector3 = sim.terrain.data.get_normal(u.position)
+		if n.is_finite() and n.y < 0.9:
+			return false
+	if sim.state.roads and not is_nan(sim.state.roads.deck_height(u.position)):
+		return false
+	if sim.structures:
+		for p: Vector3 in Posture.span(u) + [u.position]:
+			if sim.structures.blocks_point(Vector2(p.x, p.z), 0.25) or sim.structures._wet(p.x, p.z, u.position.y - 0.1):
+				return false
+	return true
 
 
 func _end_reaction(u: UnitState, cooldown: float) -> void:
@@ -1087,6 +1240,8 @@ func _finish_search(u: UnitState, s: Dictionary) -> void:
 		_covers.append([c.p, u])
 		u.react_target = u.position if c.kind == "here" else c.p
 		u.react_state = UnitState.ReactState.ARRIVED if c.kind == "here" else UnitState.ReactState.MOVING
+		if c.kind != "here":
+			Posture.for_move(u, _flat(u.position, c.p), now)
 		u.react_until = now + s.limit if s.limit < INF else INF
 		u.tactic = UnitState.Tactic.IN_COVER if c.kind == "here" else UnitState.Tactic.SEEK_COVER
 		u.tactic_since = now
@@ -1256,8 +1411,9 @@ func _reject(u: UnitState, p: Vector3) -> String:
 func _evaluate_spot(u: UnitState, p: Vector3, threat: Vector3) -> Dictionary:
 	var line := sim.combat.line
 	var t_eye := threat + Vector3.UP * CombatSim.EYE_HEIGHT
-	var torso := p + Vector3.UP * 1.1
-	var eye := p + Vector3.UP * 1.55
+	# COMBAT-01: judged for the soldier crouched behind it (what it does in cover): low cover now counts.
+	var torso := p + Vector3.UP * Posture.AIM_TORSO[Posture.CROUCH].y
+	var eye := p + Vector3.UP * Posture.EYE[Posture.CROUCH].y
 	var reach := minf(maxf(cover_contact_m, cover_terrain_m), _flat(p, threat) - 1.0)
 	if reach <= 0.5:
 		return {"protected": false, "can_fire": true}
@@ -1392,7 +1548,7 @@ func _engage(u: UnitState) -> void:
 			u.next_burst_at = now + 0.8 + 1.2 * supp
 			return
 		u.burst_left = maxi(1, roundi(_burst_size(u, dist) * def.burst_mult))
-	var aim := t.position + Vector3.UP * u.target_aim_y - Vector3(t.velocity.x, 0.0, t.velocity.z) * track_lag_s
+	var aim := Posture.aim_point(t, u.target_aim_y > 1.3) - Vector3(t.velocity.x, 0.0, t.velocity.z) * track_lag_s
 	_try_fire(u, aim, dist, now, false)
 
 
@@ -1538,6 +1694,8 @@ func _aim_error(u: UnitState, dir: Vector3, dist: float) -> Vector3:
 	# GAMEPLAY-04C: a fresh aim is rougher and settles with time on the target; a better soldier aims tighter and settles sooner.
 	sigma *= aim_settle_mult(u, wdef) * proficiency_mult(u)
 	sigma *= 1.0 + suppression_aim_mult * u.suppression_at(sim.state.time)
+	# COMBAT-01: crouched a little steadier, prone much steadier.
+	sigma *= Posture.steady(u)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash([sim.state.world_seed, u.id, u.shot_counter + 1, 977])
 	var ex := deg_to_rad(rng.randfn(0.0, sigma))
@@ -1806,6 +1964,9 @@ func _grenade_reactions(now: float) -> void:
 			u.react_state = UnitState.ReactState.ARRIVED
 			u.react_until = float(q.burst) + 1.5
 			u.down_until = float(q.burst) + 0.5
+			# COMBAT-01: down is the prone posture (the burst finds him lower).
+			Posture.request(u, Posture.PRONE, now)
+			u.posture_hold_until = u.down_until + 1.0
 			u.tactic = UnitState.Tactic.IN_COVER
 			u.tactic_since = now
 			u.cover_note = "grenade! %.0f m away: no time to get clear, down" % d if u.suppression_at(now) < pinned_at else "grenade! pinned: stays down"
@@ -1819,6 +1980,7 @@ func _grenade_reactions(now: float) -> void:
 			continue
 		u.react_target = to
 		u.react_state = UnitState.ReactState.MOVING
+		Posture.for_move(u, _flat(u.position, to), now)
 		u.react_until = now + 5.0
 		u.tactic = UnitState.Tactic.SEEK_COVER
 		u.tactic_since = now
@@ -1875,9 +2037,8 @@ func _friend_on_ray(u: UnitState, origin: Vector3, dir: Vector3, max_d: float) -
 	for f: UnitState in units_near_segment(Vector2(origin.x, origin.z), Vector2(end.x, end.z), friendly_margin_m + LineOfFire.TORSO_R + 0.1):
 		if f == u or f.faction != u.faction:
 			continue
-		var a := f.position + Vector3.UP * 0.2
-		var b := f.position + Vector3.UP * 1.7
-		var pts := Geometry3D.get_closest_points_between_segments(origin, end, a, b)
+		var ax := Posture.span(f)
+		var pts := Geometry3D.get_closest_points_between_segments(origin, end, ax[0], ax[1])
 		if pts[0].distance_to(pts[1]) < friendly_margin_m + LineOfFire.TORSO_R:
 			return true
 	return false

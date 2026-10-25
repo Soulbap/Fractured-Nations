@@ -168,7 +168,12 @@ func _physics_process(delta: float) -> void:
 	if unit == null:
 		return
 	if player_controlled:
+		# COMBAT-01: the record's posture limits the possessed body too (crouch walk, prone crawl, still while getting down).
+		if unit:
+			speed_scale = Posture.speed_mult(unit, sim.state.time) if sim else 1.0
+			may_sprint = unit.posture == Posture.STAND and Posture.settled(unit, sim.state.time if sim else NAN)
 		super(delta)
+		_player_eye(delta)
 		# Let the avoidance simulation know where the player is heading.
 		if nav.avoidance_enabled:
 			nav.velocity = Vector3(velocity.x, 0.0, velocity.z)
@@ -184,9 +189,11 @@ func _physics_process(delta: float) -> void:
 		_ai_step(delta)
 	_sync_state()
 	if character:
-		# Soldiers holding cover crouch behind it (COMBAT-02 tactic -> CHARACTER-01 pose).
+		# COMBAT-01: the character shows the record's posture (stand / crouch / prone and the change between them).
 		# GAMEPLAY-01B: soldiers at work on a construction site kneel at it (the work pose).
-		character.crouched = not player_controlled and (unit.tactic == UnitState.Tactic.IN_COVER or unit.work_until > sim.state.time)
+		var now := sim.state.time
+		character.set_posture(unit.posture_from, unit.posture, Posture.progress(unit, now))
+		character.crouched = Posture.current(unit, now) == Posture.CROUCH or (not player_controlled and unit.work_until > now)
 		_character_layers()
 
 
@@ -499,7 +506,12 @@ func _character_layers() -> void:
 	var tracking := unit.target_id >= 0 and now - unit.target_seen_at < 6.0
 	var shooting := now - unit.last_shot_at < 2.5
 	if unit.target_last_pos.is_finite() and (tracking or shooting):
-		character.aim_point = unit.target_last_pos + Vector3.UP * unit.target_aim_y
+		# COMBAT-01: at the height of the target's posture (its head / torso), where it was last seen.
+		var tgt := sim.state.get_unit(unit.target_id)
+		var h := unit.target_aim_y
+		if tgt:
+			h = Posture.aim_point(tgt, unit.target_aim_y > 1.3, now).y - tgt.position.y
+		character.aim_point = unit.target_last_pos + Vector3.UP * h
 	else:
 		character.aim_point = Vector3.INF
 	character.alert = unit.ai_state != UnitState.AiState.IDLE or now < unit.watch_until or now < unit.under_fire_until
@@ -570,6 +582,7 @@ func _player_weapon(delta: float) -> void:
 	camera.fov = lerpf(camera.fov, 42.0 if aiming else _fov_hip, clampf(delta * 12.0, 0.0, 1.0))
 	if not captured:
 		return
+	_player_posture()
 	if Input.is_action_just_pressed("reload"):
 		sim.combat.request_reload(unit.id)
 	if Input.is_action_just_pressed("fire_mode"):
@@ -613,6 +626,36 @@ func _recoil() -> void:
 		viewmodel.kick()
 
 
+## COMBAT-01: the first-person eye follows the record's posture (Posture.eye_local), eased so a change reads as a movement.
+func _player_eye(delta: float) -> void:
+	if unit == null or sim == null:
+		return
+	var want := Posture.eye_local(unit, sim.state.time) + Vector3(0, 0.02, 0)
+	var local := Vector3(want.x, want.y, -want.z)
+	head.position = head.position.lerp(local, clampf(delta * 14.0, 0.0, 1.0))
+
+
+## COMBAT-01: C crouch / stand, Z prone / crouch, sprint stands up. Prone needs room for the body (the AI's ground rule).
+func _player_posture() -> void:
+	var now := sim.state.time
+	var cur := unit.posture
+	if Input.is_action_just_pressed("crouch"):
+		Posture.request(unit, Posture.STAND if cur == Posture.CROUCH else Posture.CROUCH, now)
+	elif Input.is_action_just_pressed("prone"):
+		if cur == Posture.PRONE:
+			Posture.request(unit, Posture.CROUCH, now)
+		elif sim.brain.prone_ground_ok(unit):
+			Posture.request(unit, Posture.PRONE, now)
+		else:
+			posture_refused_at = now
+	elif Input.is_action_pressed("sprint") and move_intent.length() > 0.1 and cur != Posture.STAND:
+		Posture.request(unit, Posture.STAND, now)
+
+
+## Last time a prone request was refused (no room / ground): the HUD says so briefly.
+var posture_refused_at := -1.0e9
+
+
 func _set_viewmodel(on: bool) -> void:
 	if on and viewmodel == null and unit and unit.weapon_id != &"":
 		viewmodel = Viewmodel.new()
@@ -643,7 +686,7 @@ func muzzle_position() -> Vector3:
 
 
 static func ensure_combat_actions() -> void:
-	var keys := {"reload": KEY_R, "fire_mode": KEY_V, "throw_grenade": KEY_G, "switch_weapon": KEY_X}
+	var keys := {"reload": KEY_R, "fire_mode": KEY_V, "throw_grenade": KEY_G, "switch_weapon": KEY_X, "crouch": KEY_C, "prone": KEY_Z}
 	for action in keys:
 		if not InputMap.has_action(action):
 			InputMap.add_action(action)

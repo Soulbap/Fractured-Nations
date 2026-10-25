@@ -70,6 +70,15 @@ var _skip_delta := 0.0
 var alert := false
 var aim_point := Vector3.INF
 var reloading := false
+## COMBAT-01 posture from the record (set_posture): from, to (Posture.STAND / CROUCH / PRONE) and the change's progress.
+var posture_from := 0
+var posture_to := 0
+var posture_k := 1.0
+var _prone_amount := 0.0
+var _trans_amount := 0.0
+static var _has_prone := false
+static var _prone_len := {}
+static var _crawl_stride := 1.08
 var _alert_amount := 0.0
 var _aim_amount := 0.0
 var _turn_amount := 0.0
@@ -394,8 +403,63 @@ static func _prepare_shared(player: AnimationPlayer) -> void:
 	t.add_node("reload", reload, Vector2(1200, 200))
 	t.connect_node("reload", 0, "fire")
 	t.connect_node("reload", 1, "reload_pose")
-	t.connect_node("output", 0, "reload")
+	_has_prone = player.has_animation("Prone_Idle") and player.has_animation("Stand_To_Prone")
+	if _has_prone:
+		_add_prone(t, player, gait)
+		t.connect_node("output", 0, "prone")
+	else:
+		t.connect_node("output", 0, "reload")
 	_tree_root = t
+
+
+## COMBAT-01: the prone branch over the standing tree: prone idle <-> aim, crawl, fire one-shot, and the change of posture
+## (Stand_To_Prone / Prone_To_Stand) held at the time the record's progress gives (seeked every frame, never advancing on
+## its own), so the clip is exactly where the authoritative change is.
+static func _add_prone(t: AnimationNodeBlendTree, player: AnimationPlayer, gait: Dictionary) -> void:
+	for n in ["Stand_To_Prone", "Prone_To_Stand"]:
+		_prone_len[n] = player.get_animation(n).length
+	if gait.has("ProneCrawl"):
+		_crawl_stride = float(gait.ProneCrawl[0]) * float(gait.ProneCrawl[1])
+	t.add_node("p_idle", _anim("Prone_Idle"), Vector2(1200, 600))
+	t.add_node("p_aim_pose", _anim("Prone_Aim" if player.has_animation("Prone_Aim") else "Prone_Idle"), Vector2(1200, 700))
+	t.add_node("p_aim", AnimationNodeBlend2.new(), Vector2(1400, 600))
+	t.connect_node("p_aim", 0, "p_idle")
+	t.connect_node("p_aim", 1, "p_aim_pose")
+	t.add_node("p_crawl", _anim("ProneCrawl_F" if player.has_animation("ProneCrawl_F") else "Prone_Idle"), Vector2(1200, 800))
+	t.add_node("p_cscale", AnimationNodeTimeScale.new(), Vector2(1400, 800))
+	t.connect_node("p_cscale", 0, "p_crawl")
+	t.add_node("p_move", AnimationNodeBlend2.new(), Vector2(1600, 650))
+	t.connect_node("p_move", 0, "p_aim")
+	t.connect_node("p_move", 1, "p_cscale")
+	var pfire := AnimationNodeOneShot.new()
+	pfire.fadein_time = 0.02
+	pfire.fadeout_time = 0.08
+	t.add_node("p_fire_pose", _anim("Prone_Fire" if player.has_animation("Prone_Fire") else "Prone_Idle"), Vector2(1600, 800))
+	t.add_node("p_fire", pfire, Vector2(1800, 650))
+	t.connect_node("p_fire", 0, "p_move")
+	t.connect_node("p_fire", 1, "p_fire_pose")
+	for k in [["down", "Stand_To_Prone"], ["up", "Prone_To_Stand"]]:
+		t.add_node("t_" + k[0], _anim(k[1]), Vector2(1600, 950 + (100 if k[0] == "up" else 0)))
+		t.add_node("seek_" + k[0], AnimationNodeTimeSeek.new(), Vector2(1800, 950 + (100 if k[0] == "up" else 0)))
+		t.add_node("hold_" + k[0], AnimationNodeTimeScale.new(), Vector2(2000, 950 + (100 if k[0] == "up" else 0)))
+		t.connect_node("seek_" + k[0], 0, "t_" + k[0])
+		t.connect_node("hold_" + k[0], 0, "seek_" + k[0])
+	t.add_node("t_kind", AnimationNodeBlend2.new(), Vector2(2200, 1000))
+	t.connect_node("t_kind", 0, "hold_down")
+	t.connect_node("t_kind", 1, "hold_up")
+	t.add_node("trans", AnimationNodeBlend2.new(), Vector2(2400, 700))
+	t.connect_node("trans", 0, "p_fire")
+	t.connect_node("trans", 1, "t_kind")
+	t.add_node("prone", AnimationNodeBlend2.new(), Vector2(2600, 300))
+	t.connect_node("prone", 0, "reload")
+	t.connect_node("prone", 1, "trans")
+
+
+## COMBAT-01: the record's posture (from, to, progress 0..1) - SoldierBody sets it every tick.
+func set_posture(p_from: int, p_to: int, k: float) -> void:
+	posture_from = p_from
+	posture_to = p_to
+	posture_k = k
 
 
 ## Track paths of the upper-body bones in the rig's clips (filters of the upper-body layers), the magazine bone too.
@@ -438,14 +502,15 @@ func _set_loops() -> void:
 		var lib := anim_player.get_animation_library(lib_name)
 		for n in lib.get_animation_list():
 			# the one-shots play once
-			lib.get_animation(n).loop_mode = Animation.LOOP_NONE if n in ["Fire", "Reload"] else Animation.LOOP_LINEAR
+			lib.get_animation(n).loop_mode = Animation.LOOP_NONE if n in ["Fire", "Reload", "Prone_Fire", "Stand_To_Prone", "Prone_To_Stand"] \
+				else Animation.LOOP_LINEAR
 	_loops_set = true
 
 
 ## One shot (recoil) on the upper body; ignored while the rifle is not raised.
 func fire() -> void:
 	if anim_tree and _aim_amount > 0.3:
-		anim_tree.set("parameters/fire/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+		anim_tree.set("parameters/%s/request" % ("p_fire" if _prone_amount > 0.5 else "fire"), AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
 ## Stride (m per gait cycle) at speed v by linear interpolation of the authored clips.
@@ -570,8 +635,11 @@ func _apply_params(delta: float, snap: bool) -> void:
 	if reloading and not _was_reloading:
 		anim_tree.set("parameters/reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 	_was_reloading = reloading
+	if _has_prone:
+		_apply_prone(delta, snap, speed)
 	if _aim_mod:
-		_aim_mod.influence = _aim_amount
+		# prone, the whole body points the rifle: the spine turns only a little towards the aim point
+		_aim_mod.influence = _aim_amount * (1.0 - 0.75 * _prone_amount)
 		if aim_point.is_finite():
 			var chest := global_position + Vector3.UP * 1.4
 			var d := global_basis.orthonormalized().inverse() * (aim_point - chest)
@@ -582,9 +650,31 @@ func _apply_params(delta: float, snap: bool) -> void:
 			_aim_mod.pitch = lerpf(_aim_mod.pitch, want_pitch, s)
 
 
+## COMBAT-01: the prone branch's weights and the change of posture's clip time.
+func _apply_prone(delta: float, snap: bool, speed: float) -> void:
+	var changing := posture_from != posture_to and posture_k < 1.0 and (posture_from == 2 or posture_to == 2)
+	var lying := posture_to == 2 and not changing
+	var want := 1.0 if (changing or lying) else 0.0
+	var step := 1.0 if snap else clampf(delta * 8.0, 0.0, 1.0)
+	_prone_amount = move_toward(_prone_amount, want, step)
+	_trans_amount = move_toward(_trans_amount, 1.0 if changing else 0.0, step)
+	if changing:
+		var down := posture_to == 2
+		var clip := "Stand_To_Prone" if down else "Prone_To_Stand"
+		anim_tree.set("parameters/t_kind/blend_amount", 0.0 if down else 1.0)
+		anim_tree.set("parameters/seek_%s/seek_request" % ("down" if down else "up"), posture_k * float(_prone_len.get(clip, 1.0)))
+	anim_tree.set("parameters/hold_down/scale", 0.0)
+	anim_tree.set("parameters/hold_up/scale", 0.0)
+	anim_tree.set("parameters/prone/blend_amount", _prone_amount)
+	anim_tree.set("parameters/trans/blend_amount", _trans_amount)
+	anim_tree.set("parameters/p_aim/blend_amount", _aim_amount)
+	anim_tree.set("parameters/p_move/blend_amount", clampf((speed - 0.1) / 0.3, 0.0, 1.0))
+	anim_tree.set("parameters/p_cscale/scale", maxf(speed, 0.2) / maxf(_crawl_stride, 0.1) * float(_prone_len.get("crawl_s", 40.0 / 30.0)))
+
+
 ## Current animation state for tests/diagnostics.
 func anim_state() -> Dictionary:
-	return {"move": _move, "move_amount": _move_amount, "crouch": _crouch_amount,
+	return {"move": _move, "move_amount": _move_amount, "crouch": _crouch_amount, "prone": _prone_amount, "trans": _trans_amount,
 		"rate": anim_tree.get("parameters/scale/scale") if anim_tree else 0.0,
 		"alert": _alert_amount, "aim": _aim_amount, "turn": _turn_amount}
 

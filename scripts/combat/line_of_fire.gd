@@ -431,14 +431,15 @@ func _units_hit(from: Vector3, to: Vector3, limit: float, exclude_id: int) -> Di
 	var end := from + (to - from) * (minf(limit, length) / length)
 	var a := Vector2(from.x, from.z)
 	var b := Vector2(end.x, end.z)
-	var candidates: Array = unit_index.units_near_segment(a, b, 0.6) if unit_index else state.units.values()
+	# COMBAT-01: a prone soldier reaches farther from its position (head forward, legs back): Posture.REACH.
+	var candidates: Array = unit_index.units_near_segment(a, b, Posture.REACH[Posture.PRONE]) if unit_index else state.units.values()
 	for u: UnitState in candidates:
 		if u.id == exclude_id or not u.alive or u.kind != UnitState.Kind.SOLDIER:
 			continue
 		var p := u.position
-		if _point_segment_dist2d(Vector2(p.x, p.z), a, b) > 0.6:
+		if _point_segment_dist2d(Vector2(p.x, p.z), a, b) > Posture.reach(u):
 			continue
-		var h := unit_hit(from, end, p)
+		var h := Posture.hit(from, end, u, state.time)
 		if h.d < best.d:
 			best.d = h.d
 			best.id = u.id
@@ -446,7 +447,32 @@ func _units_hit(from: Vector3, to: Vector3, limit: float, exclude_id: int) -> Di
 	return best
 
 
-## Hit of a segment on one soldier standing at feet position p: {d, zone}.
+## COMBAT-01: distance along the segment to a capsule between centres a and b (any direction), or -1. The segment is
+## taken into a frame where the capsule axis is Z (Geometry3D's cylinder axis); a == b is a sphere.
+static func segment_capsule(from: Vector3, to: Vector3, a: Vector3, b: Vector3, r: float) -> float:
+	var best := -1.0
+	var axis := b - a
+	var h := axis.length()
+	if h > 0.001:
+		var z := axis / h
+		var x := z.cross(Vector3.UP if absf(z.y) < 0.99 else Vector3.RIGHT).normalized()
+		var y := z.cross(x)
+		var m := (a + b) * 0.5
+		var inv := Basis(x, y, z).transposed()
+		var c := Geometry3D.segment_intersects_cylinder(inv * (from - m), inv * (to - m), h, r)
+		if not c.is_empty():
+			best = from.distance_to(Basis(x, y, z) * (c[0] as Vector3) + m)
+	for cap: Vector3 in [a, b]:
+		var s := Geometry3D.segment_intersects_sphere(from, to, cap, r)
+		if not s.is_empty():
+			var d := from.distance_to(s[0])
+			if best < 0.0 or d < best:
+				best = d
+	return best
+
+
+## Hit of a segment on one soldier standing at feet position p: {d, zone}. (COMBAT-01: soldiers are hit through
+## Posture.hit, which follows their posture; this standing model stays for tools.)
 static func unit_hit(from: Vector3, to: Vector3, p: Vector3) -> Dictionary:
 	var best := {"d": INF, "zone": Zone.NONE}
 	var hs := Geometry3D.segment_intersects_sphere(from, to, p + Vector3(0, HEAD_Y, 0), HEAD_R)

@@ -157,6 +157,8 @@ func issue_move(id: int, target: Vector3, cancel_reaction := true) -> bool:
 		return false
 	# GAMEPLAY-01C: a soldier in a fortification slot steps out of it first (the tactics set a new slot after this call).
 	leave_fort(u)
+	# COMBAT-01: a soldier sent on gets up for it (a short shift keeps a crouch or a prone crawl).
+	Posture.for_move(u, Vector2(target.x - u.position.x, target.z - u.position.z).length(), time)
 	u.order = UnitState.Order.MOVE
 	u.order_target = target
 	u.move_state = UnitState.MoveState.MOVING

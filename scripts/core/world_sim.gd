@@ -211,6 +211,7 @@ func _process(_delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	last_delta = delta
 	state.time += delta
+	Posture.now = state.time
 	var t0 := Time.get_ticks_usec()
 	for u in state.units.values():
 		if not u.has_body and u.alive and u.kind == UnitState.Kind.SOLDIER and u.vehicle_id < 0:
@@ -243,6 +244,7 @@ func _physics_process(delta: float) -> void:
 ## A save was loaded into the existing records: bodies would write their old position
 ## back on the next tick, so they jump to the loaded one first.
 func _on_restored() -> void:
+	Posture.now = state.time
 	# NAV-PERF-01B: searches for the old state are dropped; squads and vehicles that were waiting for a route ask again.
 	routing.cancel_all("save loaded")
 	_local_routes.clear()
@@ -760,10 +762,12 @@ static var PACES := "--paces" in OS.get_cmdline_user_args()
 
 
 ## VISUAL-03: ground speed of a soldier at its current pace (before grade and carried load); vehicles keep `speed`.
+## COMBAT-01: times the posture's share (crouch walk, prone crawl; nothing while getting down or up).
 func move_speed(u: UnitState) -> float:
-	if u.kind != UnitState.Kind.SOLDIER or not PACES:
+	if u.kind != UnitState.Kind.SOLDIER:
 		return u.speed
-	return minf(UnitState.PACE_SPEED[pace_of(u)], u.speed)
+	var v := u.speed if not PACES else minf(UnitState.PACE_SPEED[pace_of(u)], u.speed)
+	return v * Posture.speed_mult(u, state.time)
 
 
 ## GAMEPLAY-04C: share of the walking speed a soldier keeps with what he carries (WeaponDef.move_speed_mult: the heavy machine

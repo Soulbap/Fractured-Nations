@@ -178,6 +178,9 @@ func request_fire(unit_id: int, origin: Vector3, direction: Vector3, source := S
 		return {"fired": false, "reason": "reloading"}
 	if now < u.next_shot_at:
 		return {"fired": false, "reason": "cooldown"}
+	# COMBAT-01: getting down or up (prone) takes the hands.
+	if Posture.busy(u, now):
+		return {"fired": false, "reason": "changing posture"}
 	if u.mag <= 0:
 		request_reload(unit_id)
 		return {"fired": false, "reason": "empty"}
@@ -235,16 +238,24 @@ func preview_shot(unit_id: int, origin: Vector3, direction: Vector3, counter: in
 	return {"end": r.point, "distance": r.distance, "blocker": r.blocker, "hit_unit": r.hit_unit, "zone": r.zone, "dir": dir}
 
 
-## The spread (degrees) the next shot of u gets: base + movement + recovered bloom.
+## The spread (degrees) the next shot of u gets: base + movement + recovered bloom. COMBAT-01: the posture steadies the
+## weapon (Posture.STEADY: crouched a little, prone much).
 func current_spread(u: UnitState, def: WeaponDef) -> float:
 	var speed := Vector2(u.velocity.x, u.velocity.z).length()
 	var bloom := maxf(u.bloom - def.spread_recovery_deg_s * (sim.state.time - u.last_shot_at), 0.0)
-	return (def.spread_base_deg + bloom) * settle_factor(u, def) + def.spread_moving_deg * clampf(speed / 4.5, 0.0, 1.5)
+	return (def.spread_base_deg + bloom) * settle_factor(u, def) * Posture.steady(u, sim.state.time) 		+ def.spread_moving_deg * clampf(speed / 4.5, 0.0, 1.5)
 
 
 ## GAMEPLAY-02B: a braced weapon (WeaponDef.settle_s > 0: bipod, prone) held still for settle_s shoots tighter.
+## COMBAT-01: prone, the bipod is down after Posture.PRONE_SETTLE_S.
 func settle_factor(u: UnitState, def: WeaponDef) -> float:
-	if def.settle_s <= 0.0 or sim.state.time - u.moved_at < def.settle_s:
+	if def.settle_s <= 0.0:
+		return 1.0
+	var still := sim.state.time - u.moved_at
+	if u.posture == Posture.PRONE and Posture.settled(u, sim.state.time):
+		still = minf(still, sim.state.time - u.posture_at - Posture.TRANSITION_S[u.posture_from][u.posture])
+		return def.settled_mult if still >= Posture.PRONE_SETTLE_S else 1.0
+	if still < def.settle_s:
 		return 1.0
 	return def.settled_mult
 
@@ -338,6 +349,8 @@ func fire_secondary(unit_id: int, origin: Vector3, direction: Vector3, source :=
 		return {"fired": false, "reason": "empty"}
 	if now < u.sec_ready_at or u.is_reloading():
 		return {"fired": false, "reason": "cooldown"}
+	if Posture.busy(u, now):
+		return {"fired": false, "reason": "changing posture"}
 	u.sec_ammo -= 1
 	u.shot_counter += 1
 	u.sec_ready_at = now + def.reload_time
@@ -398,7 +411,8 @@ func detonate(e: Dictionary) -> Dictionary:
 		if not u.alive or u.kind != UnitState.Kind.SOLDIER:
 			continue
 		# GAMEPLAY-03D: a soldier flat on the ground (down_until) is reached lower (low cover shields him) and by fewer fragments.
-		var down := now < u.down_until
+		# COMBAT-01: a prone soldier is flat on the ground too.
+		var down := now < u.down_until or Posture.current(u, now) == Posture.PRONE
 		var chest := u.position + Vector3.UP * (blast_down_height if down else 1.0)
 		var d := centre.distance_to(chest)
 		if d > r * 2.0:
@@ -513,6 +527,6 @@ func kill(t: UnitState, source_id := -1) -> void:
 	sim.state.unit_died.emit(t)
 
 
-## Eye position of a soldier record (shots and sight lines of units without a camera).
+## Eye position of a soldier record (shots and sight lines of units without a camera). COMBAT-01: from its posture.
 static func eye_of(u: UnitState) -> Vector3:
-	return u.position + Vector3.UP * EYE_HEIGHT
+	return Posture.eye(u)

@@ -215,6 +215,7 @@ func _setup_construction() -> void:
 func _setup_combat() -> void:
 	sim.units_root = units_root
 	sim.combat.line.setup(sim.state, terrain, vegetation, structures)
+	sim.brain.concealment.setup(world.get_node_or_null("Grass") as GrassLayer, terrain)
 	combat_fx = CombatFX.new()
 	combat_fx.name = "CombatFX"
 	add_child(combat_fx)
@@ -434,6 +435,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--campaign-test" in args:
 		_campaign_selftest = CampaignSelfTest.new(self)
 		_campaign_selftest.run.call_deferred(args)
+	elif "--combat01-test" in args:
+		_gameplay_selftest = Combat01SelfTest.new(self)
+		_gameplay_selftest.run.call_deferred(args)
 	elif "--visual03-test" in args:
 		_gameplay_selftest = Visual03SelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)

@@ -25,6 +25,10 @@
   "CrouchWalk": {
    "speed": 1.015,
    "period": 1.1333
+  },
+  "ProneCrawl": {
+   "speed": 0.81,
+   "period": 1.3333
   }
  },
  "clip_meta": {
@@ -221,6 +225,30 @@
   "Idle": {
    "take": "77_02",
    "period": 4.0
+  },
+  "ProneCrawl_F": {
+   "speed": 0.81,
+   "period": 1.3333,
+   "dir": [
+    0.0,
+    1.0
+   ],
+   "carry": "prone"
+  },
+  "Prone_Idle": {
+   "carry": "prone"
+  },
+  "Prone_Aim": {
+   "carry": "prone"
+  },
+  "Prone_Fire": {
+   "carry": "prone"
+  },
+  "Stand_To_Prone": {
+   "carry": "prone"
+  },
+  "Prone_To_Stand": {
+   "carry": "prone"
   }
  },
  "clips": {
@@ -326,6 +354,30 @@
   },
   "Reload": {
    "frames": 75,
+   "loop": false
+  },
+  "Prone_Idle": {
+   "frames": 60,
+   "loop": true
+  },
+  "Prone_Aim": {
+   "frames": 60,
+   "loop": true
+  },
+  "Prone_Fire": {
+   "frames": 6,
+   "loop": false
+  },
+  "ProneCrawl_F": {
+   "frames": 40,
+   "loop": true
+  },
+  "Stand_To_Prone": {
+   "frames": 30,
+   "loop": false
+  },
+  "Prone_To_Stand": {
+   "frames": 33,
    "loop": false
   }
  }

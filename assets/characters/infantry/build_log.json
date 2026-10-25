@@ -36,31 +36,31 @@
   "neck_r": 0.0875
  },
  "body_tris": {
-  "body_torso": 3058,
+  "body_torso": 2946,
   "body_arms": 2224,
-  "body_legs": 2212,
+  "body_legs": 2268,
   "body_feet": 4298,
   "body_hands": 6356,
-  "body_head": 9448
+  "body_head": 9504
  },
- "t_body": 7.3,
+ "t_body": 20.1,
  "uniform_tris": {
   "jacket": 10044,
   "trousers": 8000,
   "boots": 3600,
   "gloves": 4000
  },
- "t_uniform": 42.9,
+ "t_uniform": 69.9,
  "gear_seconds": {
-  "vest_standard": 27.5,
-  "vest_heavy": 28.7,
-  "belt_standard": 1.1,
-  "belt_heavy": 1.2,
-  "pack_assault": 13.3,
-  "pack_ruck": 14.8,
-  "helmet_covered": 2.8,
-  "helmet_bare": 1.9,
-  "eyepro": 0.3
+  "vest_standard": 30.8,
+  "vest_heavy": 36.2,
+  "belt_standard": 1.7,
+  "belt_heavy": 1.8,
+  "pack_assault": 16.1,
+  "pack_ruck": 16.0,
+  "helmet_covered": 2.6,
+  "helmet_bare": 1.8,
+  "eyepro": 0.2
  },
  "gear_tris": {
   "vest_standard": 6676,
@@ -77,7 +77,7 @@
   "foregrip": 148,
   "laser": 224
  },
- "t_gear": 134.9,
+ "t_gear": 177.8,
  "anim_check": {
   "carry_fit": {
    "patrol": {
@@ -1036,12 +1036,72 @@
     "mag_travel_m": 0.32,
     "mag_rest_err_mm": 0.0
    }
+  },
+  "prone": {
+   "Prone_Idle": {
+    "hand_err_mm": 0.0,
+    "butt_to_pocket_mm": 59.5
+   },
+   "Prone_Aim": {
+    "hand_err_mm": 0.0,
+    "butt_to_pocket_mm": 59.5
+   },
+   "ProneCrawl_F": {
+    "hand_err_mm": 0.8
+   },
+   "Stand_To_Prone": {
+    "hand_err_mm": 50.0,
+    "frames": 30
+   },
+   "Prone_To_Stand": {
+    "hand_err_mm": 49.6,
+    "frames": 33
+   },
+   "layout": {
+    "head": [
+     0.025,
+     0.637,
+     0.35
+    ],
+    "head_mid": [
+     0.053,
+     0.649,
+     0.435
+    ],
+    "eye": [
+     0.099,
+     0.701,
+     0.357
+    ],
+    "hips": [
+     -0.0,
+     0.0,
+     0.13
+    ],
+    "feet": [
+     [
+      -0.24,
+      -0.86,
+      0.1
+     ],
+     [
+      0.22,
+      -0.84,
+      0.1
+     ]
+    ],
+    "chest_top": [
+     0.0,
+     0.341,
+     0.27
+    ]
+   }
   }
  },
- "t_anim": 196.0,
+ "t_anim": 332.1,
  "export": {
   "rig": {
-   "bytes": 5622596,
+   "bytes": 6384552,
    "meshes": [
     "Char_Head_LOD0",
     "Char_Head_LOD1",
@@ -1076,6 +1136,11 @@
     "Jog_F",
     "Jog_L",
     "Jog_R",
+    "ProneCrawl_F",
+    "Prone_Aim",
+    "Prone_Fire",
+    "Prone_Idle",
+    "Prone_To_Stand",
     "Ready_Idle",
     "Reload",
     "Run_B",
@@ -1083,6 +1148,7 @@
     "Run_L",
     "Run_R",
     "Sprint_F",
+    "Stand_To_Prone",
     "Turn_L",
     "Turn_R",
     "Walk_B",
@@ -1196,7 +1262,7 @@
    ]
   },
   "carbine": {
-   "bytes": 821328,
+   "bytes": 821424,
    "lod_tris": [
     7032,
     2108,
@@ -1204,11 +1270,11 @@
    ]
   },
   "optic_reddot": {
-   "bytes": 57680,
+   "bytes": 57592,
    "lod_tris": [
     556,
     200,
-    56
+    57
    ]
   },
   "foregrip": {
@@ -1220,7 +1286,7 @@
    ]
   },
   "laser": {
-   "bytes": 37524,
+   "bytes": 37428,
    "lod_tris": [
     224,
     200,
@@ -1228,5 +1294,5 @@
    ]
   }
  },
- "t_total": 203.7
+ "t_total": 350.7
 }
