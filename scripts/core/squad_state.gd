@@ -80,6 +80,11 @@ var route_wait_kind := ""
 var route_wait_form := 0
 var route_job := -1
 var station_objective := -1
+## GAMEPLAY-04D: spare weapons the squad carries (WeaponDef id -> count), picked up by REARM, handed in at a base
+## (SquadEquipment); where a REARM order searches (INF: none) and how long the squad has searched there.
+var cargo := {}
+var rearm_at := Vector3.INF
+var rearm_s := 0.0
 ## GAMEPLAY-01C GARRISON_BASE: the friendly base (ConstructionState.bases id) the squad is assigned to hold (-1: none). The
 ## squad marches there, mans its fortifications (DEFEND, SquadTactics) and stays until it is given another order or the
 ## base is lost; saved, so the assignment survives a load.
@@ -203,7 +208,7 @@ func to_dict() -> Dictionary:
 		"follow_unit": follow_unit_id, "follow_squad": follow_squad_id,
 		"formation": formation, "spacing": spacing, "detached": Array(detached),
 		"status": status, "blocked": Array(blocked), "fallen": Array(fallen), "roe": roe,
-		"op": op_id, "route": Array(route), "route_i": route_i, "route_wait": [route_wait_goal, route_wait_kind, route_wait_form], "station": station_objective, "garrison_base": garrison_base, "defence_line": defence_line,
+		"op": op_id, "route": Array(route), "route_i": route_i, "route_wait": [route_wait_goal, route_wait_kind, route_wait_form], "station": station_objective, "cargo": cargo.duplicate(), "rearm_at": rearm_at, "rearm_s": rearm_s, "garrison_base": garrison_base, "defence_line": defence_line,
 		"teams": teams.map(func(t: PackedInt32Array) -> Array: return Array(t)), "team_leaders": Array(team_leaders), "team_roles": Array(team_roles),
 		"tactic": tactic, "tactic_owner": tactic_owner, "tactic_phase": tactic_phase, "tactic_since": tactic_since,
 		"tactic_phase_since": tactic_phase_since, "tactic_target": tactic_target, "tactic_contact": tactic_contact, "tactic_site": tactic_site,
@@ -241,6 +246,9 @@ static func from_dict(d: Dictionary) -> SquadState:
 	s.route_wait_kind = rw[1]
 	s.route_wait_form = rw[2]
 	s.station_objective = d.get("station", -1)
+	s.cargo = d.get("cargo", {}).duplicate()
+	s.rearm_at = d.get("rearm_at", Vector3.INF)
+	s.rearm_s = d.get("rearm_s", 0.0)
 	s.garrison_base = d.get("garrison_base", -1)
 	s.defence_line = d.get("defence_line", 0)
 	for t in d.get("teams", []):

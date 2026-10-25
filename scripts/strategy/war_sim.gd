@@ -69,6 +69,8 @@ var dev: MilitaryDevelopment
 var intro: IntroGuide
 ## GAMEPLAY-04E: opportunities offered to the player.
 var opps: Opportunities
+## GAMEPLAY-04D: squad equipment - REARM, recovered weapons, the armoury, discoveries, re-equipping.
+var equip: SquadEquipment
 var _profiles := {}
 var _t_capture := 0.0
 var _t_ops := 0.0
@@ -109,6 +111,7 @@ func _init(p_sim: WorldSim) -> void:
 	dev = MilitaryDevelopment.new(self)
 	intro = IntroGuide.new(self)
 	opps = Opportunities.new(self)
+	equip = SquadEquipment.new(self)
 
 
 func setup(p_routes: StrategicRoutes) -> void:
@@ -161,6 +164,7 @@ func update(delta: float) -> void:
 	dev.update(delta)
 	intro.update(delta)
 	opps.update(delta)
+	equip.update(delta)
 	var now := sim.state.time
 	for f: FactionState in war.factions.values():
 		if not f.player and now >= f.next_decision_at:
@@ -1308,6 +1312,7 @@ func spawn_recruits(f: FactionState, p: Vector3, n: int, tag := "") -> Array:
 func _on_unit_died(u: UnitState) -> void:
 	if not enabled or u.kind == UnitState.Kind.VEHICLE:
 		return
+	equip.on_death(u)
 	var f := war.faction(u.faction)
 	if f:
 		f.casualties += 1

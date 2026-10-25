@@ -31,6 +31,9 @@ const BRANCH_NAMES := {&"base": "Base & Logistics", &"infantry": "Infantry & Wea
 ## objectives ever captured, &"caches" supply caches secured, &"kills" enemy soldiers killed; at least milestone_count.
 @export var milestone: StringName = &""
 @export var milestone_count := 1
+## GAMEPLAY-04D: weapon types (WeaponDef ids) the faction must have found and delivered to a base first (discovery drives
+## development: research alone does not open every weapon).
+@export var requires_discovery: Array[StringName] = []
 ## Resources paid when the project starts ({"supplies": kg, "ammo": kg}); refunded in full when it is cancelled.
 @export var cost := {}
 ## Simulated seconds of development while its requirements hold.

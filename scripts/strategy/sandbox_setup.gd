@@ -121,6 +121,9 @@ static func create(demo: CoreDemo, routes: StrategicRoutes, scenario: ScenarioDe
 		# GAMEPLAY-04B: what the faction knows at minute zero (the initial developments and the scenario's "developments").
 		if sim.war.dev.enabled():
 			sim.war.dev.init_faction(f, d.get("developments", []))
+			for w in d.get("discovered", []):
+				if not f.discovered.has(String(w)):
+					f.discovered.append(String(w))
 	for i in WorldState.FACTION_NAMES.size():
 		var f := war.faction(i)
 		var placement: Dictionary = scenario.faction_entry(i).get("squads", {})
@@ -164,6 +167,18 @@ static func create(demo: CoreDemo, routes: StrategicRoutes, scenario: ScenarioDe
 			"radius": float(c.get("radius", 30.0)), "supplies": float(c.get("supplies", 0.0)), "ammo": float(c.get("ammo", 0.0)), "fuel": float(c.get("fuel", 0.0)),
 			"state": "intact", "faction": -1, "progress": 0.0, "known": [scenario.player_faction] if bool(c.get("known", false)) else [],
 			"taken_by": -1, "taken_at": -1.0})
+		# GAMEPLAY-04D: weapons in a cache are equipment lying there (a stash), collected by REARM, not converted to supplies.
+		if not (c.get("items", {}) as Dictionary).is_empty():
+			sim.war.equip.add_stash(String(c.get("name", "Supply cache")), "cache", p, c.items, float(c.get("item_ammo", 0.0)))
+	for e: Dictionary in scenario.stashes:
+		var sp := demo.on_ground(float(e.x), float(e.z), 0.0)
+		if routes and not routes.passable(sp):
+			for k in 16:
+				var q := demo.on_ground(float(e.x) + cos(k * TAU / 16.0) * 40.0, float(e.z) + sin(k * TAU / 16.0) * 40.0, 0.0)
+				if routes.passable(q):
+					sp = q
+					break
+		sim.war.equip.add_stash(String(e.get("name", "Equipment")), String(e.get("kind", "position")), sp, e.get("items", {}), float(e.get("ammo", 0.0)))
 	if demo.structures:
 		for e: Dictionary in scenario.structures:
 			_place_structure(demo, StringName(e.type), float(e.x), float(e.z), float(e.get("yaw", 0.0)), int(e.get("faction", -1)))

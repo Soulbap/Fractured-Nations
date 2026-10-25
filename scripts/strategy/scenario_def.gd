@@ -17,7 +17,7 @@ extends Resource
 ## Per faction id: {"profile": StringName, "reserves": int, "hq": objective name (after renaming) or "",
 ## "squads": {objective name: squad count}, "developments": [DevelopmentDef ids known from the start beyond the initial
 ## ones (GAMEPLAY-04B; an AI faction whose start base has a barracks knows how to build one)]}. Every faction of
-## WorldState.FACTION_NAMES must be listed.
+## WorldState.FACTION_NAMES must be listed. GAMEPLAY-04D "discovered": weapon types the faction knows from the start.
 @export var factions: Array[Dictionary] = []
 ## GAMEPLAY-04A: objectives of this scenario besides SandboxSetup.OBJECTIVES (an outpost at a world position):
 ## {"name", "kind", "x", "z", "value", "radius", "owner", "hold" (squads its owner keeps there)}.
@@ -32,6 +32,9 @@ extends Resource
 ## {"id", "title", "text" (what to do and how), "done" (condition, see IntroGuide.met), "target" ("objective:<name>",
 ## "cache:<name>" or ""), "optional" (true: a tip that never blocks)}. Empty: no introduction.
 @export var intro: Array[Dictionary] = []
+## GAMEPLAY-04D: equipment lying in the world at minute zero - abandoned positions, storage sites ({"name", "x", "z",
+## "items": {WeaponDef id: count}, "ammo": kg, "kind": "position"}); a cache entry may carry "items" too (its stash).
+@export var stashes: Array[Dictionary] = []
 ## Two or three lines of situation shown with the first phase of the introduction.
 @export_multiline var briefing := ""
 @export var squad_size := 8

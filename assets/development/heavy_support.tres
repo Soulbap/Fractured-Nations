@@ -25,3 +25,4 @@ roles = Array[StringName]([&"at_gunner"])
 effects = {}
 initial = false
 available = true
+requires_discovery = Array[StringName]([&"recoilless"])

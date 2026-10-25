@@ -828,6 +828,8 @@ func on_order(sq: SquadState) -> void:
 		return
 	# GAMEPLAY-01B: a new order replaces a march to a construction site.
 	_set_meta(sq, "build_goal", null)
+	# GAMEPLAY-04D: and a REARM search (SquadEquipment sets its own after the move it orders).
+	sq.rearm_at = Vector3.INF
 	# GAMEPLAY-01C: any other order ends a garrison assignment (the player's or an operation's: the squad is reassigned).
 	if sq.garrison_base >= 0:
 		var gb: Dictionary = sim.state.construction.bases.get(sq.garrison_base, {})

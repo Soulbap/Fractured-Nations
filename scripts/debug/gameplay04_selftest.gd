@@ -10,7 +10,7 @@ class_name Gameplay04SelfTest
 extends GameplaySelfTest
 
 ## Every check in run order. Checks that need another scenario are only run when named in --only.
-const CHECKS: Array[String] = ["a_setup", "a_ui", "a_phases", "a_persist", "a_skip", "a_road", "a_profile", "a_shoulders", "a_trees", "a_encounter", "b_lock", "b_start", "b_pause", "b_persist", "b_complete", "b_future", "b_ui", "b_ai", "b_dev_off", "c_arena", "c_gl", "c_recoilless", "c_carry", "c_fps", "c_persist", "c_ai_comp", "c_visual"]
+const CHECKS: Array[String] = ["a_setup", "a_ui", "a_phases", "a_persist", "a_skip", "a_road", "a_profile", "a_shoulders", "a_trees", "a_encounter", "b_lock", "b_start", "b_pause", "b_persist", "b_complete", "b_future", "b_ui", "b_ai", "b_dev_off", "c_arena", "c_gl", "c_recoilless", "c_carry", "c_fps", "c_persist", "c_ai_comp", "c_visual", "d_setup", "d_rearm", "d_field_equip", "d_deliver", "d_procure", "d_fallen", "d_persist", "d_ui"]
 const ONLY_NAMED: Array[String] = ["c_arena", "b_dev_off", "a_encounter", "a_road", "a_profile", "a_trees"]
 
 
@@ -1207,6 +1207,237 @@ func _c_visual() -> Dictionary:
 		await _seconds(0.5)
 	for r in worn:
 		_expect(bool(worn[r][1]), "c_visual: %s does not wear %s" % [r, worn[r][0]])
+	return out
+
+
+# --- 04D squad equipment, REARM, discovery ---------------------------------------------------------------------------------
+
+func _eqs() -> SquadEquipment:
+	return demo.sim.war.equip
+
+
+func _stash_named(n: String) -> Dictionary:
+	for s: Dictionary in _war().stashes:
+		if s.name == n:
+			return s
+	return {}
+
+
+## Puts a squad's records at p (far tier: the camera is moved away first so no body holds them back).
+func _move_squad(sq: SquadState, p: Vector3) -> void:
+	await _frame(p + Vector3(0, 0, 2500), 300.0, 0.0)
+	await _seconds(1.5)
+	var k := 0
+	for uid in sq.members:
+		var u := demo.sim.state.get_unit(uid)
+		u.position = demo.on_ground(p.x + (k % 4) * 2.0, p.z + (k / 4) * 2.0, 0.0)
+		u.order = UnitState.Order.NONE
+		u.anchor_pos = u.position
+		k += 1
+	sq.order = SquadState.Order.NONE
+	await _physics(5)
+
+
+## The finds are where the scenario put them and each faction knows its own weapon types (the player only the standard ones).
+func _d_setup() -> Dictionary:
+	var war := _war()
+	var names := war.stashes.map(func(s: Dictionary) -> String: return "%s %s" % [s.name, str(s.items)])
+	_expect(not _stash_named("Moen checkpoint stores").is_empty() and not _stash_named("Abandoned army depot").is_empty() and not _stash_named("Verket yard cache").is_empty(),
+		"d_setup: stashes %s" % str(names))
+	var pd: Array = war.faction(war.player_faction).discovered
+	_expect(pd.has("rifle") and pd.has("lmg") and not pd.has("dmr") and not pd.has("carbine"), "d_setup: player discovered %s" % str(pd))
+	_expect((war.faction(1).discovered as Array).has("dmr"), "d_setup: South does not know the DMR")
+	var lock := demo.sim.war.dev.weapon_lock(war.player_faction, &"carbine")
+	_expect(lock.begins_with("Not discovered"), "d_setup: carbine lock %s" % lock)
+	return {"stashes": names, "player_discovered": pd, "carbine_lock": lock}
+
+
+## REARM at the checkpoint stores: missing ammunition topped up from the stash, the unknown carbine into the cargo, the stash
+## emptied of it; a new order cancels a REARM in progress.
+func _d_rearm() -> Dictionary:
+	var sq: SquadState = _player_squads()[0]
+	var st := _stash_named("Moen checkpoint stores")
+	# The checkpoint is cleared first (its stores lie among the South fire team): REARM waits while the squad is under fire.
+	for g: SquadState in _squads_at(1, _objective("Moen checkpoint").id):
+		for gid in g.members.duplicate():
+			demo.sim.combat.kill(demo.sim.state.get_unit(gid))
+	await _move_squad(sq, st.pos + Vector3(8, 0, 8))
+	var u := demo.sim.state.get_unit(sq.members[0])
+	u.reserve = 10
+	var ammo0 := float(st.ammo)
+	var r := _eqs().order_rearm([sq.id], st.pos)
+	_expect(r.ok and sq.rearm_at.is_finite(), "d_rearm: order refused %s" % str(r))
+	var trace := []
+	for i in 6:
+		await _until(func() -> bool: return false, 2.0, 2.0)
+		trace.append([snappedf(sq.rearm_s, 0.1), roundi(WarSim._flat(demo.sim.war.squad_center(sq), sq.rearm_at)) if sq.rearm_at.is_finite() else -1,
+			demo.sim.tactics.assessment(sq).get("under_fire", "?"), String(SquadState.Order.keys()[sq.order]), demo.sim.war.enabled])
+		if not sq.rearm_at.is_finite():
+			break
+	results["d_rearm_trace"] = trace
+	var out := {"order": r.text, "reserve": u.reserve, "cargo": sq.cargo.duplicate(), "stash_ammo": [roundi(ammo0), roundi(float(st.ammo))], "stash_items": st.items.duplicate()}
+	_expect(not sq.rearm_at.is_finite(), "d_rearm: the search did not finish")
+	_expect(u.reserve > 10 and int(sq.cargo.get("carbine", 0)) == 1 and not st.items.has("carbine") and float(st.ammo) < ammo0, "d_rearm: %s" % str(out))
+	# Cancel: a move order ends a REARM.
+	_eqs().order_rearm([sq.id], st.pos)
+	demo.rts.select_squads([sq.id])
+	demo.rts.order_move(st.pos + Vector3(40, 0, 0))
+	out["cancelled"] = not sq.rearm_at.is_finite()
+	_expect(out.cancelled, "d_rearm: a move order did not cancel the REARM")
+	return out
+
+
+## In the field a soldier takes the found carbine from the cargo (half a load; his rifle goes into the cargo); a third
+## machine gunner is refused (squad limit); the procured ones are refused away from a base.
+func _d_field_equip() -> Dictionary:
+	var sq: SquadState = _player_squads()[0]
+	if not sq.cargo.has("carbine"):
+		sq.cargo["carbine"] = 1
+	var u: UnitState = null
+	for uid in sq.members:
+		var m := demo.sim.state.get_unit(uid)
+		if m.role == &"rifleman":
+			u = m
+			break
+	var r := _eqs().equip(sq, u, &"carbineer")
+	var wd := demo.sim.combat.weapon(&"carbine")
+	var out := {"result": r, "weapon": String(u.weapon_id), "reserve": u.reserve, "cargo": sq.cargo.duplicate(), "loadout": u.loadout}
+	_expect(r.ok and u.weapon_id == &"carbine" and u.reserve == wd.reserve_start / 2 and int(sq.cargo.get("rifle", 0)) == 1 and not sq.cargo.has("carbine"), "d_field_equip: %s" % str(out))
+	var gunners := 0
+	for uid in sq.members:
+		if demo.sim.state.get_unit(uid).role == &"machine_gunner":
+			gunners += 1
+	var r2 := {}
+	for uid in sq.members:
+		var m := demo.sim.state.get_unit(uid)
+		if m.role == &"rifleman":
+			r2 = _eqs().can_equip(sq, m, &"machine_gunner")
+			break
+	out["second_mg"] = r2.get("reason", "")
+	var r3 := {}
+	for uid in sq.members:
+		var m := demo.sim.state.get_unit(uid)
+		if m.role == &"rifleman":
+			r3 = _eqs().can_equip(sq, m, &"grenadier_gl")
+			break
+	out["gl_in_field"] = r3.get("reason", "")
+	_expect(not r3.get("ok", true) and "base" in String(r3.reason), "d_field_equip: a weapon not carried was issued in the field: %s" % str(r3))
+	return out
+
+
+## A squad with a found DMR enters its base (command post and supply depot): the DMR goes to the armoury and the type is
+## registered; Marksman Specialization no longer lacks its discovery.
+func _d_deliver() -> Dictionary:
+	var war := _war()
+	var pf := war.player_faction
+	var cp := _player_cp()
+	var depot := _add_built(&"supply_depot", cp.position + Vector3(40, 0, 0), Vector3(0, 0, -1), pf)
+	_expect(depot != null, "d_deliver: no depot could be placed")
+	var sq: SquadState = _player_squads()[0]
+	sq.cargo["dmr"] = 1
+	await _move_squad(sq, cp.position + Vector3(15, 0, 15))
+	await _until(func() -> bool: return sq.cargo.is_empty(), 5.0, 1.0)
+	var f := war.faction(pf)
+	var req := demo.sim.war.dev.requirements(pf, DevelopmentDef.by_id(&"marksman")).filter(func(r: Dictionary) -> bool: return r.kind == "discovery")
+	var out := {"cargo": sq.cargo.duplicate(), "armory": f.armory.duplicate(), "discovered": f.discovered.duplicate(), "marksman_discovery": req}
+	_expect(sq.cargo.is_empty() and int(f.armory.get("dmr", 0)) >= 1 and f.discovered.has("dmr") and not req.is_empty() and req[0].ok, "d_deliver: %s" % str(out))
+	var msgs := war.events.filter(func(e: Dictionary) -> bool: return e.kind == "discovery").map(func(e: Dictionary) -> String: return e.text)
+	out["messages"] = msgs
+	_expect(not msgs.is_empty(), "d_deliver: no discovery message")
+	return out
+
+
+## At the base: the armoury's DMR is issued without any development (found equipment is usable), procuring a second one is
+## locked until Marksman Specialization; a discovered carbine is procured for its price.
+func _d_procure() -> Dictionary:
+	var war := _war()
+	var pf := war.player_faction
+	var f := war.faction(pf)
+	var sq: SquadState = _player_squads()[0]
+	f.armory["dmr"] = 1
+	if not f.discovered.has("carbine"):
+		f.discovered.append("carbine")
+	f.pool.add(&"supplies", 500.0)
+	f.pool.add(&"ammo", 100.0)
+	var riflemen := []
+	for uid in sq.members:
+		var m := demo.sim.state.get_unit(uid)
+		if m.role == &"rifleman":
+			riflemen.append(m)
+	var out := {}
+	var a := _eqs().equip(sq, riflemen[0], &"marksman")
+	out["from_armory"] = a
+	_expect(a.ok and riflemen[0].weapon_id == &"dmr" and not f.armory.has("dmr") and int(f.armory.get("rifle", 0)) >= 1, "d_procure: armoury DMR not issued: %s" % str(a))
+	var b := _eqs().can_equip(sq, riflemen[1], &"marksman")
+	out["second_dmr"] = b.reason
+	_expect(not b.ok and String(b.reason).contains("Locked"), "d_procure: a second DMR without development: %s" % str(b))
+	var st0 := demo.sim.logistics.bases.faction_stock(pf)
+	var c := _eqs().equip(sq, riflemen[1], &"carbineer")
+	var st1 := demo.sim.logistics.bases.faction_stock(pf)
+	out["procured_carbine"] = c
+	out["paid"] = [snappedf(float(st0.supplies) - float(st1.supplies), 0.1), snappedf(float(st0.ammo) - float(st1.ammo), 0.1)]
+	_expect(c.ok and absf(out.paid[0] - 40.0) < 0.5 and absf(out.paid[1] - 15.0) < 0.5, "d_procure: carbine procurement %s paid %s" % [str(c), str(out.paid)])
+	return out
+
+
+## A soldier who dies leaves his weapon where he fell (a stash of the fallen), merged with others nearby.
+func _d_fallen() -> Dictionary:
+	var war := _war()
+	var n0 := war.stashes.size()
+	var south := war.faction(1)
+	var p := demo.on_ground(-1000.0, 6500.0, 0.0)
+	var sq := demo.sim.war.spawn_squad(south, p, 2)
+	var a := demo.sim.state.get_unit(sq.members[0])
+	var b := demo.sim.state.get_unit(sq.members[1])
+	demo.sim.combat.kill(a)
+	demo.sim.combat.kill(b)
+	await _physics(3)
+	var fallen := war.stashes.filter(func(s: Dictionary) -> bool: return s.kind == "fallen" and WarSim._flat(s.pos, p) < 20.0)
+	var out := {"new_stashes": war.stashes.size() - n0, "fallen": fallen.map(func(s: Dictionary) -> Dictionary: return {"items": s.items, "ammo": snappedf(float(s.ammo), 0.1)})}
+	var n := 0
+	for s2: Dictionary in fallen:
+		for k in s2.items:
+			n += int(s2.items[k])
+	_expect(fallen.size() == 1 and n == 2 and float(fallen[0].ammo) > 0.0, "d_fallen: %s" % str(out))
+	return out
+
+
+## Saved and loaded: stashes, cargo, armoury and discoveries come back as saved - a REARM after the save does not survive the
+## load (no duplication).
+func _d_persist() -> Dictionary:
+	var war := _war()
+	var pf := war.player_faction
+	var sq: SquadState = _player_squads()[0]
+	sq.cargo = {"gl40": 1}
+	var depot := _stash_named("Abandoned army depot")
+	var before := {"cargo": sq.cargo.duplicate(), "depot": depot.items.duplicate(), "armory": war.faction(pf).armory.duplicate(), "discovered": war.faction(pf).discovered.duplicate()}
+	demo.construction.save()
+	# After the save: take everything from the depot.
+	_eqs().rearm(sq, depot.pos)
+	var res := demo.construction.load_game()
+	await _physics(5)
+	var w2 := _war()
+	var sq2 := demo.sim.state.get_squad(sq.id)
+	var after := {"cargo": sq2.cargo.duplicate(), "depot": _stash_named("Abandoned army depot").items.duplicate(), "armory": w2.faction(pf).armory.duplicate(), "discovered": w2.faction(pf).discovered.duplicate()}
+	_expect(res.ok and str(before) == str(after), "d_persist: %s -> %s" % [str(before), str(after)])
+	return {"before": before, "after": after}
+
+
+## The equipment screen from the command panel's EQUIP button (screenshot with --shots).
+func _d_ui() -> Dictionary:
+	var sq: SquadState = _player_squads()[0]
+	if demo.game.mode != GameController.Mode.RTS:
+		demo.game.enter_rts()
+	demo.rts.select_squads([sq.id])
+	await _frame(demo.sim.war.squad_center(sq), 60.0, 0.4)
+	await _physics(10)
+	demo.hud.tactical_panel._on_button(TacticalPanel.EQUIP)
+	await _seconds(1.0)
+	var ep := demo.hud.equipment
+	var out := {"visible": ep.visible, "rows": ep.pickers.size()}
+	_expect(ep.visible and ep.pickers.size() == sq.members.size(), "d_ui: equipment screen %s" % str(out))
+	_png("d_equipment_screen")
+	ep.visible = false
 	return out
 
 

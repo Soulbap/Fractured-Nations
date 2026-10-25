@@ -80,6 +80,8 @@ func _wanted() -> bool:
 		return false
 	if hud.development and hud.development.visible:
 		return false
+	if hud.equipment and hud.equipment.visible:
+		return false
 	var it := _intro()
 	if it.active() and not it.complete():
 		return true

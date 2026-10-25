@@ -35,6 +35,8 @@ const FOLLOW := -3
 const REGROUP := -4
 const FORMATION := -5
 const ROE := -6
+## GAMEPLAY-04D: open the equipment screen for the selected squad.
+const EQUIP := -7
 
 ## [group, key, icon, title, hotkey, tooltip]
 const ENTRIES := [
@@ -50,6 +52,8 @@ const ENTRIES := [
 	["DEFENCE", RTSController.GARRISON, &"base", "Garrison", "O", "Garrison one of your bases: click it. The squad mans its towers, positions and walls and stays until given another order"],
 	["SQUAD", FORMATION, &"formation", "Line", "V", "V: line / column. Shift+V cycles line, column, wedge, staggered, dispersed and auto. [ ] change the spacing"],
 	["SQUAD", ROE, &"roe_free", "Fire free", "Y", "Rules of engagement: weapons free / hold fire (a soldier that is hit still defends himself)"],
+	["SUPPLY", RTSController.REARM, &"cargo", "Rearm", "R", "Rearm: search a cache, stash or your base for ammunition and equipment (R at the cursor, or arm and click). Found weapons ride in the squad's cargo; hand them in at a base"],
+	["SUPPLY", EQUIP, &"equipment", "Equip", "", "Equipment: change soldiers' roles and weapons - from the squad's cargo anywhere, from the armoury or procured at a base"],
 ]
 const TACTICS := [SquadState.Tactic.BOUND, SquadState.Tactic.ASSAULT, SquadState.Tactic.SUPPRESS, SquadState.Tactic.FLANK,
 	SquadState.Tactic.DEFEND, SquadState.Tactic.WITHDRAW]
@@ -161,6 +165,10 @@ func _on_button(key: int) -> void:
 			rts.toggle_formation()
 		ROE:
 			rts.toggle_roe()
+		EQUIP:
+			var hud := get_parent() as GameHUD
+			if hud and hud.equipment:
+				hud.equipment.open_for(rts.selected_squads()[0] if not rts.selected_squads().is_empty() else -1)
 		_:
 			rts.arm_tactic(key)
 	_timer = 0.0
@@ -292,7 +300,7 @@ func _refresh_buttons(squads: Array[SquadState]) -> void:
 		var is_tactic := TACTICS.has(key)
 		if is_tactic:
 			b.set_enabled(can_tactic)
-		b.armed = (is_tactic and key == rts.armed_tactic) or (key == FOLLOW and rts.follow_pick) or (key == RTSController.GARRISON and rts.armed_tactic == key)
+		b.armed = (is_tactic and key == rts.armed_tactic) or (key == FOLLOW and rts.follow_pick) or ((key == RTSController.GARRISON or key == RTSController.REARM) and rts.armed_tactic == key)
 		var now := false
 		for sq in squads:
 			match key:
@@ -306,6 +314,10 @@ func _refresh_buttons(squads: Array[SquadState]) -> void:
 					pass
 				RTSController.GARRISON:
 					now = now or sq.garrison_base >= 0
+				RTSController.REARM:
+					now = now or sq.rearm_at.is_finite()
+				EQUIP:
+					pass
 				_:
 					now = now or sq.tactic == key
 		b.current = now
@@ -326,7 +338,7 @@ func _refresh_feedback() -> void:
 		_fb_text = rts.tactic_feedback
 		_fb_until = now + 8.0
 	if rts.armed_tactic >= 0:
-		var tname := "Garrison" if rts.armed_tactic == RTSController.GARRISON else SquadState.TACTIC_NAMES[rts.armed_tactic]
+		var tname := RTSController._armed_name(rts.armed_tactic)
 		_feedback.set_status(&"tactic", "%s armed — click the target  ·  Esc or right click cancels" % tname, FNUI.ARMED)
 	elif rts.follow_pick:
 		_feedback.set_status(&"follow", "Follow armed — click the soldier or squad to follow  ·  Esc cancels", FNUI.ARMED)

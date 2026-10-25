@@ -208,6 +208,21 @@ func _draw() -> void:
 		_text(font, s + Vector2(12, 4), txt, FNUI.INK)
 		if c.state == "securing":
 			_bar(s + Vector2(12, 9), 90.0, float(c.progress), col)
+	# GAMEPLAY-04D: equipment the faction knows of (finds, cache equipment, the fallen's weapons): a square marker.
+	for s: Dictionary in hud.war_sim.equip.known_stashes(pf):
+		var sp: Vector3 = s.pos
+		if cp.distance_to(sp) > 1500.0:
+			continue
+		var sat := sp + Vector3.UP * 2.0
+		if cam.is_position_behind(sat):
+			continue
+		var ss := cam.unproject_position(sat)
+		draw_rect(Rect2(ss - Vector2(6, 6), Vector2(12, 12)), Color(0, 0, 0, 0.6))
+		draw_rect(Rect2(ss - Vector2(4, 4), Vector2(8, 8)), FNUI.OK)
+		var n := 0
+		for k in s.items:
+			n += int(s.items[k])
+		_text(font, ss + Vector2(10, 4), "%s · %s%s" % [String(s.name).to_upper(), ("%d WEAPONS" % n) if n > 0 else "", (" · %d KG AMMO" % roundi(float(s.ammo))) if float(s.ammo) >= 1.0 else ""], FNUI.INK)
 	for st: StructureState in hud.sim.state.construction.all():
 		if not st.is_site() or st.faction != pf:
 			continue

@@ -75,9 +75,17 @@ func init_faction(f: FactionState, extra: Array = []) -> void:
 	for d in DevelopmentDef.all():
 		if d.initial and not (st.done as Array).has(String(d.id)):
 			(st.done as Array).append(String(d.id))
+		# What it knows how to develop or build, it has seen: the weapons of its starting developments count as discovered.
+		if (st.done as Array).has(String(d.id)):
+			for w in d.weapons:
+				if not f.discovered.has(String(w)):
+					f.discovered.append(String(w))
 	for x in extra:
 		if DevelopmentDef.by_id(StringName(x)) and not (st.done as Array).has(String(x)):
 			(st.done as Array).append(String(x))
+			for w in DevelopmentDef.by_id(StringName(x)).weapons:
+				if not f.discovered.has(String(w)):
+					f.discovered.append(String(w))
 
 
 func is_done(f_id: int, dev_id: StringName) -> bool:
@@ -182,9 +190,20 @@ func requirements(f_id: int, d: DevelopmentDef) -> Array:
 		var t := milestone_text(d.milestone, d.milestone_count)
 		out.append({"text": "%s (%d/%d)" % [t.left(1).to_upper() + t.substr(1), mini(have, d.milestone_count), d.milestone_count],
 			"ok": have >= d.milestone_count, "kind": "milestone"})
+	for w in d.requires_discovery:
+		var wd := ws.sim.combat.weapon(w)
+		out.append({"text": "Discovered: %s (find one, deliver it to a base)" % (wd.display_name if wd else String(w)), "ok": is_discovered(f_id, w), "kind": "discovery"})
 	if d.requires_facility != &"":
 		out.append({"text": "Operational %s" % facility_name(d.requires_facility), "ok": has_facility(f_id, d.requires_facility), "kind": "facility"})
 	return out
+
+
+## GAMEPLAY-04D: the faction has registered this weapon type (or the rules do not use discovery).
+func is_discovered(f_id: int, weapon_id: StringName) -> bool:
+	if not enabled():
+		return true
+	var f := ws.war.faction(f_id)
+	return f != null and f.discovered.has(String(weapon_id))
 
 
 ## State of a development for a faction: {state: "done" / "active" / "available" / "locked" / "future", reason, progress 0..1}.
@@ -223,6 +242,8 @@ func can_start(f_id: int, dev_id: StringName) -> Dictionary:
 					return {"ok": false, "reason": "needs %s first" % r.text}
 				"milestone":
 					return {"ok": false, "reason": "needs: %s" % r.text.to_lower()}
+				"discovery":
+					return {"ok": false, "reason": "not discovered yet: %s" % r.text.trim_prefix("Discovered: ")}
 				_:
 					return {"ok": false, "reason": "needs an %s" % r.text.to_lower()}
 	if active_of(f_id).size() >= slots(f_id):
@@ -378,6 +399,9 @@ func structure_lock(f_id: int, type_id: StringName) -> String:
 func weapon_lock(f_id: int, weapon_id: StringName) -> String:
 	if not enabled():
 		return ""
+	var wd := ws.sim.combat.weapon(weapon_id)
+	if wd and wd.needs_discovery and not is_discovered(f_id, weapon_id):
+		return "Not discovered: find a %s and deliver it to a base" % wd.display_name
 	var d := unlocked_by("weapon", weapon_id)
 	if d == null or is_done(f_id, d.id):
 		return ""
@@ -407,6 +431,9 @@ func role_usable(f_id: int, role_id: StringName) -> String:
 		return "unknown role"
 	for wid in [role.weapon_id, role.secondary_id]:
 		var w := ws.sim.combat.weapon(wid) if wid != &"" else null
+		var wl := weapon_lock(f_id, wid) if w else ""
+		if wl != "":
+			return wl
 		if w and w.procure_facility != &"" and not has_facility(f_id, w.procure_facility):
 			return "needs an operational %s to issue the %s" % [facility_name(w.procure_facility), w.display_name]
 	return ""

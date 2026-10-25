@@ -10,7 +10,7 @@
 ## Conditions ("done"): "moved:<m>" a player squad is that far from where the faction started; "clear:<objective>" no
 ## enemy soldier within the objective's radius + 40 m (or the player owns it); "owned:<objective>"; "cache:<name>" the
 ## player secured that cache; "base" the player has a base; "dev_started" a development project begun or finished;
-## "fps" / "map" the player used first person / the map.
+## "fps" / "map" the player used first person / the map; "rearmed" a player squad finished a REARM.
 class_name IntroGuide
 extends RefCounted
 
@@ -149,6 +149,6 @@ func met(cond: String) -> bool:
 				if d and not d.initial:
 					return true
 			return false
-		"fps", "map":
+		"fps", "map", "rearmed":
 			return bool(ws.war.guide.get(key, false))
 	return false

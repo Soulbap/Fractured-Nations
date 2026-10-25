@@ -90,6 +90,9 @@ enum Delivery { HITSCAN, PROJECTILE }
 @export var procure_cost := 0.0
 @export var procure_ammo := 0.0
 @export var procure_facility: StringName = &""
+## GAMEPLAY-04D: a type the faction must first find in the world and deliver to a base before it can procure or develop it
+## (FactionState.discovered). A found one can always be used.
+@export var needs_discovery := false
 
 @export_group("Explosive (GAMEPLAY-02C)")
 ## A weapon that bursts (hand grenade, rocket): no hitscan damage of its own; CombatSim.detonate applies blast_damage to

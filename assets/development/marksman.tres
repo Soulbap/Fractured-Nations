@@ -25,3 +25,4 @@ roles = Array[StringName]([&"marksman"])
 effects = {}
 initial = false
 available = true
+requires_discovery = Array[StringName]([&"dmr"])

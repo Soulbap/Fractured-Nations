@@ -52,6 +52,8 @@ var economy: EconomyHud
 var development: DevelopmentPanel
 ## GAMEPLAY-04A: the objective tracker (opening phases, accepted opportunities).
 var tracker: ObjectiveTracker
+## GAMEPLAY-04D: the squad equipment screen (EQUIP in the command panel).
+var equipment: EquipmentPanel
 
 
 class Overlay extends Control:
@@ -330,6 +332,9 @@ func _ready() -> void:
 	tracker = ObjectiveTracker.new()
 	tracker.hud = self
 	add_child(tracker)
+	equipment = EquipmentPanel.new()
+	equipment.hud = self
+	add_child(equipment)
 	development = DevelopmentPanel.new()
 	development.hud = self
 	add_child(development)
@@ -374,6 +379,12 @@ func _on_war_event(e: Dictionary) -> void:
 			icon = &"cargo" if e.kind == "cache" else &"build"
 		"dev_start", "dev_cancel":
 			col = FNUI.ACCENT if e.kind == "dev_start" else FNUI.NEUTRAL
+			icon = &"development"
+		"rearm", "deliver", "equip":
+			col = FNUI.OK
+			icon = &"equipment" if e.kind == "equip" else &"cargo"
+		"discovery":
+			col = FNUI.ARMED
 			icon = &"development"
 		"dev_done", "objective_done":
 			col = FNUI.OK
@@ -497,6 +508,8 @@ func _process(_delta: float) -> void:
 	# GAMEPLAY-04: with the development screen open the notifications go below it instead of over its header.
 	if development and development.visible:
 		_notes_box.position.y = development._panel.position.y + development._panel.size.y + 6.0
+	elif equipment and equipment.visible:
+		_notes_box.position.y = FNUI.EDGE + 40.0
 	if Engine.get_process_frames() % 6 == 0:
 		var text := _text()
 		if text != _label.text:

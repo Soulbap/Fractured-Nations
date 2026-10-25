@@ -42,6 +42,10 @@ var guide := {}
 ## "garrison", "done", "failed"), why, started, ended}. The structures themselves are ordinary sites / structures.
 var expansions: Array = []
 var next_expansion_id := 1
+## GAMEPLAY-04D: equipment lying in the world - placed finds, the equipment of caches, what fallen soldiers left:
+## {id, name, kind ("position" / "cache" / "fallen"), pos, items {WeaponDef id: count}, ammo (kg), t}. SquadEquipment.
+var stashes: Array = []
+var next_stash_id := 1
 
 
 ## A rule of the scenario (WarState.rules), or `fallback` when the war has none (old saves, test layouts).
@@ -98,7 +102,7 @@ func to_dict() -> Dictionary:
 		"next_op_id": next_op_id, "log": events.duplicate(true), "contacts": cl, "next_contact": next_contact_id,
 		"intel_pending": intel_pending.duplicate(true), "missions": missions.duplicate(true), "next_mission": next_mission_id, "builds": builds.duplicate(true), "counter_cool": counter_cool.duplicate(),
 		"scenario": scenario_id, "rules": rules.duplicate(true), "caches": caches.duplicate(true), "guide": guide.duplicate(),
-		"expansions": expansions.duplicate(true), "next_expansion": next_expansion_id}
+		"expansions": expansions.duplicate(true), "next_expansion": next_expansion_id, "stashes": stashes.duplicate(true), "next_stash": next_stash_id}
 
 
 func from_dict(d: Dictionary) -> void:
@@ -136,3 +140,5 @@ func from_dict(d: Dictionary) -> void:
 	guide = d.get("guide", {}).duplicate()
 	expansions = d.get("expansions", []).duplicate(true)
 	next_expansion_id = d.get("next_expansion", 1)
+	stashes = d.get("stashes", []).duplicate(true)
+	next_stash_id = d.get("next_stash", 1)

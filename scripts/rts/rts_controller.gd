@@ -108,6 +108,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				armed_tactic = -1
 				if t == GARRISON:
 					order_garrison_at(ground_point(event.position))
+				elif t == REARM:
+					order_rearm_at(ground_point(event.position))
 				else:
 					order_tactic(t, tactic_target_at(event.position))
 			return
@@ -163,6 +165,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		tactic_hotkey(SquadState.Tactic.WITHDRAW)
 	elif event.is_action_pressed("squad_garrison"):
 		order_garrison_at(ground_point(get_viewport().get_mouse_position()))
+	elif event.is_action_pressed("squad_rearm"):
+		order_rearm_at(ground_point(get_viewport().get_mouse_position()))
 	elif event.is_action_pressed("halt"):
 		order_hold()
 	elif event.is_action_pressed("squad_follow"):
@@ -461,14 +465,38 @@ func order_garrison(base_id: int) -> Dictionary:
 	return res
 
 
+## GAMEPLAY-04D: armed_tactic value of REARM (not a squad tactic).
+const REARM := 101
+
+
+## R / the panel's Rearm button: the selected squads search for ammunition and equipment at the point - a stash, a cache,
+## one of your bases - walking there first when it is far (SquadEquipment.order_rearm).
+static func _armed_name(tactic: int) -> String:
+	return "Garrison" if tactic == GARRISON else ("Rearm" if tactic == REARM else SquadState.TACTIC_NAMES[tactic])
+
+
+func order_rearm_at(at: Vector3) -> Dictionary:
+	var sqs := selected_squads()
+	if sqs.is_empty() or sim.war == null:
+		_say("Rearm: select a squad first")
+		return {"ok": false, "text": "no squad selected"}
+	_player_takes(sqs)
+	var res := sim.war.equip.order_rearm(sqs, at)
+	tactic_feedback = res.text
+	tactic_feedback_ok = res.ok
+	_say(res.text)
+	tactical_order.emit(res)
+	return res
+
+
 ## Panel button: wait for the click that gives the target (Esc / right click cancels).
 func arm_tactic(tactic: int) -> void:
 	if selected_squads().is_empty():
-		_say("%s: select a squad first" % ("Garrison" if tactic == GARRISON else SquadState.TACTIC_NAMES[tactic]))
+		_say("%s: select a squad first" % _armed_name(tactic))
 		return
 	follow_pick = false
 	armed_tactic = tactic
-	_say("%s: click the target (Esc cancels)" % ("GARRISON: click one of your bases" if tactic == GARRISON else SquadState.TACTIC_NAMES[tactic].to_upper()))
+	_say("%s: click the target (Esc cancels)" % ("GARRISON: click one of your bases" if tactic == GARRISON else ("REARM: click a cache, stash or base" if tactic == REARM else SquadState.TACTIC_NAMES[tactic].to_upper())))
 
 
 ## A tactical order for the selected squads: {ok, n, results, text}. The result text says what was
@@ -696,7 +724,8 @@ func current_message() -> String:
 static func _ensure_squad_actions() -> void:
 	var binds := {"vehicle_board": KEY_T, "vehicle_unload": KEY_U, "squad_follow": KEY_F, "squad_regroup": KEY_G, "squad_formation": KEY_V,
 		"squad_spacing_down": KEY_BRACKETLEFT, "squad_spacing_up": KEY_BRACKETRIGHT, "squad_roe": KEY_Y,
-		"squad_assault": KEY_Z, "squad_suppress": KEY_K, "squad_flank": KEY_L, "squad_defend": KEY_J, "squad_withdraw": KEY_BACKSPACE, "squad_garrison": KEY_O}
+		"squad_assault": KEY_Z, "squad_suppress": KEY_K, "squad_flank": KEY_L, "squad_defend": KEY_J, "squad_withdraw": KEY_BACKSPACE, "squad_garrison": KEY_O,
+		"squad_rearm": KEY_R}
 	for action in binds:
 		if InputMap.has_action(action):
 			continue

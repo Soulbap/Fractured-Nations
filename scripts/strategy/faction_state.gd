@@ -66,6 +66,9 @@ var dev := {}
 ## GAMEPLAY-04D: weapons the faction holds in store, not carried by anyone (WeaponDef id -> count). A soldier re-equipped
 ## at a base hands his old weapon in here and draws the new one from here before anything is bought (SquadEquipment).
 var armory := {}
+## GAMEPLAY-04D: weapon types the faction has registered (a recovered weapon delivered to a base with a supply depot); a
+## weapon with WeaponDef.needs_discovery cannot be procured or developed before (MilitaryDevelopment.weapon_lock).
+var discovered: Array = []
 
 
 func to_dict() -> Dictionary:
@@ -77,7 +80,7 @@ func to_dict() -> Dictionary:
 		"focus": [focus_kind, focus_objective, focus_since, focus_until, focus_utility, focus_why],
 		"ledger": ledger.duplicate(true), "econ_next": econ_next_at, "supply_next": supply_next_at,
 		"pool": pool.to_dict(), "recovery_at": recovery_at, "expand_next": expand_next_at, "recoveries": recoveries, "home": home,
-		"dev": dev.duplicate(true), "armory": armory.duplicate()}
+		"dev": dev.duplicate(true), "armory": armory.duplicate(), "discovered": discovered.duplicate()}
 
 
 static func from_dict(d: Dictionary) -> FactionState:
@@ -120,4 +123,5 @@ static func from_dict(d: Dictionary) -> FactionState:
 	f.home = d.get("home", Vector3.INF)
 	f.dev = d.get("dev", {}).duplicate(true)
 	f.armory = d.get("armory", {}).duplicate()
+	f.discovered = d.get("discovered", []).duplicate()
 	return f

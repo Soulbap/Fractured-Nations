@@ -36,6 +36,7 @@ factions = Array[Dictionary]([{
 "squads": {}
 }, {
 "developments": ["personnel_facilities", "supply_infrastructure", "workshop"],
+"discovered": ["dmr", "gpmg"],
 "hq": "Nordmoen HQ",
 "profile": &"aggressive",
 "reserves": 40,
@@ -46,6 +47,7 @@ factions = Array[Dictionary]([{
 }
 }, {
 "developments": ["personnel_facilities", "supply_infrastructure", "workshop"],
+"discovered": ["carbine", "gpmg", "recoilless"],
 "hq": "East HQ",
 "profile": &"defensive",
 "reserves": 40,
@@ -79,6 +81,26 @@ start_squads = Array[Dictionary]([{
 "x": -1345.0,
 "yaw": 3.14,
 "z": 7395.0
+}])
+stashes = Array[Dictionary]([{
+"ammo": 40.0,
+"items": {
+"carbine": 1
+},
+"kind": "position",
+"name": "Moen checkpoint stores",
+"x": -1365.0,
+"z": 7370.0
+}, {
+"ammo": 120.0,
+"items": {
+"gpmg": 1,
+"recoilless": 1
+},
+"kind": "position",
+"name": "Abandoned army depot",
+"x": 900.0,
+"z": 4800.0
 }])
 structures = Array[Dictionary]([{
 "faction": 1,
@@ -115,6 +137,11 @@ intro = Array[Dictionary]([{
 "text": "Keep soldiers on the farm cache for about 30 s with no enemy near. The supplies and ammunition go to your stock.",
 "title": "Secure the supply cache"
 }, {
+"done": "rearmed",
+"id": "tip_rearm",
+"optional": true,
+"title": "R: rearm at the checkpoint stores (found weapons ride in the cargo)"
+}, {
 "done": "base",
 "id": "foothold",
 "text": "Press B, choose Command Post and place it on open, level ground near the farm. Idle soldiers walk over and build it; the base opens when it is finished.",
@@ -144,6 +171,10 @@ caches = Array[Dictionary]([{
 }, {
 "ammo": 200.0,
 "known": false,
+"item_ammo": 30.0,
+"items": {
+"dmr": 1
+},
 "name": "Verket yard cache",
 "radius": 30.0,
 "supplies": 700.0,
@@ -152,6 +183,10 @@ caches = Array[Dictionary]([{
 }, {
 "ammo": 300.0,
 "known": false,
+"item_ammo": 20.0,
+"items": {
+"gl40": 2
+},
 "name": "Sørmoen cache",
 "radius": 30.0,
 "supplies": 1200.0,
@@ -161,6 +196,10 @@ caches = Array[Dictionary]([{
 "ammo": 250.0,
 "fuel": 300.0,
 "known": false,
+"item_ammo": 40.0,
+"items": {
+"gpmg": 1
+},
 "name": "South Bridge cache",
 "radius": 30.0,
 "supplies": 1000.0,
