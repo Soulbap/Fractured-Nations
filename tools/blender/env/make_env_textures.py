@@ -24,7 +24,10 @@ def save(path, arr):
         arr = arr[..., None]
     h, w, c = arr.shape
     out = oiio.ImageOutput.create(path)
-    out.open(path, oiio.ImageSpec(w, h, c, oiio.UINT8))
+    spec = oiio.ImageSpec(w, h, c, oiio.UINT8)
+    # Straight (unassociated) alpha: otherwise OIIO divides RGB by alpha when writing PNG (bright card fringes; VISUAL-02).
+    spec.attribute("oiio:UnassociatedAlpha", 1)
+    out.open(path, spec)
     out.write_image(np.ascontiguousarray((arr * 255 + 0.5).astype(np.uint8)))
     out.close()
     print("wrote", path)
