@@ -568,6 +568,8 @@ func _consider(sq: SquadState, a: Dictionary) -> void:
 		return
 	if res.ok:
 		sq.tactic_rejected = "; ".join(rej)
+		if best.t == SquadState.Tactic.WITHDRAW:
+			sq.tactic_why = best.why   # COMBAT-01: keep why it withdraws (local, the cause) for the HUD
 	else:
 		sq.tactic_rejected = "%s refused: %s" % [SquadState.TACTIC_NAMES[best.t], res.reason] + ("; " + "; ".join(rej) if not rej.is_empty() else "")
 		_set_meta(sq, "failed_%d" % best.t, now + 30.0)
@@ -1706,14 +1708,19 @@ func _run_defend(sq: SquadState, a: Dictionary, now: float) -> void:
 		var parts: Dictionary = a.parts
 		if bound and sq.defence_line < 2 and _fall_back(sq, a, now):
 			return
-		if sq.tactic_owner != SquadState.Owner.PLAYER:
-			var f := _fallback_point(sq, a)
+		if sq.tactic_owner != SquadState.Owner.PLAYER and not player_hold(sq):
+			# COMBAT-01: a short local withdrawal out of sight first; farther only when there is no such ground.
+			var f := _fallback_point(sq, a, true)
+			var local := f.is_finite()
+			if not local:
+				f = _fallback_point(sq, a)
 			if f.is_finite():
-				_switch(sq, SquadState.Tactic.WITHDRAW, f, "defence failing: effectiveness %.2f (size %.2f, suppression %.2f, ammo %.2f)" % [a.eff, parts.size, parts.suppression, parts.ammo])
+				_switch(sq, SquadState.Tactic.WITHDRAW, f, "%s withdrawal %.0f m - %s, defence failing (effectiveness %.2f: size %.2f, suppression %.2f, ammo %.2f)" % [
+					"local" if local else "fighting", _flat(a.center, f), withdraw_cause(a), a.eff, parts.size, parts.suppression, parts.ammo])
 				return
 			sq.tactic_rejected = "withdraw considered (effectiveness %.2f) but no safe fallback position" % a.eff
 		else:
-			sq.tactic_rejected = "withdraw considered (effectiveness %.2f) but the player ordered the defence" % a.eff
+			sq.tactic_rejected = "withdraw considered (effectiveness %.2f) but the player ordered %s" % [a.eff, "the defence" if sq.tactic_owner == SquadState.Owner.PLAYER else "the squad to hold here"]
 	# A threat that shows nowhere near the posts: look for better ones.
 	if now - sq.tactic_phase_since >= 10.0:
 		var why := _bad_posts(sq, a, now)
@@ -2662,7 +2669,8 @@ func withdraw_cause(a: Dictionary, hopeless_pin := false) -> String:
 ## COMBAT-01: the squad holds where the player told it to (an ordinary HOLD of the player's faction, not one the tactics
 ## gave themselves): its own tactics do not take it away from there.
 func player_hold(sq: SquadState) -> bool:
-	if sq.order != SquadState.Order.HOLD or bool(_meta(sq, "tactic_hold", false)) or sim.state.war == null:
+	var held := sq.order == SquadState.Order.HOLD or (sq.order == SquadState.Order.TACTIC and sq.prev_order == SquadState.Order.HOLD)
+	if not held or bool(_meta(sq, "tactic_hold", false)) or sim.state.war == null:
 		return false
 	var f := sim.state.war.faction(sq.faction)
 	return f != null and f.player
@@ -2974,6 +2982,8 @@ func status_tag(sq: SquadState) -> String:
 		for k in ["pinned, no firing position", "heavy casualties", "heavy suppression", "outnumbered", "low ammunition", "losing the firefight", "assault stalled"]:
 			if sq.tactic_why.contains(k):
 				return k
+	if sq.tactic_rejected.contains("player ordered") or sq.tactic_rejected.contains("player decides"):
+		return "holding by your order (would withdraw)"
 	if sq.tactic != SquadState.Tactic.NONE and sq.tactic_rejected.contains("waits"):
 		return "waiting: " + sq.tactic_rejected.get_slice("waits: ", 1)
 	var a := assessment(sq)

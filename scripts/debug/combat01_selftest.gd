@@ -20,11 +20,13 @@
 ##            sight zoom), an enemy team 70 m away fires at him (cracks / whizzes heard where rounds pass, impacts around
 ##            him, his view never moved by it), hits make AI soldiers flinch; then the same fight from the tactical camera
 ##            at 350 m and 700 m (muzzle flickers, tracers). Screenshots of each.
+## t_withdraw a squad of four on open ground against eight kept-alive enemies 110 m away: an AI squad withdraws locally
+##            (short, out of sight, with its reason); the player's squad holding where the player ordered does not (it says so).
 ## Prints "C1 <check> <json>", writes res://benchmarks/raw/combat01_test.json.
 class_name Combat01SelfTest
 extends Visual03SelfTest
 
-const CHECKS1: Array[String] = ["v_detect", "p_posture", "g_grass", "a_accuracy", "f_gunplay"]
+const CHECKS1: Array[String] = ["v_detect", "p_posture", "g_grass", "a_accuracy", "f_gunplay", "t_withdraw"]
 
 
 func run(args: PackedStringArray) -> void:
@@ -544,4 +546,47 @@ func _f_gunplay() -> Dictionary:
 			states.append("%s t%d %s %s" % [q.ai_state_name(), q.target_id, q.ai_reason, Posture.NAMES[q.posture]])
 		out["view_%dm" % int(dist)] = {"far_flashes": fx.far_flashes - ff, "ai_shots": sim.brain.ai_shots - ai0, "states": states}
 	sim.brain.enabled = false
+	return out
+
+
+func _t_withdraw() -> Dictionary:
+	var sim := demo.sim
+	var c: Vector3 = _site.def
+	var dir: Vector3 = _site.dir
+	var pf := sim.state.war.player_faction if sim.state.war else 0
+	var ai_f := 1 if pf != 1 else 2
+	var foe_f := 0 if pf != 0 and ai_f != 0 else (3 - pf - ai_f)
+	var out := {}
+	for case: Array in [["ai", ai_f], ["player_hold", pf]]:
+		sim.brain.enabled = false
+		var sq := _cs.spawn(case[1], c, dir, 4, "C1W")
+		var foe := _cs.spawn(foe_f, c + dir * 110.0, -dir, 8, "C1X")
+		_keep_alive([foe])
+		await _physics(10)
+		# the precondition: a squad already badly hurt (two of four down) facing eight
+		for id in sq.members.slice(2):
+			sim.combat.kill(sim.state.get_unit(id), -1)
+		await _physics(5)
+		sim.squads.order_hold([sq.id])
+		var start := sim.tactics.events.size()
+		sim.brain.enabled = true
+		var t0 := sim.state.time
+		var c0 := sim.war.squad_center(sq)
+		var withdrew := ""
+		var tags := {}
+		while sim.state.time - t0 < 40.0:
+			await _physics(30)
+			var tag := sim.tactics.short_text(sq)
+			if tag != "":
+				tags[tag] = true
+			if sq.tactic == SquadState.Tactic.WITHDRAW and withdrew == "":
+				withdrew = "%.0f s: %s" % [sim.state.time - t0, sq.tactic_why]
+		var ev: Array = sim.tactics.events.slice(start).map(func(e: Dictionary) -> String: return "%s %s" % [e.get("t", ""), e.get("text", "")])
+		out[case[0]] = {"withdrew": withdrew, "moved_m": snappedf(CombatBrain._flat(c0, sim.war.squad_center(sq)), 0.1) if not sq.members.is_empty() else -1.0,
+			"alive": sq.members.size(), "rejected": sq.tactic_rejected, "hud": tags.keys(), "events": ev.slice(-6)}
+		_cs.reset()
+		await _physics(10)
+	_expect(String(out.ai.withdrew).contains("local") or String(out.ai.withdrew).contains("fighting"),
+		"t_withdraw: the AI squad never withdrew: %s" % JSON.stringify(out.ai))
+	_expect(String(out.player_hold.withdrew) == "", "t_withdraw: the player's held squad withdrew on its own: %s" % out.player_hold.withdrew)
 	return out
