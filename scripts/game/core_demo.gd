@@ -111,6 +111,7 @@ func _ready() -> void:
 	config = world.get_node("WorldBuilder").config
 	vegetation = world.get_node_or_null("Vegetation")
 	WorldLook.apply(world)
+	GroundLook.apply(world)
 	var collider_streamer: InstanceColliderStreamer = world.get_node_or_null("InstanceColliderStreamer")
 	var diagnostics: WorldDiagnostics = world.get_node_or_null("WorldDiagnostics")
 	# The world's free exploration body is replaced by possessable soldiers.
@@ -429,6 +430,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--campaign-test" in args:
 		_campaign_selftest = CampaignSelfTest.new(self)
 		_campaign_selftest.run.call_deferred(args)
+	elif "--visual02-test" in args:
+		_gameplay_selftest = Visual02SelfTest.new(self)
+		_gameplay_selftest.run.call_deferred(args)
 	elif "--gameplay05-test" in args:
 		_gameplay_selftest = Gameplay05SelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)

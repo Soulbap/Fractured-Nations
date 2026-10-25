@@ -16,8 +16,25 @@ uniform vec2 wind_direction = vec2(1.0, 1.0);
 uniform float tint_strength : hint_range(0.0, 1.0) = 0.6;
 uniform vec3 tint : source_color = vec3(1.0);
 uniform float alpha_cut : hint_range(0.0, 1.0) = 0.45;
+// VISUAL-02: the same colour-map treatment and open-ground macro variation as shaders/world/terrain_visual02.gdshader, so
+// the tufts keep the colour of the ground they stand on (otherwise the edge of the grass ring shows). GroundLook sets
+// v2_noise; without it (legacy ground) ground_match is 0.
+uniform highp sampler2D v2_noise : filter_linear_mipmap, repeat_enable;
+uniform float ground_match = 0.0;
+uniform float cm_contrast = 0.86;
+uniform float cm_saturation = 0.80;
+uniform vec3 cm_pivot = vec3(0.78, 0.80, 0.68);
+uniform vec3 open_dry : source_color = vec3(1.07, 1.02, 0.84);
+uniform vec3 open_lush : source_color = vec3(0.88, 0.98, 0.88);
+uniform float open_region_m = 2600.0;
+uniform float open_patch_m = 290.0;
+uniform float open_clump_m = 37.0;
+uniform float open_saturation = 0.74;
+uniform float tuft_gain = 1.7;
 
 varying vec4 data;
+// The ground colour depends only on the instance (its origin and colour-map tint): computed once per vertex.
+varying vec3 v_ground;
 
 void vertex() {
 	// Mesh spans y = -0.45 .. 0.55 (position_offset lifts the base onto the ground).
@@ -25,6 +42,17 @@ void vertex() {
 	data[2] *= data[2];
 	data.rg = INSTANCE_CUSTOM.rg;
 	vec3 w_vertex = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	vec2 v_world = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xz;
+	vec3 cmc = COLOR.rgb;
+	if (ground_match > 0.0) {
+		vec3 c2 = cm_pivot + (cmc - cm_pivot) * cm_contrast;
+		c2 = mix(vec3(dot(c2, vec3(0.299, 0.587, 0.114))), c2, cm_saturation);
+		vec3 ov = mix(open_lush, open_dry, smoothstep(0.32, 0.68, textureLod(v2_noise, v_world / open_region_m, 0.0).r));
+		ov *= mix(vec3(0.91, 0.95, 0.92), vec3(1.06, 1.03, 0.95), smoothstep(0.25, 0.75, textureLod(v2_noise, v_world / open_patch_m + vec2(0.37, 0.11), 0.0).r));
+		ov *= 0.93 + 0.14 * textureLod(v2_noise, v_world / open_clump_m + vec2(0.71, 0.53), 0.0).r;
+		cmc = mix(cmc, c2 * ov, ground_match);
+	}
+	v_ground = cmc;
 	float scale = pow(INSTANCE_CUSTOM[3] * INSTANCE_CUSTOM[3], 0.707);
 	float force = INSTANCE_CUSTOM[2] * data[2] * scale;
 	force = pow(max(force, 0.0), 0.707);
@@ -43,7 +71,12 @@ void fragment() {
 	float forest = 1.0 - smoothstep(forest_lum_lo, forest_lum_hi, lum);
 	vec4 t = forest > 0.5 ? texture(forest_tex, UV) : texture(tuft_tex, UV);
 	ALBEDO = t.rgb * tint * (0.85 + 0.3 * data.r);
-	ALBEDO *= mix(vec3(1.0), pow(COLOR.rgb, vec3(2.2)) * 1.6, tint_strength);
+	vec3 cmc = v_ground;
+	ALBEDO *= mix(vec3(1.0), pow(cmc, vec3(2.2)) * 1.6, tint_strength);
+	if (ground_match > 0.0) {
+		vec3 g = mix(vec3(dot(ALBEDO, vec3(0.299, 0.587, 0.114))), ALBEDO, mix(1.0, open_saturation, ground_match));
+		ALBEDO = g * mix(1.0, tuft_gain, ground_match);
+	}
 	ALPHA = t.a;
 	ALPHA_SCISSOR_THRESHOLD = alpha_cut;
 	// Soft, upward-facing normal: tufts light like a meadow, not like flat cards.
