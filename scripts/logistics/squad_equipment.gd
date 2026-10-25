@@ -226,6 +226,7 @@ func rearm(sq: SquadState, at: Vector3) -> Dictionary:
 	var base := _store_base(at, f)
 	var bs := ws.sim.logistics.bases
 	var used := 0.0
+	var lacking := false
 	# 1. Ammunition the soldiers lack: their weapons, secondary rounds, grenades.
 	for uid in sq.members:
 		var u := ws.sim.state.get_unit(uid)
@@ -236,6 +237,7 @@ func rearm(sq: SquadState, at: Vector3) -> Dictionary:
 			var full := def.magazine_size + def.reserve_start
 			var missing := full - (u.mag + u.reserve)
 			if missing > 0:
+				lacking = true
 				var need := def.procure_ammo * float(missing) / maxf(full, 1)
 				var got := _take_ammo(sources, base, f, need)
 				var rounds := int(floor(float(missing) * (got / maxf(need, 0.001))))
@@ -245,12 +247,14 @@ func rearm(sq: SquadState, at: Vector3) -> Dictionary:
 		if role:
 			var sdef := ws.sim.combat.weapon(u.sec_id) if u.sec_id != &"" else null
 			if sdef and u.sec_ammo < role.secondary_rounds and sdef.id == role.secondary_id:
+				lacking = true
 				var miss_s := role.secondary_rounds - u.sec_ammo
 				var need_s := sdef.procure_ammo * float(miss_s) / maxf(role.secondary_rounds, 1)
 				var got_s := _take_ammo(sources, base, f, need_s)
 				u.sec_ammo += int(floor(float(miss_s) * (got_s / maxf(need_s, 0.001))))
 				used += got_s
 			if u.grenades < role.grenades:
+				lacking = true
 				var got_g := _take_ammo(sources, base, f, (role.grenades - u.grenades) * GRENADE_KG)
 				u.grenades += int(floor(got_g / GRENADE_KG))
 				used += got_g
@@ -290,8 +294,19 @@ func rearm(sq: SquadState, at: Vector3) -> Dictionary:
 		var wd := ws.sim.combat.weapon(StringName(k))
 		var new := fs != null and not fs.discovered.has(k)
 		parts.append("%d x %s%s" % [taken[k], wd.display_name if wd else k, " (unknown type: deliver it to a base)" if new else ""])
+	# GAMEPLAY-05: say why nothing (more) was taken - one answer used to cover a full cargo, full soldiers and an empty spot.
+	var left := pile.size()
+	for k in taken:
+		left -= int(taken[k])
+	if left > 0:
+		parts.append("cargo full (%d/%d): %d weapon%s left here" % [cargo_count(sq), cargo_cap(sq), left, "" if left == 1 else "s"])
 	if parts.is_empty():
-		parts.append("nothing usable found")
+		if sources.is_empty() and base < 0:
+			parts.append("nothing here - no known equipment within %d m and no base stores" % roundi(SEARCH_R))
+		elif not lacking:
+			parts.append("already fully supplied, no spare weapons here")
+		else:
+			parts.append("no ammunition left here for their weapons")
 	return {"ok": true, "text": "%s rearmed: %s" % [sq.squad_name, ", ".join(parts)], "ammo_kg": used, "taken": taken}
 
 

@@ -282,6 +282,9 @@ func _refresh() -> void:
 			_:
 				ind.set_status(&"locked", String(s.reason), FNUI.INK_3 if not s.get("blocked_by_cost", false) else FNUI.WARN)
 		name.add_theme_color_override("font_color", FNUI.INK_3 if s.state in ["future", "locked"] else FNUI.INK)
+		# GAMEPLAY-05: the card trims its status line ("Needs an operational supply de..."); the whole reason on hover.
+		card.tooltip_text = "%s
+%s" % [name.text, String(s.reason)] if String(s.reason) != "" else name.text
 		var sb := FNUI.state_style(&"selected" if id == _sel else &"normal", 0)
 		if id != _sel:
 			sb.bg_color = Color(FNUI.BG_RAISED, 0.55)

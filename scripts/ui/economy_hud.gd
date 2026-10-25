@@ -209,20 +209,22 @@ func _draw() -> void:
 		if c.state == "securing":
 			_bar(s + Vector2(12, 9), 90.0, float(c.progress), col)
 	# GAMEPLAY-04D: equipment the faction knows of (finds, cache equipment, the fallen's weapons): a square marker.
-	for s: Dictionary in hud.war_sim.equip.known_stashes(pf):
-		var sp: Vector3 = s.pos
-		if cp.distance_to(sp) > 1500.0:
-			continue
-		var sat := sp + Vector3.UP * 2.0
-		if cam.is_position_behind(sat):
-			continue
-		var ss := cam.unproject_position(sat)
+	# GAMEPLAY-05: stashes close together on screen are one marker with a summary (a fight leaves many); weapon types the
+	# faction has not registered are named and drawn in the find colour; the mouse over a marker lists what lies there.
+	var mouse := get_local_mouse_position()
+	for g: Dictionary in stash_groups(cam, pf):
+		var ss: Vector2 = g.screen
+		var fresh: Array = g.new_types
+		var col := FNUI.ARMED if not fresh.is_empty() else FNUI.OK
 		draw_rect(Rect2(ss - Vector2(6, 6), Vector2(12, 12)), Color(0, 0, 0, 0.6))
-		draw_rect(Rect2(ss - Vector2(4, 4), Vector2(8, 8)), FNUI.OK)
-		var n := 0
-		for k in s.items:
-			n += int(s.items[k])
-		_text(font, ss + Vector2(10, 4), "%s · %s%s" % [String(s.name).to_upper(), ("%d WEAPONS" % n) if n > 0 else "", (" · %d KG AMMO" % roundi(float(s.ammo))) if float(s.ammo) >= 1.0 else ""], FNUI.INK)
+		draw_rect(Rect2(ss - Vector2(4, 4), Vector2(8, 8)), col)
+		var lines: Array[String] = [String(g.title)]
+		if ss.distance_to(mouse) <= 18.0:
+			lines.append_array(g.details)
+		elif not fresh.is_empty():
+			lines.append("NEW: " + ", ".join(fresh))
+		for i in lines.size():
+			_text(font, ss + Vector2(10, 4 + i * 15), lines[i], col if i == 1 and not fresh.is_empty() else FNUI.INK)
 	for st: StructureState in hud.sim.state.construction.all():
 		if not st.is_site() or st.faction != pf:
 			continue
@@ -240,6 +242,80 @@ func _draw() -> void:
 		_text(font, s + Vector2(-60, -4), "%s · %d%%" % [(def.display_name if def else String(st.type_id)).to_upper(), roundi(st.site_progress() * 100.0)], FNUI.INK)
 		_bar(s + Vector2(-60, 1), 120.0, st.site_progress(), FNUI.OK if workers > 0 else FNUI.WARN)
 		_text(font, s + Vector2(-60, 16), line2.to_upper(), FNUI.OK if workers > 0 else FNUI.WARN)
+
+
+## GAMEPLAY-05: the known stashes in view, grouped when their labels would overlap on screen (markers closer than STASH_GROUP_W
+## sideways and STASH_GROUP_H up or down). Each group: screen (the marker), title (one line), details (a line per weapon type
+## and the ammunition), new_types (display names of weapon types the faction has not registered), stashes (how many). The
+## records are untouched.
+const STASH_GROUP_W := 240.0
+const STASH_GROUP_H := 44.0
+
+
+func stash_groups(cam: Camera3D, pf: int) -> Array:
+	var groups: Array = []
+	var fs := _war().faction(pf)
+	var cp := cam.global_position
+	for s: Dictionary in hud.war_sim.equip.known_stashes(pf):
+		var sp: Vector3 = s.pos
+		if cp.distance_to(sp) > 1500.0:
+			continue
+		var sat := sp + Vector3.UP * 2.0
+		if cam.is_position_behind(sat):
+			continue
+		var ss := cam.unproject_position(sat)
+		var into: Dictionary = {}
+		for g: Dictionary in groups:
+			var dd: Vector2 = (g.screen as Vector2) - ss
+			if absf(dd.x) <= STASH_GROUP_W and absf(dd.y) <= STASH_GROUP_H:
+				into = g
+				break
+		if into.is_empty():
+			into = {"screen": ss, "members": []}
+			groups.append(into)
+		(into.members as Array).append(s)
+	for g: Dictionary in groups:
+		var items := {}
+		var ammo := 0.0
+		var names: Array[String] = []
+		var sum := Vector2.ZERO
+		for s: Dictionary in g.members:
+			for k in s.items:
+				items[k] = int(items.get(k, 0)) + int(s.items[k])
+			ammo += float(s.ammo)
+			sum += cam.unproject_position((s.pos as Vector3) + Vector3.UP * 2.0)
+			if s.kind != "fallen" and not names.has(String(s.name)):
+				names.append(String(s.name))
+		var n := (g.members as Array).size()
+		g.screen = sum / n
+		var weapons := 0
+		var details: Array[String] = []
+		var fresh: Array[String] = []
+		for k in items:
+			if int(items[k]) <= 0:
+				continue
+			weapons += int(items[k])
+			var def := hud.sim.combat.weapon(StringName(k))
+			var wname := (def.display_name if def else String(k)).to_upper()
+			var unknown := fs != null and not fs.discovered.has(String(k))
+			details.append("%d × %s%s" % [int(items[k]), wname, "  (NEW)" if unknown else ""])
+			if unknown:
+				fresh.append(wname)
+		if ammo >= 1.0:
+			details.append("%d KG AMMUNITION" % roundi(ammo))
+		var what := "FALLEN EQUIPMENT" if names.is_empty() else names[0].to_upper()
+		if n > 1:
+			what += " +%d" % (n - 1) if not names.is_empty() else " ×%d" % n
+		var parts: Array[String] = [what]
+		if weapons > 0:
+			parts.append("%d WPN" % weapons)
+		if ammo >= 1.0:
+			parts.append("%d KG" % roundi(ammo))
+		g.title = " · ".join(parts)
+		g.details = details
+		g.new_types = fresh
+		g.stashes = n
+	return groups
 
 
 func _text(font: Font, at: Vector2, txt: String, col: Color) -> void:

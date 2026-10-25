@@ -117,8 +117,23 @@ func nearest_store(pos: Vector3, faction: int, item := &"", kind := &"") -> Stru
 	return best
 
 
+## GAMEPLAY-05: "Barracks, North base 1" (a number only when the base has two of the type) instead of the structure id
+## ("Barracks #48") in every message and list.
 func store_name(s: StructureState) -> String:
-	return s.label if s.label != "" else "%s #%d" % [FacilityDefs.display_name(s.type_id), s.id]
+	if s.label != "":
+		return s.label
+	var what := FacilityDefs.display_name(s.type_id)
+	var b: Dictionary = sim.state.construction.bases.get(s.base_id, {})
+	if b.is_empty():
+		return "%s #%d" % [what, s.id]
+	var same := 0
+	var nth := 0
+	for o in bases.facilities_of(s.base_id):
+		if o.type_id == s.type_id:
+			same += 1
+			if o.id <= s.id:
+				nth += 1
+	return "%s%s, %s" % [what, (" %d" % nth) if same > 1 else "", b.name]
 
 
 ## Where vehicles dock at a store; slots spread the vehicles queueing for the same store.

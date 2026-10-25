@@ -1360,6 +1360,7 @@ func _draw() -> void:
 		for o: ObjectiveState in war.all_objectives():
 			_draw_objective(o, font, level)
 		_draw_caches(font)
+		_draw_stashes(font)
 	# Operations of the player's faction: routes, then their labels.
 	_op_rects.clear()
 	var label_slots := {}
@@ -1432,6 +1433,44 @@ func _draw_caches(font: Font) -> void:
 		else:
 			txt += " · %d kg" % roundi(float(c.supplies))
 		_text(font, s + Vector2(10, 4), txt, 11, col)
+
+
+## GAMEPLAY-05: equipment the faction knows of (finds, cache equipment, the fallen's weapons) - a small green square, amber when it
+## holds a weapon type not registered yet. Markers whose labels would overlap are one (a fight leaves many); a named find is
+## labelled, the fallen only by count. The tactical view lists the contents.
+func _draw_stashes(font: Font) -> void:
+	if demo == null or demo.sim.war == null:
+		return
+	var fs := sim.state.war.faction(faction)
+	var groups: Array = []
+	for st: Dictionary in demo.sim.war.equip.known_stashes(faction):
+		var sp := to_screen(st.pos)
+		var g: Dictionary = {}
+		for x: Dictionary in groups:
+			var dd: Vector2 = (x.s as Vector2) - sp
+			if absf(dd.x) <= 170.0 and absf(dd.y) <= 16.0:
+				g = x
+				break
+		if g.is_empty():
+			g = {"s": sp, "n": 0, "name": "", "new": false}
+			groups.append(g)
+		g.n = int(g.n) + 1
+		if st.kind != "fallen" and String(g.name) == "":
+			g.name = String(st.name)
+		for k in st.items:
+			if fs != null and int(st.items[k]) > 0 and not fs.discovered.has(String(k)):
+				g.new = true
+	for g: Dictionary in groups:
+		var col: Color = FNUI.ARMED if g.new else FNUI.OK
+		var sp: Vector2 = g.s
+		draw_rect(Rect2(sp - Vector2(5, 5), Vector2(10, 10)), Color(0, 0, 0, 0.7))
+		draw_rect(Rect2(sp - Vector2(3.5, 3.5), Vector2(7, 7)), col)
+		var txt := String(g.name) if String(g.name) != "" else ("Fallen equipment" if int(g.n) == 1 else "Fallen equipment ×%d" % int(g.n))
+		if String(g.name) != "" and int(g.n) > 1:
+			txt += " +%d" % (int(g.n) - 1)
+		if g.new:
+			txt += " · new type"
+		_text(font, sp + Vector2(9, 4), txt, 10, col)
 
 
 ## The tactical camera: its position, a faint wedge of its horizontal field of view
