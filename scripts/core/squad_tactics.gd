@@ -140,6 +140,9 @@ func update(delta: float) -> void:
 	_dt = _t
 	_t = 0.0
 	ticks += 1
+	_defence_starts = 0
+	plans_tick = 0
+	plan_tick_usec = 0
 	var t0 := Time.get_ticks_usec()
 	var counted := _site_workers.keys()
 	_site_workers.clear()
@@ -153,6 +156,8 @@ func update(delta: float) -> void:
 	var dt := Time.get_ticks_usec() - t0
 	step_usec += dt
 	step_usec_max = maxi(step_usec_max, dt)
+	plans_tick_max = maxi(plans_tick_max, plans_tick)
+	plan_tick_usec_max = maxi(plan_tick_usec_max, plan_tick_usec)
 
 
 func _step(sq: SquadState) -> void:
@@ -532,7 +537,12 @@ func _consider(sq: SquadState, a: Dictionary) -> void:
 	var contact_id := -1
 	if a.contact != null:
 		contact_id = (a.contact as ContactState).id
+	_deferrable = true
 	var res := start(sq, best.t, SquadState.Owner.SQUAD, best.target, contact_id, best.why)
+	_deferrable = false
+	if res.get("deferred", false):
+		_next_eval[sq.id] = now  # chosen again next step, no penalty
+		return
 	if res.ok:
 		sq.tactic_rejected = "; ".join(rej)
 	else:
@@ -553,6 +563,11 @@ func start(sq: SquadState, tactic: int, owner: int, target := Vector3.INF, conta
 	var a := _assess_squad(sq)
 	if int(a.n) == 0:
 		return _refuse(sq, "no soldier is available to carry it out")
+	if _deferrable and (tactic == SquadState.Tactic.DEFEND or tactic == SquadState.Tactic.REPOSITION):
+		if _defence_starts >= defence_plans_per_step:
+			deferred += 1
+			return {"ok": false, "reason": "deferred to the next step (one defence plan per step)", "deferred": true}
+		_defence_starts += 1
 	var now := sim.state.time
 	var plan := _plan(sq, a, tactic, target, owner, extra)
 	if not plan.ok:
@@ -1267,7 +1282,33 @@ func _defend_posts(sq: SquadState, units: Array, centre: Vector3, dir: Vector3, 
 	return posts
 
 
+## GAMEPLAY-04G: a defence plan judges its posts against the threat (~5 ms each); squads that choose DEFEND / REPOSITION on
+## their own (_consider, a garrison taking up its posts) start at most defence_plans_per_step of them per step, the rest one
+## step (tick_s) later - several squads alerted at once no longer plan in one frame. The player's and the operations' orders
+## are never deferred.
+var defence_plans_per_step := 1
+var _deferrable := false
+var _defence_starts := 0
+var deferred := 0
+## GAMEPLAY-04G: measured - the judged post plans of one step and their cost (the GAMEPLAY-03 DEFEND planning spike).
+var plans_tick := 0
+var plans_tick_max := 0
+var plan_usec_max := 0
+var plan_tick_usec := 0
+var plan_tick_usec_max := 0
+
+
 func _judged_posts(sq: SquadState, units: Array, centre: Vector3, dir: Vector3, look: Vector3, slots: Array, base_anchor: Vector3, nat_r: float) -> Array:
+	var t0 := Time.get_ticks_usec()
+	var out := _judged_posts_run(sq, units, centre, dir, look, slots, base_anchor, nat_r)
+	var dt := Time.get_ticks_usec() - t0
+	plans_tick += 1
+	plan_tick_usec += dt
+	plan_usec_max = maxi(plan_usec_max, dt)
+	return out
+
+
+func _judged_posts_run(sq: SquadState, units: Array, centre: Vector3, dir: Vector3, look: Vector3, slots: Array, base_anchor: Vector3, nat_r: float) -> Array:
 	var count := units.size()
 	var w := post_w
 	var uid: int = units[0].id
@@ -1564,8 +1605,10 @@ func _garrison_step(sq: SquadState, a: Dictionary, now: float) -> void:
 		_internal = false
 		_log(sq, "%s marches %.0f m to garrison %s" % [sq.squad_name, _flat(a.center, anchor), b.name])
 		return
+	_deferrable = owner != SquadState.Owner.PLAYER
 	var res := start(sq, SquadState.Tactic.DEFEND, owner, anchor, -1, "", {"garrison": sq.garrison_base})
-	if not res.ok:
+	_deferrable = false
+	if not res.ok and not res.get("deferred", false):
 		sq.tactic_rejected = "garrison: " + str(res.reason)
 
 
@@ -2769,6 +2812,7 @@ func short_text(sq: SquadState) -> String:
 
 func summary() -> Dictionary:
 	return {"ticks": ticks, "steps": steps, "step_us_avg": snappedf(float(step_usec) / maxi(ticks, 1), 0.1), "step_us_max": step_usec_max,
+		"judged_plans": {"per_tick_max": plans_tick_max, "plan_us_max": plan_usec_max, "tick_us_max": plan_tick_usec_max, "deferred": deferred},
 		"started": started.duplicate(), "finished": finished.duplicate(), "decisions": decisions, "refusals": refusals, "replans": replans,
 		"posts": {"searches": pos.searches, "evals": pos.evals, "us_avg": snappedf(float(pos.usec) / maxi(pos.searches, 1), 0.1), "us_max": pos.usec_max,
 			"flank_plans": pos.flank_plans, "flank_us_avg": snappedf(float(pos.flank_usec) / maxi(pos.flank_plans, 1), 0.1),

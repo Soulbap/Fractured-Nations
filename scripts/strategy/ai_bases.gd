@@ -382,6 +382,10 @@ func plan_expansion(f: FactionState, supplies: float, squads: int) -> Dictionary
 	for o: ObjectiveState in ws.war.owned_by(f.id):
 		if o.is_base() or o.is_hq() or ws.threatened.get(o.id, false):
 			continue
+		# GAMEPLAY-04G: a scenario outpost (a checkpoint, a roadblock) is a post, not a base site - New Game's posts next to
+		# the player's start were turned into fortified bases within half an hour.
+		if o.kind == &"outpost":
+			continue
 		if ws.intel.threat_near(f.id, o.position, o.radius + 600.0) > 0:
 			continue
 		var gap := INF

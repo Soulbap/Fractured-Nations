@@ -10,8 +10,8 @@ class_name Gameplay04SelfTest
 extends GameplaySelfTest
 
 ## Every check in run order. Checks that need another scenario are only run when named in --only.
-const CHECKS: Array[String] = ["a_setup", "a_cache_safe", "a_ui", "a_phases", "a_persist", "a_skip", "a_road", "a_profile", "a_shoulders", "a_trees", "a_encounter", "b_lock", "b_start", "b_pause", "b_persist", "b_complete", "b_future", "b_ui", "b_ai", "b_dev_off", "c_arena", "c_gl", "c_recoilless", "c_carry", "c_fps", "c_persist", "c_ai_comp", "c_visual", "d_setup", "d_rearm", "d_field_equip", "d_deliver", "d_procure", "d_fallen", "d_persist", "d_ui", "e_offer", "e_complete", "e_recon", "e_persist", "e_ui"]
-const ONLY_NAMED: Array[String] = ["c_arena", "b_dev_off", "a_encounter", "a_road", "a_profile", "a_trees"]
+const CHECKS: Array[String] = ["a_setup", "a_cache_safe", "a_ui", "a_phases", "a_persist", "a_skip", "a_road", "a_profile", "a_shoulders", "a_trees", "a_encounter", "b_lock", "b_start", "b_pause", "b_persist", "b_complete", "b_future", "b_ui", "b_ai", "b_dev_off", "c_arena", "c_gl", "c_recoilless", "c_carry", "c_fps", "c_persist", "c_ai_comp", "c_visual", "d_setup", "d_rearm", "d_field_equip", "d_deliver", "d_procure", "d_fallen", "d_persist", "d_ui", "e_offer", "e_complete", "e_recon", "e_persist", "e_ui", "g_defend_spike", "g_playthrough"]
+const ONLY_NAMED: Array[String] = ["g_playthrough", "g_defend_spike", "c_arena", "b_dev_off", "a_encounter", "a_road", "a_profile", "a_trees"]
 
 
 func run(args: PackedStringArray) -> void:
@@ -21,7 +21,7 @@ func run(args: PackedStringArray) -> void:
 	if oi >= 0 and oi + 1 < args.size():
 		only = args[oi + 1].split(",")
 	SoldierBody.require_mouse_capture = false
-	tree.create_timer(900.0, true, false, true).timeout.connect(func() -> void:
+	tree.create_timer(2700.0, true, false, true).timeout.connect(func() -> void:
 		failures.append("watchdog: test did not finish")
 		_finish())
 	await _physics(30)
@@ -1576,6 +1576,315 @@ func _e_ui() -> Dictionary:
 	out["panel"] = [tr._panel.position.round(), tr._panel.size.round(), tr._list.size.round(), tr._brief.visible, tr._foot.visible]
 	_png("e_opportunities")
 	return out
+
+
+# --- 04G performance ---------------------------------------------------------------------------------------------------
+
+## The GAMEPLAY-03 DEFEND planning spike: three South squads at one of its objectives, an enemy reported there, all told to
+## DEFEND in the same tactics step. Measures the judged post plans of that step (count, cost) - the step a player feels.
+func _g_defend_spike() -> Dictionary:
+	var sim := demo.sim
+	var war := _war()
+	var bid: int = sim.logistics.bases.main_base(1)
+	var obj: ObjectiveState = sim.war.base_objective(bid)
+	if obj == null:
+		for o: ObjectiveState in war.owned_by(1):
+			if o.is_hq():
+				obj = o
+	_expect(obj != null, "g_defend_spike: no South base objective")
+	if obj == null:
+		return {}
+	var anchor: Vector3 = sim.state.construction.bases[bid].anchor
+	sim.war.intel.report_objective(1, 0, obj, 8)
+	await _until(func() -> bool: return false, 8.0, 2.0)
+	var sqs := []
+	for k in 3:
+		var sq := sim.war.spawn_squad(war.faction(1), demo.on_ground(anchor.x + (k - 1) * 30.0, anchor.z - 20.0, 0.0), 8)
+		sqs.append(sq)
+	await _physics(5)
+	sim.tactics.plans_tick_max = 0
+	sim.tactics.plan_tick_usec_max = 0
+	sim.tactics.plan_usec_max = 0
+	var step0 := sim.tactics.step_usec_max
+	sim.tactics.step_usec_max = 0
+	# The way it happens in play: three AI squads ordered to garrison the same base take up their posts in the same step.
+	for sq: SquadState in sqs:
+		sim.tactics.assign_garrison(sq, bid, SquadState.Owner.SQUAD)
+	var deferred0 := sim.tactics.deferred
+	await _until(func() -> bool: return sqs.all(func(s2: SquadState) -> bool: return s2.tactic == SquadState.Tactic.DEFEND), 20.0, 1.0)
+	var out := {"defending": sqs.map(func(s2: SquadState) -> bool: return s2.tactic == SquadState.Tactic.DEFEND), "deferred": sim.tactics.deferred - deferred0,
+		"plans_per_tick_max": sim.tactics.plans_tick_max, "plan_ms_max": snappedf(sim.tactics.plan_usec_max / 1000.0, 0.1),
+		"plan_tick_ms_max": snappedf(sim.tactics.plan_tick_usec_max / 1000.0, 0.1), "step_ms_max": snappedf(sim.tactics.step_usec_max / 1000.0, 0.1)}
+	_expect(out.defending.all(func(x: bool) -> bool: return x), "g_defend_spike: not every squad took up the defence: %s" % str(out))
+	_expect(int(out.plans_per_tick_max) <= 1, "g_defend_spike: several defence plans in one step: %s" % str(out))
+	sim.tactics.step_usec_max = maxi(step0, sim.tactics.step_usec_max)
+	for sq: SquadState in sqs:
+		for id in Array(sq.members):
+			sim.state.remove_unit(id)
+	return out
+
+
+# --- 04G the first hour, from the start screen ---------------------------------------------------------------------------
+
+var _marks := {}
+
+
+func _mark(key: String) -> void:
+	if not _marks.has(key):
+		_marks[key] = snappedf(demo.sim.state.time, 1.0)
+
+
+func _player_shots() -> int:
+	return int(_marks.get("_shots", 0))
+
+
+## The first hour as a player plays it, through the game's own controls (run with --menu-shot: New Game is pressed on the
+## start screen). Twenty steps of the brief, each logged with its simulated time; the timeline marks feed the report.
+func _g_playthrough() -> Dictionary:
+	var war := _war()
+	var pf := war.player_faction
+	var rts := demo.rts
+	var con := demo.construction
+	_steps.clear()
+	var shot_counter := func(shot: Dictionary) -> void:
+		var u := demo.sim.state.get_unit(int(shot.get("shooter", -1)))
+		if u and u.faction == pf:
+			_marks["_shots"] = int(_marks.get("_shots", 0)) + 1
+			_mark("first_combat")
+	demo.sim.state.shot_fired.connect(shot_counter)
+	# 1-2. New Game; the situation.
+	var sq: SquadState = _player_squads()[0]
+	_step_log(1, "New Game started from the start screen", war.scenario_id == "new_game" and _player_squads().size() == 1, {"scenario": war.scenario_id})
+	await _frame(demo.sim.war.squad_center(sq) + Vector3(0, 0, -60), 160.0, 0.0)
+	await _seconds(2.0)
+	_png("g01_start")
+	_step_log(2, "situation shown: briefing and first objective", demo.hud.tracker._panel.visible and demo.hud.tracker.current_id == "command")
+	# 3. Command the squad: select, move towards the checkpoint.
+	rts.select_squads([sq.id])
+	var cp_obj := _objective("Moen checkpoint")
+	var mid := demo.sim.war.squad_center(sq).lerp(cp_obj.position, 0.35)
+	rts.order_move(demo.on_ground(mid.x, mid.z, 0.0))
+	_mark("first_action")
+	await _until(func() -> bool: return war.guide.get("intro_done", []).has("command"), 60.0, 2.0)
+	_step_log(3, "squad selected and moved (first objective done)", war.guide.intro_done.has("command"))
+	# 4-5. First person and back.
+	demo.game.possess(sq.leader_id)
+	await _seconds(1.5)
+	_png("g04_first_person")
+	_step_log(4, "first person as the squad leader", demo.game.mode == GameController.Mode.FPS)
+	demo.game.enter_rts()
+	await _seconds(1.0)
+	_step_log(5, "back to the tactical view", demo.game.mode == GameController.Mode.RTS)
+	# 6. The map.
+	demo.toggle_map()
+	await _seconds(1.5)
+	_png("g06_map")
+	_step_log(6, "strategic map", demo.strategic_map.visible and war.guide.get("map", false))
+	demo.toggle_map()
+	await _seconds(0.5)
+	# 7. The first encounter: the checkpoint, ordered as an assault from the tactical view.
+	rts.select_squads([sq.id])
+	rts.order_tactic(SquadState.Tactic.ASSAULT, cp_obj.position)
+	var guards := _squads_at(1, cp_obj.id)
+	var shot_taken := false
+	var t_fight := demo.sim.state.time
+	CoreDemo.apply_time_scale(4.0)
+	while demo.sim.state.time - t_fight < 360.0 and _alive(guards) > 0 and _alive([sq]) > 0:
+		await _physics(20)
+		if not shot_taken and _marks.has("first_combat") and demo.sim.state.time - float(_marks.first_combat) > 15.0:
+			shot_taken = true
+			CoreDemo.apply_time_scale(1.0)
+			await _frame(cp_obj.position + Vector3(0, 0, -110), 150.0, 0.0)
+			await _seconds(1.0)
+			_png("g07_first_encounter")
+			CoreDemo.apply_time_scale(4.0)
+	CoreDemo.apply_time_scale(1.0)
+	_mark("checkpoint_cleared")
+	_step_log(7, "first encounter: checkpoint cleared", _alive(guards) == 0, {"alive": _alive([sq]), "fight_s": roundi(demo.sim.state.time - t_fight)})
+	# 8. Supplies: the cache behind the checkpoint, REARM at the checkpoint's stores.
+	var cache := {}
+	for c: Dictionary in war.caches:
+		if c.name == "Moen farm cache":
+			cache = c
+	rts.select_squads([sq.id])
+	rts.order_move(cache.pos)
+	await _until(func() -> bool: return cache.state == "depleted", 240.0, 4.0)
+	_mark("first_reward")
+	var stores := _stash_named("Moen checkpoint stores")
+	rts.select_squads([sq.id])
+	rts.order_rearm_at(stores.pos)
+	await _until(func() -> bool: return not sq.rearm_at.is_finite(), 120.0, 4.0)
+	await _frame(cache.pos, 70.0, 0.4)
+	await _seconds(1.0)
+	_png("g08_supplies_rearm")
+	_step_log(8, "supplies secured and rearmed at the checkpoint", int(cache.get("taken_by", -1)) == pf and sq.cargo.has("carbine"), {"cargo": sq.cargo.duplicate(), "stock": _stock()})
+	# 9. A Command Post through the construction tool (placed near the farm), built by the squad.
+	var spot := _cp_spot(demo.sim.war.squad_center(sq))
+	await _frame(spot, 60.0)
+	con.set_active(true)
+	con.select_type(&"command_post")
+	con.mouse_override = demo.rts_camera.camera.unproject_position(spot)
+	await _seconds(1.0)
+	con.primary_action()
+	con.mouse_override = Vector2.INF
+	con.set_active(false)
+	var cp: StructureState = null
+	for s: StructureState in demo.sim.state.construction.all():
+		if s.faction == pf and s.type_id == &"command_post":
+			cp = s
+	if cp == null:
+		_step_log(9, "command post placed", false, {"message": con.message})
+		return _play_out(shot_counter)
+	await _until(func() -> bool: return not cp.is_site(), 240.0, 4.0)
+	_mark("first_construction")
+	_step_log(9, "command post built: a base", not cp.is_site() and not demo.sim.logistics.bases.bases_of(pf).is_empty())
+	# 10-11. Military Development: F2, Barracks & Personnel started and completed (a supply depot meanwhile).
+	rts.select([])
+	_press(KEY_F2)
+	await _physics(10)
+	var dp := demo.hud.development
+	dp.select(&"personnel_facilities")
+	await _seconds(1.0)
+	_png("g10_development")
+	dp._on_start()
+	_mark("dev_started")
+	_step_log(10, "Military Development opened, Barracks & Personnel started", dp.visible and not demo.sim.war.dev.active_entry(pf, &"personnel_facilities").is_empty())
+	_press(KEY_F2)
+	var depot := _place(&"supply_depot", _site_in_base(&"supply_depot", cp.position))
+	await _until(func() -> bool: return demo.sim.war.dev.is_done(pf, &"personnel_facilities") and depot != null and not depot.is_site(), 400.0, 6.0)
+	_mark("first_unlock")
+	_step_log(11, "first development complete, supply depot built (11a)", demo.sim.war.dev.is_done(pf, &"personnel_facilities") and depot != null and not depot.is_site())
+	# The carbine in the cargo is handed in at the base (the squad stands in it) and registered.
+	await _until(func() -> bool: return war.faction(pf).discovered.has("carbine"), 60.0, 2.0)
+	_mark("discovery")
+	# The hint asks for it before the barracks: a guard tower and two fighting positions facing north (where South is).
+	var forts := []
+	for e: Array in [[&"guard_tower_steel", Vector3(0, 0, 45)], [&"fighting_position", Vector3(-25, 0, 50)], [&"fighting_position", Vector3(25, 0, 50)]]:
+		var sp := _site_in_base(e[0], cp.position + e[1])
+		if sp.is_finite():
+			var st := _place(e[0], sp)
+			if st:
+				forts.append(st)
+	await _until(func() -> bool: return forts.all(func(x: StructureState) -> bool: return not x.is_site()), 300.0, 6.0)
+	_mark("fortified")
+	_step_log(11, "base fortified (guard tower, fighting positions)", forts.size() >= 2 and forts.all(func(x: StructureState) -> bool: return not x.is_site()), {"forts": forts.size(), "stock": _stock()})
+	# 12-13. Barracks (unlocked now), recruit.
+	await _until(func() -> bool: return _stock().supplies >= 560.0, 600.0, 8.0)
+	var barracks := _place(&"barracks_block", _site_in_base(&"barracks_block", cp.position))
+	await _until(func() -> bool: return barracks != null and not barracks.is_site(), 600.0, 6.0)
+	_step_log(12, "barracks built (unlocked by the development)", barracks != null and not barracks.is_site())
+	await _until(func() -> bool: return _stock().supplies >= 330.0 and _stock().ammo >= 200.0, 900.0, 8.0)
+	rts.select([])
+	rts.selected_structure = barracks.id
+	await _frame(barracks.position + Vector3(0, 0, 25), 55.0)
+	await _seconds(1.0)
+	var pressed := _press_panel_button("RECRUIT")
+	var n0 := _player_squads().size()
+	await _until(func() -> bool: return _player_squads().size() > n0, 120.0, 4.0)
+	var recruit: SquadState = _player_squads().back()
+	_step_log(13, "squad recruited at the barracks", pressed and _player_squads().size() > n0)
+	# 14. The new weapon: a soldier of the recruit squad takes the registered carbine from the armoury (equipment screen).
+	rts.select_squads([recruit.id])
+	await _seconds(0.5)
+	demo.hud.tactical_panel._on_button(TacticalPanel.EQUIP)
+	await _seconds(1.0)
+	# Re-equipping waits while the squad is under fire (it may be, at the base): give it the time a player would.
+	await _until(func() -> bool: return int(demo.sim.tactics.assessment(recruit).get("under_fire", 0)) == 0, 180.0, 4.0)
+	var who := -1
+	for uid in recruit.members:
+		if demo.sim.state.get_unit(uid).role == &"rifleman":
+			who = uid
+			break
+	var eq: Dictionary = demo.hud.equipment.apply_choice(who, &"carbineer")
+	await _seconds(1.0)
+	_png("g14_equipment")
+	demo.hud.equipment.visible = false
+	_mark("first_new_weapon")
+	_step_log(14, "registered carbine issued to a recruit (equipment screen)", eq.get("ok", false) and demo.sim.state.get_unit(who).weapon_id == &"carbine", {"result": eq})
+	# The recruits garrison the base (O); the first squad is refilled at the barracks before it moves on.
+	rts.select_squads([recruit.id])
+	rts.order_garrison(barracks.base_id)
+	var refill := demo.sim.logistics.bases.replenish(barracks.id, sq.id)
+	await _until(func() -> bool: return sq.members.size() >= 8 or not refill.get("ok", false), 120.0, 4.0)
+	_marks["refill"] = refill.get("reason", "ok")
+	# 15. An opportunity: the introduction is over; take the Verket roadblock.
+	await _until(func() -> bool: return demo.sim.war.intro.complete() and not demo.sim.war.opps.open().is_empty(), 60.0, 4.0)
+	var opp := {}
+	for o: Dictionary in demo.sim.war.opps.open():
+		if String(o.title).contains("Verket roadblock"):
+			opp = o
+	if opp.is_empty() and not demo.sim.war.opps.open().is_empty():
+		opp = demo.sim.war.opps.open()[0]
+	if not opp.is_empty():
+		demo.sim.war.opps.accept(int(opp.id))
+	await _frame(demo.sim.war.squad_center(sq), 160.0)
+	await _seconds(1.0)
+	_png("g15_opportunity")
+	_step_log(15, "opportunity accepted", not opp.is_empty() and opp.state == "accepted", {"opportunity": opp.get("title", "-"), "open": demo.sim.war.opps.open().map(func(o: Dictionary) -> String: return o.title)})
+	# 16. Another encounter: both squads assault the roadblock.
+	var rb := _objective("Verket roadblock")
+	var rb_guards := _squads_at(1, rb.id)
+	rts.select_squads([sq.id])
+	rts.order_tactic(SquadState.Tactic.ASSAULT, rb.position)
+	var t2 := demo.sim.state.time
+	var shot2 := false
+	CoreDemo.apply_time_scale(6.0)
+	while demo.sim.state.time - t2 < 900.0 and _alive(rb_guards) > 0 and _alive([sq]) > 0:
+		await _physics(20)
+		if not shot2 and _alive(rb_guards) < 4:
+			shot2 = true
+			CoreDemo.apply_time_scale(1.0)
+			await _frame(rb.position + Vector3(0, 0, 100), 150.0, 3.14)
+			await _seconds(1.0)
+			_png("g16_second_encounter")
+			CoreDemo.apply_time_scale(6.0)
+	CoreDemo.apply_time_scale(1.0)
+	_step_log(16, "second encounter: Verket roadblock", _alive(rb_guards) == 0, {"alive": [_alive([sq]), _alive([recruit])], "fight_s": roundi(demo.sim.state.time - t2),
+		"base_held": not demo.sim.logistics.bases.bases_of(pf).is_empty()})
+	# 17-19. Save (F5), load (F9), the progression intact, orders still work.
+	var snap := _progress_snapshot()
+	_press(KEY_F5)
+	await _seconds(1.5)
+	_step_log(17, "game saved (F5)", FileAccess.file_exists(con.save_path))
+	_press(KEY_F9)
+	await _seconds(3.0)
+	await _physics(10)
+	var snap2 := _progress_snapshot()
+	_step_log(18, "game loaded (F9)", str(snap) == str(snap2), {"before": snap, "after": snap2})
+	var sq_l: SquadState = _player_squads()[0] if not _player_squads().is_empty() else null
+	if sq_l == null:
+		_step_log(19, "orders work after loading", false, {"why": "no squad left"})
+		return _play_out(shot_counter)
+	rts.select_squads([sq_l.id])
+	var moved := rts.order_move(demo.on_ground(rb.position.x, rb.position.z + 60.0, 0.0))
+	_step_log(19, "orders work after loading", moved > 0)
+	# 20. The sandbox goes on: time, the war, opportunities.
+	var t3 := demo.sim.state.time
+	await _until(func() -> bool: return false, 120.0, 8.0)
+	_step_log(20, "the sandbox continues after the introduction", demo.sim.state.time > t3 + 100.0 and demo.sim.war.enabled and not demo.sim.war.opps.open().is_empty(),
+		{"open": demo.sim.war.opps.open().map(func(o: Dictionary) -> String: return o.title)})
+	await _frame(demo.sim.war.squad_center(sq_l), 200.0)
+	await _seconds(1.0)
+	_png("g20_sandbox")
+	return _play_out(shot_counter)
+
+
+func _progress_snapshot() -> Dictionary:
+	var war := _war()
+	var pf := war.player_faction
+	var f := war.faction(pf)
+	# (Supplies are left out: income keeps arriving between the snapshot and the save.)
+	return {"done": f.dev.get("done", []).duplicate(), "discovered": f.discovered.duplicate(), "armory": f.armory.duplicate(),
+		"squads": _player_squads().size(), "bases": demo.sim.logistics.bases.bases_of(pf).size(), "intro": war.guide.get("intro_done", []).duplicate(),
+		"opps": demo.sim.war.opps.open().size()}
+
+
+func _play_out(counter: Callable) -> Dictionary:
+	if demo.sim.state.shot_fired.is_connected(counter):
+		demo.sim.state.shot_fired.disconnect(counter)
+	var marks := _marks.duplicate()
+	marks.erase("_shots")
+	return {"steps": _steps, "timeline_s": marks, "player_shots": _player_shots(), "tactics": demo.sim.tactics.summary().judged_plans}
 
 
 # --- Output ------------------------------------------------------------------------------------------------------

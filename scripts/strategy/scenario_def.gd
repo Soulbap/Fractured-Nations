@@ -57,6 +57,7 @@ extends Resource
 ##   bed_limit          the player cannot recruit beyond the beds of his bases
 ##   recovery_delay_s / recovery_size   a small section after total loss (0 = off)
 ##   guide              early-game hints in the HUD
+##   ai_grace_s         GAMEPLAY-04G: AI factions launch no attack on the player's objectives / bases before this game time (s)
 ##   ai_compositions    GAMEPLAY-04C: SquadComposition ids AI factions arm new soldiers with, first usable one wins
 ##   development        GAMEPLAY-04B Military Development: buildings, weapons and roles are unlocked by developments (off: all open)
 @export var rules := {}

@@ -63,9 +63,18 @@ extra_objectives = Array[Dictionary]([{
 "name": "Moen checkpoint",
 "owner": 1,
 "radius": 70.0,
-"value": 1,
+"value": 2,
 "x": -1350.0,
 "z": 7315.0
+}, {
+"hold": 1,
+"kind": "outpost",
+"name": "Verket roadblock",
+"owner": 1,
+"radius": 70.0,
+"value": 1,
+"x": -450.0,
+"z": 5890.0
 }])
 start_squads = Array[Dictionary]([{
 "faction": 0,
@@ -81,6 +90,14 @@ start_squads = Array[Dictionary]([{
 "x": -1345.0,
 "yaw": 3.14,
 "z": 7310.0
+}, {
+"composition": "standard",
+"faction": 1,
+"size": 4,
+"station": "Verket roadblock",
+"x": -455.0,
+"yaw": 0.0,
+"z": 5895.0
 }])
 stashes = Array[Dictionary]([{
 "ammo": 40.0,
@@ -103,6 +120,12 @@ stashes = Array[Dictionary]([{
 "z": 4800.0
 }])
 structures = Array[Dictionary]([{
+"faction": 1,
+"type": "sandbag_fighting_position",
+"x": -440.0,
+"yaw": 3.14,
+"z": 5905.0
+}, {
 "faction": 1,
 "type": "checkpoint_station",
 "x": -1380.0,
@@ -157,15 +180,15 @@ squad_size = 8
 fortify = PackedStringArray("Nordmoen HQ", "East HQ")
 ai_bases = true
 start_pool = {
-"ammo": 120.0,
-"supplies": 500.0
+"ammo": 200.0,
+"supplies": 800.0
 }
 caches = Array[Dictionary]([{
-"ammo": 150.0,
+"ammo": 250.0,
 "known": true,
 "name": "Moen farm cache",
 "radius": 30.0,
-"supplies": 900.0,
+"supplies": 1200.0,
 "x": -1350.0,
 "z": 7380.0
 }, {
@@ -210,6 +233,7 @@ camera = "squad"
 rules = {
 "ai_base_limit": 2,
 "ai_compositions": ["support_section", "marksman_section", "standard"],
+"ai_grace_s": 2400.0,
 "ai_expansion": true,
 "bed_limit": true,
 "build_costs": true,
@@ -217,7 +241,7 @@ rules = {
 "development": true,
 "free_reserves": false,
 "guide": true,
-"income_ammo": 12.0,
+"income_ammo": 15.0,
 "income_fuel": 8.0,
 "income_supplies": 30.0,
 "player_income": true,

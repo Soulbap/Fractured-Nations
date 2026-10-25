@@ -11,7 +11,23 @@ branches are contained in `develop` and stay as history. Next milestone: **NAVIG
 obstacle navigation). See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest gameplay: **GAMEPLAY-03** (on `develop`) — defensive warfare: defending squads judge their posts against the
+Newest gameplay: **GAMEPLAY-04** (on `develop`) — the New Game experience and progression. **New Game** now opens as an
+operation: a short briefing, an objective tracker (top right, hideable with ×) and a South fire team holding the
+**Moen checkpoint** in front of the first supply cache; clear it, secure the cache, **REARM** (**R**) at the checkpoint's
+stores, place a Command Post and start your first project in **Military Development** (**F2**: three branches - Base &
+Logistics, Infantry & Weapons, Operations & Intelligence - paid from your stock, paused without their facility, saved; locked
+buildings stay in the build menu with what unlocks them). After the introduction the world offers **opportunities** (secure
+a cache, recover equipment, take an enemy post, observe a distant position, defend a threatened base), paid whether you
+accepted them or not. Five new weapons - compact **carbine**, 7.62 **marksman rifle**, 7.62 **GPMG**, **40 mm grenade
+launcher**, **84 mm recoilless rifle** - with new Blender assets and loadouts for every faction. You do not start with
+them: find them in the world (checkpoint stores, caches, an abandoned army depot, fallen enemies), carry them in a squad's
+cargo, hand them in at a base with a Supply Depot to **register** the type, then develop / procure more. The **EQUIP** button
+of the command panel changes a soldier's role from the squad's cargo (anywhere), the armoury or procurement (at a base). The
+AI's aim now settles over time and depends on the weapon's optic and the soldier's proficiency (same rules for every
+faction). Movement: road shoulders are eased into the roads at game start and infantry climbs steeper ground, slower.
+Tests: `--scenario=new_game --gameplay04-test --only <check>`. See [docs/GAMEPLAY-04_REPORT.md](docs/GAMEPLAY-04_REPORT.md).
+
+Before that, **GAMEPLAY-03** (on `develop`) — defensive warfare: defending squads judge their posts against the
 believed threat (protection, line of fire, **concealment** measured from the enemy's side, prepared positions, weapon
 roles: the machine gunner takes the widest arc it is least seen from, the grenadier a concealed post), keep the posts that
 still serve when the threat moves, and a garrison no longer gives up its base because it is outnumbered: it **falls back
@@ -318,6 +334,9 @@ thumbnails come from `tools/ui/make_structure_thumbs.gd`.
 | V, [ and ] | Line or column formation, spacing −/+ 0.5 m (1.5–10 m) |
 | Y, FREE / HOLD in the squad panel | Rules of engagement of the selected squads: Weapons Free (default, soldiers engage on their own) / Hold Fire (they track but do not shoot) |
 | **O**, Garrison button | GAMEPLAY-01C: the selected squads garrison the base at the cursor (or clicked after the button): they man its towers, positions and walls and stay until given another order |
+| **R**, Rearm button | GAMEPLAY-04D: the selected squads search a cache, stash or your base at the cursor (or clicked after the button) for ammunition and spare weapons; found weapons ride in the squad's cargo and are handed in at a base with a Supply Depot (an unknown type is registered) |
+| **EQUIP** button | GAMEPLAY-04D: the equipment screen of the selected squad - change soldiers' roles with weapons from the cargo, the armoury or procurement |
+| **F2** | GAMEPLAY-04B: Military Development (start / cancel projects, see what each unlocks and why it is locked) |
 | Esc (nothing selected) | GAMEPLAY-01G in-game menu: Resume, Save Game, Load Game, Main Menu, Quit Game (the game is paused) |
 | P, Enter or double-click | Possess the selected soldier (first person) |
 | **Tab** | Return to the soldier you last controlled |

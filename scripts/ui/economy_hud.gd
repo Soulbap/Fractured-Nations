@@ -140,6 +140,13 @@ func next_hint() -> Dictionary:
 		if depot_site:
 			return {"id": "depot_building", "text": "The Supply Depot is under construction (%d%%). What you carry is stored there when it is done." % roundi(depot_site.site_progress() * 100.0)}
 		return {"id": "depot", "text": "Build a Supply Depot inside the base (%d kg): the supplies you carry are stored there." % roundi(BuildCosts.COST[&"supply_depot"])}
+	var fortified := false
+	for s: StructureState in cs.all():
+		if s.faction == pf and (FacilityDefs.kind_of(s.type_id) == &"guard" or s.type_id in [&"sandbag_fighting_position", &"hesco", &"hesco_tall", &"mg_nest", &"dfp_sandbag_ring", &"bunker_fighting", &"fighting_position", &"mg_emplacement"]):
+			fortified = true
+			break
+	if not fortified:
+		return {"id": "fortify", "text": "Fortify the base before South answers: a Guard Tower (%d kg) and fighting positions (%d kg) cover the approaches; garrison it with O." % [roundi(BuildCosts.COST[&"guard_tower_steel"]), roundi(BuildCosts.COST[&"fighting_position"])]}
 	if not has.call(&"barracks"):
 		var need := BuildCosts.COST[&"barracks_block"]
 		# GAMEPLAY-04B: the barracks has to be developed first.
@@ -155,13 +162,6 @@ func next_hint() -> Dictionary:
 		if not _complete_of(pf, &"barracks"):
 			return {"id": "barracks_building", "text": "The Barracks is under construction. When it is finished, click it and recruit a squad."}
 		return {"id": "recruit", "text": "Recruit a squad: click the Barracks, then Recruit (%s)." % bs.cost_text(BaseSim.RECRUIT_COST)}
-	var fortified := false
-	for s: StructureState in cs.all():
-		if s.faction == pf and (FacilityDefs.kind_of(s.type_id) == &"guard" or s.type_id in [&"sandbag_fighting_position", &"hesco", &"hesco_tall", &"mg_nest", &"dfp_sandbag_ring", &"bunker_fighting"]):
-			fortified = true
-			break
-	if not fortified:
-		return {"id": "fortify", "text": "Fortify the base: a Guard Post or sandbag positions cover the approaches."}
 	if w.owned_by(pf).is_empty():
 		return {"id": "capture", "text": "Capture ground: objectives such as Verket pay supplies every minute (map - M - select a squad, Attack)."}
 	return {}

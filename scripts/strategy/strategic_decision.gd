@@ -336,8 +336,13 @@ func _collect_attacks(f: FactionState, p: FactionProfile, forces: Dictionary, ac
 	if beyond < p.min_attack_soldiers:
 		return
 	var owned := ws.war.owned_by(f.id)
+	# GAMEPLAY-04G: a scenario's opening grace (rule ai_grace_s): no attack on what the player holds before then - the AI
+	# factions still fight each other, expand and defend.
+	var grace := now < float(ws.war.rule("ai_grace_s", 0.0))
 	for o: ObjectiveState in ws.war.all_objectives():
 		if o.owner == f.id or ws._attacked_by(f.id, o.id):
+			continue
+		if grace and o.owner == ws.war.player_faction:
 			continue
 		# Distance from the faction's nearest held objective (its front), not from where the free squads stand.
 		var d := INF
