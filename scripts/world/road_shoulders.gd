@@ -25,6 +25,13 @@ const MIN_CHANGE_M := 0.03
 ## edge and the ramp starts there.
 const MESH_EDGE_M := 2.0
 const MESH_EDGE_DROP_M := 0.28
+## --shoulders-g04: the GAMEPLAY-04 shoulders (eased to RoadNetwork's width, no mesh margin), for comparisons only.
+static func _edge_m() -> float:
+	return 0.0 if "--shoulders-g04" in OS.get_cmdline_user_args() else MESH_EDGE_M
+
+
+static func _edge_drop() -> float:
+	return 0.0 if "--shoulders-g04" in OS.get_cmdline_user_args() else MESH_EDGE_DROP_M
 const BRIDGE_SKIP_M := 15.0
 const CACHE := "user://terrain/%s_road_shoulders_%s.bin"
 ## Vegetation cells (VegetationChunk cell size) whose ground was eased, and the terrain: instances there are put back on the
@@ -141,7 +148,9 @@ static func compute(terrain: Terrain3D, roads: RoadNetwork, spacing: float) -> D
 		if pts.size() < 2:
 			continue
 		var hw := r.width * 0.5
-		var hw_mesh := hw + MESH_EDGE_M
+		var edge_m := _edge_m()
+		var edge_drop := _edge_drop()
+		var hw_mesh := hw + edge_m
 		var reach := hw_mesh + SHOULDER_MAX_M
 		for i in pts.size() - 1:
 			if _near_bridge(r, pts, i):
@@ -174,10 +183,10 @@ static func compute(terrain: Terrain3D, roads: RoadNetwork, spacing: float) -> D
 						continue
 					var road_y := lerpf(a.y, b.y, t)
 					var nh := road_y - UNDER_M
-					var edge_y := road_y - UNDER_M - MESH_EDGE_DROP_M
+					var edge_y := road_y - UNDER_M - edge_drop
 					if d > hw and d <= hw_mesh:
 						# Under the mesh's shoulder: its cross-fall.
-						nh = lerpf(road_y - UNDER_M, edge_y, (d - hw) / MESH_EDGE_M)
+						nh = lerpf(road_y - UNDER_M, edge_y, (d - hw) / maxf(edge_m, 0.01))
 					elif d > hw_mesh:
 						# The ramp across the band, along the perpendicular through this vertex, ends on the original terrain.
 						var foot := a2 + ab * t
@@ -222,7 +231,7 @@ static func _near_bridge(r: RoadNetwork.Road, pts: PackedVector3Array, i: int) -
 
 ## A short signature of the road set and the rules (the cache is rebuilt when either changes).
 static func _signature(roads: RoadNetwork, spacing: float) -> String:
-	var h := hash([SHOULDER_M, SHOULDER_MAX_M, SLOPE, UNDER_M, MIN_CHANGE_M, BRIDGE_SKIP_M, MESH_EDGE_M, MESH_EDGE_DROP_M, spacing, roads.world.size()])
+	var h := hash([SHOULDER_M, SHOULDER_MAX_M, SLOPE, UNDER_M, MIN_CHANGE_M, BRIDGE_SKIP_M, _edge_m(), _edge_drop(), spacing, roads.world.size()])
 	for r: RoadNetwork.Road in roads.world:
 		if r.points.size() > 0:
 			h = hash([h, r.points.size(), r.points[0], r.points[r.points.size() - 1], r.width])
