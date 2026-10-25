@@ -53,7 +53,12 @@ static func kind_of(type_id: StringName) -> StringName:
 	return TABLE[type_id].kind if TABLE.has(type_id) else &""
 
 
+## GAMEPLAY-05B: the catalog's name (StructureDef.display_name) - the build menu and every message say the same; TABLE's own
+## name only for a type the catalog does not have.
 static func display_name(type_id: StringName) -> String:
+	var def := StructureCatalog.get_def(type_id)
+	if def:
+		return def.display_name
 	return TABLE[type_id].name if TABLE.has(type_id) else String(type_id)
 
 

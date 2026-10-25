@@ -1432,7 +1432,17 @@ func _draw_caches(font: Font) -> void:
 			txt += " · securing %d%%" % roundi(float(c.progress) * 100.0)
 		else:
 			txt += " · %d kg" % roundi(float(c.supplies))
-		_text(font, s + Vector2(10, 4), txt, 11, col)
+		_label_free(font, s, txt, 11, col)
+
+
+## GAMEPLAY-05B: a marker's label beside it where it does not cover an objective name or another label (the same _place as
+## objective names, which keep priority); left out when there is no room (the marker stays; closer zoom shows it).
+func _label_free(font: Font, s: Vector2, txt: String, fs: int, col: Color) -> void:
+	var tw := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var cands: Array[Vector2] = [s + Vector2(10, 4), s + Vector2(-10.0 - tw, 4), s + Vector2(-tw * 0.5, -10), s + Vector2(-tw * 0.5, 18)]
+	var lp := _place(cands, tw, fs, float(fs + 3), false)
+	if lp.is_finite():
+		_text(font, lp, txt, fs, col)
 
 
 ## GAMEPLAY-05: equipment the faction knows of (finds, cache equipment, the fallen's weapons) - a small green square, amber when it
@@ -1470,7 +1480,7 @@ func _draw_stashes(font: Font) -> void:
 			txt += " +%d" % (int(g.n) - 1)
 		if g.new:
 			txt += " · new type"
-		_text(font, sp + Vector2(9, 4), txt, 10, col)
+		_label_free(font, sp, txt, 10, col)
 
 
 ## The tactical camera: its position, a faint wedge of its horizontal field of view
@@ -1675,6 +1685,19 @@ func _draw_objective(o: ObjectiveState, font: Font, level: int) -> void:
 		draw_string(font, tp + Vector2(-2.5, 4), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color.BLACK)
 		tag = "THREATENED"
 		tag_col = COL_THREAT
+	# GAMEPLAY-05B: the player's own capture (or loss) says what it is doing and what keeps it going (WarSim.capture_state).
+	var cs: Dictionary = demo.sim.war.capture_state(o, faction) if demo and demo.sim.war else {}
+	var pct := roundi(float(cs.get("progress", 0.0)) * 100.0)
+	match String(cs.get("state", "")):
+		"capturing":
+			tag = "CAPTURING %d%% · keep %d+ within %d m" % [pct, int(cs.need), roundi(o.radius)]
+			tag_col = FNUI.OK
+		"paused":
+			tag = "CAPTURE PAUSED %d%% · %d of %d inside %d m" % [pct, int(cs.have), int(cs.need), roundi(o.radius)]
+			tag_col = FNUI.WARN
+		"losing":
+			tag = "BEING TAKEN %d%% · %d+ within %d m stops it" % [pct, int(cs.need), roundi(o.radius)]
+			tag_col = COL_CONTESTED
 	if o.id == selected_objective:
 		draw_arc(p, rr + 14.0, 0.0, TAU, 32, COL_SELECT, 2.0)
 	var fs := 13 if level == 0 else 14

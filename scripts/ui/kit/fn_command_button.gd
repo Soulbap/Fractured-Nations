@@ -20,6 +20,21 @@ var current := false:
 var _icon_name := &""
 
 
+## GAMEPLAY-05B: the tooltip wraps at a readable width (an order's explanation ran to one line of ~1400 px): its first line as the
+## heading, the rest as body text.
+func _make_custom_tooltip(for_text: String) -> Object:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 2)
+	var parts := for_text.split("\n", true, 1)
+	v.add_child(FNUI.label(parts[0], FNUI.CAPTION, FNUI.INK, "caps"))
+	if parts.size() > 1:
+		var b := FNUI.label(parts[1], FNUI.CAPTION + 1, FNUI.INK_2, "body")
+		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		b.custom_minimum_size = Vector2(330, 0)
+		v.add_child(b)
+	return v
+
+
 func _init(icon_name: StringName, title: String, key: String, tip := "") -> void:
 	focus_mode = Control.FOCUS_NONE
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND

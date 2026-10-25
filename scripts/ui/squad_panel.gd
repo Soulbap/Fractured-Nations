@@ -130,6 +130,9 @@ static func squad_status(p_sim: WorldSim, sq: SquadState, brief := false) -> Dic
 		return {"icon": &"engaged", "text": "ENGAGED", "color": FNUI.DANGER, "engaged": true}
 	if under_fire > 0:
 		return {"icon": &"under_fire", "text": "UNDER FIRE", "color": FNUI.ALERT, "engaged": true}
+	var cap := capture_status(p_sim, sq)
+	if not cap.is_empty():
+		return cap
 	if sq.status == SquadState.Status.PARTIAL:
 		return {"icon": &"blocked", "text": "BLOCKED", "color": FNUI.ALERT, "engaged": false}
 	if sq.garrison_base >= 0 and (sq.tactic == SquadState.Tactic.DEFEND or sq.tactic == SquadState.Tactic.REPOSITION or sq.tactic == SquadState.Tactic.NONE):
@@ -151,6 +154,29 @@ static func squad_status(p_sim: WorldSim, sq: SquadState, brief := false) -> Dic
 		SquadState.Order.REGROUP:
 			return {"icon": &"regroup", "text": "REGROUP", "color": FNUI.INFO, "engaged": false}
 	return {"icon": &"idle", "text": "IDLE", "color": FNUI.WARN, "engaged": false}
+
+
+## GAMEPLAY-05B: a squad standing in an objective its faction is capturing (or defending against a capture): "CAPTURING 42%",
+## "CAPTURE PAUSED 42%" (too few soldiers inside), "CONTESTED", "BEING TAKEN 30%"; {} when it stands in none.
+static func capture_status(p_sim: WorldSim, sq: SquadState) -> Dictionary:
+	if p_sim.war == null or not p_sim.war.enabled or sq.members.is_empty():
+		return {}
+	var c := p_sim.war.squad_center(sq)
+	for o: ObjectiveState in p_sim.state.war.all_objectives():
+		if Vector2(c.x - o.position.x, c.z - o.position.z).length() > o.radius:
+			continue
+		var cs := p_sim.war.capture_state(o, sq.faction)
+		var pct := roundi(float(cs.progress) * 100.0)
+		match String(cs.state):
+			"capturing":
+				return {"icon": &"objective", "text": "CAPTURING %d%%" % pct, "color": FNUI.OK, "engaged": false}
+			"paused":
+				return {"icon": &"objective", "text": "CAPTURE PAUSED %d%%" % pct, "color": FNUI.WARN, "engaged": false}
+			"contested":
+				return {"icon": &"objective", "text": "CONTESTED", "color": FNUI.ALERT, "engaged": true}
+			"losing":
+				return {"icon": &"objective", "text": "BEING TAKEN %d%%" % pct, "color": FNUI.ALERT, "engaged": true}
+	return {}
 
 
 const TACTIC_ICONS := {

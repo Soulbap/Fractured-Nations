@@ -30,6 +30,8 @@ var capture_s := 90.0
 var capture_ref := 4.0
 var decay_owner_s := 30.0
 var decay_empty_s := 180.0
+## GAMEPLAY-05B: objective id -> capture state of its capturing faction at the last update (a pause is told once).
+var _cap_state := {}
 ## Operations: give up an attack below this share of its strength, or after this long
 ## in the objective area (s); a DEFEND is done after this long without a threat (s).
 var fail_ratio := 0.35
@@ -229,6 +231,7 @@ func _update_capture(dt: float) -> void:
 			if not was_contested:
 				var sides := ", ".join(present.map(func(f: int) -> String: return WorldState.faction_name(f)))
 				log_event(-1, "contested", "%s is contested (%s)" % [o.obj_name, sides], o.position)
+			_cap_state[o.id] = "contested"
 			continue
 		if present.size() == 1 and present[0] != o.owner:
 			var f: int = present[0]
@@ -247,6 +250,32 @@ func _update_capture(dt: float) -> void:
 			o.capture_progress = maxf(o.capture_progress - dt / decay_empty_s, 0.0)
 			if o.capture_progress <= 0.0:
 				o.capture_faction = -1
+		_tell_capture_pause(o)
+
+
+## GAMEPLAY-05B: what faction f's capture of objective o is doing, the one answer for every surface (RTS overlay, squad status,
+## map, messages): {state: "" | "capturing" | "paused" (too few of f's soldiers left in the radius) | "contested" | "losing"
+## (an enemy is taking f's objective), progress, radius, need (soldiers needed), have (f's soldiers inside)}.
+func capture_state(o: ObjectiveState, f: int) -> Dictionary:
+	var have := int(o.presence.get(f, 0))
+	var out := {"state": "", "progress": o.capture_progress, "radius": o.radius, "need": capture_min, "have": have}
+	if o.contested and have > 0:
+		out.state = "contested"
+	elif o.capture_faction == f and o.owner != f and o.capture_progress > 0.0:
+		out.state = "capturing" if have >= capture_min and not o.contested else "paused"
+	elif o.owner == f and o.capture_faction >= 0 and o.capture_faction != f and o.capture_progress > 0.0:
+		out.state = "losing"
+	return out
+
+
+## A capture that stops because the capturing side left (or fell below capture_min) is told to that side once.
+func _tell_capture_pause(o: ObjectiveState) -> void:
+	var f := o.capture_faction
+	var st: String = capture_state(o, f).state if f >= 0 else ""
+	if st == "paused" and String(_cap_state.get(o.id, "")) == "capturing":
+		log_event(f, "capture", "Capture of %s paused at %d%%: keep %d or more soldiers within %d m (progress fades while nobody is there)" % [o.obj_name,
+			roundi(o.capture_progress * 100.0), capture_min, roundi(o.radius)], o.position)
+	_cap_state[o.id] = st
 
 
 ## GAMEPLAY-01B supply caches (WarState.caches), with the presence rule of the objectives: a faction's soldiers come within

@@ -496,7 +496,9 @@ func arm_tactic(tactic: int) -> void:
 		return
 	follow_pick = false
 	armed_tactic = tactic
-	_say("%s: click the target (Esc cancels)" % ("GARRISON: click one of your bases" if tactic == GARRISON else ("REARM: click a cache, stash or base" if tactic == REARM else SquadState.TACTIC_NAMES[tactic].to_upper())))
+	# GAMEPLAY-05B: one instruction (REARM / GARRISON said "click ...: click the target").
+	_say("GARRISON: click one of your bases (Esc cancels)" if tactic == GARRISON else ("REARM: click a cache, stash or base (Esc cancels)" if tactic == REARM
+		else "%s: click the target (Esc cancels)" % SquadState.TACTIC_NAMES[tactic].to_upper()))
 
 
 ## A tactical order for the selected squads: {ok, n, results, text}. The result text says what was

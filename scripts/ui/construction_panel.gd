@@ -14,13 +14,13 @@
 class_name ConstructionPanel
 extends Control
 
-## Short name and function of the base menu entries.
+## Function of the base menu entries (the name is the catalog's StructureDef.display_name, GAMEPLAY-05B).
 const BASE_ENTRIES := {
-	&"command_post": ["Command Post", "Establishes a base (150 m area)"],
-	&"barracks_block": ["Barracks", "+32 soldier capacity"],
-	&"supply_depot": ["Supply Depot", "Base stores"],
-	&"vehicle_parking_pad": ["Vehicle Parking", "6 vehicle bays"],
-	&"guard_tower_steel": ["Guard Post", "Defensive position"],
+	&"command_post": "Establishes a base (150 m area)",
+	&"barracks_block": "+32 soldier capacity",
+	&"supply_depot": "Base stores",
+	&"vehicle_parking_pad": "6 vehicle bays",
+	&"guard_tower_steel": "Defensive position",
 }
 const BASE := "Base"
 const CATEGORY_ICONS := {
@@ -176,7 +176,7 @@ func _build_menu() -> void:
 func _make_card(d: StructureDef, cat: String) -> FNBuildCard:
 	var path := "res://assets/ui/thumbs/%s.png" % d.id
 	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
-	var e: Array = BASE_ENTRIES.get(d.id, [d.display_name, ""]) if cat == BASE else [d.display_name, ""]
+	var e: Array = [d.display_name, String(BASE_ENTRIES.get(d.id, "")) if cat == BASE else ""]
 	var info: String = e[1]
 	if info == "":
 		info = _short(d)
@@ -467,7 +467,7 @@ func _refresh_context() -> void:
 		var path := "res://assets/ui/thumbs/%s.png" % d.id
 		_set_thumb(load(path) if ResourceLoader.exists(path) else null, CATEGORY_ICONS.get(d.category, &"building"))
 		_ctx_title.text = d.display_name
-		var e: Array = BASE_ENTRIES.get(d.id, [d.display_name, _short(d)])
+		var e: Array = [d.display_name, String(BASE_ENTRIES[d.id]) if BASE_ENTRIES.has(d.id) else _short(d)]
 		_ctx_info.text = e[1]
 		var cost := controller.current_cost()
 		if cost > 0.0:

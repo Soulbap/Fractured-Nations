@@ -177,10 +177,14 @@ func _complete_of(pf: int, kind: StringName) -> bool:
 # --- World markers -----------------------------------------------------------------------------------------------
 
 func _draw() -> void:
-	if not active() or hud.game == null or hud.game.mode != GameController.Mode.RTS:
+	if hud.game == null or hud.game.mode != GameController.Mode.RTS:
 		return
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
+		return
+	_draw_captures(cam)
+	_draw_order_preview(cam)
+	if not active():
 		return
 	var w := _war()
 	var pf := w.player_faction
@@ -242,6 +246,109 @@ func _draw() -> void:
 		_text(font, s + Vector2(-60, -4), "%s · %d%%" % [(def.display_name if def else String(st.type_id)).to_upper(), roundi(st.site_progress() * 100.0)], FNUI.INK)
 		_bar(s + Vector2(-60, 1), 120.0, st.site_progress(), FNUI.OK if workers > 0 else FNUI.WARN)
 		_text(font, s + Vector2(-60, 16), line2.to_upper(), FNUI.OK if workers > 0 else FNUI.WARN)
+
+
+## GAMEPLAY-05B: objectives the player's faction is capturing, has paused, contests or is losing: the capture radius on the
+## ground, the state and progress, and what keeps the capture going ("Keep 2+ soldiers within 70 m" - the objective's own
+## radius and WarSim.capture_min). Reads WarSim.capture_state; nothing is stored.
+func _draw_captures(cam: Camera3D) -> void:
+	var ws := hud.war_sim
+	if ws == null or not ws.enabled or hud.sim.terrain == null:
+		return
+	var pf := ws.war.player_faction
+	var font := FNUI.caps_font()
+	for o: ObjectiveState in ws.war.all_objectives():
+		var cs := ws.capture_state(o, pf)
+		var st := String(cs.state)
+		if st == "" or cam.global_position.distance_to(o.position) > 2500.0:
+			continue
+		var col: Color = {"capturing": FNUI.OK, "paused": FNUI.WARN, "contested": FNUI.ALERT, "losing": FNUI.ALERT}[st]
+		# The ring in visible pieces (a large radius at a close zoom has points behind the camera).
+		var ring := PackedVector2Array()
+		for i in 97:
+			var a := TAU * i / 96.0
+			var x := o.position.x + cos(a) * o.radius
+			var z := o.position.z + sin(a) * o.radius
+			var gp := Vector3(x, hud.sim.terrain.data.get_height(Vector3(x, 0.0, z)) + 0.5, z)
+			if cam.is_position_behind(gp) or i == 96:
+				if not cam.is_position_behind(gp):
+					ring.append(cam.unproject_position(gp))
+				if ring.size() > 1:
+					draw_polyline(ring, Color(0, 0, 0, 0.45), 4.0)
+					draw_polyline(ring, Color(col, 0.85), 2.0)
+				ring.clear()
+				continue
+			ring.append(cam.unproject_position(gp))
+		var at := o.position + Vector3.UP * 12.0
+		if cam.is_position_behind(at):
+			continue
+		var sp := cam.unproject_position(at)
+		var pct := roundi(float(cs.progress) * 100.0)
+		var need := int(cs.need)
+		var r := roundi(o.radius)
+		var head: String = {"capturing": "CAPTURING — %d%%" % pct, "paused": "CAPTURE PAUSED — %d%%" % pct, "contested": "CONTESTED — %d%%" % pct,
+			"losing": "BEING TAKEN BY %s — %d%%" % [WorldState.faction_name(o.capture_faction).to_upper(), pct]}[st]
+		var hint: String = {"capturing": "Keep %d+ soldiers within %d m to complete the capture" % [need, r],
+			"paused": "%d of %d soldiers inside: bring them back within %d m (progress fades)" % [int(cs.have), need, r],
+			"contested": "Enemy soldiers inside %d m: the capture waits until they are cleared" % r,
+			"losing": "Bring %d+ soldiers within %d m to stop it" % [need, r]}[st]
+		var title := "%s · %s" % [o.obj_name.to_upper(), head]
+		var w := maxf(font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, FNUI.LABEL).x, 160.0)
+		_text(font, sp + Vector2(-w * 0.5, -18), title, col)
+		_bar(sp + Vector2(-w * 0.5, -12), w, float(cs.progress), col)
+		var bf := FNUI.font("regular", false)
+		var hw := bf.get_string_size(hint, HORIZONTAL_ALIGNMENT_LEFT, -1, FNUI.CAPTION).x
+		draw_string_outline(bf, sp + Vector2(-hw * 0.5, 6), hint, HORIZONTAL_ALIGNMENT_LEFT, -1, FNUI.CAPTION, 3, Color(0, 0, 0, 0.75))
+		draw_string(bf, sp + Vector2(-hw * 0.5, 6), hint, HORIZONTAL_ALIGNMENT_LEFT, -1, FNUI.CAPTION, FNUI.INK)
+
+
+## GAMEPLAY-05B: an order armed on the command bar, before its click: a line from the (first) selected squad to the ground under
+## the cursor, the order, the distance, and what the click will do there (REARM: what it would search; GARRISON: the base).
+const ORDER_PREVIEW := {
+	SquadState.Tactic.BOUND: "bound forward to here, one team covering",
+	SquadState.Tactic.ASSAULT: "assault this position",
+	SquadState.Tactic.SUPPRESS: "pin this area with fire",
+	SquadState.Tactic.FLANK: "flank this position by a covered route",
+	SquadState.Tactic.DEFEND: "defend this spot from firing posts",
+	SquadState.Tactic.WITHDRAW: "break contact towards here",
+}
+
+
+func _draw_order_preview(cam: Camera3D) -> void:
+	var rts := hud.rts
+	if rts == null or rts.armed_tactic < 0 or hud.war_sim == null:
+		return
+	var sqs := rts.selected_squads()
+	if sqs.is_empty():
+		return
+	var g := rts.ground_point(get_viewport().get_mouse_position())
+	var sq := hud.sim.state.get_squad(sqs[0])
+	if not g.is_finite() or sq == null or cam.is_position_behind(g):
+		return
+	var c := hud.war_sim.squad_center(sq)
+	var gs := cam.unproject_position(g + Vector3.UP * 0.3)
+	var col := FNUI.ARMED
+	if not cam.is_position_behind(c):
+		var cs := cam.unproject_position(c + Vector3.UP * 0.3)
+		var n := maxi(int(cs.distance_to(gs) / 12.0), 1)
+		for i in n:
+			if i % 2 == 0:
+				draw_line(cs.lerp(gs, float(i) / n), cs.lerp(gs, float(i + 1) / n), Color(col, 0.8), 2.0)
+	draw_arc(gs, 12.0, 0.0, TAU, 24, Color(0, 0, 0, 0.6), 4.0)
+	draw_arc(gs, 12.0, 0.0, TAU, 24, col, 2.0)
+	var t := rts.armed_tactic
+	var what := String(ORDER_PREVIEW.get(t, ""))
+	if t == RTSController.REARM:
+		what = "rearm " + hud.war_sim.equip.describe_sources(g, sq.faction)
+	elif t == RTSController.GARRISON:
+		var bid := hud.sim.logistics.bases.base_area_at(g, sq.faction)
+		what = ("garrison " + String(hud.sim.state.construction.bases[bid].name)) if bid >= 0 else "no base of yours here - click one of your bases"
+	var font := FNUI.caps_font()
+	_text(font, gs + Vector2(18, -4), "%s · %d M%s" % [RTSController._armed_name(t).to_upper(), roundi(WarSim._flat(c, g)), (" · %d SQUADS" % sqs.size()) if sqs.size() > 1 else ""], col)
+	var bf := FNUI.font("regular", false)
+	var line := "Click: %s   (Esc cancels)" % what
+	draw_string_outline(bf, gs + Vector2(18, 12), line, HORIZONTAL_ALIGNMENT_LEFT, -1, FNUI.CAPTION, 3, Color(0, 0, 0, 0.75))
+	draw_string(bf, gs + Vector2(18, 12), line, HORIZONTAL_ALIGNMENT_LEFT, -1, FNUI.CAPTION, FNUI.INK)
 
 
 ## GAMEPLAY-05: the known stashes in view, grouped when their labels would overlap on screen (markers closer than STASH_GROUP_W

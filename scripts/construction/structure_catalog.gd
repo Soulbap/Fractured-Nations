@@ -149,10 +149,24 @@ static func _surface_def(id: StringName, name: String, kind: StructureDef.Surfac
 
 
 static func _add(d: StructureDef) -> void:
+	d.display_name = sentence_case(d.display_name)
 	if d.mesh_path == "":
 		d.mesh_path = ASSET_DIR + String(d.id) + ".glb"
 	_defs.append(d)
 	_by_id[d.id] = d
+
+
+## GAMEPLAY-05B: one style for every structure name the player reads (build menu, messages, panels): the first word
+## capitalised, the rest lower case, acronyms and words with digits kept ("Guard Tower" -> "Guard tower", "HESCO barrier").
+## StructureDef.display_name is the one name; FacilityDefs and the build menu read it.
+static func sentence_case(n: String) -> String:
+	var words := n.split(" ")
+	for i in range(1, words.size()):
+		var w := words[i]
+		if w.length() > 1 and w == w.to_upper() or w.contains("(") or w.is_valid_int() or w.lstrip("0123456789") != w:
+			continue
+		words[i] = w.to_lower()
+	return " ".join(words)
 
 
 ## WORLD-INTEGRATION-03: every StructureDef resource in DEF_DIRS, in file order. A resource
