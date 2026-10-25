@@ -11,7 +11,15 @@ branches are contained in `develop` and stay as history. Next milestone: **NAVIG
 obstacle navigation). See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest: **VISUAL-02** (on `develop`) — world and environment. A data bug (4-channel maps written as premultiplied alpha)
+Newest: **ROAD-QUALITY-01** (on `develop`) — main roads and the ground beside them. The road meshes are wider and higher than the
+line the terrain was fitted to, so their edges hung up to 1–4 m over the ground at junctions, on embankments and between roads
+running side by side. The terrain is now fitted to the road surface itself (measured with rays at game start, in memory; world
+files untouched): edges higher than a soldier's step went from 88 to 1 on 137 km of main road, and soldiers cross from road to
+terrain and back without stuck handling (60 of 64 test crossings clean, the rest natural steep banks or one navmesh pause). Steep
+natural cuts and fills stay obstacles. Survey and crossing tests: `--road-quality-test --only survey,cross`. See
+[docs/ROAD-QUALITY-01_REPORT.md](docs/ROAD-QUALITY-01_REPORT.md).
+
+Before that, **VISUAL-02** (on `develop`) — world and environment. A data bug (4-channel maps written as premultiplied alpha)
 made the forest 71 % pine everywhere and washed out the forest-floor, gravel, bog and asphalt textures: fixed. The terrain is
 drawn with a new ground shader (`GroundLook`, in memory; `--legacy-ground` for the old one): softened colour-map edges, macro
 variation, fields with rows / tramlines / mowing bands, distant forest as canopy. Houses, barns, sheds and fences are rebuilt

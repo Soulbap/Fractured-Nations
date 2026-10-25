@@ -190,6 +190,13 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   `user://terrain/`), and puts the vegetation of those cells back on the ground when chunks load. Infantry climbs grades up to
   `WorldSim.INFANTRY_MAX_GRADE` (tan 50°) slower uphill through `WorldSim.slope_speed` in both tiers (navmesh, abstract step,
   SoldierBody floor angle). `--no-road-shoulders` switches the easing off for comparison.
+- **Road edges (ROAD-QUALITY-01).** Meshed roads are fitted to their Road Generator **collider**, not to RoadNetwork's line (the mesh
+  is 2 m wider per side - its gutter -, 0.2 m higher, and junctions are separate meshes): `RoadShoulders` measures the edge with rays
+  every 2 m and tests every nearby vertex with one ray; under the collider the terrain lies 0.28 m (carriageway) to 0.04 m (edge)
+  below it, beyond the edge a 3 m landing at most 0.35 steep, between two roads edge to edge. Raise `RoadShoulders.CACHE_VERSION`
+  whenever compute() changes (the cache key does not see code). Plants >= 1 m inside an edge are kept under the asphalt and masked
+  from the grass (`mask_grass`). Steep natural banks beyond the band stay obstacles. Never "fix" a road edge in SoldierBody (no
+  higher step / hop): measure it with `--road-quality-test --only survey` and fix the terrain.
 - **World look (VISUAL-02).** The terrain is drawn with `shaders/world/terrain_visual02.gdshader` (Terrain3D's default shader plus
   colour-map softening, open-ground macro variation, field patterns, distant canopy), applied in memory by `GroundLook` like
   `WorldLook` (`--legacy-ground` for the old shader); the grass tufts match it. Settlement buildings / fences use
@@ -265,6 +272,9 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   (RTS roster / command panel) and `--ui01c2-test [--shots] [--only construction,vehicle,markers,map,fps]` (run
   `--fullscreen` for 1920x1080 captures in `docs/ui_01c/`). HUD sizes are in the 1152x648 logical canvas
   (stretch mode canvas_items). Building thumbnails: `Godot_v4.7.2-stable_win64.exe --path . --script res://tools/ui/make_structure_thumbs.gd`.
+- ROAD-QUALITY-01: `--road-quality-test [--only survey,cross,squads,along,shots,probe,perf,nav_climb] [--sites=a,b] [--at=x:z:side]
+  [--shot-tag=t]` (results `benchmarks/raw/road_quality_test_<tag>.json`, merged per tag; shots `docs/road_quality01/`, `--fullscreen`).
+  `survey` takes ~3 s; `cross,squads,along` ~10 min. A changed shoulder rule recomputes on the next start (~30 s, then cached).
 - GAMEPLAY-05 review checks: `--scenario=new_game --gameplay05-test [--shots] --only u_post_block,u_strength,u_markers,u_capture_name,u_bodies,v_tour,q_perf`
   (`v_tour --shot-tag=before --legacy-look` / `--shot-tag=after` for comparable look screenshots with frame rates; `q_perf` the
   opening fight's frame times; `--continue ... --only p_state,p_watch` diagnoses the last test save). Results
