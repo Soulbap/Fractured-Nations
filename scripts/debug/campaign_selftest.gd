@@ -118,6 +118,27 @@ func _spot_dir(type_id: StringName, c: Vector3, dir: Vector3, r0: float) -> Vect
 	return Vector3.INF
 
 
+## GAMEPLAY-05B: unfinished sites (progress, workers, why, crew, block) and the squad (tactic, phase, site, contact, soldiers' posts
+## and move states) at one moment.
+func _build_trace(sq: SquadState, forts: Dictionary) -> Dictionary:
+	var sites := {}
+	for k in forts:
+		var st: StructureState = forts[k]
+		if st.is_site():
+			var w := st.work_record()
+			sites[String(k)] = {"p": snappedf(st.work_progress(), 0.01), "why": String(w.get("why", "")), "workers": int(w.get("workers", 0)),
+				"crew": float(w.get("crew", 0.0)), "block_until": snappedf(float(demo.sim.tactics._site_block.get(st.id, 0.0)), 0.1),
+				"c": [roundi(st.site_center().x), roundi(st.site_center().z)]}
+	var a := demo.sim.tactics.assessment(sq)
+	var us := []
+	for uid in sq.members:
+		var u := demo.sim.state.get_unit(uid)
+		us.append([roundi(u.position.x), roundi(u.position.z), [roundi(u.post_pos.x), roundi(u.post_pos.z)] if u.post_pos.is_finite() else [], u.order, u.move_state, u.nav_reason])
+	return {"t": roundi(demo.sim.state.time), "sites": sites, "tactic": sq.tactic_name(), "phase": sq.tactic_phase, "site": sq.tactic_site, "why": sq.tactic_why,
+		"order": sq.order, "contact": a.get("in_contact", null), "under_fire": a.get("under_fire", null), "eligible": demo.sim.tactics.build_eligible(sq),
+		"garrison": sq.garrison_base, "units": us}
+
+
 func _sites_left(pf: int) -> int:
 	var n := 0
 	for s: StructureState in demo.sim.state.construction.all():
@@ -168,12 +189,25 @@ func _build_fort_base(sq: SquadState, front: Vector3) -> Dictionary:
 	if wall:
 		forts[&"sandbag_wall_2m"] = wall
 	var t0 := demo.sim.state.time
-	await _until(func() -> bool: return _sites_left(pf) == 0, 900.0, 8.0)
+	# GAMEPLAY-05B: a trace of every unfinished site and the squad every ~20 s, printed when a site is left (B6 diagnosis).
+	var trace := []
+	var next_trace := {"t": t0}
+	await _until(func() -> bool:
+		if demo.sim.state.time >= float(next_trace.t):
+			next_trace.t = demo.sim.state.time + 20.0
+			trace.append(_build_trace(sq, forts))
+		return _sites_left(pf) == 0, 900.0, 8.0)
 	var built := {}
 	for k in forts:
 		var s: StructureState = forts[k]
 		built[String(k)] = not s.is_site()
 		_expect(not s.is_site(), "c: %s was not finished by the squad" % k)
+	if built.values().has(false):
+		for e in trace:
+			print("CP build_trace ", JSON.stringify(e))
+		for ev: Dictionary in demo.sim.tactics.events:
+			if int(ev.squad) == sq.id:
+				print("CP tactics_event ", JSON.stringify(ev))
 	return {"cp": cp, "forts": forts, "front": front, "base": cp.base_id, "built": built, "build_s": roundi(demo.sim.state.time - t0)}
 
 
@@ -189,6 +223,15 @@ func _c_forts() -> Dictionary:
 	var sq: SquadState = _player_squads()[0]
 	var out := {}
 	var front := Vector3(0.6, 0.0, -0.8).normalized()
+	# GAMEPLAY-05B: this check is about building, garrisoning and manning fortifications. Since GAMEPLAY-04 the New Game puts a
+	# South fire team at the Moen checkpoint ~450 m away; seeing it stops the building (correctly: no work in contact) and its
+	# reports turn the judged posts towards it, away from this test's front. The fire team is removed first (the narrow-check
+	# way: state set directly). Building interrupted by contact is checked by --gameplay05-test b_build_resume.
+	var c0 := demo.sim.war.squad_center(sq)
+	for esq: SquadState in demo.sim.war.squads_of(1).duplicate():
+		if WarSim._flat(demo.sim.war.squad_center(esq), c0) < 900.0:
+			for uid in esq.members.duplicate():
+				demo.sim.combat.apply_damage(uid, 1000.0, LineOfFire.Zone.BODY, -1)
 	var fb := await _build_fort_base(sq, front)
 	if fb.is_empty():
 		return out
@@ -215,7 +258,9 @@ func _c_forts() -> Dictionary:
 	demo.rts.select_squads([sq.id])
 	var res := demo.rts.order_garrison(base_id)
 	_expect(res.ok and sq.garrison_base == base_id, "c: the garrison order was not taken: %s" % str(res))
-	await _until(func() -> bool: return _fort_units(pf).size() >= mini(sq.members.size(), 6), 180.0, 4.0)
+	# GAMEPLAY-05B: until the garrison has settled (every soldier in his slot, at most 180 s): the posts at the front (fighting
+	# position, MG emplacement 34-40 m out) are reached last, and a count taken at the sixth soldier missed them.
+	await _until(func() -> bool: return _fort_units(pf).size() >= sq.members.size(), 180.0, 4.0)
 	var held := _fort_units(pf)
 	var keys := {}
 	var dup := 0

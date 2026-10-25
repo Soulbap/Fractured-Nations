@@ -812,6 +812,7 @@ func _restore(sq: SquadState) -> void:
 			sim.squads.order_move([sq.id], target)
 		else:
 			sim.squads.order_hold([sq.id])
+			_set_meta(sq, "tactic_hold", true)
 	_internal = false
 	sq.prev_order = SquadState.Order.NONE
 	sim.state.squad_changed.emit(sq)
@@ -841,6 +842,7 @@ func cancel(sq: SquadState, why: String) -> void:
 func on_order(sq: SquadState) -> void:
 	if _internal:
 		return
+	_set_meta(sq, "tactic_hold", false)
 	# GAMEPLAY-01B: a new order replaces a march to a construction site.
 	_set_meta(sq, "build_goal", null)
 	# GAMEPLAY-04D: and a REARM search (SquadEquipment sets its own after the move it orders).
@@ -1000,6 +1002,10 @@ func build_eligible(sq: SquadState, ignore_cooldown := false) -> bool:
 			return true
 		SquadState.Order.MOVE:
 			return sq.status != SquadState.Status.MOVING
+		SquadState.Order.HOLD, SquadState.Order.REGROUP:
+			# GAMEPLAY-05B (B6): a hold or regroup the tactics gave when the squad's own tactic ended is not the player's order: once
+			# it stands, the squad builds again. Before, one self-chosen defence ended building for the rest of the game.
+			return bool(_meta(sq, "tactic_hold", false)) and sq.status != SquadState.Status.MOVING
 	return false
 
 
@@ -2548,9 +2554,11 @@ func _run_regroup(sq: SquadState, a: Dictionary, now: float) -> void:
 	_internal = true
 	if spread > 14.0:
 		sim.squads.order_regroup([sq.id], point if point.is_finite() else Vector3.INF)
+		_set_meta(sq, "tactic_hold", true)
 	else:
 		if sq.order == SquadState.Order.TACTIC:
 			sim.squads.order_hold([sq.id])
+			_set_meta(sq, "tactic_hold", true)
 		sq.prev_order = SquadState.Order.NONE
 	_internal = false
 	finished[SquadState.Tactic.REGROUP] = int(finished.get(SquadState.Tactic.REGROUP, 0)) + 1
