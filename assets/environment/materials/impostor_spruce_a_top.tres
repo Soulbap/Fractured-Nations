@@ -18,4 +18,5 @@ shader_parameter/alpha_cut = 0.5
 shader_parameter/translucency = 0.2
 shader_parameter/roughness_value = null
 shader_parameter/flutter = 0.0
+shader_parameter/edge_fade = 0.3
 shader_parameter/normal_up_blend = 0.45

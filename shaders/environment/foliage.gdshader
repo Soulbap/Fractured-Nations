@@ -15,6 +15,9 @@ uniform float roughness_value : hint_range(0.0, 1.0) = 0.78;
 uniform float flutter = 0.015;
 // Impostors: bend the card normals toward "up" so the flat cards light like a volume.
 uniform float normal_up_blend : hint_range(0.0, 1.0) = 0.0;
+// GAMEPLAY-05: cards seen this close to edge-on are not drawn (0 = off). The horizontal top card of an impostor seen from the
+// side drew as a thin black line across the canopy of every distant tree; the impostors' top materials set ~0.3.
+uniform float edge_fade : hint_range(0.0, 1.0) = 0.0;
 
 void vertex() {
 	VERTEX += wind_offset(VERTEX, MODEL_MATRIX, TIME);
@@ -26,6 +29,9 @@ void fragment() {
 	vec4 a = texture(albedo_tex, UV);
 	ALBEDO = a.rgb * COLOR.rgb * tint;
 	ALPHA = a.a;
+	if (edge_fade > 0.0) {
+		ALPHA *= smoothstep(edge_fade, edge_fade + 0.15, abs(dot(normalize(NORMAL), VIEW)));
+	}
 	ALPHA_SCISSOR_THRESHOLD = alpha_cut;
 	if (use_normal_tex) {
 		NORMAL_MAP = texture(normal_tex, UV).rgb;

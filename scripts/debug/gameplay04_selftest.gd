@@ -17,6 +17,9 @@ const ONLY_NAMED: Array[String] = ["g_playthrough", "g_defend_spike", "c_arena",
 func run(args: PackedStringArray) -> void:
 	shots = "--shots" in args
 	_shot_dir = "res://docs/gameplay04"
+	for a in args:
+		if a.begins_with("--shot-dir="):
+			_shot_dir = a.trim_prefix("--shot-dir=")
 	var oi := args.find("--only")
 	if oi >= 0 and oi + 1 < args.size():
 		only = args[oi + 1].split(",")
