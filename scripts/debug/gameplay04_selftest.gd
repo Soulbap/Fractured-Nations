@@ -10,8 +10,8 @@ class_name Gameplay04SelfTest
 extends GameplaySelfTest
 
 ## Every check in run order. Checks that need another scenario are only run when named in --only.
-const CHECKS: Array[String] = ["a_setup", "a_ui", "a_phases", "a_persist", "a_skip", "a_road", "a_profile", "a_shoulders", "a_trees", "a_encounter", "b_lock", "b_start", "b_pause", "b_persist", "b_complete", "b_future", "b_ui", "b_ai", "b_dev_off"]
-const ONLY_NAMED: Array[String] = ["b_dev_off", "a_encounter", "a_road", "a_profile", "a_trees"]
+const CHECKS: Array[String] = ["a_setup", "a_ui", "a_phases", "a_persist", "a_skip", "a_road", "a_profile", "a_shoulders", "a_trees", "a_encounter", "b_lock", "b_start", "b_pause", "b_persist", "b_complete", "b_future", "b_ui", "b_ai", "b_dev_off", "c_arena", "c_gl", "c_recoilless", "c_carry", "c_fps", "c_persist", "c_ai_comp", "c_visual"]
+const ONLY_NAMED: Array[String] = ["c_arena", "b_dev_off", "a_encounter", "a_road", "a_profile", "a_trees"]
 
 
 func run(args: PackedStringArray) -> void:
@@ -654,6 +654,560 @@ func _b_dev_off() -> Dictionary:
 		_expect(locks[id] == "", "b_dev_off: %s locked" % id)
 	_expect(dev.weapon_lock(0, &"dmr") == "" and dev.role_lock(0, &"marksman") == "", "b_dev_off: weapons locked")
 	return {"enabled": dev.enabled(), "locks": locks}
+
+
+# --- 04C combat accuracy arena -----------------------------------------------------------------------------------------
+
+## The accuracy arena (GAMEPLAY-04C addendum): one AI shooter against one target on open, level ground of the real world,
+## through the real CombatBrain / CombatSim (perception, reaction, aim error, weapon spread, LineOfFire, damage). The target
+## holds fire and never dies (its health is topped up; hits are counted from WorldState.shot_fired) and makes no cover moves
+## (held like a possessed soldier, so it still records suppression); squad tactics are off while it runs, so the numbers are
+## marksmanship, not manoeuvre. Far tier (no bodies), seeds 1-3 (the
+## world seed drives every aim error and spread). Run once with --legacy-aim for the GAMEPLAY-03 model.
+## Cases: [name, weapon, distance, target moving, shooter moving, shooter suppression, proficiency, friend near the line].
+const ARENA_CASES := [
+	["rifle_50", &"rifle", 50.0, false, false, 0.0, 0.5, false],
+	["rifle_100", &"rifle", 100.0, false, false, 0.0, 0.5, false],
+	["rifle_200", &"rifle", 200.0, false, false, 0.0, 0.5, false],
+	["rifle_300", &"rifle", 300.0, false, false, 0.0, 0.5, false],
+	["rifle_100_moving_target", &"rifle", 100.0, true, false, 0.0, 0.5, false],
+	["rifle_300_moving_target", &"rifle", 300.0, true, false, 0.0, 0.5, false],
+	["rifle_100_moving_shooter", &"rifle", 100.0, false, true, 0.0, 0.5, false],
+	["rifle_100_suppressed", &"rifle", 100.0, false, false, 0.7, 0.5, false],
+	["rifle_100_recruit", &"rifle", 100.0, false, false, 0.0, 0.1, false],
+	["rifle_100_veteran", &"rifle", 100.0, false, false, 0.0, 0.9, false],
+	["rifle_300_recruit_moving_target", &"rifle", 300.0, true, false, 0.0, 0.1, false],
+	["carbine_50", &"carbine", 50.0, false, false, 0.0, 0.5, false],
+	["carbine_100_moving_shooter", &"carbine", 100.0, false, true, 0.0, 0.5, false],
+	["carbine_300", &"carbine", 300.0, false, false, 0.0, 0.5, false],
+	["dmr_100", &"dmr", 100.0, false, false, 0.0, 0.5, false],
+	["dmr_300", &"dmr", 300.0, false, false, 0.0, 0.5, false],
+	["dmr_500", &"dmr", 500.0, false, false, 0.0, 0.5, false],
+	["lmg_100", &"lmg", 100.0, false, false, 0.0, 0.5, false],
+	["lmg_300", &"lmg", 300.0, false, false, 0.0, 0.5, false],
+	["lmg_100_moving_shooter", &"lmg", 100.0, false, true, 0.0, 0.5, false],
+	["gpmg_300", &"gpmg", 300.0, false, false, 0.0, 0.5, false],
+	["gpmg_100_moving_shooter", &"gpmg", 100.0, false, true, 0.0, 0.5, false],
+	["rifle_100_friend_near_line", &"rifle", 100.0, false, false, 0.0, 0.5, true],
+]
+const ARENA_SEEDS := [1, 2, 3]
+const ARENA_S := 12.0
+
+
+func _c_arena() -> Dictionary:
+	var sim := demo.sim
+	var cs := CombatScenario.new(demo)
+	cs.approach_m = 520.0
+	var site := cs.find_site()
+	_expect(not site.is_empty(), "c_arena: no open site")
+	if site.is_empty():
+		return {}
+	var target_at: Vector3 = site.def
+	var dir: Vector3 = site.dir
+	var side: Vector3 = site.side
+	# Far tier: the camera well away from the arena; then the vegetation of the line is warm for the LOS search below.
+	await _frame(target_at + Vector3(0, 0, 3000), 300.0, 0.0)
+	await _seconds(2.0)
+	# A direction from the target with a clear line (eye to chest) at every distance the cases use.
+	var clear_dir := Vector3.ZERO
+	for k in 24:
+		var dd := Vector3(cos(k * TAU / 24.0), 0, sin(k * TAU / 24.0))
+		var ok := true
+		for dist: float in [50.0, 100.0, 200.0, 300.0, 400.0, 500.0]:
+			var from := demo.on_ground(target_at.x - dd.x * dist, target_at.z - dd.z * dist, 0.0) + Vector3.UP * CombatSim.EYE_HEIGHT
+			await _warm_line(from, target_at)
+			var r := sim.combat.line.trace(from, target_at + Vector3.UP * 1.2, -1, false)
+			if r.blocker != "range":
+				ok = false
+				break
+		if ok:
+			clear_dir = dd
+			break
+	_expect(clear_dir != Vector3.ZERO, "c_arena: no direction with a clear 500 m line at the site")
+	if clear_dir != Vector3.ZERO:
+		dir = clear_dir
+		side = Vector3(-dir.z, 0, dir.x)
+	var tactics_were: bool = sim.brain.tactics_enabled
+	var squads_were: bool = sim.tactics.enabled
+	sim.tactics.enabled = false
+	var seed_was: int = sim.state.world_seed
+	var out := {"model": "legacy (GAMEPLAY-03)" if not sim.brain.aim_model else "GAMEPLAY-04C", "site": [roundi(target_at.x), roundi(target_at.z)], "cases": {}}
+	var usec0: int = sim.brain.update_usec
+	var frames0: int = sim.brain.frames
+	var pick: PackedStringArray = []
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--arena="):
+			pick = a.trim_prefix("--arena=").split(",")
+	for c: Array in ARENA_CASES:
+		if sim.combat.weapon(c[1]) == null or (not pick.is_empty() and not pick.has(c[0])):
+			continue
+		var rows := []
+		for s in ARENA_SEEDS:
+			sim.state.world_seed = int(s)
+			rows.append(await _arena_run(cs, c, target_at, dir, side))
+		out.cases[c[0]] = _arena_sum(rows)
+	sim.state.world_seed = seed_was
+	sim.tactics.enabled = squads_were
+	out["brain_usec_per_frame"] = snappedf(float(sim.brain.update_usec - usec0) / maxf(sim.brain.frames - frames0, 1), 0.1)
+	cs.reset()
+	return out
+
+
+## One shooter against one target for ARENA_S simulated seconds.
+func _arena_run(cs: CombatScenario, c: Array, target_at: Vector3, dir: Vector3, side: Vector3) -> Dictionary:
+	var sim := demo.sim
+	var d: float = c[2]
+	var shooter_sq := cs.spawn(0, target_at - dir * d, dir, 1, "ARENA_S")
+	var target_sq := cs.spawn(1, target_at, -dir, 1, "ARENA_T")
+	var sh := sim.state.get_unit(shooter_sq.members[0])
+	var tg := sim.state.get_unit(target_sq.members[0])
+	var role_id: StringName = {&"rifle": &"rifleman", &"carbine": &"carbineer", &"dmr": &"marksman", &"lmg": &"machine_gunner", &"gpmg": &"heavy_gunner"}.get(c[1], &"rifleman")
+	sh.role = &""
+	sim.combat._equip_role(sh, role_id)
+	sh.grenades = 0
+	sh.sec_id = &""
+	sh.proficiency = float(c[6])
+	target_sq.roe = SquadState.Roe.HOLD_FIRE
+	# Held like the possessed soldier: it records the suppression it takes but makes no cover moves of its own.
+	tg.player_controlled = true
+	tg.max_health = 100000.0
+	tg.health = 100000.0
+	var friend: UnitState = null
+	if c[7]:
+		var fsq := cs.spawn(0, target_at - dir * (d * 0.5) + side * 1.2, dir, 1, "ARENA_F")
+		friend = sim.state.get_unit(fsq.members[0])
+		fsq.roe = SquadState.Roe.HOLD_FIRE
+		friend.player_controlled = true
+		friend.max_health = 100000.0
+		friend.health = 100000.0
+	var rec := {"shots": 0, "hits": 0, "friend_hits": 0, "first_shot": -1.0, "first_hit": -1.0, "bursts": 0, "last_shot": -10.0, "blockers": {}}
+	var t0 := sim.state.time
+	var on_shot := func(shot: Dictionary) -> void:
+		if int(shot.get("shooter", -1)) != sh.id:
+			return
+		var t := sim.state.time - t0
+		rec.shots += 1
+		if t - float(rec.last_shot) > 0.3:
+			rec.bursts += 1
+		rec.last_shot = t
+		if float(rec.first_shot) < 0.0:
+			rec.first_shot = t
+		var bl := String(shot.get("blocker", ""))
+		rec.blockers[bl] = int(rec.blockers.get(bl, 0)) + 1
+		if int(shot.get("hit_unit", -1)) == tg.id:
+			rec.hits += 1
+			if float(rec.first_hit) < 0.0:
+				rec.first_hit = t
+		elif friend and int(shot.get("hit_unit", -1)) == friend.id:
+			rec.friend_hits += 1
+	sim.state.shot_fired.connect(on_shot)
+	var holds0: int = sim.brain.friendly_holds
+	var supp_max := 0.0
+	var flip := 1.0
+	var next_flip := 0.0
+	CoreDemo.apply_time_scale(6.0)
+	while sim.state.time - t0 < ARENA_S:
+		await _physics(2)
+		var now := sim.state.time
+		tg.health = tg.max_health
+		sh.mag = maxi(sh.mag, 1)
+		sh.reserve = 500
+		if c[5] > 0.0:
+			sh.suppression = float(c[5])
+			sh.suppression_t = now
+		if friend:
+			friend.health = friend.max_health
+		supp_max = maxf(supp_max, tg.suppression_at(now))
+		if now - t0 >= next_flip:
+			next_flip += 6.0
+			flip = -flip
+			if c[3]:
+				tg.order = UnitState.Order.MOVE
+				tg.order_target = demo.on_ground(target_at.x + side.x * 15.0 * flip, target_at.z + side.z * 15.0 * flip, 0.0)
+			if c[4]:
+				sh.order = UnitState.Order.MOVE
+				sh.order_target = demo.on_ground(sh.position.x + side.x * 15.0 * flip, sh.position.z + side.z * 15.0 * flip, 0.0)
+	CoreDemo.apply_time_scale(1.0)
+	sim.state.shot_fired.disconnect(on_shot)
+	for u: UnitState in [sh, tg, friend]:
+		if u:
+			cs.unit_ids.erase(u.id)
+			sim.state.remove_unit(u.id)
+	await _physics(2)
+	return {"shots": rec.shots, "hits": rec.hits, "friend_hits": rec.friend_hits, "first_shot": rec.first_shot, "first_hit": rec.first_hit,
+		"bursts": rec.bursts, "supp": supp_max, "friendly_holds": sim.brain.friendly_holds - holds0, "blockers": rec.blockers}
+
+
+func _arena_sum(rows: Array) -> Dictionary:
+	var shots := 0
+	var hits := 0
+	var fh := 0
+	var bursts := 0
+	var holds := 0
+	var fs := []
+	var fhit := []
+	var supp := 0.0
+	var blockers := {}
+	for r: Dictionary in rows:
+		for b in r.blockers:
+			blockers[b] = int(blockers.get(b, 0)) + int(r.blockers[b])
+		shots += int(r.shots)
+		hits += int(r.hits)
+		fh += int(r.friend_hits)
+		bursts += int(r.bursts)
+		holds += int(r.friendly_holds)
+		supp += float(r.supp)
+		if float(r.first_shot) >= 0.0:
+			fs.append(float(r.first_shot))
+		if float(r.first_hit) >= 0.0:
+			fhit.append(float(r.first_hit))
+	var avg := func(a: Array) -> float:
+		var t := 0.0
+		for v in a:
+			t += float(v)
+		return snappedf(t / a.size(), 0.1) if not a.is_empty() else -1.0
+	return {"shots": shots, "hits": hits, "hit_pct": snappedf(100.0 * hits / maxf(shots, 1), 0.1), "first_shot_s": avg.call(fs),
+		"first_hit_s": avg.call(fhit), "no_hit_runs": rows.size() - fhit.size(), "burst_len": snappedf(float(shots) / maxf(bursts, 1), 0.1),
+		"target_suppression": snappedf(supp / rows.size(), 0.01), "friend_hits": fh, "friendly_holds": holds, "blockers": blockers}
+
+
+## The arena line (shared by the narrow weapon checks): open level ground of the real world with a clear line from 50 to
+## 500 m, the camera far away (far tier). {cs, at, dir, side} or {} when no site.
+func _arena_line(near := false) -> Dictionary:
+	var sim := demo.sim
+	var cs := CombatScenario.new(demo)
+	cs.approach_m = 520.0
+	var site := cs.find_site()
+	if site.is_empty():
+		return {}
+	var at: Vector3 = site.def
+	# Near: the camera over the site, so bodies, vegetation and lines are loaded as in play.
+	await _frame(at + Vector3(0, 0, 3000) if not near else at, 300.0 if not near else 220.0, 0.0)
+	await _seconds(2.0 if not near else 5.0)
+	for k in 24:
+		var dd := Vector3(cos(k * TAU / 24.0), 0, sin(k * TAU / 24.0))
+		var ok := true
+		for dist: float in [50.0, 150.0, 330.0, 500.0]:
+			var from := demo.on_ground(at.x - dd.x * dist, at.z - dd.z * dist, 0.0) + Vector3.UP * CombatSim.EYE_HEIGHT
+			await _warm_line(from, at)
+			if sim.combat.line.trace(from, at + Vector3.UP * 1.2, -1, false).blocker != "range":
+				ok = false
+				break
+		if ok:
+			if near:
+				await _frame(at - dd * 120.0, 260.0, 0.0)
+				await _seconds(3.0)
+			return {"cs": cs, "at": at, "dir": dd, "side": Vector3(-dd.z, 0, dd.x)}
+	return {}
+
+
+## Waits until CombatBrain has the vegetation of the cells along a line (it fills a cell per frame; far from the camera a
+## fresh line is unknown for a while - a soldier cannot see along it and a line test would miss its trees).
+func _warm_line(a: Vector3, b: Vector3) -> void:
+	var n := 0
+	while not demo.sim.brain._line_warm(a, b) and n < 400:
+		await _physics(1)
+		n += 1
+
+
+## One soldier of faction f in a role at p facing `face` (a fresh squad of one).
+func _soldier(cs: CombatScenario, f: int, p: Vector3, face: Vector3, role_id: StringName) -> UnitState:
+	var sq := cs.spawn(f, p, face, 1)
+	var u := demo.sim.state.get_unit(sq.members[0])
+	# Exactly at p (a fresh squad lines its soldiers up beside the spawn point).
+	u.position = demo.on_ground(p.x, p.z, 0.0)
+	u.anchor_pos = u.position
+	var body := demo.sim.view_of(u.id) as Node3D
+	if body:
+		body.global_position = u.position + Vector3.UP * 0.1
+	u.role = &""
+	demo.sim.combat._equip_role(u, role_id)
+	return u
+
+
+## The 40 mm grenade launcher: an AI grenadier fires at two enemies standing together 150 m away, the round comes down there
+## (blast near them, suppression); with a friend beside the targets it holds.
+func _c_gl() -> Dictionary:
+	var sim := demo.sim
+	var L := await _arena_line(true)
+	_expect(not L.is_empty(), "c_gl: no arena line")
+	if L.is_empty():
+		return {}
+	var cs: CombatScenario = L.cs
+	sim.tactics.enabled = false
+	var gren := _soldier(cs, 0, L.at - L.dir * 150.0, L.dir, &"grenadier_gl")
+	gren.grenades = 0
+	var t1 := _soldier(cs, 1, L.at, -L.dir, &"rifleman")
+	var t2 := _soldier(cs, 1, L.at + L.side * 2.0, -L.dir, &"rifleman")
+	for t in [t1, t2]:
+		t.player_controlled = true
+		t.max_health = 100000.0
+		t.health = t.max_health
+	var fired0 := sim.brain.gl_fired
+	var bursts := []
+	var on_burst := func(e: Dictionary) -> void:
+		if int(e.get("src", -1)) == gren.id:
+			bursts.append(roundi(WarSim._flat(e.at, L.at)))
+	var conn := sim.state.has_signal("explosive_burst")
+	if conn:
+		sim.state.explosive_burst.connect(on_burst)
+	var t0 := sim.state.time
+	CoreDemo.apply_time_scale(4.0)
+	var trace := []
+	while sim.state.time - t0 < 20.0 and sim.brain.gl_fired - fired0 < 2:
+		await _physics(4)
+		if trace.size() < 8 and Engine.get_physics_frames() % 40 < 5:
+			trace.append([snappedf(sim.state.time - t0, 0.1), gren.ai_reason, gren.target_id, gren.target_visible, gren.sec_ammo, snappedf(gren.sec_ready_at - sim.state.time, 0.1)])
+		t1.health = t1.max_health
+		t2.health = t2.max_health
+		gren.reserve = 200
+	await _until(func() -> bool: return false, 4.0, 4.0)
+	CoreDemo.apply_time_scale(1.0)
+	var fired := sim.brain.gl_fired - fired0
+	var supp := maxf(t1.suppression_at(sim.state.time), t2.suppression_at(sim.state.time))
+	var out := {"fired": fired, "rounds_left": gren.sec_ammo, "target_suppression": snappedf(supp, 0.01), "bursts_m_from_targets": bursts, "holds": sim.brain.gl_holds.duplicate(), "trace": trace}
+	_expect(fired >= 1 and gren.sec_ammo < 6, "c_gl: the grenadier did not fire at two enemies at 150 m: %s" % str(out))
+	# A friend beside the target: the launcher's own decision (called directly, everything else ready) holds the round.
+	var friend := _soldier(cs, 0, t1.position + L.side * 6.0, L.dir, &"rifleman")
+	friend.position = t1.position + L.side * 6.0
+	await _physics(2)
+	var now := sim.state.time
+	gren.sec_ready_at = 0.0
+	gren.moved_at = now - 10.0
+	sim.brain._squad_gl_at.clear()
+	sim.brain._rocket_check.erase(gren.id)
+	var holds0 := int(sim.brain.gl_holds.get("friend near the impact", 0))
+	var fired_near := sim.brain._grenade_launcher(gren, t1, sim.combat.weapon(&"gl40"), t1.position, false, sim.state.squad_of(gren.id), now)
+	out["fired_with_friend_6m"] = fired_near
+	out["friend_holds"] = int(sim.brain.gl_holds.get("friend near the impact", 0)) - holds0
+	out["holds_after"] = sim.brain.gl_holds.duplicate()
+	out["direct_call"] = {"d": snappedf(WarSim._flat(gren.position, t1.position), 0.1), "friend_m": snappedf(WarSim._flat(friend.position, t1.position), 0.1),
+		"sec_ammo": gren.sec_ammo, "group": sim.brain._group_near(t1, 6.0)}
+	_expect(not fired_near and out.friend_holds == 1, "c_gl: fired with a friend 6 m from the impact: %s" % str(out))
+	if conn:
+		sim.state.explosive_burst.disconnect(on_burst)
+	sim.tactics.enabled = true
+	cs.reset()
+	return out
+
+
+## The 84 mm recoilless rifle reaches an enemy position at 330 m (the light launcher holds there: range); one AT gunner and
+## one grenadier side by side against a South fighting position with a soldier in it.
+func _c_recoilless() -> Dictionary:
+	var sim := demo.sim
+	var L := await _arena_line(true)
+	if L.is_empty():
+		_expect(false, "c_recoilless: no arena line")
+		return {}
+	var cs: CombatScenario = L.cs
+	sim.tactics.enabled = false
+	var fp := _add_built(&"fighting_position", L.at, -L.dir, 1)
+	_expect(fp != null, "c_recoilless: no fighting position could be placed")
+	if fp == null:
+		return {}
+	var enemy := _soldier(cs, 1, fp.position + L.side * 3.5, -L.dir, &"rifleman")
+	enemy.player_controlled = true
+	enemy.max_health = 100000.0
+	var at := _soldier(cs, 0, fp.position - L.dir * 330.0, L.dir, &"at_gunner")
+	var gr := _soldier(cs, 0, fp.position - L.dir * 330.0 + L.side * 4.0, L.dir, &"grenadier")
+	at.grenades = 0
+	gr.grenades = 0
+	var at0 := at.sec_ammo
+	var gr0 := gr.sec_ammo
+	var hp0 := fp.health_frac()
+	CoreDemo.apply_time_scale(4.0)
+	var t0 := sim.state.time
+	var trace := []
+	while sim.state.time - t0 < 25.0 and at.sec_ammo == at0:
+		await _physics(4)
+		if trace.size() < 8 and Engine.get_physics_frames() % 40 < 5:
+			trace.append([snappedf(sim.state.time - t0, 0.1), at.ai_reason, at.target_id, at.target_visible, at.sec_ammo])
+		enemy.health = enemy.max_health
+		at.reserve = 200
+		gr.reserve = 200
+	await _until(func() -> bool: return false, 3.0, 4.0)
+	CoreDemo.apply_time_scale(1.0)
+	var out := {"at_rounds_used": at0 - at.sec_ammo, "light_rounds_used": gr0 - gr.sec_ammo, "position_health": [snappedf(hp0, 0.01), snappedf(fp.health_frac(), 0.01)],
+		"holds": sim.brain.rocket_holds.duplicate(), "trace": trace}
+	_expect(out.at_rounds_used >= 1 and fp.health_frac() < hp0, "c_recoilless: no 84 mm round on the position at 330 m: %s" % str(out))
+	_expect(out.light_rounds_used == 0, "c_recoilless: the light launcher fired beyond its reach: %s" % str(out))
+	sim.state.construction.remove(fp.id)
+	sim.tactics.enabled = true
+	cs.reset()
+	return out
+
+
+## The heavy machine gun slows its carrier, in the far tier as in the near one (the same factor): a heavy gunner and a
+## rifleman walk 60 m side by side.
+func _c_carry() -> Dictionary:
+	var sim := demo.sim
+	var L := await _arena_line()
+	if L.is_empty():
+		_expect(false, "c_carry: no arena line")
+		return {}
+	var cs: CombatScenario = L.cs
+	var hg := _soldier(cs, 0, L.at - L.dir * 300.0, L.dir, &"heavy_gunner")
+	var rf := _soldier(cs, 0, L.at - L.dir * 300.0 + L.side * 4.0, L.dir, &"rifleman")
+	var times := {}
+	for u: UnitState in [hg, rf]:
+		u.order = UnitState.Order.MOVE
+		u.order_target = demo.on_ground(u.position.x + L.dir.x * 60.0, u.position.z + L.dir.z * 60.0, 0.0)
+	var t0 := sim.state.time
+	CoreDemo.apply_time_scale(4.0)
+	while sim.state.time - t0 < 40.0 and times.size() < 2:
+		await _physics(2)
+		for u: UnitState in [hg, rf]:
+			if not times.has(u.role) and u.order != UnitState.Order.MOVE:
+				times[u.role] = snappedf(sim.state.time - t0, 0.1)
+	CoreDemo.apply_time_scale(1.0)
+	var out := {"seconds": times, "factor": sim.carry_speed(hg)}
+	_expect(times.size() == 2 and float(times.heavy_gunner) > float(times.rifleman) * 1.15, "c_carry: the heavy gunner is not slower: %s" % str(out))
+	cs.reset()
+	return out
+
+
+## First person: the possessed marksman fires the weapon itself - its own spread, no AI aim error. Ten aimed shots at a man
+## 50 m away all hit (DMR spread 0.02 deg = 2 cm at 50 m); the line is checked first (a precondition, not a result).
+func _c_fps() -> Dictionary:
+	var sim := demo.sim
+	var L := await _arena_line(true)
+	if L.is_empty():
+		_expect(false, "c_fps: no arena line")
+		return {}
+	var cs: CombatScenario = L.cs
+	var dm := _soldier(cs, 0, L.at - L.dir * 50.0, L.dir, &"marksman")
+	var tg := _soldier(cs, 1, L.at, -L.dir, &"rifleman")
+	tg.player_controlled = true
+	tg.max_health = 100000.0
+	await _physics(10)
+	demo.game.possess(dm.id)
+	await _seconds(0.5)
+	var hits := 0
+	var o0 := CombatSim.eye_of(dm)
+	var pre := sim.combat.line.trace(o0, tg.position + Vector3.UP * 1.3, dm.id, false)
+	_expect(pre.blocker == "range", "c_fps: precondition - no clear line to the target (%s at %.1f m)" % [pre.blocker, pre.distance])
+	for i in 10:
+		tg.health = tg.max_health
+		var origin := CombatSim.eye_of(dm)
+		var aim := tg.position + Vector3.UP * 1.3
+		dm.next_shot_at = 0.0
+		dm.last_shot_at = -100.0
+		var r := sim.combat.request_fire(dm.id, origin, (aim - origin).normalized(), CombatSim.Source.PLAYER)
+		if int(r.get("hit_unit", -1)) == tg.id:
+			hits += 1
+		elif i < 3:
+			results["c_fps_miss_%d" % i] = [r.get("reason", ""), r.get("blocker", ""), snappedf(float(r.get("distance", 0.0)), 0.1), r.get("hit_unit", -1), tg.id]
+		await _physics(2)
+	demo.game.enter_rts()
+	var out := {"hits_of_10": hits, "weapon": String(dm.weapon_id)}
+	_expect(hits == 10, "c_fps: aimed player shots missed: %s" % str(out))
+	cs.reset()
+	return out
+
+
+## Role, proficiency, the secondary weapon and its rounds survive save / load.
+func _c_persist() -> Dictionary:
+	var sim := demo.sim
+	var u: UnitState = sim.state.get_unit(_player_squads()[0].members[1])
+	u.role = &""
+	sim.combat._equip_role(u, &"grenadier_gl")
+	u.proficiency = 0.8
+	u.sec_ammo = 4
+	var before := [String(u.role), String(u.weapon_id), String(u.sec_id), u.sec_ammo, u.proficiency]
+	demo.construction.save()
+	u.proficiency = 0.1
+	var res := demo.construction.load_game()
+	await _physics(5)
+	var v: UnitState = demo.sim.state.get_unit(u.id)
+	var after := [String(v.role), String(v.weapon_id), String(v.sec_id), v.sec_ammo, v.proficiency]
+	_expect(res.ok and str(before) == str(after), "c_persist: %s -> %s" % [str(before), str(after)])
+	return {"before": before, "after": after}
+
+
+## AI factions field the new weapons through the same rules: South without the developments arms a new squad as standard;
+## with them (and its base's supply depot and ammunition magazine) as the scenario's support squad - heavy gunner, marksman,
+## 40 mm grenadier - each wearing the faction's loadout for the role.
+func _c_ai_comp() -> Dictionary:
+	var sim := demo.sim
+	var war := _war()
+	var south := war.faction(1)
+	var at: Vector3 = sim.logistics.bases.bases_of(1)[0].anchor
+	var sq0 := sim.war.spawn_squad(south, demo.on_ground(at.x + 40.0, at.z + 40.0, 0.0), 8)
+	var roles0 := []
+	for id in sq0.members:
+		roles0.append(String(sim.state.get_unit(id).role))
+	_expect(not roles0.has("heavy_gunner") and roles0.has("machine_gunner"), "c_ai_comp: undeveloped South fielded new roles: %s" % str(roles0))
+	var done: Array = south.dev.done
+	for d in ["infantry_equipment", "marksman", "advanced_support"]:
+		if not done.has(d):
+			done.append(d)
+	var sq1 := sim.war.spawn_squad(south, demo.on_ground(at.x + 60.0, at.z + 40.0, 0.0), 8)
+	var roles1 := []
+	var looks := []
+	for id in sq1.members:
+		var u := sim.state.get_unit(id)
+		roles1.append(String(u.role))
+		looks.append(u.loadout)
+	var usable := {}
+	for r in [&"heavy_gunner", &"marksman", &"grenadier_gl"]:
+		usable[r] = sim.war.dev.role_usable(1, r)
+	_expect(roles1.has("heavy_gunner") and roles1.has("marksman") and roles1.has("grenadier_gl"), "c_ai_comp: developed South did not field the support squad: %s (%s)" % [str(roles1), str(usable)])
+	for lo in looks:
+		_expect(InfantryLoadout.by_id(lo) != null, "c_ai_comp: missing loadout %s" % lo)
+	for id in Array(sq0.members) + Array(sq1.members):
+		sim.state.remove_unit(id)
+	return {"undeveloped": roles0, "developed": roles1, "loadouts": looks, "usable": usable}
+
+
+## The new weapons as they look: a NATO squad of every new role in the near tier (third person), first person with the DMR,
+## the raised 40 mm launcher and the 84 mm recoilless rifle (screenshots with --shots; checks that the loadouts are worn).
+func _c_visual() -> Dictionary:
+	var sim := demo.sim
+	var sq: SquadState = _player_squads()[0]
+	var roles := [&"carbineer", &"marksman", &"heavy_gunner", &"grenadier_gl", &"at_gunner", &"rifleman", &"machine_gunner", &"grenadier"]
+	for i in sq.members.size():
+		var u := sim.state.get_unit(sq.members[i])
+		u.role = &""
+		sim.combat._equip_role(u, roles[i % roles.size()])
+	var c := sim.war.squad_center(sq)
+	if demo.game.mode != GameController.Mode.RTS:
+		demo.game.enter_rts()
+	await _frame(c, 14.0, 0.5)
+	await _seconds(3.0)
+	_png("c_third_person_roles_wide")
+	await _frame(c, 7.0, 0.5)
+	await _seconds(1.5)
+	var worn := {}
+	for id in sq.members:
+		var u := sim.state.get_unit(id)
+		var body := sim.view_of(id) as SoldierBody
+		worn[String(u.role)] = [u.loadout, body != null and body.character != null and body.character.loadout != null and body.character.loadout.id == u.loadout,
+			body.is_visible_in_tree() if body else false, body.character.get_child_count() if body and body.character else -1,
+			snappedf(body.global_position.y - u.position.y, 0.01) if body else 0.0, String(UnitState.Order.keys()[u.order]), u.tactic, u.down_until > sim.state.time]
+	_png("c_third_person_roles")
+	var out := {"worn": worn}
+	for e: Array in [[&"marksman", "c_fps_dmr", false], [&"grenadier_gl", "c_fps_gl40", true], [&"at_gunner", "c_fps_recoilless", true]]:
+		var who := -1
+		for id in sq.members:
+			if sim.state.get_unit(id).role == e[0]:
+				who = id
+				break
+		if who < 0:
+			continue
+		demo.game.possess(who)
+		await _seconds(1.0)
+		if e[2]:
+			_press(KEY_X)
+			await _seconds(1.2)
+		_png(e[1])
+		if e[2]:
+			_press(KEY_X)
+			await _seconds(0.5)
+		demo.game.enter_rts()
+		await _seconds(0.5)
+	for r in worn:
+		_expect(bool(worn[r][1]), "c_visual: %s does not wear %s" % [r, worn[r][0]])
+	return out
 
 
 # --- Output ------------------------------------------------------------------------------------------------------

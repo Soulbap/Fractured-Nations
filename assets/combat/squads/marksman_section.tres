@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="SquadComposition" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/squad_composition.gd" id="1_comp"]
+
+[resource]
+script = ExtResource("1_comp")
+id = "marksman_section"
+display_name = "Rifle squad with a designated marksman: the standard squad, one rifleman a marksman"
+slots = Array[StringName]([&"rifleman", &"machine_gunner", &"rifleman", &"marksman", &"rifleman", &"grenadier", &"rifleman", &"rifleman"])

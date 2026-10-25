@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="InfantryRole" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/infantry_role.gd" id="1_role"]
+
+[resource]
+script = ExtResource("1_role")
+id = &"at_gunner"
+display_name = "Anti-structure gunner (84 mm recoilless rifle)"
+short = "AT"
+weapon_id = &"rifle"
+loadout_suffix = "at"
+grenades = 1
+secondary_id = &"recoilless"
+secondary_rounds = 4

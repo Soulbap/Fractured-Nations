@@ -170,6 +170,7 @@ caches = Array[Dictionary]([{
 camera = "squad"
 rules = {
 "ai_base_limit": 2,
+"ai_compositions": ["support_section", "marksman_section", "standard"],
 "ai_expansion": true,
 "bed_limit": true,
 "build_costs": true,

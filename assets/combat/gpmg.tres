@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_def.gd" id="1_wdef"]
+
+[resource]
+script = ExtResource("1_wdef")
+id = &"gpmg"
+display_name = "General-purpose MG 7.62"
+rounds_per_minute = 650.0
+allow_auto = true
+default_mode = 1
+magazine_size = 200
+reserve_start = 400
+reload_time = 8.5
+damage = 46.0
+head_multiplier = 2.5
+body_multiplier = 1.0
+falloff_start = 250.0
+falloff_end = 700.0
+min_damage_fraction = 0.7
+max_range = 1000.0
+effective_range = 650.0
+spread_base_deg = 0.14
+spread_moving_deg = 5.5
+spread_bloom_deg = 0.18
+spread_bloom_max_deg = 3.4
+spread_recovery_deg_s = 2.2
+role = &"lmg"
+suppression_mult = 3.0
+near_miss_m = 5.5
+settle_s = 2.0
+settled_mult = 0.35
+moving_aim_mult = 3.5
+burst_mult = 3.0
+mission_burst = 10
+aim_time_s = 1.6
+ai_engage_m = 600.0
+move_speed_mult = 0.8
+procure_cost = 200.0
+procure_ammo = 80.0
+procure_facility = &"ammo"
+recoil_pitch_deg = 0.5
+recoil_yaw_deg = 0.5
+aim_mult = 1.1

@@ -80,6 +80,15 @@ var reaction_per_100m_s := 0.15
 var aim_error_base_deg := 0.25
 var aim_error_per_100m_deg := 0.20
 var aim_error_moving_deg := 1.2
+## GAMEPLAY-04C aim settling: on a new target (or after moving) the aim error is this many times its settled value and falls
+## to it over the weapon's aim_time_s (WeaponDef), scaled by the soldier's proficiency. aim_time_default_s for weapons without one.
+var aim_first_mult := 2.0
+## ... and settles to this multiple of the GAMEPLAY-03 aim error (a settled, steady aim is a little better than before).
+var aim_settled_mult := 0.9
+var aim_time_default_s := 0.8
+## False: the GAMEPLAY-03 model (no settling, no proficiency, one engage and sight range for every weapon) - for the before /
+## after measurements of the accuracy arena only (`--legacy-aim`).
+var aim_model := true
 ## The aim follows a moving target with this delay (s): a walking target is trailed.
 var track_lag_s := 0.2
 ## Extra clearance kept around friends in the line of fire (m), for the weapon spread.
@@ -375,22 +384,23 @@ func _perceive(u: UnitState, budget: int) -> int:
 		cur = null
 	var cur_visible := false
 	var cur_dist := INF
+	var sight := sight_of(u)
 	if cur:
 		cur_dist = _flat(u.position, cur.position)
-		if cur_dist <= sight_range and _line_warm(eye, cur.position):
+		if cur_dist <= sight and _line_warm(eye, cur.position):
 			var s := _see(eye, cur, u.target_aim_y)
 			used += s.checks
 			cur_visible = s.visible
 			if cur_visible:
 				u.target_aim_y = s.aim_y
-		elif cur_dist <= sight_range:
+		elif cur_dist <= sight:
 			cur_visible = u.target_visible  # cells still filling: keep the last answer
 	# Look for a (closer) enemy: always when the target is hidden or missing, otherwise
 	# only among enemies clearly closer than the current one.
 	var best: UnitState = null
 	var best_aim := 1.0
 	var tried := 0
-	var max_d := cur_dist * switch_ratio if cur_visible else sight_range
+	var max_d := cur_dist * switch_ratio if cur_visible else sight
 	for c: UnitState in _candidates(u, max_d, max_candidates + 1):
 		if used >= budget or tried >= max_candidates:
 			break
@@ -501,6 +511,7 @@ func _acquire(u: UnitState, t: UnitState, aim_y: float) -> void:
 		u.target_id = t.id
 		var d := _flat(u.position, t.position)
 		u.aim_ready_at = now + reaction_s + reaction_per_100m_s * d / 100.0 + suppression_acquire_s * u.suppression_at(now)
+		u.aim_since = now
 		u.burst_left = 0
 		_event(u, "sees %s at %.0f m" % [t.unit_name, d])
 		_share_contact(u, t)
@@ -1325,7 +1336,7 @@ func _engage(u: UnitState) -> void:
 			return
 		u.ai_reason = "self-defence"
 	u.ai_state = UnitState.AiState.ENGAGING
-	if dist > engage_range:
+	if dist > engage_reach(def):
 		u.ai_reason = "out of range"
 		return
 	if now < u.aim_ready_at:
@@ -1368,7 +1379,7 @@ func _fire_mission(u: UnitState, def: WeaponDef, now: float) -> bool:
 		mission_holds += 1
 		return true
 	var dist := _flat(u.position, u.fire_at)
-	if dist > engage_range or dist < 12.0:
+	if dist > engage_reach(def) or dist < 12.0:
 		return false
 	u.ai_state = UnitState.AiState.ENGAGING
 	_watch(u, u.fire_at, 1.0)
@@ -1454,6 +1465,34 @@ func _burst_pause(u: UnitState, dist: float) -> float:
 	return (0.25 + dist / 250.0 + _rand(u, 13) * 0.35) * (1.0 + 1.5 * u.suppression_at(sim.state.time))
 
 
+## GAMEPLAY-04C: how rough the aim still is (aim_first_mult on a fresh target, 1 when settled): time on the target since it
+## was acquired or the soldier last moved, against the weapon's aim time scaled by proficiency. Computed when a shot is aimed;
+## no per-frame state beyond UnitState.aim_since / moved_at.
+func aim_settle_mult(u: UnitState, wdef: WeaponDef) -> float:
+	if not aim_model:
+		return 1.0
+	var t_aim := (wdef.aim_time_s if wdef and wdef.aim_time_s > 0.0 else aim_time_default_s) * lerpf(1.4, 0.6, clampf(u.proficiency, 0.0, 1.0))
+	var since := maxf(u.aim_since, u.moved_at)
+	var k := clampf((sim.state.time - since) / maxf(t_aim, 0.05), 0.0, 1.0)
+	return lerpf(aim_first_mult, aim_settled_mult, k) * (wdef.aim_mult if wdef else 1.0)
+
+
+## GAMEPLAY-04C: aim error of a soldier against a trained one (proficiency 0.5 -> 1.0; a recruit 0 -> 1.35, a veteran 1 -> 0.65).
+func proficiency_mult(u: UnitState) -> float:
+	return 1.35 - 0.7 * clampf(u.proficiency, 0.0, 1.0) if aim_model else 1.0
+
+
+## The distance a soldier engages at with its weapon (WeaponDef.ai_engage_m, else engage_range).
+func engage_reach(def: WeaponDef) -> float:
+	return def.ai_engage_m if aim_model and def and def.ai_engage_m > 0.0 else engage_range
+
+
+## How far a soldier notices enemies: a magnified optic (WeaponDef.optic_sight_m) beyond the plain sight range.
+func sight_of(u: UnitState) -> float:
+	var def := sim.combat.weapon(u.weapon_id)
+	return maxf(sight_range, def.optic_sight_m) if def and aim_model else sight_range
+
+
 ## The direction the soldier actually holds: the ideal one plus a seeded aim error that
 ## grows with distance and while walking (the weapon's spread is added by CombatSim).
 func _aim_error(u: UnitState, dir: Vector3, dist: float) -> Vector3:
@@ -1462,6 +1501,8 @@ func _aim_error(u: UnitState, dir: Vector3, dist: float) -> Vector3:
 	var wdef := sim.combat.weapon(u.weapon_id)
 	var settle := sim.combat.settle_factor(u, wdef) if wdef else 1.0
 	var sigma := (aim_error_base_deg + aim_error_per_100m_deg * dist / 100.0) * lerpf(1.0, settle, 0.5) 			+ aim_error_moving_deg * clampf(speed / 4.5, 0.0, 1.0) * (wdef.moving_aim_mult if wdef else 1.0)
+	# GAMEPLAY-04C: a fresh aim is rougher and settles with time on the target; a better soldier aims tighter and settles sooner.
+	sigma *= aim_settle_mult(u, wdef) * proficiency_mult(u)
 	sigma *= 1.0 + suppression_aim_mult * u.suppression_at(sim.state.time)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash([sim.state.world_seed, u.id, u.shot_counter + 1, 977])
@@ -1545,6 +1586,9 @@ func _support_weapons(u: UnitState, t: UnitState, now: float) -> bool:
 					_squad_nade_at[sq.id if sq else -1] = now + grenade_squad_gap_s
 					_event(u, "grenade at %.0f m" % d)
 					return true
+	var sdef := sim.combat.weapon(u.sec_id) if u.sec_id != &"" else null
+	if sdef and sdef.role == &"gl":
+		return _grenade_launcher(u, t, sdef, known, seen, sq, now)
 	if u.sec_id != &"" and u.sec_ammo > 0 and now >= u.sec_ready_at and now >= float(_squad_rocket_at.get(sq.id if sq else -1, -INF)) 			and now >= float(_rocket_check.get(u.id, -INF)):
 		_rocket_check[u.id] = now + 2.0  # the structure query at most every two seconds per soldier
 		var aim_at := known
@@ -1568,7 +1612,7 @@ func _support_weapons(u: UnitState, t: UnitState, now: float) -> bool:
 				var origin := CombatSim.eye_of(u)
 				var aim := _structure_aim(st)
 				var d := _flat(u.position, aim)
-				if d < launcher_min_m or d > launcher_max_m:
+				if d < launcher_min_m or d > maxf(launcher_max_m, sdef.effective_range if sdef else 0.0):
 					_rocket_hold("range")
 				elif _friendly_near_line(u, origin, aim):
 					_rocket_hold("friend in the line")
@@ -1604,6 +1648,56 @@ func _support_weapons(u: UnitState, t: UnitState, now: float) -> bool:
 							_squad_rocket_at[sq.id if sq else -1] = now + launcher_squad_gap_s
 							_event(u, "launcher at %s %.0f m" % [st.type_id, d])
 							return true
+	return false
+
+
+## GAMEPLAY-04C: the 40 mm grenade launcher - explosive rounds at enemies the soldier saw or saw a moment ago, gl_min_m to
+## gl_max_m away, where they are worth a round: in cover or a position, or two together; never with a friend within
+## gl_friend_m of the impact or near the line; one round per squad per gl_squad_gap_s, the last rounds kept for positions and
+## groups. The round comes down at the aimed distance (CombatSim.fire_secondary). True when it fired (the update is spent).
+var gl_min_m := 40.0
+var gl_max_m := 300.0
+var gl_friend_m := 18.0
+var gl_squad_gap_s := 6.0
+var gl_fired := 0
+var gl_holds := {}
+var _squad_gl_at := {}
+
+
+func _grenade_launcher(u: UnitState, t: UnitState, sdef: WeaponDef, known: Vector3, seen: bool, sq: SquadState, now: float) -> bool:
+	if u.sec_ammo <= 0 or now < u.sec_ready_at or not known.is_finite() or now < float(_squad_gl_at.get(sq.id if sq else -1, -INF)):
+		return false
+	if now < float(_rocket_check.get(u.id, -INF)):
+		return false
+	_rocket_check[u.id] = now + 1.0
+	var d := _flat(u.position, known)
+	var hold := ""
+	var group := _group_near(t, 6.0) if t and t.alive else 1
+	var worth := not seen or (t and (t.tactic == UnitState.Tactic.IN_COVER or t.fort_slot != "")) or group >= 2
+	if u.sec_ammo <= 2 and not (group >= 2 or (t and t.fort_slot != "")):
+		hold = "last rounds kept"
+	elif d < gl_min_m or d > minf(gl_max_m, sdef.effective_range):
+		hold = "range"
+	elif not worth:
+		hold = "a lone enemy in the open"
+	elif _friend_near(u, known, gl_friend_m) or _friend_heading(u, known, gl_friend_m * 0.7):
+		hold = "friend near the impact"
+	elif now - u.moved_at < 0.8:
+		hold = "moving"
+	var origin := CombatSim.eye_of(u)
+	var aim := known + Vector3.UP * 0.6
+	if hold == "" and _friendly_near_line(u, origin, aim):
+		hold = "friend in the line"
+	if hold != "":
+		gl_holds[hold] = int(gl_holds.get(hold, 0)) + 1
+		return false
+	var res := sim.combat.fire_secondary(u.id, origin, (aim - origin).normalized(), CombatSim.Source.AI, origin.distance_to(aim))
+	if res.get("fired", false):
+		gl_fired += 1
+		_squad_gl_at[sq.id if sq else -1] = now + gl_squad_gap_s
+		u.sec_shown_until = now + launcher_lower_s
+		_event(u, "40 mm at %.0f m" % d)
+		return true
 	return false
 
 

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="InfantryRole" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/infantry_role.gd" id="1_role"]
+
+[resource]
+script = ExtResource("1_role")
+id = &"heavy_gunner"
+display_name = "Heavy machine gunner (7.62 GPMG)"
+short = "HMG"
+weapon_id = &"gpmg"
+loadout_suffix = "hmg"
+grenades = 0

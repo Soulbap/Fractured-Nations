@@ -133,6 +133,15 @@ func _use_infantry_character() -> void:
 		UnitVisuals.set_shadows_only(visual, true)
 
 
+## GAMEPLAY-04D: the record's loadout changed (re-equipped at a base): the character is rebuilt for it.
+func refresh_look() -> void:
+	if unit and InfantryCharacter.enabled():
+		_use_infantry_character()
+	if viewmodel and player_controlled:
+		_set_viewmodel(false)
+		_set_viewmodel(true)
+
+
 func _exit_tree() -> void:
 	if sim and unit and sim.bodies.get(unit.id) == self:
 		sim.unregister_body(unit.id)
@@ -365,6 +374,7 @@ func _apply_velocity(v: Vector3, delta: float) -> void:
 		if flat_n.length_squared() > 1e-6 and n.y > 0.01:
 			var along := -Vector2(v.x, v.z).normalized().dot(flat_n) / n.y
 			v *= WorldSim.slope_speed(along)
+		v *= sim.carry_speed(unit) if sim and unit else 1.0
 	velocity.x = v.x
 	velocity.z = v.z
 	if step_height > 0.0 and is_on_floor():
@@ -488,7 +498,13 @@ func _player_weapon(delta: float) -> void:
 		return
 	if unit.sec_active:
 		if Input.is_action_just_pressed("fire"):
-			var r := sim.combat.fire_secondary(unit.id, camera.global_position, -camera.global_basis.z, CombatSim.Source.PLAYER)
+			# GAMEPLAY-04C: a lobbed 40 mm round comes down where the crosshair points (the distance along the sight line).
+			var sdef := sim.combat.weapon(unit.sec_id)
+			var aim_dist := -1.0
+			if sdef and sdef.role == &"gl":
+				var look := sim.combat.line.trace(camera.global_position, camera.global_position - camera.global_basis.z * sdef.max_range, unit.id)
+				aim_dist = look.distance
+			var r := sim.combat.fire_secondary(unit.id, camera.global_position, -camera.global_basis.z, CombatSim.Source.PLAYER, aim_dist)
 			if r.get("fired", false):
 				_recoil()
 		return

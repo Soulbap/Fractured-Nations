@@ -394,6 +394,24 @@ func role_lock(f_id: int, role_id: StringName) -> String:
 	return "Locked: develop %s" % d.display_name
 
 
+## "" when soldiers of the faction can be equipped in this role now: the role developed and the facility that issues its
+## weapons (WeaponDef.procure_facility, primary and secondary) operational at one of its bases; else why not.
+func role_usable(f_id: int, role_id: StringName) -> String:
+	var lock := role_lock(f_id, role_id)
+	if lock != "":
+		return lock
+	if not enabled():
+		return ""
+	var role := InfantryRole.by_id(role_id)
+	if role == null:
+		return "unknown role"
+	for wid in [role.weapon_id, role.secondary_id]:
+		var w := ws.sim.combat.weapon(wid) if wid != &"" else null
+		if w and w.procure_facility != &"" and not has_facility(f_id, w.procure_facility):
+			return "needs an operational %s to issue the %s" % [facility_name(w.procure_facility), w.display_name]
+	return ""
+
+
 func summary() -> Dictionary:
 	var per := {}
 	for f: FactionState in ws.war.factions.values():

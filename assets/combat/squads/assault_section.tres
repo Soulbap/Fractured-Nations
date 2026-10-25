@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="SquadComposition" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/squad_composition.gd" id="1_comp"]
+
+[resource]
+script = ExtResource("1_comp")
+id = "assault_section"
+display_name = "Assault squad: carbines, light machine gun, 40 mm grenadier and an anti-structure gunner"
+slots = Array[StringName]([&"carbineer", &"machine_gunner", &"carbineer", &"at_gunner", &"carbineer", &"grenadier_gl", &"carbineer", &"rifleman"])

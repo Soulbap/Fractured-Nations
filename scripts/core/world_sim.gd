@@ -315,6 +315,7 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 		var h1: float = terrain.data.get_height(u.position + dir)
 		if not is_nan(h0) and not is_nan(h1):
 			climb = slope_speed(h1 - h0)
+	climb *= carry_speed(u)
 	var step := minf(u.speed * abstract_friction * climb * delta, dist)
 	if structures and _step_blocked(u.position, dir, step):
 		var invalid: Dictionary = _local_routes.get(u.id, {})
@@ -717,6 +718,13 @@ static func _flat(a: Vector3, b: Vector3) -> float:
 
 ## Height of an abstract unit: the terrain, or the bridge deck it stands on; a unit beside
 ## a bridge above the river (a formation's outer file) moves onto the deck.
+## GAMEPLAY-04C: share of the walking speed a soldier keeps with what he carries (WeaponDef.move_speed_mult: the heavy machine
+## gun and its belt). Both tiers.
+func carry_speed(u: UnitState) -> float:
+	var def := combat.weapon(u.weapon_id) if combat else null
+	return def.move_speed_mult if def else 1.0
+
+
 ## GAMEPLAY-04A: share of the walking speed left on an uphill grade (rise per metre walked; negative = downhill).
 static func slope_speed(grade: float) -> float:
 	if grade <= SLOPE_EASY_GRADE:

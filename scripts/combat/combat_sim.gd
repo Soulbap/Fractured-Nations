@@ -77,6 +77,16 @@ func apply_composition(sq: SquadState, only: Array = [], comp_override := "") ->
 		comp_id = String(sim.state.war.rule("squad_composition", "standard"))
 	if comp_override != "":
 		comp_id = comp_override
+	elif sim.war and sim.war.dev and sim.war.dev.enabled():
+		# GAMEPLAY-04C: an AI faction arms new soldiers with the first composition of the scenario's list it can field - every
+		# role developed and its weapons issued at one of its bases (the player's rule; the player equips his own: 04D).
+		var f := sim.state.war.faction(sq.faction)
+		if f and not f.player:
+			for cid in sim.state.war.rule("ai_compositions", []):
+				var c := SquadComposition.by_id(String(cid))
+				if c and c.slots.all(func(r: StringName) -> bool: return sim.war.dev.role_usable(sq.faction, r) == ""):
+					comp_id = String(cid)
+					break
 	var comp := SquadComposition.by_id(comp_id)
 	var slots: Array[StringName] = comp.slots if comp else ([] as Array[StringName])
 	var fresh: Array = []
@@ -141,8 +151,12 @@ func _equip_role(u: UnitState, role_id: StringName) -> void:
 		u.fire_auto = def.default_mode == WeaponDef.FireMode.AUTO and def.allow_auto
 	if role:
 		var lo := role.loadout_for(u.faction)
-		if lo != "":
+		if lo != "" and lo != u.loadout:
 			u.loadout = lo
+			# GAMEPLAY-04D: a soldier re-equipped while shown looks the part at once (body or far proxy).
+			var view := sim.view_of(u.id)
+			if view and view.has_method("refresh_look"):
+				view.refresh_look()
 
 
 # --- Firing -------------------------------------------------------------------------
@@ -308,7 +322,9 @@ func throw_grenade(unit_id: int, target: Vector3, source := Source.AI) -> Dictio
 
 ## Fires the secondary weapon (a rocket) from origin along direction, like request_fire: the round flies straight to the
 ## first thing in its way. Returns {fired, reason, e}.
-func fire_secondary(unit_id: int, origin: Vector3, direction: Vector3, source := Source.AI) -> Dictionary:
+## aim_dist: for a lobbed weapon (a grenade launcher, WeaponDef role &"gl") the distance it was aimed at - the round comes down
+## there (or on whatever it meets first) instead of flying on to its maximum range.
+func fire_secondary(unit_id: int, origin: Vector3, direction: Vector3, source := Source.AI, aim_dist := -1.0) -> Dictionary:
 	var u := sim.state.get_unit(unit_id)
 	if u == null or not u.alive:
 		return {"fired": false, "reason": "dead"}
@@ -328,7 +344,10 @@ func fire_secondary(unit_id: int, origin: Vector3, direction: Vector3, source :=
 	# Moving spoils the aim; standing (a shuffle under 0.6 m/s, as UnitState.moved_at counts it) does not.
 	var spread := def.spread_base_deg + def.spread_moving_deg * clampf((Vector2(u.velocity.x, u.velocity.z).length() - 0.6) / 3.9, 0.0, 1.5)
 	var dir := spread_direction(direction.normalized(), spread, sim.state.world_seed, u.id, u.shot_counter)
-	var r := line.trace(origin, origin + dir * def.max_range, u.id)
+	var reach := def.max_range
+	if def.role == &"gl" and aim_dist > 0.0:
+		reach = minf(aim_dist + 1.0, def.max_range)
+	var r := line.trace(origin, origin + dir * reach, u.id)
 	var at: Vector3 = r.point - dir * 0.2
 	var e := _launch(u, def.id, origin, at, now + r.distance / maxf(def.projectile_speed, 1.0))
 	e["hit_structure"] = int(r.structure_id) if r.blocker == "structure" else -1

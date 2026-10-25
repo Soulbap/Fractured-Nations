@@ -35,3 +35,7 @@ burst_mult = 2.5
 mission_burst = 8
 recoil_pitch_deg = 0.35
 recoil_yaw_deg = 0.35
+aim_time_s = 1.1
+ai_engage_m = 450.0
+procure_cost = 90.0
+procure_ammo = 40.0

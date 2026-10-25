@@ -69,6 +69,28 @@ enum Delivery { HITSCAN, PROJECTILE }
 @export var burst_mult := 1.0
 @export var mission_burst := 3
 
+@export_group("Handling (GAMEPLAY-04C)")
+## Seconds a shooter needs on a new target, standing, to settle the aim (the weapon's handling: a carbine comes up fast, a
+## marksman rifle or a heavy machine gun slowly). The AI's aim error starts at CombatBrain.aim_first_mult times its settled
+## value and falls to it over this time (soldier proficiency scales it); moving restarts it. 0 = the brain's default.
+@export var aim_time_s := 0.0
+## How well the AI can aim the weapon: its sight / optic and how it points (the aim error of CombatBrain is multiplied by it;
+## the weapon's own spread is separate). A magnified marksman optic 0.4, a short carbine 1.15, the standard rifle 1.0.
+@export var aim_mult := 1.0
+## The AI engages targets out to this distance (m) with this weapon; 0 = CombatBrain.engage_range.
+@export var ai_engage_m := 0.0
+## A magnified optic: the soldier notices targets out to this distance (m) instead of CombatBrain.sight_range; 0 = none.
+@export var optic_sight_m := 0.0
+## Walking speed with the weapon as a share of the normal one (a heavy machine gun and its belt slow the gunner).
+@export var move_speed_mult := 1.0
+
+@export_group("Procurement (GAMEPLAY-04D)")
+## Price of one weapon when the faction's armoury holds none (supplies kg), the ammunition a soldier is issued with it (kg),
+## and the facility (FacilityDefs kind) that must be operational at the base where it is issued (&"" = any base).
+@export var procure_cost := 0.0
+@export var procure_ammo := 0.0
+@export var procure_facility: StringName = &""
+
 @export_group("Explosive (GAMEPLAY-02C)")
 ## A weapon that bursts (hand grenade, rocket): no hitscan damage of its own; CombatSim.detonate applies blast_damage to
 ## soldiers (falling off to nothing at blast_radius, mostly stopped by cover between them and the burst) and

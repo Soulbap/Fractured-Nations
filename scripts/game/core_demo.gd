@@ -223,6 +223,9 @@ func _setup_combat() -> void:
 		sim.tactics.ops_assault = false
 	if "--no-squad-ai" in launch_args:
 		sim.tactics.autonomous = false
+	# GAMEPLAY-04C: --legacy-aim measures the accuracy arena with the GAMEPLAY-03 aim model (comparison only).
+	if "--legacy-aim" in launch_args:
+		sim.brain.aim_model = false
 	tactics_overlay = TacticsOverlay.new()
 	tactics_overlay.name = "TacticsOverlay"
 	tactics_overlay.sim = sim

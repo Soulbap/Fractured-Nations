@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="WeaponDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_def.gd" id="1_wdef"]
+[ext_resource type="PackedScene" path="res://assets/characters/infantry/weapons/recoilless.glb" id="2_vm"]
+
+[resource]
+script = ExtResource("1_wdef")
+id = &"recoilless"
+display_name = "Recoilless rifle 84 mm"
+delivery = 1
+rounds_per_minute = 6.0
+allow_auto = false
+default_mode = 0
+magazine_size = 1
+reserve_start = 3
+reload_time = 7.5
+damage = 0.0
+max_range = 500.0
+effective_range = 400.0
+spread_base_deg = 0.15
+spread_moving_deg = 3.0
+role = &"launcher"
+blast_radius = 5.5
+blast_damage = 160.0
+blast_structure = 950.0
+blast_suppression = 1.0
+projectile_speed = 230.0
+aim_time_s = 1.8
+procure_cost = 260.0
+procure_ammo = 60.0
+procure_facility = &"repair"
+recoil_pitch_deg = 3.5
+recoil_yaw_deg = 0.8
+viewmodel_scene = ExtResource("2_vm")

@@ -110,6 +110,12 @@ var target_visible := false
 var target_aim_y := 1.0
 ## Simulation time from which the first shot at a newly acquired target may leave.
 var aim_ready_at := 0.0
+## GAMEPLAY-04C: when the soldier began aiming at its current target (acquisition, target switch); with moved_at it gives
+## how settled the aim is (CombatBrain.aim_settle). Saved like aim_ready_at.
+var aim_since := 0.0
+## GAMEPLAY-04C: how well the soldier handles a weapon, 0..1 (0.5 = trained): it scales the AI's aim error and how fast it
+## settles. A property of the soldier, never of the faction or the weapon (CombatBrain.proficiency_mult). Saved.
+var proficiency := 0.5
 ## Rounds left in the current burst and when the next burst may start.
 var burst_left := 0
 var next_burst_at := 0.0
@@ -205,7 +211,7 @@ func to_dict() -> Dictionary:
 		"next_shot_at": next_shot_at, "reload_until": reload_until, "shot_counter": shot_counter,
 		"bloom": bloom, "last_shot_at": last_shot_at, "died_at": died_at, "killer_id": killer_id,
 		"ai_state": ai_state, "target_id": target_id, "target_seen_at": target_seen_at, "target_last_pos": target_last_pos,
-		"target_visible": target_visible, "target_aim_y": target_aim_y, "aim_ready_at": aim_ready_at,
+		"target_visible": target_visible, "target_aim_y": target_aim_y, "aim_ready_at": aim_ready_at, "aim_since": aim_since, "proficiency": proficiency,
 		"burst_left": burst_left, "next_burst_at": next_burst_at, "watch_yaw": watch_yaw, "watch_until": watch_until,
 		"tactic": tactic, "tactic_since": tactic_since, "tactic_cooldown_until": tactic_cooldown_until,
 		"react_target": react_target, "react_state": react_state, "react_until": react_until, "cover_pos": cover_pos,
@@ -274,6 +280,8 @@ func copy_combat_from(d: Dictionary) -> void:
 	target_visible = d.get("target_visible", false)
 	target_aim_y = d.get("target_aim_y", 1.0)
 	aim_ready_at = d.get("aim_ready_at", 0.0)
+	aim_since = d.get("aim_since", 0.0)
+	proficiency = d.get("proficiency", 0.5)
 	burst_left = d.get("burst_left", 0)
 	next_burst_at = d.get("next_burst_at", 0.0)
 	watch_yaw = d.get("watch_yaw", NAN)

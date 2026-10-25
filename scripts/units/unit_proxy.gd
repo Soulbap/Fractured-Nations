@@ -38,7 +38,7 @@ func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
 		_vehicle_visual.build(unit.veh.type_id if unit.veh else VehicleDefs.TRUCK, unit.faction, true)
 		_marker.mesh = null
 	elif InfantryCharacter.enabled():
-		# CHARACTER-01: static posed far-view mesh of the unit's loadout (one draw call).
+		# CHARACTER-01: static posed far-view mesh of the unit's loadout (one draw call); refresh_look swaps it.
 		if unit.loadout == "":
 			unit.loadout = InfantryLoadout.default_for(unit.id, unit.faction)
 		var pm := InfantryProxyMesh.get_mesh(unit.loadout, unit.faction)
@@ -99,3 +99,11 @@ func _show_dead() -> void:
 func _follow() -> void:
 	global_position = unit.position
 	rotation.y = unit.yaw
+
+
+## GAMEPLAY-04D: the record's loadout changed (re-equipped): the far-view mesh of the new loadout.
+func refresh_look() -> void:
+	if unit and not unit.is_vehicle() and InfantryCharacter.enabled() and unit.loadout != "":
+		var pm := InfantryProxyMesh.get_mesh(unit.loadout, unit.faction)
+		if pm:
+			_marker.mesh = pm

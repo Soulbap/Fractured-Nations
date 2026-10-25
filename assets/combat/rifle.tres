@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_wdef")
 id = &"rifle"
-display_name = "Carbine 5.56"
+display_name = "Rifle 5.56"
 rounds_per_minute = 700.0
 allow_auto = true
 default_mode = 1
@@ -27,3 +27,7 @@ spread_bloom_max_deg = 1.8
 spread_recovery_deg_s = 4.0
 recoil_pitch_deg = 0.55
 recoil_yaw_deg = 0.25
+aim_time_s = 0.8
+ai_engage_m = 350.0
+procure_cost = 35.0
+procure_ammo = 15.0
