@@ -1,0 +1,172 @@
+{
+ "id": "weapon_svd",
+ "display_name": "SVD Dragunov",
+ "faction": "RU",
+ "kind": "dmr",
+ "description": "Dragunov SVD 7.62x54R designated marksman rifle, laminated wood furniture, PSO-1 scope.",
+ "bounds_min": [
+  -0.046,
+  -0.255,
+  -0.086
+ ],
+ "bounds_max": [
+  0.0478,
+  0.98,
+  0.186
+ ],
+ "length_m": 1.235,
+ "height_m": 0.272,
+ "width_m": 0.0938,
+ "tris": [
+  10722,
+  3632,
+  712
+ ],
+ "objects": [
+  5,
+  5,
+  4
+ ],
+ "materials": [
+  "Lens",
+  "Metal_Black",
+  "Polymer_Black",
+  "Rubber_Black",
+  "Weapon_PaintBlack",
+  "Weapon_Phosphate",
+  "Wood_Laminate"
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "node": "",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "",
+   "tris": [
+    8046,
+    2452,
+    476
+   ]
+  },
+  {
+   "name": "Bolt",
+   "node": "PIV_Bolt",
+   "parent": "",
+   "pivot_godot": [
+    0.016,
+    0.07,
+    -0.12
+   ],
+   "axis": "slide -y",
+   "note": "bolt carrier with the charging handle (right)",
+   "tris": [
+    200,
+    92,
+    44
+   ]
+  },
+  {
+   "name": "Trigger",
+   "node": "PIV_Trigger",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.038,
+    -0.046
+   ],
+   "axis": "x",
+   "note": "trigger (pivots about X)",
+   "tris": [
+    348,
+    204,
+    0
+   ]
+  },
+  {
+   "name": "Mag",
+   "node": "ATT_Magazine",
+   "parent": "",
+   "pivot_godot": [
+    0.11,
+    0.024,
+    -0.0
+   ],
+   "axis": "",
+   "note": "detachable magazine",
+   "tris": [
+    412,
+    156,
+    28
+   ]
+  },
+  {
+   "name": "Optic",
+   "node": "PIV_Optic",
+   "parent": "",
+   "pivot_godot": [
+    -0.02,
+    0.064,
+    -0.06
+   ],
+   "axis": "",
+   "note": "PSO-1 scope on the side-rail bracket (removable)",
+   "tris": [
+    1716,
+    728,
+    164
+   ]
+  }
+ ],
+ "markers": [
+  {
+   "name": "ATT_Muzzle",
+   "pos_godot": [
+    0,
+    0.074,
+    -0.98
+   ],
+   "note": "flash hider face"
+  },
+  {
+   "name": "ATT_Optic",
+   "pos_godot": [
+    -0.019,
+    0.064,
+    -0.04
+   ],
+   "note": "Warsaw Pact side rail (PSO-1 fitted)"
+  },
+  {
+   "name": "GRIP_Main",
+   "pos_godot": [
+    0,
+    0,
+    0
+   ],
+   "note": "firing hand (thumbhole grip)"
+  },
+  {
+   "name": "GRIP_Support",
+   "pos_godot": [
+    0,
+    0.044,
+    -0.3
+   ],
+   "note": "support hand under the handguard"
+  }
+ ],
+ "variant": "SVD (classic laminated wood, PSO-1)",
+ "dimensions_m": {
+  "overall": 1.225,
+  "barrel": 0.62
+ },
+ "sight_line_z": 0.152,
+ "source": "assets/weapons/_references/svd/notes.md",
+ "glb_bytes": 616164
+}

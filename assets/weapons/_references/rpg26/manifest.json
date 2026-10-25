@@ -1,0 +1,58 @@
+{
+ "asset": "rpg26",
+ "source": "Wikimedia Commons",
+ "images": [
+  {
+   "file": "01_Grenade_launchers_RPG_26.jpg",
+   "title": "Grenade launchers RPG-26.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Grenade_launchers_RPG-26.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Grenade_launchers_RPG-26.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2761,
+    1841
+   ],
+   "license": "Public domain",
+   "author": "Sergeev Pavel",
+   "description": "Russia, Vologda, militsiya museum, Grenade launchers RPG-26"
+  },
+  {
+   "file": "02_Rpg_26.jpg",
+   "title": "Rpg-26.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Rpg-26.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/f/ff/Rpg-26.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    799,
+    422
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Historiador09NI",
+   "description": "lanzador rpg-26, misil y activador"
+  },
+  {
+   "file": "03_Tula_State_Museum_of_Weapons_79_59_cropped_RPG_26.jpg",
+   "title": "Tula State Museum of Weapons (79-59) (cropped) RPG-26.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Tula_State_Museum_of_Weapons_(79-59)_(cropped)_RPG-26.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/d/dd/Tula_State_Museum_of_Weapons_%2879-59%29_%28cropped%29_RPG-26.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2250,
+    495
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Vitaly V. Kuzmin",
+   "description": "RPG-26"
+  },
+  {
+   "file": "04_Tula_State_Museum_of_Weapons_79_58.jpg",
+   "title": "Tula State Museum of Weapons (79-58).jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Tula_State_Museum_of_Weapons_(79-58).jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/0/04/Tula_State_Museum_of_Weapons_%2879-58%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2250,
+    1500
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Vitaly V. Kuzmin",
+   "description": "1: RPG-18 Mukha, 2: RPG-26 Aglen', 3: RPG-27 Tavolga, 4: RPG-29 Vampire and 5: RPO-A Shmel"
+  }
+ ]
+}

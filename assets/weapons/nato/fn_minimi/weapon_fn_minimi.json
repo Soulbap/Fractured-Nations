@@ -1,0 +1,224 @@
+{
+ "id": "weapon_fn_minimi",
+ "display_name": "FN Minimi 7.62 Mk3",
+ "faction": "NATO",
+ "kind": "lmg",
+ "description": "FN Minimi 7.62 Mk3 light machine gun (Norwegian Army from 2022): telescopic stock, railed feed cover and handguard, bipod.",
+ "bounds_min": [
+  -0.1413,
+  -0.346,
+  -0.2938
+ ],
+ "bounds_max": [
+  0.1413,
+  0.664,
+  0.159
+ ],
+ "length_m": 1.01,
+ "height_m": 0.4528,
+ "width_m": 0.2826,
+ "tris": [
+  17636,
+  3278,
+  704
+ ],
+ "objects": [
+  8,
+  8,
+  6
+ ],
+ "materials": [
+  "Cordura_RangerGreen",
+  "Metal_Black",
+  "Metal_Worn",
+  "Polymer_Black",
+  "Rubber_Black",
+  "Strap_Black",
+  "Weapon_Anodized",
+  "Weapon_Phosphate"
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "node": "",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "",
+   "tris": [
+    11096,
+    1894,
+    404
+   ]
+  },
+  {
+   "name": "FeedCover",
+   "node": "PIV_FeedCover",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.106,
+    0.11
+   ],
+   "axis": "x (opens upward)",
+   "note": "feed cover with top rail",
+   "tris": [
+    3712,
+    296,
+    36
+   ]
+  },
+  {
+   "name": "Trigger",
+   "node": "PIV_Trigger",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.038,
+    -0.04
+   ],
+   "axis": "x",
+   "note": "trigger (pivots about X)",
+   "tris": [
+    348,
+    204,
+    0
+   ]
+  },
+  {
+   "name": "Stock",
+   "node": "PIV_Stock",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.074,
+    0.15
+   ],
+   "axis": "slide y",
+   "note": "Mk3 telescopic stock",
+   "tris": [
+    748,
+    368,
+    104
+   ]
+  },
+  {
+   "name": "ChargingHandle",
+   "node": "PIV_ChargingHandle",
+   "parent": "",
+   "pivot_godot": [
+    0.032,
+    0.054,
+    -0.14
+   ],
+   "axis": "slide -y",
+   "note": "cocking handle (right side)",
+   "tris": [
+    152,
+    64,
+    32
+   ]
+  },
+  {
+   "name": "Bipod",
+   "node": "PIV_Bipod",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.002,
+    -0.49
+   ],
+   "axis": "x (legs fold forward)",
+   "note": "bipod, deployed",
+   "tris": [
+    452,
+    212,
+    92
+   ]
+  },
+  {
+   "name": "AmmoPouch",
+   "node": "PIV_AmmoPouch",
+   "parent": "",
+   "pivot_godot": [
+    -0.01,
+    0.016,
+    -0.08
+   ],
+   "axis": "",
+   "note": "100-round soft pouch (removable)",
+   "tris": [
+    456,
+    160,
+    36
+   ]
+  },
+  {
+   "name": "Belt",
+   "node": "PIV_Belt",
+   "parent": "",
+   "pivot_godot": [
+    -0.032,
+    0.064,
+    -0.12
+   ],
+   "axis": "",
+   "note": "ammunition belt stub",
+   "tris": [
+    672,
+    80,
+    0
+   ]
+  }
+ ],
+ "markers": [
+  {
+   "name": "ATT_Muzzle",
+   "pos_godot": [
+    0,
+    0.074,
+    -0.664
+   ],
+   "note": "muzzle face"
+  },
+  {
+   "name": "ATT_Optic",
+   "pos_godot": [
+    0,
+    0.13,
+    -0.0
+   ],
+   "note": "feed-cover rail"
+  },
+  {
+   "name": "GRIP_Main",
+   "pos_godot": [
+    0,
+    0,
+    0
+   ],
+   "note": "firing hand"
+  },
+  {
+   "name": "GRIP_Support",
+   "pos_godot": [
+    0,
+    0.014,
+    -0.36
+   ],
+   "note": "support hand on the handguard"
+  }
+ ],
+ "variant": "FN Minimi 7.62 Mk3 (Norway)",
+ "dimensions_m": {
+  "overall": 1.0,
+  "barrel": 0.502,
+  "collapsed": 0.865
+ },
+ "source": "assets/weapons/_references/fn_minimi/notes.md",
+ "glb_bytes": 877852
+}

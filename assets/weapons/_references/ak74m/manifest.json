@@ -1,0 +1,58 @@
+{
+ "asset": "ak74m",
+ "source": "Wikimedia Commons",
+ "images": [
+  {
+   "file": "01_Ak74l.png",
+   "title": "Ak74l.png",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Ak74l.png",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/2/20/Ak74l.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    799,
+    292
+   ],
+   "license": "CC BY-SA 3.0",
+   "author": "Сергей Сандалов (sAg-) (https://forum.guns.ru/forummessage/396/1987340.html)",
+   "description": "AK-74 assault rifle"
+  },
+  {
+   "file": "02_Servicerifle_ak_74.png",
+   "title": "Servicerifle-ak-74.png",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Servicerifle-ak-74.png",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/0/00/Servicerifle-ak-74.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    1502,
+    511
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "АО \"Концерн \"Калашников\" ( https://kalashnikov.com )",
+   "description": "AK-74M service rifle"
+  },
+  {
+   "file": "03_DPR_AK_74M.png",
+   "title": "DPR AK-74M.png",
+   "source_page": "https://commons.wikimedia.org/wiki/File:DPR_AK-74M.png",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/f/f2/DPR_AK-74M.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    1509,
+    723
+   ],
+   "license": "CC BY 3.0",
+   "author": "Gennadiy Dubovoy",
+   "description": "DPR 1st Sloviansk Brigade fighter with AK-74M during a military exercise."
+  },
+  {
+   "file": "04_AK_74M_with_GP_25.jpg",
+   "title": "AK-74M with GP-25.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:AK-74M_with_GP-25.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/0/0d/AK-74M_with_GP-25.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    650,
+    184
+   ],
+   "license": "CC BY 3.0",
+   "author": "S5switch",
+   "description": "AK-74M by S5switch. Released in Wikipedia under CreativeCommons Attribution License. Converted to .jpeg image"
+  }
+ ]
+}

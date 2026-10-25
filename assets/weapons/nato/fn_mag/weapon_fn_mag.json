@@ -1,0 +1,203 @@
+{
+ "id": "weapon_fn_mag",
+ "display_name": "FN MAG",
+ "faction": "NATO",
+ "kind": "gpmg",
+ "description": "FN MAG 7.62 mm general-purpose machine gun (Norwegian Army: vehicles, weapon stations, infantry).",
+ "bounds_min": [
+  -0.1562,
+  -0.372,
+  -0.3105
+ ],
+ "bounds_max": [
+  0.1562,
+  0.893,
+  0.154
+ ],
+ "length_m": 1.265,
+ "height_m": 0.4645,
+ "width_m": 0.3123,
+ "tris": [
+  9716,
+  3074,
+  708
+ ],
+ "objects": [
+  7,
+  7,
+  5
+ ],
+ "materials": [
+  "Metal_Black",
+  "Metal_Worn",
+  "Polymer_Black",
+  "Rubber_Black",
+  "Weapon_Phosphate"
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "node": "",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "",
+   "tris": [
+    4908,
+    1794,
+    440
+   ]
+  },
+  {
+   "name": "FeedCover",
+   "node": "PIV_FeedCover",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.11,
+    0.08
+   ],
+   "axis": "x (opens upward)",
+   "note": "top cover / feed cover",
+   "tris": [
+    532,
+    284,
+    44
+   ]
+  },
+  {
+   "name": "Trigger",
+   "node": "PIV_Trigger",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.038,
+    -0.038
+   ],
+   "axis": "x",
+   "note": "trigger (pivots about X)",
+   "tris": [
+    348,
+    204,
+    0
+   ]
+  },
+  {
+   "name": "Stock",
+   "node": "PIV_Stock",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.074,
+    0.11
+   ],
+   "axis": "",
+   "note": "butt stock (removable)",
+   "tris": [
+    2148,
+    376,
+    100
+   ]
+  },
+  {
+   "name": "ChargingHandle",
+   "node": "PIV_ChargingHandle",
+   "parent": "",
+   "pivot_godot": [
+    0.034,
+    0.074,
+    -0.18
+   ],
+   "axis": "slide -y",
+   "note": "cocking handle (right side)",
+   "tris": [
+    152,
+    64,
+    32
+   ]
+  },
+  {
+   "name": "Bipod",
+   "node": "PIV_Bipod",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.022,
+    -0.69
+   ],
+   "axis": "x (legs fold forward)",
+   "note": "bipod, deployed",
+   "tris": [
+    452,
+    212,
+    92
+   ]
+  },
+  {
+   "name": "Belt",
+   "node": "PIV_Belt",
+   "parent": "",
+   "pivot_godot": [
+    -0.038,
+    0.062,
+    -0.17
+   ],
+   "axis": "",
+   "note": "ammunition belt stub",
+   "tris": [
+    1176,
+    140,
+    0
+   ]
+  }
+ ],
+ "markers": [
+  {
+   "name": "ATT_Muzzle",
+   "pos_godot": [
+    0,
+    0.074,
+    -0.893
+   ],
+   "note": "muzzle face"
+  },
+  {
+   "name": "ATT_Optic",
+   "pos_godot": [
+    0,
+    0.128,
+    -0.06
+   ],
+   "note": "top of the feed cover (no rail on the standard MAG)"
+  },
+  {
+   "name": "GRIP_Main",
+   "pos_godot": [
+    0,
+    0,
+    0
+   ],
+   "note": "firing hand"
+  },
+  {
+   "name": "GRIP_Support",
+   "pos_godot": [
+    0,
+    -0.016,
+    0.25
+   ],
+   "note": "support hand over the butt (bipod firing)"
+  }
+ ],
+ "variant": "FN MAG (MAG 58) infantry configuration with bipod and butt stock",
+ "dimensions_m": {
+  "overall": 1.263,
+  "barrel": 0.63
+ },
+ "source": "assets/weapons/_references/fn_mag/notes.md",
+ "glb_bytes": 577508
+}

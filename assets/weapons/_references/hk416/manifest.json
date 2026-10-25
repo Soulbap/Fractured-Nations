@@ -1,0 +1,84 @@
+{
+ "asset": "hk416",
+ "source": "Wikimedia Commons",
+ "images": [
+  {
+   "file": "01_HK416N.jpg",
+   "title": "HK416N.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:HK416N.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/0/0c/HK416N.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2722,
+    1034
+   ],
+   "license": "CC BY-SA 3.0",
+   "author": "No machine-readable author provided. Dybdal~commonswiki assumed (based on copyright claims).",
+   "description": "HK416 N."
+  },
+  {
+   "file": "02_HK416N.png",
+   "title": "HK416N.png",
+   "source_page": "https://commons.wikimedia.org/wiki/File:HK416N.png",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/9/92/HK416N.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2143,
+    834
+   ],
+   "license": "CC BY-SA 2.0",
+   "author": "Dybdal.",
+   "description": "Norwegian Army Heckler &amp; Koch HK416N with 419 mm (16.5 in) long barrel, an Aimpoint CompM4 red dot sight and a vertical foregrip. (Transparent version.)"
+  },
+  {
+   "file": "03_Norwegian_soldier_with_HK416.jpg",
+   "title": "Norwegian soldier with HK416.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Norwegian_soldier_with_HK416.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/4/49/Norwegian_soldier_with_HK416.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2832,
+    2953
+   ],
+   "license": "CC BY 2.0",
+   "author": "Soldatnytt from Oslo, Norway",
+   "description": "A Norwegian soldier wielding the HK 416"
+  },
+  {
+   "file": "04_NorwegiansolderHK416.jpg",
+   "title": "NorwegiansolderHK416.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:NorwegiansolderHK416.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/5/55/NorwegiansolderHK416.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    3888,
+    2592
+   ],
+   "license": "CC BY 2.0",
+   "author": "PRT Meymaneh",
+   "description": "Norwegian soldier in Faryab province, Afghanistan, armed with an HK416 rifle."
+  },
+  {
+   "file": "05_HK416.jpg",
+   "title": "HK416.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:HK416.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/9/97/HK416.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2143,
+    834
+   ],
+   "license": "CC BY-SA 2.0",
+   "author": "Dybdal.",
+   "description": "Norwegian Army Heckler &amp; Koch HK416N with an Aimpoint CompM4 red dot sight and a vertical foregrip."
+  },
+  {
+   "file": "06_Norwegian_soldier_during_Saber_Strike_2015.jpg",
+   "title": "Norwegian soldier during Saber Strike 2015.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Norwegian_soldier_during_Saber_Strike_2015.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/1/17/Norwegian_soldier_during_Saber_Strike_2015.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    960,
+    639
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Arntor",
+   "description": "Norwegian Army soldiers, conscripts and officers, in a military multinational NATO exercise in Latvia called Saber Strike"
+  }
+ ]
+}

@@ -1,10 +1,9 @@
-"""VEHICLE-ASSETS-01: downloads the reference photographs of the vehicle pack from
-Wikimedia Commons (freely licensed files only) into
-assets/military/vehicles/_references/<vehicle>/ and writes a manifest per vehicle with
-source page, licence, author and description. Photos are study material for modelling
-only; nothing from them is copied into an asset.
+"""VEHICLE-ASSETS-01 / WEAPON-ASSETS-01: downloads the reference photographs of an asset pack
+from Wikimedia Commons (freely licensed files only) into <pack>/_references/<asset>/ and
+writes a manifest per asset with source page, licence, author and description. Photos are
+study material for modelling only; nothing from them is copied into an asset.
 
-    python tools/vehicle_assets/fetch_references.py [--only iveco_lmv,cv9030n]
+    python tools/vehicle_assets/fetch_references.py [--pack vehicles|weapons] [--only iveco_lmv,cv9030n]
 
 Observations per vehicle (dimensions, variant decisions) live in the hand-written
 `notes.md` next to each manifest; this script never touches them.
@@ -18,7 +17,9 @@ import urllib.parse
 import urllib.request
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-OUT = os.path.join(REPO, "assets", "military", "vehicles", "_references")
+OUTS = {"vehicles": os.path.join(REPO, "assets", "military", "vehicles", "_references"),
+        "weapons": os.path.join(REPO, "assets", "weapons", "_references")}
+OUT = OUTS["vehicles"]
 UA = {"User-Agent": "FracturedNationsRefFetch/1.0 (private game project reference research)"}
 API = "https://commons.wikimedia.org/w/api.php"
 WIDTH = 1280      # one of Wikimedia's standard thumbnail steps (others are rate limited)
@@ -84,6 +85,38 @@ REFS = {
 }
 
 
+WEAPON_REFS = {
+    "hk416": ["HK416N.jpg", "HK416N.png", "Norwegian soldier with HK416.jpg", "NorwegiansolderHK416.jpg", "HK416.jpg",
+              "Norwegian soldier during Saber Strike 2015.jpg"],
+    "hk417": ["HK417 norway.png", "HK417 Nederlands - precision rifle.jpg", "Heckler&Koch HK MR308 linke Seite.jpg",
+              "Australian soldier with a Heckler & Koch HK417 rifle in Afghanistan during 2013.jpg"],
+    "fn_minimi": ["Minimi MK3 Opendeurdag Leopoldsburg 14-05-2023 12-03-19.jpg", "Australian soldier armed with Minimi MK3 during Exercise Balikatan 23.webp",
+                  "US and NATO Allies conduct weapons familiarization (7426987).jpg"],
+    "fn_mag": ["FN MAG Machine Gun Left.jpg", "FN MAG 58 Avalon 2025 side view (1).jpg", "FN Herstal machine gun detail.jpg",
+               "FN MAG white background.jpg", "MAG-latrun-exhibition-1.jpg"],
+    "glock_17": ["Glock 17.JPG", "Glock 17 (6825676904).jpg", "Glock 17 Gen 5 Gun white bg crop.png", "GLOCK 17 Gen 4 Pistol MOD 45160305.jpg",
+                 "Glock 17 G5 FR.jpg"],
+    "axmc": ["Accuracy International AXMC.jpg", "60th Merdeka Day Picture 69 Commando of PGK sniper with AXMC.jpg", "High Angle shoot training-4.jpg",
+             "Danish International Sniper Competition (8515329).jpg"],
+    "carl_gustaf_m4": ["Carl-Gustaf M4.jpg", "Carl Gustav M4 (1).jpg", "Hungary-2019.09.12 Carl-Gustaf-M4.jpg", "Carl Gustav M4 Kokonaisturvallisuus 2015.jpg",
+                       "Carl Gustav M3 ja M4 Kokonaisturvallisuus 2015.jpg"],
+    "m72_law": ["M72 LAW 66 KES 88 20180604.jpg", "M72A2 LAW.png", "M72 Light Anti-tank Weapon (7414626756).jpg", "M72 Front Sight.jpg",
+                "M72 LAW 1986.jpg"],
+    "ak12": ["5,45mm AK-12 6P70 assault rifle at Military-technical forum ARMY-2016 01.jpg", "5,45mm AK-12 6P70 assault rifle at Military-technical forum ARMY-2016 02.jpg",
+             "5,45mm AK-12 6P70 assault rifle at Military-technical forum ARMY-2016 03.jpg", "5,45mm AK-12 6P70 assault rifle at Military-technical forum ARMY-2016 04.jpg",
+             "AK-12 Assault Rifle Army-2022 2022-08-20 2384.jpg", "AK-12 rifle (2).jpg"],
+    "ak74m": ["Ak74l.png", "Servicerifle-ak-74.png", "DPR AK-74M.png", "AK-74M with GP-25.jpg"],
+    "pkp_pecheneg": ["PKP Pecheneg (1).jpg", "Pecheneg machine gun-01.jpg", "Pecheneg machine gun-02.jpg", "Pecheneg machine gun-06.jpg",
+                     "PKP Pecheneg machine gun - RaceofHeroes-part2-19.jpg"],
+    "rpk74m": ["RPK-74M (1).jpg", "RPK-74M (2).jpg", "Machine Gun RPK-74.jpg", "Soviet RPK-74.JPEG"],
+    "mp443": ["Mp-443 grach.jpg", "9mm Yarygin pistol PYa.jpg", "9-мм Пистолет Ярыгина ПЯ 6П35 03.jpg", "9-мм Пистолет Ярыгина ПЯ 6П35 12.jpg",
+              "9-мм Пистолет Ярыгина ПЯ 6П35 19.jpg"],
+    "svd": ["SVD Dragunov.jpg", "Dragunov SVD Rifle.JPEG", "SVD rifle detail.jpg", "Dragunov lft.jpg", "Dragunovs rt.JPG"],
+    "rpg7": ["RPG-7V2 - ETIF-2010.jpg", "RPG-7 detached.jpg", "Rpg-7.jpg", "RPG-7D3 - 51AirborneRegiment44.jpg"],
+    "rpg26": ["Grenade launchers RPG-26.jpg", "Rpg-26.jpg", "Tula State Museum of Weapons (79-59) (cropped) RPG-26.jpg", "Tula State Museum of Weapons (79-58).jpg"],
+}
+
+
 def _get(url, tries=5):
     for k in range(tries):
         try:
@@ -142,14 +175,18 @@ def fetch(vehicle, titles):
         print("OK", vehicle, name, flush=True)
         time.sleep(1.0)
     with open(os.path.join(d, "manifest.json"), "w", encoding="utf-8") as f:
-        json.dump({"vehicle": vehicle, "source": "Wikimedia Commons", "images": entries}, f, indent=1, ensure_ascii=False)
+        json.dump({"asset": vehicle, "source": "Wikimedia Commons", "images": entries}, f, indent=1, ensure_ascii=False)
 
 
 def main():
+    global OUT
     only = None
     if "--only" in sys.argv:
         only = set(sys.argv[sys.argv.index("--only") + 1].split(","))
-    for v, titles in REFS.items():
+    pack = sys.argv[sys.argv.index("--pack") + 1] if "--pack" in sys.argv else "vehicles"
+    OUT = OUTS[pack]
+    refs = WEAPON_REFS if pack == "weapons" else REFS
+    for v, titles in refs.items():
         if only is None or v in only:
             fetch(v, titles)
 

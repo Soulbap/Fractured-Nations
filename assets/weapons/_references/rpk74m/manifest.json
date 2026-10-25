@@ -1,0 +1,58 @@
+{
+ "asset": "rpk74m",
+ "source": "Wikimedia Commons",
+ "images": [
+  {
+   "file": "01_RPK_74M_1.jpg",
+   "title": "RPK-74M (1).jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:RPK-74M_(1).jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/4/4a/RPK-74M_%281%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2250,
+    1424
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Vitaly V. Kuzmin",
+   "description": "RPK-74M"
+  },
+  {
+   "file": "02_RPK_74M_2.jpg",
+   "title": "RPK-74M (2).jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:RPK-74M_(2).jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/7/71/RPK-74M_%282%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2250,
+    1424
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Vitaly V. Kuzmin",
+   "description": "RPK-74M"
+  },
+  {
+   "file": "03_Machine_Gun_RPK_74.jpg",
+   "title": "Machine Gun RPK-74.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Machine_Gun_RPK-74.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/6/63/Machine_Gun_RPK-74.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    720,
+    323
+   ],
+   "license": "Attribution",
+   "author": "Polish military",
+   "description": "Soviet light machine gun RPK-74"
+  },
+  {
+   "file": "04_Soviet_RPK_74.jpeg",
+   "title": "Soviet RPK-74.JPEG",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Soviet_RPK-74.JPEG",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/a/aa/Soviet_RPK-74.JPEG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    3216,
+    1448
+   ],
+   "license": "Public domain",
+   "author": "",
+   "description": "A right side of a Soviet 5.45 mm RPK-74 light machine gun with a 40-round box magazine. (Released to Public)"
+  }
+ ]
+}

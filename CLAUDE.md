@@ -336,4 +336,9 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   of `ap_lib.Asset`; shells with boolean cabin cuts on LOD0; `veh_kit` tyres / tracks / RWS) -> `assets/military/vehicles/<id>/`,
   `.blend` in `assets/military/blender/vehicles/`; Godot check `tools/vehicle_assets/run_vehicle_lab.sh --validate | --shots`.
   Reference photos: `tools/vehicle_assets/fetch_references.py` (Wikimedia rate-limits: standard thumb widths only).
+- Weapon pack (WEAPON-ASSETS-01): `tools/blender/weapons/build_weapons.py` (`wpn_lib.Weapon` parts = `PIV_<Part>` pivots, the
+  magazine part on `ATT_Magazine`; meshes `<id>[_<Part>]_LOD0/1/2`, weapon space of CHARACTER_STANDARD §3) -> `assets/weapons/{nato,russian}/<id>/`
+  (.glb, sidecar, `InfantryEquipment` .tres, `source/*.blend`). New weapon material names must be added to both `build_weapons.WEAPON_MATERIALS`
+  and `InfantryMaterials.TABLE`. Godot check `tools/weapon_assets/run_weapon_lab.sh --validate | --shots | --showcase`; references
+  `fetch_references.py --pack weapons`.
 - Python on Windows: open files with `encoding='utf-8'`.

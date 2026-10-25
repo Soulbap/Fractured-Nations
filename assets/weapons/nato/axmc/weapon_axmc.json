@@ -1,0 +1,214 @@
+{
+ "id": "weapon_axmc",
+ "display_name": "Accuracy International AXMC",
+ "faction": "NATO",
+ "kind": "sniper_rifle",
+ "description": "Accuracy International AXMC .338 Lapua Magnum precision rifle, folding stock, Schmidt & Bender PM II, bipod.",
+ "bounds_min": [
+  -0.04,
+  -0.36,
+  -0.091
+ ],
+ "bounds_max": [
+  0.0746,
+  0.905,
+  0.2065
+ ],
+ "length_m": 1.265,
+ "height_m": 0.2975,
+ "width_m": 0.1146,
+ "tris": [
+  30786,
+  3824,
+  912
+ ],
+ "objects": [
+  7,
+  7,
+  6
+ ],
+ "materials": [
+  "Lens",
+  "Metal_Black",
+  "Metal_Worn",
+  "Polymer_Green",
+  "Rubber_Black",
+  "Weapon_Anodized"
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "node": "",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "",
+   "tris": [
+    22476,
+    1152,
+    348
+   ]
+  },
+  {
+   "name": "Trigger",
+   "node": "PIV_Trigger",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.038,
+    -0.036
+   ],
+   "axis": "x",
+   "note": "trigger (pivots about X)",
+   "tris": [
+    348,
+    204,
+    0
+   ]
+  },
+  {
+   "name": "Bolt",
+   "node": "PIV_Bolt",
+   "parent": "",
+   "pivot_godot": [
+    0.02,
+    0.076,
+    0.02
+   ],
+   "axis": "y (lift) + slide -y",
+   "note": "bolt handle",
+   "tris": [
+    172,
+    88,
+    44
+   ]
+  },
+  {
+   "name": "Stock",
+   "node": "PIV_Stock",
+   "parent": "",
+   "pivot_godot": [
+    -0.025,
+    0.054,
+    0.072
+   ],
+   "axis": "z (folds left)",
+   "note": "folding, adjustable skeleton stock",
+   "tris": [
+    1322,
+    588,
+    112
+   ]
+  },
+  {
+   "name": "Mag",
+   "node": "ATT_Magazine",
+   "parent": "",
+   "pivot_godot": [
+    0.11,
+    0.024,
+    -0.0
+   ],
+   "axis": "",
+   "note": "detachable magazine",
+   "tris": [
+    632,
+    312,
+    56
+   ]
+  },
+  {
+   "name": "Optic",
+   "node": "PIV_Optic",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.1065,
+    -0.09
+   ],
+   "axis": "",
+   "note": "Schmidt & Bender PM II scope in a one-piece mount (removable)",
+   "tris": [
+    5472,
+    1308,
+    300
+   ]
+  },
+  {
+   "name": "Bipod",
+   "node": "PIV_Bipod",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.034,
+    -0.39
+   ],
+   "axis": "x (legs fold)",
+   "note": "folding bipod (legs folded forward)",
+   "tris": [
+    364,
+    172,
+    52
+   ]
+  }
+ ],
+ "markers": [
+  {
+   "name": "ATT_Optic",
+   "pos_godot": [
+    0,
+    0.1065,
+    -0.09
+   ],
+   "note": "top rail (PM II fitted)"
+  },
+  {
+   "name": "ATT_Muzzle",
+   "pos_godot": [
+    0,
+    0.074,
+    -0.905
+   ],
+   "note": "muzzle brake face"
+  },
+  {
+   "name": "ATT_Underbarrel",
+   "pos_godot": [
+    0,
+    0.034,
+    -0.39
+   ],
+   "note": "bottom rail (bipod fitted)"
+  },
+  {
+   "name": "GRIP_Main",
+   "pos_godot": [
+    0,
+    0,
+    0
+   ],
+   "note": "firing hand"
+  },
+  {
+   "name": "GRIP_Support",
+   "pos_godot": [
+    0,
+    -0.026,
+    0.29
+   ],
+   "note": "support hand under the butt (prone)"
+  }
+ ],
+ "variant": "Accuracy International AXMC .338 LM (AI pale green), 27 in barrel",
+ "dimensions_m": {
+  "overall": 1.28,
+  "folded": 1.03,
+  "barrel": 0.686
+ },
+ "source": "assets/weapons/_references/axmc/notes.md",
+ "glb_bytes": 1299264
+}

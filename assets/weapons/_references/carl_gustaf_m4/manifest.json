@@ -1,0 +1,71 @@
+{
+ "asset": "carl_gustaf_m4",
+ "source": "Wikimedia Commons",
+ "images": [
+  {
+   "file": "01_Carl_Gustaf_M4.jpg",
+   "title": "Carl-Gustaf M4.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Carl-Gustaf_M4.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/d/dc/Carl-Gustaf_M4.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    1024,
+    683
+   ],
+   "license": "CC0",
+   "author": "Kaitsevägi",
+   "description": "carl-gustaf M4 of the Estonian Defence Forces"
+  },
+  {
+   "file": "02_Carl_Gustav_M4_1.jpg",
+   "title": "Carl Gustav M4 (1).jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Carl_Gustav_M4_(1).jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/c/c6/Carl_Gustav_M4_%281%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2700,
+    1800
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Reise Reise",
+   "description": "Carl Gustav M4, IDET/PYROS/ISET 2019, Brno"
+  },
+  {
+   "file": "03_Hungary_2019_09_12_Carl_Gustaf_M4.jpg",
+   "title": "Hungary-2019.09.12 Carl-Gustaf-M4.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Hungary-2019.09.12_Carl-Gustaf-M4.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/8/8c/Hungary-2019.09.12_Carl-Gustaf-M4.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    978,
+    811
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Duke83",
+   "description": "Hungarian Carl Gustaf M4"
+  },
+  {
+   "file": "04_Carl_Gustav_M4_Kokonaisturvallisuus_2015.jpg",
+   "title": "Carl Gustav M4 Kokonaisturvallisuus 2015.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Carl_Gustav_M4_Kokonaisturvallisuus_2015.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/2/29/Carl_Gustav_M4_Kokonaisturvallisuus_2015.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    5184,
+    3456
+   ],
+   "license": "Public domain",
+   "author": "MKFI",
+   "description": "Carl Gustav M4 anti-tank rocket at Bofors exhibition stall at Comprehensive security exhibition 2015 in Tampere."
+  },
+  {
+   "file": "05_Carl_Gustav_M3_ja_M4_Kokonaisturvallisuus_2015.jpg",
+   "title": "Carl Gustav M3 ja M4 Kokonaisturvallisuus 2015.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Carl_Gustav_M3_ja_M4_Kokonaisturvallisuus_2015.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Carl_Gustav_M3_ja_M4_Kokonaisturvallisuus_2015.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    4467,
+    2973
+   ],
+   "license": "Public domain",
+   "author": "MKFI",
+   "description": "Carl Gustav M3 and M4 anti-tank rockets at Bofors exhibition stall at Comprehensive security exhibition 2015 in Tampere."
+  }
+ ]
+}

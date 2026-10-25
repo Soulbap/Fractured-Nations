@@ -1,0 +1,174 @@
+{
+ "id": "weapon_carl_gustaf_m4",
+ "display_name": "Carl-Gustaf M4",
+ "faction": "NATO",
+ "kind": "recoilless",
+ "description": "Saab Carl-Gustaf M4 84 mm recoilless rifle (Norwegian Army, 2021 framework).",
+ "bounds_min": [
+  -0.1164,
+  -0.43,
+  -0.1278
+ ],
+ "bounds_max": [
+  0.1164,
+  0.555,
+  0.234
+ ],
+ "length_m": 0.985,
+ "height_m": 0.3618,
+ "width_m": 0.2328,
+ "tris": [
+  8060,
+  2720,
+  824
+ ],
+ "objects": [
+  4,
+  4,
+  4
+ ],
+ "materials": [
+  "Composite_Dark",
+  "Launcher_OD",
+  "Lens",
+  "Metal_Black",
+  "Metal_Worn",
+  "Polymer_Black",
+  "Rubber_Black",
+  "Weapon_Anodized"
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "node": "",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "",
+   "tris": [
+    6792,
+    2280,
+    648
+   ]
+  },
+  {
+   "name": "Foregrip",
+   "node": "PIV_Foregrip",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.068,
+    -0.2
+   ],
+   "axis": "x (folds forward)",
+   "note": "front grip",
+   "tris": [
+    252,
+    116,
+    60
+   ]
+  },
+  {
+   "name": "Optic",
+   "node": "PIV_Optic",
+   "parent": "",
+   "pivot_godot": [
+    -0.066,
+    0.17,
+    -0.06
+   ],
+   "axis": "",
+   "note": "fire-control sight (removable)",
+   "tris": [
+    564,
+    112,
+    24
+   ]
+  },
+  {
+   "name": "Bipod",
+   "node": "PIV_Bipod",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.07,
+    -0.33
+   ],
+   "axis": "x (legs fold forward)",
+   "note": "bipod, deployed",
+   "tris": [
+    452,
+    212,
+    92
+   ]
+  }
+ ],
+ "markers": [
+  {
+   "name": "ATT_Muzzle",
+   "pos_godot": [
+    0,
+    0.12,
+    -0.555
+   ],
+   "note": "muzzle face (84 mm)"
+  },
+  {
+   "name": "ATT_Breech",
+   "pos_godot": [
+    0,
+    0.12,
+    0.43
+   ],
+   "note": "venturi exit (back-blast)"
+  },
+  {
+   "name": "ATT_Optic",
+   "pos_godot": [
+    -0.066,
+    0.17,
+    -0.06
+   ],
+   "note": "sight rail"
+  },
+  {
+   "name": "GRIP_Main",
+   "pos_godot": [
+    0,
+    0,
+    0
+   ],
+   "note": "firing hand"
+  },
+  {
+   "name": "GRIP_Support",
+   "pos_godot": [
+    0,
+    0.02,
+    -0.2
+   ],
+   "note": "support hand on the front grip"
+  },
+  {
+   "name": "ATT_Shoulder",
+   "pos_godot": [
+    0,
+    0.12,
+    0.15
+   ],
+   "note": "shoulder contact (tube on the shoulder)"
+  }
+ ],
+ "variant": "Carl-Gustaf M4 (Norway)",
+ "bore_z": 0.12,
+ "dimensions_m": {
+  "length": 0.985,
+  "calibre": 0.084
+ },
+ "source": "assets/weapons/_references/carl_gustaf_m4/notes.md",
+ "glb_bytes": 509416
+}

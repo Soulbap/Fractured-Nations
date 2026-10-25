@@ -1,0 +1,71 @@
+{
+ "asset": "glock_17",
+ "source": "Wikimedia Commons",
+ "images": [
+  {
+   "file": "01_Glock_17.jpg",
+   "title": "Glock 17.JPG",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Glock_17.JPG",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/4/48/Glock_17.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    496,
+    343
+   ],
+   "license": "Public domain",
+   "author": "Sprenger",
+   "description": "Glock Pistol Model 17 (Glock 17), third generation"
+  },
+  {
+   "file": "02_Glock_17_6825676904.jpg",
+   "title": "Glock 17 (6825676904).jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Glock_17_(6825676904).jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/3/3b/Glock_17_%286825676904%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    4288,
+    2848
+   ],
+   "license": "CC BY 2.0",
+   "author": "Askild Antonsen",
+   "description": "Glock 17 - used in Norway"
+  },
+  {
+   "file": "03_Glock_17_Gen_5_Gun_white_bg_crop.png",
+   "title": "Glock 17 Gen 5 Gun white bg crop.png",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Glock_17_Gen_5_Gun_white_bg_crop.png",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/7/76/Glock_17_Gen_5_Gun_white_bg_crop.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    8124,
+    5200
+   ],
+   "license": "CC BY 2.0",
+   "author": "Tony Webster (original image), LeoPavouk (derived work)",
+   "description": "Glock 17 Gen 5 pistol on a white background"
+  },
+  {
+   "file": "04_GLOCK_17_Gen_4_Pistol_MOD_45160305.jpg",
+   "title": "GLOCK 17 Gen 4 Pistol MOD 45160305.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:GLOCK_17_Gen_4_Pistol_MOD_45160305.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/7/7b/GLOCK_17_Gen_4_Pistol_MOD_45160305.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    3780,
+    2996
+   ],
+   "license": "OGL v1.0",
+   "author": "Steve Dock",
+   "description": "Pictured is the GLOCK 17 Gen 4 pistol. In 2013 the British Ministry of Defence signed a £9-million-pound contract to provide the Armed Forces with more than 25,000 new Glock side arms. The Glock 17 Generation 4 pistol is not only much lighter than the Browning L9A1 pistol previously used by the UK military, it is also more accurate and its magazine holds 17 (9mm ) rounds compared to 13 rounds for "
+  },
+  {
+   "file": "05_Glock_17_G5_FR.jpg",
+   "title": "Glock 17 G5 FR.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Glock_17_G5_FR.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/5/5b/Glock_17_G5_FR.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2048,
+    1365
+   ],
+   "license": "Licence Ouverte",
+   "author": "Arnaud KLOPFENSTEIN/French Army",
+   "description": "A French soldier with his Glock 17 Gen 5 FR during a shooting session (Mission Jeanne d'Arc 2022). Embarked on the French Navy's LHD FS Mistral, a French battlegroup, composed of detachments from the 3rd Marine Infantry Regiment, the 11th Marine Artillery Regiment and the 6th Engineer Regiment, carried out a series of exercises with allies from various countries."
+  }
+ ]
+}

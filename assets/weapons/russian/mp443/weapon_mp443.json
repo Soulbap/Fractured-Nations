@@ -1,0 +1,162 @@
+{
+ "id": "weapon_mp443",
+ "display_name": "MP-443 Grach",
+ "faction": "RU",
+ "kind": "pistol",
+ "description": "MP-443 Grach (PYa) 9 mm service pistol, steel slide, external hammer.",
+ "bounds_min": [
+  -0.0185,
+  -0.0706,
+  -0.086
+ ],
+ "bounds_max": [
+  0.0185,
+  0.138,
+  0.08
+ ],
+ "length_m": 0.2086,
+ "height_m": 0.166,
+ "width_m": 0.037,
+ "tris": [
+  4952,
+  2116,
+  244
+ ],
+ "objects": [
+  5,
+  5,
+  4
+ ],
+ "materials": [
+  "Metal_Black",
+  "Metal_Worn",
+  "Polymer_Black",
+  "Weapon_PaintBlack"
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "node": "",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "frame",
+   "tris": [
+    2896,
+    1080,
+    108
+   ]
+  },
+  {
+   "name": "Slide",
+   "node": "PIV_Slide",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.052,
+    -0.0
+   ],
+   "axis": "slide -y",
+   "note": "slide (recoils / racks back)",
+   "tris": [
+    888,
+    396,
+    44
+   ]
+  },
+  {
+   "name": "Hammer",
+   "node": "PIV_Hammer",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.048,
+    0.052
+   ],
+   "axis": "x (cocks back)",
+   "note": "external hammer (down)",
+   "tris": [
+    300,
+    172,
+    36
+   ]
+  },
+  {
+   "name": "Trigger",
+   "node": "PIV_Trigger",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.022,
+    -0.036
+   ],
+   "axis": "x",
+   "note": "DA/SA trigger",
+   "tris": [
+    300,
+    172,
+    0
+   ]
+  },
+  {
+   "name": "Mag",
+   "node": "ATT_Magazine",
+   "parent": "",
+   "pivot_godot": [
+    -0.028,
+    0.018,
+    -0.0
+   ],
+   "axis": "",
+   "note": "detachable magazine",
+   "tris": [
+    568,
+    296,
+    56
+   ]
+  }
+ ],
+ "markers": [
+  {
+   "name": "ATT_Muzzle",
+   "pos_godot": [
+    0,
+    0.052,
+    -0.139
+   ],
+   "note": "muzzle face"
+  },
+  {
+   "name": "GRIP_Main",
+   "pos_godot": [
+    0,
+    0,
+    0
+   ],
+   "note": "firing hand"
+  },
+  {
+   "name": "GRIP_Support",
+   "pos_godot": [
+    0.012,
+    -0.02,
+    0.01
+   ],
+   "note": "support hand wraps the firing hand"
+  }
+ ],
+ "variant": "MP-443 Grach (PYa), polymer-frame form",
+ "bore_z": 0.052,
+ "dimensions_m": {
+  "length": 0.198,
+  "height": 0.14,
+  "width": 0.038,
+  "barrel": 0.112
+ },
+ "source": "assets/weapons/_references/mp443/notes.md",
+ "glb_bytes": 287928
+}

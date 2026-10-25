@@ -1,0 +1,154 @@
+{
+ "id": "weapon_glock_17",
+ "display_name": "Glock 17",
+ "faction": "NATO",
+ "kind": "pistol",
+ "description": "Glock 17 9 mm pistol (Norwegian service pistol P80), Gen 5 form.",
+ "bounds_min": [
+  -0.0165,
+  -0.0666,
+  -0.08
+ ],
+ "bounds_max": [
+  0.017,
+  0.131,
+  0.128
+ ],
+ "length_m": 0.1976,
+ "height_m": 0.208,
+ "width_m": 0.0335,
+ "tris": [
+  4750,
+  1672,
+  244
+ ],
+ "objects": [
+  4,
+  4,
+  3
+ ],
+ "materials": [
+  "Metal_Black",
+  "Metal_Worn",
+  "Polymer_Black",
+  "Weapon_Phosphate"
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "node": "",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "frame (polymer)",
+   "tris": [
+    2352,
+    668,
+    116
+   ]
+  },
+  {
+   "name": "Slide",
+   "node": "PIV_Slide",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.052,
+    -0.0
+   ],
+   "axis": "slide -y",
+   "note": "slide (recoils / racks back)",
+   "tris": [
+    1530,
+    536,
+    72
+   ]
+  },
+  {
+   "name": "Trigger",
+   "node": "PIV_Trigger",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.022,
+    -0.034
+   ],
+   "axis": "x",
+   "note": "safe-action trigger",
+   "tris": [
+    300,
+    172,
+    0
+   ]
+  },
+  {
+   "name": "Mag",
+   "node": "ATT_Magazine",
+   "parent": "",
+   "pivot_godot": [
+    -0.026,
+    0.018,
+    -0.0
+   ],
+   "axis": "",
+   "note": "detachable magazine",
+   "tris": [
+    568,
+    296,
+    56
+   ]
+  }
+ ],
+ "markers": [
+  {
+   "name": "ATT_Muzzle",
+   "pos_godot": [
+    0,
+    0.052,
+    -0.131
+   ],
+   "note": "muzzle face"
+  },
+  {
+   "name": "ATT_RailUnder",
+   "pos_godot": [
+    0,
+    0.02,
+    -0.1
+   ],
+   "note": "dust-cover rail (light)"
+  },
+  {
+   "name": "GRIP_Main",
+   "pos_godot": [
+    0,
+    0,
+    0
+   ],
+   "note": "firing hand"
+  },
+  {
+   "name": "GRIP_Support",
+   "pos_godot": [
+    0.012,
+    -0.02,
+    0.01
+   ],
+   "note": "support hand wraps the firing hand"
+  }
+ ],
+ "variant": "Glock 17 Gen 5 form (Norwegian P80 = Glock 17)",
+ "bore_z": 0.052,
+ "dimensions_m": {
+  "length": 0.202,
+  "height": 0.139,
+  "width": 0.034,
+  "barrel": 0.114
+ },
+ "source": "assets/weapons/_references/glock_17/notes.md",
+ "glb_bytes": 265732
+}

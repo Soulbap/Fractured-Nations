@@ -1,0 +1,182 @@
+{
+ "id": "weapon_ak12",
+ "display_name": "AK-12 (6P70)",
+ "faction": "RU",
+ "kind": "assault_rifle",
+ "description": "Kalashnikov AK-12 (6P70, 2020) 5.45 mm assault rifle: railed dust cover and handguard, telescopic side-folding stock.",
+ "bounds_min": [
+  -0.024,
+  -0.302,
+  -0.1571
+ ],
+ "bounds_max": [
+  0.0478,
+  0.652,
+  0.123
+ ],
+ "length_m": 0.954,
+ "height_m": 0.2801,
+ "width_m": 0.0718,
+ "tris": [
+  18624,
+  2952,
+  700
+ ],
+ "objects": [
+  5,
+  5,
+  4
+ ],
+ "materials": [
+  "Lens_Tinted",
+  "Metal_Black",
+  "Metal_Worn",
+  "Polymer_Black",
+  "Rubber_Black",
+  "Weapon_PaintBlack",
+  "Weapon_Phosphate"
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "node": "",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "",
+   "tris": [
+    15050,
+    1904,
+    460
+   ]
+  },
+  {
+   "name": "Bolt",
+   "node": "PIV_Bolt",
+   "parent": "",
+   "pivot_godot": [
+    0.016,
+    0.07,
+    -0.15
+   ],
+   "axis": "slide -y",
+   "note": "bolt carrier with the charging handle (right)",
+   "tris": [
+    200,
+    92,
+    44
+   ]
+  },
+  {
+   "name": "Trigger",
+   "node": "PIV_Trigger",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.038,
+    -0.05
+   ],
+   "axis": "x",
+   "note": "trigger (pivots about X)",
+   "tris": [
+    348,
+    204,
+    0
+   ]
+  },
+  {
+   "name": "Stock",
+   "node": "PIV_Stock",
+   "parent": "",
+   "pivot_godot": [
+    -0.012,
+    0.054,
+    0.05
+   ],
+   "axis": "z (folds left) + slide y",
+   "note": "telescopic side-folding stock",
+   "tris": [
+    1950,
+    424,
+    128
+   ]
+  },
+  {
+   "name": "Mag",
+   "node": "ATT_Magazine",
+   "parent": "",
+   "pivot_godot": [
+    0.123,
+    0.024,
+    -0.0
+   ],
+   "axis": "",
+   "note": "detachable magazine",
+   "tris": [
+    1076,
+    328,
+    68
+   ]
+  }
+ ],
+ "markers": [
+  {
+   "name": "ATT_Muzzle",
+   "pos_godot": [
+    0,
+    0.074,
+    -0.652
+   ],
+   "note": "muzzle device face"
+  },
+  {
+   "name": "ATT_Optic",
+   "pos_godot": [
+    0,
+    0.105,
+    -0.08
+   ],
+   "note": "dust-cover rail"
+  },
+  {
+   "name": "ATT_Underbarrel",
+   "pos_godot": [
+    0,
+    0.043,
+    -0.36
+   ],
+   "note": "bottom handguard rail"
+  },
+  {
+   "name": "GRIP_Main",
+   "pos_godot": [
+    0,
+    0,
+    0
+   ],
+   "note": "firing hand"
+  },
+  {
+   "name": "GRIP_Support",
+   "pos_godot": [
+    0,
+    0.054,
+    -0.32
+   ],
+   "note": "support hand on the handguard"
+  }
+ ],
+ "variant": "AK-12 6P70 (2020 production)",
+ "dimensions_m": {
+  "overall": 0.94,
+  "overall_min": 0.88,
+  "folded": 0.69,
+  "barrel": 0.415
+ },
+ "source": "assets/weapons/_references/ak12/notes.md",
+ "glb_bytes": 868060
+}

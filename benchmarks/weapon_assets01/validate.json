@@ -1,0 +1,350 @@
+{
+ "ak12": {
+  "checks": {
+   "length_m": [
+    0.954,
+    0.94
+   ],
+   "markers": 5,
+   "parts": 5,
+   "size_m": [
+    0.072,
+    0.28,
+    0.954
+   ],
+   "tris_godot": [
+    18624,
+    2952,
+    700
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "ak74m": {
+  "checks": {
+   "length_m": [
+    0.945,
+    0.943
+   ],
+   "markers": 4,
+   "parts": 5,
+   "size_m": [
+    0.071,
+    0.275,
+    0.945
+   ],
+   "tris_godot": [
+    11610,
+    3378,
+    708
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "axmc": {
+  "checks": {
+   "length_m": [
+    1.265,
+    1.28
+   ],
+   "markers": 5,
+   "parts": 7,
+   "size_m": [
+    0.115,
+    0.297,
+    1.265
+   ],
+   "tris_godot": [
+    30786,
+    3824,
+    912
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "carl_gustaf_m4": {
+  "checks": {
+   "length_m": [
+    0.985,
+    0.985
+   ],
+   "markers": 6,
+   "parts": 4,
+   "size_m": [
+    0.233,
+    0.362,
+    0.985
+   ],
+   "tris_godot": [
+    8060,
+    2720,
+    824
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "fn_mag": {
+  "checks": {
+   "length_m": [
+    1.265,
+    1.263
+   ],
+   "markers": 4,
+   "parts": 7,
+   "size_m": [
+    0.312,
+    0.465,
+    1.265
+   ],
+   "tris_godot": [
+    9716,
+    3074,
+    708
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "fn_minimi": {
+  "checks": {
+   "length_m": [
+    1.01,
+    1.0
+   ],
+   "markers": 4,
+   "parts": 8,
+   "size_m": [
+    0.283,
+    0.453,
+    1.01
+   ],
+   "tris_godot": [
+    17636,
+    3278,
+    704
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "glock_17": {
+  "checks": {
+   "length_m": [
+    0.198,
+    0.202
+   ],
+   "markers": 4,
+   "parts": 4,
+   "size_m": [
+    0.034,
+    0.208,
+    0.198
+   ],
+   "tris_godot": [
+    4750,
+    1672,
+    244
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "hk416": {
+  "checks": {
+   "markers": 6,
+   "parts": 7,
+   "size_m": [
+    0.078,
+    0.404,
+    1.003
+   ],
+   "tris_godot": [
+    34128,
+    5126,
+    826
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "hk417": {
+  "checks": {
+   "length_m": [
+    1.051,
+    1.03
+   ],
+   "markers": 5,
+   "parts": 7,
+   "size_m": [
+    0.082,
+    0.376,
+    1.051
+   ],
+   "tris_godot": [
+    37176,
+    5576,
+    968
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "m72_law": {
+  "checks": {
+   "length_m": [
+    0.984,
+    0.98
+   ],
+   "markers": 5,
+   "parts": 4,
+   "size_m": [
+    0.11,
+    0.159,
+    0.984
+   ],
+   "tris_godot": [
+    2588,
+    1172,
+    292
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "mp443": {
+  "checks": {
+   "length_m": [
+    0.209,
+    0.198
+   ],
+   "markers": 3,
+   "parts": 5,
+   "size_m": [
+    0.037,
+    0.166,
+    0.209
+   ],
+   "tris_godot": [
+    4952,
+    2116,
+    244
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "pkp_pecheneg": {
+  "checks": {
+   "length_m": [
+    1.212,
+    1.2
+   ],
+   "markers": 4,
+   "parts": 8,
+   "size_m": [
+    0.292,
+    0.471,
+    1.212
+   ],
+   "tris_godot": [
+    9676,
+    3474,
+    748
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "rpg26": {
+  "checks": {
+   "length_m": [
+    0.77,
+    0.77
+   ],
+   "markers": 5,
+   "parts": 3,
+   "size_m": [
+    0.102,
+    0.151,
+    0.77
+   ],
+   "tris_godot": [
+    2706,
+    1248,
+    372
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "rpg7": {
+  "checks": {
+   "length_m": [
+    0.95,
+    0.95
+   ],
+   "markers": 6,
+   "parts": 5,
+   "size_m": [
+    0.158,
+    0.28,
+    1.364
+   ],
+   "tris_godot": [
+    6928,
+    3280,
+    1014
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "rpk74m": {
+  "checks": {
+   "length_m": [
+    1.06,
+    1.06
+   ],
+   "markers": 4,
+   "parts": 6,
+   "size_m": [
+    0.226,
+    0.341,
+    1.06
+   ],
+   "tris_godot": [
+    11876,
+    3568,
+    788
+   ]
+  },
+  "fail": [],
+  "pass": true
+ },
+ "svd": {
+  "checks": {
+   "length_m": [
+    1.235,
+    1.225
+   ],
+   "markers": 4,
+   "parts": 5,
+   "size_m": [
+    0.094,
+    0.272,
+    1.235
+   ],
+   "tris_godot": [
+    10722,
+    3632,
+    712
+   ]
+  },
+  "fail": [],
+  "pass": true
+ }
+}

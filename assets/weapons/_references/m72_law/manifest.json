@@ -1,0 +1,71 @@
+{
+ "asset": "m72_law",
+ "source": "Wikimedia Commons",
+ "images": [
+  {
+   "file": "01_M72_LAW_66_KES_88_20180604.jpg",
+   "title": "M72 LAW 66 KES 88 20180604.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:M72_LAW_66_KES_88_20180604.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/a/ab/M72_LAW_66_KES_88_20180604.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    4592,
+    3448
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Santeri Viinamäki",
+   "description": "M72 LAW 66 KES 88."
+  },
+  {
+   "file": "02_M72A2_LAW.png",
+   "title": "M72A2 LAW.png",
+   "source_page": "https://commons.wikimedia.org/wiki/File:M72A2_LAW.png",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/f/f1/M72A2_LAW.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    4152,
+    1450
+   ],
+   "license": "CC0",
+   "author": "ZiaLater",
+   "description": "M72A2 LAW disposable anti-tank rocket, Finnish designation 66 kertasinko 75."
+  },
+  {
+   "file": "03_M72_Light_Anti_tank_Weapon_7414626756.jpg",
+   "title": "M72 Light Anti-tank Weapon (7414626756).jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:M72_Light_Anti-tank_Weapon_(7414626756).jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/a/a6/M72_Light_Anti-tank_Weapon_%287414626756%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2489,
+    778
+   ],
+   "license": "Public domain",
+   "author": "US Air Force from USA",
+   "description": "M72 Light Anti-tank Weapon Primary function: Anti-armor, gun emplacements, pillboxes, buildings and light vehicles. Length: Extended 34.67 in.; closed 24.8 in.; rocket 20 in. Weight: 5.5 lbs. Bore diameter: 66 mm. Maximum effective range: Stationary 200 meters, moving 165 meters."
+  },
+  {
+   "file": "04_M72_Front_Sight.jpg",
+   "title": "M72 Front Sight.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:M72_Front_Sight.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/c/c8/M72_Front_Sight.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2850,
+    1880
+   ],
+   "license": "Public domain",
+   "author": "GYSGT Lucas and SSGT Drago",
+   "description": "A view from inside a bunker as Marines aim a light anti-tank weapon toward a truck stopped at a checkpoint. The Marines are participating in a multinational peacekeeping operation."
+  },
+  {
+   "file": "05_M72_LAW_1986.jpg",
+   "title": "M72 LAW 1986.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:M72_LAW_1986.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/9/97/M72_LAW_1986.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2799,
+    1849
+   ],
+   "license": "Public domain",
+   "author": "SPC Michael D. Evans",
+   "description": "A member of Company A, 1st Battalion, 27th Infantry, 25th Infantry Division, aims an M72 light anti-tank weapon during Exercise OPPORTUNE JOURNEY 1-87."
+  }
+ ]
+}

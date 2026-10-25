@@ -1,0 +1,71 @@
+{
+ "asset": "mp443",
+ "source": "Wikimedia Commons",
+ "images": [
+  {
+   "file": "01_Mp_443_grach.jpg",
+   "title": "Mp-443 grach.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Mp-443_grach.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/6/6a/Mp-443_grach.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    150,
+    111
+   ],
+   "license": "CC BY-SA 3.0",
+   "author": "User:Risotto",
+   "description": "Пистолет Ярыгина(ПЯ) \"Грач\""
+  },
+  {
+   "file": "02_9mm_Yarygin_pistol_PYa.jpg",
+   "title": "9mm Yarygin pistol PYa.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:9mm_Yarygin_pistol_PYa.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/5/51/9mm_Yarygin_pistol_PYa.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2250,
+    1450
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Vitaly V. Kuzmin",
+   "description": "9mm Yarygin pistol PYa - MP-443 Grach."
+  },
+  {
+   "file": "03_9_6_35_03.jpg",
+   "title": "9-мм Пистолет Ярыгина ПЯ 6П35 03.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:9-%D0%BC%D0%BC_%D0%9F%D0%B8%D1%81%D1%82%D0%BE%D0%BB%D0%B5%D1%82_%D0%AF%D1%80%D1%8B%D0%B3%D0%B8%D0%BD%D0%B0_%D0%9F%D0%AF_6%D0%9F35_03.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/b/bc/9-%D0%BC%D0%BC_%D0%9F%D0%B8%D1%81%D1%82%D0%BE%D0%BB%D0%B5%D1%82_%D0%AF%D1%80%D1%8B%D0%B3%D0%B8%D0%BD%D0%B0_%D0%9F%D0%AF_6%D0%9F35_03.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2250,
+    1500
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Vitaly V. Kuzmin",
+   "description": "9mm PYa 6P35 Yarygin pistol, also know as MP-443 Grach"
+  },
+  {
+   "file": "04_9_6_35_12.jpg",
+   "title": "9-мм Пистолет Ярыгина ПЯ 6П35 12.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:9-%D0%BC%D0%BC_%D0%9F%D0%B8%D1%81%D1%82%D0%BE%D0%BB%D0%B5%D1%82_%D0%AF%D1%80%D1%8B%D0%B3%D0%B8%D0%BD%D0%B0_%D0%9F%D0%AF_6%D0%9F35_12.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/1/1f/9-%D0%BC%D0%BC_%D0%9F%D0%B8%D1%81%D1%82%D0%BE%D0%BB%D0%B5%D1%82_%D0%AF%D1%80%D1%8B%D0%B3%D0%B8%D0%BD%D0%B0_%D0%9F%D0%AF_6%D0%9F35_12.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2250,
+    1500
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Vitaly V. Kuzmin",
+   "description": "9mm PYa 6P35 Yarygin pistol, also know as MP-443 Grach"
+  },
+  {
+   "file": "05_9_6_35_19.jpg",
+   "title": "9-мм Пистолет Ярыгина ПЯ 6П35 19.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:9-%D0%BC%D0%BC_%D0%9F%D0%B8%D1%81%D1%82%D0%BE%D0%BB%D0%B5%D1%82_%D0%AF%D1%80%D1%8B%D0%B3%D0%B8%D0%BD%D0%B0_%D0%9F%D0%AF_6%D0%9F35_19.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/4/4e/9-%D0%BC%D0%BC_%D0%9F%D0%B8%D1%81%D1%82%D0%BE%D0%BB%D0%B5%D1%82_%D0%AF%D1%80%D1%8B%D0%B3%D0%B8%D0%BD%D0%B0_%D0%9F%D0%AF_6%D0%9F35_19.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2250,
+    1500
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Vitaly V. Kuzmin",
+   "description": "9mm PYa 6P35 Yarygin pistol, also know as MP-443 Grach"
+  }
+ ]
+}

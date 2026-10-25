@@ -1,0 +1,58 @@
+{
+ "asset": "hk417",
+ "source": "Wikimedia Commons",
+ "images": [
+  {
+   "file": "01_HK417_norway.png",
+   "title": "HK417 norway.png",
+   "source_page": "https://commons.wikimedia.org/wiki/File:HK417_norway.png",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/6/6d/HK417_norway.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    402,
+    344
+   ],
+   "license": "CC0",
+   "author": "Green Nor",
+   "description": "HK 417 Norwegian Army DMR rifle"
+  },
+  {
+   "file": "02_HK417_Nederlands_precision_rifle.jpg",
+   "title": "HK417 Nederlands - precision rifle.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:HK417_Nederlands_-_precision_rifle.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/3/3a/HK417_Nederlands_-_precision_rifle.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    1250,
+    833
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Defensie",
+   "description": "HK417 Nederlands - precision rifle"
+  },
+  {
+   "file": "03_Heckler_Koch_HK_MR308_linke_Seite.jpg",
+   "title": "Heckler&Koch HK MR308 linke Seite.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Heckler%26Koch_HK_MR308_linke_Seite.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/c/c8/Heckler%26Koch_HK_MR308_linke_Seite.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2735,
+    705
+   ],
+   "license": "CC BY-SA 3.0",
+   "author": "RalfGB",
+   "description": "Semiautomatic Rifle Heckler &amp; Koch MR308 (left side)"
+  },
+  {
+   "file": "04_Australian_soldier_with_a_Heckler_Koch_HK417_rifle_in_Afghan.jpg",
+   "title": "Australian soldier with a Heckler & Koch HK417 rifle in Afghanistan during 2013.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Australian_soldier_with_a_Heckler_%26_Koch_HK417_rifle_in_Afghanistan_during_2013.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/1/1b/Australian_soldier_with_a_Heckler_%26_Koch_HK417_rifle_in_Afghanistan_during_2013.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    870,
+    652
+   ],
+   "license": "Public domain",
+   "author": "SGT Jessi Ann McCormick",
+   "description": "Australian Army Pvt. Levi Mooney, right, bumps fists with a child during a patrol in Tarin Kowt, Uruzgan province, Afghanistan, July 26, 2013. (U.S. Army National Guard photo by Sgt. Jessi Ann McCormick/Released)"
+  }
+ ]
+}

@@ -1,0 +1,71 @@
+{
+ "asset": "svd",
+ "source": "Wikimedia Commons",
+ "images": [
+  {
+   "file": "01_SVD_Dragunov.jpg",
+   "title": "SVD Dragunov.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:SVD_Dragunov.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/8/8b/SVD_Dragunov.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    3004,
+    1208
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Hokos",
+   "description": "SVD Dragunov rifle featuring a wooden handguard/gas tube cover and skeletonized stock used before the change to (black) synthetic furniture."
+  },
+  {
+   "file": "02_Dragunov_SVD_Rifle.jpeg",
+   "title": "Dragunov SVD Rifle.JPEG",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Dragunov_SVD_Rifle.JPEG",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/3/38/Dragunov_SVD_Rifle.JPEG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2030,
+    1305
+   ],
+   "license": "Public domain",
+   "author": "LCPL. M. A. SUNDERLAND",
+   "description": "Troops from Company 5, armed with a Dragunov sniper rifle equipped with a PSO-1 telescopic sight, practice Check Point Operations/Weapons Disarmament learned during Situational Training Exercise - 5 (STX-5)."
+  },
+  {
+   "file": "03_SVD_rifle_detail.jpg",
+   "title": "SVD rifle detail.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:SVD_rifle_detail.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/e/eb/SVD_rifle_detail.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2304,
+    1728
+   ],
+   "license": "CC BY 2.5",
+   "author": "Michal Maňas",
+   "description": "telescopic sight PSO-1 at SVD rifle"
+  },
+  {
+   "file": "04_Dragunov_lft.jpg",
+   "title": "Dragunov lft.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Dragunov_lft.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/c/ca/Dragunov_lft.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    1570,
+    550
+   ],
+   "license": "CC BY-SA 3.0",
+   "author": "tu HUJ był",
+   "description": "Dragunov rifle with scope and magazine removed."
+  },
+  {
+   "file": "05_Dragunovs_rt.jpg",
+   "title": "Dragunovs rt.JPG",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Dragunovs_rt.JPG",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/d/de/Dragunovs_rt.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    1600,
+    1200
+   ],
+   "license": "CC BY-SA 3.0",
+   "author": "No machine-readable author provided. Cas4j~commonswiki assumed (based on copyright claims).",
+   "description": "Pair of Dragunovs imported to US as Tigers; Top rifle has cheek pad, two 10-round magazines, and flash suppressor. Bottom gun was marketed as a \"hunting carbine.\" It has no cheek pad, two 5-round magazines, and no flash suppressor. Both have wooden stocks and polymer foregrips."
+  }
+ ]
+}

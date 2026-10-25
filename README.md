@@ -637,6 +637,22 @@ reference photos and notes per vehicle: `assets/military/vehicles/_references/`.
   `docs/vehicle_assets01/godot/`). Not yet used by gameplay (`VehicleDefs` still drives the
   LOGISTICS-01 truck / APC).
 
+### Weapon pack (WEAPON-ASSETS-01)
+
+Sixteen NATO / Norwegian and Russian infantry weapons in the character weapon space (origin at the
+pistol grip, +Y muzzle, bore z = 0.074), with separate moving parts (magazine, bolt / charging
+handle, trigger, stock, sights, optics, bipod, feed cover) and three authored LODs (FPS / world /
+distance): HK416N, HK417, FN Minimi 7.62 Mk3, FN MAG, Glock 17, AI AXMC, Carl-Gustaf M4, M72 EC,
+AK-12, AK-74M, RPK-74M, SVD, PKP Pecheneg, MP-443, RPG-7V2 (PGO-7, PG-7V), RPG-26.
+Report: `docs/WEAPON-ASSETS-01_REPORT.md`; references and notes per weapon: `assets/weapons/_references/`.
+
+* `assets/weapons/{nato,russian}/<id>/weapon_<id>.glb` + `.json` sidecar + `weapon_<id>.tres`
+  (`InfantryEquipment`, attach `ATT_Weapon`); editable sources in `.../<id>/source/`.
+* Build: `blender -b --factory-startup --python tools/blender/weapons/build_weapons.py -- --export --save-blend [--only id,..] [--previews DIR]`.
+* Check in Godot: `tools/weapon_assets/run_weapon_lab.sh --validate | --shots | --showcase`
+  (screenshots in `docs/weapon_assets01/godot/`; open `tools/weapon_assets/weapon_lab.tscn` for the
+  showcase). Not yet in any loadout or `WeaponDef`.
+
 ## Repository layout
 
 ```

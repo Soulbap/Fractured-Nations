@@ -1,0 +1,71 @@
+{
+ "asset": "pkp_pecheneg",
+ "source": "Wikimedia Commons",
+ "images": [
+  {
+   "file": "01_PKP_Pecheneg_1.jpg",
+   "title": "PKP Pecheneg (1).jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:PKP_Pecheneg_(1).jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/4/40/PKP_Pecheneg_%281%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    1879,
+    873
+   ],
+   "license": "CC BY-SA 3.0",
+   "author": "Vitaly V. Kuzmin",
+   "description": "Пулемёт «Печенег»"
+  },
+  {
+   "file": "02_Pecheneg_machine_gun_01.jpg",
+   "title": "Pecheneg machine gun-01.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Pecheneg_machine_gun-01.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/0/06/Pecheneg_machine_gun-01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2250,
+    1461
+   ],
+   "license": "CC BY-SA 3.0",
+   "author": "Vitaly V. Kuzmin",
+   "description": "Pecheneg machine gun"
+  },
+  {
+   "file": "03_Pecheneg_machine_gun_02.jpg",
+   "title": "Pecheneg machine gun-02.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Pecheneg_machine_gun-02.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Pecheneg_machine_gun-02.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2250,
+    1458
+   ],
+   "license": "CC BY-SA 3.0",
+   "author": "Vitaly V. Kuzmin",
+   "description": "Pecheneg machine gun"
+  },
+  {
+   "file": "04_Pecheneg_machine_gun_06.jpg",
+   "title": "Pecheneg machine gun-06.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Pecheneg_machine_gun-06.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Pecheneg_machine_gun-06.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2250,
+    1464
+   ],
+   "license": "CC BY-SA 3.0",
+   "author": "Vitaly V. Kuzmin",
+   "description": "Pecheneg machine gun"
+  },
+  {
+   "file": "05_PKP_Pecheneg_machine_gun_RaceofHeroes_part2_19.jpg",
+   "title": "PKP Pecheneg machine gun - RaceofHeroes-part2-19.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:PKP_Pecheneg_machine_gun_-_RaceofHeroes-part2-19.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/d/d0/PKP_Pecheneg_machine_gun_-_RaceofHeroes-part2-19.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2250,
+    1455
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Vitaly V. Kuzmin",
+   "description": "PKP Pecheneg machine gun"
+  }
+ ]
+}

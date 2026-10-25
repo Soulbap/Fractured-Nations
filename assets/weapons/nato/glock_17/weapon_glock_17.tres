@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="InfantryEquipment" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/characters/infantry_equipment.gd" id="1_eq"]
+[ext_resource type="PackedScene" path="res://assets/weapons/nato/glock_17/weapon_glock_17.glb" id="2_scene"]
+
+[resource]
+script = ExtResource("1_eq")
+id = "weapon_glock_17"
+scene = ExtResource("2_scene")
+mode = 1
+attach = "ATT_Weapon"
+slot = "weapon"
+hides_body = PackedStringArray()

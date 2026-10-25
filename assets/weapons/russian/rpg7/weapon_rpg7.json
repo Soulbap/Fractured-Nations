@@ -1,0 +1,192 @@
+{
+ "id": "weapon_rpg7",
+ "display_name": "RPG-7V2",
+ "faction": "RU",
+ "kind": "launcher",
+ "description": "RPG-7V2 40 mm reusable launcher with the PGO-7 optic, loaded with a PG-7V grenade.",
+ "bounds_min": [
+  -0.1,
+  -0.56,
+  -0.0695
+ ],
+ "bounds_max": [
+  0.058,
+  0.804,
+  0.21
+ ],
+ "length_m": 1.364,
+ "height_m": 0.2795,
+ "width_m": 0.158,
+ "tris": [
+  6928,
+  3280,
+  1014
+ ],
+ "objects": [
+  5,
+  5,
+  4
+ ],
+ "materials": [
+  "Launcher_OD",
+  "Lens",
+  "Metal_Black",
+  "Metal_Worn",
+  "Polymer_Black",
+  "Rubber_Black",
+  "Weapon_PaintBlack",
+  "Wood_Laminate"
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "node": "",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "",
+   "tris": [
+    4508,
+    2128,
+    672
+   ]
+  },
+  {
+   "name": "Trigger",
+   "node": "PIV_Trigger",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.038,
+    -0.03
+   ],
+   "axis": "x",
+   "note": "trigger (pivots about X)",
+   "tris": [
+    348,
+    204,
+    0
+   ]
+  },
+  {
+   "name": "Foregrip",
+   "node": "PIV_Foregrip",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.074,
+    -0.16
+   ],
+   "axis": "",
+   "note": "front grip",
+   "tris": [
+    504,
+    240,
+    60
+   ]
+  },
+  {
+   "name": "Optic",
+   "node": "PIV_Optic",
+   "parent": "",
+   "pivot_godot": [
+    -0.046,
+    0.13,
+    -0.0
+   ],
+   "axis": "",
+   "note": "PGO-7V3 optic (removable)",
+   "tris": [
+    616,
+    288,
+    84
+   ]
+  },
+  {
+   "name": "Grenade",
+   "node": "PIV_Grenade",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.11,
+    -0.39
+   ],
+   "axis": "slide y (loaded from the muzzle)",
+   "note": "PG-7V HEAT grenade (loaded)",
+   "tris": [
+    952,
+    420,
+    198
+   ]
+  }
+ ],
+ "markers": [
+  {
+   "name": "ATT_Muzzle",
+   "pos_godot": [
+    0,
+    0.11,
+    -0.39
+   ],
+   "note": "launcher muzzle (grenade seated ahead of it)"
+  },
+  {
+   "name": "ATT_Breech",
+   "pos_godot": [
+    0,
+    0.11,
+    0.56
+   ],
+   "note": "blast cone exit (back-blast)"
+  },
+  {
+   "name": "ATT_Optic",
+   "pos_godot": [
+    -0.046,
+    0.13,
+    -0.0
+   ],
+   "note": "PGO-7 bracket (left)"
+  },
+  {
+   "name": "GRIP_Main",
+   "pos_godot": [
+    0,
+    0,
+    0
+   ],
+   "note": "firing hand"
+  },
+  {
+   "name": "GRIP_Support",
+   "pos_godot": [
+    0,
+    0.01,
+    -0.16
+   ],
+   "note": "support hand on the front grip"
+  },
+  {
+   "name": "ATT_Shoulder",
+   "pos_godot": [
+    0,
+    0.11,
+    0.08
+   ],
+   "note": "shoulder contact on the heat shield"
+  }
+ ],
+ "variant": "RPG-7V2 + PGO-7V3, PG-7V loaded",
+ "bore_z": 0.11,
+ "dimensions_m": {
+  "launcher": 0.95,
+  "calibre_tube": 0.04,
+  "grenade_calibre": 0.085
+ },
+ "source": "assets/weapons/_references/rpg7/notes.md",
+ "glb_bytes": 501204
+}

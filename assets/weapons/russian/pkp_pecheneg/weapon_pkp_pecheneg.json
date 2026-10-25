@@ -1,0 +1,222 @@
+{
+ "id": "weapon_pkp_pecheneg",
+ "display_name": "PKP Pecheneg",
+ "faction": "RU",
+ "kind": "gpmg",
+ "description": "PKP Pecheneg 7.62x54R general-purpose machine gun: cooling shroud with carry handle, bipod at the muzzle end, 100-round box.",
+ "bounds_min": [
+  -0.146,
+  -0.307,
+  -0.2947
+ ],
+ "bounds_max": [
+  0.146,
+  0.905,
+  0.176
+ ],
+ "length_m": 1.212,
+ "height_m": 0.4707,
+ "width_m": 0.292,
+ "tris": [
+  9676,
+  3474,
+  748
+ ],
+ "objects": [
+  8,
+  8,
+  6
+ ],
+ "materials": [
+  "Metal_Black",
+  "Metal_Worn",
+  "Polymer_Black",
+  "Polymer_Green",
+  "Rubber_Black",
+  "Weapon_PaintBlack",
+  "Weapon_Phosphate"
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "node": "",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "",
+   "tris": [
+    6034,
+    2162,
+    480
+   ]
+  },
+  {
+   "name": "FeedCover",
+   "node": "PIV_FeedCover",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.104,
+    0.08
+   ],
+   "axis": "x (opens upward)",
+   "note": "feed cover",
+   "tris": [
+    424,
+    240,
+    44
+   ]
+  },
+  {
+   "name": "Trigger",
+   "node": "PIV_Trigger",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.038,
+    -0.04
+   ],
+   "axis": "x",
+   "note": "trigger (pivots about X)",
+   "tris": [
+    348,
+    204,
+    0
+   ]
+  },
+  {
+   "name": "Stock",
+   "node": "PIV_Stock",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.074,
+    0.1
+   ],
+   "axis": "",
+   "note": "skeleton butt stock",
+   "tris": [
+    860,
+    364,
+    76
+   ]
+  },
+  {
+   "name": "ChargingHandle",
+   "node": "PIV_ChargingHandle",
+   "parent": "",
+   "pivot_godot": [
+    0.03,
+    0.04,
+    -0.25
+   ],
+   "axis": "slide -y",
+   "note": "cocking handle (right side)",
+   "tris": [
+    152,
+    64,
+    32
+   ]
+  },
+  {
+   "name": "Bipod",
+   "node": "PIV_Bipod",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.044,
+    -0.745
+   ],
+   "axis": "x (legs fold forward)",
+   "note": "bipod, deployed",
+   "tris": [
+    452,
+    212,
+    92
+   ]
+  },
+  {
+   "name": "Belt",
+   "node": "PIV_Belt",
+   "parent": "",
+   "pivot_godot": [
+    0.034,
+    0.062,
+    -0.15
+   ],
+   "axis": "",
+   "note": "ammunition belt stub",
+   "tris": [
+    1008,
+    120,
+    0
+   ]
+  },
+  {
+   "name": "Mag",
+   "node": "ATT_Magazine",
+   "parent": "",
+   "pivot_godot": [
+    0.03,
+    0.01,
+    -0.14
+   ],
+   "axis": "",
+   "note": "100-round belt box (clips under the receiver)",
+   "tris": [
+    398,
+    108,
+    24
+   ]
+  }
+ ],
+ "markers": [
+  {
+   "name": "ATT_Muzzle",
+   "pos_godot": [
+    0,
+    0.074,
+    -0.905
+   ],
+   "note": "flash hider face"
+  },
+  {
+   "name": "ATT_Optic",
+   "pos_godot": [
+    -0.028,
+    0.074,
+    -0.1
+   ],
+   "note": "Warsaw Pact side rail (left)"
+  },
+  {
+   "name": "GRIP_Main",
+   "pos_godot": [
+    0,
+    0,
+    0
+   ],
+   "note": "firing hand"
+  },
+  {
+   "name": "GRIP_Support",
+   "pos_godot": [
+    0,
+    0.169,
+    -0.5
+   ],
+   "note": "carry handle (assault fire)"
+  }
+ ],
+ "variant": "PKP Pecheneg 6P41 (infantry, bipod at the muzzle end)",
+ "dimensions_m": {
+  "overall": 1.2,
+  "barrel": 0.658
+ },
+ "source": "assets/weapons/_references/pkp_pecheneg/notes.md",
+ "glb_bytes": 627852
+}

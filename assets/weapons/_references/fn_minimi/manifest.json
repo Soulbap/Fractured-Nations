@@ -1,0 +1,45 @@
+{
+ "asset": "fn_minimi",
+ "source": "Wikimedia Commons",
+ "images": [
+  {
+   "file": "01_Minimi_MK3_Opendeurdag_Leopoldsburg_14_05_2023_12_03_19.jpg",
+   "title": "Minimi MK3 Opendeurdag Leopoldsburg 14-05-2023 12-03-19.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Minimi_MK3_Opendeurdag_Leopoldsburg_14-05-2023_12-03-19.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/5/5e/Minimi_MK3_Opendeurdag_Leopoldsburg_14-05-2023_12-03-19.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    5780,
+    3251
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Paul Hermans",
+   "description": "Minimi MK3 Opendeurdag Leopoldsburg 14-05-2023 12-03-19"
+  },
+  {
+   "file": "02_Australian_soldier_armed_with_Minimi_MK3_during_Exercise_Bal.webp",
+   "title": "Australian soldier armed with Minimi MK3 during Exercise Balikatan 23.webp",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Australian_soldier_armed_with_Minimi_MK3_during_Exercise_Balikatan_23.webp",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/f/ff/Australian_soldier_armed_with_Minimi_MK3_during_Exercise_Balikatan_23.webp?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    1000,
+    667
+   ],
+   "license": "Public domain",
+   "author": "U.S. Marine Corps photo by Lance Cpl John Hall",
+   "description": "An Australian soldier, with Joint Australian Training Team-Philippines, starts a jungle patrol during a combined arms field training exercise at Colonel Ernesto Ravina Air Base, Philippines as part of Balikatan 23 on April 14, 2023. Balikatan 23 is the 38th iteration of the annual bilateral exercise between the Armed Forces of the Philippines and the U.S. military. The exercise includes three week"
+  },
+  {
+   "file": "03_US_and_NATO_Allies_conduct_weapons_familiarization_7426987.jpg",
+   "title": "US and NATO Allies conduct weapons familiarization (7426987).jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:US_and_NATO_Allies_conduct_weapons_familiarization_(7426987).jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/d/d2/US_and_NATO_Allies_conduct_weapons_familiarization_%287426987%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    6732,
+    4492
+   ],
+   "license": "Public domain",
+   "author": "U.S. Army photo by Pfc. Destinee Rodriguez",
+   "description": "U.S. Soldiers, assigned to Alpha Company, 1st Battalion, 8th Infantry Regiment, 3rd Armored Brigade Combat Team, 4th Infantry Division, examine Portuguese weapons systems during Exercise Justice Eagle, at Smardan Training Area, Romania, on Sept.17, 2022. As part of the 101st Airborne Division (Air Assault); 1st Battalion, 8th Infantry Regiment, continues to reinforce NATO’s eastern flank and engag"
+  }
+ ]
+}

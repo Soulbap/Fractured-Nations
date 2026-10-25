@@ -1,0 +1,147 @@
+{
+ "id": "weapon_rpg26",
+ "display_name": "RPG-26 Aglen",
+ "faction": "RU",
+ "kind": "launcher_disposable",
+ "description": "RPG-26 72.5 mm one-shot anti-tank launcher, sights raised, ready to fire.",
+ "bounds_min": [
+  -0.0403,
+  -0.33,
+  -0.0092
+ ],
+ "bounds_max": [
+  0.062,
+  0.44,
+  0.1423
+ ],
+ "length_m": 0.77,
+ "height_m": 0.1515,
+ "width_m": 0.1023,
+ "tris": [
+  2706,
+  1248,
+  372
+ ],
+ "objects": [
+  3,
+  3,
+  3
+ ],
+ "materials": [
+  "Launcher_Green",
+  "Metal_Black",
+  "Metal_Worn",
+  "Polymer_Black",
+  "Rubber_Black",
+  "Strap_Black",
+  "Weapon_PaintBlack"
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "node": "",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "",
+   "tris": [
+    1918,
+    948,
+    308
+   ]
+  },
+  {
+   "name": "RearSight",
+   "node": "PIV_RearSight",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0823,
+    0.18
+   ],
+   "axis": "x (flips up)",
+   "note": "rear sight (raised)",
+   "tris": [
+    312,
+    88,
+    24
+   ]
+  },
+  {
+   "name": "FrontSight",
+   "node": "PIV_FrontSight",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0823,
+    -0.36
+   ],
+   "axis": "x (flips up)",
+   "note": "front sight frame (raised)",
+   "tris": [
+    476,
+    212,
+    40
+   ]
+  }
+ ],
+ "markers": [
+  {
+   "name": "ATT_Muzzle",
+   "pos_godot": [
+    0,
+    0.046,
+    -0.44
+   ],
+   "note": "front opening (72.5 mm)"
+  },
+  {
+   "name": "ATT_Breech",
+   "pos_godot": [
+    0,
+    0.046,
+    0.33
+   ],
+   "note": "rear opening (back-blast)"
+  },
+  {
+   "name": "GRIP_Main",
+   "pos_godot": [
+    0,
+    0,
+    0
+   ],
+   "note": "firing hand under the mechanism"
+  },
+  {
+   "name": "GRIP_Support",
+   "pos_godot": [
+    0,
+    0.006,
+    -0.25
+   ],
+   "note": "support hand under the front of the tube"
+  },
+  {
+   "name": "ATT_Shoulder",
+   "pos_godot": [
+    0,
+    0.046,
+    0.15
+   ],
+   "note": "shoulder contact"
+  }
+ ],
+ "variant": "RPG-26 Aglen (ready)",
+ "bore_z": 0.046,
+ "dimensions_m": {
+  "length": 0.77,
+  "calibre": 0.0725
+ },
+ "source": "assets/weapons/_references/rpg26/notes.md",
+ "glb_bytes": 216240
+}

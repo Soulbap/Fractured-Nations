@@ -1,0 +1,71 @@
+{
+ "asset": "fn_mag",
+ "source": "Wikimedia Commons",
+ "images": [
+  {
+   "file": "01_FN_MAG_Machine_Gun_Left.jpg",
+   "title": "FN MAG Machine Gun Left.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:FN_MAG_Machine_Gun_Left.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/a/ab/FN_MAG_Machine_Gun_Left.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2126,
+    696
+   ],
+   "license": "CC BY-SA 2.0",
+   "author": "FN Herstal",
+   "description": "7.62 mm FN MAG machine gun"
+  },
+  {
+   "file": "02_FN_MAG_58_Avalon_2025_side_view_1.jpg",
+   "title": "FN MAG 58 Avalon 2025 side view (1).jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:FN_MAG_58_Avalon_2025_side_view_(1).jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/7/7e/FN_MAG_58_Avalon_2025_side_view_%281%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    5712,
+    4284
+   ],
+   "license": "CC0",
+   "author": "AussieSurplus1510",
+   "description": "Side view of FN MAG 58 during 2025 Australian Avalon air show"
+  },
+  {
+   "file": "03_FN_Herstal_machine_gun_detail.jpg",
+   "title": "FN Herstal machine gun detail.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:FN_Herstal_machine_gun_detail.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/9/9c/FN_Herstal_machine_gun_detail.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    680,
+    450
+   ],
+   "license": "CC BY-SA 2.0",
+   "author": "Al Jazeera English",
+   "description": "FN MAG ?"
+  },
+  {
+   "file": "04_FN_MAG_white_background.jpg",
+   "title": "FN MAG white background.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:FN_MAG_white_background.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/9/97/FN_MAG_white_background.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2126,
+    1290
+   ],
+   "license": "CC BY 2.0",
+   "author": "FN Herstal",
+   "description": "FN MAG. If you'd like to use this image, please credit FN Herstal as the author, that is the condition to be licensed under Creative Common Attribution."
+  },
+  {
+   "file": "05_MAG_latrun_exhibition_1.jpg",
+   "title": "MAG-latrun-exhibition-1.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:MAG-latrun-exhibition-1.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/f/fd/MAG-latrun-exhibition-1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    1296,
+    972
+   ],
+   "license": "CC BY 2.5",
+   "author": "User:Bukvoed",
+   "description": "FN MAG machine gun. Independence Day exhibition at Yad la-Shiryon Museum, Latrun, Israel."
+  }
+ ]
+}

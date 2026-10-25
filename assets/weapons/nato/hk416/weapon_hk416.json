@@ -1,0 +1,224 @@
+{
+ "id": "weapon_hk416",
+ "display_name": "HK416N",
+ "faction": "NATO",
+ "kind": "assault_rifle",
+ "description": "Heckler & Koch HK416N, Norwegian Army standard rifle: 16.5 in barrel, quad rail, Aimpoint CompM4, vertical grip.",
+ "bounds_min": [
+  -0.0329,
+  -0.2755,
+  -0.1818
+ ],
+ "bounds_max": [
+  0.045,
+  0.728,
+  0.2218
+ ],
+ "length_m": 1.0035,
+ "height_m": 0.4035,
+ "width_m": 0.0779,
+ "tris": [
+  34128,
+  5126,
+  826
+ ],
+ "objects": [
+  7,
+  7,
+  6
+ ],
+ "materials": [
+  "Lens",
+  "Metal_Black",
+  "Metal_Worn",
+  "Polymer_Black",
+  "Rubber_Black",
+  "Weapon_Anodized",
+  "Weapon_Phosphate"
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "node": "",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "",
+   "tris": [
+    23540,
+    2970,
+    400
+   ]
+  },
+  {
+   "name": "ChargingHandle",
+   "node": "PIV_ChargingHandle",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.086,
+    0.012
+   ],
+   "axis": "slide -y",
+   "note": "charging handle (pulls back)",
+   "tris": [
+    532,
+    200,
+    40
+   ]
+  },
+  {
+   "name": "Trigger",
+   "node": "PIV_Trigger",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.038,
+    -0.051
+   ],
+   "axis": "x",
+   "note": "trigger (pivots about X)",
+   "tris": [
+    348,
+    204,
+    0
+   ]
+  },
+  {
+   "name": "Stock",
+   "node": "PIV_Stock",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.074,
+    0.15
+   ],
+   "axis": "slide y",
+   "note": "telescopic stock (slides along the buffer tube)",
+   "tris": [
+    4000,
+    476,
+    104
+   ]
+  },
+  {
+   "name": "Mag",
+   "node": "ATT_Magazine",
+   "parent": "",
+   "pivot_godot": [
+    0.168,
+    0.002,
+    -0.0
+   ],
+   "axis": "",
+   "note": "detachable magazine",
+   "tris": [
+    1064,
+    304,
+    60
+   ]
+  },
+  {
+   "name": "Optic",
+   "node": "PIV_Optic",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.114,
+    -0.12
+   ],
+   "axis": "",
+   "note": "Aimpoint CompM4 on a QD mount (removable)",
+   "tris": [
+    3536,
+    828,
+    150
+   ]
+  },
+  {
+   "name": "Foregrip",
+   "node": "PIV_Foregrip",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0375,
+    -0.32
+   ],
+   "axis": "",
+   "note": "vertical fore grip on the bottom rail (removable)",
+   "tris": [
+    1108,
+    144,
+    72
+   ]
+  }
+ ],
+ "markers": [
+  {
+   "name": "ATT_Optic",
+   "pos_godot": [
+    0,
+    0.114,
+    -0.12
+   ],
+   "note": "top rail optic mount (CompM4 fitted)"
+  },
+  {
+   "name": "ATT_Muzzle",
+   "pos_godot": [
+    0,
+    0.074,
+    -0.728
+   ],
+   "note": "muzzle face"
+  },
+  {
+   "name": "ATT_Underbarrel",
+   "pos_godot": [
+    0,
+    0.037,
+    -0.32
+   ],
+   "note": "bottom rail (fore grip fitted)"
+  },
+  {
+   "name": "ATT_RailRight",
+   "pos_godot": [
+    0.037,
+    0.074,
+    -0.42
+   ],
+   "note": "right rail (laser / light)"
+  },
+  {
+   "name": "GRIP_Main",
+   "pos_godot": [
+    0,
+    0,
+    0
+   ],
+   "note": "firing hand"
+  },
+  {
+   "name": "GRIP_Support",
+   "pos_godot": [
+    0,
+    -0.006,
+    -0.32
+   ],
+   "note": "support hand on the vertical grip"
+  }
+ ],
+ "variant": "HK416N (Norway)",
+ "dimensions_m": {
+  "overall_mid_stock": 0.98,
+  "barrel": 0.419,
+  "receiver_width": 0.032
+ },
+ "source": "assets/weapons/_references/hk416/notes.md",
+ "glb_bytes": 1566028
+}

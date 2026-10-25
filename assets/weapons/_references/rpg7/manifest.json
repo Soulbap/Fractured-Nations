@@ -1,0 +1,58 @@
+{
+ "asset": "rpg7",
+ "source": "Wikimedia Commons",
+ "images": [
+  {
+   "file": "01_RPG_7V2_ETIF_2010.jpg",
+   "title": "RPG-7V2 - ETIF-2010.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:RPG-7V2_-_ETIF-2010.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/b/b2/RPG-7V2_-_ETIF-2010.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2250,
+    1424
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Vitaly V. Kuzmin",
+   "description": "RPG-7V2"
+  },
+  {
+   "file": "02_RPG_7_detached.jpg",
+   "title": "RPG-7 detached.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:RPG-7_detached.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/3/33/RPG-7_detached.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2304,
+    1536
+   ],
+   "license": "CC BY 2.5",
+   "author": "Michal Maňas",
+   "description": "RPG-7 with warhead detached"
+  },
+  {
+   "file": "03_Rpg_7.jpg",
+   "title": "Rpg-7.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Rpg-7.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/8/8d/Rpg-7.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    610,
+    330
+   ],
+   "license": "Public domain",
+   "author": "",
+   "description": ""
+  },
+  {
+   "file": "04_RPG_7D3_51AirborneRegiment44.jpg",
+   "title": "RPG-7D3 - 51AirborneRegiment44.jpg",
+   "source_page": "https://commons.wikimedia.org/wiki/File:RPG-7D3_-_51AirborneRegiment44.jpg",
+   "original": "https://upload.wikimedia.org/wikipedia/commons/c/ce/RPG-7D3_-_51AirborneRegiment44.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+   "size": [
+    2248,
+    1431
+   ],
+   "license": "CC BY-SA 4.0",
+   "author": "Vitaly V. Kuzmin",
+   "description": "RPG-7D3 is the airborne variant of RPG-7V2 (with 1PN93-2 RPG night vision scope)"
+  }
+ ]
+}

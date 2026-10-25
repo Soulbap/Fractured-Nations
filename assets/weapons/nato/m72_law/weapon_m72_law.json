@@ -1,0 +1,166 @@
+{
+ "id": "weapon_m72_law",
+ "display_name": "M72 EC Mk1 LAW",
+ "faction": "NATO",
+ "kind": "launcher_disposable",
+ "description": "Nammo M72 EC Mk1 66 mm light anti-armour weapon (made at Raufoss), extended and ready to fire.",
+ "bounds_min": [
+  -0.044,
+  -0.304,
+  -0.0102
+ ],
+ "bounds_max": [
+  0.066,
+  0.68,
+  0.149
+ ],
+ "length_m": 0.984,
+ "height_m": 0.1592,
+ "width_m": 0.11,
+ "tris": [
+  2588,
+  1172,
+  292
+ ],
+ "objects": [
+  4,
+  4,
+  4
+ ],
+ "materials": [
+  "Launcher_OD",
+  "Lens",
+  "Metal_Black",
+  "Polymer_Black",
+  "Polymer_Tan",
+  "Rubber_Black",
+  "Strap_Black",
+  "Weapon_PaintBlack"
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "node": "",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "outer (rear) tube with the trigger housing",
+   "tris": [
+    1360,
+    704,
+    120
+   ]
+  },
+  {
+   "name": "RearSight",
+   "node": "PIV_RearSight",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.087,
+    0.236
+   ],
+   "axis": "x (flips up)",
+   "note": "rear peep sight (raised)",
+   "tris": [
+    312,
+    88,
+    24
+   ]
+  },
+  {
+   "name": "FrontTube",
+   "node": "PIV_FrontTube",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.045,
+    -0.25
+   ],
+   "axis": "slide -y (telescopes in)",
+   "note": "inner tube, extended",
+   "tris": [
+    432,
+    168,
+    108
+   ]
+  },
+  {
+   "name": "FrontSight",
+   "node": "PIV_FrontSight",
+   "parent": "FrontTube",
+   "pivot_godot": [
+    0.0,
+    0.083,
+    -0.62
+   ],
+   "axis": "x (flips up)",
+   "note": "front sight frame (raised)",
+   "tris": [
+    484,
+    212,
+    40
+   ]
+  }
+ ],
+ "markers": [
+  {
+   "name": "ATT_Muzzle",
+   "pos_godot": [
+    0,
+    0.045,
+    -0.68
+   ],
+   "note": "front tube mouth (66 mm)"
+  },
+  {
+   "name": "ATT_Breech",
+   "pos_godot": [
+    0,
+    0.045,
+    0.3
+   ],
+   "note": "rear opening (back-blast)"
+  },
+  {
+   "name": "GRIP_Main",
+   "pos_godot": [
+    0,
+    0,
+    0
+   ],
+   "note": "firing hand on the trigger housing"
+  },
+  {
+   "name": "GRIP_Support",
+   "pos_godot": [
+    0,
+    0.005,
+    -0.3
+   ],
+   "note": "support hand under the front tube"
+  },
+  {
+   "name": "ATT_Shoulder",
+   "pos_godot": [
+    0,
+    0.045,
+    0.12
+   ],
+   "note": "shoulder contact"
+  }
+ ],
+ "variant": "Nammo M72 EC Mk1 (extended)",
+ "bore_z": 0.045,
+ "dimensions_m": {
+  "extended": 0.98,
+  "carried": 0.78,
+  "calibre": 0.066
+ },
+ "source": "assets/weapons/_references/m72_law/notes.md",
+ "glb_bytes": 216400
+}

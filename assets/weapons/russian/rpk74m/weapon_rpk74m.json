@@ -1,0 +1,189 @@
+{
+ "id": "weapon_rpk74m",
+ "display_name": "RPK-74M",
+ "faction": "RU",
+ "kind": "lmg",
+ "description": "Kalashnikov RPK-74M 5.45 mm light machine gun: long heavy barrel, bipod, 45-round magazine.",
+ "bounds_min": [
+  -0.113,
+  -0.28,
+  -0.2232
+ ],
+ "bounds_max": [
+  0.113,
+  0.78,
+  0.118
+ ],
+ "length_m": 1.06,
+ "height_m": 0.3412,
+ "width_m": 0.226,
+ "tris": [
+  11876,
+  3568,
+  788
+ ],
+ "objects": [
+  6,
+  6,
+  5
+ ],
+ "materials": [
+  "Metal_Black",
+  "Metal_Worn",
+  "Polymer_Black",
+  "Polymer_Plum",
+  "Rubber_Black",
+  "Weapon_PaintBlack",
+  "Weapon_Phosphate"
+ ],
+ "parts": [
+  {
+   "name": "Body",
+   "node": "",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "axis": "",
+   "note": "",
+   "tris": [
+    8818,
+    2296,
+    492
+   ]
+  },
+  {
+   "name": "Bolt",
+   "node": "PIV_Bolt",
+   "parent": "",
+   "pivot_godot": [
+    0.016,
+    0.07,
+    -0.15
+   ],
+   "axis": "slide -y",
+   "note": "bolt carrier with the charging handle (right)",
+   "tris": [
+    200,
+    92,
+    44
+   ]
+  },
+  {
+   "name": "Trigger",
+   "node": "PIV_Trigger",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.038,
+    -0.05
+   ],
+   "axis": "x",
+   "note": "trigger (pivots about X)",
+   "tris": [
+    348,
+    204,
+    0
+   ]
+  },
+  {
+   "name": "Stock",
+   "node": "PIV_Stock",
+   "parent": "",
+   "pivot_godot": [
+    -0.012,
+    0.054,
+    0.05
+   ],
+   "axis": "z (folds left)",
+   "note": "side-folding polymer stock",
+   "tris": [
+    1030,
+    436,
+    92
+   ]
+  },
+  {
+   "name": "Mag",
+   "node": "ATT_Magazine",
+   "parent": "",
+   "pivot_godot": [
+    0.123,
+    0.024,
+    -0.0
+   ],
+   "axis": "",
+   "note": "detachable magazine",
+   "tris": [
+    1028,
+    328,
+    68
+   ]
+  },
+  {
+   "name": "Bipod",
+   "node": "PIV_Bipod",
+   "parent": "",
+   "pivot_godot": [
+    0.0,
+    0.054,
+    -0.684
+   ],
+   "axis": "x (legs fold forward)",
+   "note": "bipod, deployed",
+   "tris": [
+    452,
+    212,
+    92
+   ]
+  }
+ ],
+ "markers": [
+  {
+   "name": "ATT_Muzzle",
+   "pos_godot": [
+    0,
+    0.074,
+    -0.78
+   ],
+   "note": "muzzle face"
+  },
+  {
+   "name": "ATT_Optic",
+   "pos_godot": [
+    -0.019,
+    0.054,
+    -0.05
+   ],
+   "note": "side scope rail (left)"
+  },
+  {
+   "name": "GRIP_Main",
+   "pos_godot": [
+    0,
+    0,
+    0
+   ],
+   "note": "firing hand"
+  },
+  {
+   "name": "GRIP_Support",
+   "pos_godot": [
+    0,
+    0.054,
+    -0.3
+   ],
+   "note": "support hand on the lower handguard"
+  }
+ ],
+ "variant": "RPK-74M",
+ "dimensions_m": {
+  "overall": 1.06,
+  "folded": 0.845,
+  "barrel": 0.59
+ },
+ "source": "assets/weapons/_references/rpk74m/notes.md",
+ "glb_bytes": 670980
+}
