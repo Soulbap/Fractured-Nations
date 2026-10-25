@@ -11,7 +11,16 @@ branches are contained in `develop` and stay as history. Next milestone: **NAVIG
 obstacle navigation). See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest: **GAMEPLAY-05** (on `develop`) — a quality review of the game as it plays. Fixed: squads showed fewer soldiers than they
+Newest: **VISUAL-02** (on `develop`) — world and environment. A data bug (4-channel maps written as premultiplied alpha)
+made the forest 71 % pine everywhere and washed out the forest-floor, gravel, bog and asphalt textures: fixed. The terrain is
+drawn with a new ground shader (`GroundLook`, in memory; `--legacy-ground` for the old one): softened colour-map edges, macro
+variation, fields with rows / tramlines / mowing bands, distant forest as canopy. Houses, barns, sheds and fences are rebuilt
+with textures (fewer triangles). A **candidate world** `ref_20km_visual02` (new cover model: regions, forestry stands,
+clear-cuts, species by site; same relief, roads, settlements) is built next to the reference and waits for approval: load
+`res://scenes/game/world_ref_20km_visual02.tscn`. Survey: `--scenario=new_game --visual02-test --shots --only survey`. See
+[docs/VISUAL-02_REPORT.md](docs/VISUAL-02_REPORT.md).
+
+Before that, **GAMEPLAY-05** (on `develop`) — a quality review of the game as it plays. Fixed: squads showed fewer soldiers than they
 had ("1/5" for five alive), a garrison could stay **BLOCKED** for good after one soldier failed to reach his post, the EQUIP
 screen errored on every refresh, soldiers about 12 m from the camera were invisible (LOD gap), distant trees had black lines
 across their canopies, captured bases kept the enemy's name. Clearer: fallen soldiers' equipment is one summary marker per
