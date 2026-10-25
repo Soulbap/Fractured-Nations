@@ -11,7 +11,13 @@ branches are contained in `develop` and stay as history. Next milestone: **NAVIG
 obstacle navigation). See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest: **ROAD-QUALITY-01** (on `develop`) — main roads and the ground beside them. The road meshes are wider and higher than the
+In progress: **VISUAL-03** (soldier anatomy, rig and animation) — at the approval gate. The CHARACTER-01 soldier was
+diagnosed (blob-built body, idle with 30° bent knees, walking pelvis rotating the wrong way, a run whose legs never reach in
+front of the body); a reference-backed prototype on a MakeHuman (MPFB) body with CMU motion-capture walk / jog / run, foot
+locking and stress-tested skinning waits for approval. The game still uses the old soldier. See
+[docs/VISUAL-03_REPORT.md](docs/VISUAL-03_REPORT.md).
+
+Newest finished: **ROAD-QUALITY-01** (on `develop`) — main roads and the ground beside them. The road meshes are wider and higher than the
 line the terrain was fitted to, so their edges hung up to 1–4 m over the ground at junctions, on embankments and between roads
 running side by side. The terrain is now fitted to the road surface itself (measured with rays at game start, in memory; world
 files untouched): edges higher than a soldier's step went from 88 to 1 on 137 km of main road, and soldiers cross from road to

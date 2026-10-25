@@ -77,3 +77,7 @@ __pycache__/
 /worlds/settlements/*_visual02*
 /scenes/game/world_ref_20km_visual02.tscn
 /worlds/ref_20km_visual02/world_config.tres
+
+# VISUAL-03: CMU BVH takes are committed zipped (zip/), unpacked on demand by v03_proto.py
+assets/characters/infantry/mocap/cmu/*.bvh
+docs/visual03/proto/_tmp/
