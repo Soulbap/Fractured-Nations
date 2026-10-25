@@ -693,7 +693,13 @@ func _recover_member_if_needed(sq: SquadState, u: UnitState) -> bool:
 		p.failed = false
 		_member_progress[u.id] = p
 		sim.invalidate_local_route(u.id)
+		# GAMEPLAY-05: the same walk again, so a tactic's post stays his (issue_move ends posts; without it a soldier of a
+		# defence that recovered here had no post left, and once the budget was spent the garrison read BLOCKED for good).
+		var post := u.post_pos
+		var key := u.fort_slot
 		sim.state.issue_move(u.id, target, false)
+		u.post_pos = post
+		u.fort_slot = key
 		return true
 	if stalled and not bool(p.failed):
 		member_failures += 1

@@ -61,7 +61,7 @@ func _process(delta: float) -> void:
 	var soldiers := 0
 	for sq: SquadState in squads:
 		ids[sq.id] = true
-		soldiers += maxi(0, sq.members.size() - sq.fallen.size())
+		soldiers += strength(sq).x
 		if not _rows.has(sq.id):
 			_add_row(sq)
 	for id in _rows.keys():
@@ -94,12 +94,21 @@ func _refresh_row(row: FNUnitRow, sq: SquadState, is_selected: bool) -> void:
 	var st := squad_status(sim, sq, true)
 	row.selected = is_selected
 	row.callsign.text = sq.squad_name.to_upper()
-	row.set_strength(maxi(0, sq.members.size() - sq.fallen.size()), sq.members.size())
+	var sn := strength(sq)
+	row.set_strength(sn.x, sn.y)
 	row.status.set_status(st.icon, st.text, st.color)
 	row.emblem.frame_color = st.color if st.engaged else Color.TRANSPARENT
 	row.flag.visible = sq.roe == SquadState.Roe.HOLD_FIRE
 	row.tooltip_text = "%s · %s · %s · %s formation%s" % [sq.squad_name, st.text.capitalize(), sq.roe_name(), sq.formation_name(),
 		" · in an operation" if sq.op_id >= 0 else ""]
+
+
+## GAMEPLAY-05: soldiers alive and the squad's strength for every "a/b" in the UI. The dead leave `members` (they are listed in
+## `fallen`), so members are the living; the strength is what they were, capped by a full squad (a replenished squad keeps its
+## old fallen on the record). (UI-01C subtracted the fallen from the members a second time: 5 soldiers alive read "1/5".)
+static func strength(sq: SquadState) -> Vector2i:
+	var alive := sq.members.size()
+	return Vector2i(alive, maxi(alive, mini(alive + sq.fallen.size(), BaseSim.SQUAD_SIZE)))
 
 
 ## What a squad is doing, for every RTS surface (roster, command panel, field tag): an icon, one
@@ -173,6 +182,6 @@ func row_text(sq: SquadState) -> String:
 	var state := "ENGAGED" if fighting > 0 else ("UNDER FIRE" if under_fire > 0 else order)
 	if sq.status == SquadState.Status.PARTIAL:
 		state = "BLOCKED"
-	var effective := maxi(0, sq.members.size() - sq.fallen.size())
+	var sn := strength(sq)
 	var mark := "◆" if fighting > 0 or under_fire > 0 else "●"
-	return "%s  %d/%d   %s %s" % [sq.squad_name.to_upper(), effective, sq.members.size(), mark, state]
+	return "%s  %d/%d   %s %s" % [sq.squad_name.to_upper(), sn.x, sn.y, mark, state]

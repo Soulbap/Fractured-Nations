@@ -75,12 +75,8 @@ func _on_added(s: StructureState) -> void:
 				best_d = d
 				best = b.id
 		if best < 0:
-			var n := 0
-			for b: Dictionary in cs.bases.values():
-				if b.faction == s.faction:
-					n += 1
 			var founds := FacilityDefs.founds_base(s.type_id)
-			var nb := cs.add_base("%s base %d" % [WorldState.faction_name(s.faction), n + 1], s.faction, s.position,
+			var nb := cs.add_base(_free_base_name(s.faction), s.faction, s.position,
 				FacilityDefs.area_of(s.type_id) if founds else 0.0, s.id if founds else -1)
 			best = nb.id
 			if founds:
@@ -328,9 +324,26 @@ func capture_base(bid: int, new_faction: int) -> Dictionary:
 		for k in loot:
 			of.ledger["lost_with_bases"][k] = float(of.ledger["lost_with_bases"][k]) + loot[k]
 	stats.bases_captured += 1
-	lsim._event(new_faction, "%s captured: %d facilities, %d supplies, %d ammunition, %d fuel" % [b.name, n, roundi(loot.supplies), roundi(loot.ammo), roundi(loot.fuel)])
-	lsim._event(old, "%s was lost to %s" % [b.name, WorldState.faction_name(new_faction)])
+	# GAMEPLAY-05: a generated name carries the old owner ("South base 2" held by North read as an enemy base in every
+	# list); it takes the new owner's next number. Named places (scenario bases) keep their names.
+	var old_name := String(b.name)
+	if old_name.begins_with(WorldState.faction_name(old) + " base"):
+		b["name"] = _free_base_name(new_faction)
+	var renamed := "" if String(b.name) == old_name else " (now %s)" % b.name
+	lsim._event(new_faction, "%s captured%s: %d facilities, %d supplies, %d ammunition, %d fuel" % [old_name, renamed, n, roundi(loot.supplies), roundi(loot.ammo), roundi(loot.fuel)])
+	lsim._event(old, "%s was lost to %s" % [old_name, WorldState.faction_name(new_faction)])
 	return {"ok": true, "loot": loot, "facilities": n}
+
+
+## "<Faction> base <n>" with the first number no base of that name uses.
+func _free_base_name(f: int) -> String:
+	var used := {}
+	for x: Dictionary in _cs().bases.values():
+		used[String(x.name)] = true
+	var n := 1
+	while used.has("%s base %d" % [WorldState.faction_name(f), n]):
+		n += 1
+	return "%s base %d" % [WorldState.faction_name(f), n]
 
 
 ## Everything the player may want to know about a base.

@@ -137,7 +137,8 @@ func update(sim: WorldSim, u: UnitState) -> void:
 		_sq_emblem.color = WorldState.faction_color(sq.faction)
 		_squad.accent = WorldState.faction_color(sq.faction)
 		_sq_title.text = "%s  ·  %s" % [WorldState.faction_name(sq.faction).to_upper(), sq.squad_name.to_upper()]
-		_sq_count.text = "%d/%d" % [maxi(0, sq.members.size() - sq.fallen.size()), sq.members.size()]
+		var sn := SquadPanel.strength(sq)
+		_sq_count.text = "%d/%d" % [sn.x, sn.y]
 		_sq_status.set_status(st.icon, "Order: " + st.text, st.color)
 		_sq_lead.visible = sq.leader_id == u.id
 		_squad.size = Vector2.ZERO

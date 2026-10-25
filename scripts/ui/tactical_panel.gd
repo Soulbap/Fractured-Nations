@@ -201,8 +201,9 @@ func _refresh_summary(squads: Array[SquadState]) -> void:
 	var total := 0
 	var names: Array[String] = []
 	for sq in squads:
-		alive += maxi(0, sq.members.size() - sq.fallen.size())
-		total += sq.members.size()
+		var sn := SquadPanel.strength(sq)
+		alive += sn.x
+		total += sn.y
 		names.append(sq.squad_name.to_upper())
 	_emblem.color = WorldState.faction_color(first.faction)
 	if squads.size() == 1:

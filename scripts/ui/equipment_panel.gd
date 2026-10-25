@@ -118,7 +118,7 @@ func _refresh() -> void:
 	for uid in sq.members:
 		var u := hud.sim.state.get_unit(uid)
 		if u:
-			sig += "%d:%s:%s:%d|" % [uid, u.role, u.weapon_id, u.alive]
+			sig += "%d:%s:%s:%d|" % [uid, u.role, u.weapon_id, int(u.alive)]
 	sig += str(hud.sim.logistics.bases.faction_stock(sq.faction))
 	if sig == _sig:
 		return
@@ -199,6 +199,11 @@ func _row(sq: SquadState, u: UnitState) -> Control:
 	var apply := FNUI.action_button(&"check", "Apply", "Give this soldier the chosen role")
 	var uid := u.id
 	apply.pressed.connect(func() -> void: apply_choice(uid))
+	# GAMEPLAY-05: Apply is live only when the choice would change something (eight live buttons on "current" read as eight
+	# pending actions).
+	var cur := pick.selected
+	apply.disabled = true
+	pick.item_selected.connect(func(i: int) -> void: apply.disabled = i == cur)
 	h.add_child(apply)
 	return h
 

@@ -1232,6 +1232,8 @@ var post_w := {"protect": 3.0, "fire": 2.0, "conceal": 2.5, "prepared": 1.0, "se
 ## Candidates whose exposure is measured, per post needed (the rest are judged without it: bounded sight checks).
 var post_exposure_per := 2
 var fallbacks := 0
+## GAMEPLAY-05: soldiers that held short of a post they could not reach (_unblock_post).
+var posts_given_up := 0
 var support_fort_targets := 0
 var _fort_contact := {}
 ## Weapon modifiers when posts are handed out (configurable): the machine gunner values a wide arc and low exposure, the
@@ -1487,6 +1489,8 @@ func _is_mg(u: UnitState) -> bool:
 func _tend_forts(sq: SquadState, a: Dictionary, now: float) -> void:
 	var lost := false
 	for u: UnitState in _units(sq):
+		if _unblock_post(sq, u, now):
+			continue
 		if u.fort_slot == "":
 			continue
 		var e := pos.slot_by_key(u.fort_slot, sq.faction)
@@ -1515,6 +1519,44 @@ func _tend_forts(sq: SquadState, a: Dictionary, now: float) -> void:
 			u.post_pos = post
 	if lost and (sq.tactic == SquadState.Tactic.DEFEND or sq.tactic == SquadState.Tactic.REPOSITION):
 		_reposition(sq, a, "a fortification was lost", now)
+
+
+## GAMEPLAY-05: a defending soldier whose walk to his post (a natural post or a fortification slot's access point) ended BLOCKED is sent
+## again POST_RETRIES times, POST_RETRY_S apart; then he holds where he got to (that is his post now, a slot is given up). Before,
+## a natural post was never retried and a slot was re-sent every 8 s for ever: one unreachable post left a holding garrison
+## shown as BLOCKED. Returns true when it handled the soldier this step.
+const POST_RETRIES := 2
+const POST_RETRY_S := 8.0
+
+
+func _unblock_post(sq: SquadState, u: UnitState, now: float) -> bool:
+	# Only a defence's posts: a BUILD post is where the work is done (BUILD re-sends its own), an attack's legs move on.
+	if sq.tactic != SquadState.Tactic.DEFEND and sq.tactic != SquadState.Tactic.REPOSITION:
+		return false
+	if u.move_state != UnitState.MoveState.BLOCKED or u.order != UnitState.Order.NONE or not u.post_pos.is_finite() or u.fort_pos.is_finite():
+		return false
+	var tries := int(_meta(sq, "post_try_%d" % u.id, 0))
+	if now - float(_meta(sq, "post_try_at_%d" % u.id, -100.0)) < POST_RETRY_S:
+		return true
+	var post := u.post_pos
+	var key := u.fort_slot
+	if tries < POST_RETRIES:
+		_set_meta(sq, "post_try_%d" % u.id, tries + 1)
+		_set_meta(sq, "post_try_at_%d" % u.id, now)
+		var goal := post
+		if key != "":
+			goal = pos.slot_by_key(key, sq.faction).get("access", post)
+		sim.state.issue_move(u.id, goal, false)
+		u.fort_slot = key
+		u.post_pos = post
+		return true
+	_set_meta(sq, "post_try_%d" % u.id, 0)
+	_log(sq, "%s cannot reach his post %s (%s): holds %d m short of it" % [u.unit_name, key if key != "" else _xz(post), u.nav_reason, roundi(_flat(u.position, post))])
+	sim.state.halt(u.id)
+	u.post_pos = u.position
+	u.anchor_pos = u.position
+	posts_given_up += 1
+	return true
 
 
 ## The player assigns squads to a friendly base (RTS command, map, facility panel). Releases them from operations;
@@ -2813,7 +2855,7 @@ func short_text(sq: SquadState) -> String:
 func summary() -> Dictionary:
 	return {"ticks": ticks, "steps": steps, "step_us_avg": snappedf(float(step_usec) / maxi(ticks, 1), 0.1), "step_us_max": step_usec_max,
 		"judged_plans": {"per_tick_max": plans_tick_max, "plan_us_max": plan_usec_max, "tick_us_max": plan_tick_usec_max, "deferred": deferred},
-		"started": started.duplicate(), "finished": finished.duplicate(), "decisions": decisions, "refusals": refusals, "replans": replans,
+		"started": started.duplicate(), "finished": finished.duplicate(), "decisions": decisions, "refusals": refusals, "replans": replans, "posts_given_up": posts_given_up,
 		"posts": {"searches": pos.searches, "evals": pos.evals, "us_avg": snappedf(float(pos.usec) / maxi(pos.searches, 1), 0.1), "us_max": pos.usec_max,
 			"flank_plans": pos.flank_plans, "flank_us_avg": snappedf(float(pos.flank_usec) / maxi(pos.flank_plans, 1), 0.1),
 			"slot_searches": pos.slot_searches, "slot_us_avg": snappedf(float(pos.slot_usec) / maxi(pos.slot_searches, 1), 0.1), "slot_us_max": pos.slot_usec_max}}
