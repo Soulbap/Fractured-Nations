@@ -7,11 +7,19 @@ RTS and 2D-map views.
 `C:\Users\Hafnor\Desktop\Game Dev\fractured-nations`, one active development branch **`develop`** (`main` is the
 stable branch, updated only with the product owner's approval), one canonical development world **`ref_20km`**
 (main scene `scenes/game/world_ref_20km.tscn`, checked with `worlds/ref_20km.manifest.json`). All earlier feature
-branches are contained in `develop` and stay as history. Next milestone: **COMBAT-01** (combat visibility and gunplay
-overhaul; scope to be defined with the product owner). See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
+branches are contained in `develop` and stay as history. See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest finished: **VISUAL-03** (soldier anatomy, rig and animation, on `develop`) — the game's soldier is new: a
+Newest finished: **COMBAT-01** (combat visibility, gunplay, tactical AI and postures, on `develop`) — soldiers stand,
+crouch (**C**) and go prone (**Z**) as one saved state that hits, sight, speed, aim, animation (new prone clips) and the AI
+all use; dense grass mildly delays the AI noticing a low soldier; rifles have a credible chance at 200-300 m and the
+marksman rifle a clear edge; an original sound set with distance layers and sound travel time, cracks and whizzes of rounds
+passing the player, material impacts, new muzzle flashes and recoil with recovery; first person shows the soldier's own
+arms on the weapon (Arma / Gray Zone references); squads withdraw locally with a stated reason (never against the player's
+hold) and break off stalled assaults; the RTS marks what the selected squad knows of the enemy. A hidden-target perception
+leak was found and fixed. See [docs/COMBAT-01_IMPLEMENTATION_REPORT.md](docs/COMBAT-01_IMPLEMENTATION_REPORT.md).
+
+Before that: **VISUAL-03** (soldier anatomy, rig and animation, on `develop`) — the game's soldier is new: a
 MakeHuman (MPFB) body with CMU motion-capture locomotion and a rifle-handling layer (carries, cheek weld with the eye on
 the sight line, aim / fire / reload layers with the magazine coming out in the support hand, turning clips), uniforms and
 kit of all three factions refitted to it, validated in the game (squad of eight, combat, slopes, transitions, FPS / RTS

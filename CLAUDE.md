@@ -23,7 +23,7 @@ Norwegian; code, comments and docs are English.
   (`../fractured-nations-*`) are only kept until the product owner approves removing them
   (status: [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md)). Do not develop there.
 - **Session workflow:** open this project → read this file and the roadmap ([docs/AI_ROADMAP.md](docs/AI_ROADMAP.md),
-  the next milestone is **COMBAT-01**, combat visibility and gunplay; its scope is defined with the product owner first) → read the systems you will touch (owners below) → implement →
+  COMBAT-01 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
   targeted tests + visual Godot validation → update the report / README → commit to `develop`.
 - Each milestone ends with a report in `docs/<MILESTONE>_REPORT.md` and an updated README.
 
@@ -229,6 +229,21 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   `<weapon>_Mag_LOD*`) that `InfantryCharacter._hang_magazine` puts on `ATT_Magazine`; only `Reload` moves that bone. Write
   bone poses through `char_anim._set_world` (rotation + position only). Movement paces (`WorldSim.pace_of`) are opt-in with
   `--paces`. Validation: `--paces --visual03-test [--shots]` (A-F), `tools/visual03/check_loadouts.gd`, `check_clearance.py`.
+- **Combat posture (COMBAT-01).** Stand / crouch / prone is `UnitState.posture` (+ `posture_from`, `posture_at`,
+  `posture_hold_until`; saved) read through the `Posture` table (`scripts/combat/posture.gd`): eye (`CombatSim.eye_of`),
+  AI look / aim points, analytic hit volumes (`LineOfFire` via `Posture.hit`, `segment_capsule`), speed (`WorldSim.move_speed`,
+  both tiers), steadiness, grass top. Never store posture elsewhere; the character and proxies only show it (prone clips
+  seeked to `Posture.progress`). Moves stand up through `Posture.for_move` (`WorldState.issue_move`, reactions); the AI picks
+  a posture in `CombatBrain._choose_posture`. Prone numbers come from the clips (`char_prone.prone_layout`) - keep them in step.
+- **Concealment and perception (COMBAT-01).** Grass only delays noticing (`CombatBrain.acquire_delay`, `Concealment` reads
+  the grass placement data); it never blocks sight or bullets (`--no-concealment` off). A kept "visible" answer while
+  vegetation cells fill must never refresh a target's position (that leaked hidden enemies); fire needs a sighting within 1.2 s.
+- **Combat presentation (COMBAT-01).** Sounds are files from `tools/audio/make_combat_sounds.py` (`assets/audio/combat`,
+  original, regenerate - do not hand-edit); `CombatFX` chooses close / distant by listener distance and delays by sound
+  travel; nothing moves the player's view except his own recoil. First person is the soldier's own arms
+  (`Viewmodel` + `InfantryCharacter`); new weapons follow `docs/CHARACTER_STANDARD.md` §3.1 (sight line z 0.172, `ATT_Muzzle`
+  at the muzzle, glass `Lens`, `WeaponDef.ads_fov`). RTS contact markers (`ContactMarkers`) read only the selected soldiers'
+  perception records. AI aim profile `c01` (`--aim=g05b` for the old one).
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are
@@ -292,6 +307,11 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   opening fight's frame times; `--continue ... --only p_state,p_watch` diagnoses the last test save). Results
   `benchmarks/raw/gameplay05_test.json`, shots `docs/gameplay05/`. Known flaky on unchanged code: `--nav-inf-test` navinf_04 near
   tier (about one run in two); `--campaign-test c_forts` fails (timber guard tower never built; GAMEPLAY-05 report §3.1).
+- COMBAT-01 checks: `--combat01-test [--shots] [--only v_detect,p_posture,g_grass,a_accuracy,f_gunplay,t_withdraw,r_markers,s_visibility,p_ai_posture]`
+  (one deterministic run each, results `benchmarks/raw/combat01_test.json`, shots `docs/combat01/`; `--fullscreen` for
+  1920x1080). Known pre-existing: `--ai-squad-test k_persist` K(suppress)/K(flank) and the `l_perf` tactics step limit.
+  Prone / posture clips: `tools/blender/character/char_prone.py`, built by `build_infantry.py --export` (then revert the
+  unchanged parts / weapons GLBs it rewrites; keep rig, `animation_meta.json`, `build_log.json`, the blend).
 - After adding `class_name` scripts or assets run `Godot ... --headless --path . --import` once (two
   "placeholder instance" SCRIPT ERRORs from VegetationMask / VegetationMeshDef during a headless import are known
   and harmless).
