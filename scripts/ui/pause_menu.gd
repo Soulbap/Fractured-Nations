@@ -48,7 +48,7 @@ func _ready() -> void:
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_status.custom_minimum_size = Vector2(320, 0)
 	col.add_child(_status)
-	for e: Array in [["resume", "Resume", "Esc"], ["save", "Save Game", "F5"], ["load", "Load Game", "F9"], ["main_menu", "Main Menu", ""], ["quit", "Quit Game", ""]]:
+	for e: Array in [["resume", "Resume", "Esc"], ["save", "Save Game", "F5"], ["load", "Load Game", "F9"], ["settings", "Settings", ""], ["main_menu", "Main Menu", ""], ["quit", "Quit Game", ""]]:
 		_entry(col, e[0], e[1], e[2])
 	refresh()
 
@@ -97,6 +97,14 @@ func say(text: String, good := true) -> void:
 
 
 func _choose(action: String) -> void:
+	# GAMEPLAY-02 (controls): the settings screen opens over the menu (the game stays paused).
+	if action == "settings":
+		if not has_node("Settings"):
+			var sp := SettingsPanel.new()
+			sp.name = "Settings"
+			add_child(sp)
+			sp.closed.connect(func() -> void: (_buttons["settings"] as Button).grab_focus.call_deferred())
+		return
 	# Leaving the game asks once: what was not saved is lost.
 	if (action == "main_menu" or action == "quit") and _confirm != action:
 		_confirm = action
@@ -109,6 +117,8 @@ func _choose(action: String) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not visible:
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()
 		chosen.emit("resume")

@@ -61,6 +61,7 @@ func _ready() -> void:
 	var gap2 := Control.new()
 	gap2.custom_minimum_size = Vector2(0, 14)
 	col.add_child(gap2)
+	_entry(col, "settings", "Settings", "")
 	_entry(col, "quit", "Quit", "")
 	_status = FNUI.label("", FNUI.LABEL, FNUI.DANGER, "caps")
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -137,11 +138,24 @@ func show_error(text: String) -> void:
 
 
 func _choose(action: String) -> void:
+	# GAMEPLAY-02 (controls): the settings screen opens over the start screen; it does not start anything.
+	if action == "settings":
+		_open_settings()
+		return
 	if action == "continue" and not bool(save_info.get("ok", false)):
 		show_error("Cannot continue: %s" % save_info.get("reason", "no saved game"))
 		return
 	show_error("")
 	chosen.emit(action)
+
+
+func _open_settings() -> void:
+	if has_node("Settings"):
+		return
+	var sp := SettingsPanel.new()
+	sp.name = "Settings"
+	add_child(sp)
+	sp.closed.connect(func() -> void: (_buttons["settings"][0] as Button).grab_focus.call_deferred())
 
 
 static func _clock(t: float) -> String:

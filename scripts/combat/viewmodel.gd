@@ -239,6 +239,7 @@ func _build_arms() -> bool:
 		return false
 	var c := InfantryCharacter.new()
 	c.name = "Arms"
+	c.ground_tilt = false
 	add_child(c)
 	c.setup(loadout, faction, false)
 	var keep := {}

@@ -29,6 +29,8 @@ static var _adaptive := false
 static var _k := 1.0
 static var _last_ticks := 0
 static var _frame_ms := 16.0
+## GAMEPLAY-02 (controls): the player paused the simulation (Space, CoreDemo.set_sim_paused); shown by label().
+static var paused := false
 
 
 ## k x speed with 1/60 s steps. max_steps: physics steps allowed per rendered frame
@@ -75,6 +77,8 @@ static func sample(sim_time: float) -> void:
 
 ## "8x" or "8x (reached 5.6x)" when the machine falls clearly short.
 static func label() -> String:
+	if paused:
+		return "paused"
 	var k := Engine.time_scale
 	if k > 1.0 and reached < k * 0.9:
 		return "%dx (reached %.1fx)" % [int(k), reached]

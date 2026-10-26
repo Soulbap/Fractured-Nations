@@ -79,6 +79,9 @@ var _trans_amount := 0.0
 ## COMBAT-POLISH-01: the ground under the prone body (x: pitch along it, + = head end higher; y: roll, + = right side higher;
 ## radians), set by the body (SoldierBody._prone_slope). The lying body is laid onto it about the point under the hips.
 var ground_slope := Vector2.ZERO
+## GAMEPLAY-02 (controls): false for the first-person arms (Viewmodel), whose transform their owner sets every frame; the
+## prone tilt would reset it (the rifle ended up 1.4 m above the view).
+var ground_tilt := true
 var _tilt := Vector2.ZERO
 var _aim_fix := Vector2.ZERO
 ## Steepest tilt shown (radians): beyond it the body lies at this angle (the AI does not lie on ground steeper than ~26 deg).
@@ -749,7 +752,8 @@ func _apply_params(delta: float, snap: bool) -> void:
 	_was_reloading = reloading
 	if _has_prone:
 		_apply_prone(delta, snap, speed)
-		_apply_tilt(delta, snap)
+		if ground_tilt:
+			_apply_tilt(delta, snap)
 	if _grip:
 		_support_amount = move_toward(_support_amount, 0.0 if reloading else 1.0, step * 5.0)
 		_grip.aim_w = _aim_amount

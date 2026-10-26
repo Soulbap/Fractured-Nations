@@ -46,6 +46,7 @@ var zoom := 80.0
 ## Player tilt added to the zoom-dependent pitch (radians, + = steeper).
 var pitch_offset := 0.0
 var active := false
+var _last_us := 0
 
 @onready var camera: Camera3D = $Camera3D
 
@@ -76,7 +77,11 @@ func frame(pos: Vector3, p_yaw: float, p_zoom := -1.0) -> void:
 	_update_transform()
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
+	# GAMEPLAY-02 (controls): the view moves in real time - the same speed at 8 x and while the simulation is paused.
+	var now := Time.get_ticks_usec()
+	var delta := clampf((now - _last_us) / 1.0e6, 0.0, 0.1) if _last_us > 0 else 0.0
+	_last_us = now
 	var pan := Input.get_vector("move_left", "move_right", "move_back", "move_forward")
 	if pan != Vector2.ZERO:
 		var fwd := Vector3(-sin(yaw), 0.0, -cos(yaw))

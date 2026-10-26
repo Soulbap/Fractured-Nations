@@ -43,6 +43,8 @@ var show_debug := false
 ## The player's faction, top centre (war only; first person and driving - in the tactical view the
 ## faction heads the Task Force roster).
 var _badge: Label
+## GAMEPLAY-02 (controls): PAUSED / the speed above 1 x, at the top centre of the tactical view.
+var _clock: Label
 ## UI-01C: the tactical view's key hints, bottom left while nothing is selected (the command panel
 ## carries its own keys).
 var _hints: FNPanel
@@ -69,10 +71,113 @@ class Overlay extends Control:
 			_draw_fps()
 		elif hud.rts:
 			_draw_squads()
+			_draw_pointer()
 			if hud.rts.dragging:
 				var r := Rect2(hud.rts.drag_start, hud.rts.drag_current - hud.rts.drag_start).abs()
 				draw_rect(r, Color(1, 1, 1, 0.12), true)
 				draw_rect(r, Color(1, 1, 1, 0.85), false, 1.5)
+
+	## GAMEPLAY-02 (controls): what the cursor points at and what an order will do - the unit under it (brackets and a tag:
+	## yours / enemy and what a click does), the ground point of a move with something selected (a small reticle), the
+	## right-drag preview (the frontage, its facing, every soldier's place: filled = in cover) and a short pulse where an
+	## order was given. Dark outlines keep it readable on bright fields and dark forest alike.
+	func _draw_pointer() -> void:
+		var rts := hud.rts
+		var cam := rts.rig.camera if rts.rig else null
+		if cam == null or not cam.current or not rts.active:
+			Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+			return
+		var shade := Color(FNUI.BG, 0.75)
+		var have_sel := not rts.selected.is_empty()
+		var shape := Input.CURSOR_ARROW
+		# The right-drag preview.
+		if rts.rdrag_on and rts.rdrag_a.is_finite() and rts.rdrag_b.is_finite():
+			var a3: Vector3 = rts.rdrag_a + Vector3.UP * 0.15
+			var b3: Vector3 = rts.rdrag_b + Vector3.UP * 0.15
+			if not cam.is_position_behind(a3) and not cam.is_position_behind(b3):
+				var pa := cam.unproject_position(a3)
+				var pb := cam.unproject_position(b3)
+				draw_line(pa, pb, shade, 4.0)
+				draw_line(pa, pb, Color(FNUI.ACCENT, 0.95), 2.0)
+				var m3: Vector3 = (a3 + b3) * 0.5
+				var tip3: Vector3 = m3 + rts.rdrag_facing * maxf(2.5, a3.distance_to(b3) * 0.15)
+				if not cam.is_position_behind(tip3):
+					var pm := cam.unproject_position(m3)
+					var pt := cam.unproject_position(tip3)
+					draw_line(pm, pt, shade, 4.0)
+					draw_line(pm, pt, Color(FNUI.ACCENT, 0.95), 2.0)
+					var dir := (pt - pm).normalized()
+					if dir != Vector2.ZERO:
+						var side := Vector2(-dir.y, dir.x)
+						draw_colored_polygon(PackedVector2Array([pt + dir * 6.0, pt + side * 4.5, pt - side * 4.5]), FNUI.ACCENT)
+			for id in rts.rdrag_plan:
+				var u := hud.sim.state.get_unit(id)
+				var p3: Vector3 = rts.rdrag_plan[id] + Vector3.UP * 0.1
+				if u == null or cam.is_position_behind(p3):
+					continue
+				var pp := cam.unproject_position(p3)
+				var from3 := u.position + Vector3.UP * 0.3
+				if not cam.is_position_behind(from3):
+					draw_line(cam.unproject_position(from3), pp, Color(FNUI.INK, 0.28), 1.0)
+				var in_cover: bool = rts.rdrag_cover.has(id)
+				draw_circle(pp, 5.5, shade)
+				if in_cover:
+					draw_circle(pp, 4.0, FNUI.OK)
+				else:
+					draw_arc(pp, 3.6, 0.0, TAU, 16, FNUI.INK, 1.8)
+			var cn: int = rts.rdrag_cover.size()
+			_pointer_tag(get_local_mouse_position() + Vector2(16, 18), "PLACE %d  ·  %d IN COVER" % [rts.rdrag_plan.size(), cn], FNUI.ACCENT)
+		elif rts.hover_unit > 0:
+			var u := hud.sim.state.get_unit(rts.hover_unit)
+			if u:
+				var feet := u.position + Vector3.UP * 0.1
+				var head := u.position + Vector3.UP * (1.9 if u.kind == UnitState.Kind.SOLDIER else 3.0)
+				if not cam.is_position_behind(feet) and not cam.is_position_behind(head):
+					var pf := cam.unproject_position(feet)
+					var ph := cam.unproject_position(head)
+					var h := maxf(absf(pf.y - ph.y), 14.0)
+					var w := h * (0.55 if u.kind == UnitState.Kind.SOLDIER else 1.4)
+					var r := Rect2(Vector2(pf.x - w * 0.5, pf.y - h), Vector2(w, h)).grow(4.0)
+					var col := FNUI.ACCENT if rts.hover_own else FNUI.DANGER
+					_brackets(r.grow(1.0), shade)
+					_brackets(r, col)
+					var text := ""
+					if rts.hover_own:
+						var sq := hud.sim.state.squad_of(u.id)
+						text = "%s%s" % [sq.squad_name.to_upper() + " · " if sq else "", u.unit_name.to_upper()]
+						var vehicle := u.kind == UnitState.Kind.VEHICLE
+						text += "  ·  RMB BOARD" if vehicle and not rts.selected_squads().is_empty() else "  ·  CLICK SELECT"
+						shape = Input.CURSOR_POINTING_HAND
+					else:
+						text = "ENEMY %s%s" % ["SOLDIER" if u.kind == UnitState.Kind.SOLDIER else "VEHICLE", "  ·  Z ASSAULT  K SUPPRESS" if have_sel else ""]
+						shape = Input.CURSOR_CROSS if have_sel else Input.CURSOR_ARROW
+					_pointer_tag(Vector2(r.get_center().x, r.position.y - 6.0), text, col, true)
+		elif have_sel and rts.hover_ground.is_finite() and not cam.is_position_behind(rts.hover_ground):
+			var pg := cam.unproject_position(rts.hover_ground + Vector3.UP * 0.1)
+			draw_arc(pg, 7.0, 0.0, TAU, 20, shade, 3.5)
+			draw_arc(pg, 7.0, 0.0, TAU, 20, Color(FNUI.INK, 0.9), 1.5)
+			for v: Vector2 in [Vector2.LEFT, Vector2.RIGHT, Vector2.UP, Vector2.DOWN]:
+				draw_line(pg + v * 3.0, pg + v * 10.0, Color(FNUI.INK, 0.9), 1.5)
+			shape = Input.CURSOR_CROSS
+		# The confirmation pulse of the last order (0.6 s).
+		var age := (Time.get_ticks_msec() - rts.order_flash_at) / 1000.0
+		if age < 0.6 and rts.order_flash_pos.is_finite() and not cam.is_position_behind(rts.order_flash_pos):
+			var po := cam.unproject_position(rts.order_flash_pos + Vector3.UP * 0.1)
+			var k := age / 0.6
+			draw_arc(po, 6.0 + 22.0 * k, 0.0, TAU, 28, Color(FNUI.OK, 1.0 - k), 2.5)
+		Input.set_default_cursor_shape(shape)
+
+	## A small tag with a dark plate (centred above `at` when centre, else to the lower right of it).
+	func _pointer_tag(at: Vector2, text: String, col: Color, centre := false) -> void:
+		var cf := FNUI.caps_font()
+		var fs := FNUI.CAPTION
+		var tw := cf.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var r := Rect2(Vector2(at.x - tw * 0.5 - 5.0 if centre else at.x, at.y - 13.0 if centre else at.y), Vector2(tw + 10.0, 13.0))
+		r.position.x = clampf(r.position.x, 4.0, size.x - r.size.x - 4.0)
+		r.position.y = clampf(r.position.y, 4.0, size.y - r.size.y - 4.0)
+		draw_rect(r, Color(FNUI.BG, 0.82), true)
+		draw_rect(Rect2(r.position, Vector2(2, r.size.y)), col, true)
+		draw_string(cf, r.position + Vector2(6, 10), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, FNUI.INK)
 
 	## COMBAT-01b debug: one tag per soldier within 400 m of the camera (name, AI state,
 	## target, seen / remembered, reason it is not firing) and a line to its target: red
@@ -309,7 +414,7 @@ func _ready() -> void:
 	var hb := HBoxContainer.new()
 	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hb.add_theme_constant_override("separation", FNUI.S5)
-	for k: Array in [["LMB", "Select"], ["RMB", "Move"], ["B", "Build"], ["M", "Map"], ["F2", "Development"], ["Tab", "First person"], ["F1", "Controls"]]:
+	for k: Array in [["LMB", "Select"], ["RMB", "Move"], ["RMB drag", "Place"], ["B", "Build"], ["M", "Map"], ["Space", "Pause"], ["1-4", "Speed"], ["Tab", "First person"], ["F1", "Controls"]]:
 		hb.add_child(FNKeyHint.new(k[0], k[1]))
 	_hints.add_child(hb)
 	_hints.visible = false
@@ -349,6 +454,19 @@ func _ready() -> void:
 	_badge.add_theme_font_override("font", FNUI.caps_font())
 	_badge.visible = false
 	add_child(_badge)
+	_clock = Label.new()
+	_clock.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_clock.add_theme_font_size_override("font_size", FNUI.HEADLINE)
+	_clock.add_theme_font_override("font", FNUI.caps_font())
+	var csb := FNUI.panel_style(FNUI.S2)
+	csb.border_width_left = 3
+	csb.border_color = FNUI.WARN
+	csb.content_margin_left = 10
+	csb.content_margin_right = 10
+	_clock.add_theme_stylebox_override("normal", csb)
+	_clock.add_theme_color_override("font_color", FNUI.WARN)
+	_clock.visible = false
+	add_child(_clock)
 
 
 ## A war event the player's faction learns about: a short notification at the top of the
@@ -549,6 +667,15 @@ func _process(_delta: float) -> void:
 		notes_y = economy._strip.position.y + economy._strip.size.y + 6.0
 		if economy._hint.visible:
 			notes_y = economy._hint.position.y + economy._hint.size.y + 6.0
+	var paused := TimeCompression.paused
+	_clock.visible = in_rts and (paused or Engine.time_scale != 1.0)
+	if _clock.visible:
+		var ct := "PAUSED  ·  SPACE TO RESUME" if paused else "SPEED %s  ·  1 FOR NORMAL" % TimeCompression.label().to_upper()
+		if _clock.text != ct:
+			_clock.text = ct
+			_clock.size = Vector2.ZERO
+		_clock.position = Vector2(vp.x * 0.5 - _clock.size.x * 0.5, notes_y)
+		notes_y += _clock.size.y + 6.0
 	_notes_box.position = Vector2(vp.x * 0.5 - _notes_box.size.x * 0.5, notes_y)
 	# GAMEPLAY-04: with the development screen open the notifications go below it instead of over its header.
 	if development and development.visible:
@@ -636,7 +763,7 @@ func _war_text() -> String:
 	for fs: FactionState in war.factions.values():
 		parts.append("%s %d" % [fs.faction_name, war.owned_by(fs.id).size()])
 	if show_controls:
-		lines.append("WAR  objectives %s · your operations %d · speed %s (, .) · F5 save · F9 load" % [
+		lines.append("WAR  objectives %s · your operations %d · speed %s (Space pause, 1-4) · F5 save · F9 load" % [
 			" / ".join(parts), war.active_operations(pf).size(), TimeCompression.label()])
 	if construction and construction.message != "" and Time.get_ticks_msec() / 1000.0 < construction._message_until:
 		lines.append(construction.message)
@@ -707,7 +834,7 @@ func _text() -> String:
 		var parts: Array[String] = []
 		for fs: FactionState in war.factions.values():
 			parts.append("%s %d" % [fs.faction_name, war.owned_by(fs.id).size()])
-		lines.append("WAR  you: %s · %d soldiers, %d reserve, %d fallen · objectives %s · %d operations · speed %dx  |  M strategic map, , . time speed" % [
+		lines.append("WAR  you: %s · %d soldiers, %d reserve, %d fallen · objectives %s · %d operations · speed %dx  |  M strategic map, Space pause, 1-4 time speed" % [
 			f.faction_name, soldiers, f.reserves, f.casualties, " / ".join(parts), war.active_operations(pf).size(), int(Engine.time_scale)])
 	if detail:
 		var u := sim.state.get_unit(game.possessed_id)

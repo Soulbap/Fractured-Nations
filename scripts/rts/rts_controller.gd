@@ -64,6 +64,31 @@ var _message_until := 0.0
 var _marker: MeshInstance3D
 var _marker_until := 0.0
 
+## GAMEPLAY-02 (controls): right-drag placement. A right click shorter than rdrag_threshold_px is the ordinary move (given on
+## release); held and dragged it lays a frontage from the press point to the cursor, the soldiers' places are previewed
+## (SquadControl.place_plan: cover near the line, spread) and the release gives the order (order_place).
+@export var rdrag_threshold_px := 14.0
+var rdrag_start := Vector2.INF
+var rdrag_on := false
+var rdrag_a := Vector3.INF
+var rdrag_b := Vector3.INF
+var rdrag_facing := Vector3.ZERO
+## The previewed places (unit id -> Vector3) and which of them are in cover (unit id -> true).
+var rdrag_plan := {}
+var rdrag_cover := {}
+var _rdrag_plan_b := Vector3.INF
+var _rdrag_plan_ms := 0
+var _rdrag_cover_b := Vector3.INF
+## What the cursor points at (hover feedback): a unit id (-1 none) and whether the player may command it.
+var hover_unit := -1
+var hover_own := false
+## The ground under the cursor while something is selected (the move order's point), INF otherwise.
+var hover_ground := Vector3.INF
+var _last_hover_ground := Vector3.INF
+## The last order's point and when it was given (msec), for the confirmation pulse.
+var order_flash_at := -100000
+var order_flash_pos := Vector3.INF
+
 
 func _ready() -> void:
 	GameController.ensure_input_actions()
@@ -89,11 +114,152 @@ func set_active(on: bool) -> void:
 		_end_drag()
 		follow_pick = false
 		armed_tactic = -1
+		_rdrag_reset()
+		hover_unit = -1
+		hover_ground = Vector3.INF
 
 
 func _process(_delta: float) -> void:
 	if _marker.visible and Time.get_ticks_msec() / 1000.0 > _marker_until:
 		_marker.visible = false
+	_update_hover()
+	if rdrag_on:
+		_update_rdrag(false)
+
+
+## GAMEPLAY-02 (controls): the unit under the cursor (a commandable one, or another side's soldier the player can see) and the
+## ground a move order would go to (every other frame: one ray).
+func _update_hover() -> void:
+	hover_unit = -1
+	hover_ground = Vector3.INF
+	if not active or rig == null or Input.mouse_mode != Input.MOUSE_MODE_VISIBLE:
+		return
+	var vp := get_viewport()
+	var mp := vp.get_mouse_position()
+	if vp.gui_get_hovered_control() != null:
+		return
+	var id := _unit_at(mp)
+	if id > 0:
+		hover_own = _can_command(id)
+		var v := sim.view_of(id)
+		if hover_own or (v != null and v.is_visible_in_tree()):
+			hover_unit = id
+	if not selected.is_empty() and hover_unit < 0:
+		hover_ground = ground_point(mp) if Engine.get_process_frames() % 2 == 0 else _last_hover_ground
+	_last_hover_ground = hover_ground
+
+
+func _rdrag_active() -> bool:
+	return rdrag_start != Vector2.INF
+
+
+func _rdrag_cancel() -> void:
+	var was := rdrag_on
+	_rdrag_reset()
+	if was:
+		_say("Placement cancelled")
+
+
+func _rdrag_reset() -> void:
+	rdrag_start = Vector2.INF
+	rdrag_on = false
+	rdrag_plan = {}
+	rdrag_cover = {}
+	rdrag_a = Vector3.INF
+	rdrag_b = Vector3.INF
+	_rdrag_plan_b = Vector3.INF
+	_rdrag_cover_b = Vector3.INF
+
+
+## Who a right-drag places: the selected squads, else the selected soldiers on their own.
+func _rdrag_who() -> Dictionary:
+	var sqs := selected_squads()
+	return {"squads": sqs, "loose": loose_selected() if sqs.is_empty() else []}
+
+
+## The frontage from the press point to the cursor, its facing (away from where the soldiers stand: the far side of a wall
+## they are sent behind) and the places. The cover search runs at most every 150 ms and only when the line changed; between
+## searches the plain spread along the line follows the cursor.
+func _update_rdrag(final: bool) -> void:
+	var b := ground_point(get_viewport().get_mouse_position())
+	if not b.is_finite() or not rdrag_a.is_finite():
+		return
+	rdrag_b = b
+	var who := _rdrag_who()
+	var ids: Array = []
+	for sid in who.squads:
+		ids.append_array(sim.squads._active_members(sim.state.get_squad(sid)))
+	ids.append_array(who.loose)
+	if ids.is_empty():
+		return
+	var c := Vector3.ZERO
+	for id in ids:
+		c += sim.state.get_unit(id).position
+	c /= ids.size()
+	var d := Vector3(rdrag_b.x - rdrag_a.x, 0.0, rdrag_b.z - rdrag_a.z)
+	var n := Vector3(-d.z, 0.0, d.x).normalized() if d.length() > 0.3 else Vector3.ZERO
+	var mid := (rdrag_a + rdrag_b) * 0.5
+	var away := Vector3(mid.x - c.x, 0.0, mid.z - c.z)
+	if n == Vector3.ZERO:
+		n = away.normalized()
+	elif away.dot(n) < 0.0:
+		n = -n
+	if n == Vector3.ZERO:
+		n = Vector3(-sin(rig.yaw), 0.0, -cos(rig.yaw))
+	rdrag_facing = n
+	var now := Time.get_ticks_msec()
+	var moved := not _rdrag_plan_b.is_finite() or _rdrag_plan_b.distance_to(rdrag_b) > 0.4
+	var cover_due := final or (now - _rdrag_plan_ms > 150 and (not _rdrag_cover_b.is_finite() or _rdrag_cover_b.distance_to(rdrag_b) > 0.4))
+	if not moved and not cover_due:
+		return
+	_rdrag_plan_b = rdrag_b
+	if cover_due:
+		_rdrag_plan_ms = now
+		_rdrag_cover_b = rdrag_b
+	rdrag_cover = {}
+	rdrag_plan = sim.squads.place_plan(who.squads, rdrag_a, rdrag_b, rdrag_facing, cover_due, rdrag_cover) if not who.squads.is_empty() else {}
+	if not who.loose.is_empty():
+		var places: Array = sim.tactics.pos.placement(who.loose.size(), rdrag_a, rdrag_b, rdrag_facing, cover_due)
+		for i in who.loose.size():
+			rdrag_plan[who.loose[i]] = (places[i] as Dictionary).p + Vector3.UP * 0.25
+			if bool(places[i].protected):
+				rdrag_cover[who.loose[i]] = true
+
+
+## Release of a right-drag: the soldiers go to the places of the preview (a final cover search first).
+func _finish_rdrag() -> int:
+	_update_rdrag(true)
+	var who := _rdrag_who()
+	var plan := rdrag_plan.duplicate()
+	var a := rdrag_a
+	var b := rdrag_b
+	var facing := rdrag_facing
+	var cover_n := rdrag_cover.size()
+	_rdrag_reset()
+	if plan.is_empty():
+		return 0
+	_player_takes(who.squads)
+	var pace := -1
+	if Input.is_key_pressed(KEY_CTRL):
+		pace = UnitState.Pace.SPRINT
+	elif Input.is_key_pressed(KEY_ALT):
+		pace = UnitState.Pace.WALK
+	var n := sim.squads.order_place(who.squads, a, b, facing, plan, pace) if not who.squads.is_empty() else 0
+	for id in who.loose:
+		if plan.has(id) and sim.state.issue_move(id, plan[id]):
+			sim.state.get_unit(id).post_pos = plan[id]
+			n += 1
+	if n > 0:
+		var mid := (a + b) * 0.5
+		last_order_target = mid
+		order_flash_pos = mid
+		order_flash_at = Time.get_ticks_msec()
+		var names := _names(who.squads) if not who.squads.is_empty() else "%d soldier%s" % [n, "" if n == 1 else "s"]
+		tactic_feedback = "Placed: %s along %.0f m, %d of %d in cover" % [names, SquadControl._flat(a, b), cover_n, plan.size()]
+		tactic_feedback_ok = true
+		_say(tactic_feedback)
+		order_issued.emit(n, mid)
+	return n
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -139,8 +305,26 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif event.shift_pressed and not selected_squads().is_empty():
 				# Shift + right click: move by bounds (one fire team covers while the other moves).
 				order_tactic(SquadState.Tactic.BOUND, tactic_target_at(event.position))
+			elif not selected.is_empty():
+				# GAMEPLAY-02 (controls): the order is given on release - a drag first lays out where the soldiers go.
+				_rdrag_reset()
+				rdrag_start = event.position
+				rdrag_a = ground_point(event.position)
+		elif event.button_index == MOUSE_BUTTON_RIGHT and not event.pressed and rdrag_start != Vector2.INF:
+			if rdrag_on:
+				_finish_rdrag()
 			else:
-				order_move_at(event.position)
+				var at := rdrag_start
+				_rdrag_reset()
+				if order_move_at(at) > 0:
+					order_flash_pos = last_order_target
+					order_flash_at = Time.get_ticks_msec()
+	elif event is InputEventMouseMotion and rdrag_start != Vector2.INF and event.button_mask & MOUSE_BUTTON_MASK_RIGHT:
+		if not rdrag_on and event.position.distance_to(rdrag_start) > rdrag_threshold_px and rdrag_a.is_finite() \
+				and (not selected_squads().is_empty() or not loose_selected().is_empty()):
+			rdrag_on = true
+		if rdrag_on:
+			_update_rdrag(false)
 	elif event is InputEventMouseMotion and drag_start != Vector2.INF and event.button_mask & MOUSE_BUTTON_MASK_LEFT:
 		drag_current = event.position
 		if drag_current.distance_to(drag_start) > drag_threshold_px:
@@ -197,8 +381,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				ids.append(u.id)
 		select(ids)
 	elif event.is_action_pressed("ui_cancel"):
-		# GAMEPLAY-01G: Esc cancels what is armed, then clears the selection; with nothing to cancel it is the in-game menu's
-		# (CoreDemo), so it is consumed only when it did something here.
+		# GAMEPLAY-01G: Esc cancels what is armed; with nothing to cancel it is the in-game menu's (CoreDemo), so it is consumed
+		# only when it did something here. GAMEPLAY-02 (controls): it no longer clears the selection first - with squads
+		# selected the menu did not open ("Esc sometimes does nothing"); a click on open ground deselects.
 		if follow_pick:
 			follow_pick = false
 			_say("Follow cancelled")
@@ -207,9 +392,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			armed_tactic = -1
 			_say("Tactical order cancelled")
 			get_viewport().set_input_as_handled()
-		elif not selected.is_empty() or selected_structure >= 0:
-			select([])
-			selected_structure = -1
+		elif _rdrag_active():
+			_rdrag_cancel()
 			get_viewport().set_input_as_handled()
 
 
