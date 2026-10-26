@@ -189,12 +189,42 @@ var conceal_on := true
 var concealment := Concealment.new()
 var conceal_base_s := 1.0
 var conceal_per_150m_s := 4.5
-var posture_notice_s: Array[float] = [0.0, 0.25, 0.8]
+## AI-COMBAT-02: seconds of observation per 100 m a target needs to be noticed by its shape alone (standing, crouched, prone).
+## COMBAT-01 had [0, 0.25, 0.8]: a man standing still on bare ground was noticed at once at any distance in the field of view.
+var posture_notice_s: Array[float] = [0.55, 1.2, 2.6]
 var notice_close_m := 15.0
-var notice_moving_mult := 0.45
+## A target moving at full walking speed (4.5 m/s, faster counts the same) is noticed in this fraction of the time.
+var notice_moving_mult := 0.4
+## A target that fired in the last 2.5 s: within notice_fire_near_m in this fraction, at notice_fire_far_m and beyond in
+## notice_firing_far_mult (the flash and the dust of a shot are seen close, a distant rifle mostly heard).
 var notice_firing_mult := 0.15
+var notice_firing_far_mult := 0.45
+var notice_fire_near_m := 80.0
+var notice_fire_far_m := 300.0
+## Looking where it was told / heard / suspected: only a target within notice_told_deg of that direction is noticed sooner.
 var notice_told_mult := 0.6
+var notice_told_deg := 20.0
+## AI-COMBAT-02: off the centre of the observer's attention (notice_centre_deg) up to notice_edge_mult times longer at the
+## edge of the field of view; each tree crown the sight line passes (thinner than a blocking stand) notice_foliage_mult more;
+## a suppressed observer up to notice_supp_mult (at full suppression) longer; a walking observer notice_moving_obs_mult.
+var notice_centre_deg := 25.0
+var notice_edge_mult := 2.2
+var notice_foliage_mult := 0.6
+var notice_supp_mult := 1.5
+var notice_moving_obs_mult := 1.3
+## A target seen in the last notice_recall_s is picked up again at once - AI-COMBAT-02: only near where it was last seen
+## (recall_slack_m + recall_speed_ms per second of absence); one that moved away has to be found again.
 var notice_recall_s := 12.0
+var recall_slack_m := 6.0
+var recall_speed_ms := 2.0
+## AI-COMBAT-02 suspicion: a target in view for suspect_frac of the time it needs makes the soldier look at the place (blurred
+## by suspect_blur of the distance) - he turns to it before he has seen anyone; the look also speeds noticing (told).
+var suspect_frac := 0.4
+var suspect_blur := 0.06
+var suspicions := 0
+## AI-COMBAT-02: heard gunfire gives a bearing, not a point: the place an idle soldier turns to is off by up to heard_blur of
+## the distance sideways (the faction's report keeps its own wide blur, IntelSim.report_heard).
+var heard_blur := 0.12
 ## Posture choice of the AI (COMBAT-01): crouch in cover and when alert, prone when pinned in the open or when a machine gun
 ## / marksman rifle engages from prone_engage_m; each choice is kept posture_hold_s at least (prone longer).
 var posture_ai := true
@@ -276,6 +306,38 @@ func _init(p_sim: WorldSim) -> void:
 	sim = p_sim
 	_apply_aim_args(OS.get_cmdline_user_args())
 	conceal_on = not "--no-concealment" in OS.get_cmdline_user_args()
+	if "--legacy-perception" in OS.get_cmdline_user_args():
+		legacy_perception(true)
+	firing_moves = not "--no-stalemate" in OS.get_cmdline_user_args()
+
+
+## AI-COMBAT-02 comparison switch (`--legacy-perception`, tests): the COMBAT-01 noticing rule - shape-only delays [0, 0.25, 0.8] s
+## per 100 m, no field-of-view, foliage, observer or suspicion terms, recall anywhere, the old movement and firing factors.
+## Difficulty still applies (tests set HARD for the old aim).
+var _perception_now := {}
+
+
+func legacy_perception(on: bool) -> void:
+	var keys := ["posture_notice_s", "notice_moving_mult", "notice_firing_far_mult", "notice_edge_mult", "notice_foliage_mult",
+		"notice_supp_mult", "notice_moving_obs_mult", "notice_told_deg", "suspect_frac", "recall_slack_m"]
+	if on:
+		if _perception_now.is_empty():
+			for k: String in keys:
+				_perception_now[k] = get(k)
+		var old: Array[float] = [0.0, 0.25, 0.8]
+		posture_notice_s = old
+		notice_moving_mult = 0.45
+		notice_firing_far_mult = notice_firing_mult
+		notice_edge_mult = 1.0
+		notice_foliage_mult = 0.0
+		notice_supp_mult = 1.0
+		notice_moving_obs_mult = 1.0
+		notice_told_deg = 180.0
+		suspect_frac = 1000.0
+		recall_slack_m = 1.0e6
+	elif not _perception_now.is_empty():
+		for k: String in _perception_now:
+			set(k, _perception_now[k])
 
 
 ## GAMEPLAY-05B aim profiles (the distance growth of the aim error and the suppression penalty). "g05b" is the game's; "g04" is
@@ -458,7 +520,9 @@ func _perceive(u: UnitState, budget: int) -> int:
 					hd = d
 					heard = r[0]
 		if heard.is_finite():
-			_watch(u, heard, 5.0)
+			# AI-COMBAT-02: a bearing, not the shooter's point.
+			var side := Vector3(-(heard.z - u.position.z), 0.0, heard.x - u.position.x).normalized()
+			_watch(u, heard + side * (_rand(u, 29) * 2.0 - 1.0) * heard_blur * hd, 5.0)
 			# AI-INTEL-01: the faction hears it too, without learning who or exactly where.
 			if sim.war != null and sim.war.enabled:
 				sim.war.intel.report_heard(u, heard, hd)
@@ -505,7 +569,7 @@ func _perceive(u: UnitState, budget: int) -> int:
 		tried += 1
 		var s := _see(eye, c, 1.55)
 		used += s.checks
-		if s.visible and _noticed(u, c, now):
+		if s.visible and _noticed(u, c, now, int(s.foliage)):
 			if crowded == null and not cur_visible and c.target_id != u.id and int(_aimers.get(c.id, 0)) >= crowd_n:
 				crowded = c
 				crowded_aim = s.aim_y
@@ -526,7 +590,7 @@ func _perceive(u: UnitState, budget: int) -> int:
 		u.target_seen_at = now
 		u.target_last_pos = cur.position
 		u.target_visible = true
-		_remember_seen(u, cur.id, now)
+		_remember_seen(u, cur.id, now, cur.position)
 		_report_seen(u, cur)
 	elif cur:
 		u.target_visible = false
@@ -600,12 +664,13 @@ func _see(eye: Vector3, t: UnitState, first_y: float) -> Dictionary:
 				sight_usec += Time.get_ticks_usec() - t1
 				sight_checks += 1
 				checks += 1
-				return {"visible": true, "aim_y": 1.1 if r2.visible else 1.55, "checks": checks, "blocker": ""}
-			return {"visible": true, "aim_y": y, "checks": checks, "blocker": ""}
+				return {"visible": true, "aim_y": 1.1 if r2.visible else 1.55, "checks": checks, "blocker": "",
+					"foliage": mini(int(r.foliage), int(r2.foliage)) if r2.visible else int(r.foliage)}
+			return {"visible": true, "aim_y": y, "checks": checks, "blocker": "", "foliage": int(r.foliage)}
 		blocker = r.blocker
 		if r.blocker == "terrain" and y > 1.3:
 			break  # the head is under the horizon: the torso is too
-	return {"visible": false, "aim_y": first_y, "checks": checks, "blocker": blocker}
+	return {"visible": false, "aim_y": first_y, "checks": checks, "blocker": blocker, "foliage": 0}
 
 
 ## COMBAT-01: a candidate the soldier can see is noticed once it has been in view for acquire_delay in total: every
@@ -615,9 +680,9 @@ var notice_glimpse_s := 0.5
 var notice_forget_s := 6.0
 
 
-func _noticed(u: UnitState, t: UnitState, now: float) -> bool:
+func _noticed(u: UnitState, t: UnitState, now: float, foliage := 0) -> bool:
 	var seen: Dictionary = _spot.get(u.id, {})
-	var e: Array = seen.get(t.id, [0.0, now, -INF])
+	var e: Array = seen.get(t.id, [0.0, now, -INF, Vector3.INF])
 	var gap := now - float(e[1])
 	if gap > notice_forget_s:
 		e[0] = 0.0
@@ -625,17 +690,31 @@ func _noticed(u: UnitState, t: UnitState, now: float) -> bool:
 	e[1] = now
 	seen[t.id] = e
 	_spot[u.id] = seen
-	if now - float(e[2]) <= notice_recall_s:
+	# AI-COMBAT-02: picked up again at once only near where it was last seen, within the (difficulty's) recall time.
+	var since := now - float(e[2])
+	var last: Vector3 = e[3]
+	if since <= notice_recall_s / _diff(u, "regain") and (not last.is_finite() or _flat(t.position, last) <= recall_slack_m + recall_speed_ms * since):
 		return true
-	if float(e[0]) >= acquire_delay(u, t, now):
+	var need := acquire_delay(u, t, now, foliage)
+	if float(e[0]) >= need:
 		return true
 	notice_waits += 1
+	# Suspicion: something there - the soldier turns to look (not at the man: at a blurred place) before he has seen anyone.
+	if u.target_id < 0 and float(e[0]) >= need * suspect_frac and (u.watch_until < now or is_nan(u.watch_yaw)):
+		var d := _flat(u.position, t.position)
+		var side := Vector3(-(t.position.z - u.position.z), 0.0, t.position.x - u.position.x).normalized()
+		_watch(u, t.position + side * (_rand(u, 23 + t.id % 7) * 2.0 - 1.0) * suspect_blur * d, 4.0)
+		suspicions += 1
+		_event(u, "suspects movement at %.0f m" % d)
 	return false
 
 
 ## How long a soldier needs to notice t, which it can see (s): grass at t against t's height, the distance, t's posture,
 ## movement and fire. Concealment.grass_height is a cached map lookup; no sight line is added.
-func acquire_delay(u: UnitState, t: UnitState, now: float) -> float:
+## AI-COMBAT-02: also the target's shape at a distance (posture_notice_s), where it stands in the observer's field of view, the
+## tree crowns the sight line passes (`foliage`, from the sight check already made), the observer's own movement and
+## suppression, and the difficulty (Difficulty "spot", for soldiers hostile to the player).
+func acquire_delay(u: UnitState, t: UnitState, now: float, foliage := 0) -> float:
 	if not conceal_on:
 		return 0.0
 	var d := _flat(u.position, t.position)
@@ -645,25 +724,39 @@ func acquire_delay(u: UnitState, t: UnitState, now: float) -> float:
 	var hidden := smoothstep(0.08, 0.75, concealment.grass_height(t.position) / maxf(top, 0.1))
 	var delay := hidden * (conceal_base_s + conceal_per_150m_s * minf(d / 150.0, 1.5)) + posture_notice_s[Posture.current(t, now)] * d / 100.0
 	delay *= clampf((d - notice_close_m) / 15.0, 0.0, 1.0)
-	if Vector2(t.velocity.x, t.velocity.z).length() > 0.5:
-		delay *= notice_moving_mult
+	delay *= 1.0 + notice_foliage_mult * foliage
+	# Where it is in the observer's field of view: in the centre of his attention at once, at the edge much later.
+	var bearing := atan2(-(t.position.x - u.position.x), -(t.position.z - u.position.z))
+	if d > awareness_m:
+		var off := rad_to_deg(absf(angle_difference(look_yaw(u), bearing)))
+		delay *= lerpf(1.0, notice_edge_mult, clampf((off - notice_centre_deg) / maxf(fov_deg * 0.5 - notice_centre_deg, 1.0), 0.0, 1.0))
+	var speed := Vector2(t.velocity.x, t.velocity.z).length()
+	delay *= lerpf(1.0, notice_moving_mult, clampf(speed / 4.5, 0.0, 1.0))
 	if now - t.last_shot_at < 2.5:
-		delay *= notice_firing_mult
-	elif u.watch_until >= now:
+		delay *= lerpf(notice_firing_mult, notice_firing_far_mult, clampf((d - notice_fire_near_m) / (notice_fire_far_m - notice_fire_near_m), 0.0, 1.0))
+	elif u.watch_until >= now and not is_nan(u.watch_yaw) and rad_to_deg(absf(angle_difference(u.watch_yaw, bearing))) <= notice_told_deg:
 		delay *= notice_told_mult
-	return delay
+	if Vector2(u.velocity.x, u.velocity.z).length() > 1.0:
+		delay *= notice_moving_obs_mult
+	delay *= 1.0 + (notice_supp_mult - 1.0) * u.suppression_at(now)
+	return delay * _diff(u, "spot")
+
+
+## AI-COMBAT-02: the difficulty multiplier `key` for soldier u (Difficulty: full for soldiers hostile to the player).
+func _diff(u: UnitState, key: String) -> float:
+	return Difficulty.mult(key, u.faction, sim.state.war.player_faction if sim.state.war else 0)
 
 
 func _acquire(u: UnitState, t: UnitState, aim_y: float) -> void:
 	var now := sim.state.time
-	_remember_seen(u, t.id, now)
+	_remember_seen(u, t.id, now, t.position)
 	if t.id != u.target_id:
 		if u.target_id > 0:
 			target_switches += 1
 		acquisitions += 1
 		u.target_id = t.id
 		var d := _flat(u.position, t.position)
-		u.aim_ready_at = now + reaction_s + reaction_per_100m_s * d / 100.0 + suppression_acquire_s * u.suppression_at(now)
+		u.aim_ready_at = now + (reaction_s + reaction_per_100m_s * d / 100.0) * _diff(u, "react") + suppression_acquire_s * u.suppression_at(now)
 		u.aim_since = now
 		u.burst_left = 0
 		_event(u, "sees %s at %.0f m" % [t.unit_name, d])
@@ -679,9 +772,9 @@ func _acquire(u: UnitState, t: UnitState, aim_y: float) -> void:
 	_report_seen(u, t)
 
 
-func _remember_seen(u: UnitState, tid: int, now: float) -> void:
+func _remember_seen(u: UnitState, tid: int, now: float, at := Vector3.INF) -> void:
 	var seen: Dictionary = _spot.get(u.id, {})
-	seen[tid] = [0.0, now, now]
+	seen[tid] = [0.0, now, now, at]
 	_spot[u.id] = seen
 
 
@@ -735,7 +828,9 @@ func _share_contact(u: UnitState, t: UnitState) -> void:
 	for id in sq.members:
 		var m := sim.state.get_unit(id)
 		if m and m != u and m.target_id < 0 and not m.player_controlled and _flat(m.position, u.position) <= contact_share_m:
-			_watch(m, t.position, 6.0)
+			# AI-COMBAT-02: told roughly where ("by the barn"), not shown the man - they still have to find him themselves.
+			var side := Vector3(-(t.position.z - m.position.z), 0.0, t.position.x - m.position.x).normalized()
+			_watch(m, t.position + side * (_rand(m, 31) * 2.0 - 1.0) * suspect_blur * _flat(m.position, t.position), 6.0)
 
 
 func _watch(u: UnitState, at: Vector3, seconds: float) -> void:
@@ -782,8 +877,8 @@ func _on_shot(shot: Dictionary) -> void:
 				if miss <= miss_m and not u.player_controlled:
 					_under_fire(u, origin)
 					# AI-SQUAD-01: the closer it passes, the more it suppresses; a hit is
-					# counted by _on_damaged.
-					u.add_suppression(per_shot * (1.0 - 0.7 * miss / miss_m), sim.state.time)
+					# counted by _on_damaged. AI-COMBAT-02: x the difficulty's suppression weight.
+					u.add_suppression(per_shot * (1.0 - 0.7 * miss / miss_m) * _diff(u, "supp"), sim.state.time)
 					suppression_events += 1
 	prof.shot_events += Time.get_ticks_usec() - t0
 
@@ -802,12 +897,13 @@ func _on_damaged(t: UnitState, _amount: float, _zone: int, source_id: int) -> vo
 	var s := sim.state.get_unit(source_id)
 	if not enabled or s == null or not t.alive or t.player_controlled:
 		return
-	if t.target_id < 0 or not t.target_visible:
-		_watch(t, s.position, 5.0)
 	if tactics_enabled and s.faction != t.faction:
 		t.hit_at = sim.state.time
-		t.add_suppression(suppression_per_hit, sim.state.time)
+		t.add_suppression(suppression_per_hit * _diff(t, "supp"), sim.state.time)
 		_under_fire(t, CombatSim.eye_of(s))
+	# AI-COMBAT-02: towards where the fire came from as he can tell (the blurred threat), not the shooter's exact position.
+	if t.target_id < 0 or not t.target_visible:
+		_watch(t, t.threat_pos if t.threat_pos.is_finite() else s.position, 5.0)
 
 
 ## Under fire: the soldier knows roughly where from (the shooter's position, blurred by a
@@ -1088,12 +1184,17 @@ func _tactics(u: UnitState) -> void:
 				else:
 					u.cover_note = "calm"
 					_end_reaction(u, 2.0)
-			elif now - u.cover_checked_at >= recheck_s and u.threat_pos.is_finite():
+			elif now - u.cover_checked_at >= recheck_s and u.threat_pos.is_finite() and not _searches.has(u.id):
 				u.cover_checked_at = now
 				var ev := _evaluate_spot(u, u.position, u.threat_pos)
 				if not ev.protected and now - u.tactic_since >= min_dwell_s:
 					u.cover_note = "cover no longer protects: looking again"
 					_end_reaction(u, 0.0)
+				elif ev.protected and not ev.can_fire and _wants_firing_spot(u, now):
+					# AI-COMBAT-02: safe but useless - full cover with no line to the enemy, nobody in sight for a while: a short
+					# move to nearby cover he can fire from (he keeps this cover when there is none).
+					_fire_retry[u.id] = now + fire_retry_s
+					_start_search(u, mode, true)
 		UnitState.Tactic.RETURNING:
 			if not u.is_reacting() or u.react_state != UnitState.ReactState.MOVING:
 				u.clear_reaction()
@@ -1287,7 +1388,26 @@ func _is_bad(u: UnitState, p: Vector3) -> bool:
 	return bad
 
 
-func _start_search(u: UnitState, mode: String) -> void:
+## AI-COMBAT-02: a soldier in full cover without a line of fire looks for cover he can fire from after fire_retry_s in cover
+## with no enemy in sight for fire_blind_s, not suppressed, at most once per fire_retry_s; the search excludes his own spot.
+var fire_retry_s := 25.0
+var fire_blind_s := 10.0
+var fire_moves := 0
+var _fire_retry := {}
+## `--no-stalemate`: no such moves (and no squad stalemate shifts, SquadTactics.stalemate_on) - comparison runs.
+var firing_moves := true
+
+
+func _wants_firing_spot(u: UnitState, now: float) -> bool:
+	if not firing_moves or now < float(_fire_retry.get(u.id, 0.0)) or now - u.tactic_since < min_dwell_s * 2.0 or u.suppression_at(now) >= suppressed_at:
+		return false
+	if u.target_id > 0 and now - u.target_seen_at < fire_blind_s:
+		return false
+	var sq := sim.state.squad_of(u.id)
+	return sq == null or sq.roe != SquadState.Roe.HOLD_FIRE
+
+
+func _start_search(u: UnitState, mode: String, need_fire := false) -> void:
 	var center := u.position
 	var radius := cover_radius_hold
 	var limit := INF
@@ -1321,9 +1441,18 @@ func _start_search(u: UnitState, mode: String) -> void:
 	if cands.is_empty():
 		u.cover_note = "waiting for vegetation data"
 		return
+	if need_fire:
+		# Somewhere else: his own spot and the ones within a metre of it are what he is leaving.
+		cands = cands.filter(func(c: Dictionary) -> bool: return c.kind != "here" and _flat(c.p, u.position) > 1.5)
+		if cands.is_empty():
+			u.cover_note = "no other cover near: stays (no line of fire)"
+			return
 	cover_searches += 1
 	_searches[u.id] = {"cands": cands, "i": 0, "accepted": [],
-		"mode": mode, "limit": limit, "threat": u.threat_pos, "rejects": {}}
+		"mode": mode, "limit": limit, "threat": u.threat_pos, "rejects": {}, "need_fire": need_fire}
+	if need_fire:
+		u.cover_note = "no line of fire: looking for a firing position (%s, %.0f m)" % [mode, radius]
+		return  # keeps his cover (IN_COVER) until a better spot is found
 	u.tactic = UnitState.Tactic.SEEK_COVER
 	u.tactic_since = sim.state.time
 	u.cover_note = "looking for cover (%s, %.0f m)" % [mode, radius]
@@ -1354,6 +1483,9 @@ func _search_step() -> void:
 			var ev := _evaluate_spot(u, c.p, s.threat)
 			if not ev.protected:
 				s.rejects["no protection from the threat"] = s.rejects.get("no protection from the threat", 0) + 1
+				continue
+			if bool(s.get("need_fire", false)) and not ev.can_fire:
+				s.rejects["no line of fire either"] = s.rejects.get("no line of fire either", 0) + 1
 				continue
 			c["can_fire"] = ev.can_fire
 			c["score"] = _cover_score(u, c, ev)
@@ -1389,6 +1521,9 @@ func _finish_search(u: UnitState, s: Dictionary) -> void:
 		u.cover_note = "%s: %s %.0f m (%s)" % ["staying" if c.kind == "here" else "cover", c.kind, c.d,
 			"can fire" if c.can_fire else "full cover"]
 		_event(u, u.cover_note)
+		if bool(s.get("need_fire", false)):
+			fire_moves += 1
+			u.cover_note = "moves to a firing position %.0f m (%s): no line of fire from his cover" % [c.d, c.kind]
 		return
 	cover_none += 1
 	var rej: Dictionary = s.rejects
@@ -1398,6 +1533,9 @@ func _finish_search(u: UnitState, s: Dictionary) -> void:
 		if rej[k] > most:
 			most = rej[k]
 			top = k
+	if bool(s.get("need_fire", false)):
+		u.cover_note = "no firing position with cover near (%s): stays in cover" % (top if top != "" else "no candidates")
+		return
 	u.cover_note = "no usable cover within %s (%s)" % [s.mode, top if top != "" else "no candidates"]
 	u.tactic = UnitState.Tactic.NONE
 	u.tactic_cooldown_until = now + 4.0
@@ -1943,7 +2081,7 @@ func _aim_error(u: UnitState, dir: Vector3, dist: float) -> Vector3:
 	var sigma := (aim_error_base_deg + aim_error_per_100m_deg * dist / 100.0) * lerpf(1.0, settle, 0.5) \
 			+ aim_error_moving_deg * clampf(speed / 4.5, 0.0, 1.0) * (wdef.moving_aim_mult if wdef else 1.0)
 	# GAMEPLAY-04C: a fresh aim is rougher and settles with time on the target; a better soldier aims tighter and settles sooner.
-	sigma *= aim_settle_mult(u, wdef) * proficiency_mult(u)
+	sigma *= aim_settle_mult(u, wdef) * proficiency_mult(u) * _diff(u, "aim")
 	sigma *= 1.0 + suppression_aim_mult * u.suppression_at(sim.state.time)
 	# COMBAT-01: crouched a little steadier, prone much steadier.
 	sigma *= Posture.steady(u)

@@ -39,6 +39,8 @@ var lost_conf := 0.12
 var id_window_s := 30.0
 var unc_cap := 800.0
 var heard_strength := 2
+## AI-COMBAT-02: how far off a reported sighting may be, as a share of the observer's distance (per axis).
+var seen_blur := 0.03
 var max_pending := 600
 ## Time constant of the confidence decay (s) and confidence at the moment of evidence, per
 ## ContactState.Source (seen, fire, heard, objective).
@@ -127,7 +129,13 @@ func _report_seen(o: UnitState, t: UnitState, group := 1) -> void:
 	var d := WarSim._flat(o.position, t.position)
 	var kind := ContactState.Kind.VEHICLE if t.kind == UnitState.Kind.VEHICLE else ContactState.Kind.INFANTRY
 	var est := clampi(roundi(group * (0.8 + 0.4 * float((o.id * 131 + t.id * 17) % 100) / 100.0)), 1, 40)
-	_queue(o.faction, t.faction, kind, ContactState.Source.SEEN, t.position, t.id, 6.0 + d * 0.04, est, o.unit_name, now, report_delay_s)
+	# AI-COMBAT-02: a sighting passed on by word is a place ("by the second barn"), not a grid point: off by up to seen_blur of
+	# the distance (seeded per observer, target and few seconds), inside the report's uncertainty.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([_state().world_seed, o.id, t.id, int(now / 5.0), 53])
+	var off := d * seen_blur
+	var p := t.position + Vector3(rng.randf_range(-off, off), 0.0, rng.randf_range(-off, off))
+	_queue(o.faction, t.faction, kind, ContactState.Source.SEEN, p, t.id, 6.0 + d * 0.04, est, o.unit_name, now, report_delay_s)
 
 
 ## A soldier comes under fire from roughly `from` (already blurred by the caller).

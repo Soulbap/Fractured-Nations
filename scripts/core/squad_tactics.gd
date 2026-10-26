@@ -65,6 +65,25 @@ var flank_max_detour := 2.3
 ## A flank must expose the maneuver team this much less than going straight in.
 var flank_gain := 0.2
 var reposition_cooldown_s := 25.0
+## AI-COMBAT-02 stalemate: a defence in contact whose soldiers have hardly been able to fire at anyone (the share of the squad
+## engaging a seen enemy, averaged over fire_share_tau_s) stays below stall_fire_share for stall_hold_s shifts sideways
+## (shift_m) to a firing angle, keeping the soldiers who can fire; a garrison / a stationed defence (a prepared defence: holding
+## is its job) only when nearly nobody can fire (stall_fire_share_bound) for stall_hold_bound_s, inside its area. An AI squad of
+## its own command that is clearly the stronger side tries a limited flank first (initiative_*). Never a defence the player
+## ordered, holds or placed. Derived each step; only the reposition / flank itself is saved (as any tactic).
+var fire_share_tau_s := 15.0
+var stall_fire_share := 0.25
+var stall_hold_s := 25.0
+var stall_fire_share_bound := 0.12
+var stall_hold_bound_s := 40.0
+var shift_m := 20.0
+var initiative_eff := 0.6
+var initiative_ratio := 0.75
+var initiative_conf := 0.5
+var stalemates := 0
+var initiative_flanks := 0
+## `--no-stalemate`: defences never shift or flank for a stalemate (comparison runs).
+var stalemate_on := not "--no-stalemate" in OS.get_cmdline_user_args()
 ## COMBAT-01: most of a squad pinned with nobody firing back for this long is a hopeless position (local withdrawal).
 var pinned_hopeless_s := 8.0
 ## COMBAT-01: an advance that loses this many soldiers while gaining less than stall_gain_m in stall_window_s has stalled.
@@ -939,6 +958,15 @@ func _plan(sq: SquadState, a: Dictionary, tactic: int, target: Vector3, _owner: 
 			var dir := _dir_to(centre, threat) if threat.is_finite() else _dir_from_yaw(sq.order_yaw)
 			var look: Vector3 = threat if threat.is_finite() and _flat(centre, threat) < 300.0 else Vector3.INF
 			var slot_r := minf(BaseSim.reach_of(gb), 170.0) if not gb.is_empty() else fort_radius_m
+			if player_placed(sq) and gb.is_empty():
+				# AI-COMBAT-02: the places the player gave are the posts (each soldier keeps his own).
+				var own: Array = []
+				for u: UnitState in units:
+					if sq.placed.has(u.id):
+						own.append({"p": sq.placed[u.id], "protected": false, "unit": u.id})
+				if own.size() == units.size():
+					return {"ok": true, "tactic": tactic, "target": centre, "dir": dir, "posts": own, "commit": 10.0, "placed": true,
+						"why": "defend the places you gave (%d soldiers)%s" % [own.size(), "" if not threat.is_finite() else ", threat %s %.0f m" % [a.threat_src, _flat(centre, threat)]]}
 			var posts := _defend_posts(sq, units, centre, dir, look, slot_r, gb.get("anchor", Vector3.INF))
 			var covered := 0
 			var forts := 0
@@ -995,23 +1023,32 @@ func _plan(sq: SquadState, a: Dictionary, tactic: int, target: Vector3, _owner: 
 				var plans: Array = []
 				var rejected: Array[String] = []
 				var man := _units(sq, 1)
+				# AI-COMBAT-02: a wide and a tight flank on each side (a small squad's limited lateral move often has the better ground),
+				# each credited with the cover waiting at its staging point (WORLD-COVER / WORLD-DETAIL walls, bales, rocks).
 				for side: int in [-1, 1]:
-					var fp := pos.plan_flank(c, target, side, flank_lateral_m, man[0].id if not man.is_empty() else -1)
-					if fp.ok:
-						plans.append(fp)
-					else:
-						rejected.append(fp.reason)
-				plans.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return x.exposure + (x.detour - 1.0) * 0.15 < y.exposure + (y.detour - 1.0) * 0.15)
+					for lat: float in [flank_lateral_m, flank_lateral_m * 0.6]:
+						var fp := pos.plan_flank(c, target, side, lat, man[0].id if not man.is_empty() else -1)
+						if fp.ok:
+							fp["cover"] = _stage_cover(fp.points[-1], target)
+							if lat < flank_lateral_m:
+								fp["name"] = "%s (tight)" % fp.name
+							plans.append(fp)
+						elif lat == flank_lateral_m:
+							rejected.append(fp.reason)
+				plans.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return _flank_cost(x) < _flank_cost(y))
 				if not plans.is_empty():
 					var p0: Dictionary = plans[0]
 					# COMBAT-POLISH-01: an ordered flank (player, operation) is carried out over open ground too when it is no more
 					# exposed than going straight in (on open ground every route is seen; the flank still comes from the side). A flank
 					# the squad would choose itself instead of an assault must be clearly safer.
-					var viable: bool = p0.detour <= flank_max_detour and (p0.exposure <= 0.55 or want_flank) \
-							and (p0.exposure <= frontal - flank_gain or (want_flank and p0.exposure <= frontal + 0.05))
+					# AI-COMBAT-02: cover at the staging point lets a little more exposure on the way pay off (the team arrives into
+					# protected firing positions beside the enemy, not onto open ground).
+					var cover_ok := int(p0.get("cover", 0)) >= 3
+					var viable: bool = p0.detour <= flank_max_detour and (p0.exposure <= (0.62 if cover_ok else 0.55) or want_flank) \
+							and (p0.exposure <= frontal - (flank_gain * 0.6 if cover_ok else flank_gain) or (want_flank and p0.exposure <= frontal + 0.05))
 					if viable and (want_flank or frontal >= 0.4):
 						best = p0
-						report = "flank %s: exposure %d%% against %d%% straight in, %.0f m route (%.1fx the direct way)" % [p0.name, roundi(p0.exposure * 100.0), roundi(frontal * 100.0), p0.length, p0.detour]
+						report = "flank %s: exposure %d%% against %d%% straight in, %.0f m route (%.1fx the direct way), %d cover spots at the end" % [p0.name, roundi(p0.exposure * 100.0), roundi(frontal * 100.0), p0.length, p0.detour, int(p0.get("cover", 0))]
 					else:
 						rejected.append("flank %s not worth it: exposure %d%% against %d%% straight in, detour %.1fx" % [p0.name, roundi(p0.exposure * 100.0), roundi(frontal * 100.0), p0.detour])
 				if best.is_empty():
@@ -1050,7 +1087,13 @@ func _enter(sq: SquadState, a: Dictionary, plan: Dictionary) -> void:
 	match sq.tactic:
 		SquadState.Tactic.DEFEND:
 			_set_roles(sq, SquadState.TeamRole.SUPPORT, SquadState.TeamRole.SECURITY)
-			_send_posts(sq, _units(sq), plan.posts, sq.tactic_dir)
+			if bool(plan.get("placed", false)):
+				for u: UnitState in _units(sq):
+					u.post_pos = sq.placed.get(u.id, u.post_pos)
+					if u.post_pos.is_finite() and _flat(u.position, u.post_pos) > 1.2 and not u.is_reacting():
+						sim.state.issue_move(u.id, u.post_pos, true)
+			else:
+				_send_posts(sq, _units(sq), plan.posts, sq.tactic_dir)
 		SquadState.Tactic.SUPPRESS:
 			_set_roles(sq, SquadState.TeamRole.SUPPORT, SquadState.TeamRole.SUPPORT)
 			_send_posts(sq, _units(sq), plan.posts, sq.tactic_dir)
@@ -2012,13 +2055,76 @@ func _run_defend(sq: SquadState, a: Dictionary, now: float) -> void:
 		else:
 			sq.tactic_rejected = "withdraw considered (effectiveness %.2f) but the player ordered %s" % [a.eff, "the defence" if sq.tactic_owner == SquadState.Owner.PLAYER else "the squad to hold here"]
 	# A threat that shows nowhere near the posts: look for better ones.
-	if now - sq.tactic_phase_since >= 10.0:
+	_track_fire_share(sq, a, now)
+	# AI-COMBAT-02: places the player gave are not re-planned by the squad.
+	if now - sq.tactic_phase_since >= 10.0 and not player_placed(sq):
 		var why := _bad_posts(sq, a, now)
 		if why != "":
 			_reposition(sq, a, why, now)
 			return
+		# AI-COMBAT-02: safe but useless posts - shift for an angle, or (an AI squad of its own, clearly stronger) flank.
+		var stall := _stalemate(sq, a, now)
+		if stall != "":
+			if _initiative(sq, a, stall, now):
+				stalemates += 1
+				return
+			_reposition(sq, a, stall, now, true)
+			if sq.tactic == SquadState.Tactic.REPOSITION:
+				stalemates += 1
+				_set_meta(sq, "fire_share", 0.5)
+				return
 	if sq.tactic_owner == SquadState.Owner.SQUAD and sq.garrison_base < 0 and not a.in_contact and now - float(_seen_at.get(sq.id, sq.tactic_since)) > calm_end_s and now - sq.tactic_since > calm_end_s:
 		_finish(sq, "no contact for %.0f s" % calm_end_s, SquadState.Tactic.REGROUP)
+
+
+## AI-COMBAT-02: the share of the squad engaging an enemy it sees right now, averaged over fire_share_tau_s (runtime meta).
+func _track_fire_share(sq: SquadState, a: Dictionary, now: float) -> void:
+	var share := float(a.engaged) / maxf(float(a.n), 1.0)
+	var t0 := float(_meta(sq, "fire_share_t", now))
+	var k := 1.0 - exp(-maxf(now - t0, 0.0) / fire_share_tau_s)
+	_set_meta(sq, "fire_share", lerpf(float(_meta(sq, "fire_share", 0.5)), share, k))
+	_set_meta(sq, "fire_share_t", now)
+
+
+## AI-COMBAT-02: why this defence is a stalemate worth breaking ("" when it is not): in contact with a believed enemy within
+## rifle range, holding its posts long enough, most of the squad unable to fire at him and not pinned down (a pinned squad has
+## its own rules). Not a defence the player owns, holds or placed - his line is his decision.
+func _stalemate(sq: SquadState, a: Dictionary, now: float) -> String:
+	if not stalemate_on or sq.tactic_owner == SquadState.Owner.PLAYER or player_hold(sq) or not a.in_contact or sq.defence_line > 0:
+		return ""
+	var threat: Vector3 = a.threat_pos
+	if not threat.is_finite() or float(a.threat_conf) < 0.4 or float(a.dist) > 350.0 or float(a.dist) < 25.0:
+		return ""
+	if int(a.pinned) * 2 >= int(a.n):
+		return ""
+	var bound := sq.garrison_base >= 0 or sq.station_objective >= 0
+	var hold_s := stall_hold_bound_s if bound else stall_hold_s
+	var share_max := stall_fire_share_bound if bound else stall_fire_share
+	var share := float(_meta(sq, "fire_share", 0.5))
+	if now - sq.tactic_phase_since < hold_s or share >= share_max:
+		return ""
+	return "stalemate: %d%% of the squad could fire at the enemy over %.0f s (%s %.0f m)" % [roundi(share * 100.0), now - sq.tactic_phase_since, a.threat_src, a.dist]
+
+
+## AI-COMBAT-02 initiative: an AI faction's squad defending on its own command (not a garrison, not stationed, not in an
+## operation) that is clearly the stronger side and knows where the enemy is tries a limited flank round him; refused (no safe
+## route, see _plan) it is not tried again for a minute. Player squads never attack on their own.
+func _initiative(sq: SquadState, a: Dictionary, why: String, now: float) -> bool:
+	if _player_squad(sq) or sq.tactic_owner != SquadState.Owner.SQUAD or sq.garrison_base >= 0 or sq.station_objective >= 0 or sq.op_id >= 0:
+		return false
+	if sq.teams.size() < 2 or float(a.eff) < initiative_eff or float(a.enemy_est) > float(a.n) * initiative_ratio:
+		return false
+	var c: ContactState = a.contact
+	if c == null or c.conf < initiative_conf or float(a.dist) < 70.0 or float(a.dist) > 300.0:
+		return false
+	if now < float(_meta(sq, "failed_%d" % SquadState.Tactic.FLANK, 0.0)):
+		return false
+	var res := start(sq, SquadState.Tactic.FLANK, SquadState.Owner.SQUAD, c.pos, c.id, why + "; stronger (%d against ~%.0f): flank" % [int(a.n), float(a.enemy_est)])
+	if not res.ok:
+		_set_meta(sq, "failed_%d" % SquadState.Tactic.FLANK, now + 60.0)
+		return false
+	initiative_flanks += 1
+	return true
 
 
 ## Why the posts are no good any more ("" when they are): the squad is under fire but nobody has
@@ -2057,7 +2163,7 @@ func _bad_posts(sq: SquadState, a: Dictionary, now: float) -> String:
 	return ""
 
 
-func _reposition(sq: SquadState, a: Dictionary, why: String, now: float) -> void:
+func _reposition(sq: SquadState, a: Dictionary, why: String, now: float, shift := false) -> void:
 	var list: Array = _repos.get(sq.id, [])
 	list = list.filter(func(t: float) -> bool: return now - t < 120.0)
 	if list.size() >= reposition_limit or (not list.is_empty() and now - float(list[-1]) < reposition_cooldown_s):
@@ -2068,6 +2174,14 @@ func _reposition(sq: SquadState, a: Dictionary, why: String, now: float) -> void
 	_repos[sq.id] = list
 	var centre: Vector3 = sq.tactic_target
 	var threat: Vector3 = a.threat_pos
+	if shift and threat.is_finite():
+		# AI-COMBAT-02: the defence moves its centre sideways to the side that sees the threat (the old posts are avoided).
+		var c2 := _shift_centre(sq, centre, threat)
+		if not c2.is_finite():
+			sq.tactic_rejected = "%s - no ground to shift to" % why
+			return
+		centre = c2
+		sq.tactic_target = c2
 	var dir := _dir_to(centre, threat) if threat.is_finite() else sq.tactic_dir
 	var units := _units(sq)
 	for u: UnitState in units:
@@ -2081,7 +2195,10 @@ func _reposition(sq: SquadState, a: Dictionary, why: String, now: float) -> void
 	var keep: Array = []
 	var move: Array = []
 	for u: UnitState in units:
-		if threat.is_finite() and u.post_pos.is_finite() and _post_still_good(sq, u, threat):
+		# A stalemate shift keeps the soldiers who can fire at the enemy now, not the ones safely behind cover.
+		var serves := (u.target_id > 0 and u.target_visible and now - u.target_seen_at < 6.0) if shift \
+				else (threat.is_finite() and u.post_pos.is_finite() and _post_still_good(sq, u, threat))
+		if serves:
 			keep.append(u)
 		else:
 			move.append(u)
@@ -2104,6 +2221,27 @@ func _reposition(sq: SquadState, a: Dictionary, why: String, now: float) -> void
 
 
 # --- GAMEPLAY-03B: falling back a line ------------------------------------------------------------------------------------
+
+## AI-COMBAT-02: a centre shift_m to one side of the defence's (across the threat direction): the side with a sight line to the
+## threat first, the other next, alternating when both or neither do; on valid ground and inside the defended area. INF: none.
+func _shift_centre(sq: SquadState, centre: Vector3, threat: Vector3) -> Vector3:
+	var d := _dir_to(centre, threat)
+	var lat := Vector3(-d.z, 0.0, d.x)
+	var first := 1 if int(_meta(sq, "shift_side", 0)) % 2 == 0 else -1
+	var opts: Array = []
+	for side: int in [first, -first]:
+		for m: float in [shift_m, shift_m * 0.6]:
+			var p := pos.nearest_valid(centre + lat * side * m, 6.0)
+			if p.is_finite() and _inside_limit(sq, p):
+				var seen: bool = sim.combat.line.sight(p + Vector3.UP * 1.2, threat + Vector3.UP * 1.3).visible
+				opts.append({"p": p, "score": (2.0 if seen else 0.0) + (0.5 if side == first else 0.0) + m * 0.01, "side": side})
+				break
+	if opts.is_empty():
+		return Vector3.INF
+	opts.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return float(x.score) > float(y.score))
+	_set_meta(sq, "shift_side", int(_meta(sq, "shift_side", 0)) + 1)
+	return opts[0].p
+
 
 ## The area the defence must stay in: the capture radius of the objective it holds (a garrison's base objective, a stationed
 ## squad's objective), less a margin, so a defence never gives the objective away by where it stands. {} = no such limit.
@@ -2895,6 +3033,22 @@ func _flank_leg(sq: SquadState, a: Dictionary, man: Array, now: float) -> void:
 	_begin_leg(sq, 1, dest, sq.tactic_target)
 
 
+## AI-COMBAT-02: protected spots (against the target) within 15 m of a flank's staging point, at most 6 (one cover search).
+func _stage_cover(stage: Vector3, target: Vector3) -> int:
+	var n := 0
+	for e: Dictionary in sim.brain.cover_spots(stage, 15.0, target, stage, 8):
+		if n >= 6:
+			break
+		if sim.brain._evaluate_spot(null, e.p, target).protected:
+			n += 1
+	return n
+
+
+## A flank's cost for ranking: exposure on the way, the detour, less a credit for cover at the end.
+func _flank_cost(fp: Dictionary) -> float:
+	return float(fp.exposure) + (float(fp.detour) - 1.0) * 0.15 - 0.03 * minf(float(fp.get("cover", 0)), 4.0)
+
+
 func _replan_flank(sq: SquadState, a: Dictionary, c: ContactState, man: Array) -> bool:
 	replans += 1
 	sq.tactic_replans += 1
@@ -2984,11 +3138,23 @@ func withdraw_cause(a: Dictionary, hopeless_pin := false) -> String:
 ## COMBAT-01: the squad holds where the player told it to (an ordinary HOLD of the player's faction, not one the tactics
 ## gave themselves): its own tactics do not take it away from there.
 func player_hold(sq: SquadState) -> bool:
+	if player_placed(sq):
+		return true
 	var held := sq.order == SquadState.Order.HOLD or (sq.order == SquadState.Order.TACTIC and sq.prev_order == SquadState.Order.HOLD)
 	if not held or bool(_meta(sq, "tactic_hold", false)) or sim.state.war == null:
 		return false
 	var f := sim.state.war.faction(sq.faction)
 	return f != null and f.player
+
+
+## AI-COMBAT-02: the player put this squad's soldiers where they stand one by one (GAMEPLAY-02 right-drag placement, a Move
+## whose slots are SquadState.placed): like a hold, no tactic of the squad's own moves them off their places or withdraws them;
+## each soldier's own cover reaction stays within a few metres of his place (CombatBrain post mode). Any new order clears it.
+func player_placed(sq: SquadState) -> bool:
+	if sq.placed.is_empty():
+		return false
+	return sq.order == SquadState.Order.MOVE or (sq.order == SquadState.Order.TACTIC and sq.prev_order == SquadState.Order.MOVE \
+			and sq.tactic_owner != SquadState.Owner.PLAYER and sq.tactic_owner != SquadState.Owner.OPERATION)
 
 
 ## A place to withdraw to: away from the believed threat, on walkable ground, hidden from the
@@ -3347,7 +3513,17 @@ func status_tag(sq: SquadState) -> String:
 	if a.is_empty() or int(a.n) == 0:
 		return ""
 	if int(a.pinned) * 2 >= int(a.n):
-		return "pinned"
+		return "pinned" if sq.tactic in [SquadState.Tactic.NONE, SquadState.Tactic.DEFEND, SquadState.Tactic.SUPPRESS] else "pinned - cannot advance"
+	# AI-COMBAT-02: what the squad is doing about a stalemate, and a contact it lost.
+	if sq.tactic == SquadState.Tactic.REPOSITION and sq.tactic_why.contains("stalemate"):
+		return "shifting for a line of fire"
+	if sq.tactic == SquadState.Tactic.FLANK and sq.tactic_why.contains("stronger"):
+		return "flanking on its own initiative"
+	var c: ContactState = a.get("contact")
+	if c != null and int(a.seen_n) == 0 and int(a.under_fire) == 0 and int(a.engaged) == 0:
+		var since := sim.state.time - c.t_seen
+		if since >= 8.0 and since <= 90.0 and float(a.dist) <= 350.0:
+			return "lost contact - watching (%ds)" % roundi(since)
 	var covering := 0
 	for u: UnitState in _units(sq):
 		if u.tactic == UnitState.Tactic.SEEK_COVER:

@@ -23,7 +23,7 @@ Norwegian; code, comments and docs are English.
   (`../fractured-nations-*`) are only kept until the product owner approves removing them
   (status: [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md)). Do not develop there.
 - **Session workflow:** open this project → read this file and the roadmap ([docs/AI_ROADMAP.md](docs/AI_ROADMAP.md),
-  AI-ASSAULT-01 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
+  AI-COMBAT-02 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
   targeted tests + visual Godot validation → update the report / README → commit to `develop`.
 - Each milestone ends with a report in `docs/<MILESTONE>_REPORT.md` and an updated README.
 
@@ -316,6 +316,18 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   spreads targets (`crowd_n`, `_aimers` from the frame grid), holds aimed fire on the move beyond `move_fire_m`, and paces rifle fire
   missions (`rifle_mission_burst` / `_pause_s`). Measure with `--ai-strat-test --diag --only a_assault` and `--combat02-test --only
   a_haugen,e_haugen --seeds=1,2,3` (stochastic: judge series, run one Godot at a time).
+- **Perception, stalemates, difficulty (AI-COMBAT-02).** Noticing is the COMBAT-01 accumulation in `CombatBrain._noticed` against
+  `acquire_delay`, which now also weighs shape per 100 m (`posture_notice_s`), field-of-view position, tree crowns on the sight line
+  (`_see` returns `foliage`), target speed, muzzle signature by range, told direction (20°), observer movement / suppression and
+  `Difficulty`. A target is suspected (the soldier looks at a blurred place) at `suspect_frac`, and recall is only near the last seen
+  place. Heard shots, hits and shared contacts give blurred bearings; `IntelSim` sighting reports are blurred by `seen_blur`.
+  `Difficulty` (`scripts/combat/difficulty.gd`, the setting in `UISettings`, `--difficulty=`, tests use Normal) scales spot / react
+  / aim / regain / supp for soldiers hostile to the player (a quarter for the player's own faction) - never sight, damage or tactics.
+  A soldier in protecting cover without a line of fire moves to firing cover (`_wants_firing_spot`, `need_fire` search). A DEFEND
+  whose fire share stays low is a stalemate (`SquadTactics._stalemate`): an AI squad of its own command tries `_initiative` (a
+  flank), else `_reposition(..., shift = true)` moves the centre sideways (`_shift_centre`). Never for player-owned / held /
+  placed defences (`player_placed` counts as `player_hold`; a placed squad's DEFEND posts are its places). Comparison switches:
+  `--legacy-perception`, `--no-stalemate`. Check: `--scenario=dev --ai-combat02-test [--only d_detect,l_track,k_levels,p_placed,b_firefight]`.
 - **Man-made detail, sandbags, culverts (WORLD-DETAIL-02).** `DetailLayer` (`scripts/world/detail_layer.gd`) places walls, fences,
   firewood, bales, yards, kiosks, depots, guardrails and road checkpoints as a read-only WorldOverrides layer
   `worlds/detail/<world>.detail.json` after the cover layer (`--no-world-detail`); rebuild `--scenario=dev --no-world-detail

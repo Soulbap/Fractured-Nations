@@ -10,7 +10,18 @@ stable branch, updated only with the product owner's approval), one canonical de
 branches are contained in `develop` and stay as history. See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest finished: **WORLD-DETAIL-02** (physical cover and environmental detail, branch `feature/world-detail-02`) — 7 187 objects
+Newest finished: **AI-COMBAT-02** (dynamic combat, realistic perception, difficulty). Spotting is now a process: shape and
+distance, posture, movement, where you are in the observer's field of view, tree crowns in between and the observer's own state all
+add to the time an enemy needs to notice you. Soldiers turn towards something suspicious before they see it, lose you when you break
+line of sight, and do not pick you up again at once if you moved. Gunfire gives a bearing, not your position, and shared reports are
+approximate. Soldiers in full cover with no line of fire move to nearby cover they can fire from. A defence that cannot hit anything
+shifts sideways for an angle, and a stronger AI squad tries a limited flank. Flank planning considers tighter routes and the cover at
+the end. A squad placed with right-drag keeps its places in a fight. **Difficulty** Easy / Normal (default) / Hard in Settings: it
+changes how fast enemies notice and react, their aim and how much fire weighs on them, never what they can see or the damage.
+Check `--scenario=dev --ai-combat02-test [--only d_detect,l_track,k_levels,p_placed,b_firefight]`; `--difficulty=`,
+`--legacy-perception` and `--no-stalemate` are available for comparisons. See [docs/AI-COMBAT-02_REPORT.md](docs/AI-COMBAT-02_REPORT.md).
+
+Before that: **WORLD-DETAIL-02** (physical cover and environmental detail, branch `feature/world-detail-02`) — 7 187 objects
 in a read-only layer over `ref_20km` (`worlds/detail/ref_20km.detail.json`, `--no-world-detail` off): garden walls and picket fences
 at the plots, firewood at the houses, round bales and yard goods at the farms, container and builder's yards in the town and the
 works, transformer kiosks, road depots and guardrails along the roads, sandbag / HESCO checkpoints on the roads into objectives,
@@ -390,7 +401,8 @@ Then press **F5**. The start screen (GAMEPLAY-01B) offers:
 - **Continue** — the saved game (F5 saves, F9 loads, or **Esc** → Save Game / Load Game; one slot in `user://saves/ref_20km/`).
   Esc → Main Menu returns here without starting anything.
 - **Settings** (also in the Esc menu) — GAMEPLAY-02 (controls): the interface scale, 75–175 % (default 125 %), for every menu,
-  the HUD and tooltips; kept in `user://settings.cfg`.
+  the HUD and tooltips; AI-COMBAT-02: the **difficulty** (Easy / Normal / Hard, default Normal, applies at once). Both are
+  kept in `user://settings.cfg`.
 - **Development Scenario** — the full three-faction war as before: you are North (blue) in the tactical view over
   your HQ with five squads, free and instant construction and the starting stockpile; South (orange, aggressive) and
   East (green, defensive) plan and launch their own operations.

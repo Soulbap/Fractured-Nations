@@ -1,4 +1,5 @@
-## Settings screen (GAMEPLAY-02 controls), opened from the start screen and the in-game menu: the interface scale (UISettings).
+## Settings screen (GAMEPLAY-02 controls), opened from the start screen and the in-game menu: the interface scale (UISettings)
+## and, AI-COMBAT-02, the difficulty (Difficulty; applies at once, also in a running game, and is kept for the next start).
 ## On the UI-01C kit like the menus; runs while the tree is paused. The scale is applied when the slider is let go (applying it
 ## while dragging would move the slider under the mouse) and saved at once; Esc or Back closes the screen.
 class_name SettingsPanel
@@ -9,6 +10,8 @@ signal closed
 var _slider: HSlider
 var _value: Label
 var _dragging := false
+var _diff_buttons: Array[Button] = []
+var _diff_hint: Label
 
 
 func _ready() -> void:
@@ -63,6 +66,27 @@ func _ready() -> void:
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.custom_minimum_size = Vector2(340, 0)
 	col.add_child(hint)
+	# AI-COMBAT-02: difficulty, three choices.
+	var drow := HBoxContainer.new()
+	drow.add_theme_constant_override("separation", FNUI.S4)
+	col.add_child(drow)
+	var dname := FNUI.label("DIFFICULTY", FNUI.TITLE, FNUI.INK, "caps")
+	dname.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	drow.add_child(dname)
+	var dbuttons := HBoxContainer.new()
+	dbuttons.add_theme_constant_override("separation", FNUI.S2)
+	col.add_child(dbuttons)
+	for lv in 3:
+		var b := _button(Difficulty.NAMES[lv], func() -> void: _set_difficulty(lv))
+		b.toggle_mode = true
+		b.custom_minimum_size = Vector2(108, 32)
+		dbuttons.add_child(b)
+		_diff_buttons.append(b)
+	_diff_hint = FNUI.label("", FNUI.LABEL, FNUI.INK_2, "body")
+	_diff_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_diff_hint.custom_minimum_size = Vector2(340, 0)
+	col.add_child(_diff_hint)
+	_show_difficulty()
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", FNUI.S4)
 	col.add_child(buttons)
@@ -94,6 +118,24 @@ func _button(text: String, fn: Callable) -> Button:
 		b.add_theme_stylebox_override(st, sb)
 	b.pressed.connect(fn)
 	return b
+
+
+func _set_difficulty(lv: int) -> void:
+	UISettings.set_difficulty(lv, not CoreDemo.automated_run())
+	_show_difficulty()
+
+
+func _show_difficulty() -> void:
+	for i in _diff_buttons.size():
+		_diff_buttons[i].set_pressed_no_signal(i == Difficulty.level)
+		var sb := FNUI.state_style(&"pressed" if i == Difficulty.level else &"normal", 0)
+		sb.content_margin_left = 10
+		sb.content_margin_right = 10
+		if i == Difficulty.level:
+			sb.border_width_bottom = 3
+			sb.border_color = FNUI.OK
+		_diff_buttons[i].add_theme_stylebox_override("normal", sb)
+	_diff_hint.text = Difficulty.DESCRIPTIONS[Difficulty.level]
 
 
 func _on_value(v: float) -> void:

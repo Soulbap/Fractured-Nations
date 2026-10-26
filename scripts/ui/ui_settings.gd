@@ -1,7 +1,8 @@
 ## Player settings (GAMEPLAY-02 controls): what the Settings screen changes, kept in user://settings.cfg and applied at start.
-## Only the interface scale so far: the root window's content scale factor on top of the 1152 x 648 logical canvas (stretch
+## The interface scale: the root window's content scale factor on top of the 1152 x 648 logical canvas (stretch
 ## mode canvas_items), so every menu, HUD panel, tooltip and overlay grows together and lays itself out on the smaller
 ## logical canvas - no font is enlarged one by one. Scripted test runs keep 100 % (their screenshots stay comparable).
+## AI-COMBAT-02: the difficulty (Difficulty.level); `--difficulty=` overrides it, scripted test runs use Normal.
 class_name UISettings
 extends RefCounted
 
@@ -20,12 +21,19 @@ static func load_settings() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(PATH) == OK:
 		ui_scale = clampf(float(cfg.get_value("interface", "scale", SCALE_DEFAULT)), SCALE_MIN, SCALE_MAX)
+		Difficulty.level = Difficulty.from_id(String(cfg.get_value("game", "difficulty", "normal")))
+	if CoreDemo.automated_run():
+		Difficulty.level = Difficulty.NORMAL
+	for a: String in OS.get_cmdline_user_args():
+		if a.begins_with("--difficulty="):
+			Difficulty.level = Difficulty.from_id(a.trim_prefix("--difficulty="))
 
 
 static func save_settings() -> void:
 	var cfg := ConfigFile.new()
 	cfg.load(PATH)  # keeps any other section
 	cfg.set_value("interface", "scale", ui_scale)
+	cfg.set_value("game", "difficulty", Difficulty.id_of(Difficulty.level))
 	cfg.save(PATH)
 
 
@@ -42,5 +50,11 @@ static func apply_at_start(tree: SceneTree) -> void:
 static func set_ui_scale(tree: SceneTree, k: float, save := true) -> void:
 	ui_scale = clampf(snappedf(k, SCALE_STEP), SCALE_MIN, SCALE_MAX)
 	tree.root.content_scale_factor = ui_scale
+	if save:
+		save_settings()
+
+
+static func set_difficulty(lv: int, save := true) -> void:
+	Difficulty.level = clampi(lv, Difficulty.EASY, Difficulty.HARD)
 	if save:
 		save_settings()
