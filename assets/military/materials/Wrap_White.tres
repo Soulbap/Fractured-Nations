@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/military/textures/canvas.png" id="1_alb"]
+[ext_resource type="Texture2D" path="res://assets/military/textures/canvas_normal.png" id="2_nrm"]
+
+[resource]
+resource_name = "Wrap_White"
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.8600, 0.8700, 0.8400, 1.000)
+albedo_texture = ExtResource("1_alb")
+roughness = 0.380
+metallic = 0.000
+normal_enabled = true
+normal_scale = 0.350
+normal_texture = ExtResource("2_nrm")
+texture_filter = 5

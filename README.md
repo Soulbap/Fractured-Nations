@@ -10,7 +10,18 @@ stable branch, updated only with the product owner's approval), one canonical de
 branches are contained in `develop` and stay as history. See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest finished: **AI-ASSAULT-01** (coordinated infantry assaults) — after research into Arma, Company of Heroes, F.E.A.R.,
+Newest finished: **WORLD-DETAIL-02** (physical cover and environmental detail, branch `feature/world-detail-02`) — 7 187 objects
+in a read-only layer over `ref_20km` (`worlds/detail/ref_20km.detail.json`, `--no-world-detail` off): garden walls and picket fences
+at the plots, firewood at the houses, round bales and yard goods at the farms, container and builder's yards in the town and the
+works, transformer kiosks, road depots and guardrails along the roads, sandbag / HESCO checkpoints on the roads into objectives,
+and bales and rock piles on the last 200 m into every settlement. 12 new civilian models plus the existing military / road kit as
+vegetation library ids 31-49; the solid ones stop bullets, block movement and give AI cover posts through the existing systems. Every
+sandbag asset (walls, positions, bunker, towers) was rebuilt with pillow-shaped bags laid tight (`tools/blender/sandbag_geo.py`), and
+the road culverts are a new pipe-in-the-fill model seated at the foot of the embankment at start (`CulvertSeat`, `--legacy-culverts`).
+Build `--scenario=dev --no-world-detail --build-detail-layer`, check `--scenario=dev --world-detail-test [--shots]`. See
+[docs/WORLD-DETAIL-02_REPORT.md](docs/WORLD-DETAIL-02_REPORT.md).
+
+Before that: **AI-ASSAULT-01** (coordinated infantry assaults) — after research into Arma, Company of Heroes, F.E.A.R.,
 Killzone and others, operations' assault squads now close on an objective together (a phase line instead of one squad at a time),
 the team that halts covers from cover it can fire from, covering fire goes to reported enemy positions and follows the movement,
 the last 120 m are crossed in short rushes, a blind fire support moves up, rifle fire missions are paced so the ammunition lasts,

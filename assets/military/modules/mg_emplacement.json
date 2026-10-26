@@ -5,29 +5,29 @@
  "category": "Defences",
  "description": "Machine-gun emplacement: 1.2 m sandbag parapet front and sides, timber frame with a sandbagged roof at 2.2 m over the front two thirds (1 m open firing band forward), gun sill, open rear. 4.1 x 3.4 m.",
  "bounds_min": [
-  -2.093,
-  -1.189,
+  -2.11,
+  -1.252,
   -0.02
  ],
  "bounds_max": [
-  2.087,
-  1.687,
-  2.52
+  2.109,
+  1.675,
+  2.532
  ],
  "size_above_ground": [
-  4.18,
-  2.877,
-  2.52
+  4.219,
+  2.927,
+  2.532
  ],
  "footprint_xy": [
-  -2.093,
-  -1.189,
-  2.087,
-  1.687
+  -2.11,
+  -1.252,
+  2.109,
+  1.675
  ],
  "foundation_depth": 0.0,
  "tris": [
-  9992,
+  40944,
   168,
   72
  ],
@@ -150,7 +150,7 @@
   "errors": [],
   "warnings": [],
   "accepted": [
-   "hidden back-to-back faces: mg_emplacement_LOD0 (4 pairs) - delete to save tris"
+   "hidden back-to-back faces: mg_emplacement_LOD0 (356 pairs) - delete to save tris"
   ],
   "eps": 0.002,
   "tol": 0.03,

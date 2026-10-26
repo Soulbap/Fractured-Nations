@@ -1,0 +1,88 @@
+{
+ "id": "concrete_pipes",
+ "family": "prop",
+ "display_name": "Concrete pipe stack",
+ "category": "Industrial",
+ "description": "Three 1000 mm concrete pipes 2.0 m long stacked two-and-one, 2.1 m wide, 1.95 m high.",
+ "bounds_min": [
+  -1.15,
+  -1.0,
+  0.0
+ ],
+ "bounds_max": [
+  1.15,
+  1.0,
+  1.96
+ ],
+ "size_above_ground": [
+  2.3,
+  2.0,
+  1.96
+ ],
+ "footprint_xy": [
+  -1.15,
+  -1.0,
+  1.15,
+  1.0
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  648,
+  312,
+  192
+ ],
+ "surfaces": [
+  2,
+  2,
+  1
+ ],
+ "materials": [
+  "Concrete",
+  "Timber_Dark"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   140
+  ],
+  [
+   140,
+   700
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.05,
+   0.0,
+   -1.0,
+   2.1,
+   1.06,
+   2.0
+  ],
+  [
+   -0.5,
+   1.05,
+   -1.0,
+   1.0,
+   0.9,
+   2.0
+  ]
+ ],
+ "markers": [],
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [],
+  "accepted": [
+   "hidden back-to-back faces: concrete_pipes_LOD0 (8 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
+}

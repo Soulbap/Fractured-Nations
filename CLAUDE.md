@@ -316,6 +316,15 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   spreads targets (`crowd_n`, `_aimers` from the frame grid), holds aimed fire on the move beyond `move_fire_m`, and paces rifle fire
   missions (`rifle_mission_burst` / `_pause_s`). Measure with `--ai-strat-test --diag --only a_assault` and `--combat02-test --only
   a_haugen,e_haugen --seeds=1,2,3` (stochastic: judge series, run one Godot at a time).
+- **Man-made detail, sandbags, culverts (WORLD-DETAIL-02).** `DetailLayer` (`scripts/world/detail_layer.gd`) places walls, fences,
+  firewood, bales, yards, kiosks, depots, guardrails and road checkpoints as a read-only WorldOverrides layer
+  `worlds/detail/<world>.detail.json` after the cover layer (`--no-world-detail`); rebuild `--scenario=dev --no-world-detail
+  --build-detail-layer [--area=x,z,r]` (~46 s). The kit is vegetation library ids 31-49 = static-library GLBs (civilian models in
+  `fam_props_civil.py`), written with `assets/environment/detail_kit.json` by `tools/world_detail/make_detail_library.py` from the
+  sidecars' collision boxes (keep box radii under LineOfFire's reach); fences / guardrails are drawn only. Every sandbag is
+  `tools/blender/sandbag_geo.py` (pillow bags in running bond; `ap_kit.bag_wall / bag_ring / bag_layer`) - never spheres or boxes.
+  Culvert ends are seated at the foot of the road fill at start by `CulvertSeat` (memory only; ends without a fill are hidden;
+  `--legacy-culverts`). Check: `--scenario=dev --world-detail-test [--shots] [--only r_loaded,r_roads,b_ballistic,c_cover,v_shots,v_culverts]`.
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are

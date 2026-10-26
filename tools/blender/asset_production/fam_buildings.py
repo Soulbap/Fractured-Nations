@@ -482,12 +482,7 @@ def guard_tower_steel(A):
     # Sandbag ring at the base.
     import random
     rnd = random.Random(7)
-    for k in range(4):
-        for i in range(10):
-            ang = (i + 0.5 * (k % 2)) * 2 * math.pi / 10
-            r = 2.3
-            a.box((0.6, 0.32, 0.13), (r * math.cos(ang), r * math.sin(ang), 0.07 + k * 0.12), "Sandbag", L0,
-                  rot=A.rot_z(math.degrees(ang) + 90 + rnd.uniform(-4, 4)), bevel=0.03, segs=1)
+    K.bag_ring(a, 2.3, 4, rnd)
     a.cyl(2.3, 2.3, 0.5, (0, 0, 0.25), "Sandbag", (1, 2), segs=10, cap=True)
     a.col_between((-1.2, -1.2, -0.3), (1.2, 1.2, fl))
     # GAMEPLAY-01C: floor, four breastwork walls (to fl + 1.05), roof and upper wall (from fl + 1.85).
@@ -527,14 +522,7 @@ def bunker(A):
     # Sandbag cover on the roof (two layers), earth splayed around the base.
     import random
     rnd = random.Random(3)
-    for k in range(2):
-        for i in range(7):
-            for j in range(7):
-                if rnd.random() < 0.08:
-                    continue
-                x = -2.0 + (i + 0.5) * 4.0 / 7 + (0.15 if k else 0)
-                y = -2.0 + (j + 0.5) * 4.0 / 7
-                a.box((0.58, 0.32, 0.13), (x, y, H + 0.32 + k * 0.12), "Sandbag", L0, rot=A.rot_z(rnd.uniform(-8, 8) + (90 if k else 0)), bevel=0.03, segs=1)
+    K.bag_layer(a, -2.0, 2.0, -2.0, 2.0, H + 0.25, 2, rnd)
     a.box_between((-W / 2, -D / 2, H + 0.25), (W / 2, D / 2, H + 0.52), "Sandbag", (1, 2), bevel=0.03)
     # Earth bank piled against the front and side walls (below the firing slits).
     for yaw in (0, 90, -90):
@@ -544,8 +532,7 @@ def bunker(A):
     Fb = Frame((0, -D / 2, 0), 180)
     Fb.box(a, (0.9, 0.05, 1.5), 0, 0.0, 0.7, "Paint_Black", ALL)
     for sx in (-0.75, 0.75):
-        for k in range(8):
-            a.box((0.32, 0.6, 0.13), (sx, -D / 2 - 1.0, 0.07 + k * 0.12), "Sandbag", L0, bevel=0.03, segs=1)
+        K.bag_wall(a, -D / 2 - 1.9, -D / 2 - 0.1, sx, 8, rnd, along="y")
         a.box((0.32, 1.8, 0.95), (sx, -D / 2 - 1.0, 0.48), "Sandbag", (1, 2))
     a.col_between((-W / 2, -D / 2, -0.6), (W / 2, D / 2, H + 0.5))
     a.marker("IP_Entrance", (0, -D / 2 - 2.2, 0), 0, "rear entrance")

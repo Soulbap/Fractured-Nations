@@ -3,10 +3,10 @@
 [ext_resource type="ArrayMesh" path="res://assets/environment/meshes/culvert_lod0.res" id="1_0hhh6"]
 [ext_resource type="ArrayMesh" path="res://assets/environment/meshes/culvert_lod1.res" id="2_rnquc"]
 
-[node name="Culvert" type="Node3D" unique_id=1031558266]
+[node name="Culvert" type="Node3D" unique_id=39855538]
 
-[node name="culvert_LOD0" type="MeshInstance3D" parent="." unique_id=695731727]
+[node name="culvert_LOD0" type="MeshInstance3D" parent="." unique_id=1238451270]
 mesh = ExtResource("1_0hhh6")
 
-[node name="culvert_LOD1" type="MeshInstance3D" parent="." unique_id=92828449]
+[node name="culvert_LOD1" type="MeshInstance3D" parent="." unique_id=699863813]
 mesh = ExtResource("2_rnquc")

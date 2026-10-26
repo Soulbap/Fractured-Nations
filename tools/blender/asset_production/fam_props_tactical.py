@@ -12,6 +12,8 @@ import random
 
 from mathutils import Vector
 
+import ap_kit as K
+
 ALL = (0, 1, 2)
 L01 = (0, 1)
 L0 = (0,)
@@ -25,46 +27,17 @@ MEDIUM = [[0, 35], [35, 130], [130, 600]]
 
 
 def _bags_along_x(a, x0, x1, y, courses, rnd, mat="Sandbag", notch=None, h=0.12, depth=(-0.16, 0.16)):
-    """Stretcher-bond sandbags along X from x0 to x1 at row centre y, two bags deep. `notch`
-    = (xa, xb, courses_kept): the courses above `courses_kept` are left out between xa and xb
-    (a firing gap)."""
-    length = x1 - x0
-    xc = (x0 + x1) / 2
-    for k in range(courses):
-        z = h * k + h / 2 + 0.005
-        off = 0.0 if k % 2 == 0 else 0.30
-        x = x0 + 0.30 + off - 0.30
-        while x < x1 - 0.05:
-            w = min(0.60, x1 - x)
-            cx = x + w / 2
-            skip = notch is not None and k >= notch[2] and notch[0] <= cx <= notch[1]
-            if not skip and w > 0.12:
-                for dy in depth:
-                    a.sphere(1.0, (cx + rnd.uniform(-0.01, 0.01), y + dy + rnd.uniform(-0.012, 0.012), z), mat, L0,
-                             scale=((w - 0.01) / 2, 0.165, 0.078), segs=8, rings=3)
-            x += 0.60
-        # LOD1: one slab per course (and per side of a notch).
-        spans = [(x0, x1)] if notch is None or k < notch[2] else [(x0, notch[0]), (notch[1], x1)]
-        for (sa, sb) in spans:
-            a.box((sb - sa, 0.64, h), ((sa + sb) / 2, y, z), mat, L1, bevel=0.03)
+    """Sandbags along X from x0 to x1 at row centre y, two bags deep, in running bond (WORLD-DETAIL-02: ap_kit.bag_wall,
+    pillow bags on LOD0 / LOD1). `notch` = (xa, xb, courses_kept): the courses above `courses_kept` are left out between xa
+    and xb (a firing gap)."""
+    K.bag_wall(a, x0, x1, y, courses, rnd, mat, rows=tuple(d * 0.97 for d in depth),
+               gaps=[notch] if notch is not None else None, lods=L01)
     for (sa, sb, hh) in _course_blocks(x0, x1, courses, notch, h):
         a.box((sb - sa, 0.64, hh), ((sa + sb) / 2, y, hh / 2), mat, L2)
 
 
 def _bags_along_y(a, y0, y1, x, courses, rnd, mat="Sandbag", h=0.12, depth=(-0.16, 0.16)):
-    for k in range(courses):
-        z = h * k + h / 2 + 0.005
-        off = 0.0 if k % 2 == 0 else 0.30
-        y = y0 + 0.30 + off - 0.30
-        while y < y1 - 0.05:
-            w = min(0.60, y1 - y)
-            cy = y + w / 2
-            if w > 0.12:
-                for dx in depth:
-                    a.sphere(1.0, (x + dx + rnd.uniform(-0.012, 0.012), cy + rnd.uniform(-0.01, 0.01), z), mat, L0,
-                             scale=(0.165, (w - 0.01) / 2, 0.078), segs=8, rings=3)
-            y += 0.60
-        a.box((0.64, y1 - y0, h), (x, (y0 + y1) / 2, z), mat, L1, bevel=0.03)
+    K.bag_wall(a, y0, y1, x, courses, rnd, mat, along="y", rows=tuple(d * 0.97 for d in depth), lods=L01)
     a.box((0.64, y1 - y0, courses * h), (x, (y0 + y1) / 2, courses * h / 2), mat, L2)
 
 
@@ -228,11 +201,7 @@ def earth_berm(A):
     prof = [(-0.95, 0.0), (0.95, 0.0), (0.55, 0.34), (0.30, 0.74), (0.14, 0.82), (-0.14, 0.82), (-0.30, 0.74), (-0.55, 0.34)]
     a.prism(prof, (-Lx / 2, 0, 0), (Lx / 2, 0, 0), "Dirt")
     # Sandbag crest row (front side), LOD0 / LOD1 only.
-    x = -Lx / 2 + 0.35
-    while x < Lx / 2 - 0.2:
-        a.sphere(1.0, (x + rnd.uniform(-0.01, 0.01), 0.16, 0.83 + rnd.uniform(-0.01, 0.01)), "Sandbag", L0, scale=(0.29, 0.17, 0.10), segs=10, rings=5)
-        x += 0.60
-    a.box((Lx - 0.2, 0.34, 0.16), (0, 0.16, 0.84), "Sandbag", L1, bevel=0.03)
+    K.bag_wall(a, -Lx / 2 + 0.1, Lx / 2 - 0.1, 0.16, 1, rnd, z0=0.74, lods=L01)
     a.col_box((Lx, 1.1, 0.82), (0, 0, 0.41))
     a.marker("SNAP_W", (-Lx / 2, 0, 0), 90)
     a.marker("SNAP_E", (Lx / 2, 0, 0), -90)

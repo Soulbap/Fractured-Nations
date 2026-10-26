@@ -136,18 +136,8 @@ def sandbag_wall(A, aid, length, courses, name, mat="Sandbag", double=True):
     import random
     rnd = random.Random(hash(aid) & 0xFFFF)
     depth_rows = (-0.16, 0.16) if double else (0.0,)
-    for k in range(courses):
-        z = h * k + h / 2 + 0.005
-        off = 0.0 if k % 2 == 0 else 0.30
-        x = -length / 2 + 0.30 + off
-        while x < length / 2 - 0.05:
-            w = min(0.60, length / 2 - x + 0.30)
-            for yr in depth_rows:
-                c = (x + rnd.uniform(-0.01, 0.01), yr + rnd.uniform(-0.012, 0.012), z)
-                # Filled bag: a cushion (flattened ellipsoid), fullest in the middle.
-                a.sphere(1.0, c, mat, L0, scale=((min(w, 0.60) - 0.01) / 2, 0.165, 0.074), segs=12, rings=6)
-            x += 0.60
-        a.box((length, 0.64 if double else 0.32, h), (0, 0, z), mat, (1,), bevel=0.03)
+    # WORLD-DETAIL-02: pillow-shaped bags laid tight in running bond (ap_kit.bag_wall), LOD1 the same bags coarser.
+    K.bag_wall(a, -length / 2, length / 2, 0.0, courses, rnd, mat, rows=tuple(r * 0.97 for r in depth_rows), lods=(0, 1))
     a.box((length, 0.64 if double else 0.32, courses * h), (0, 0, courses * h / 2), mat, L2)
     a.col_box((length, 0.64 if double else 0.32, courses * h), (0, 0, courses * h / 2))
     a.marker("SNAP_W", (-length / 2, 0, 0), 90)
@@ -160,11 +150,9 @@ def sandbag_wall(A, aid, length, courses, name, mat="Sandbag", double=True):
 
 def sandbag_single(A):
     a = A.Asset("sandbag_single", "prop", "Sandbag", "Defences", "One filled sandbag 0.60 x 0.32 x 0.13 m.")
-    a.box((0.60, 0.32, 0.13), (0, 0, 0.065), "Sandbag", L0, bevel=0.05, segs=2)
-    a.box((0.60, 0.32, 0.13), (0, 0, 0.065), "Sandbag", (1,), bevel=0.03)
+    import random
+    K.sandbag(a, (0, 0, 0.07), 0.0, "Sandbag", (0, 1), rnd=random.Random(5))
     a.box((0.58, 0.30, 0.12), (0, 0, 0.06), "Sandbag", L2)
-    # Tied neck.
-    a.cyl(0.03, 0.015, 0.08, (0.32, 0, 0.06), "Sandbag", L0, axis=(1, 0, 0), segs=8)
     a.col_box((0.60, 0.32, 0.13), (0, 0, 0.065))
     a.lod_ranges = SMALL
     return a

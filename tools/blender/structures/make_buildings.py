@@ -376,9 +376,29 @@ def make_vehicle_shelter():
 
 # --- Guard tower ------------------------------------------------------------------------
 
+_bag_rnd = None
+
+
 def sandbag(parts, x, y, z, along_x, mat):
-    size = (0.58, 0.32, 0.15) if along_x else (0.32, 0.58, 0.15)
-    parts.append(lib.box("Bag", size, (x, y, z), mat, bevel=0.06))
+    """WORLD-DETAIL-02: one filled bag from tools/blender/sandbag_geo.py (a pillow with a folded end, as in the reference
+    photographs) instead of a bevelled box."""
+    global _bag_rnd
+    import random
+    G = _load("sandbag_geo", ("tools", "blender", "sandbag_geo.py"))
+    if _bag_rnd is None:
+        _bag_rnd = random.Random(384)
+    rnd = _bag_rnd
+    v, f = G.pillow((0.60, 0.32, 0.15), 1 if rnd.random() < 0.5 else -1, rnd)
+    v = G.placed(v, (x, y, z), (0.0 if along_x else 90.0) + rnd.uniform(-3.0, 3.0), (rnd.uniform(-2, 2), rnd.uniform(-1.5, 1.5)))
+    me = bpy.data.meshes.new("Bag")
+    me.from_pydata(v, [], f)
+    me.update()
+    for p in me.polygons:
+        p.use_smooth = True
+    obj = bpy.data.objects.new("Bag", me)
+    bpy.context.scene.collection.objects.link(obj)
+    obj.data.materials.append(mat)
+    parts.append(obj)
 
 
 def make_guard_tower():

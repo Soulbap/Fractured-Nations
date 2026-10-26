@@ -1,0 +1,70 @@
+{
+ "id": "picket_fence",
+ "family": "prop",
+ "display_name": "Picket fence 4 m",
+ "category": "Settlement",
+ "description": "White painted picket fence section 4.0 m long, 0.95 m high.",
+ "bounds_min": [
+  -1.995,
+  -0.105,
+  0.0
+ ],
+ "bounds_max": [
+  1.995,
+  0.02,
+  1.05
+ ],
+ "size_above_ground": [
+  3.99,
+  0.125,
+  1.05
+ ],
+ "footprint_xy": [
+  -1.995,
+  -0.105,
+  1.995,
+  0.02
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  572,
+  72,
+  48
+ ],
+ "surfaces": [
+  1,
+  1,
+  1
+ ],
+ "materials": [
+  "Kit_Palette"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   30
+  ],
+  [
+   30,
+   90
+  ],
+  [
+   90,
+   260
+  ]
+ ],
+ "collision_boxes_godot": [],
+ "markers": [],
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "picket_fence_LOD0: 64 n-gons"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
+}

@@ -1,0 +1,82 @@
+{
+ "id": "transformer_kiosk",
+ "family": "prop",
+ "display_name": "Transformer kiosk",
+ "category": "Infrastructure",
+ "description": "Precast concrete transformer kiosk (nettstasjon) 2.4 x 1.9 x 2.3 m with steel doors.",
+ "bounds_min": [
+  -1.5,
+  -1.25,
+  0.0
+ ],
+ "bounds_max": [
+  1.5,
+  1.25,
+  2.45
+ ],
+ "size_above_ground": [
+  3.0,
+  2.5,
+  2.45
+ ],
+ "footprint_xy": [
+  -1.5,
+  -1.25,
+  1.5,
+  1.25
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  256,
+  100,
+  20
+ ],
+ "surfaces": [
+  4,
+  4,
+  2
+ ],
+ "materials": [
+  "Concrete",
+  "Gravel",
+  "Kit_Palette",
+  "Roof_Galv"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   50
+  ],
+  [
+   50,
+   180
+  ],
+  [
+   180,
+   900
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.2,
+   0.0,
+   -0.95,
+   2.4,
+   2.45,
+   1.9
+  ]
+ ],
+ "markers": [],
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [],
+  "accepted": [
+   "hidden back-to-back faces: transformer_kiosk_LOD0 (12 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
+}

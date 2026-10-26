@@ -85,6 +85,8 @@ var _integration03_selftest: Integration03SelfTest
 var _logistics_selftest: LogisticsSelfTest
 ## WORLD-COVER-01: the natural cover layer builder (--build-cover-layer), kept alive while it runs.
 var _cover_builder: CoverLayer
+## WORLD-DETAIL-02: the man-made detail layer builder (--build-detail-layer).
+var _detail_builder: DetailLayer
 var _relief_builder: TerrainRelief
 var _gameplay_selftest: GameplaySelfTest
 var _campaign_selftest: CampaignSelfTest
@@ -476,6 +478,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--world-cover11-test" in args:
 		_gameplay_selftest = WorldCover11SelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)
+	elif "--world-detail-test" in args:
+		_gameplay_selftest = WorldDetailSelfTest.new(self)
+		_gameplay_selftest.run.call_deferred(args)
 	elif "--world-cover-test" in args:
 		_gameplay_selftest = WorldCoverSelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)
@@ -485,6 +490,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--build-cover-layer" in args:
 		_cover_builder = CoverLayer.new(self)
 		_cover_builder.run.call_deferred(args)
+	elif "--build-detail-layer" in args:
+		_detail_builder = DetailLayer.new(self)
+		_detail_builder.run.call_deferred(args)
 	elif "--qol011-test" in args:
 		_gameplay_selftest = Qol011SelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)
@@ -545,6 +553,8 @@ func _start_sandbox() -> void:
 	if not TerrainRelief.apply(terrain, config.world_name).is_empty():
 		TerrainRelief.refix_loaded(vegetation)
 		layer += "_relief_%s" % TerrainRelief.signature
+	# WORLD-DETAIL-02: the culvert ends sit at the foot of the road fill on the final terrain (memory only).
+	print("CULVERT_SEAT ", JSON.stringify(CulvertSeat.apply(world.get_node_or_null("RoadStructures"), terrain, sim.state.roads, sim.structures)))
 	routes.setup(terrain, config.half_size(), src, "user://strategic/%s_grid%s.bin" % [config.world_name, layer], sim.state.roads)
 	routes.prebuild_profiles()
 	sim.war.setup(routes)

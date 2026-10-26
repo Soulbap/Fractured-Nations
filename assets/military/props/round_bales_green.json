@@ -1,0 +1,81 @@
+{
+ "id": "round_bales_green",
+ "family": "prop",
+ "display_name": "Round bales x4",
+ "category": "Rural",
+ "description": "4 stretch-wrapped silage round bales, 1.25 m diameter, 1.2 m wide, in a row (5.1 m long).",
+ "bounds_min": [
+  -2.538,
+  -0.641,
+  -0.035
+ ],
+ "bounds_max": [
+  2.529,
+  0.663,
+  1.21
+ ],
+ "size_above_ground": [
+  5.067,
+  1.304,
+  1.21
+ ],
+ "footprint_xy": [
+  -2.538,
+  -0.641,
+  2.529,
+  0.663
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  1040,
+  96,
+  12
+ ],
+ "surfaces": [
+  1,
+  1,
+  1
+ ],
+ "materials": [
+  "Wrap_Green"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   140
+  ],
+  [
+   140,
+   700
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -2.49,
+   0.0,
+   -0.6,
+   4.98,
+   1.15,
+   1.2
+  ]
+ ],
+ "markers": [],
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "round_bales_green_LOD0: 24 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: round_bales_green_LOD0 (283 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
+}

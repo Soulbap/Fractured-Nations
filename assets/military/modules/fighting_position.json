@@ -5,29 +5,29 @@
  "category": "Defences",
  "description": "Two-man sandbag fighting position: 1.08 m parapet in front and on the sides (riflemen fire standing), dug floor, timber revetment, open rear. 4.3 x 2.9 m.",
  "bounds_min": [
-  -2.187,
-  -0.985,
+  -2.219,
+  -1.046,
   -0.02
  ],
  "bounds_max": [
-  2.187,
-  1.444,
-  1.085
+  2.21,
+  1.421,
+  1.101
  ],
  "size_above_ground": [
-  4.374,
-  2.429,
-  1.085
+  4.429,
+  2.467,
+  1.101
  ],
  "footprint_xy": [
-  -2.187,
-  -0.985,
-  2.187,
-  1.444
+  -2.219,
+  -1.046,
+  2.21,
+  1.421
  ],
  "foundation_depth": 0.0,
  "tris": [
-  6444,
+  23112,
   96,
   48
  ],
@@ -125,7 +125,7 @@
   "errors": [],
   "warnings": [],
   "accepted": [
-   "hidden back-to-back faces: fighting_position_LOD0 (1 pairs) - delete to save tris"
+   "hidden back-to-back faces: fighting_position_LOD0 (203 pairs) - delete to save tris"
   ],
   "eps": 0.002,
   "tol": 0.03,

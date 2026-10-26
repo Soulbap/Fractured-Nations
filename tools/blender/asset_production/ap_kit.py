@@ -253,3 +253,49 @@ def dish(a, cx, cy, cz, r, yaw, elev, mat="Paint_White"):
 def whip(a, x, y, z, length, mat="Plastic_Black"):
     a.cyl(0.012, 0.004, length, (x, y, z + length / 2), mat, (0,), segs=5)
     a.cyl(0.03, 0.03, 0.10, (x, y, z + 0.05), "Steel_Dark", (0, 1), segs=8)
+
+
+# ----------------------------------------------------------------------------- sandbags (WORLD-DETAIL-02)
+
+def _bag_geo():
+    import os
+    import sys
+    d = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    if d not in sys.path:
+        sys.path.insert(0, d)
+    import sandbag_geo
+    return sandbag_geo
+
+
+def sandbag(a, centre, yaw_deg, mat="Sandbag", lods=L0, size=None, tie=1, rnd=None, tilt=(0.0, 0.0)):
+    """One filled sandbag (tools/blender/sandbag_geo.py: a pillow, flat top and bottom, one folded end), long axis turned
+    by yaw_deg. Smooth shaded; LOD0 has 8 rings x 10, LOD1 4 x 6."""
+    G = _bag_geo()
+    size = size or G.BAG
+    for i in lods:
+        rings, around = (G.RINGS, 10) if i == 0 else ((-1.0, -0.5, 0.5, 1.0), 6)
+        v, f = G.pillow(size, tie, rnd, rings, around)
+        a.poly(G.placed(v, centre, yaw_deg, tilt), f, mat, (i,), smooth=True)
+
+
+def sandbags(a, bags, rnd, mat="Sandbag", lods=L0):
+    """Bags from a sandbag_geo layout ([(centre, yaw, size, tie)]), each slightly rolled / pitched."""
+    for (c, yaw, size, tie) in bags:
+        sandbag(a, c, yaw, mat, lods, size, tie, rnd, (rnd.uniform(-2.0, 2.0), rnd.uniform(-1.5, 1.5)))
+
+
+def bag_wall(a, x0, x1, row, courses, rnd, mat="Sandbag", along="x", rows=(0.0,), z0=0.0, gaps=None, lods=L0):
+    """A sandbag wall (running bond, `rows` bags deep) as LOD0 bags; returns its height."""
+    G = _bag_geo()
+    sandbags(a, G.wall(x0, x1, row, courses, rnd, along, rows, z0, G.BAG, gaps), rnd, mat, lods)
+    return z0 + G.COURSE * (courses - 1) + G.BAG[2]
+
+
+def bag_ring(a, radius, courses, rnd, mat="Sandbag", skip=None, z0=0.0, lods=L0):
+    G = _bag_geo()
+    sandbags(a, G.ring(radius, courses, rnd, skip, z0), rnd, mat, lods)
+
+
+def bag_layer(a, x0, x1, y0, y1, z, layers, rnd, mat="Sandbag", lods=L0):
+    G = _bag_geo()
+    sandbags(a, G.layer(x0, x1, y0, y1, z, layers, rnd), rnd, mat, lods)

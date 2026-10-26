@@ -1,0 +1,239 @@
+{
+ "31": {
+  "name": "Round bales",
+  "foot": [
+   2.545,
+   0.665
+  ],
+  "height": 1.238,
+  "solid": true,
+  "glb": [
+   "props/round_bales_white",
+   "props/round_bales_green"
+  ]
+ },
+ "32": {
+  "name": "Firewood stack",
+  "foot": [
+   1.7,
+   0.5
+  ],
+  "height": 1.435,
+  "solid": true,
+  "glb": [
+   "props/firewood_stack"
+  ]
+ },
+ "33": {
+  "name": "Garden wall",
+  "foot": [
+   3.02,
+   0.23
+  ],
+  "height": 0.9,
+  "solid": true,
+  "glb": [
+   "props/garden_wall_concrete",
+   "props/garden_wall_stone"
+  ]
+ },
+ "34": {
+  "name": "Picket fence",
+  "foot": [
+   1.995,
+   0.062
+  ],
+  "height": 1.05,
+  "solid": false,
+  "glb": [
+   "props/picket_fence"
+  ]
+ },
+ "35": {
+  "name": "Concrete blocks",
+  "foot": [
+   2.413,
+   0.41
+  ],
+  "height": 1.67,
+  "solid": true,
+  "glb": [
+   "props/concrete_blocks"
+  ]
+ },
+ "36": {
+  "name": "Concrete pipes",
+  "foot": [
+   1.15,
+   1.0
+  ],
+  "height": 1.96,
+  "solid": true,
+  "glb": [
+   "props/concrete_pipes"
+  ]
+ },
+ "37": {
+  "name": "Skip container",
+  "foot": [
+   1.8,
+   1.17
+  ],
+  "height": 1.5,
+  "solid": true,
+  "glb": [
+   "props/skip_green",
+   "props/skip_yellow"
+  ]
+ },
+ "38": {
+  "name": "Transformer kiosk",
+  "foot": [
+   1.5,
+   1.25
+  ],
+  "height": 2.45,
+  "solid": true,
+  "glb": [
+   "props/transformer_kiosk"
+  ]
+ },
+ "39": {
+  "name": "Pallets and materials",
+  "foot": [
+   1.976,
+   1.2
+  ],
+  "height": 1.296,
+  "solid": true,
+  "glb": [
+   "props/material_stack"
+  ]
+ },
+ "40": {
+  "name": "Concrete barrier",
+  "foot": [
+   1.5,
+   0.308
+  ],
+  "height": 0.887,
+  "solid": true,
+  "glb": [
+   "props/jersey_barrier"
+  ]
+ },
+ "41": {
+  "name": "HESCO line",
+  "foot": [
+   2.659,
+   0.54
+  ],
+  "height": 1.37,
+  "solid": true,
+  "glb": [
+   "props/hesco_mil1_5"
+  ]
+ },
+ "42": {
+  "name": "Sandbag wall",
+  "foot": [
+   1.029,
+   0.336
+  ],
+  "height": 0.979,
+  "solid": true,
+  "glb": [
+   "props/sandbag_wall_2m",
+   "props/sandbag_wall_green_2m"
+  ]
+ },
+ "43": {
+  "name": "T-wall",
+  "foot": [
+   0.76,
+   0.614
+  ],
+  "height": 3.768,
+  "solid": true,
+  "glb": [
+   "props/t_wall"
+  ]
+ },
+ "44": {
+  "name": "Container 20 ft",
+  "foot": [
+   1.222,
+   3.062
+  ],
+  "height": 2.591,
+  "solid": true,
+  "glb": [
+   "props/iso_container_20_rust",
+   "props/iso_container_20_blue"
+  ]
+ },
+ "45": {
+  "name": "Container 20 ft (military)",
+  "foot": [
+   1.222,
+   3.062
+  ],
+  "height": 2.591,
+  "solid": true,
+  "glb": [
+   "props/iso_container_20_od",
+   "props/iso_container_20_tan"
+  ]
+ },
+ "46": {
+  "name": "Guardrail",
+  "foot": [
+   2.025,
+   0.3
+  ],
+  "height": 0.8,
+  "solid": false,
+  "glb": [
+   "roads/guardrail_4m"
+  ]
+ },
+ "47": {
+  "name": "Chain-link fence",
+  "foot": [
+   1.534,
+   0.309
+  ],
+  "height": 2.807,
+  "solid": false,
+  "glb": [
+   "props/chainlink_fence"
+  ]
+ },
+ "48": {
+  "name": "Yard goods",
+  "foot": [
+   0.61,
+   0.611
+  ],
+  "height": 1.165,
+  "solid": true,
+  "glb": [
+   "props/ibc_tank",
+   "props/drum_pallet",
+   "props/supply_pallet",
+   "props/crate_large"
+  ]
+ },
+ "49": {
+  "name": "Log barricade",
+  "foot": [
+   1.806,
+   0.52
+  ],
+  "height": 0.859,
+  "solid": true,
+  "glb": [
+   "props/log_barricade"
+  ]
+ }
+}

@@ -1,0 +1,107 @@
+{
+ "id": "material_stack",
+ "family": "prop",
+ "display_name": "Pallets and materials",
+ "category": "Industrial",
+ "description": "Stacked EUR pallets, a pallet of cement sacks and a bulk bag: 3.9 x 1.1 m, 1.3 m high.",
+ "bounds_min": [
+  -1.978,
+  -1.2,
+  0.0
+ ],
+ "bounds_max": [
+  1.975,
+  0.513,
+  1.296
+ ],
+ "size_above_ground": [
+  3.952,
+  1.713,
+  1.296
+ ],
+ "footprint_xy": [
+  -1.978,
+  -1.2,
+  1.975,
+  0.513
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  6092,
+  92,
+  60
+ ],
+ "surfaces": [
+  3,
+  2,
+  2
+ ],
+ "materials": [
+  "Canvas_White",
+  "Timber",
+  "Timber_Dark"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   140
+  ],
+  [
+   140,
+   700
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.95,
+   0.0,
+   -0.4,
+   1.2,
+   1.152,
+   0.8
+  ],
+  [
+   -0.6,
+   0.0,
+   -0.5,
+   1.2,
+   1.224,
+   0.8
+  ],
+  [
+   0.75,
+   0.0,
+   -0.35,
+   1.2,
+   1.296,
+   0.8
+  ],
+  [
+   0.25,
+   0.0,
+   0.3,
+   0.9,
+   0.95,
+   0.9
+  ]
+ ],
+ "markers": [],
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "material_stack_LOD0: duplicate verts=400 loose verts=0"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: material_stack_LOD0 (1674 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
+}

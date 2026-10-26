@@ -27,7 +27,7 @@
  ],
  "foundation_depth": 0.3,
  "tris": [
-  1516,
+  7084,
   332,
   200
  ],
@@ -214,7 +214,7 @@
    "range_firing_point_LOD0: 14 n-gons"
   ],
   "accepted": [
-   "hidden back-to-back faces: range_firing_point_LOD0 (39 pairs) - delete to save tris"
+   "hidden back-to-back faces: range_firing_point_LOD0 (71 pairs) - delete to save tris"
   ],
   "eps": 0.002,
   "tol": 0.03,
