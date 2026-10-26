@@ -10,7 +10,15 @@ stable branch, updated only with the product owner's approval), one canonical de
 branches are contained in `develop` and stay as history. See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest finished: **QOL-01.1** (movement paces) — soldiers WALK (1.8 m/s), RUN (4.5) or SPRINT (6.2) in normal play, chosen
+Newest finished: **WORLD-COVER-01** (natural terrain cover) — 32 067 boulders, rock groups and ridges, thick fallen logs,
+wind-thrown root plates, dry stone field walls and timber stacks across `ref_20km` (new scan-based assets, library ids 24-30),
+placed by rules from the world's own maps (forest density, rockiness, field edges, forest roads; never on roads, bridges,
+water, objectives or bases) as a read-only layer over the unchanged world (`worlds/cover/ref_20km.cover.json`;
+`--no-natural-cover` for the world without it). They stop bullets (new box solids for logs and walls), block vehicles and the
+navmesh, and the AI's one cover search finds spots behind them (several along a wall, both sides of a big boulder, reachable
+by the navmesh). Tests `--scenario=dev --world-cover-test [--shots]`. See [docs/WORLD-COVER-01_REPORT.md](docs/WORLD-COVER-01_REPORT.md).
+
+Before that: **QOL-01.1** (movement paces) — soldiers WALK (1.8 m/s), RUN (4.5) or SPRINT (6.2) in normal play, chosen
 from the situation and the squad's behaviour (sprint across open ground near a threat or under fire, walk when closing
 carefully or for SAFE short moves, run otherwise); crouched and prone movement are capped at their clips; Ctrl / Alt + right
 click still sets sprint / walk. Interruption limits now hold on long routed moves; a player's fight order outranks STEALTH's

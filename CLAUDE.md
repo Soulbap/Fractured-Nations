@@ -274,6 +274,18 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   `RESUME_CALM_S`; any player order clears it. `SquadControl.describe_order` is the one order description every UI surface and
   `SquadReports` (notices, `war.log_event(..., {"squad": id})`, clickable via `GameHUD.show_event`) read. Tests:
   `--qol01-test [--shots] [--only r_routes,b_modes,p_posture,i_interrupt,n_notices,c_views,z_shots,q_perf]`.
+- **Natural cover (WORLD-COVER-01).** Boulders, rock groups / ridges, thick logs, root plates, dry stone walls and timber stacks
+  are library ids 24-30 (`tools/blender/env/make_cover_v1.py` on the scan pipeline; `.blend` in `assets/environment/blender/`) placed
+  by `CoverLayer` (`scripts/world/cover_layer.gd`) as a read-only WorldOverrides layer `worlds/cover/<world>.cover.json` (loaded under the
+  settlement layer through `WorldOverrides.extra_layers`; chunks and manifest untouched; `--no-natural-cover` off). Rebuild:
+  `--scenario=dev --no-natural-cover --build-cover-layer [--area=x,z,r]` (the old layer must not be loaded: it would block itself).
+  Box solids are collider type 2 (`VegetationMeshDef.box`: half length, height, half depth, turned with the instance); every
+  reader handles them - LineOfFire (stride `LineOfFire.STRIDE` 9, `_box_hit`), InstanceColliderStreamer (BoxShape3D),
+  StructureManager (circles along the axis), AreaNavigation (turned rectangle), CombatBrain.cover_spots (`_box_candidates`:
+  several spots along a wall / log). Cover spots lie `CombatBrain.COVER_GAP` (1.0 m) behind a solid (the navmesh keeps agents
+  ~0.95 m off it) and a walk to a post (`UnitState.post_pos`) arrives with the reaction tolerance. Tests: `--scenario=dev
+  --world-cover-test [--shots] [--only v_kinds,b_ballistic,a_open,b_forest,c_road,d_two_threats,e_modes,n_vehicles,q_perf,z_fight]`
+  (with `--no-natural-cover` for before numbers).
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are
