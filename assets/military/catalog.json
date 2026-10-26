@@ -305,17 +305,17 @@
   "category": "Defences",
   "size_above_ground": [
    6.4,
-   6.5,
-   2.105
+   7.143,
+   2.113
   ],
   "footprint_xy": [
    -3.2,
-   -3.3,
+   -3.943,
    3.2,
    3.2
   ],
   "tris": [
-   4764,
+   40304,
    212,
    144
   ],
@@ -331,7 +331,7 @@
    "Kit_Palette",
    "Sandbag"
   ],
-  "glb_bytes": 667468,
+  "glb_bytes": 2497108,
   "glb": "res://assets/military/buildings/bunker_fighting.glb"
  },
  "camo_net_canopy": {
@@ -534,6 +534,69 @@
   "glb_bytes": 178064,
   "glb": "res://assets/military/modules/comms_tower.glb"
  },
+ "concrete_blocks": {
+  "family": "prop",
+  "display_name": "Concrete block wall",
+  "category": "Industrial",
+  "size_above_ground": [
+   4.825,
+   0.821,
+   1.67
+  ],
+  "footprint_xy": [
+   -2.415,
+   -0.402,
+   2.41,
+   0.418
+  ],
+  "tris": [
+   660,
+   220,
+   24
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Concrete_Dark"
+  ],
+  "glb_bytes": 82620,
+  "glb": "res://assets/military/props/concrete_blocks.glb"
+ },
+ "concrete_pipes": {
+  "family": "prop",
+  "display_name": "Concrete pipe stack",
+  "category": "Industrial",
+  "size_above_ground": [
+   2.3,
+   2.0,
+   1.96
+  ],
+  "footprint_xy": [
+   -1.15,
+   -1.0,
+   1.15,
+   1.0
+  ],
+  "tris": [
+   648,
+   312,
+   192
+  ],
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "materials": [
+   "Concrete",
+   "Timber_Dark"
+  ],
+  "glb_bytes": 95676,
+  "glb": "res://assets/military/props/concrete_pipes.glb"
+ },
  "container_yard": {
   "family": "module",
   "display_name": "Container storage area",
@@ -611,18 +674,18 @@
   "display_name": "Fighting position (sandbags)",
   "category": "Defences",
   "size_above_ground": [
-   3.2,
-   2.801,
-   0.979
+   2.96,
+   2.862,
+   0.983
   ],
   "footprint_xy": [
-   -1.6,
-   -1.336,
-   1.6,
-   1.465
+   -1.478,
+   -1.389,
+   1.482,
+   1.473
   ],
   "tris": [
-   4764,
+   16332,
    40,
    40
   ],
@@ -635,7 +698,7 @@
    "Dirt",
    "Sandbag"
   ],
-  "glb_bytes": 364996,
+  "glb_bytes": 1039148,
   "glb": "res://assets/military/modules/dfp_sandbag_ring.glb"
  },
  "drum_pallet": {
@@ -679,7 +742,7 @@
   "size_above_ground": [
    4.0,
    1.9,
-   0.938
+   0.882
   ],
   "footprint_xy": [
    -2.0,
@@ -688,8 +751,8 @@
    0.95
   ],
   "tris": [
-   508,
-   72,
+   1148,
+   364,
    28
   ],
   "surfaces": [
@@ -701,7 +764,7 @@
    "Dirt",
    "Sandbag"
   ],
-  "glb_bytes": 35456,
+  "glb_bytes": 79348,
   "glb": "res://assets/military/props/earth_berm.glb"
  },
  "field_toilet": {
@@ -740,18 +803,18 @@
   "display_name": "Fighting position",
   "category": "Defences",
   "size_above_ground": [
-   4.374,
-   2.429,
-   1.085
+   4.429,
+   2.467,
+   1.101
   ],
   "footprint_xy": [
-   -2.187,
-   -0.985,
-   2.187,
-   1.444
+   -2.219,
+   -1.046,
+   2.21,
+   1.421
   ],
   "tris": [
-   6444,
+   23112,
    96,
    48
   ],
@@ -766,8 +829,41 @@
    "Sandbag",
    "Timber"
   ],
-  "glb_bytes": 854928,
+  "glb_bytes": 1431156,
   "glb": "res://assets/military/modules/fighting_position.glb"
+ },
+ "firewood_stack": {
+  "family": "prop",
+  "display_name": "Firewood stack",
+  "category": "Rural",
+  "size_above_ground": [
+   3.4,
+   1.0,
+   1.435
+  ],
+  "footprint_xy": [
+   -1.7,
+   -0.5,
+   1.7,
+   0.5
+  ],
+  "tris": [
+   3756,
+   96,
+   24
+  ],
+  "surfaces": [
+   3,
+   3,
+   2
+  ],
+  "materials": [
+   "Roof_Galv",
+   "Timber",
+   "Timber_Dark"
+  ],
+  "glb_bytes": 327944,
+  "glb": "res://assets/military/props/firewood_stack.glb"
  },
  "fuel_bladder_berm": {
   "family": "module",
@@ -932,6 +1028,70 @@
   "glb_bytes": 79804,
   "glb": "res://assets/military/props/fuel_tank_skid.glb"
  },
+ "garden_wall_concrete": {
+  "family": "prop",
+  "display_name": "Garden wall (concrete)",
+  "category": "Settlement",
+  "size_above_ground": [
+   6.04,
+   0.35,
+   0.9
+  ],
+  "footprint_xy": [
+   -3.02,
+   -0.175,
+   3.02,
+   0.175
+  ],
+  "tris": [
+   80,
+   48,
+   12
+  ],
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "materials": [
+   "Concrete",
+   "Concrete_Dark"
+  ],
+  "glb_bytes": 23404,
+  "glb": "res://assets/military/props/garden_wall_concrete.glb"
+ },
+ "garden_wall_stone": {
+  "family": "prop",
+  "display_name": "Garden wall (stone)",
+  "category": "Settlement",
+  "size_above_ground": [
+   6.04,
+   0.46,
+   0.85
+  ],
+  "footprint_xy": [
+   -3.02,
+   -0.23,
+   3.02,
+   0.23
+  ],
+  "tris": [
+   4984,
+   36,
+   24
+  ],
+  "surfaces": [
+   2,
+   2,
+   1
+  ],
+  "materials": [
+   "Concrete_Dark",
+   "Rock"
+  ],
+  "glb_bytes": 652600,
+  "glb": "res://assets/military/props/garden_wall_stone.glb"
+ },
  "generator_60kw": {
   "family": "prop",
   "display_name": "Generator 60 kW",
@@ -1036,18 +1196,18 @@
   "display_name": "Guard Tower",
   "category": "Defences",
   "size_above_ground": [
-   4.952,
-   4.939,
+   4.933,
+   4.934,
    8.8
   ],
   "footprint_xy": [
-   -2.474,
-   -2.477,
-   2.478,
-   2.463
+   -2.463,
+   -2.475,
+   2.47,
+   2.459
   ],
   "tris": [
-   2872,
+   17752,
    908,
    284
   ],
@@ -1062,7 +1222,7 @@
    "Paint_OD",
    "Sandbag"
   ],
-  "glb_bytes": 373296,
+  "glb_bytes": 977988,
   "glb": "res://assets/military/buildings/guard_tower_steel.glb"
  },
  "guardrail_4m": {
@@ -1658,6 +1818,39 @@
   "glb_bytes": 69864,
   "glb": "res://assets/military/props/log_barricade.glb"
  },
+ "material_stack": {
+  "family": "prop",
+  "display_name": "Pallets and materials",
+  "category": "Industrial",
+  "size_above_ground": [
+   3.952,
+   1.713,
+   1.296
+  ],
+  "footprint_xy": [
+   -1.978,
+   -1.2,
+   1.975,
+   0.513
+  ],
+  "tris": [
+   6092,
+   92,
+   60
+  ],
+  "surfaces": [
+   3,
+   2,
+   2
+  ],
+  "materials": [
+   "Canvas_White",
+   "Timber",
+   "Timber_Dark"
+  ],
+  "glb_bytes": 755344,
+  "glb": "res://assets/military/props/material_stack.glb"
+ },
  "medical_station": {
   "family": "building",
   "display_name": "Medical Station",
@@ -1733,18 +1926,18 @@
   "display_name": "MG emplacement",
   "category": "Defences",
   "size_above_ground": [
-   4.18,
-   2.877,
-   2.52
+   4.219,
+   2.927,
+   2.532
   ],
   "footprint_xy": [
-   -2.093,
-   -1.189,
-   2.087,
-   1.687
+   -2.11,
+   -1.252,
+   2.109,
+   1.675
   ],
   "tris": [
-   9992,
+   40944,
    168,
    72
   ],
@@ -1760,7 +1953,7 @@
    "Sandbag",
    "Timber"
   ],
-  "glb_bytes": 1326224,
+  "glb_bytes": 2512920,
   "glb": "res://assets/military/modules/mg_emplacement.glb"
  },
  "mg_nest": {
@@ -1770,7 +1963,7 @@
   "size_above_ground": [
    3.4,
    3.2,
-   1.794
+   1.788
   ],
   "footprint_xy": [
    -1.7,
@@ -1779,7 +1972,7 @@
    1.6
   ],
   "tris": [
-   6252,
+   30140,
    108,
    60
   ],
@@ -1793,7 +1986,7 @@
    "Sandbag",
    "Timber"
   ],
-  "glb_bytes": 495292,
+  "glb_bytes": 1846392,
   "glb": "res://assets/military/modules/mg_nest.glb"
  },
  "mout_wall_door": {
@@ -2084,6 +2277,37 @@
   "glb_bytes": 36880,
   "glb": "res://assets/military/props/pallet_euro.glb"
  },
+ "picket_fence": {
+  "family": "prop",
+  "display_name": "Picket fence 4 m",
+  "category": "Settlement",
+  "size_above_ground": [
+   3.99,
+   0.125,
+   1.05
+  ],
+  "footprint_xy": [
+   -1.995,
+   -0.105,
+   1.995,
+   0.02
+  ],
+  "tris": [
+   572,
+   72,
+   48
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Kit_Palette"
+  ],
+  "glb_bytes": 59312,
+  "glb": "res://assets/military/props/picket_fence.glb"
+ },
  "radio_mast": {
   "family": "prop",
   "display_name": "Telescopic radio mast 12 m",
@@ -2165,7 +2389,7 @@
    3.22
   ],
   "tris": [
-   1516,
+   7084,
    332,
    200
   ],
@@ -2183,7 +2407,7 @@
    "Sandbag",
    "Signs"
   ],
-  "glb_bytes": 161900,
+  "glb_bytes": 399944,
   "glb": "res://assets/military/modules/range_firing_point.glb"
  },
  "range_target_line": {
@@ -2449,24 +2673,86 @@
   "glb_bytes": 15792,
   "glb": "res://assets/military/roads/road_gravel_10m.glb"
  },
+ "round_bales_green": {
+  "family": "prop",
+  "display_name": "Round bales x4",
+  "category": "Rural",
+  "size_above_ground": [
+   5.067,
+   1.304,
+   1.21
+  ],
+  "footprint_xy": [
+   -2.538,
+   -0.641,
+   2.529,
+   0.663
+  ],
+  "tris": [
+   1040,
+   96,
+   12
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Wrap_Green"
+  ],
+  "glb_bytes": 57936,
+  "glb": "res://assets/military/props/round_bales_green.glb"
+ },
+ "round_bales_white": {
+  "family": "prop",
+  "display_name": "Round bales x4",
+  "category": "Rural",
+  "size_above_ground": [
+   5.09,
+   1.331,
+   1.238
+  ],
+  "footprint_xy": [
+   -2.537,
+   -0.686,
+   2.553,
+   0.645
+  ],
+  "tris": [
+   1040,
+   96,
+   12
+  ],
+  "surfaces": [
+   1,
+   1,
+   1
+  ],
+  "materials": [
+   "Wrap_White"
+  ],
+  "glb_bytes": 57936,
+  "glb": "res://assets/military/props/round_bales_white.glb"
+ },
  "sandbag_fighting_position": {
   "family": "prop",
   "display_name": "Sandbag fighting position",
   "category": "Defences",
   "size_above_ground": [
-   3.871,
-   2.94,
-   0.743
+   3.924,
+   2.971,
+   0.742
   ],
   "footprint_xy": [
-   -1.935,
-   -1.354,
-   1.935,
-   1.586
+   -1.964,
+   -1.394,
+   1.96,
+   1.577
   ],
   "tris": [
-   7788,
-   936,
+   30252,
+   9084,
    72
   ],
   "surfaces": [
@@ -2478,7 +2764,7 @@
    "Dirt",
    "Sandbag"
   ],
-  "glb_bytes": 747448,
+  "glb_bytes": 2475020,
   "glb": "res://assets/military/props/sandbag_fighting_position.glb"
  },
  "sandbag_single": {
@@ -2486,19 +2772,19 @@
   "display_name": "Sandbag",
   "category": "Defences",
   "size_above_ground": [
-   0.66,
-   0.32,
-   0.13
+   0.632,
+   0.318,
+   0.134
   ],
   "footprint_xy": [
-   -0.3,
-   -0.16,
-   0.36,
-   0.16
+   -0.316,
+   -0.159,
+   0.316,
+   0.159
   ],
   "tris": [
-   136,
-   44,
+   160,
+   48,
    12
   ],
   "surfaces": [
@@ -2509,7 +2795,7 @@
   "materials": [
    "Sandbag"
   ],
-  "glb_bytes": 18300,
+  "glb_bytes": 19160,
   "glb": "res://assets/military/props/sandbag_single.glb"
  },
  "sandbag_wall_2m": {
@@ -2517,19 +2803,19 @@
   "display_name": "Sandbag wall 2 m (1.0 m)",
   "category": "Defences",
   "size_above_ground": [
-   2.049,
-   0.672,
-   0.979
+   2.09,
+   0.656,
+   0.98
   ],
   "footprint_xy": [
-   -0.998,
-   -0.336,
-   1.051,
-   0.336
+   -1.046,
+   -0.327,
+   1.044,
+   0.329
   ],
   "tris": [
-   5760,
-   352,
+   10240,
+   3072,
    12
   ],
   "surfaces": [
@@ -2540,7 +2826,7 @@
   "materials": [
    "Sandbag"
   ],
-  "glb_bytes": 378176,
+  "glb_bytes": 836780,
   "glb": "res://assets/military/props/sandbag_wall_2m.glb"
  },
  "sandbag_wall_green_2m": {
@@ -2548,19 +2834,19 @@
   "display_name": "Sandbag wall 2 m (green)",
   "category": "Defences",
   "size_above_ground": [
-   2.058,
-   0.667,
-   0.979
+   2.086,
+   0.655,
+   0.977
   ],
   "footprint_xy": [
-   -1.004,
-   -0.337,
-   1.054,
-   0.33
+   -1.042,
+   -0.327,
+   1.044,
+   0.328
   ],
   "tris": [
-   5760,
-   352,
+   10240,
+   3072,
    12
   ],
   "surfaces": [
@@ -2571,7 +2857,7 @@
   "materials": [
    "Sandbag_Green"
   ],
-  "glb_bytes": 378220,
+  "glb_bytes": 839284,
   "glb": "res://assets/military/props/sandbag_wall_green_2m.glb"
  },
  "sandbag_wall_low_2m": {
@@ -2579,19 +2865,19 @@
   "display_name": "Sandbag wall 2 m (0.6 m)",
   "category": "Defences",
   "size_above_ground": [
-   2.045,
-   0.668,
-   0.619
+   2.093,
+   0.652,
+   0.621
   ],
   "footprint_xy": [
-   -0.995,
-   -0.334,
-   1.05,
-   0.335
+   -1.051,
+   -0.326,
+   1.042,
+   0.326
   ],
   "tris": [
-   3600,
-   220,
+   6400,
+   1920,
    12
   ],
   "surfaces": [
@@ -2602,7 +2888,7 @@
   "materials": [
    "Sandbag"
   ],
-  "glb_bytes": 237884,
+  "glb_bytes": 524216,
   "glb": "res://assets/military/props/sandbag_wall_low_2m.glb"
  },
  "shoot_house": {
@@ -2895,6 +3181,73 @@
   "glb_bytes": 16432,
   "glb": "res://assets/military/props/sign_yield.glb"
  },
+ "skip_green": {
+  "family": "prop",
+  "display_name": "Skip container",
+  "category": "Industrial",
+  "size_above_ground": [
+   3.6,
+   2.34,
+   1.5
+  ],
+  "footprint_xy": [
+   -1.8,
+   -1.17,
+   1.8,
+   1.17
+  ],
+  "tris": [
+   396,
+   80,
+   10
+  ],
+  "surfaces": [
+   4,
+   3,
+   1
+  ],
+  "materials": [
+   "Dirt",
+   "Kit_Palette",
+   "Paint_Green",
+   "Timber_Dark"
+  ],
+  "glb_bytes": 53300,
+  "glb": "res://assets/military/props/skip_green.glb"
+ },
+ "skip_yellow": {
+  "family": "prop",
+  "display_name": "Skip container",
+  "category": "Industrial",
+  "size_above_ground": [
+   3.601,
+   2.34,
+   1.5
+  ],
+  "footprint_xy": [
+   -1.8,
+   -1.17,
+   1.801,
+   1.17
+  ],
+  "tris": [
+   396,
+   80,
+   10
+  ],
+  "surfaces": [
+   3,
+   2,
+   1
+  ],
+  "materials": [
+   "Dirt",
+   "Kit_Palette",
+   "Timber_Dark"
+  ],
+  "glb_bytes": 51212,
+  "glb": "res://assets/military/props/skip_yellow.glb"
+ },
  "supply_depot": {
   "family": "building",
   "display_name": "Supply Depot",
@@ -3130,6 +3483,40 @@
   ],
   "glb_bytes": 240796,
   "glb": "res://assets/military/buildings/training_facility.glb"
+ },
+ "transformer_kiosk": {
+  "family": "prop",
+  "display_name": "Transformer kiosk",
+  "category": "Infrastructure",
+  "size_above_ground": [
+   3.0,
+   2.5,
+   2.45
+  ],
+  "footprint_xy": [
+   -1.5,
+   -1.25,
+   1.5,
+   1.25
+  ],
+  "tris": [
+   256,
+   100,
+   20
+  ],
+  "surfaces": [
+   4,
+   4,
+   2
+  ],
+  "materials": [
+   "Concrete",
+   "Gravel",
+   "Kit_Palette",
+   "Roof_Galv"
+  ],
+  "glb_bytes": 56712,
+  "glb": "res://assets/military/props/transformer_kiosk.glb"
  },
  "truck_6x6": {
   "family": "vehicle",

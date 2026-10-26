@@ -5,30 +5,30 @@
  "category": "Defences",
  "description": "Sandbag wall 2.0 m long, 8 courses (0.96 m high).",
  "bounds_min": [
-  -0.998,
-  -0.336,
-  -0.009
+  -1.046,
+  -0.327,
+  -0.0
  ],
  "bounds_max": [
-  1.051,
-  0.336,
-  0.979
+  1.044,
+  0.329,
+  0.98
  ],
  "size_above_ground": [
-  2.049,
-  0.672,
-  0.979
+  2.09,
+  0.656,
+  0.98
  ],
  "footprint_xy": [
-  -0.998,
-  -0.336,
-  1.051,
-  0.336
+  -1.046,
+  -0.327,
+  1.044,
+  0.329
  ],
  "foundation_depth": 0.0,
  "tris": [
-  5760,
-  352,
+  10240,
+  3072,
   12
  ],
  "surfaces": [
@@ -94,7 +94,9 @@
   "pass": true,
   "errors": [],
   "warnings": [],
-  "accepted": [],
+  "accepted": [
+   "hidden back-to-back faces: sandbag_wall_2m_LOD0 (112 pairs) - delete to save tris"
+  ],
   "eps": 0.002,
   "tol": 0.03,
   "over_budget": []

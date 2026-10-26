@@ -1,0 +1,101 @@
+{
+ "id": "garden_wall_concrete",
+ "family": "prop",
+ "display_name": "Garden wall (concrete)",
+ "category": "Settlement",
+ "description": "Low concrete garden wall 6.0 m long, 0.9 m high, 0.25 m thick, with a cap.",
+ "bounds_min": [
+  -3.02,
+  -0.175,
+  0.0
+ ],
+ "bounds_max": [
+  3.02,
+  0.175,
+  0.9
+ ],
+ "size_above_ground": [
+  6.04,
+  0.35,
+  0.9
+ ],
+ "footprint_xy": [
+  -3.02,
+  -0.175,
+  3.02,
+  0.175
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  80,
+  48,
+  12
+ ],
+ "surfaces": [
+  2,
+  2,
+  1
+ ],
+ "materials": [
+  "Concrete",
+  "Concrete_Dark"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   140
+  ],
+  [
+   140,
+   700
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -3.0,
+   0.0,
+   -0.165,
+   6.0,
+   0.9,
+   0.33
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SNAP_W",
+   "pos": [
+    -3.0,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": ""
+  },
+  {
+   "name": "SNAP_E",
+   "pos": [
+    3.0,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": ""
+  }
+ ],
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [],
+  "accepted": [
+   "hidden back-to-back faces: garden_wall_concrete_LOD0 (16 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
+}

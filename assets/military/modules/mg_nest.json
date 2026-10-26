@@ -7,17 +7,17 @@
  "bounds_min": [
   -1.7,
   -1.6,
-  -0.009
+  -0.002
  ],
  "bounds_max": [
   1.7,
   1.6,
-  1.794
+  1.788
  ],
  "size_above_ground": [
   3.4,
   3.2,
-  1.794
+  1.788
  ],
  "footprint_xy": [
   -1.7,
@@ -27,7 +27,7 @@
  ],
  "foundation_depth": 0.0,
  "tris": [
-  6252,
+  30140,
   108,
   60
  ],
@@ -121,7 +121,9 @@
   "pass": true,
   "errors": [],
   "warnings": [],
-  "accepted": [],
+  "accepted": [
+   "hidden back-to-back faces: mg_nest_LOD0 (253 pairs) - delete to save tris"
+  ],
   "eps": 0.002,
   "tol": 0.03,
   "over_budget": []

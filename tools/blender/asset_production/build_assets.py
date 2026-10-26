@@ -40,7 +40,7 @@ import ap_textures as T  # noqa: E402
 import ap_materials as AM  # noqa: E402
 import ap_lib as A  # noqa: E402
 
-FAMILY_MODULES = {"building": ["fam_buildings"], "module": ["fam_modules"], "prop": ["fam_props", "fam_props_logistics", "fam_props_tactical"],
+FAMILY_MODULES = {"building": ["fam_buildings"], "module": ["fam_modules"], "prop": ["fam_props", "fam_props_logistics", "fam_props_tactical", "fam_props_civil"],
                   "road": ["fam_roads"], "vehicle": ["fam_vehicles"]}
 FAMILY_DIRS = {"building": "buildings", "module": "modules", "prop": "props", "road": "roads", "vehicle": "vehicles"}
 

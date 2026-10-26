@@ -483,7 +483,7 @@ func _exclusions(world: String) -> void:
 			_excl.append([Vector2(s.pos[0], s.pos[2]), float(s.radius_m) + 30.0])
 	for p: Vector3 in demo.config.base_sites:
 		_excl.append([Vector2(p.x, p.z), 270.0])
-	for file in [CoverLayer.path(world), SettlementLayer.overrides_path(world), "res://worlds/%s.overrides.json" % world]:
+	for file in [CoverLayer.path(world), DetailLayer.path(world), SettlementLayer.overrides_path(world), "res://worlds/%s.overrides.json" % world]:
 		if file == "" or not FileAccess.file_exists(file):
 			continue
 		var j: Variant = JSON.parse_string(FileAccess.get_file_as_string(file))

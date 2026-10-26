@@ -75,6 +75,9 @@ MATERIALS = {
     "Canvas_White":    _m("canvas", "canvas_normal", (0.80, 0.79, 0.74), 0.90, 0.0, 0.7, 2.0, ("double",)),
     "Sandbag":         _m("canvas", "canvas_normal", (0.60, 0.53, 0.39), 0.95, 0.0, 1.0, 1.0),
     "Sandbag_Green":   _m("canvas", "canvas_normal", (0.33, 0.35, 0.25), 0.95, 0.0, 1.0, 1.0),
+    # WORLD-DETAIL-02: stretch film of wrapped round bales (glossy, faint weave of the overlapping wraps).
+    "Wrap_White":      _m("canvas", "canvas_normal", (0.86, 0.87, 0.84), 0.38, 0.0, 0.35, 1.6),
+    "Wrap_Green":      _m("canvas", "canvas_normal", (0.30, 0.38, 0.27), 0.40, 0.0, 0.35, 1.6),
     "Hesco_Liner":     _m("hesco_liner", "hesco_liner_normal", (1.0, 1.0, 1.0), 0.95, 0.0, 0.6, 0.608),
     "Hesco_Mesh":      _m("wire_mesh", None, (1.0, 1.0, 1.0), 0.55, 0.6, 1.0, 0.608, ("blend", "double")),
     "Chainlink":       _m("chainlink", None, (1.0, 1.0, 1.0), 0.50, 0.7, 1.0, 0.40, ("blend", "double")),

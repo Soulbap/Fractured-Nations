@@ -1,0 +1,83 @@
+{
+ "id": "skip_yellow",
+ "family": "prop",
+ "display_name": "Skip container",
+ "category": "Industrial",
+ "description": "Open steel lift skip 3.6 x 1.8 x 1.5 m (8 m3) with sloped ends, half full of waste.",
+ "bounds_min": [
+  -1.8,
+  -1.17,
+  0.0
+ ],
+ "bounds_max": [
+  1.801,
+  1.17,
+  1.5
+ ],
+ "size_above_ground": [
+  3.601,
+  2.34,
+  1.5
+ ],
+ "footprint_xy": [
+  -1.8,
+  -1.17,
+  1.801,
+  1.17
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  396,
+  80,
+  10
+ ],
+ "surfaces": [
+  3,
+  2,
+  1
+ ],
+ "materials": [
+  "Dirt",
+  "Kit_Palette",
+  "Timber_Dark"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   140
+  ],
+  [
+   140,
+   700
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -1.7,
+   0.0,
+   -0.95,
+   3.4,
+   1.5,
+   1.9
+  ]
+ ],
+ "markers": [],
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "skip_yellow_LOD0: 8 n-gons"
+  ],
+  "accepted": [
+   "hidden back-to-back faces: skip_yellow_LOD0 (30 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
+}

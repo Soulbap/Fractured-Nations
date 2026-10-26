@@ -6,28 +6,28 @@
  "description": "Reinforced-concrete bunker 4.0 x 4.0 x 1.6 m above ground (0.6 m below), firing slits front and sides, sandbag roof cover, rear entrance with sandbag walls.",
  "bounds_min": [
   -3.2,
-  -3.3,
+  -3.943,
   -0.6
  ],
  "bounds_max": [
   3.2,
   3.2,
-  2.105
+  2.113
  ],
  "size_above_ground": [
   6.4,
-  6.5,
-  2.105
+  7.143,
+  2.113
  ],
  "footprint_xy": [
   -3.2,
-  -3.3,
+  -3.943,
   3.2,
   3.2
  ],
  "foundation_depth": 0.6,
  "tris": [
-  4764,
+  40304,
   212,
   144
  ],
@@ -122,7 +122,7 @@
    "bunker_fighting_LOD0: duplicate verts=2 loose verts=0"
   ],
   "accepted": [
-   "hidden back-to-back faces: bunker_fighting_LOD0 (16 pairs) - delete to save tris"
+   "hidden back-to-back faces: bunker_fighting_LOD0 (560 pairs) - delete to save tris"
   ],
   "eps": 0.002,
   "tol": 0.03,

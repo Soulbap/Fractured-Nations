@@ -12,12 +12,12 @@
  "bounds_max": [
   2.0,
   0.95,
-  0.938
+  0.882
  ],
  "size_above_ground": [
   4.0,
   1.9,
-  0.938
+  0.882
  ],
  "footprint_xy": [
   -2.0,
@@ -27,8 +27,8 @@
  ],
  "foundation_depth": 0.0,
  "tris": [
-  508,
-  72,
+  1148,
+  364,
   28
  ],
  "surfaces": [
@@ -90,5 +90,16 @@
  "module": {
   "length": 4.0,
   "height": 0.9
+ },
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [
+   "earth_berm_LOD0: 2 n-gons"
+  ],
+  "accepted": [],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
  }
 }

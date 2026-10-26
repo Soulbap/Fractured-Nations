@@ -1,0 +1,101 @@
+{
+ "id": "garden_wall_stone",
+ "family": "prop",
+ "display_name": "Garden wall (stone)",
+ "category": "Settlement",
+ "description": "Low mortared stone garden wall 6.0 m long, 0.85 m high, 0.4 m thick.",
+ "bounds_min": [
+  -3.02,
+  -0.23,
+  0.0
+ ],
+ "bounds_max": [
+  3.02,
+  0.23,
+  0.85
+ ],
+ "size_above_ground": [
+  6.04,
+  0.46,
+  0.85
+ ],
+ "footprint_xy": [
+  -3.02,
+  -0.23,
+  3.02,
+  0.23
+ ],
+ "foundation_depth": 0.0,
+ "tris": [
+  4984,
+  36,
+  24
+ ],
+ "surfaces": [
+  2,
+  2,
+  1
+ ],
+ "materials": [
+  "Concrete_Dark",
+  "Rock"
+ ],
+ "lod_ranges": [
+  [
+   0,
+   40
+  ],
+  [
+   40,
+   140
+  ],
+  [
+   140,
+   700
+  ]
+ ],
+ "collision_boxes_godot": [
+  [
+   -3.0,
+   0.0,
+   -0.22,
+   6.0,
+   0.85,
+   0.44
+  ]
+ ],
+ "markers": [
+  {
+   "name": "SNAP_W",
+   "pos": [
+    -3.0,
+    0,
+    0
+   ],
+   "yaw": 90,
+   "note": ""
+  },
+  {
+   "name": "SNAP_E",
+   "pos": [
+    3.0,
+    0,
+    0
+   ],
+   "yaw": -90,
+   "note": ""
+  }
+ ],
+ "structure": null,
+ "qa": {
+  "pass": true,
+  "errors": [],
+  "warnings": [],
+  "accepted": [
+   "hidden back-to-back faces: garden_wall_stone_LOD0 (4 pairs) - delete to save tris"
+  ],
+  "eps": 0.002,
+  "tol": 0.03,
+  "over_budget": []
+ }
+}

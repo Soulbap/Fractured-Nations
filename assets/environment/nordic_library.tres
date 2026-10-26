@@ -88,6 +88,35 @@
 [ext_resource type="PackedScene" path="res://assets/environment/scenes/timber_stack.tscn" id="wc1_timber_stack"]
 [ext_resource type="PackedScene" path="res://assets/environment/scenes/timber_stack_v1.tscn" id="wc1_timber_stack_v1"]
 
+[ext_resource type="PackedScene" path="res://assets/military/props/round_bales_white.glb" id="wd2_round_bales_white"]
+[ext_resource type="PackedScene" path="res://assets/military/props/round_bales_green.glb" id="wd2_round_bales_green"]
+[ext_resource type="PackedScene" path="res://assets/military/props/firewood_stack.glb" id="wd2_firewood_stack"]
+[ext_resource type="PackedScene" path="res://assets/military/props/garden_wall_concrete.glb" id="wd2_garden_wall_concrete"]
+[ext_resource type="PackedScene" path="res://assets/military/props/garden_wall_stone.glb" id="wd2_garden_wall_stone"]
+[ext_resource type="PackedScene" path="res://assets/military/props/picket_fence.glb" id="wd2_picket_fence"]
+[ext_resource type="PackedScene" path="res://assets/military/props/concrete_blocks.glb" id="wd2_concrete_blocks"]
+[ext_resource type="PackedScene" path="res://assets/military/props/concrete_pipes.glb" id="wd2_concrete_pipes"]
+[ext_resource type="PackedScene" path="res://assets/military/props/skip_green.glb" id="wd2_skip_green"]
+[ext_resource type="PackedScene" path="res://assets/military/props/skip_yellow.glb" id="wd2_skip_yellow"]
+[ext_resource type="PackedScene" path="res://assets/military/props/transformer_kiosk.glb" id="wd2_transformer_kiosk"]
+[ext_resource type="PackedScene" path="res://assets/military/props/material_stack.glb" id="wd2_material_stack"]
+[ext_resource type="PackedScene" path="res://assets/military/props/jersey_barrier.glb" id="wd2_jersey_barrier"]
+[ext_resource type="PackedScene" path="res://assets/military/props/hesco_mil1_5.glb" id="wd2_hesco_mil1_5"]
+[ext_resource type="PackedScene" path="res://assets/military/props/sandbag_wall_2m.glb" id="wd2_sandbag_wall_2m"]
+[ext_resource type="PackedScene" path="res://assets/military/props/sandbag_wall_green_2m.glb" id="wd2_sandbag_wall_green_2m"]
+[ext_resource type="PackedScene" path="res://assets/military/props/t_wall.glb" id="wd2_t_wall"]
+[ext_resource type="PackedScene" path="res://assets/military/props/iso_container_20_rust.glb" id="wd2_iso_container_20_rust"]
+[ext_resource type="PackedScene" path="res://assets/military/props/iso_container_20_blue.glb" id="wd2_iso_container_20_blue"]
+[ext_resource type="PackedScene" path="res://assets/military/props/iso_container_20_od.glb" id="wd2_iso_container_20_od"]
+[ext_resource type="PackedScene" path="res://assets/military/props/iso_container_20_tan.glb" id="wd2_iso_container_20_tan"]
+[ext_resource type="PackedScene" path="res://assets/military/roads/guardrail_4m.glb" id="wd2_guardrail_4m"]
+[ext_resource type="PackedScene" path="res://assets/military/props/chainlink_fence.glb" id="wd2_chainlink_fence"]
+[ext_resource type="PackedScene" path="res://assets/military/props/ibc_tank.glb" id="wd2_ibc_tank"]
+[ext_resource type="PackedScene" path="res://assets/military/props/drum_pallet.glb" id="wd2_drum_pallet"]
+[ext_resource type="PackedScene" path="res://assets/military/props/supply_pallet.glb" id="wd2_supply_pallet"]
+[ext_resource type="PackedScene" path="res://assets/military/props/crate_large.glb" id="wd2_crate_large"]
+[ext_resource type="PackedScene" path="res://assets/military/props/log_barricade.glb" id="wd2_log_barricade"]
+
 [sub_resource type="Resource" id="Resource_t6y5q"]
 script = ExtResource("1_xbpqk")
 name = "Pine A"
@@ -345,7 +374,6 @@ cast_shadows = false
 variants = Array[PackedScene]([ExtResource("wv1_birch_s_v1")])
 shared_far = true
 
-
 [sub_resource type="Resource" id="Resource_wc1_24"]
 script = ExtResource("1_xbpqk")
 id = 24
@@ -427,6 +455,223 @@ collider = Vector3(2, 2.323, 0)
 box = Vector3(2.15, 1.15, 0.88)
 variants = Array[PackedScene]([ExtResource("wc1_timber_stack_v1")])
 
+[sub_resource type="Resource" id="Resource_wd2_31"]
+script = ExtResource("1_xbpqk")
+id = 31
+name = "Round bales"
+scene = ExtResource("wd2_round_bales_white")
+near_range = 40.0
+mid_range = 140.0
+max_range = 800.0
+collider = Vector3(2, 2.561, 0)
+box = Vector3(2.490, 1.150, 0.600)
+variants = Array[PackedScene]([ExtResource("wd2_round_bales_green")])
+
+[sub_resource type="Resource" id="Resource_wd2_32"]
+script = ExtResource("1_xbpqk")
+id = 32
+name = "Firewood stack"
+scene = ExtResource("wd2_firewood_stack")
+near_range = 40.0
+mid_range = 140.0
+max_range = 600.0
+collider = Vector3(2, 1.530, 0)
+box = Vector3(1.500, 1.350, 0.300)
+
+[sub_resource type="Resource" id="Resource_wd2_33"]
+script = ExtResource("1_xbpqk")
+id = 33
+name = "Garden wall"
+scene = ExtResource("wd2_garden_wall_concrete")
+near_range = 40.0
+mid_range = 140.0
+max_range = 700.0
+collider = Vector3(2, 3.008, 0)
+box = Vector3(3.000, 0.900, 0.220)
+parts = Array[PackedFloat32Array]([PackedFloat32Array(2.000, 0.000, 0.000, 3.000, 0.900, 0.165), PackedFloat32Array(2.000, 0.000, 0.000, 3.000, 0.850, 0.220)])
+variants = Array[PackedScene]([ExtResource("wd2_garden_wall_stone")])
+
+[sub_resource type="Resource" id="Resource_wd2_34"]
+script = ExtResource("1_xbpqk")
+id = 34
+name = "Picket fence"
+scene = ExtResource("wd2_picket_fence")
+near_range = 30.0
+mid_range = 90.0
+max_range = 260.0
+
+[sub_resource type="Resource" id="Resource_wd2_35"]
+script = ExtResource("1_xbpqk")
+id = 35
+name = "Concrete blocks"
+scene = ExtResource("wd2_concrete_blocks")
+near_range = 40.0
+mid_range = 140.0
+max_range = 700.0
+collider = Vector3(2, 2.433, 0)
+box = Vector3(2.400, 1.600, 0.400)
+parts = Array[PackedFloat32Array]([PackedFloat32Array(2.000, 0.000, 0.000, 2.400, 0.800, 0.400, 2.000, 0.000, 0.000, 1.600, 1.600, 0.400)])
+
+[sub_resource type="Resource" id="Resource_wd2_36"]
+script = ExtResource("1_xbpqk")
+id = 36
+name = "Concrete pipes"
+scene = ExtResource("wd2_concrete_pipes")
+near_range = 40.0
+mid_range = 140.0
+max_range = 700.0
+collider = Vector3(2, 1.450, 0)
+box = Vector3(1.050, 1.950, 1.000)
+parts = Array[PackedFloat32Array]([PackedFloat32Array(2.000, 0.000, 0.000, 1.050, 1.060, 1.000, 2.000, 0.000, 0.000, 0.500, 1.950, 1.000)])
+
+[sub_resource type="Resource" id="Resource_wd2_37"]
+script = ExtResource("1_xbpqk")
+id = 37
+name = "Skip container"
+scene = ExtResource("wd2_skip_green")
+near_range = 40.0
+mid_range = 140.0
+max_range = 700.0
+collider = Vector3(2, 1.947, 0)
+box = Vector3(1.700, 1.500, 0.950)
+variants = Array[PackedScene]([ExtResource("wd2_skip_yellow")])
+
+[sub_resource type="Resource" id="Resource_wd2_38"]
+script = ExtResource("1_xbpqk")
+id = 38
+name = "Transformer kiosk"
+scene = ExtResource("wd2_transformer_kiosk")
+near_range = 50.0
+mid_range = 180.0
+max_range = 900.0
+collider = Vector3(2, 1.531, 0)
+box = Vector3(1.200, 2.450, 0.950)
+
+[sub_resource type="Resource" id="Resource_wd2_39"]
+script = ExtResource("1_xbpqk")
+id = 39
+name = "Pallets and materials"
+scene = ExtResource("wd2_material_stack")
+near_range = 40.0
+mid_range = 140.0
+max_range = 700.0
+collider = Vector3(2, 2.290, 0)
+box = Vector3(1.950, 1.296, 1.200)
+parts = Array[PackedFloat32Array]([PackedFloat32Array(2.000, -1.350, 0.000, 0.600, 1.152, 0.400, 2.000, 0.000, -0.100, 0.600, 1.224, 0.400, 2.000, 1.350, 0.050, 0.600, 1.296, 0.400, 2.000, 0.700, 0.750, 0.450, 0.950, 0.450)])
+
+[sub_resource type="Resource" id="Resource_wd2_40"]
+script = ExtResource("1_xbpqk")
+id = 40
+name = "Concrete barrier"
+scene = ExtResource("wd2_jersey_barrier")
+near_range = 40.0
+mid_range = 150.0
+max_range = 800.0
+collider = Vector3(2, 1.531, 0)
+box = Vector3(1.500, 0.810, 0.305)
+
+[sub_resource type="Resource" id="Resource_wd2_41"]
+script = ExtResource("1_xbpqk")
+id = 41
+name = "HESCO line"
+scene = ExtResource("wd2_hesco_mil1_5")
+near_range = 50.0
+mid_range = 180.0
+max_range = 1200.0
+collider = Vector3(2, 2.702, 0)
+box = Vector3(2.650, 1.370, 0.530)
+
+[sub_resource type="Resource" id="Resource_wd2_42"]
+script = ExtResource("1_xbpqk")
+id = 42
+name = "Sandbag wall"
+scene = ExtResource("wd2_sandbag_wall_2m")
+near_range = 30.0
+mid_range = 120.0
+max_range = 700.0
+collider = Vector3(2, 1.050, 0)
+box = Vector3(1.000, 0.960, 0.320)
+variants = Array[PackedScene]([ExtResource("wd2_sandbag_wall_green_2m")])
+
+[sub_resource type="Resource" id="Resource_wd2_43"]
+script = ExtResource("1_xbpqk")
+id = 43
+name = "T-wall"
+scene = ExtResource("wd2_t_wall")
+near_range = 60.0
+mid_range = 220.0
+max_range = 1000.0
+collider = Vector3(2, 0.975, 0)
+box = Vector3(0.760, 3.660, 0.610)
+parts = Array[PackedFloat32Array]([PackedFloat32Array(2.000, 0.000, 0.000, 0.760, 0.300, 0.610, 2.000, 0.000, 0.000, 0.760, 3.660, 0.150)])
+
+[sub_resource type="Resource" id="Resource_wd2_44"]
+script = ExtResource("1_xbpqk")
+id = 44
+name = "Container 20 ft"
+scene = ExtResource("wd2_iso_container_20_rust")
+near_range = 35.0
+mid_range = 120.0
+max_range = 1200.0
+collider = Vector3(2, 3.265, 0)
+box = Vector3(1.219, 2.591, 3.029)
+variants = Array[PackedScene]([ExtResource("wd2_iso_container_20_blue")])
+
+[sub_resource type="Resource" id="Resource_wd2_45"]
+script = ExtResource("1_xbpqk")
+id = 45
+name = "Container 20 ft (military)"
+scene = ExtResource("wd2_iso_container_20_od")
+near_range = 35.0
+mid_range = 120.0
+max_range = 1200.0
+collider = Vector3(2, 3.265, 0)
+box = Vector3(1.219, 2.591, 3.029)
+variants = Array[PackedScene]([ExtResource("wd2_iso_container_20_tan")])
+
+[sub_resource type="Resource" id="Resource_wd2_46"]
+script = ExtResource("1_xbpqk")
+id = 46
+name = "Guardrail"
+scene = ExtResource("wd2_guardrail_4m")
+near_range = 50.0
+mid_range = 200.0
+max_range = 400.0
+
+[sub_resource type="Resource" id="Resource_wd2_47"]
+script = ExtResource("1_xbpqk")
+id = 47
+name = "Chain-link fence"
+scene = ExtResource("wd2_chainlink_fence")
+near_range = 40.0
+mid_range = 140.0
+max_range = 400.0
+
+[sub_resource type="Resource" id="Resource_wd2_48"]
+script = ExtResource("1_xbpqk")
+id = 48
+name = "Yard goods"
+scene = ExtResource("wd2_ibc_tank")
+near_range = 20.0
+mid_range = 60.0
+max_range = 400.0
+collider = Vector3(2, 0.863, 0)
+box = Vector3(0.610, 1.160, 0.610)
+parts = Array[PackedFloat32Array]([PackedFloat32Array(2.000, 0.000, 0.000, 0.600, 1.160, 0.500), PackedFloat32Array(2.000, 0.000, 0.000, 0.610, 1.030, 0.610), PackedFloat32Array(2.000, 0.000, 0.000, 0.600, 1.050, 0.400), PackedFloat32Array(2.000, 0.000, 0.000, 0.600, 0.900, 0.400)])
+variants = Array[PackedScene]([ExtResource("wd2_drum_pallet"), ExtResource("wd2_supply_pallet"), ExtResource("wd2_crate_large")])
+
+[sub_resource type="Resource" id="Resource_wd2_49"]
+script = ExtResource("1_xbpqk")
+id = 49
+name = "Log barricade"
+scene = ExtResource("wd2_log_barricade")
+near_range = 25.0
+mid_range = 90.0
+max_range = 600.0
+collider = Vector3(2, 1.848, 0)
+box = Vector3(1.800, 0.760, 0.420)
+parts = Array[PackedFloat32Array]([PackedFloat32Array(2.000, 0.000, 0.000, 1.800, 0.400, 0.420, 2.000, 0.000, 0.000, 1.750, 0.760, 0.200)])
+
 [resource]
 script = ExtResource("23_6b78p")
-meshes = Array[ExtResource("1_xbpqk")]([SubResource("Resource_t6y5q"), SubResource("Resource_4thry"), SubResource("Resource_ux4vf"), SubResource("Resource_ow4jh"), SubResource("Resource_4urcw"), SubResource("Resource_2ow38"), SubResource("Resource_nipys"), SubResource("Resource_ngi1v"), SubResource("Resource_77nvk"), SubResource("Resource_vpp75"), SubResource("Resource_prot2"), SubResource("Resource_34ylq"), SubResource("Resource_wonga"), SubResource("Resource_8q1gf"), SubResource("Resource_eb01y"), SubResource("Resource_xl0ie"), SubResource("Resource_0p0xr"), SubResource("Resource_m4sfk"), SubResource("Resource_2j4ml"), SubResource("Resource_y7k2c"), SubResource("Resource_60cva"), SubResource("Resource_v2sap1"), SubResource("Resource_v2sap2"), SubResource("Resource_wc1_24"), SubResource("Resource_wc1_25"), SubResource("Resource_wc1_26"), SubResource("Resource_wc1_27"), SubResource("Resource_wc1_28"), SubResource("Resource_wc1_29"), SubResource("Resource_wc1_30")])
+meshes = Array[ExtResource("1_xbpqk")]([SubResource("Resource_t6y5q"), SubResource("Resource_4thry"), SubResource("Resource_ux4vf"), SubResource("Resource_ow4jh"), SubResource("Resource_4urcw"), SubResource("Resource_2ow38"), SubResource("Resource_nipys"), SubResource("Resource_ngi1v"), SubResource("Resource_77nvk"), SubResource("Resource_vpp75"), SubResource("Resource_prot2"), SubResource("Resource_34ylq"), SubResource("Resource_wonga"), SubResource("Resource_8q1gf"), SubResource("Resource_eb01y"), SubResource("Resource_xl0ie"), SubResource("Resource_0p0xr"), SubResource("Resource_m4sfk"), SubResource("Resource_2j4ml"), SubResource("Resource_y7k2c"), SubResource("Resource_60cva"), SubResource("Resource_v2sap1"), SubResource("Resource_v2sap2"), SubResource("Resource_wc1_24"), SubResource("Resource_wc1_25"), SubResource("Resource_wc1_26"), SubResource("Resource_wc1_27"), SubResource("Resource_wc1_28"), SubResource("Resource_wc1_29"), SubResource("Resource_wc1_30"), SubResource("Resource_wd2_31"), SubResource("Resource_wd2_32"), SubResource("Resource_wd2_33"), SubResource("Resource_wd2_34"), SubResource("Resource_wd2_35"), SubResource("Resource_wd2_36"), SubResource("Resource_wd2_37"), SubResource("Resource_wd2_38"), SubResource("Resource_wd2_39"), SubResource("Resource_wd2_40"), SubResource("Resource_wd2_41"), SubResource("Resource_wd2_42"), SubResource("Resource_wd2_43"), SubResource("Resource_wd2_44"), SubResource("Resource_wd2_45"), SubResource("Resource_wd2_46"), SubResource("Resource_wd2_47"), SubResource("Resource_wd2_48"), SubResource("Resource_wd2_49")])

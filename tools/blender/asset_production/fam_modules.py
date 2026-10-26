@@ -32,17 +32,9 @@ def _st(cat="Base modules", slope=8.0, gap=None, nav=True):
 
 
 def _sandbag_row(a, x0, x1, y, courses, lods=L0, seed=1, mat="Sandbag", along="x"):
-    """A sandbag wall along X (or Y) on LOD0, one block on LOD1/2."""
+    """A sandbag wall along X (or Y) on LOD0 (WORLD-DETAIL-02 pillow bags, ap_kit.bag_wall), one block on LOD1/2."""
     rnd = random.Random(seed)
-    n = max(1, int(abs(x1 - x0) / 0.6))
-    step = (x1 - x0) / n
-    for k in range(courses):
-        off = 0.3 if k % 2 else 0.0
-        for i in range(n):
-            c = x0 + (i + 0.5) * step + (off if i < n - 1 else 0)
-            p = (c, y, 0.065 + k * 0.12) if along == "x" else (y, c, 0.065 + k * 0.12)
-            sc = (abs(step) / 2 - 0.005, 0.165, 0.074) if along == "x" else (0.165, abs(step) / 2 - 0.005, 0.074)
-            a.sphere(1.0, p, mat, lods, scale=sc, segs=8, rings=4)
+    K.bag_wall(a, x0, x1, y, courses, rnd, mat, along=along, lods=lods)
     lo = (min(x0, x1), y - 0.17, 0) if along == "x" else (y - 0.17, min(x0, x1), 0)
     hi = (max(x0, x1), y + 0.17, courses * 0.12) if along == "x" else (y + 0.17, max(x0, x1), courses * 0.12)
     a.box_between(lo, hi, mat, L12)
@@ -643,17 +635,8 @@ def dfp_sandbag_ring(A):
                 "Circular sandbag fighting position, 3.0 m outer diameter, 1.0 m high, firing port forward, rear entrance.")
     rnd = random.Random(11)
     R = 1.3
-    for k in range(8):
-        n = 14
-        for i in range(n):
-            ang = (i + 0.5 * (k % 2)) * 2 * math.pi / n
-            deg = math.degrees(ang)
-            if 250 < deg < 290:
-                continue                                 # rear entrance (-Y)
-            if k in (5, 6) and 80 < deg < 100:
-                continue                                 # firing port (+Y)
-            c = (R * math.cos(ang), R * math.sin(ang), 0.065 + k * 0.12)
-            a.sphere(1.0, c, "Sandbag", L0, scale=(0.30, 0.165, 0.074), segs=8, rings=4)
+    # WORLD-DETAIL-02: pillow bags laid round the ring; rear entrance (-Y) and firing port (+Y, courses 5-6) left open.
+    K.bag_ring(a, R, 8, rnd, skip=lambda k, deg: 250 < deg < 290 or (k in (5, 6) and 80 < deg < 100))
     # LOD1/2: a plain ring.
     a.cyl(R + 0.17, R + 0.17, 0.96, (0, 0, 0.48), "Sandbag", L12, segs=12)
     a.cyl(R - 0.17, R - 0.17, 0.01, (0, 0, 0.97), "Dirt", L12, segs=12)
@@ -681,9 +664,7 @@ def mg_nest(A):
             a.box((0.12, 0.12, 1.6), (sx, sy, 0.8), "Timber", L01)
     a.box((3.4, 3.2, 0.05), (0, 0, 1.62), "Plywood", ALL)
     rnd = random.Random(5)
-    for i in range(5):
-        for j in range(5):
-            a.sphere(1.0, (-1.3 + i * 0.65, -1.3 + j * 0.65, 1.72), "Sandbag", L0, scale=(0.30, 0.165, 0.074), segs=8, rings=4)
+    K.bag_layer(a, -1.6, 1.6, -1.5, 1.5, 1.645, 1, rnd)
     a.box((3.3, 3.1, 0.15), (0, 0, 1.72), "Sandbag", L12)
     a.col_box((3.4, 0.35, 1.0), (0, 1.35, 0.5))
     a.col_box((0.35, 2.4, 1.0), (-1.5, 0, 0.5))
@@ -705,48 +686,19 @@ def mg_nest(A):
 def _roof_bags(a, x0, x1, y0, y1, z, layers=2, seed=1):
     """Sandbags laid flat on a roof between (x0, y0) and (x1, y1), LOD0 only (LOD1/2 get a slab)."""
     rnd = random.Random(seed)
-    nx = max(1, int((x1 - x0) / 0.62))
-    ny = max(1, int((y1 - y0) / 0.36))
-    for k in range(layers):
-        for i in range(nx):
-            for j in range(ny):
-                off = 0.1 if (j + k) % 2 else -0.1    # rows offset against each other, every bag the same way
-                x = x0 + (i + 0.5) * (x1 - x0) / nx + off
-                y = y0 + (j + 0.5) * (y1 - y0) / ny
-                a.box((0.56, 0.33, 0.125), (x + rnd.uniform(-0.02, 0.02), y + rnd.uniform(-0.02, 0.02), z + 0.068 + k * 0.12), "Sandbag", L0,
-                      rot=A_rot(rnd.uniform(-1.5, 1.5)), bevel=0.035, segs=1)
+    K.bag_layer(a, x0, x1, y0, y1, z, layers, rnd)
     a.box_between((x0, y0, z), (x1, y1, z + layers * 0.12), "Sandbag", L12)
 
 
 def _bag_wall(a, x0, x1, y, courses, seed=1, along="x", thick=0.34):
-    """GAMEPLAY-01C sandbag wall: pillow-shaped bags (bevelled boxes, slightly irregular) in running bond over a solid earth
-    core, so no light shows between the bags; one block on LOD1/2. Along X at y (or along Y at x = y)."""
+    """GAMEPLAY-01C sandbag wall: pillow bags in running bond, pressed tight course on course (WORLD-DETAIL-02:
+    ap_kit.bag_wall), one bag deep; one block on LOD1/2. Along X at y (or along Y at x = y)."""
     rnd = random.Random(seed)
-    length = abs(x1 - x0)
     lo_, hi_ = min(x0, x1), max(x0, x1)
-    h = 0.12
-    for k in range(courses):
-        off = 0.27 if k % 2 else 0.0
-        c = lo_ - off + 0.28
-        while c < hi_ + 0.01:
-            l0 = max(c - 0.28, lo_ + rnd.uniform(0.0, 0.025))     # ragged ends: no coplanar end faces
-            l1 = min(c + 0.28, hi_ - rnd.uniform(0.0, 0.025))
-            if l1 - l0 > 0.12:
-                cx = (l0 + l1) / 2 + rnd.uniform(-0.01, 0.01)
-                size = (l1 - l0 - 0.035, thick + rnd.uniform(-0.02, 0.01), h + 0.008)
-                z = 0.06 + k * h + rnd.uniform(-0.0015, 0.0015)
-                rz = rnd.uniform(-1.5, 1.5)
-                if along == "x":
-                    a.box(size, (cx, y + rnd.uniform(-0.015, 0.015), z), "Sandbag", L0, rot=A_rot(rz), bevel=0.035, segs=1)
-                else:
-                    a.box(size, (y + rnd.uniform(-0.015, 0.015), cx, z), "Sandbag", L0, rot=A_rot(rz + 90.0), bevel=0.035, segs=1)
-            c += 0.56
-    top = courses * h
+    top = K.bag_wall(a, lo_, hi_, y, courses, rnd, along=along) - 0.02
     if along == "x":
-        a.box_between((lo_ + 0.1, y - thick / 2 + 0.06, 0.0), (hi_ - 0.1, y + thick / 2 - 0.06, top - 0.03), "Dirt", L0)
         a.box_between((lo_, y - thick / 2, 0), (hi_, y + thick / 2, top), "Sandbag", L12)
     else:
-        a.box_between((y - thick / 2 + 0.06, lo_ + 0.1, 0.0), (y + thick / 2 - 0.06, hi_ - 0.1, top - 0.03), "Dirt", L0)
         a.box_between((y - thick / 2, lo_, 0), (y + thick / 2, hi_, top), "Sandbag", L12)
 
 
