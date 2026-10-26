@@ -95,7 +95,8 @@ func _ready() -> void:
 	super()
 	nav.velocity_computed.connect(_on_velocity_computed)
 	possession_changed.connect(_on_possession_changed)
-	nav.max_speed = walk_speed
+	# QOL-01.1: avoidance may hand back up to the sprint (the desired speed is the pace; walk_speed capped sprints at 4.5).
+	nav.max_speed = maxf(walk_speed, UnitState.PACE_SPEED[UnitState.Pace.SPRINT])
 	# GAMEPLAY-04A: the body stands and walks on the same grades the routes send it over (WorldSim.INFANTRY_MAX_GRADE, slower uphill).
 	floor_max_angle = atan(WorldSim.INFANTRY_MAX_GRADE) + deg_to_rad(2.0)
 

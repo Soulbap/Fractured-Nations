@@ -37,6 +37,8 @@ const REACT_RADIUS: Array[float] = [0.8, 1.0, 1.6, 1.4]
 const REACT_TIME: Array[float] = [0.8, 1.0, 1.6, 1.4]
 ## A believed threat this close (m) makes COMBAT / STEALTH squads go low (crouch) when they halt, STEALTH also while moving.
 const LOW_M: Array[float] = [0.0, 0.0, 300.0, 250.0]
+## QOL-01.1: STEALTH walks crouched only this close to a believed threat (m), and only at WALK.
+const STEALTH_CROUCH_MOVE_M := 150.0
 ## STEALTH lies prone when holding within this distance of a believed threat (m).
 const STEALTH_PRONE_M := 150.0
 ## STEALTH does not open fire at targets farther than this (m) while not compromised.

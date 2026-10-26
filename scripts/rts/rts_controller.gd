@@ -309,10 +309,11 @@ func order_move(hit: Vector3) -> int:
 			return tn
 	var sqs := selected_squads()
 	_player_takes(sqs)
-	# VISUAL-03 (with --paces): squads jog on ordinary orders; Ctrl+right-click = run, Alt+right-click = walk.
+	# QOL-01.1: on ordinary orders the squads choose WALK / RUN / SPRINT from the situation; Ctrl+right-click = sprint,
+	# Alt+right-click = walk (the player's pace, kept for the whole move).
 	var pace := -1
 	if Input.is_key_pressed(KEY_CTRL):
-		pace = UnitState.Pace.RUN
+		pace = UnitState.Pace.SPRINT
 	elif Input.is_key_pressed(KEY_ALT):
 		pace = UnitState.Pace.WALK
 	var n := sim.squads.order_move(sqs, hit, pace) if not sqs.is_empty() else 0

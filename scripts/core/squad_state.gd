@@ -221,7 +221,7 @@ func to_dict() -> Dictionary:
 		"follow_unit": follow_unit_id, "follow_squad": follow_squad_id,
 		"formation": formation, "spacing": spacing, "detached": Array(detached),
 		"status": status, "blocked": Array(blocked), "fallen": Array(fallen), "roe": roe,
-		"op": op_id, "route": Array(route), "route_i": route_i, "route_wait": [route_wait_goal, route_wait_kind, route_wait_form], "station": station_objective, "cargo": cargo.duplicate(), "rearm_at": rearm_at, "rearm_s": rearm_s, "garrison_base": garrison_base, "defence_line": defence_line, "pace": pace,
+		"op": op_id, "route": Array(route), "route_i": route_i, "route_wait": [route_wait_goal, route_wait_kind, route_wait_form], "station": station_objective, "cargo": cargo.duplicate(), "rearm_at": rearm_at, "rearm_s": rearm_s, "garrison_base": garrison_base, "defence_line": defence_line, "pace": pace, "pace3": true,
 		"teams": teams.map(func(t: PackedInt32Array) -> Array: return Array(t)), "team_leaders": Array(team_leaders), "team_roles": Array(team_roles),
 		"tactic": tactic, "tactic_owner": tactic_owner, "tactic_phase": tactic_phase, "tactic_since": tactic_since,
 		"tactic_phase_since": tactic_phase_since, "tactic_target": tactic_target, "tactic_contact": tactic_contact, "tactic_site": tactic_site,
@@ -248,6 +248,9 @@ static func from_dict(d: Dictionary) -> SquadState:
 	s.formation = d.get("formation", Formation.LINE)
 	s.spacing = d.get("spacing", 3.0)
 	s.pace = int(d.get("pace", -1))
+	# QOL-01.1: saves before the three paces stored WALK / BRISK / JOG / RUN (0..3): walk and brisk are WALK, jog and run RUN.
+	if not d.has("pace3") and s.pace >= 0:
+		s.pace = UnitState.Pace.WALK if s.pace <= 1 else UnitState.Pace.RUN
 	s.detached = PackedInt32Array(d.get("detached", []))
 	s.status = d.get("status", Status.IDLE)
 	s.blocked = PackedInt32Array(d.get("blocked", []))

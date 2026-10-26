@@ -222,6 +222,15 @@ func _sync_point(c: Vector2i) -> void:
 			g.set_point_weight_scale(c, _profile_weight(PROFILES[pname], i))
 
 
+## QOL-01.1: forest density 0..1 of the cell at p (0 outside the grid or without a vegetation map).
+func cover_at(p: Vector3) -> float:
+	var c := world_to_cell(p)
+	if not _in(c):
+		return 0.0
+	var i := c.y * size.x + c.x
+	return cover[i] / 255.0 if i < cover.size() else 0.0
+
+
 # --- Behaviour profiles (QOL-01) ------------------------------------------------------
 
 ## Weight of cell i in a profile grid: roads at the profile's road cost, other ground its slope weight x (open + forest x
@@ -258,6 +267,13 @@ func profile_grid(pname: String) -> AStarGrid2D:
 	_profile_grids[pname] = g
 	profile_build_ms[pname] = snappedf((Time.get_ticks_usec() - t0) / 1000.0, 0.1)
 	return g
+
+
+## QOL-01.1: builds every profile grid now (at load; ~50 ms each) so the first SAFE / COMBAT / STEALTH order in play does not
+## pay for it in one frame.
+func prebuild_profiles() -> void:
+	for pname: String in PROFILES:
+		profile_grid(pname)
 
 
 ## A route for a behaviour profile: the profile's grid, cells in the believed enemy's area (`threat`: StrategicInfluence

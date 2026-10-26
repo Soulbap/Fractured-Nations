@@ -35,10 +35,12 @@ var max_health := 100.0
 ## Top ground speed in m/s (a run). VISUAL-03: how fast a soldier actually moves is its pace (WorldSim.move_speed), the
 ## same in both tiers; `speed` stays the ceiling (and what target leads assume).
 var speed := 4.5
-## VISUAL-03: locomotion paces and their speeds (m/s): patrol walk, brisk walk, jog (ordinary orders), run (assaults,
-## withdrawals, movement under fire). The animation set has a captured gait at each.
-enum Pace { WALK, BRISK, JOG, RUN }
-const PACE_SPEED: Array[float] = [1.3, 1.8, 3.3, 4.5]
+## QOL-01.1: the three locomotion paces and their speeds (m/s) for a soldier of `speed` 4.5: WALK (careful, patrol; the
+## captured brisk walk, 1.83 m/s, plays at its own stride), RUN (ordinary movement; the captured run, 4.45 m/s) and SPRINT
+## (dashes between cover, across open ground; between the run and sprint clips). WorldSim.pace_of chooses one.
+enum Pace { WALK, RUN, SPRINT }
+const PACE_SPEED: Array[float] = [1.8, 4.5, 6.2]
+const PACE_NAMES: Array[String] = ["walk", "run", "sprint"]
 var order := Order.NONE
 var order_target := Vector3.ZERO
 var move_state := MoveState.IDLE

@@ -448,6 +448,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--asset-integration-test" in args:
 		_gameplay_selftest = AssetIntegrationSelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)
+	elif "--qol011-test" in args:
+		_gameplay_selftest = Qol011SelfTest.new(self)
+		_gameplay_selftest.run.call_deferred(args)
 	elif "--qol01-test" in args:
 		_gameplay_selftest = Qol01SelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)
@@ -498,6 +501,7 @@ func _start_sandbox() -> void:
 		RoadShoulders.mask_grass(world.get_node_or_null("Grass") as GrassLayer)
 		layer += "_shoulders_%s" % sh.get("signature", "")
 	routes.setup(terrain, config.half_size(), src, "user://strategic/%s_grid%s.bin" % [config.world_name, layer], sim.state.roads)
+	routes.prebuild_profiles()
 	sim.war.setup(routes)
 	sim.vehicles.setup(routes)
 	bridge_markers = BridgeMarkers.new()

@@ -22,6 +22,10 @@ const NAMES: Array[String] = ["standing", "crouching", "prone"]
 const TRANSITION_S := [[0.0, 0.35, 1.0], [0.35, 0.0, 0.8], [1.1, 0.9, 0.0]]
 ## Share of the walking speed (crouch walk ~2.5 m/s, prone crawl ~0.8 m/s at the 4.5 m/s baseline).
 const SPEED: Array[float] = [1.0, 0.55, 0.18]
+## QOL-01.1: the fastest a soldier moves in each posture, whatever his pace (m/s): crouched no faster than the captured
+## crouch walk can stride (1.0 m/s clip, played up to ~1.6x), prone at the captured crawl - a sprint order does not make a
+## prone soldier slide along at 1.1 m/s.
+const MAX_SPEED: Array[float] = [INF, 1.6, 0.81]
 ## Weapon steadiness: multiplies the weapon's spread and bloom (CombatSim) and the AI's aim error (CombatBrain).
 const STEADY: Array[float] = [1.0, 0.85, 0.65]
 ## A braced weapon (WeaponDef.settle_s > 0: bipod) counts as settled after this when prone.

@@ -10,7 +10,13 @@ stable branch, updated only with the product owner's approval), one canonical de
 branches are contained in `develop` and stay as history. See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest finished: **QOL-01** (tactical controls, squad behaviour and command feedback, on `develop`) — every squad has a
+Newest finished: **QOL-01.1** (movement paces) — soldiers WALK (1.8 m/s), RUN (4.5) or SPRINT (6.2) in normal play, chosen
+from the situation and the squad's behaviour (sprint across open ground near a threat or under fire, walk when closing
+carefully or for SAFE short moves, run otherwise); crouched and prone movement are capped at their clips; Ctrl / Alt + right
+click still sets sprint / walk. Interruption limits now hold on long routed moves; a player's fight order outranks STEALTH's
+fire discipline. `--uniform-pace` for the old single speed; tests `--qol011-test`. See [docs/QOL-01_1_REPORT.md](docs/QOL-01_1_REPORT.md).
+
+Before that: **QOL-01** (tactical controls, squad behaviour and command feedback, on `develop`) — every squad has a
 behaviour mode, **SAFE / AWARE / COMBAT / STEALTH** (after Arma 3's AI behaviour; **X** cycles, or the MODE row of the
 command panel), that the existing systems read: route choice (SAFE keeps to roads, STEALTH goes through woods and off roads,
 COMBAT and STEALTH keep wide of the enemy their faction believes in, with detour limits), posture (STEALTH walks crouched

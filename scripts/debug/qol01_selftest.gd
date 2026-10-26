@@ -328,18 +328,26 @@ func _p_posture() -> Dictionary:
 	var side: Vector3 = _site.side
 	await _until(func() -> bool: return not demo.sim.tactics.assessment(sq2).is_empty() and demo.sim.tactics.threat_dist(sq2) < 250.0, 20.0, 2.0)
 	demo.sim.squads.order_move([sq2.id], demo.on_ground(at.x + side.x * 60.0, at.z + side.z * 60.0, 0.0))
+	# QOL-01.1: STEALTH crouch-walks only at WALK within 150 m; across open ground it sprints upright.
 	var moving_crouched := 0
 	var moving := 0
+	var crouched_not_walking := 0
+	var paces := [0, 0, 0]
 	for i in 40:
 		await _physics(6)
 		for id in sq2.members:
 			var u := demo.sim.state.get_unit(id)
 			if u and u.move_state == UnitState.MoveState.MOVING and u.order == UnitState.Order.MOVE:
 				moving += 1
+				var pc := demo.sim.pace_of(u)
+				paces[pc] += 1
 				if u.posture == Posture.CROUCH:
 					moving_crouched += 1
-	out["stealth_moving"] = {"samples": moving, "crouched": moving_crouched, "threat_m": snappedf(demo.sim.tactics.threat_dist(sq2), 1.0)}
-	_expect(moving > 10 and moving_crouched * 2 >= moving, "p_posture: STEALTH did not move crouched near the enemy %s" % str(out.stealth_moving))
+					if pc != UnitState.Pace.WALK:
+						crouched_not_walking += 1
+	out["stealth_moving"] = {"samples": moving, "crouched": moving_crouched, "crouched_not_walking": crouched_not_walking, "paces_walk_run_sprint": paces,
+		"threat_m": snappedf(demo.sim.tactics.threat_dist(sq2), 1.0)}
+	_expect(moving > 10 and crouched_not_walking * 10 <= moving and paces[UnitState.Pace.RUN] * 2 < moving, "p_posture: STEALTH near the enemy did not move cautiously (walk crouched / sprint upright) %s" % str(out.stealth_moving))
 	# Compromised: the enemy opens fire; the STEALTH squad answers.
 	enemy.roe = SquadState.Roe.WEAPONS_FREE
 	var shots0 := _shots_of(sq2)

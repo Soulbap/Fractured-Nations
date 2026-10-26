@@ -1,7 +1,7 @@
 ## VISUAL-03 in-game validation of the soldier on the VISUAL-02 world, through the real bodies, controller, squad orders
-## and AI (--paces: the walk / jog / run orders the checks give; the game itself runs without them).
+## and AI (QOL-01.1: the walk / run / sprint orders the checks give are the game's own paces).
 ##
-##   Godot.exe --path . --fullscreen --log-file v3.log res://scenes/game/world_ref_20km.tscn -- --paces --visual03-test [--shots] [--only a_loco,b_squad,c_combat,d_terrain,e_trans,f_views] [--shot-dir=res://docs/visual03/godot]
+##   Godot.exe --path . --fullscreen --log-file v3.log res://scenes/game/world_ref_20km.tscn -- --visual03-test [--shots] [--only a_loco,b_squad,c_combat,d_terrain,e_trans,f_views] [--shot-dir=res://docs/visual03/godot]
 ##
 ## a_loco     one soldier walks, jogs, runs (squad order paces), stops and turns on the spot
 ## b_squad    eight soldiers in formation: jog, a change of direction at a run, a walk
@@ -38,7 +38,7 @@ func run(args: PackedStringArray) -> void:
 		failures.append("watchdog: test did not finish")
 		_finish())
 	await _physics(30)
-	_expect(WorldSim.PACES, "run with --paces (walk / jog / run orders)")
+	_expect(not WorldSim.UNIFORM_PACE, "run without --uniform-pace (walk / run / sprint orders)")
 	_cs = CombatScenario.new(demo)
 	_site = _cs.find_site()
 	_expect(not _site.is_empty(), "no open test site")
@@ -228,7 +228,7 @@ func _a_loco() -> Dictionary:
 	await _seconds(2.0)
 	var out := {"paces": {}}
 	var leg := 0
-	for p: Array in [["walk", UnitState.Pace.WALK, 3.5], ["jog", UnitState.Pace.JOG, 3.0], ["run", UnitState.Pace.RUN, 3.0]]:
+	for p: Array in [["walk", UnitState.Pace.WALK, 3.5], ["run", UnitState.Pace.RUN, 3.0], ["sprint", UnitState.Pace.SPRINT, 3.0]]:
 		var goal := u.position + dir * (float(p[2]) * UnitState.PACE_SPEED[p[1]] + 6.0)
 		_move(sq, goal, p[1])
 		await _physics(20)
@@ -273,7 +273,7 @@ func _b_squad() -> Dictionary:
 	await _seconds(2.0)
 	var out := {}
 	var centre := func() -> Vector3: return demo.sim.war.squad_center(sq)
-	_move(sq, centre.call() + dir * 60.0, UnitState.Pace.JOG)
+	_move(sq, centre.call() + dir * 60.0, UnitState.Pace.RUN)
 	await _physics(30)
 	var follow := func() -> Dictionary:
 		var p: Vector3 = centre.call()
@@ -398,10 +398,10 @@ func _d_terrain() -> Dictionary:
 		var p: Vector3 = demo.sim.war.squad_center(sq)
 		_cam(p + Vector3.UP, 14.0, side_yaw, 8.0)
 		return {}
-	_move(sq, p0 + d * 32.0, UnitState.Pace.JOG)
+	_move(sq, p0 + d * 32.0, UnitState.Pace.RUN)
 	await _physics(20)
 	await _record("d_uphill", 6.0, 2, follow)
-	_move(sq, p0 - d * 10.0, UnitState.Pace.JOG)
+	_move(sq, p0 - d * 10.0, UnitState.Pace.RUN)
 	await _physics(20)
 	await _record("d_downhill", 6.0, 2, follow)
 	var u := demo.sim.state.get_unit(sq.members[0])
@@ -428,7 +428,7 @@ func _e_trans() -> Dictionary:
 	await _seconds(1.5)
 	var log := []
 	# move and stop
-	_move(sq, u.position + dir * 8.0, UnitState.Pace.JOG)
+	_move(sq, u.position + dir * 8.0, UnitState.Pace.RUN)
 	log.append_array(await _record("e_1_move_stop", 4.5, 2, view))
 	# crouch and stand (the cover pose)
 	u.tactic = UnitState.Tactic.IN_COVER

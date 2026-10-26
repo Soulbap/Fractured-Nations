@@ -225,6 +225,12 @@ func threat_dist(sq: SquadState) -> float:
 	return float(a.get("dist", INF)) if not a.is_empty() else INF
 
 
+## Where the squad believes the threat is (INF: none) - from the last assessment.
+func threat_pos(sq: SquadState) -> Vector3:
+	var a := assessment(sq)
+	return a.get("threat_pos", Vector3.INF) if not a.is_empty() else Vector3.INF
+
+
 ## A squad of the player's side (every squad outside the war): its moves may be interrupted and resumed. AI factions' squads
 ## keep the behaviour they had (their moves belong to WarSim).
 func _player_squad(sq: SquadState) -> bool:
@@ -246,6 +252,10 @@ func _may_interrupt(sq: SquadState, a: Dictionary, now: float) -> bool:
 		return false
 	var pinned := int(a.pinned) * 2 >= maxi(int(a.n), 1)
 	if sq.interrupts >= SquadBehaviour.MAX_INTERRUPTS:
+		# QOL-01.1: past the limit the squad presses on - its soldiers still return fire and dash for cover on their own - but
+		# a squad pinned down cannot march anyway: it halts (and resumes) like before, at most every cooldown.
+		if pinned and now >= sq.interrupt_until:
+			return true
 		if not bool(_meta(sq, "pressing_on", false)):
 			_set_meta(sq, "pressing_on", true)
 			notice.emit(sq, "pressing_on", "%s: in contact again after %d halts - pressing on to the destination" % [sq.squad_name, sq.interrupts])

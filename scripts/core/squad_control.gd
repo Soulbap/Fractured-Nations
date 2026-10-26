@@ -318,7 +318,7 @@ func _on_route_job(job: RouteService.Job, sq_id: int) -> void:
 			routed_orders += 1
 			# March in column (narrow enough for bridges and tracks), take the ordered formation again for the last leg.
 			_end_formation[sq.id] = _end_formation.get(sq.id, formation)
-			follow_route(sq, r, SquadState.Formation.COLUMN)
+			follow_route(sq, r, SquadState.Formation.COLUMN, false)
 		"replan":
 			if r.size() < 2:
 				route_failures += 1
@@ -385,8 +385,11 @@ func route_priority(sq: SquadState) -> int:
 ## the next one given as the leader comes within route_reach_m (column formation on the
 ## march). The squad's order is MOVE throughout, so bodies, the abstract tier, cover
 ## reactions and the HUD treat it like any other move.
-func follow_route(sq: SquadState, route: PackedVector3Array, formation := SquadState.Formation.COLUMN) -> void:
-	sim.tactics.on_order(sq)
+## QOL-01.1: new_order false - the route of an order already given (it came back from RouteService): the order's own state (its
+## interruption count and cooldown) is not reset a second time.
+func follow_route(sq: SquadState, route: PackedVector3Array, formation := SquadState.Formation.COLUMN, new_order := true) -> void:
+	if new_order:
+		sim.tactics.on_order(sq)
 	drop_route_wait(sq)
 	sq.route = route
 	sq.route_i = 0

@@ -236,8 +236,8 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   `docs/CHARACTER_STANDARD.md`). Garments are authored in CHARACTER-01 *reference space* and moved onto the body with
   `char_body.to_body_space`. A detachable magazine is a split child of the weapon (`char_weapon.split_magazine`,
   `<weapon>_Mag_LOD*`) that `InfantryCharacter._hang_magazine` puts on `ATT_Magazine`; only `Reload` moves that bone. Write
-  bone poses through `char_anim._set_world` (rotation + position only). Movement paces (`WorldSim.pace_of`) are opt-in with
-  `--paces`. Validation: `--paces --visual03-test [--shots]` (A-F), `tools/visual03/check_loadouts.gd`, `check_clearance.py`.
+  bone poses through `char_anim._set_world` (rotation + position only). Movement paces (`WorldSim.pace_of`: WALK / RUN / SPRINT,
+  QOL-01.1) are always on (`--uniform-pace` for the old 4.5 m/s). Validation: `--visual03-test [--shots]` (A-F), `tools/visual03/check_loadouts.gd`, `check_clearance.py`.
 - **Combat posture (COMBAT-01).** Stand / crouch / prone is `UnitState.posture` (+ `posture_from`, `posture_at`,
   `posture_hold_until`; saved) read through the `Posture` table (`scripts/combat/posture.gd`): eye (`CombatSim.eye_of`),
   AI look / aim points, analytic hit volumes (`LineOfFire` via `Posture.hit`, `segment_capsule`), speed (`WorldSim.move_speed`,

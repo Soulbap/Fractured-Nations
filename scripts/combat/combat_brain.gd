@@ -1083,10 +1083,11 @@ func _choose_posture(u: UnitState) -> void:
 	var beh := sim.tactics.behaviour_now(sq) if sq else SquadBehaviour.AWARE
 	var near := sq != null and SquadBehaviour.LOW_M[beh] > 0.0 and sim.tactics.threat_dist(sq) <= SquadBehaviour.LOW_M[beh]
 	if moving:
-		# STEALTH near a believed enemy walks crouched (concealment delays noticing); up again once the threat is behind it.
-		# Never prone on the move, never against a reaction's dash (reactions run upright).
+		# STEALTH close to a believed enemy walks crouched (concealment delays noticing); upright again further off, and always
+		# upright when it sprints across open ground or dashes for cover (QOL-01.1: no crouch-walking the whole approach).
 		if beh == SquadBehaviour.STEALTH and not u.is_reacting():
-			var mw := Posture.CROUCH if near else Posture.STAND
+			var close := sq != null and sim.tactics.threat_dist(sq) <= SquadBehaviour.STEALTH_CROUCH_MOVE_M
+			var mw := Posture.CROUCH if close and sim.pace_of(u) == UnitState.Pace.WALK else Posture.STAND
 			if mw != u.posture and u.posture != Posture.PRONE and Posture.request(u, mw, now):
 				posture_changes += 1
 				u.posture_hold_until = now + posture_hold_s
@@ -1130,6 +1131,9 @@ func _choose_posture(u: UnitState) -> void:
 ## the squad away); a soldier just hit, or a target that close, is fired at. Fired on (compromised) the squad fights as COMBAT.
 func _stealth_holds(u: UnitState, sq: SquadState, dist: float, now: float) -> bool:
 	if sq == null or sq.behaviour != SquadBehaviour.STEALTH or sim.tactics.behaviour_now(sq) != SquadBehaviour.STEALTH:
+		return false
+	# QOL-01.1: a fight the player ordered (assault, suppress, flank, defend) is fought: the order outranks the mode.
+	if sq.tactic_owner == SquadState.Owner.PLAYER and sq.tactic in [SquadState.Tactic.ASSAULT, SquadState.Tactic.SUPPRESS, SquadState.Tactic.FLANK, SquadState.Tactic.DEFEND]:
 		return false
 	return dist > SquadBehaviour.STEALTH_FIRE_M and now - u.hit_at > self_defence_s
 
