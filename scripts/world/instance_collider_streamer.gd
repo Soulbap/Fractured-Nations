@@ -99,6 +99,12 @@ func _index_near(c: Vector3) -> void:
 				var key := Vector2i(floori(g.origin.x / bucket_size), floori(g.origin.z / bucket_size))
 				if not _buckets.has(key):
 					_buckets[key] = []
+				var d: VegetationMeshDef = vegetation.library.get_def(entry[0]) if vegetation.library else null
+				if d and d.collider.x >= 1.5:
+					# WORLD-COVER-01.1: one shape per box of the instance's variant.
+					for bx: Array in d.boxes_of(g):
+						_buckets[key].append([entry[0], g, bx])
+					continue
 				_buckets[key].append(entry)
 
 
@@ -115,14 +121,14 @@ func _rebuild(c: Vector3) -> void:
 				var g: Transform3D = entry[1]
 				if Vector2(g.origin.x - c.x, g.origin.z - c.z).length() > radius:
 					continue
-				_place(used, entry[0], g)
+				_place(used, entry[0], g, entry[2] if entry.size() > 2 else [])
 				used += 1
 	for i in range(used, _pool.size()):
 		_pool[i].disabled = true
 	active_count = used
 
 
-func _place(i: int, mesh_id: int, g: Transform3D) -> void:
+func _place(i: int, mesh_id: int, g: Transform3D, bx: Array = []) -> void:
 	if i >= _pool.size():
 		var new_shape := CollisionShape3D.new()
 		_body.add_child(new_shape)
@@ -131,14 +137,16 @@ func _place(i: int, mesh_id: int, g: Transform3D) -> void:
 	var spec := _shape_spec(mesh_id)
 	var s := g.basis.get_scale().y
 	if spec.x >= 1.5:
-		# WORLD-COVER-01: box solids (logs, walls, timber stacks, root plates, rock groups), turned with the instance.
-		var bx := (vegetation.library.get_def(mesh_id) as VegetationMeshDef).box * s
+		# WORLD-COVER-01: box solids (logs, walls, timber stacks, root plates, rock groups), turned with the instance;
+		# WORLD-COVER-01.1: bx = one box of VegetationMeshDef.boxes_of ([centre, yaw, half length, height, half depth]).
+		if bx.is_empty():
+			bx = (vegetation.library.get_def(mesh_id) as VegetationMeshDef).boxes_of(g)[0]
 		var box := cs.shape as BoxShape3D
 		if box == null:
 			box = BoxShape3D.new()
 			cs.shape = box
-		box.size = Vector3(bx.x * 2.0, bx.y, bx.z * 2.0)
-		cs.global_transform = Transform3D(Basis(Vector3.UP, VegetationMeshDef.yaw_of(g)), g.origin + Vector3.UP * bx.y * 0.5)
+		box.size = Vector3(float(bx[2]) * 2.0, float(bx[3]), float(bx[4]) * 2.0)
+		cs.global_transform = Transform3D(Basis(Vector3.UP, float(bx[1])), (bx[0] as Vector3) + Vector3.UP * float(bx[3]) * 0.5)
 	elif spec.x == 0:
 		var cap := cs.shape as CapsuleShape3D
 		if cap == null:

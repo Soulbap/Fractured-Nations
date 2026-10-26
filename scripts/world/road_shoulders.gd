@@ -57,6 +57,8 @@ static var touched := {}
 static var under_road := {}
 static var _terrain: Terrain3D
 static var _spacing := 1.0
+## WORLD-COVER-01.1: the eased vertices (x, z) of the last apply, kept only while TerrainRelief builds (its features keep clear).
+static var kept_keys := PackedVector2Array()
 
 
 ## Applies the eased heights to the terrain (computing them on the first run). road_root: the node holding the Road Generator
@@ -110,6 +112,8 @@ static func apply(terrain: Terrain3D, roads: RoadNetwork, world: String, spacing
 	under_road.clear()
 	_terrain = terrain
 	_spacing = spacing
+	if "--build-terrain-relief" in OS.get_cmdline_user_args():
+		kept_keys = keys
 	for i in keys.size():
 		var p := Vector3(keys[i].x, 0.0, keys[i].y)
 		terrain.data.set_height(p, heights[i])

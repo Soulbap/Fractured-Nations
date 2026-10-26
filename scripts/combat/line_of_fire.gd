@@ -379,6 +379,15 @@ func _fill_cell(cell: Vector2i) -> void:
 	for inst in vegetation.get_cell_instances(cell, _solid.keys()):
 		var xf: Transform3D = inst[1]
 		var spec: PackedFloat32Array = _solid[inst[0]]
+		if spec[0] > 1.5:
+			# WORLD-COVER-01.1: one record per box of the instance's variant (VegetationMeshDef.boxes_of).
+			for bx: Array in vegetation.library.get_def(inst[0]).boxes_of(xf):
+				var o: Vector3 = bx[0]
+				var bkey := Vector2i(floori(o.x / BUCKET), floori(o.z / BUCKET))
+				if not fresh.has(bkey):
+					fresh[bkey] = []
+				fresh[bkey].append_array([o.x, o.z, o.y, Vector2(bx[2], bx[4]).length(), bx[3], 2.0, bx[1], bx[2], bx[4]])
+			continue
 		var sc := xf.basis.get_scale()
 		var r := spec[1] * sc.x
 		var h := maxf(spec[2] * sc.y, 2.0 * r) if spec[0] < 0.5 else (r * 2.0 if spec[0] < 1.5 else spec[2] * sc.y)

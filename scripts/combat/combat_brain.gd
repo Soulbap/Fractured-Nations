@@ -1012,7 +1012,8 @@ func _tactics(u: UnitState) -> void:
 				u.clear_reaction()
 			if threatened and now >= u.tactic_cooldown_until and not _searches.has(u.id):
 				_start_search(u, mode)
-			elif (mode == "hold" or mode == "post") and not threatened and now - u.threat_at > calm_s and u.anchor_pos.is_finite() 					and _flat(u.position, u.anchor_pos) > 2.5 and now >= u.tactic_cooldown_until:
+			elif (mode == "hold" or mode == "post") and not threatened and now - u.threat_at > calm_s and u.anchor_pos.is_finite() \
+					and _flat(u.position, u.anchor_pos) > 2.5 and now >= u.tactic_cooldown_until:
 				# A reaction that ended away from the held spot (cover not reached, cover no
 				# longer useful): walk back once it is calm.
 				u.tactic = UnitState.Tactic.RETURNING
@@ -1110,6 +1111,15 @@ func _choose_posture(u: UnitState) -> void:
 				and sq.status != SquadState.Status.MOVING and not sim.squads.marching(sq) \
 				and sim.tactics.threat_dist(sq) <= SquadBehaviour.STEALTH_PRONE_M and prone_ground_ok(u):
 			want = Posture.PRONE
+		# WORLD-COVER-01.1: where only lying down protects (a hollow, a low bank or log: the spot is "low" against the believed
+		# threat) a soldier taking cover, under fire or waiting goes prone; one fighting a target he sees keeps his crouch to shoot.
+		if want == Posture.CROUCH and (u.tactic == UnitState.Tactic.IN_COVER or supp >= suppressed_at or not engaged) \
+				and not _moves_soon(u, mode) and _low_cover(u, now) and prone_ground_ok(u):
+			want = Posture.PRONE
+		# WORLD-COVER-01.1: behind cover taller than a crouching man's eye (a boulder, a root plate, the crest of a fold) a soldier
+		# fighting a target he sees stands to fire over it; the next choice brings him down again when the fight eases.
+		if want == Posture.CROUCH and engaged and supp < suppressed_at and not _moves_soon(u, mode) and _stand_to_fire(u, now):
+			want = Posture.STAND
 		if alert and u.tactic != UnitState.Tactic.IN_COVER:
 			var wdef := sim.combat.weapon(u.weapon_id)
 			var steady_weapon := wdef != null and (wdef.role == &"lmg" or wdef.role == &"dmr")
@@ -1136,6 +1146,53 @@ func _stealth_holds(u: UnitState, sq: SquadState, dist: float, now: float) -> bo
 	if sq.tactic_owner == SquadState.Owner.PLAYER and sq.tactic in [SquadState.Tactic.ASSAULT, SquadState.Tactic.SUPPRESS, SquadState.Tactic.FLANK, SquadState.Tactic.DEFEND]:
 		return false
 	return dist > SquadBehaviour.STEALTH_FIRE_M and now - u.hit_at > self_defence_s
+
+
+## WORLD-COVER-01.1: the soldier's spot protects him only lying down against the threat he believes in (judged at most every
+## 4 s per spot and threat; derived, never saved).
+var _low := {}
+
+
+func _low_cover(u: UnitState, now: float) -> bool:
+	var threat := u.threat_pos if u.threat_pos.is_finite() else u.target_last_pos
+	if not threat.is_finite():
+		# The squad's belief (a reported enemy the soldier has not seen himself).
+		var sq := sim.state.squad_of(u.id)
+		threat = sim.tactics.threat_pos(sq) if sq else Vector3.INF
+	if not threat.is_finite() or _flat(u.position, threat) > 400.0:
+		return false
+	var e: Array = _low.get(u.id, [])
+	if not e.is_empty() and now - float(e[0]) < 4.0 and _flat(e[1], u.position) < 1.0 and _flat(e[2], threat) < 10.0:
+		return e[3]
+	var low := bool(_evaluate_spot(u, u.position, threat).get("low", false))
+	_low[u.id] = [now, u.position, threat, low]
+	return low
+
+
+## WORLD-COVER-01.1: the soldier's crouched eye line to his target meets cover within 4 m while his standing one is clear (judged
+## at most every 2 s per spot and target; derived, never saved).
+var _stand := {}
+
+
+func _stand_to_fire(u: UnitState, now: float) -> bool:
+	var t := u.target_last_pos
+	if not t.is_finite():
+		return false
+	var e: Array = _stand.get(u.id, [])
+	if not e.is_empty() and now - float(e[0]) < 2.0 and _flat(e[1], u.position) < 1.0 and _flat(e[2], t) < 5.0:
+		return e[3]
+	var line := sim.combat.line
+	var aim := t + Vector3.UP * 1.0
+	var ce := u.position + Vector3.UP * Posture.EYE[Posture.CROUCH].y
+	var se := u.position + Vector3.UP * Posture.EYE[Posture.STAND].y
+	var d := _flat(u.position, t) - 1.0
+	var ok := false
+	if d > 4.0:
+		var rc := line.trace(ce, ce + (aim - ce).normalized() * d, u.id, false)
+		if rc.blocker != "range" and float(rc.distance) <= 4.0:
+			ok = line.trace(se, se + (aim - se).normalized() * d, u.id, false).blocker == "range"
+	_stand[u.id] = [now, u.position, t, ok]
+	return ok
 
 
 ## The squad is about to move this soldier (an assault, flank, bound or withdrawal it is not holding a post in).
@@ -1378,7 +1435,12 @@ func cover_spots(center: Vector3, radius: float, threat: Vector3, origin: Vector
 						var lat := Vector3(-tdir.z, 0.0, tdir.x) * r * 0.75
 						_add_candidate(out, origin, center, radius, c - tdir * (r * 0.75 + COVER_GAP) + lat, "rock")
 						_add_candidate(out, origin, center, radius, c - tdir * (r * 0.75 + COVER_GAP) - lat, "rock")
-	# Terrain: spots with ground rising at least 0.9 m within 8 m towards the threat.
+	# WORLD-COVER-01.1: the terrain microrelief near the centre - the bottom of a hollow or a ditch, the back of a fold or a bank
+	# (seen from the threat) - from its feature list: precise spots without sampling the ground.
+	if sim.terrain:
+		_relief_candidates(out, origin, center, radius, tdir)
+	# Terrain: spots with ground rising at least 0.55 m within 8 m towards the threat (prone cover; crouched needs more,
+	# _evaluate_spot decides).
 	if sim.terrain:
 		for ring: float in [3.0, 6.0, 9.0, 12.0]:
 			if ring > radius:
@@ -1394,12 +1456,54 @@ func cover_spots(center: Vector3, radius: float, threat: Vector3, origin: Vector
 					var hh: float = sim.terrain.data.get_height(p + tdir * step)
 					if not is_nan(hh):
 						rise = maxf(rise, hh - h)
-				if rise >= 0.9:
+				if rise >= 0.55:
 					_add_candidate(out, origin, center, radius, p, "terrain")
 	var rank := {"structure": 1, "rock": 2, "box": 2, "terrain": 3, "tree": 4}
 	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return a.d + rank[a.kind] * 3.0 < b.d + rank[b.kind] * 3.0)
 	return out.slice(0, max_cover_candidates if limit < 0 else limit)
+
+
+## WORLD-COVER-01.1: cover spots on the terrain microrelief within radius of center (TerrainRelief features), for a threat in
+## direction tdir: a hollow's bottom and its threat-side half (nearer the rim that shields it); along a fold, step or bank the
+## back slope at 0.55 of its width from the crest (crouched behind the crest, the eye over it) and at 0.75 (lower: covered,
+## not firing); along a ditch its bottom.
+func _relief_candidates(out: Array, origin: Vector3, center: Vector3, radius: float, tdir: Vector3) -> void:
+	for fi: int in TerrainRelief.features_near(center, radius):
+		var f: Dictionary = TerrainRelief.feats[fi]
+		match int(f.type):
+			TerrainRelief.HOLLOW:
+				if float(f.d) < 0.3:
+					continue
+				var c := Vector3(float(f.x), 0.0, float(f.z))
+				_add_candidate(out, origin, center, radius, c, "terrain")
+				_add_candidate(out, origin, center, radius, c + tdir * minf(float(f.rx), float(f.rz)) * 0.35, "terrain")
+			TerrainRelief.RIDGE:
+				var along := Vector3(float(f.cs), 0.0, float(f.sn))
+				var across := Vector3(-float(f.sn), 0.0, float(f.cs))
+				var away := -1.0 if across.dot(tdir) > 0.0 else 1.0
+				var w := float(f.wb) if away > 0.0 else float(f.wf)
+				for k: float in [-0.45, 0.0, 0.45]:
+					var s := k * float(f.hl)
+					var crest := Vector3(float(f.x), 0.0, float(f.z)) + along * s + across * float(f.get("bend", 0.0)) * (1.0 - k * k)
+					_add_candidate(out, origin, center, radius, crest + across * away * w * 0.55, "terrain")
+					_add_candidate(out, origin, center, radius, crest + across * away * w * 0.75, "terrain")
+			TerrainRelief.LINE:
+				var pts: PackedVector2Array = f.p2
+				var q := Vector2(center.x, center.z)
+				for i in pts.size() - 1:
+					var ab := pts[i + 1] - pts[i]
+					var l2 := maxf(ab.length_squared(), 1e-6)
+					var foot := pts[i] + ab * clampf((q - pts[i]).dot(ab) / l2, 0.0, 1.0)
+					if foot.distance_to(q) > radius:
+						continue
+					if float(f.a) < 0.0:
+						_add_candidate(out, origin, center, radius, Vector3(foot.x, 0.0, foot.y), "terrain")
+					else:
+						var n := Vector2(-ab.y, ab.x).normalized()
+						var nn := Vector3(n.x, 0.0, n.y)
+						var side := -1.0 if nn.dot(tdir) > 0.0 else 1.0
+						_add_candidate(out, origin, center, radius, Vector3(foot.x, 0.0, foot.y) + nn * side * float(f.w) * 0.6, "terrain")
 
 
 ## WORLD-COVER-01: how far behind the surface of a trunk, rock or box solid a cover spot lies (m). The local navmesh keeps
@@ -1488,7 +1592,7 @@ func _reject(u: UnitState, p: Vector3) -> String:
 ## Protection of a spot against a threat: short lines from the soldier's torso and eye
 ## at the spot towards the threat. Cover counts when something solid stops the torso
 ## line close to the spot; the eye line tells whether the soldier can fire from there.
-func _evaluate_spot(u: UnitState, p: Vector3, threat: Vector3) -> Dictionary:
+func _evaluate_spot(u: UnitState, p: Vector3, threat: Vector3, low_ok := true) -> Dictionary:
 	var line := sim.combat.line
 	var t_eye := threat + Vector3.UP * CombatSim.EYE_HEIGHT
 	# COMBAT-01: judged for the soldier crouched behind it (what it does in cover): low cover now counts.
@@ -1501,7 +1605,18 @@ func _evaluate_spot(u: UnitState, p: Vector3, threat: Vector3) -> Dictionary:
 	var limit := cover_terrain_m if r1.blocker == "terrain" else cover_contact_m
 	var protected: bool = r1.blocker in ["structure", "terrain", "tree"] and r1.distance <= limit
 	if not protected:
-		return {"protected": false, "can_fire": true}
+		if not low_ok:
+			return {"protected": false, "can_fire": true}
+		# WORLD-COVER-01.1: low cover - a hollow, a bank, a log, the back of a fold - protects a soldier lying down ("low":
+		# he goes prone there, _choose_posture). The eye line tells whether he can fire from the ground.
+		var pt := p + Vector3.UP * Posture.AIM_TORSO[Posture.PRONE].y
+		var rp := line.trace(pt, pt + (t_eye - pt).normalized() * reach, -1, false)
+		var lim := cover_terrain_m if rp.blocker == "terrain" else cover_contact_m
+		if not (rp.blocker in ["structure", "terrain", "tree"] and rp.distance <= lim):
+			return {"protected": false, "can_fire": true}
+		var pe := p + Vector3.UP * Posture.EYE[Posture.PRONE].y
+		var rpe := line.trace(pe, pe + (t_eye - pe).normalized() * reach, -1, false)
+		return {"protected": true, "low": true, "can_fire": rpe.blocker == "range", "blocker": rp.blocker}
 	var r2 := line.trace(eye, eye + (t_eye - eye).normalized() * reach, -1, false)
 	return {"protected": true, "can_fire": r2.blocker == "range", "blocker": r1.blocker}
 
@@ -1781,7 +1896,8 @@ func _aim_error(u: UnitState, dir: Vector3, dist: float) -> Vector3:
 	# GAMEPLAY-02B: the weapon's handling - a braced machine gun holds tighter, the same gun on the move much worse.
 	var wdef := sim.combat.weapon(u.weapon_id)
 	var settle := sim.combat.settle_factor(u, wdef) if wdef else 1.0
-	var sigma := (aim_error_base_deg + aim_error_per_100m_deg * dist / 100.0) * lerpf(1.0, settle, 0.5) 			+ aim_error_moving_deg * clampf(speed / 4.5, 0.0, 1.0) * (wdef.moving_aim_mult if wdef else 1.0)
+	var sigma := (aim_error_base_deg + aim_error_per_100m_deg * dist / 100.0) * lerpf(1.0, settle, 0.5) \
+			+ aim_error_moving_deg * clampf(speed / 4.5, 0.0, 1.0) * (wdef.moving_aim_mult if wdef else 1.0)
 	# GAMEPLAY-04C: a fresh aim is rougher and settles with time on the target; a better soldier aims tighter and settles sooner.
 	sigma *= aim_settle_mult(u, wdef) * proficiency_mult(u)
 	sigma *= 1.0 + suppression_aim_mult * u.suppression_at(sim.state.time)
@@ -1855,7 +1971,8 @@ func _support_weapons(u: UnitState, t: UnitState, now: float) -> bool:
 			seen = true
 		elif u.target_last_pos.is_finite() and now - u.target_seen_at < 8.0:
 			known = u.target_last_pos
-	if u.grenades > 0 and known.is_finite() and now - u.nade_at >= grenade_soldier_gap_s and now >= float(_squad_nade_at.get(sq.id if sq else -1, -INF)) 			and now >= float(_nade_check.get(u.id, -INF)):
+	if u.grenades > 0 and known.is_finite() and now - u.nade_at >= grenade_soldier_gap_s and now >= float(_squad_nade_at.get(sq.id if sq else -1, -INF)) \
+			and now >= float(_nade_check.get(u.id, -INF)):
 		_nade_check[u.id] = now + 1.0  # considered at most once a second per soldier
 		var d := _flat(u.position, known)
 		# Into cover: an enemy that went out of sight, one in a position or behind cover, or two together.
@@ -1874,7 +1991,8 @@ func _support_weapons(u: UnitState, t: UnitState, now: float) -> bool:
 	var sdef := sim.combat.weapon(u.sec_id) if u.sec_id != &"" else null
 	if sdef and sdef.role == &"gl":
 		return _grenade_launcher(u, t, sdef, known, seen, sq, now)
-	if u.sec_id != &"" and u.sec_ammo > 0 and now >= u.sec_ready_at and now >= float(_squad_rocket_at.get(sq.id if sq else -1, -INF)) 			and now >= float(_rocket_check.get(u.id, -INF)):
+	if u.sec_id != &"" and u.sec_ammo > 0 and now >= u.sec_ready_at and now >= float(_squad_rocket_at.get(sq.id if sq else -1, -INF)) \
+			and now >= float(_rocket_check.get(u.id, -INF)):
 		_rocket_check[u.id] = now + 2.0  # the structure query at most every two seconds per soldier
 		var aim_at := known
 		if not aim_at.is_finite() and u.fire_at.is_finite() and now < u.fire_until:
@@ -2086,7 +2204,8 @@ func _grenade_reactions(now: float) -> void:
 ## A living friend (not u) walking to a point within r of p (an assault moving onto the landing spot).
 func _friend_heading(u: UnitState, p: Vector3, r: float) -> bool:
 	for f: UnitState in units_near(p, 40.0):
-		if f != u and f.alive and f.faction == u.faction and f.order == UnitState.Order.MOVE and f.move_state == UnitState.MoveState.MOVING 				and _flat(f.order_target, p) <= r:
+		if f != u and f.alive and f.faction == u.faction and f.order == UnitState.Order.MOVE and f.move_state == UnitState.MoveState.MOVING \
+				and _flat(f.order_target, p) <= r:
 			return true
 	return false
 

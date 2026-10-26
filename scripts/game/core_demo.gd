@@ -85,6 +85,7 @@ var _integration03_selftest: Integration03SelfTest
 var _logistics_selftest: LogisticsSelfTest
 ## WORLD-COVER-01: the natural cover layer builder (--build-cover-layer), kept alive while it runs.
 var _cover_builder: CoverLayer
+var _relief_builder: TerrainRelief
 var _gameplay_selftest: GameplaySelfTest
 var _campaign_selftest: CampaignSelfTest
 ## WORLD-SANDBOX-01: true when the game runs the three-faction war (the default).
@@ -258,6 +259,10 @@ func _setup_combat() -> void:
 ## WORLD-SANDBOX-01: release the streamed ground shapes before the world is torn down
 ## (freeing them after Terrain3D crashed the engine on exit).
 func shutdown_cleanup() -> void:
+	# WORLD-COVER-01.1: no navmesh bake may still run on a worker thread when the engine shuts down (it crashed the process
+	# after quit, typically after a structure change had started a re-bake).
+	if is_instance_valid(navigation):
+		navigation.drain()
 	if detail and detail.ground:
 		var g := detail.ground
 		detail.ground = null
@@ -450,9 +455,15 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--asset-integration-test" in args:
 		_gameplay_selftest = AssetIntegrationSelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)
+	elif "--world-cover11-test" in args:
+		_gameplay_selftest = WorldCover11SelfTest.new(self)
+		_gameplay_selftest.run.call_deferred(args)
 	elif "--world-cover-test" in args:
 		_gameplay_selftest = WorldCoverSelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)
+	elif "--build-terrain-relief" in args:
+		_relief_builder = TerrainRelief.new(self)
+		_relief_builder.run.call_deferred(args)
 	elif "--build-cover-layer" in args:
 		_cover_builder = CoverLayer.new(self)
 		_cover_builder.run.call_deferred(args)
@@ -508,6 +519,11 @@ func _start_sandbox() -> void:
 		RoadShoulders.refix_loaded(vegetation)
 		RoadShoulders.mask_grass(world.get_node_or_null("Grass") as GrassLayer)
 		layer += "_shoulders_%s" % sh.get("signature", "")
+	# WORLD-COVER-01.1: terrain microrelief (hollows, folds, ditches, banks) added after the shoulders, memory only; the route grid,
+	# collision, navmesh and LineOfFire read it, the vegetation on it moves with it.
+	if not TerrainRelief.apply(terrain, config.world_name).is_empty():
+		TerrainRelief.refix_loaded(vegetation)
+		layer += "_relief_%s" % TerrainRelief.signature
 	routes.setup(terrain, config.half_size(), src, "user://strategic/%s_grid%s.bin" % [config.world_name, layer], sim.state.roads)
 	routes.prebuild_profiles()
 	sim.war.setup(routes)

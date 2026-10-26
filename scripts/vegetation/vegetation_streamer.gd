@@ -340,6 +340,7 @@ func _store_chunk(loc: Vector2i, res: Resource) -> void:
 			loc, ch.cell_size_m, ch.chunk_size_m, cell_size_m, chunk_size_m])
 		cell_size_m = ch.cell_size_m
 		chunk_size_m = ch.chunk_size_m
+	TerrainRelief.fix_chunk(ch)  # WORLD-COVER-01.1: instances on the microrelief moved with the ground (before the shoulders' check)
 	RoadShoulders.fix_chunk(ch)  # GAMEPLAY-04A: instances on the eased road shoulders back on the ground
 	chunks[loc] = ch
 	counters.chunk_loads += 1

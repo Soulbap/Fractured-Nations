@@ -189,6 +189,8 @@ func _step(sq: SquadState) -> void:
 	_track_compromise(sq, a, now)
 	if sq.formation_auto and sq.tactic == SquadState.Tactic.NONE and sq.order == SquadState.Order.MOVE:
 		_formation_for_contact(sq, a, now)
+	if sq.tactic == SquadState.Tactic.NONE and sq.order == SquadState.Order.MOVE and sq.garrison_base < 0:
+		_settle(sq, a, now)
 	if sq.tactic != SquadState.Tactic.NONE:
 		_run(sq, a)
 	elif sq.garrison_base >= 0 and sq.order != SquadState.Order.REGROUP:
@@ -202,6 +204,100 @@ func _step(sq: SquadState) -> void:
 	elif not a.in_contact and now >= float(_next_build.get(sq.id, 0.0)):
 		_next_build[sq.id] = now + build_check_s
 		_auto_build(sq, a.center, build_auto_m)
+
+
+# --- End of a move (WORLD-COVER-01.1) --------------------------------------------------------------
+
+## Radius round the ordered point in which a squad looks for its final positions (m): it stays where the player sent it.
+var settle_radius_m := 18.0
+## `--no-end-cover`: moves end in their formation slots as before (comparison runs).
+var settle_enabled := not "--no-end-cover" in OS.get_cmdline_user_args()
+## A believed threat within this distance makes the squad settle into cover, by behaviour (SAFE never).
+const SETTLE_THREAT_M := {SquadBehaviour.AWARE: 150.0, SquadBehaviour.COMBAT: 350.0, SquadBehaviour.STEALTH: 450.0}
+var settles := 0
+
+
+## A player squad's move has arrived: COMBAT (and AWARE close to a threat) spreads its soldiers over the best firing positions
+## with cover near the ordered point, facing the believed threat; STEALTH over the positions least seen from it (concealment)
+## that also shield where they can. Once per order (keyed by its target), from the same post search a defence uses
+## (SquadPositions.find_posts -> CombatBrain.cover_spots); soldiers walk there with ordinary moves to a post (precise arrival).
+## Nothing within reach that is better than the formation slots: the order ends as it is. Never on HOLD, FOLLOW or a tactic.
+func _settle(sq: SquadState, a: Dictionary, now: float) -> void:
+	if not settle_enabled or sq.status != SquadState.Status.DONE or not sq.route.is_empty() or sim.squads.marching(sq) or sim.squads.route_waiting(sq) \
+			or sq.interrupted or not _player_squad(sq) or not sq.order_target.is_finite():
+		return
+	var key := "%d_%d" % [roundi(sq.order_target.x), roundi(sq.order_target.z)]
+	if String(_meta(sq, "settled_key", "")) == key:
+		return
+	var beh := behaviour_now(sq)
+	var threat: Vector3 = a.get("threat_pos", Vector3.INF)
+	var reach: float = SETTLE_THREAT_M.get(beh, 0.0)
+	if not threat.is_finite() or _flat(sq.order_target, threat) > reach:
+		_set_meta(sq, "settled_key", key)
+		return
+	var centre := sq.order_target
+	var r := settle_radius_m
+	# The vegetation of the place must be in the cover data first (asked for by cover_spots); a few seconds at most.
+	if sim.brain._veg_missing(centre, r):
+		var w0 := float(_meta(sq, "settle_wait", -1.0))
+		if w0 < 0.0:
+			_set_meta(sq, "settle_wait", now)
+			w0 = now
+		if now - w0 < 5.0:
+			sim.brain.cover_spots(centre, r, threat, centre, 1)
+			return
+	_set_meta(sq, "settle_wait", -1.0)
+	_set_meta(sq, "settled_key", key)
+	var ids: Array = sim.squads._active_members(sq)
+	var units: Array = []
+	for id in ids:
+		var u := sim.state.get_unit(id)
+		if u and u.alive and not u.player_controlled and u.vehicle_id < 0:
+			units.append(u)
+	if units.is_empty():
+		return
+	var stealth := beh == SquadBehaviour.STEALTH
+	# No line-of-sight demand to the believed threat (often hundreds of metres off behind trees): the post's own eye line over its
+	# cover (can_fire) is what makes it a firing position.
+	var opts := {"mode": "cover" if stealth else "fire", "unit_id": units[0].id, "min_enemy_m": 30.0}
+	var found := pos.find_posts(units.size() + 3, centre, r, threat, opts)
+	var good: Array = []
+	for e: Dictionary in found:
+		if String(e.kind) == "open":
+			continue
+		var ex := pos.exposure(e.p, threat) if stealth else 0.5
+		e["exposure"] = ex
+		# COMBAT: protected positions only (firing ones first, find_posts' order); STEALTH: hidden or protected ones, least seen first.
+		if (not stealth and bool(e.protected)) or (stealth and (ex <= 0.34 or bool(e.protected))):
+			good.append(e)
+	if stealth:
+		good.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return float(x.exposure) + (0.0 if x.protected else 0.25) < float(y.exposure) + (0.0 if y.protected else 0.25))
+	# Each position to the nearest soldier still without one (short walks, no crossing over).
+	var pairs: Array = []
+	for e: Dictionary in good.slice(0, units.size()):
+		for u: UnitState in units:
+			pairs.append([_flat(u.position, e.p), u, e])
+	pairs.sort_custom(func(x: Array, y: Array) -> bool: return float(x[0]) < float(y[0]))
+	var taken_u := {}
+	var taken_p := {}
+	var moved := 0
+	for pr: Array in pairs:
+		var u: UnitState = pr[1]
+		var e: Dictionary = pr[2]
+		if taken_u.has(u.id) or taken_p.has(e.p) or u.is_reacting():
+			continue
+		taken_u[u.id] = true
+		taken_p[e.p] = true
+		if float(pr[0]) < 1.0:
+			continue
+		sim.state.issue_move(u.id, e.p, false)
+		u.post_pos = e.p
+		moved += 1
+	settles += 1
+	_set_meta(sq, "settled", {"t": now, "moved": moved, "posts": good.size(), "mode": SquadBehaviour.NAMES[beh],
+		"protected": good.slice(0, units.size()).filter(func(e: Dictionary) -> bool: return bool(e.protected)).size()})
+	if moved > 0:
+		_log(sq, "%s takes %d positions at the end of the move (%s, facing the believed threat)" % [sq.squad_name, moved, "concealed" if stealth else "cover"])
 
 
 # --- Behaviour modes (QOL-01) --------------------------------------------------------------------

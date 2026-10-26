@@ -33,6 +33,11 @@ const FAR := 2
 ## WORLD-COVER-01, collider type 2: half length along the instance's local x, full height, half depth along local z (m, scale 1),
 ## standing on the instance origin and turned with it. Every variant of the id lies inside it.
 @export var box := Vector3.ZERO
+## WORLD-COVER-01.1: the box solids of each variant (index = variant, 0 = `scene`) where one box fits badly (the gaps of a rock
+## group, a root plate's lying trunk, a shorter log): 6 floats per box - [2, centre x, centre z, half length, height, half depth] in
+## the instance's local frame at scale 1, turned with it. Measured from the meshes by tools/world_cover/measure_cover_colliders.gd.
+## Empty (or no list for a variant): the id's one `box`. Every reader of box solids goes through boxes_of().
+@export var parts: Array[PackedFloat32Array] = []
 ## WORLD-VISUALS-01: more scenes of the same kind of plant or rock (variant 1..n; `scene` is variant 0), same size class and
 ## trunk / footprint, so the collider above fits all of them. Each stored instance draws one variant, chosen from its position
 ## (variant_of): the chunk data stays as it is.
@@ -168,6 +173,26 @@ func solid_spec() -> PackedFloat32Array:
 	if collider.x >= 1.5:
 		return PackedFloat32Array([2.0, box_radius(), box.y, box.x, box.z])
 	return PackedFloat32Array([collider.x, collider.y, collider.z, 0.0, 0.0])
+
+
+## WORLD-COVER-01.1: the box solids of an instance (collider type 2) in world space, scaled and turned with it:
+## [centre on the base (Vector3), yaw, half length, height, half depth] per box - its variant's parts, else the one box.
+func boxes_of(xf: Transform3D) -> Array:
+	var s := xf.basis.get_scale().x
+	var yaw := yaw_of(xf)
+	var v := variant_of(xf.origin.x, xf.origin.z, variant_count()) if parts.size() > 1 else 0
+	if use_parts and v < parts.size() and parts[v].size() >= 6:
+		var p: PackedFloat32Array = parts[v]
+		var b := Basis(Vector3.UP, yaw)
+		var out: Array = []
+		for i in range(0, p.size() - 5, 6):
+			out.append([xf.origin + b * Vector3(p[i + 1], 0.0, p[i + 2]) * s, yaw, p[i + 3] * s, p[i + 4] * s, p[i + 5] * s])
+		return out
+	return [[xf.origin, yaw, box.x * s, box.y * s, box.z * s]]
+
+
+## `--single-box-colliders`: every box id uses its one box again (comparison runs).
+static var use_parts := not "--single-box-colliders" in OS.get_cmdline_user_args()
 
 
 ## Yaw of an instance transform (rotation about +Y; 0 = local x along world +X).

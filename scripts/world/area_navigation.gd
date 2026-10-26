@@ -27,10 +27,27 @@ var _faces := PackedVector3Array()
 var _faces_key := []
 ## WORLD-SANDBOX-01: build the source geometry of async bakes on a worker thread.
 var threaded_source := false
+## WORLD-COVER-01.1: the worker tasks and server bakes still running (drain() waits for them at shutdown: a bake left running
+## when the engine shut its thread pool down crashed the process after the game had quit).
+var _tasks: Array[int] = []
+var _baking: Array[NavigationMesh] = []
 
 
 func has_pending_bake() -> bool:
 	return _pending > 0
+
+
+## Waits for every bake still running (worker tasks and NavigationServer async bakes; at most timeout_ms). Called at shutdown
+## (CoreDemo.shutdown_cleanup) so nothing runs on a worker thread while the engine tears its servers and thread pool down.
+func drain(timeout_ms := 10000) -> void:
+	for id in _tasks:
+		WorkerThreadPool.wait_for_task_completion(id)
+	_tasks.clear()
+	var until := Time.get_ticks_msec() + timeout_ms
+	for nm in _baking:
+		while NavigationServer3D.is_baking_navigation_mesh(nm) and Time.get_ticks_msec() < until:
+			OS.delay_msec(5)
+	_baking.clear()
 
 
 ## The terrain changed inside rect (construction groundwork): update the cached terrain
@@ -97,9 +114,10 @@ func bake_area(center: Vector3, size: float, obstacles: Array = [], async := fal
 			NavigationServer3D.bake_from_source_geometry_data(nm2, src2)
 			(func() -> void:
 				# Collect the finished task (an uncollected WorkerThreadPool task crashed
-				# the engine on exit).
-				if task_holder[0] >= 0:
+				# the engine on exit); drain() may have collected it already.
+				if task_holder[0] >= 0 and _tasks.has(task_holder[0]):
 					WorkerThreadPool.wait_for_task_completion(task_holder[0])
+					_tasks.erase(task_holder[0])
 				if tserial == _serial:
 					navigation_mesh = nm2
 					_faces = faces2
@@ -108,6 +126,7 @@ func bake_area(center: Vector3, size: float, obstacles: Array = [], async := fal
 				last_bake["async_done_ms"] = (Time.get_ticks_usec() - t0) / 1000.0
 				last_bake["tree_obstructions"] = trees2
 				last_bake["polygons"] = nm2.get_polygon_count()).call_deferred())
+		_tasks.append(task_holder[0])
 		last_bake = {"bake_ms": (Time.get_ticks_usec() - t0) / 1000.0, "source_ms": 0.0, "async": true, "threaded_source": true,
 			"area_m": size, "center": [center.x, center.z], "vehicle_obstructions": obstacles.size()}
 		return last_bake
@@ -126,9 +145,11 @@ func bake_area(center: Vector3, size: float, obstacles: Array = [], async := fal
 	var serial := _serial
 	if async:
 		_pending += 1
+		_baking.append(nm)
 		# The callback may come from the worker thread: apply on the main thread.
 		NavigationServer3D.bake_from_source_geometry_data_async(nm, src, func() -> void:
 			(func() -> void:
+				_baking.erase(nm)
 				if serial == _serial:
 					navigation_mesh = nm
 				_pending -= 1
@@ -184,11 +205,11 @@ func _add_tree_obstructions(src: NavigationMeshSourceGeometryData3D, center: Vec
 					continue
 				var def := vegetation.library.get_def(inst[0])
 				if def.collider.x >= 1.5:
-					# WORLD-COVER-01: a box solid (log, wall) as its own turned rectangle.
-					var s := xf.basis.get_scale().x
-					src.add_projected_obstruction(_rect(o, VegetationMeshDef.yaw_of(xf), Vector2(def.box.x * 2.0 * s + tree_margin * 2.0, def.box.z * 2.0 * s + tree_margin * 2.0)),
-						o.y - 2.0, 6.0, false)
-					count += 1
+					# WORLD-COVER-01: a box solid (log, wall) as its own turned rectangle; WORLD-COVER-01.1: one per box of its variant.
+					for bx: Array in def.boxes_of(xf):
+						src.add_projected_obstruction(_rect(bx[0], bx[1], Vector2(float(bx[2]) * 2.0 + tree_margin * 2.0, float(bx[4]) * 2.0 + tree_margin * 2.0)),
+							o.y - 2.0, 6.0, false)
+						count += 1
 					continue
 				var r: float = radii[inst[0]] * xf.basis.get_scale().x + tree_margin
 				src.add_projected_obstruction(_rect(o, 0.0, Vector2(r * 2.0, r * 2.0)), o.y - 2.0, 6.0, false)

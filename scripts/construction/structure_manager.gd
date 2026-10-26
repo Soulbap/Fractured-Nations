@@ -1866,20 +1866,22 @@ func _trees_in(cell: Vector2i) -> Array:
 			if d.collider.x >= 0.0:
 				_tree_radii[d.id] = maxf(d.collider.y, 0.25)
 				if d.collider.x >= 1.5:
-					_tree_boxes[d.id] = d.box
+					_tree_boxes[d.id] = d
 	var out := []
 	for inst in vegetation.get_cell_instances(cell, _tree_radii.keys()):
 		var xf: Transform3D = inst[1]
 		var s := xf.basis.get_scale().x
 		if _tree_boxes.has(inst[0]):
-			# WORLD-COVER-01: a box (log, wall) as circles of its half depth along its length, not one circle round all of it.
-			var bx: Vector3 = _tree_boxes[inst[0]] * s
+			# WORLD-COVER-01: a box (log, wall) as circles of its half depth along its length, not one circle round all of it;
+			# WORLD-COVER-01.1: for every box of the instance's variant.
 			var axis := xf.basis.x.normalized()
-			var rr := maxf(bx.z, 0.25)
-			var n := maxi(1, ceili(bx.x / rr))
-			for k in n + 1:
-				var p := xf.origin + axis * lerpf(-bx.x + rr, bx.x - rr, float(k) / n)
-				out.append([p.x, p.z, rr, inst[0]])
+			for bx: Array in (_tree_boxes[inst[0]] as VegetationMeshDef).boxes_of(xf):
+				var hx: float = bx[2]
+				var rr := maxf(float(bx[4]), 0.25)
+				var n := maxi(1, ceili(hx / rr))
+				for k in n + 1:
+					var p: Vector3 = bx[0] + axis * lerpf(-hx + minf(rr, hx), hx - minf(rr, hx), float(k) / n)
+					out.append([p.x, p.z, rr, inst[0]])
 			continue
 		out.append([xf.origin.x, xf.origin.z, _tree_radii[inst[0]] * s, inst[0]])
 	_tree_cache[cell] = out

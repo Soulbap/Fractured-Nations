@@ -850,8 +850,10 @@ func _p_ai_posture() -> Dictionary:
 				at[u.id] = sim.state.time
 			last[u.id] = u.posture
 			time_in[Posture.current(u)] += 1
-			# faster than the posture allows (crouch walk 2.5 m/s, prone crawl 0.8 m/s)
-			if Posture.settled(u) and Vector2(u.velocity.x, u.velocity.z).length() > Posture.SPEED[u.posture] * u.speed + 0.3:
+			# faster than the posture allows: crouched / prone no faster than Posture.MAX_SPEED (QOL-01.1: 1.6 / 0.81 m/s), standing
+			# no faster than a sprint (QOL-01.1 paces: a standing soldier sprinting at 6.2 m/s is not "moving low")
+			var cap := UnitState.PACE_SPEED[UnitState.Pace.SPRINT] * u.speed / 4.5 if u.posture == Posture.STAND else Posture.MAX_SPEED[u.posture]
+			if Posture.settled(u) and Vector2(u.velocity.x, u.velocity.z).length() > cap + 0.3:
 				moving_low += 1
 			if u.posture == Posture.PRONE and Posture.settled(u) and not why_prone.has(u.unit_name):
 				why_prone[u.unit_name] = "supp %.2f, weapon %s, target %.0f m" % [u.suppression_at(sim.state.time), String(u.weapon_id),
