@@ -72,7 +72,14 @@ const CLOSE_ZOOM := 0.45
 const TERRITORY_RES := 256
 
 var _bg: Texture2D
+## UI-UX-03: the topographic base layer (behind this node) and its build state.
+var _topo: MapTopo
+## Territory as one channel per faction (the topographic shader draws tint and border); _territory_old is the coloured
+## fallback picture for a world without terrain data.
 var _territory: ImageTexture
+var _territory_old: ImageTexture
+var _topo_tried := false
+var _topo_key := ""
 var _territory_key := ""
 ## Territory cells -> index of the nearest objective in reach (-1 none); geometry only,
 ## built once - an ownership change only recolours.
@@ -102,12 +109,16 @@ var _ops_box: VBoxContainer
 var _buttons := {}
 var _panel_bg: PanelContainer
 
-const COL_ATTACK := Color(1.0, 0.45, 0.35)
-const COL_REINFORCE := Color(0.55, 0.95, 0.55)
-const COL_MOVE := Color(0.85, 0.9, 1.0)
-const COL_SELECT := Color(0.92, 0.95, 0.90)
-const COL_THREAT := Color(1.0, 0.3, 0.25)
-const COL_CONTESTED := Color(1.0, 0.82, 0.2)
+## UI-UX-03: colours for symbols on the light topographic sheet (dark ink, a paper halo behind text, amber selection).
+const COL_ATTACK := Color(0.78, 0.16, 0.12)
+const COL_REINFORCE := Color(0.13, 0.50, 0.20)
+const COL_MOVE := Color(0.14, 0.28, 0.60)
+const COL_SELECT := Color(0.96, 0.62, 0.04)
+const COL_THREAT := Color(0.85, 0.14, 0.10)
+const COL_CONTESTED := Color(0.86, 0.52, 0.0)
+const MAP_INK := Color(0.10, 0.11, 0.09)
+const MAP_HALO := Color(0.97, 0.96, 0.91, 0.88)
+const MAP_PAPER := Color(0.98, 0.97, 0.93, 0.96)
 
 
 func setup(p_demo: CoreDemo) -> void:
@@ -118,6 +129,17 @@ func setup(p_demo: CoreDemo) -> void:
 	var path := "res://worlds/%s/source/preview_macro.png" % demo.config.world_name
 	if ResourceLoader.exists(path):
 		_bg = load(path)
+	var surround := ColorRect.new()
+	surround.color = Color(0.11, 0.12, 0.11)
+	surround.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	surround.show_behind_parent = true
+	surround.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(surround)
+	move_child(surround, 0)
+	_topo = MapTopo.new()
+	_topo.name = "Topo"
+	add_child(_topo)
+	move_child(_topo, 1)
 	_build_panel()
 	fit_all()
 
@@ -218,6 +240,7 @@ func _process(_delta: float) -> void:
 	var clamped := view_center.clamp(Vector2(-half, -half), Vector2(half, half))
 	if clamped != view_center:
 		view_center = clamped
+	_sync_topo()
 	_redraw_t -= dt
 	if _redraw_t <= 0.0:
 		_redraw_t = 0.1
@@ -225,6 +248,27 @@ func _process(_delta: float) -> void:
 		moved = true
 	if moved or _box:
 		queue_redraw()
+
+
+## UI-UX-03: the topographic layer follows the view in the same frame (built the first time the map shows).
+func _sync_topo() -> void:
+	if _topo == null:
+		return
+	if not _topo_tried:
+		_topo_tried = true
+		_topo.build(demo)
+		print("MAP_TOPO built in %.0f ms: %d roads, %d river pieces, %d lakes, %d houses" % [_topo.build_ms, _topo.roads.size(),
+			_topo.rivers.size(), _topo.lakes.size(), _topo.houses.size()])
+		_territory_key = ""
+		_update_territory()
+	var tl := to_screen(Vector3(-half, 0, -half))
+	var br := to_screen(Vector3(half, 0, half))
+	# Territory is strongest on the overview and fades when zoomed in, where the terrain itself matters more.
+	var a := clampf(remap(log(zoom), log(0.05), log(1.0), 1.0, 0.45), 0.45, 1.0)
+	var key := "%s|%s|%s|%s|%s" % [tl, br, zoom, layers.territory, layers.relief]
+	if key != _topo_key:
+		_topo_key = key
+		_topo.set_view(Rect2(tl, br - tl), zoom, layers.territory, a, layers.relief)
 
 
 func _selection_text() -> String:
@@ -384,14 +428,26 @@ static func _dur(s: float) -> String:
 const COLUMN_W := 214.0
 const INSPECTOR_W := 252.0
 ## Map layers the player can switch (each one is drawn by its own pass in _draw).
+## UI-UX-03: shown as a row of icon toggles in the map's top bar (name and what it shows in the tooltip).
 const LAYERS := [
-	["territory", &"territory", "Territory"], ["objectives", &"objective", "Objectives"], ["friendly", &"soldiers", "Friendly forces"],
-	["contacts", &"contact", "Enemy contacts"], ["operations", &"operation", "Operations"], ["logistics", &"vehicle", "Logistics & bases"],
-	["camera", &"drive", "Tactical camera"], ["grid", &"layers", "Grid"],
+	["friendly", &"soldiers", "Units", "Your squads (and every soldier when close)"],
+	["contacts", &"contact", "Contacts", "Enemy forces your soldiers have reported: solid = observed now, outlined = reported, faded = old"],
+	["objectives", &"objective", "Objectives", "Objectives, capture zones and progress, supply caches"],
+	["operations", &"operation", "Orders", "Your operations: routes, stages, targets"],
+	["logistics", &"vehicle", "Logistics", "Bases, facilities, vehicles and their routes"],
+	["territory", &"territory", "Territory", "Who holds the ground around each objective"],
+	["roads", &"road", "Roads", "Roads by class, bridges (red cross: closed)"],
+	["relief", &"relief", "Relief", "Contour lines and hillshade"],
+	["grid", &"layers", "Grid", "1 km grid with references"],
+	["camera", &"drive", "Camera", "Where the tactical camera is and looks"],
+	["legend", &"info", "Legend", "What the symbols mean"],
 ]
-var layers := {"territory": true, "objectives": true, "friendly": true, "contacts": true, "operations": true, "logistics": true, "camera": true, "grid": true}
+var layers := {"territory": true, "objectives": true, "friendly": true, "contacts": true, "operations": true, "logistics": true, "camera": true,
+	"grid": true, "roads": true, "relief": true, "legend": true}
 
 var _cmd_panel: FNPanel
+var _top: FNPanel
+var _grid_ref: Label
 var _cmd_rows: VBoxContainer
 var _clock: FNStatusIndicator
 var _layer_buttons := {}
@@ -492,51 +548,116 @@ func _build_panel() -> void:
 	add_child(_keys)
 
 
+## UI-UX-03: the map's top bar - title and war clock on the left, the layer toggles in the middle (icon buttons, the layer's
+## name and content in the tooltip, the selected surface while on), the grid reference under the cursor and Close on the right.
 func _header_panel_layers() -> void:
-	var lp := FNPanel.new(Color.TRANSPARENT, FNUI.S4)
-	lp.custom_minimum_size = Vector2(COLUMN_W, 0)
-	lp.name = "Layers"
-	add_child(lp)
-	var lv := VBoxContainer.new()
-	lv.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lv.add_theme_constant_override("separation", FNUI.S2)
-	lp.add_child(lv)
-	lv.add_child(FNSectionHeader.new("Map layers", "", FNUI.INK))
+	_top = FNPanel.new(Color.TRANSPARENT, 2)
+	_top.name = "TopBar"
+	add_child(_top)
+	var h := HBoxContainer.new()
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_theme_constant_override("separation", FNUI.S3)
+	_top.add_child(h)
+	var title := FNStatusIndicator.new(FNUI.ICON_S, FNUI.LABEL)
+	title.set_status(&"map", "Tactical map", FNUI.INK)
+	title.text_label.clip_text = false
+	title.text_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	h.add_child(title)
+	_clock.reparent(h)
+	_clock.text_label.clip_text = false
+	_clock.text_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	var sp := Control.new()
+	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(sp)
+	var cap := FNUI.label("Layers", FNUI.CAPTION - 1, FNUI.INK_3, "caps")
+	cap.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	h.add_child(cap)
+	var chips := HBoxContainer.new()
+	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	chips.add_theme_constant_override("separation", 1)
+	h.add_child(chips)
 	for l: Array in LAYERS:
 		var key: String = l[0]
-		var b := FNCategoryTile.new(l[1], l[2], "")
-		b.custom_minimum_size = Vector2(0, 19)
-		b.selected = layers[key]
-		b.count_label.text = "ON" if layers[key] else "OFF"
+		var b := Button.new()
+		b.focus_mode = Control.FOCUS_NONE
+		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		b.icon = FNIcons.texture(l[1], FNUI.ICON_S)
+		b.custom_minimum_size = Vector2(22, 18)
+		b.add_theme_constant_override("icon_max_width", FNUI.ICON_S)
+		b.tooltip_text = "%s\n%s" % [String(l[2]).to_upper(), l[3]]
 		b.pressed.connect(func() -> void: set_layer(key, not layers[key]))
-		lv.add_child(b)
+		chips.add_child(b)
 		_layer_buttons[key] = b
+		_style_layer(key)
+	var sp2 := Control.new()
+	sp2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sp2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(sp2)
+	_grid_ref = FNUI.label("", FNUI.LABEL, FNUI.INK_2, "number")
+	_grid_ref.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_grid_ref.custom_minimum_size = Vector2(118, 0)
+	_grid_ref.tooltip_text = "Grid reference (km east, km north from the south-west corner) and height under the cursor"
+	_grid_ref.mouse_filter = Control.MOUSE_FILTER_PASS
+	h.add_child(_grid_ref)
+	var close_b := FNUI.action_button(&"close", "Close  M", "Back to the tactical view (M or Esc)")
+	close_b.pressed.connect(close)
+	h.add_child(close_b)
+
+
+func _style_layer(key: String) -> void:
+	var b: Button = _layer_buttons.get(key)
+	if b == null:
+		return
+	var on: bool = layers[key]
+	for st in ["normal", "hover", "pressed", "hover_pressed"]:
+		var state := StringName(st)
+		if on:
+			state = &"selected_hover" if st in ["hover", "hover_pressed"] else &"selected"
+		elif st == "hover_pressed":
+			state = &"pressed"
+		var sb := FNUI.state_style(state, 0)
+		if not on and st == "normal":
+			sb.bg_color = Color.TRANSPARENT
+			sb.border_color = Color(FNUI.LINE, 0.6)
+		sb.content_margin_left = 4
+		sb.content_margin_right = 4
+		b.add_theme_stylebox_override(st, sb)
+	b.add_theme_color_override("icon_normal_color", FNUI.ACCENT.lightened(0.25) if on else FNUI.INK_3)
+	b.add_theme_color_override("icon_hover_color", FNUI.INK)
 
 
 ## Switches a map layer (presentation only; nothing in the simulation depends on it).
 func set_layer(key: String, on: bool) -> void:
 	layers[key] = on
-	var b: FNCategoryTile = _layer_buttons.get(key)
-	if b:
-		b.selected = on
-		b.count_label.text = "ON" if on else "OFF"
+	_style_layer(key)
 	queue_redraw()
+
+
+## Height of the top bar (the map's own panels start below it).
+func top_bar_bottom() -> float:
+	return _top.position.y + _top.size.y if _top else float(FNUI.EDGE)
 
 
 func _layout_panels() -> void:
 	var vs := size
-	var y := float(FNUI.EDGE)
+	_top.position = Vector2(FNUI.EDGE, FNUI.EDGE)
+	_top.size = Vector2(vs.x - 2.0 * FNUI.EDGE, 0)
+	var y := top_bar_bottom() + FNUI.S3
 	_cmd_panel.size = Vector2.ZERO
 	_cmd_panel.position = Vector2(FNUI.EDGE, y)
 	y += _cmd_panel.size.y + FNUI.S3
-	var lp: Control = get_node("Layers")
-	lp.size = Vector2.ZERO
-	lp.position = Vector2(FNUI.EDGE, y)
-	y += lp.size.y + FNUI.S3
 	_ops_panel.size = Vector2.ZERO
 	_ops_panel.position = Vector2(FNUI.EDGE, maxf(y, vs.y - _ops_panel.size.y - FNUI.EDGE))
 	_insp.size = Vector2.ZERO
-	_insp.position = Vector2(vs.x - _insp.size.x - FNUI.EDGE, FNUI.EDGE)
+	_insp.position = Vector2(vs.x - _insp.size.x - FNUI.EDGE, top_bar_bottom() + FNUI.S3)
+	var m := _to_world2(get_local_mouse_position())
+	if map_rect().has_point(get_local_mouse_position()) and absf(m.x) <= half and absf(m.y) <= half:
+		var gh: float = sim.terrain.data.get_height(Vector3(m.x, 0, m.y)) if sim.terrain else NAN
+		# Easting / northing in 10 m from the south-west corner (north is -z).
+		_grid_ref.text = "%04d %04d%s" % [int((m.x + half) / 10.0), int((half - m.y) / 10.0), ("  ·  %d m" % roundi(gh)) if is_finite(gh) else ""]
+	else:
+		_grid_ref.text = ""
 	_keys.size = Vector2.ZERO
 	_keys.position = Vector2(roundf((vs.x - _keys.size.x) * 0.5), vs.y - _keys.size.y - FNUI.EDGE)
 	_keys.visible = not show_help
@@ -1359,21 +1480,29 @@ func _threatened(o: ObjectiveState) -> bool:
 
 func _draw() -> void:
 	var r := map_rect()
-	draw_rect(Rect2(Vector2.ZERO, size), Color(0.05, 0.06, 0.07))
 	var tl := to_screen(Vector3(-half, 0, -half))
 	var br := to_screen(Vector3(half, 0, half))
 	var map_area := Rect2(tl, br - tl)
-	if _bg:
-		draw_texture_rect(_bg, map_area, false, Color(0.86, 0.89, 0.86))
 	_update_territory()
-	if _territory and layers.territory:
-		# Territory is strongest on the overview and fades when zoomed in, where the
-		# terrain itself matters more.
-		var a := clampf(remap(log(zoom), log(0.05), log(1.0), 0.75, 0.3), 0.3, 0.75)
-		draw_texture_rect(_territory, map_area, false, Color(1, 1, 1, a))
+	if _topo == null or not _topo.ready_ok:
+		# Fallback without the topographic layer (no terrain data): the generator's macro preview.
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.05, 0.06, 0.07))
+		if _bg:
+			draw_texture_rect(_bg, map_area, false, Color(0.86, 0.89, 0.86))
+		if _territory_old and layers.territory:
+			draw_texture_rect(_territory_old, map_area, false, Color(1, 1, 1, 0.5))
+	else:
+		# UI-UX-03: water, roads, bridges and houses in world coordinates over the topographic terrain (MapTopo, behind).
+		var view := Rect2(_to_world2(Vector2.ZERO), size / zoom)
+		draw_set_transform_matrix(Transform2D(0.0, Vector2(zoom, zoom), 0.0, map_rect().get_center() - view_center * zoom))
+		_topo.draw_water(self, zoom, view)
+		if layers.roads:
+			_topo.draw_roads(self, zoom, view, sim.state.roads)
+		_topo.draw_houses(self, zoom, view)
+		draw_set_transform_matrix(Transform2D.IDENTITY)
 	if layers.grid:
 		_draw_grid(map_area)
-	draw_rect(map_area, Color(FNUI.LINE_STRONG, 0.8), false, 1.0)
+	draw_rect(map_area, Color(0.12, 0.11, 0.09, 0.9), false, 1.5)
 	var font := FNUI.font("semibold")
 	var war := sim.state.war
 	var level := detail_level()
@@ -1426,6 +1555,8 @@ func _draw() -> void:
 		draw_arc(m, 12.0, 0.0, TAU, 20, col, 2.0)
 		_text(font, m + Vector2(16, -8), OperationState.TYPE_NAMES[pending_order].to_upper(), 12, col)
 	_draw_scale(font)
+	if layers.legend:
+		_draw_legend()
 	if dbg_faction >= 0:
 		_draw_inspector(font, r)
 	_draw_help(font, r)
@@ -1525,25 +1656,36 @@ func _draw_camera() -> void:
 	var pts := PackedVector2Array([cp])
 	for k in 9:
 		pts.append(cp + dir.rotated(lerpf(-half_h, half_h, k / 8.0)) * reach)
-	draw_colored_polygon(pts, Color(1, 1, 1, 0.09))
-	draw_line(cp, pts[1], Color(1, 1, 1, 0.45), 1.2, true)
-	draw_line(cp, pts[pts.size() - 1], Color(1, 1, 1, 0.45), 1.2, true)
-	draw_polyline(pts.slice(1), Color(1, 1, 1, 0.18), 1.0, true)
+	draw_colored_polygon(pts, Color(0.10, 0.20, 0.45, 0.10))
+	draw_line(cp, pts[1], Color(MAP_INK, 0.5), 1.2, true)
+	draw_line(cp, pts[pts.size() - 1], Color(MAP_INK, 0.5), 1.2, true)
+	draw_polyline(pts.slice(1), Color(MAP_INK, 0.2), 1.0, true)
 	var fp := to_screen(rig.focus)
-	draw_line(fp + Vector2(-5, 0), fp + Vector2(5, 0), Color(1, 1, 1, 0.7), 1.2)
-	draw_line(fp + Vector2(0, -5), fp + Vector2(0, 5), Color(1, 1, 1, 0.7), 1.2)
-	draw_circle(cp, 4.5, Color(0.05, 0.06, 0.07, 0.9))
-	draw_circle(cp, 3.0, Color.WHITE)
+	draw_line(fp + Vector2(-5, 0), fp + Vector2(5, 0), Color(MAP_INK, 0.75), 1.2)
+	draw_line(fp + Vector2(0, -5), fp + Vector2(0, 5), Color(MAP_INK, 0.75), 1.2)
+	draw_circle(cp, 4.5, MAP_PAPER)
+	draw_circle(cp, 3.0, MAP_INK)
 
 
 func _draw_grid(area: Rect2) -> void:
-	var c := Color(1, 1, 1, 0.06)
-	var step := 2 if zoom < 0.15 else 1
-	for k in range(-10, 11, step):
+	var c := Color(0.10, 0.22, 0.42, 0.18)
+	var step := 2 if zoom < 0.05 else 1
+	var n := int(half / 1000.0)
+	var f := FNUI.font("semibold")
+	var vis := area.intersection(Rect2(Vector2.ZERO, size))
+	var lx := vis.position.x + 4.0
+	var ly := maxf(vis.position.y, top_bar_bottom()) + 12.0
+	for k in range(-n, n + 1, step):
 		var x := to_screen(Vector3(k * 1000.0, 0, 0)).x
 		var y := to_screen(Vector3(0, 0, k * 1000.0)).y
 		draw_line(Vector2(x, area.position.y), Vector2(x, area.end.y), c, 1.0)
 		draw_line(Vector2(area.position.x, y), Vector2(area.end.x, y), c, 1.0)
+		# References: km east from the west edge, km north from the south edge.
+		if zoom >= 0.05:
+			if x > vis.position.x + 30.0 and x < vis.end.x - 10.0:
+				_text(f, Vector2(x + 3.0, ly), "%02d" % (k + n), 9, Color(0.10, 0.22, 0.42), 3)
+			if y > ly + 10.0 and y < vis.end.y - 10.0:
+				_text(f, Vector2(lx, y - 3.0), "%02d" % (n - k), 9, Color(0.10, 0.22, 0.42), 3)
 
 
 func _draw_scale(font: Font) -> void:
@@ -1554,13 +1696,16 @@ func _draw_scale(font: Font) -> void:
 			break
 	var px := m_per_bar * zoom
 	# Inside the map's lower left corner (the left column covers the window edge).
+	# Bottom right of the visible map (the left column and the key strip hold the bottom left and centre).
 	var br := to_screen(Vector3(half, 0, half))
-	var tl := to_screen(Vector3(-half, 0, -half))
-	var at := Vector2(clampf(tl.x, COLUMN_W + 2.0 * FNUI.EDGE, size.x) + 12.0, minf(br.y, size.y) - 14.0)
-	draw_line(at, at + Vector2(px, 0), Color.WHITE, 2.0)
-	draw_line(at + Vector2(0, -4), at + Vector2(0, 4), Color.WHITE, 2.0)
-	draw_line(at + Vector2(px, -4), at + Vector2(px, 4), Color.WHITE, 2.0)
-	_text(font, at + Vector2(0, -8), ("%d km" % int(m_per_bar / 1000.0)) if m_per_bar >= 1000.0 else "%d m" % int(m_per_bar), 12, Color.WHITE)
+	var at := Vector2(minf(br.x, size.x) - px - 150.0, minf(minf(br.y, size.y), _keys.position.y - 6.0 if _keys.visible else size.y) - 14.0)
+	draw_rect(Rect2(at + Vector2(-6, -24), Vector2(px + 12, 32)), Color(MAP_PAPER, 0.85), true)
+	draw_line(at, at + Vector2(px, 0), MAP_INK, 2.0)
+	draw_line(at + Vector2(0, -4), at + Vector2(0, 4), MAP_INK, 2.0)
+	draw_line(at + Vector2(px, -4), at + Vector2(px, 4), MAP_INK, 2.0)
+	draw_line(at + Vector2(px * 0.5, -3), at + Vector2(px * 0.5, 0), MAP_INK, 1.5)
+	var ci := MapTopo.interval_for(zoom)
+	_text(font, at + Vector2(0, -8), (("%d km" % int(m_per_bar / 1000.0)) if m_per_bar >= 1000.0 else "%d m" % int(m_per_bar)) + ("   ·   contours %d m" % int(ci) if layers.relief else ""), 11, MAP_INK)
 
 
 func _draw_help(font: Font, r: Rect2) -> void:
@@ -1596,8 +1741,12 @@ func _draw_help(font: Font, r: Rect2) -> void:
 
 ## Text with a dark outline (readable on any terrain).
 func _text(font: Font, p: Vector2, t: String, fs: int, col: Color, outline := 4) -> void:
-	draw_string_outline(font, p, t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, outline, Color(0, 0, 0, 0.85 * col.a))
-	draw_string(font, p, t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+	if outline <= 0:
+		draw_string(font, p, t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+		return
+	var ink := Color(MAP_INK, col.a) if col.get_luminance() > 0.62 else Color(col.darkened(0.3), col.a)
+	draw_string_outline(font, p, t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, outline, Color(MAP_HALO, MAP_HALO.a * col.a))
+	draw_string(font, p, t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, ink)
 
 
 ## Territory: each cell belongs to the nearest objective within its reach (1.6 km + 0.6 km
@@ -1633,22 +1782,33 @@ func _update_territory() -> void:
 	for i in n * n:
 		var k := _cell_objective[i]
 		owner[i] = (_cell_objs[k] as ObjectiveState).owner if k >= 0 else -1
+	# UI-UX-03: channel f = 255 where faction f (0-3) holds the cell. Filtered linearly in the topographic shader, the 0.5 crossing
+	# of a channel is a smooth border line instead of the cells' staircase.
 	var data := PackedByteArray()
 	data.resize(n * n * 4)
-	for z in n:
-		for x in n:
-			var i := z * n + x
-			var f := owner[i]
-			if f < 0:
-				continue
-			var edge := (x > 0 and owner[i - 1] != f) or (x < n - 1 and owner[i + 1] != f) \
-					or (z > 0 and owner[i - n] != f) or (z < n - 1 and owner[i + n] != f)
-			var c := WorldState.faction_color(f)
-			data[i * 4] = int(c.r * 255.0)
-			data[i * 4 + 1] = int(c.g * 255.0)
-			data[i * 4 + 2] = int(c.b * 255.0)
-			data[i * 4 + 3] = 235 if edge else 72
-	_territory = ImageTexture.create_from_image(Image.create_from_data(n, n, false, Image.FORMAT_RGBA8, data))
+	for i in n * n:
+		var f := owner[i]
+		if f >= 0 and f < 4:
+			data[i * 4 + f] = 255
+	var img := Image.create_from_data(n, n, false, Image.FORMAT_RGBA8, data)
+	# Smooth the 78 m cells a little so the borders are curves, not steps.
+	img.resize(n * 2, n * 2, Image.INTERPOLATE_CUBIC)
+	_territory = ImageTexture.create_from_image(img)
+	if _topo and _topo.ready_ok:
+		_topo.set_territory(_territory)
+		return
+	var old := PackedByteArray()
+	old.resize(n * n * 4)
+	for i in n * n:
+		var f := owner[i]
+		if f < 0:
+			continue
+		var c := WorldState.faction_color(f)
+		old[i * 4] = int(c.r * 255.0)
+		old[i * 4 + 1] = int(c.g * 255.0)
+		old[i * 4 + 2] = int(c.b * 255.0)
+		old[i * 4 + 3] = 90
+	_territory_old = ImageTexture.create_from_image(Image.create_from_data(n, n, false, Image.FORMAT_RGBA8, old))
 
 
 func _objective_size(o: ObjectiveState) -> float:
@@ -1657,7 +1817,7 @@ func _objective_size(o: ObjectiveState) -> float:
 
 func _draw_objective(o: ObjectiveState, font: Font, level: int) -> void:
 	var p := to_screen(o.position)
-	var col := WorldState.faction_color(o.owner) if o.owner >= 0 else Color(0.85, 0.85, 0.85)
+	var col := WorldState.faction_color(o.owner).darkened(0.15) if o.owner >= 0 else Color(0.40, 0.40, 0.37)
 	var s := _objective_size(o)
 	var zone := o.radius * zoom
 	var rr := maxf(zone, s + 3.0)
@@ -1667,33 +1827,33 @@ func _draw_objective(o: ObjectiveState, font: Font, level: int) -> void:
 		draw_arc(p, zone, 0.0, TAU, 48, Color(col, 0.7), 1.5)
 	match o.kind:
 		&"hq":
-			draw_rect(Rect2(p - Vector2(s, s), Vector2(s, s) * 2.0), Color(0.08, 0.08, 0.08, 0.9), true)
+			draw_rect(Rect2(p - Vector2(s, s), Vector2(s, s) * 2.0), MAP_PAPER, true)
 			draw_rect(Rect2(p - Vector2(s, s), Vector2(s, s) * 2.0), col, false, 2.5)
 			_star(p, s * 0.7, col)
 		&"bridge":
-			draw_rect(Rect2(p - Vector2(s, s * 0.45), Vector2(s * 2.0, s * 0.9)), Color(0.08, 0.08, 0.08, 0.9), true)
+			draw_rect(Rect2(p - Vector2(s, s * 0.45), Vector2(s * 2.0, s * 0.9)), MAP_PAPER, true)
 			draw_line(p + Vector2(-s, -s * 0.45), p + Vector2(s, -s * 0.45), col, 2.0)
 			draw_line(p + Vector2(-s, s * 0.45), p + Vector2(s, s * 0.45), col, 2.0)
 		&"base":
 			# GAMEPLAY-01D: a base - a walled square with a flag.
-			draw_rect(Rect2(p - Vector2(s, s * 0.8), Vector2(s * 2.0, s * 1.6)), Color(0.08, 0.08, 0.08, 0.9), true)
+			draw_rect(Rect2(p - Vector2(s, s * 0.8), Vector2(s * 2.0, s * 1.6)), MAP_PAPER, true)
 			draw_rect(Rect2(p - Vector2(s, s * 0.8), Vector2(s * 2.0, s * 1.6)), col, false, 2.0)
 			for k in 3:
 				draw_rect(Rect2(p + Vector2(-s + k * s * 0.8, -s * 0.8 - 3.0), Vector2(s * 0.4, 3.0)), col, true)
 			draw_line(p + Vector2(-s * 0.2, s * 0.45), p + Vector2(-s * 0.2, -s * 0.45), col, 1.5)
 			draw_colored_polygon(PackedVector2Array([p + Vector2(-s * 0.2, -s * 0.45), p + Vector2(s * 0.5, -s * 0.25), p + Vector2(-s * 0.2, -s * 0.05)]), col)
 		&"town":
-			draw_circle(p, s, Color(0.08, 0.08, 0.08, 0.9))
+			draw_circle(p, s, MAP_PAPER)
 			draw_arc(p, s, 0.0, TAU, 20, col, 2.5)
 			draw_circle(p, s * 0.4, col)
 		_:
 			var pts := PackedVector2Array([p + Vector2(0, -s), p + Vector2(s, 0), p + Vector2(0, s), p + Vector2(-s, 0)])
-			draw_colored_polygon(pts, Color(0.08, 0.08, 0.08, 0.9))
+			draw_colored_polygon(pts, MAP_PAPER)
 			pts.append(pts[0])
 			draw_polyline(pts, col, 2.0)
 	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 150.0)
 	if o.capture_faction >= 0 and o.capture_progress > 0.0:
-		draw_arc(p, rr + 5.0, 0.0, TAU, 32, Color(0, 0, 0, 0.5), 5.0)
+		draw_arc(p, rr + 5.0, 0.0, TAU, 32, Color(MAP_PAPER, 0.8), 5.0)
 		draw_arc(p, rr + 5.0, -PI * 0.5, -PI * 0.5 + TAU * o.capture_progress, 32, WorldState.faction_color(o.capture_faction), 4.0)
 	var tag := ""
 	var tag_col := Color.WHITE
@@ -1705,7 +1865,7 @@ func _draw_objective(o: ObjectiveState, font: Font, level: int) -> void:
 		var tp := p + Vector2(-s - 9.0, -s - 6.0)
 		var tri := PackedVector2Array([tp + Vector2(0, -8), tp + Vector2(7, 5), tp + Vector2(-7, 5)])
 		draw_colored_polygon(tri, Color(COL_THREAT, 0.6 + 0.4 * pulse))
-		draw_string(font, tp + Vector2(-2.5, 4), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color.BLACK)
+		draw_string(font, tp + Vector2(-2.5, 4), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color.WHITE)
 		tag = "THREATENED"
 		tag_col = COL_THREAT
 	# GAMEPLAY-05B: the player's own capture (or loss) says what it is doing and what keeps it going (WarSim.capture_state).
@@ -1731,7 +1891,7 @@ func _draw_objective(o: ObjectiveState, font: Font, level: int) -> void:
 	var h := float(fs + 4) + (13.0 if tag != "" else 0.0)
 	var cands: Array[Vector2] = [p + Vector2(-w * 0.5, rr + 17.0), p + Vector2(rr + 8.0, 5.0), p + Vector2(-rr - 8.0 - w, 5.0), p + Vector2(-w * 0.5, -rr - 10.0 - (13.0 if tag != "" else 0.0))]
 	var lp := _place(cands, w, fs, h, true)
-	_text(font, lp, label, fs, Color(1, 1, 1))
+	_text(font, lp, label, fs, MAP_INK)
 	if tag != "":
 		var tw := font.get_string_size(tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
 		_text(font, lp + Vector2((w - tw) * 0.5, 13.0), tag, 10, tag_col, 3)
@@ -1777,22 +1937,28 @@ func _draw_group(g: Dictionary, font: Font, level: int) -> void:
 		# Garrison badge: a short leader line to the objective it stands in.
 		var op := to_screen(sim.state.war.objective(g.badge).position)
 		draw_line(op, p, Color(col.lightened(0.3), 0.6), 1.0)
+	var fill := col.lightened(0.55)
+	var frame := col.darkened(0.62)
 	if n > 1:
 		for k: int in [2, 1]:
 			var off := Vector2(3, -3) * k
-			draw_rect(Rect2(p - half_size + off, half_size * 2.0), Color(col.darkened(0.6), 0.95), true)
-			draw_rect(Rect2(p - half_size + off, half_size * 2.0), col.lightened(0.2), false, 1.0)
+			draw_rect(Rect2(p - half_size + off, half_size * 2.0), fill.darkened(0.08), true)
+			draw_rect(Rect2(p - half_size + off, half_size * 2.0), frame, false, 1.0)
 	var rect := Rect2(p - half_size, half_size * 2.0)
-	draw_rect(rect, Color(col.darkened(0.55), 0.6 if level == 2 and zoom >= 1.0 else 0.95), true)
-	var outline := COL_SELECT if sel > 0 else col.lightened(0.3)
-	draw_rect(rect, outline, false, 2.5 if sel > 0 else 1.5)
-	if sel > 0 and sel < n:
-		# Only some of the group's squads are selected.
-		draw_rect(rect.grow(3.0), Color(COL_SELECT, 0.5), false, 1.0)
-	draw_line(rect.position, rect.end, col.lightened(0.4), 1.2)
-	draw_line(Vector2(rect.position.x, rect.end.y), Vector2(rect.end.x, rect.position.y), col.lightened(0.4), 1.2)
+	if sel > 0:
+		draw_rect(rect.grow(3.0), COL_SELECT, false, 3.0)
+		if sel < n:
+			# Only some of the group's squads are selected.
+			draw_rect(rect.grow(6.0), Color(COL_SELECT, 0.6), false, 1.0)
+	draw_rect(rect, Color(fill, 0.55 if level == 2 and zoom >= 1.0 else 1.0), true)
+	draw_rect(rect, frame, false, 1.5)
+	draw_line(rect.position, rect.end, frame, 1.2)
+	draw_line(Vector2(rect.position.x, rect.end.y), Vector2(rect.end.x, rect.position.y), frame, 1.2)
+	if n == 1 and level >= 1:
+		# Echelon: a squad is one dot over the frame.
+		draw_circle(Vector2(p.x, rect.position.y - 4.0), 1.8, frame)
 	if g.fighting:
-		_swords(p + Vector2(half_size.x + 5, -half_size.y - 4), Color(1.0, 0.45, 0.3))
+		_swords(p + Vector2(half_size.x + 5, -half_size.y - 4), COL_THREAT)
 	_taken.append(rect.grow(2.0).merge(rect.grow(2.0).grow_individual(0, 6.0 if n > 1 else 0.0, 6.0 if n > 1 else 0.0, 0)))
 	g.half = half_size
 
@@ -1823,7 +1989,65 @@ func _draw_group_label(g: Dictionary, font: Font) -> void:
 	var at := _place(cands, tw, fs, fs + 3, n > 1 or detail_level() == 2)
 	if not at.is_finite():
 		return
-	_text(font, at, t, fs, COL_SELECT if g.selected > 0 else Color.WHITE, 3)
+	_text(font, at, t, fs, Color(0.55, 0.33, 0.0) if g.selected > 0 else MAP_INK, 3)
+
+
+## UI-UX-03: the symbol key, bottom right above the scale (the same drawing calls as the map, so it cannot disagree).
+func _draw_legend() -> void:
+	var rows := 8
+	var box := Rect2(Vector2(size.x - 172.0 - FNUI.EDGE, size.y - 60.0 - rows * 15.0 - 26.0), Vector2(172.0, rows * 15.0 + 22.0))
+	if _insp.visible and box.intersects(_insp.get_rect()):
+		return
+	draw_rect(box, Color(MAP_PAPER, 0.92), true)
+	draw_rect(box, Color(MAP_INK, 0.5), false, 1.0)
+	var f := FNUI.font("semibold")
+	var cf := FNUI.caps_font()
+	draw_string(cf, box.position + Vector2(8, 13), "LEGEND", HORIZONTAL_ALIGNMENT_LEFT, -1, FNUI.CAPTION, Color(MAP_INK, 0.7))
+	var own := WorldState.faction_color(faction)
+	var foe := WorldState.faction_color((faction + 1) % 3).darkened(0.1)
+	var x := box.position.x + 18.0
+	var y := box.position.y + 28.0
+	var items := ["Your squad", "Enemy, observed now", "Enemy, reported earlier", "Objective (owner colour)", "Your base", "Main road / road", "Track", "Contour (bold every 5th)"]
+	for i in items.size():
+		var p := Vector2(x, y + i * 15.0 - 4.0)
+		match i:
+			0:
+				var r := Rect2(p - Vector2(7, 4.5), Vector2(14, 9))
+				draw_rect(r, own.lightened(0.55), true)
+				draw_rect(r, own.darkened(0.62), false, 1.2)
+				draw_line(r.position, r.end, own.darkened(0.62), 1.0)
+				draw_line(Vector2(r.position.x, r.end.y), Vector2(r.end.x, r.position.y), own.darkened(0.62), 1.0)
+			1, 2:
+				var d := PackedVector2Array([p + Vector2(0, -6), p + Vector2(6, 0), p + Vector2(0, 6), p + Vector2(-6, 0), p + Vector2(0, -6)])
+				if i == 1:
+					draw_colored_polygon(d, foe.lightened(0.5))
+					draw_polyline(d, foe.darkened(0.55), 1.6)
+				else:
+					_dashed(d, foe.darkened(0.45), 1.4)
+			3:
+				draw_circle(p, 5.5, MAP_PAPER)
+				draw_arc(p, 5.5, 0.0, TAU, 16, own.darkened(0.15), 2.0)
+				draw_circle(p, 2.2, own.darkened(0.15))
+			4:
+				draw_rect(Rect2(p - Vector2(5, 5), Vector2(10, 10)), MAP_PAPER, true)
+				draw_rect(Rect2(p - Vector2(5, 5), Vector2(10, 10)), own.darkened(0.45), false, 1.6)
+			5:
+				draw_line(p - Vector2(8, 0), p + Vector2(8, 0), MapTopo.ROAD_STYLE[&"primary"][0], 4.0)
+				draw_line(p - Vector2(8, 0), p + Vector2(8, 0), MapTopo.ROAD_STYLE[&"primary"][1], 2.6)
+			6:
+				draw_line(p - Vector2(8, 0), p + Vector2(8, 0), MapTopo.ROAD_STYLE[&"track"][1], 1.2)
+			7:
+				draw_line(p - Vector2(8, -2), p + Vector2(8, -2), Color(0.56, 0.39, 0.23, 0.9), 1.6)
+				draw_line(p - Vector2(8, 2), p + Vector2(8, 2), Color(0.56, 0.39, 0.23, 0.5), 1.0)
+		draw_string(f, Vector2(x + 14.0, y + i * 15.0), items[i], HORIZONTAL_ALIGNMENT_LEFT, -1, FNUI.CAPTION + 1, MAP_INK)
+
+
+## A circle as points (for dashed rings).
+static func _ring(c: Vector2, r: float, n: int) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for i in n + 1:
+		out.append(c + Vector2(cos(TAU * i / n), sin(TAU * i / n)) * r)
+	return out
 
 
 func _swords(p: Vector2, col: Color) -> void:
@@ -1843,7 +2067,7 @@ func _draw_soldier_dots() -> void:
 				continue
 			var p := to_screen(u.position)
 			if r.has_point(p):
-				draw_circle(p, 3.0, Color(0, 0, 0, 0.7))
+				draw_circle(p, 3.0, Color(MAP_INK, 0.8))
 				draw_circle(p, 2.0, COL_SELECT if sel else col)
 
 
@@ -1871,12 +2095,12 @@ func _draw_known_enemies(font: Font) -> void:
 	for m: Dictionary in contact_markers():
 		var c: ContactState = m.c
 		var p: Vector2 = m.p
-		var col := WorldState.faction_color(c.enemy_faction) if c.enemy_faction >= 0 else Color(0.82, 0.82, 0.78)
+		var col := WorldState.faction_color(c.enemy_faction).darkened(0.1) if c.enemy_faction >= 0 else Color(0.45, 0.45, 0.42)
 		var a := clampf(0.3 + c.conf * 0.7, 0.3, 1.0)
 		var ur := c.unc * zoom
 		if ur > 8.0:
-			draw_circle(p, ur, Color(col, 0.07 * a))
-			draw_arc(p, ur, 0.0, TAU, 48, Color(col.lightened(0.25), 0.5 * a), 1.5)
+			draw_circle(p, ur, Color(col, 0.08 * a))
+			draw_arc(p, ur, 0.0, TAU, 48, Color(col.darkened(0.2), 0.55 * a), 1.2)
 		var observed := c.status == ContactState.Status.OBSERVED
 		var r := 6.0 if c.status == ContactState.Status.STALE else 10.0
 		var pts := PackedVector2Array([p + Vector2(0, -r), p + Vector2(r, 0), p + Vector2(0, r), p + Vector2(-r, 0), p + Vector2(0, -r)])
@@ -1884,10 +2108,11 @@ func _draw_known_enemies(font: Font) -> void:
 			draw_arc(p, r, 0.0, TAU, 20, Color(col, a), 2.0)
 		else:
 			if observed:
-				draw_colored_polygon(pts, Color(col.darkened(0.45), 0.9 * a))
+				draw_colored_polygon(pts, Color(col.lightened(0.5), 0.95 * a))
+				draw_polyline(pts, Color(col.darkened(0.55), a), 2.0)
 			else:
-				draw_colored_polygon(pts, Color(col.darkened(0.7), 0.35 * a))
-			draw_polyline(pts, Color(col.lightened(0.2), a), 2.0 if observed else 1.5)
+				draw_colored_polygon(pts, Color(MAP_PAPER, 0.6 * a))
+				_dashed(pts, Color(col.darkened(0.45), a), 1.6)
 		_taken.append(Rect2(p - Vector2(11, 11), Vector2(22, 22)))
 		var t := "%d%s" % [c.strength, "" if observed else "?"]
 		if dbg_faction >= 0:
@@ -1895,7 +2120,7 @@ func _draw_known_enemies(font: Font) -> void:
 			_text(font, p + Vector2(r + 3, 4), t, 11, Color(1, 1, 1, a), 3)
 		else:
 			var tw := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
-			_text(font, p + Vector2(-tw * 0.5, 4), t, 11, Color(1, 1, 1, a), 3)
+			_text(font, p + Vector2(-tw * 0.5, 4), t, 11, Color(MAP_INK, a), 3)
 
 
 ## Developer only: where every other faction's squads really are, hollow and labelled TRUTH,
@@ -2098,15 +2323,15 @@ func _draw_logistics_layer(font: Font, level: int) -> void:
 		var kind := sim.logistics.bases.base_kind(b.id)
 		var col := WorldState.faction_color(faction).lightened(0.3)
 		if level == 0:
-			draw_rect(Rect2(p - Vector2(7, 7), Vector2(14, 14)), Color(0, 0, 0, 0.7), true)
-			draw_rect(Rect2(p - Vector2(6, 6), Vector2(12, 12)), col, false, 2.0)
+			draw_rect(Rect2(p - Vector2(7, 7), Vector2(14, 14)), MAP_PAPER, true)
+			draw_rect(Rect2(p - Vector2(6, 6), Vector2(12, 12)), col.darkened(0.45), false, 2.0)
 			# GAMEPLAY-01D: a base with its own objective is already named by the objective symbol.
 			var own_obj := sim.war.base_objective(int(b.id))
 			_text(font, p + Vector2(10, 5), b.name if kind == "Main base" and (own_obj == null or not own_obj.is_base()) else "", 12, col)
 		else:
 			# BASE-01: an established base shows its area; a proximity group half its join distance.
 			var radius_px := (float(b.radius) if float(b.get("radius", 0.0)) > 0.0 else BaseSim.JOIN_M * 0.5) * zoom
-			draw_arc(p, maxf(radius_px, 14.0), 0.0, TAU, 40, Color(col, 0.5), 1.5)
+			_dashed(_ring(p, maxf(radius_px, 14.0), 48), Color(col.darkened(0.45), 0.8), 1.5)
 			var bt := "%s (%s)" % [b.name, kind]
 			var bw := font.get_string_size(bt, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
 			var r_px := maxf(radius_px, 14.0)
@@ -2119,7 +2344,7 @@ func _draw_logistics_layer(font: Font, level: int) -> void:
 			var p2 := to_screen(s.position)
 			var letter: String = FACILITY_LETTERS.get(FacilityDefs.kind_of(s.type_id), "?")
 			var sel: bool = s.id == selected_structure
-			var edge := COL_SELECT if sel else Color(0.75, 0.85, 1.0, 0.9)
+			var edge := COL_SELECT if sel else Color(MAP_INK, 0.85)
 			var sd := StructureCatalog.get_def(s.type_id)
 			var fp: Vector2 = sd.footprint() if sd else Vector2(8, 8)
 			var box := Rect2(p2 - Vector2(6, 6), Vector2(12, 12))
@@ -2128,18 +2353,18 @@ func _draw_logistics_layer(font: Font, level: int) -> void:
 				var ax := Vector3(cos(s.yaw), 0, -sin(s.yaw)) * fp.x * 0.5
 				var az := Vector3(sin(s.yaw), 0, cos(s.yaw)) * fp.y * 0.5
 				var poly := PackedVector2Array([to_screen(s.position + ax + az), to_screen(s.position + ax - az), to_screen(s.position - ax - az), to_screen(s.position - ax + az)])
-				draw_colored_polygon(poly, Color(0.08, 0.1, 0.12, 0.85))
+				draw_colored_polygon(poly, Color(WorldState.faction_color(faction).lightened(0.55), 0.95))
 				poly.append(poly[0])
 				draw_polyline(poly, edge, 2.0 if sel else 1.2, true)
 				box = Rect2(poly[0], Vector2.ZERO)
 				for q in poly:
 					box = box.expand(q)
 			else:
-				draw_rect(box, Color(0.08, 0.1, 0.12, 0.85), true)
+				draw_rect(box, Color(WorldState.faction_color(faction).lightened(0.55), 0.95), true)
 				draw_rect(box, edge, false, 2.0 if sel else 1.0)
 			_taken.append(box)
 			var lw := font.get_string_size(letter, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
-			_text(font, p2 + Vector2(-lw * 0.5, 4), letter, 11, Color.WHITE, 2)
+			_text(font, p2 + Vector2(-lw * 0.5, 4), letter, 11, MAP_INK, 2)
 			if s.inventory != null and sel and level >= 1:
 				var st := "%d / %d / %d" % [roundi(s.inventory.get_qty(Inventory.AMMO)), roundi(s.inventory.get_qty(Inventory.FUEL)), roundi(s.inventory.get_qty(Inventory.SUPPLIES))]
 				var sw := font.get_string_size(st, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x

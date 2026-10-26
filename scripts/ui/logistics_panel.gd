@@ -25,6 +25,8 @@ var game: GameController
 ## GAMEPLAY-01B: cancelling a construction site goes through the construction controller (refund rule).
 var construction: ConstructionController
 var enabled := true
+## UI-UX-03: the top of the right-hand column (below the navigation bar), set by GameHUD.
+var top_y := float(FNUI.EDGE)
 
 var _icon: TextureRect
 var _title: Label
@@ -113,7 +115,7 @@ func _process(delta: float) -> void:
 	visible = vid > 0 or (sid > 0 and sim.logistics.structure(sid) != null)
 	if not visible:
 		return
-	position = Vector2(get_viewport_rect().size.x - size.x - FNUI.EDGE, FNUI.EDGE)
+	position = Vector2(get_viewport_rect().size.x - size.x - FNUI.EDGE, top_y)
 	_timer -= delta
 	if _timer > 0.0:
 		return

@@ -56,6 +56,8 @@ var development: DevelopmentPanel
 var tracker: ObjectiveTracker
 ## GAMEPLAY-04D: the squad equipment screen (EQUIP in the command panel).
 var equipment: EquipmentPanel
+## UI-UX-03: the main navigation (top edge of the tactical view).
+var nav_bar: HudNavBar
 
 
 class Overlay extends Control:
@@ -475,7 +477,7 @@ func _ready() -> void:
 	var hb := HBoxContainer.new()
 	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hb.add_theme_constant_override("separation", FNUI.S5)
-	for k: Array in [["LMB", "Select"], ["RMB", "Move"], ["RMB drag", "Place"], ["B", "Build"], ["M", "Map"], ["Space", "Pause"], ["1-4", "Speed"], ["Tab", "First person"], ["F1", "Controls"]]:
+	for k: Array in [["LMB", "Select"], ["RMB", "Move"], ["RMB drag", "Place"], ["Tab", "First person"], ["F1", "Controls"]]:
 		hb.add_child(FNKeyHint.new(k[0], k[1]))
 	_hints.add_child(hb)
 	_hints.visible = false
@@ -504,6 +506,9 @@ func _ready() -> void:
 	development = DevelopmentPanel.new()
 	development.hud = self
 	add_child(development)
+	nav_bar = HudNavBar.new()
+	nav_bar.hud = self
+	add_child(nav_bar)
 	_notes_box = VBoxContainer.new()
 	_notes_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_notes_box.add_theme_constant_override("separation", 3)
@@ -687,7 +692,10 @@ func _process(_delta: float) -> void:
 	var top := float(FNUI.EDGE)
 	if game and game.diagnostics:
 		top = maxf(top, game.diagnostics.overlay_bottom() + 8.0)
+	if nav_bar.visible:
+		top = maxf(top, nav_bar.bottom() + 6.0)
 	squad_panel.position = Vector2(FNUI.EDGE, top)
+	_layout_right(vp)
 	var squads_selected: bool = rts != null and not rts.selected_squads().is_empty()
 	tactical_panel.visible = squads_selected and in_rts
 	_hints.visible = in_rts and war_on and not tactical_panel.visible
@@ -737,6 +745,11 @@ func _process(_delta: float) -> void:
 			_clock.size = Vector2.ZERO
 		_clock.position = Vector2(vp.x * 0.5 - _clock.size.x * 0.5, notes_y)
 		notes_y += _clock.size.y + 6.0
+	# UI-UX-03: on a narrow screen the notifications go below the navigation row instead of touching it.
+	if nav_bar.visible:
+		var nx := vp.x * 0.5 - _notes_box.size.x * 0.5
+		if nx < nav_bar.left_rect().end.x + 6.0 or nx + _notes_box.size.x > nav_bar.right_rect().position.x - 6.0:
+			notes_y = maxf(notes_y, nav_bar.bottom() + 6.0)
 	_notes_box.position = Vector2(vp.x * 0.5 - _notes_box.size.x * 0.5, notes_y)
 	# GAMEPLAY-04: with the development screen open the notifications go below it instead of over its header.
 	if development and development.visible:
@@ -752,6 +765,27 @@ func _process(_delta: float) -> void:
 	_label.position = Vector2(FNUI.EDGE if in_rts else 12.0, floor_y - _label.size.y)
 	if _label.visible:
 		squad_panel.max_bottom = minf(squad_panel.max_bottom, _label.position.y - 8.0)
+
+
+## UI-UX-03: the right-hand column, top to bottom: a selected building's or vehicle's panel (the player asked for it: it comes
+## first), then the objective tracker / opportunities (folded to its header while a panel is up, or when it would reach the
+## squad card). The economy strip leaves the top row when it would touch the navigation panels.
+func _layout_right(vp: Vector2) -> void:
+	var y0 := float(FNUI.EDGE)
+	if nav_bar.visible:
+		y0 = nav_bar.right_rect().end.y + 6.0
+	logistics_panel.top_y = y0
+	var panel_up := logistics_panel.visible
+	tracker.top_y = (logistics_panel.position.y + logistics_panel.size.y + 6.0) if panel_up else y0
+	var card_top := tactical_panel.position.y if tactical_panel.visible else vp.y
+	# An unfolded list needs about 200 px; with less room above the squad card it folds.
+	tracker.compact = panel_up or tracker.top_y + 200.0 > card_top
+	economy.top_y = float(FNUI.EDGE)
+	if nav_bar.visible:
+		var sr: Rect2 = economy._strip.get_global_rect()
+		var cx := (vp.x - sr.size.x) * 0.5
+		if cx < nav_bar.left_rect().end.x + 8.0 or cx + sr.size.x > nav_bar.right_rect().position.x - 8.0:
+			economy.top_y = nav_bar.bottom() + 6.0
 
 
 ## COMBAT-01a: shots, hits and damage that concern the possessed soldier.

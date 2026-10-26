@@ -21,6 +21,36 @@ var _sig := ""
 var current_id := ""
 var target := Vector3.INF
 var target_label := ""
+## UI-UX-03: the right-hand column. GameHUD sets top_y (below the navigation bar, or below a selected building's panel) and
+## compact (a building or vehicle panel is up: the tracker shrinks to its header, which still counts what is open; a click on
+## the chevron expands it anyway). The player can also fold it away himself.
+var top_y := float(FNUI.EDGE)
+var compact := false:
+	set(v):
+		if v != compact:
+			compact = v
+			_expanded_by_user = false
+			_apply_fold()
+var _collapsed_by_user := false
+var _expanded_by_user := false
+var _fold: Button
+var _count := 0
+
+
+func folded() -> bool:
+	return _collapsed_by_user or (compact and not _expanded_by_user)
+
+
+func _apply_fold() -> void:
+	if _list == null:
+		return
+	var f := folded()
+	_list.visible = not f
+	_brief.visible = not f and _brief.text != ""
+	_foot.visible = not f and _foot.text != ""
+	_fold.icon = FNIcons.texture(&"chevron_down" if f else &"chevron_up", FNUI.ICON_S)
+	_fold.tooltip_text = "Show the list" if f else "Fold to the header"
+	_panel.size = Vector2.ZERO
 
 
 func _ready() -> void:
@@ -40,6 +70,21 @@ func _ready() -> void:
 	_title = FNUI.label("Objectives", FNUI.LABEL, FNUI.INK, "caps")
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(_title)
+	_fold = Button.new()
+	_fold.flat = true
+	_fold.focus_mode = Control.FOCUS_NONE
+	_fold.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_fold.icon = FNIcons.texture(&"chevron_up", FNUI.ICON_S)
+	_fold.add_theme_constant_override("icon_max_width", FNUI.ICON_S)
+	_fold.pressed.connect(func() -> void:
+		if folded():
+			_collapsed_by_user = false
+			_expanded_by_user = true
+		else:
+			_collapsed_by_user = true
+			_expanded_by_user = false
+		_apply_fold())
+	head.add_child(_fold)
 	var close := Button.new()
 	close.text = "×"
 	close.flat = true
@@ -106,7 +151,7 @@ func _process(delta: float) -> void:
 		return
 	var vp := get_viewport_rect().size
 	# First person keeps its squad box at the top right: the tracker goes below it.
-	_panel.position = Vector2(vp.x - _panel.size.x - FNUI.EDGE, FNUI.EDGE + (72.0 if hud.game.mode == GameController.Mode.FPS else 0.0))
+	_panel.position = Vector2(vp.x - _panel.size.x - FNUI.EDGE, FNUI.EDGE + 72.0 if hud.game.mode == GameController.Mode.FPS else top_y)
 	_timer -= delta
 	if _timer > 0.0:
 		return
@@ -160,9 +205,12 @@ func _refresh() -> void:
 	_foot.text = dist
 	_foot.visible = dist != ""
 	_brief.visible = _brief.text != ""
+	_count = rows.size()
+	if folded() and _count > 0:
+		_title.text += "  ·  %d" % _count
 	var sig := str(rows) + _title.text + _brief.text
 	if sig == _sig:
-		_panel.size = Vector2.ZERO
+		_apply_fold()
 		return
 	_sig = sig
 	for c in _list.get_children():
@@ -222,7 +270,7 @@ func _refresh() -> void:
 			m2.add_theme_constant_override("margin_left", 16)
 			m2.add_child(ti)
 			_list.add_child(m2)
-	_panel.size = Vector2.ZERO
+	_apply_fold()
 
 
 ## The optional tips shown under a phase: [text, done] for the optional phases that follow it in the list.
@@ -259,10 +307,9 @@ func _draw() -> void:
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
 		return
-	var at := target + Vector3.UP * 8.0
-	if cam.is_position_behind(at):
+	var s := FNUI.project(cam, target + Vector3.UP * 8.0)
+	if not s.is_finite():
 		return
-	var s := cam.unproject_position(at)
 	var col := FNUI.ARMED
 	var font := FNUI.caps_font()
 	draw_colored_polygon(PackedVector2Array([s + Vector2(-9, -14), s + Vector2(9, -14), s]), Color(0, 0, 0, 0.6))

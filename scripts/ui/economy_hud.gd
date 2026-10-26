@@ -17,6 +17,8 @@ var _timer := 0.0
 ## The current hint (tests read it): id and text.
 var hint_id := ""
 var hint_text := ""
+## UI-UX-03: the strip's top (GameHUD moves it below the navigation when the top row is too narrow).
+var top_y := float(FNUI.EDGE)
 
 
 func _ready() -> void:
@@ -76,7 +78,7 @@ func _process(delta: float) -> void:
 		return
 	queue_redraw()
 	var vp := get_viewport_rect().size
-	_strip.position = Vector2(roundf((vp.x - _strip.size.x) * 0.5), FNUI.EDGE)
+	_strip.position = Vector2(roundf((vp.x - _strip.size.x) * 0.5), top_y)
 	_hint.position = Vector2(roundf((vp.x - _hint.size.x) * 0.5), _strip.position.y + _strip.size.y + 6.0)
 	_timer -= delta
 	if _timer > 0.0:
@@ -196,10 +198,9 @@ func _draw() -> void:
 		var p: Vector3 = c.pos
 		if cp.distance_to(p) > 2500.0:
 			continue
-		var at := p + Vector3.UP * 3.0
-		if cam.is_position_behind(at):
+		var s := FNUI.project(cam, p + Vector3.UP * 3.0)
+		if not s.is_finite():
 			continue
-		var s := cam.unproject_position(at)
 		var col := FNUI.ARMED
 		var d := 7.0
 		draw_colored_polygon(PackedVector2Array([s + Vector2(0, -d - 2), s + Vector2(d + 2, 0), s + Vector2(0, d + 2), s + Vector2(-d - 2, 0)]), Color(0, 0, 0, 0.6))
@@ -235,10 +236,9 @@ func _draw() -> void:
 		var p := st.site_center()
 		if cp.distance_to(p) > 1500.0:
 			continue
-		var at := p + Vector3.UP * 6.0
-		if cam.is_position_behind(at):
+		var s := FNUI.project(cam, p + Vector3.UP * 6.0)
+		if not s.is_finite():
 			continue
-		var s := cam.unproject_position(at)
 		var def := StructureCatalog.get_def(st.type_id)
 		var workers := int(st.site.get("workers", 0))
 		var why := String(st.site.get("why", ""))
@@ -279,10 +279,9 @@ func _draw_captures(cam: Camera3D) -> void:
 				ring.clear()
 				continue
 			ring.append(cam.unproject_position(gp))
-		var at := o.position + Vector3.UP * 12.0
-		if cam.is_position_behind(at):
+		var sp := FNUI.project(cam, o.position + Vector3.UP * 12.0)
+		if not sp.is_finite():
 			continue
-		var sp := cam.unproject_position(at)
 		var pct := roundi(float(cs.progress) * 100.0)
 		var need := int(cs.need)
 		var r := roundi(o.radius)
@@ -367,10 +366,9 @@ func stash_groups(cam: Camera3D, pf: int) -> Array:
 		var sp: Vector3 = s.pos
 		if cp.distance_to(sp) > 1500.0:
 			continue
-		var sat := sp + Vector3.UP * 2.0
-		if cam.is_position_behind(sat):
+		var ss := FNUI.project(cam, sp + Vector3.UP * 2.0)
+		if not ss.is_finite():
 			continue
-		var ss := cam.unproject_position(sat)
 		var into: Dictionary = {}
 		for g: Dictionary in groups:
 			var dd: Vector2 = (g.screen as Vector2) - ss

@@ -86,6 +86,19 @@ const SHAPES := {
 	&"garrison": "<path d='M4 21V11L12 6L20 11V21Z M12 6V2H16L15 3.5L16 5H12 M10 21V16H14V21'/>",
 	&"rearm": "<rect x='3' y='11' width='18' height='10'/><path d='M7 11V5L8 3L9 5V11M11 11V5L12 3L13 5V11M15 11V5L16 3L17 5V11'/>",
 	&"focus": "<path d='M3 8V3H8M16 3H21V8M21 16V21H16M8 21H3V16'/><circle cx='12' cy='12' r='3'/>",
+	# UI-UX-03: dropdowns, the main navigation and time controls.
+	&"chevron_down": "<path d='M6 9L12 15L18 9'/>",
+	&"chevron_up": "<path d='M6 15L12 9L18 15'/>",
+	&"more": "<path d='M5 12H6M11.5 12H12.5M18 12H19'/>",
+	&"map": "<path d='M3 6L9 3L15 6L21 3V18L15 21L9 18L3 21Z M9 3V18M15 6V21'/>",
+	&"menu": "<path d='M4 6H20M4 12H20M4 18H20'/>",
+	&"pause": "<path d='M8 5V19M16 5V19'/>",
+	&"play": "<path d='M7 4L19 12L7 20Z'/>",
+	&"armoury": "<path d='M3 15H15L18 12H21M6 15V18H9V15M12 12V15M3 12H12'/>",
+	&"close": "<path d='M6 6L18 18M18 6L6 18'/>",
+	&"filter": "<path d='M3 5H21L14 13V20L10 18V13Z'/>",
+	&"info": "<circle cx='12' cy='12' r='9'/><path d='M12 11V17M12 7V8'/>",
+	&"relief":"<path d='M2 19C6 19 7 9 12 9C17 9 18 19 22 19M6 19C8 19 9 13 12 13C15 13 16 19 18 19'/>",
 }
 
 ## Icons are rasterised larger than drawn and shrunk with mipmaps: the canvas is scaled up to the

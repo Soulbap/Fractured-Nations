@@ -81,10 +81,13 @@ var counters := {"chunk_loads": 0, "chunk_unloads": 0, "cells_activated": 0, "ce
 	"unload_us": 0, "cells_reused": 0, "release_queue_max": 0, "store_us": 0, "store_us_max": 0, "unloads_cancelled": 0}
 ## Chunks waiting to be unloaded (Vector2i -> true), at most unloads_per_frame a frame; cancelled when wanted again.
 var _unload_pending := {}
-## PERFORMANCE-01: hidden cells waiting to be freed: [key, MultiMeshInstance3D] in order, and key -> instance for the ones that may
+## PERFORMANCE-01: hidden cells waiting to be freed: [key, instance id] in order, and key -> instance for the ones that may
 ## be shown again (left the range by camera movement; data unchanged). Freed by _drain_release.
+## UI-UX-03: an instance is in the queue at most once (_queued: instance id -> true). A reused cell hidden again kept its old
+## entry and got a second one; the first freed it and the second read a freed instance.
 var _release: Array = []
 var _release_pos := 0
+var _queued := {}
 var _reusable := {}
 ## --veg-immediate-free: the old behaviour (every leaving cell freed in the same frame), for comparisons only.
 var _immediate_free := false
@@ -636,7 +639,10 @@ func _deactivate(key: Vector3i, reusable := false) -> void:
 		return
 	mmi.visible = false
 	mmi.set_meta("lod", lod)
-	_release.append([key, mmi])
+	var id := mmi.get_instance_id()
+	if not _queued.has(id):
+		_queued[id] = true
+		_release.append([key, id])
 	if reusable:
 		_reusable[key] = mmi
 	else:
@@ -676,9 +682,10 @@ func _drain_release() -> void:
 		var e: Array = _release[_release_pos]
 		_release_pos += 1
 		var key: Vector3i = e[0]
-		var mmi: MultiMeshInstance3D = e[1]
-		if not is_instance_valid(mmi) or active.get(key) == mmi:
-			continue  # shown again (reused)
+		_queued.erase(e[1])
+		var mmi := instance_from_id(e[1]) as MultiMeshInstance3D
+		if mmi == null or active.get(key) == mmi:
+			continue  # shown again (reused); queued again when it is hidden again
 		if _reusable.get(key) == mmi:
 			_reusable.erase(key)
 		_free_cell(mmi)
@@ -695,10 +702,11 @@ func _deactivate_all() -> void:
 	_queue.clear()
 	# Switched off: everything goes now (nothing should linger hidden).
 	for i in range(_release_pos, _release.size()):
-		var mmi: MultiMeshInstance3D = _release[i][1]
-		if is_instance_valid(mmi) and active.get(_release[i][0]) != mmi:
+		var mmi := instance_from_id(_release[i][1]) as MultiMeshInstance3D
+		if mmi != null and active.get(_release[i][0]) != mmi:
 			_free_cell(mmi)
 	_release.clear()
+	_queued.clear()
 	_release_pos = 0
 	_reusable.clear()
 	_queue_pos = 0

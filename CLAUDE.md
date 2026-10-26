@@ -23,7 +23,7 @@ Norwegian; code, comments and docs are English.
   (`../fractured-nations-*`) are only kept until the product owner approves removing them
   (status: [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md)). Do not develop there.
 - **Session workflow:** open this project → read this file and the roadmap ([docs/AI_ROADMAP.md](docs/AI_ROADMAP.md),
-  COMBAT-COVER-03 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
+  UI-UX-03 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
   targeted tests + visual Godot validation → update the report / README → commit to `develop`.
 - Each milestone ends with a report in `docs/<MILESTONE>_REPORT.md` and an updated README.
 
@@ -348,6 +348,16 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   into the ground in front. Player single click near cover / right-drag: `SquadPositions.cover_line_near` + `placement(..., opts)`
   (threats from `threats_for`, snap by zoom `RTSController.cover_snap`); places are player-authoritative (a placed squad's own SUPPRESS
   uses its places). Check: `--scenario=dev --cover03-test [--shots] [--only ...]`.
+- **Tactical interface and map (UI-UX-03).** The squad card (`TacticalPanel`) is one row of order tiles plus `FNDropdown`s (kit:
+  `fn_dropdown.gd` / `fn_menu.gd`; menus re-parent to the HUD layer while open, open on the side with room, close on outside click / Esc);
+  a dropdown only calls the existing RTSController / SquadControl order. `HudNavBar` (`scripts/ui/nav_bar.gd`) is the mouse path to every
+  screen - add an entry there for a new screen, never a key-only screen. `GameHUD._layout_right` owns the right column (building panel
+  first, tracker folds). Screen-space world markers go through `FNUI.project` (a point at the camera plane projected to ~1e9 px broke
+  triangulation). The map's base layer is `MapTopo` + `shaders/ui/topo_map.gdshader` (built once from Terrain3D / vegetation.png /
+  info.png / RoadNetwork / water.json / WorldOverrides houses; vectors drawn in world coordinates with one transform); map text goes
+  through `StrategicMap._text` (dark ink, paper halo). `RTSCamera._step`: only box solids / structures move the camera, smoothed and
+  capped (`--legacy-rts-camera`). `VegetationStreamer` queues an instance for release at most once (`_queued`, instance ids). Check:
+  `--scenario=dev --uiux03-test [--shots] [--scale=1.25] [--only ...]`.
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are

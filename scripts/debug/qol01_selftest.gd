@@ -563,7 +563,7 @@ func _z_shots() -> Dictionary:
 	_png("01_rts_panel_stealth_move")
 	# The tooltip of a command tile under the mouse (the real hover path).
 	var tp := demo.hud.tactical_panel
-	var tile: Control = tp._buttons[TacticalPanel.BEHAVIOUR - SquadBehaviour.STEALTH]
+	var tile: Control = tp.behaviour_dd  # UI-UX-03: the behaviour dropdown replaced the mode tiles
 	var at := tile.get_global_rect().get_center() * demo.get_viewport().get_final_transform().get_scale()
 	Input.warp_mouse(at)
 	var mm := InputEventMouseMotion.new()

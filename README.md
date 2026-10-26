@@ -10,7 +10,20 @@ stable branch, updated only with the product owner's approval), one canonical de
 branches are contained in `develop` and stay as history. See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest finished: **COMBAT-COVER-03** (Company of Heroes-style cover on real geometry). Settlement houses, barns and sheds stop
+Newest finished: **UI-UX-03** (tactical interface, map overhaul, RTS camera, runtime stability). The squad card is compact
+(about 40 % of its old size): one row of order tiles and **Formation / Behaviour / Fire / Squad dropdowns** that show the current
+value (MIXED for a mixed selection) and open where there is room; the hotkeys are unchanged. A **navigation bar** at the top of the
+tactical view opens the Map, Construction, Military Development, your Base (recruitment, stores) and, in the Development Scenario, the
+Armoury by mouse; pause, speed, clock and menu sit top right. A selected building's panel now comes first in the right column and the
+Opportunities fold to a counted header under it. The **tactical map** is a topographic sheet built from the live world: hillshade,
+contours that follow the zoom, woods, fields, water, roads by class, bridges with their state, settlement houses, territory as a tint
+with a border, NATO-style unit and contact symbols, a layer bar with 10 toggles, a legend and grid references. The **RTS camera** no
+longer jumps or turns round near houses (only buildings move it, smoothly; next to the focus it rises over the roof). Fixed: the
+economy HUD "triangulation failed" error and the vegetation streamer's "previously freed instance". Check
+`--scenario=dev --uiux03-test [--shots] [--scale=1.25] [--only shots,dropdowns,nav,layout,map,camera,streamer,econ,small]`;
+`--legacy-rts-camera` for comparison. See [docs/UI-UX-03_REPORT.md](docs/UI-UX-03_REPORT.md).
+
+Before that: **COMBAT-COVER-03** (Company of Heroes-style cover on real geometry). Settlement houses, barns and sheds stop
 bullets and sight over their whole shape (they were spheres: a fifth of the lines through a house passed its corners and ends). The
 first-person round leaves the muzzle towards the point under the crosshair, so a camera beside a wall no longer shoots through it.
 AI soldiers fire only along a free line (no rounds into walls, hillsides or the ground in front), stand up or step to a corner when

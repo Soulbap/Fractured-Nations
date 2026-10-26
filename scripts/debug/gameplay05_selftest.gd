@@ -562,8 +562,12 @@ func _u_orders() -> Dictionary:
 	await _seconds(1.6)
 	_png("u_orders_tooltip" + tag)
 	var tips := {}
-	for e: Array in TacticalPanel.ENTRIES:
-		tips[String(e[3])] = String(e[5])
+	# UI-UX-03: the order row (ORDERS) and the Squad menu's entries.
+	for e in TacticalPanel.ORDERS:
+		if e != null:
+			tips[String(e[2])] = String(e[4])
+	for it: Dictionary in demo.hud.tactical_panel.squad_dd.menu.items:
+		tips[String(it.text).get_slice(" ", 0)] = String(it.tip)
 	_expect(String(tips.get("Assault", "")).contains("fire and movement") and String(tips.get("Rearm", "")).contains("ammunition"), "u_orders: tooltips: %s" % str(tips))
 	return {"tooltips": tips.size(), "assault": tips.get("Assault", "")}
 

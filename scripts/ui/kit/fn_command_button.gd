@@ -18,6 +18,7 @@ var current := false:
 			current = v
 			queue_redraw()
 var _icon_name := &""
+var _icon_px := FNUI.ICON_L - 2
 
 
 ## GAMEPLAY-05B: the tooltip wraps at a readable width (an order's explanation ran to one line of ~1400 px): its first line as the
@@ -83,11 +84,29 @@ func _init(icon_name: StringName, title: String, key: String, tip := "", compact
 	mouse_exited.connect(_restyle)
 
 
+## UI-UX-03: a square icon-only tile for the squad card's order row (the name and the help are in the tooltip, the hotkey small
+## in the corner).
+func make_icon_only(px := Vector2(27, 25)) -> void:
+	custom_minimum_size = px
+	title_label.visible = false
+	var v := icon_rect.get_parent() as VBoxContainer
+	v.offset_top = 0
+	v.offset_bottom = 0
+	icon_rect.custom_minimum_size = Vector2(FNUI.ICON_M, FNUI.ICON_M)
+	icon_rect.texture = FNIcons.texture(_icon_name, FNUI.ICON_M)
+	key_label.add_theme_font_size_override("font_size", 7)
+	key_label.offset_left = -14.0
+	key_label.offset_right = -2.0
+	key_label.offset_top = 0.0
+	key_label.offset_bottom = 8.0
+	_icon_px = FNUI.ICON_M
+
+
 ## Changes title and icon in place (e.g. ROE: FIRE FREE <-> HOLD FIRE).
 func set_face(icon_name: StringName, title: String) -> void:
 	if icon_name != _icon_name:
 		_icon_name = icon_name
-		icon_rect.texture = FNIcons.texture(icon_name, FNUI.ICON_L - 2)
+		icon_rect.texture = FNIcons.texture(icon_name, _icon_px)
 	title_label.text = title
 
 

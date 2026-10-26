@@ -230,3 +230,14 @@ static func keycap(key: String, size := CAPTION) -> Label:
 	l.add_theme_stylebox_override("normal", keycap_style())
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	return l
+
+
+## UI-UX-03: the screen point of a world position for a HUD marker, or Vector2.INF when it is not drawable: behind the camera,
+## or so far off the viewport that it is no marker the player can see. A point just in front of the camera plane projects to
+## coordinates near 1e9, where a 9 px diamond loses its size in float precision and the canvas cannot triangulate it.
+static func project(cam: Camera3D, p: Vector3, margin := 200.0) -> Vector2:
+	if cam == null or not p.is_finite() or cam.is_position_behind(p):
+		return Vector2.INF
+	var s := cam.unproject_position(p)
+	var r := cam.get_viewport().get_visible_rect().grow(margin)
+	return s if s.is_finite() and r.has_point(s) else Vector2.INF
