@@ -130,7 +130,16 @@ func _place(i: int, mesh_id: int, g: Transform3D) -> void:
 	var cs := _pool[i]
 	var spec := _shape_spec(mesh_id)
 	var s := g.basis.get_scale().y
-	if spec.x == 0:
+	if spec.x >= 1.5:
+		# WORLD-COVER-01: box solids (logs, walls, timber stacks, root plates, rock groups), turned with the instance.
+		var bx := (vegetation.library.get_def(mesh_id) as VegetationMeshDef).box * s
+		var box := cs.shape as BoxShape3D
+		if box == null:
+			box = BoxShape3D.new()
+			cs.shape = box
+		box.size = Vector3(bx.x * 2.0, bx.y, bx.z * 2.0)
+		cs.global_transform = Transform3D(Basis(Vector3.UP, VegetationMeshDef.yaw_of(g)), g.origin + Vector3.UP * bx.y * 0.5)
+	elif spec.x == 0:
 		var cap := cs.shape as CapsuleShape3D
 		if cap == null:
 			cap = CapsuleShape3D.new()

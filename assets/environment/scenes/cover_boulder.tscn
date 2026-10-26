@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/cover_boulder_lod0.res" id="1_kkp4x"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/cover_boulder_lod1.res" id="2_8qr26"]
+
+[node name="CoverBoulder" type="Node3D" unique_id=1305487222]
+
+[node name="cover_boulder_LOD0" type="MeshInstance3D" parent="." unique_id=528175093]
+mesh = ExtResource("1_kkp4x")
+
+[node name="cover_boulder_LOD1" type="MeshInstance3D" parent="." unique_id=1993656726]
+mesh = ExtResource("2_8qr26")

@@ -27,8 +27,12 @@ const FAR := 2
 ## Only the near (and mid) LOD casts shadows.
 @export var cast_shadows := true
 ## Physics shape for InstanceColliderStreamer at instance scale 1:
-## x = type (-1 none, 0 capsule, 1 sphere), y = radius, z = height.
+## x = type (-1 none, 0 capsule, 1 sphere, 2 box), y = radius, z = height. WORLD-COVER-01: a box (logs, walls, timber stacks,
+## root plates, rock groups) takes its size from `box`; y is then its bounding radius (set by box_radius()).
 @export var collider := Vector3(-1, 0, 0)
+## WORLD-COVER-01, collider type 2: half length along the instance's local x, full height, half depth along local z (m, scale 1),
+## standing on the instance origin and turned with it. Every variant of the id lies inside it.
+@export var box := Vector3.ZERO
 ## WORLD-VISUALS-01: more scenes of the same kind of plant or rock (variant 1..n; `scene` is variant 0), same size class and
 ## trunk / footprint, so the collider above fits all of them. Each stored instance draws one variant, chosen from its position
 ## (variant_of): the chunk data stays as it is.
@@ -152,3 +156,21 @@ static func _scene_lods(ps: PackedScene) -> Array:
 		overrides.append(mi.material_override)
 	root.free()
 	return [meshes, overrides]
+
+
+## WORLD-COVER-01: the radius of the circle round a box collider (bucket culling, vehicle and soldier clearance).
+func box_radius() -> float:
+	return Vector2(box.x, box.z).length()
+
+
+## The physics / ballistic spec of the id as [type, radius, height, half length, half depth] (type -1: none).
+func solid_spec() -> PackedFloat32Array:
+	if collider.x >= 1.5:
+		return PackedFloat32Array([2.0, box_radius(), box.y, box.x, box.z])
+	return PackedFloat32Array([collider.x, collider.y, collider.z, 0.0, 0.0])
+
+
+## Yaw of an instance transform (rotation about +Y; 0 = local x along world +X).
+static func yaw_of(xf: Transform3D) -> float:
+	var bx := xf.basis.x
+	return atan2(-bx.z, bx.x)

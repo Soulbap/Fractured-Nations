@@ -1,0 +1,255 @@
+{
+ "cover_boulder": {
+  "collider": {
+   "id": 24,
+   "sphere": 1.15
+  },
+  "variants": {
+   "cover_boulder": {
+    "lod0": 2200,
+    "lod1": 260,
+    "fits": true,
+    "size": [
+     2.03,
+     1.87,
+     1.69
+    ]
+   },
+   "cover_boulder_v1": {
+    "lod0": 2200,
+    "lod1": 260,
+    "fits": true,
+    "size": [
+     1.99,
+     3.01,
+     1.32
+    ]
+   },
+   "cover_boulder_v2": {
+    "lod0": 2199,
+    "lod1": 260,
+    "fits": true,
+    "size": [
+     2.8,
+     1.53,
+     1.68
+    ]
+   }
+  }
+ },
+ "cover_log": {
+  "collider": {
+   "id": 27,
+   "box": [
+    3.7,
+    0.68,
+    0.38
+   ]
+  },
+  "variants": {
+   "cover_log": {
+    "lod0": 1999,
+    "lod1": 260,
+    "fits": true,
+    "size": [
+     7.39,
+     0.66,
+     0.71
+    ],
+    "max_z": 0.62
+   },
+   "cover_log_v1": {
+    "lod0": 2000,
+    "lod1": 259,
+    "fits": true,
+    "size": [
+     6.59,
+     0.64,
+     0.67
+    ],
+    "max_z": 0.59
+   }
+  }
+ },
+ "cover_rockgroup": {
+  "collider": {
+   "id": 25,
+   "box": [
+    1.95,
+    0.8,
+    0.72
+   ]
+  },
+  "variants": {
+   "cover_rockgroup": {
+    "lod0": 2400,
+    "lod1": 300,
+    "fits": true,
+    "size": [
+     2.59,
+     1.03,
+     0.95
+    ],
+    "max_z": 0.8
+   },
+   "cover_rockgroup_v1": {
+    "lod0": 2400,
+    "lod1": 299,
+    "fits": true,
+    "size": [
+     2.45,
+     1.25,
+     0.84
+    ],
+    "max_z": 0.71
+   },
+   "cover_rockgroup_v2": {
+    "lod0": 2400,
+    "lod1": 300,
+    "fits": true,
+    "size": [
+     2.42,
+     1.52,
+     1.05
+    ],
+    "max_z": 0.88
+   }
+  }
+ },
+ "cover_ridge": {
+  "collider": {
+   "id": 26,
+   "box": [
+    3.3,
+    0.95,
+    1.78
+   ]
+  },
+  "variants": {
+   "cover_ridge": {
+    "lod0": 2600,
+    "lod1": 320,
+    "fits": true,
+    "size": [
+     5.3,
+     3.72,
+     1.51
+    ],
+    "max_z": 1.06
+   },
+   "cover_ridge_v1": {
+    "lod0": 2600,
+    "lod1": 320,
+    "fits": false,
+    "size": [
+     5.31,
+     3.6,
+     1.67
+    ],
+    "max_z": 1.14
+   }
+  }
+ },
+ "cover_rootplate": {
+  "collider": {
+   "id": 28,
+   "box": [
+    0.55,
+    2.45,
+    1.6
+   ]
+  },
+  "variants": {
+   "cover_rootplate": {
+    "lod0": 6500,
+    "lod1": 900,
+    "fits": true,
+    "size": [
+     8.29,
+     3.45,
+     3.03
+    ],
+    "max_z": 2.56
+   },
+   "cover_rootplate_v1": {
+    "lod0": 6499,
+    "lod1": 899,
+    "fits": true,
+    "size": [
+     7.79,
+     3.4,
+     3.15
+    ],
+    "max_z": 2.52
+   }
+  }
+ },
+ "stone_wall": {
+  "collider": {
+   "id": 29,
+   "box": [
+    3.0,
+    0.85,
+    0.4
+   ]
+  },
+  "variants": {
+   "stone_wall": {
+    "lod0": 9361,
+    "lod1": 2399,
+    "fits": true,
+    "size": [
+     5.9,
+     0.97,
+     0.93
+    ],
+    "max_z": 0.85
+   },
+   "stone_wall_v1": {
+    "lod0": 7965,
+    "lod1": 2400,
+    "fits": true,
+    "size": [
+     5.9,
+     0.9,
+     0.92
+    ],
+    "max_z": 0.84
+   }
+  }
+ },
+ "timber_stack": {
+  "collider": {
+   "id": 30,
+   "box": [
+    2.05,
+    1.0,
+    0.8
+   ]
+  },
+  "variants": {
+   "timber_stack": {
+    "lod0": 616,
+    "lod1": 300,
+    "fits": true,
+    "size": [
+     4.32,
+     1.5,
+     1.09
+    ],
+    "max_z": 1.16
+   },
+   "timber_stack_v1": {
+    "lod0": 660,
+    "lod1": 300,
+    "fits": true,
+    "size": [
+     4.24,
+     1.75,
+     0.87
+    ],
+    "max_z": 0.89
+   }
+  }
+ }
+}

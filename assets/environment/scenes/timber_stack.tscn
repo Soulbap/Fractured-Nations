@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/timber_stack_lod0.res" id="1_wayyn"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/timber_stack_lod1.res" id="2_gmk45"]
+
+[node name="TimberStack" type="Node3D" unique_id=1862476252]
+
+[node name="timber_stack_LOD0" type="MeshInstance3D" parent="." unique_id=2062880277]
+mesh = ExtResource("1_wayyn")
+
+[node name="timber_stack_LOD1" type="MeshInstance3D" parent="." unique_id=1910224708]
+mesh = ExtResource("2_gmk45")

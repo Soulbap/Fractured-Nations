@@ -241,7 +241,10 @@ func _ai_step(delta: float) -> void:
 		var next := nav.get_next_path_position()
 		var path_len := nav.get_current_navigation_path().size()
 		dbg_branch = "?"
-		if remaining <= (react_arrive_distance if reacting else arrive_distance):
+		# WORLD-COVER-01: a walk to a post (a cover or firing position a tactic gave, UnitState.post_pos) ends as precisely as a
+		# cover dash: a metre off is out of the cover's shadow.
+		var to_post := unit.post_pos.is_finite() and Vector2(unit.post_pos.x - goal.x, unit.post_pos.z - goal.z).length() < 0.5
+		if remaining <= (react_arrive_distance if reacting or to_post else arrive_distance):
 			dbg_branch = "arrive"
 			_finish(remaining, reacting)
 		elif path_len == 0 and sim.detail and not sim.detail.nav_covers(goal):

@@ -182,6 +182,14 @@ func _add_tree_obstructions(src: NavigationMeshSourceGeometryData3D, center: Vec
 				var o := xf.origin
 				if absf(o.x - center.x) > half or absf(o.z - center.z) > half:
 					continue
+				var def := vegetation.library.get_def(inst[0])
+				if def.collider.x >= 1.5:
+					# WORLD-COVER-01: a box solid (log, wall) as its own turned rectangle.
+					var s := xf.basis.get_scale().x
+					src.add_projected_obstruction(_rect(o, VegetationMeshDef.yaw_of(xf), Vector2(def.box.x * 2.0 * s + tree_margin * 2.0, def.box.z * 2.0 * s + tree_margin * 2.0)),
+						o.y - 2.0, 6.0, false)
+					count += 1
+					continue
 				var r: float = radii[inst[0]] * xf.basis.get_scale().x + tree_margin
 				src.add_projected_obstruction(_rect(o, 0.0, Vector2(r * 2.0, r * 2.0)), o.y - 2.0, 6.0, false)
 				count += 1

@@ -83,6 +83,8 @@ var _road_audit: RoadAuditRunner
 var _playtest_selftest: PlaytestSelfTest
 var _integration03_selftest: Integration03SelfTest
 var _logistics_selftest: LogisticsSelfTest
+## WORLD-COVER-01: the natural cover layer builder (--build-cover-layer), kept alive while it runs.
+var _cover_builder: CoverLayer
 var _gameplay_selftest: GameplaySelfTest
 var _campaign_selftest: CampaignSelfTest
 ## WORLD-SANDBOX-01: true when the game runs the three-faction war (the default).
@@ -448,6 +450,12 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--asset-integration-test" in args:
 		_gameplay_selftest = AssetIntegrationSelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)
+	elif "--world-cover-test" in args:
+		_gameplay_selftest = WorldCoverSelfTest.new(self)
+		_gameplay_selftest.run.call_deferred(args)
+	elif "--build-cover-layer" in args:
+		_cover_builder = CoverLayer.new(self)
+		_cover_builder.run.call_deferred(args)
 	elif "--qol011-test" in args:
 		_gameplay_selftest = Qol011SelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)

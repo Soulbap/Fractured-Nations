@@ -301,7 +301,8 @@ func _abstract_step(u: UnitState, delta: float) -> void:
 	if dist <= 1.0 and move_goal != goal:
 		_advance_local_route(u.id)
 		return
-	if dist <= (0.5 if reacting else abstract_arrive_m) and move_goal == goal:
+	var to_post := u.post_pos.is_finite() and Vector2(u.post_pos.x - goal.x, u.post_pos.z - goal.z).length() < 0.5
+	if dist <= (0.5 if reacting or to_post else abstract_arrive_m) and move_goal == goal:
 		u.position.x = goal.x
 		u.position.z = goal.z
 		_settle_height(u)

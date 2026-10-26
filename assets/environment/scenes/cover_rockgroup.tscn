@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/cover_rockgroup_lod0.res" id="1_nb28m"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/cover_rockgroup_lod1.res" id="2_6upir"]
+
+[node name="CoverRockgroup" type="Node3D" unique_id=879701476]
+
+[node name="cover_rockgroup_LOD0" type="MeshInstance3D" parent="." unique_id=713235091]
+mesh = ExtResource("1_nb28m")
+
+[node name="cover_rockgroup_LOD1" type="MeshInstance3D" parent="." unique_id=1947695207]
+mesh = ExtResource("2_6upir")

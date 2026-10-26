@@ -52,6 +52,9 @@ const SCAN := {
 	"dead_tree_trunk": {"sat": 0.8, "grade": Color(1, 1, 1), "bright": 0.95, "moss": 0.2, "lichen": 0.1},
 	"dead_tree_trunk_02": {"sat": 0.8, "grade": Color(1, 1, 1), "bright": 0.95, "moss": 0.2, "lichen": 0.1},
 	"dry_branches_medium_01": {"sat": 0.8, "grade": Color(1, 1, 1), "bright": 1.0, "moss": 0.0, "lichen": 0.0},
+	# WORLD-COVER-01 (tools/blender/env/make_cover_v1.py): the soil of a wind-thrown root plate, darker and browner than the
+	# pale dirt scan.
+	"dirt": {"sat": 0.8, "grade": Color(0.78, 0.66, 0.52), "bright": 0.42, "moss": 0.3, "lichen": 0.0},
 }
 
 ## VISUAL-02 settlement buildings and fences ("Bld_*" in tools/blender/env/make_structures.py) ->
@@ -316,6 +319,10 @@ func _material_for(mname: String, original: Material) -> Material:
 			std.alpha_scissor_threshold = o.alpha_scissor_threshold
 			std.cull_mode = o.cull_mode
 		std.vertex_color_use_as_albedo = true
+		if mname == "Wood_EndGrain":
+			# WORLD-COVER-01 timber stacks: the cut ends of the logs, pale weathered spruce.
+			std.albedo_color = Color(0.62, 0.5, 0.36)
+			std.roughness = 0.9
 		mat = std
 	mat.resource_name = mname
 	ResourceSaver.save(mat, path)

@@ -1363,13 +1363,21 @@ func cover_spots(center: Vector3, radius: float, threat: Vector3, origin: Vector
 		for bx in range(b0.x, b1.x + 1):
 			for bz in range(b0.y, b1.y + 1):
 				var data: PackedFloat32Array = line._buckets.get(Vector2i(bx, bz), PackedFloat32Array())
-				for i in range(0, data.size(), 6):
+				for i in range(0, data.size(), LineOfFire.STRIDE):
 					var r: float = data[i + 3]
+					var c := Vector3(data[i], data[i + 2], data[i + 1])
+					if data[i + 5] > 1.5:
+						_box_candidates(out, origin, center, radius, data, i, tdir)
+						continue
 					var rock := data[i + 5] > 0.5
 					if (rock and r < 0.5) or (not rock and r < 0.25):
 						continue
-					var c := Vector3(data[i], data[i + 2], data[i + 1])
-					_add_candidate(out, origin, center, radius, c - tdir * (r + 0.55), "rock" if rock else "tree")
+					_add_candidate(out, origin, center, radius, c - tdir * (r + COVER_GAP), "rock" if rock else "tree")
+					if rock and r >= 1.0:
+						# WORLD-COVER-01: a large boulder hides more than one soldier: spots to either side behind it too.
+						var lat := Vector3(-tdir.z, 0.0, tdir.x) * r * 0.75
+						_add_candidate(out, origin, center, radius, c - tdir * (r * 0.75 + COVER_GAP) + lat, "rock")
+						_add_candidate(out, origin, center, radius, c - tdir * (r * 0.75 + COVER_GAP) - lat, "rock")
 	# Terrain: spots with ground rising at least 0.9 m within 8 m towards the threat.
 	if sim.terrain:
 		for ring: float in [3.0, 6.0, 9.0, 12.0]:
@@ -1388,10 +1396,37 @@ func cover_spots(center: Vector3, radius: float, threat: Vector3, origin: Vector
 						rise = maxf(rise, hh - h)
 				if rise >= 0.9:
 					_add_candidate(out, origin, center, radius, p, "terrain")
-	var rank := {"structure": 1, "rock": 2, "terrain": 3, "tree": 4}
+	var rank := {"structure": 1, "rock": 2, "box": 2, "terrain": 3, "tree": 4}
 	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return a.d + rank[a.kind] * 3.0 < b.d + rank[b.kind] * 3.0)
 	return out.slice(0, max_cover_candidates if limit < 0 else limit)
+
+
+## WORLD-COVER-01: how far behind the surface of a trunk, rock or box solid a cover spot lies (m). The local navmesh keeps
+## agents tree_margin + agent radius (~0.95 m) off such solids: a spot nearer than that cannot be reached, the soldier stopped
+## a metre short and often out of its shadow. 1.0 m behind a 0.85 m wall still hides a crouched soldier from a level shooter.
+const COVER_GAP := 1.0
+
+
+## WORLD-COVER-01: cover spots behind a box solid (log, wall, timber stack, root plate, rock group) at data[i] from a threat in
+## direction tdir: along its long side away from the threat every 1.4 m (several soldiers behind one wall), or, when the
+## threat lies along its length, behind its far end.
+func _box_candidates(out: Array, origin: Vector3, center: Vector3, radius: float, data: PackedFloat32Array, i: int, tdir: Vector3) -> void:
+	var c := Vector3(data[i], data[i + 2], data[i + 1])
+	var basis := Basis(Vector3.UP, data[i + 6])
+	var hx: float = data[i + 7]
+	var hz: float = data[i + 8]
+	if hx < 0.3 or data[i + 4] < 0.45:
+		return
+	var lt := basis.inverse() * tdir
+	if absf(lt.z) >= absf(lt.x) * 0.6:
+		var back := -signf(lt.z) * (hz + COVER_GAP)
+		var n := maxi(1, floori((hx * 2.0 - 0.6) / 1.4) + 1)
+		for k in n:
+			var s := -hx + 0.3 + (hx * 2.0 - 0.6) * (0.5 if n == 1 else float(k) / (n - 1))
+			_add_candidate(out, origin, center, radius, c + basis * Vector3(s, 0.0, back), "box")
+	else:
+		_add_candidate(out, origin, center, radius, c + basis * Vector3(-signf(lt.x) * (hx + COVER_GAP), 0.0, 0.0), "box")
 
 
 ## True while vegetation cells within radius of center are missing (queued for filling).
@@ -1483,7 +1518,7 @@ func _cover_score(u: UnitState, c: Dictionary, ev: Dictionary) -> float:
 			score += 2.0
 		"structure":
 			score += 1.0
-		"rock":
+		"rock", "box":
 			score += 0.5
 	return score
 

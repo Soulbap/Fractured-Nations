@@ -26,8 +26,11 @@ const TORSO_Y0 := 0.30   # lower hemisphere centre
 const TORSO_Y1 := 1.20   # upper hemisphere centre (top of torso 1.50)
 ## Tree bucket size (m).
 const BUCKET := 16.0
-## Largest trunk / rock radius considered when choosing buckets (m).
-const REACH := 4.0
+## Largest trunk / rock radius considered when choosing buckets (m). WORLD-COVER-01: box solids (logs, walls) reach farther.
+const REACH := 5.0
+## WORLD-COVER-01: floats per solid in a bucket: x, z, base y, radius (bounding for boxes), height, type (0 trunk, 1 rock
+## sphere, 2 box), yaw, half length, half depth.
+const STRIDE := 9
 ## Terrain march steps (m): fine near the muzzle, coarser beyond.
 const STEP_NEAR := 1.0
 const STEP_FAR := 2.0
@@ -76,7 +79,7 @@ func setup(p_state: WorldState, p_terrain: Terrain3D, p_vegetation: VegetationSt
 	if vegetation and vegetation.library:
 		for d in vegetation.library.meshes:
 			if d.collider.x >= 0.0:
-				_solid[d.id] = d.collider
+				_solid[d.id] = d.solid_spec()
 		if not vegetation.clearings_changed.is_connected(_on_clearings_changed):
 			vegetation.clearings_changed.connect(_on_clearings_changed)
 
@@ -152,7 +155,7 @@ func foliage_layers(from: Vector3, to: Vector3, stop_at := 1 << 30) -> int:
 	for bucket: Vector2i in _buckets_along(a, b):
 		_ensure_cell(Vector2i(floori(bucket.x * BUCKET / vegetation.cell_size_m), floori(bucket.y * BUCKET / vegetation.cell_size_m)))
 		var data: PackedFloat32Array = _buckets.get(bucket, PackedFloat32Array())
-		for i in range(0, data.size(), 6):
+		for i in range(0, data.size(), STRIDE):
 			if data[i + 5] > 0.5:
 				continue
 			var rel := Vector2(data[i] - a.x, data[i + 1] - a.y)
@@ -266,7 +269,7 @@ func _trees_hit(from: Vector3, to: Vector3, limit: float) -> float:
 	for bucket: Vector2i in _buckets_along(a, b):
 		_ensure_cell(Vector2i(floori(bucket.x * BUCKET / vegetation.cell_size_m), floori(bucket.y * BUCKET / vegetation.cell_size_m)))
 		var data: PackedFloat32Array = _buckets.get(bucket, PackedFloat32Array())
-		for i in range(0, data.size(), 6):
+		for i in range(0, data.size(), STRIDE):
 			var r: float = data[i + 3]
 			var rel := Vector2(data[i] - a.x, data[i + 1] - a.y)
 			var along := rel.dot(dir2)
@@ -282,6 +285,9 @@ func _trees_hit(from: Vector3, to: Vector3, limit: float) -> float:
 			var base: float = data[i + 2]
 			var h: float = data[i + 4]
 			var top := base + h
+			if data[i + 5] > 1.5:  # WORLD-COVER-01 box: the segment in the box's own frame
+				best = minf(best, _box_hit(from, end, data, i))
+				continue
 			if data[i + 5] > 0.5:  # sphere (rocks): centre at base + 0.3 r, height test by sphere
 				var c := Vector3(data[i], base + r * 0.3, data[i + 1])
 				var hs := Geometry3D.segment_intersects_sphere(from, end, c, r)
@@ -297,6 +303,22 @@ func _trees_hit(from: Vector3, to: Vector3, limit: float) -> float:
 			var d3 := t * sqrt(1.0 + dy_per_m * dy_per_m)
 			best = minf(best, d3)
 	return best
+
+
+## WORLD-COVER-01: distance along from -> to where the segment enters the box solid at data[i] (INF: misses). The box stands on
+## its base height, turned by its yaw; inside it from the start counts as 0.
+static func _box_hit(from: Vector3, to: Vector3, data: PackedFloat32Array, i: int) -> float:
+	var origin := Vector3(data[i], data[i + 2], data[i + 1])
+	var inv := Basis(Vector3.UP, -data[i + 6])
+	var lf := inv * (from - origin)
+	var lt := inv * (to - origin)
+	var box := AABB(Vector3(-data[i + 7], 0.0, -data[i + 8]), Vector3(data[i + 7] * 2.0, data[i + 4], data[i + 8] * 2.0))
+	if box.has_point(lf):
+		return 0.0
+	var hit: Variant = box.intersects_segment(lf, lt)
+	if hit == null:
+		return INF
+	return lf.distance_to(hit as Vector3)
 
 
 ## 16 m buckets crossed by the 2D segment (grid walk), plus a one-bucket margin for
@@ -356,14 +378,14 @@ func _fill_cell(cell: Vector2i) -> void:
 	var fresh := {}
 	for inst in vegetation.get_cell_instances(cell, _solid.keys()):
 		var xf: Transform3D = inst[1]
-		var spec: Vector3 = _solid[inst[0]]
+		var spec: PackedFloat32Array = _solid[inst[0]]
 		var sc := xf.basis.get_scale()
-		var r := spec.y * sc.x
-		var h := maxf(spec.z * sc.y, 2.0 * r) if spec.x < 0.5 else r * 2.0
+		var r := spec[1] * sc.x
+		var h := maxf(spec[2] * sc.y, 2.0 * r) if spec[0] < 0.5 else (r * 2.0 if spec[0] < 1.5 else spec[2] * sc.y)
 		var key := Vector2i(floori(xf.origin.x / BUCKET), floori(xf.origin.z / BUCKET))
 		if not fresh.has(key):
 			fresh[key] = []
-		fresh[key].append_array([xf.origin.x, xf.origin.z, xf.origin.y, r, h, spec.x])
+		fresh[key].append_array([xf.origin.x, xf.origin.z, xf.origin.y, r, h, spec[0], VegetationMeshDef.yaw_of(xf), spec[3] * sc.x, spec[4] * sc.x])
 	for key: Vector2i in fresh:
 		var arr: PackedFloat32Array = _buckets.get(key, PackedFloat32Array())
 		arr.append_array(PackedFloat32Array(fresh[key]))

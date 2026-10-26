@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/cover_ridge_lod0.res" id="1_4u6bv"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/cover_ridge_lod1.res" id="2_018to"]
+
+[node name="CoverRidge" type="Node3D" unique_id=123035083]
+
+[node name="cover_ridge_LOD0" type="MeshInstance3D" parent="." unique_id=1740208863]
+mesh = ExtResource("1_4u6bv")
+
+[node name="cover_ridge_LOD1" type="MeshInstance3D" parent="." unique_id=1274668860]
+mesh = ExtResource("2_018to")

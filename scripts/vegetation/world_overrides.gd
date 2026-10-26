@@ -34,6 +34,8 @@ var streamer: Node
 var path: String
 ## Read-only record layer under the user's file ("" = none).
 var layer_path := ""
+## WORLD-COVER-01: further read-only layers loaded after layer_path (worlds/cover/<world>.cover.json).
+var extra_layers: Array[String] = []
 var _layer: Dictionary = {}
 ## id -> record. Mutate with put()/erase_record() (or call reindex() after replacing the dictionary).
 var records: Dictionary = {}
@@ -58,17 +60,25 @@ func _init(owner: Node, file_path: String) -> void:
 
 
 func load_file() -> bool:
+	var t_load := Time.get_ticks_usec()
 	records = {}
 	_layer = {}
 	unresolved.clear()
 	_forget_state()
-	if not layer_path.is_empty() and FileAccess.file_exists(layer_path):
-		var lj: Variant = JSON.parse_string(FileAccess.get_file_as_string(layer_path))
+	# WORLD-COVER-01: more read-only layers (the natural cover layer) after the settlement layer; all of them lie under the user's
+	# file, a later layer wins on the same id.
+	for lp: String in [layer_path] + extra_layers:
+		if lp.is_empty() or not FileAccess.file_exists(lp):
+			continue
+		var lj: Variant = JSON.parse_string(FileAccess.get_file_as_string(lp))
 		if lj is Dictionary and lj.get("version") == 1 and lj.get("records") is Dictionary:
-			_layer = lj.records
-			records = _layer.duplicate(true)
+			_layer.merge(lj.records, true)
 		else:
-			push_error("World overrides: invalid layer file " + layer_path)
+			push_error("World overrides: invalid layer file " + lp)
+	if not _layer.is_empty():
+		records = _layer.duplicate(true)
+	stats["layer_load_ms"] = snappedf((Time.get_ticks_usec() - t_load) / 1000.0, 0.1)
+	stats["layer_records"] = _layer.size()
 	if not FileAccess.file_exists(path):
 		affected_cells()
 		return true

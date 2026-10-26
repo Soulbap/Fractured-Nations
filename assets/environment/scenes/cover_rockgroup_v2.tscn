@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/cover_rockgroup_v2_lod0.res" id="1_0qu3k"]
+[ext_resource type="ArrayMesh" path="res://assets/environment/meshes/cover_rockgroup_v2_lod1.res" id="2_mvetf"]
+
+[node name="CoverRockgroupV2" type="Node3D" unique_id=1841943248]
+
+[node name="cover_rockgroup_v2_LOD0" type="MeshInstance3D" parent="." unique_id=1846957710]
+mesh = ExtResource("1_0qu3k")
+
+[node name="cover_rockgroup_v2_LOD1" type="MeshInstance3D" parent="." unique_id=554759098]
+mesh = ExtResource("2_mvetf")

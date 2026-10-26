@@ -71,6 +71,22 @@
 [ext_resource type="PackedScene" path="res://assets/environment/scenes/spruce_s_v1.tscn" id="wv1_spruce_s_v1"]
 [ext_resource type="PackedScene" path="res://assets/environment/scenes/birch_s.tscn" id="wv1_birch_s"]
 [ext_resource type="PackedScene" path="res://assets/environment/scenes/birch_s_v1.tscn" id="wv1_birch_s_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/cover_boulder.tscn" id="wc1_cover_boulder"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/cover_boulder_v1.tscn" id="wc1_cover_boulder_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/cover_boulder_v2.tscn" id="wc1_cover_boulder_v2"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/cover_rockgroup.tscn" id="wc1_cover_rockgroup"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/cover_rockgroup_v1.tscn" id="wc1_cover_rockgroup_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/cover_rockgroup_v2.tscn" id="wc1_cover_rockgroup_v2"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/cover_ridge.tscn" id="wc1_cover_ridge"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/cover_ridge_v1.tscn" id="wc1_cover_ridge_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/cover_log.tscn" id="wc1_cover_log"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/cover_log_v1.tscn" id="wc1_cover_log_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/cover_rootplate.tscn" id="wc1_cover_rootplate"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/cover_rootplate_v1.tscn" id="wc1_cover_rootplate_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/stone_wall.tscn" id="wc1_stone_wall"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/stone_wall_v1.tscn" id="wc1_stone_wall_v1"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/timber_stack.tscn" id="wc1_timber_stack"]
+[ext_resource type="PackedScene" path="res://assets/environment/scenes/timber_stack_v1.tscn" id="wc1_timber_stack_v1"]
 
 [sub_resource type="Resource" id="Resource_t6y5q"]
 script = ExtResource("1_xbpqk")
@@ -329,6 +345,83 @@ cast_shadows = false
 variants = Array[PackedScene]([ExtResource("wv1_birch_s_v1")])
 shared_far = true
 
+
+[sub_resource type="Resource" id="Resource_wc1_24"]
+script = ExtResource("1_xbpqk")
+id = 24
+name = "Cover boulder"
+scene = ExtResource("wc1_cover_boulder")
+near_range = 140.0
+max_range = 650.0
+collider = Vector3(1, 1.15, 0)
+variants = Array[PackedScene]([ExtResource("wc1_cover_boulder_v1"), ExtResource("wc1_cover_boulder_v2")])
+
+[sub_resource type="Resource" id="Resource_wc1_25"]
+script = ExtResource("1_xbpqk")
+id = 25
+name = "Rock group"
+scene = ExtResource("wc1_cover_rockgroup")
+near_range = 120.0
+max_range = 550.0
+collider = Vector3(2, 1.559, 0)
+box = Vector3(1.35, 0.85, 0.78)
+variants = Array[PackedScene]([ExtResource("wc1_cover_rockgroup_v1"), ExtResource("wc1_cover_rockgroup_v2")])
+
+[sub_resource type="Resource" id="Resource_wc1_26"]
+script = ExtResource("1_xbpqk")
+id = 26
+name = "Rock ridge"
+scene = ExtResource("wc1_cover_ridge")
+near_range = 200.0
+max_range = 900.0
+collider = Vector3(2, 3.343, 0)
+box = Vector3(2.75, 1.1, 1.9)
+variants = Array[PackedScene]([ExtResource("wc1_cover_ridge_v1")])
+
+[sub_resource type="Resource" id="Resource_wc1_27"]
+script = ExtResource("1_xbpqk")
+id = 27
+name = "Thick log"
+scene = ExtResource("wc1_cover_log")
+near_range = 80.0
+max_range = 400.0
+collider = Vector3(2, 3.719, 0)
+box = Vector3(3.7, 0.68, 0.38)
+variants = Array[PackedScene]([ExtResource("wc1_cover_log_v1")])
+
+[sub_resource type="Resource" id="Resource_wc1_28"]
+script = ExtResource("1_xbpqk")
+id = 28
+name = "Root plate"
+scene = ExtResource("wc1_cover_rootplate")
+near_range = 120.0
+max_range = 700.0
+collider = Vector3(2, 1.692, 0)
+box = Vector3(0.55, 2.45, 1.6)
+variants = Array[PackedScene]([ExtResource("wc1_cover_rootplate_v1")])
+
+[sub_resource type="Resource" id="Resource_wc1_29"]
+script = ExtResource("1_xbpqk")
+id = 29
+name = "Stone wall"
+scene = ExtResource("wc1_stone_wall")
+near_range = 120.0
+max_range = 700.0
+collider = Vector3(2, 3.038, 0)
+box = Vector3(3, 0.85, 0.48)
+variants = Array[PackedScene]([ExtResource("wc1_stone_wall_v1")])
+
+[sub_resource type="Resource" id="Resource_wc1_30"]
+script = ExtResource("1_xbpqk")
+id = 30
+name = "Timber stack"
+scene = ExtResource("wc1_timber_stack")
+near_range = 100.0
+max_range = 600.0
+collider = Vector3(2, 2.323, 0)
+box = Vector3(2.15, 1.15, 0.88)
+variants = Array[PackedScene]([ExtResource("wc1_timber_stack_v1")])
+
 [resource]
 script = ExtResource("23_6b78p")
-meshes = Array[ExtResource("1_xbpqk")]([SubResource("Resource_t6y5q"), SubResource("Resource_4thry"), SubResource("Resource_ux4vf"), SubResource("Resource_ow4jh"), SubResource("Resource_4urcw"), SubResource("Resource_2ow38"), SubResource("Resource_nipys"), SubResource("Resource_ngi1v"), SubResource("Resource_77nvk"), SubResource("Resource_vpp75"), SubResource("Resource_prot2"), SubResource("Resource_34ylq"), SubResource("Resource_wonga"), SubResource("Resource_8q1gf"), SubResource("Resource_eb01y"), SubResource("Resource_xl0ie"), SubResource("Resource_0p0xr"), SubResource("Resource_m4sfk"), SubResource("Resource_2j4ml"), SubResource("Resource_y7k2c"), SubResource("Resource_60cva"), SubResource("Resource_v2sap1"), SubResource("Resource_v2sap2")])
+meshes = Array[ExtResource("1_xbpqk")]([SubResource("Resource_t6y5q"), SubResource("Resource_4thry"), SubResource("Resource_ux4vf"), SubResource("Resource_ow4jh"), SubResource("Resource_4urcw"), SubResource("Resource_2ow38"), SubResource("Resource_nipys"), SubResource("Resource_ngi1v"), SubResource("Resource_77nvk"), SubResource("Resource_vpp75"), SubResource("Resource_prot2"), SubResource("Resource_34ylq"), SubResource("Resource_wonga"), SubResource("Resource_8q1gf"), SubResource("Resource_eb01y"), SubResource("Resource_xl0ie"), SubResource("Resource_0p0xr"), SubResource("Resource_m4sfk"), SubResource("Resource_2j4ml"), SubResource("Resource_y7k2c"), SubResource("Resource_60cva"), SubResource("Resource_v2sap1"), SubResource("Resource_v2sap2"), SubResource("Resource_wc1_24"), SubResource("Resource_wc1_25"), SubResource("Resource_wc1_26"), SubResource("Resource_wc1_27"), SubResource("Resource_wc1_28"), SubResource("Resource_wc1_29"), SubResource("Resource_wc1_30")])
