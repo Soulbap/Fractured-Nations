@@ -11,6 +11,8 @@ Named `-CONTROLS` because `docs/GAMEPLAY-02_REPORT.md` is the earlier GAMEPLAY-0
 | Cursor freed / captured at random after mode changes | Every `SoldierBody` set the global mouse mode from its `player_controlled` setter, so a body streamed in near the player freed the first-person capture | Same policy; mode changes, menus, window focus and a click in first person all go through it |
 | Esc "sometimes" did nothing | `PauseMenu` (process mode ALWAYS) stays in the tree when hidden and hidden CanvasLayers still get `_unhandled_input`: after the first use every Esc was eaten as "resume". Also the RTS controller used Esc to clear the selection first | The menu ignores input while hidden; Esc no longer clears the selection (it still cancels an armed order / a right-drag; a click on open ground deselects) |
 | No weapon in first person | COMBAT-POLISH-01's prone tilt (`InfantryCharacter._apply_tilt`) reset the character transform to identity every frame - also on the first-person arms, whose transform the `Viewmodel` sets: the rifle sat 1.44 m above the camera | `InfantryCharacter.ground_tilt`, false for the viewmodel arms |
+| First-person weapon shook (play test, follow-up) | The Viewmodel placed the arms in `_process` from the previous frame's animated weapon pose: one frame behind the idle, the sight moved 2.5 mm a frame (up to 13 mm, also aiming) | Placed on `skeleton_updated` (after this frame's animation and grip IK): range 21 mm -> under 2 mm, still, aiming and walking (`f_steady`) |
+| Speckled, "see-through" shading on arms and weapon (follow-up) | Shadow acne: the possessed body (shadows-only) lies where the first-person arms are. With the body hidden the speckle vanished | Upper-body pieces of the possessed body go on render layer 20, which the sun's `shadow_caster_mask` leaves out (`UnitVisuals.FP_NO_SHADOW_LAYER`); legs and boots keep their shadow. The sleeves' ripstop normal map at 0.3x in first person only (its grid read as dots at 30 cm) |
 | Camera 8x too fast at 8x | `RTSCamera` used the scaled frame delta | Real-time delta (also works while paused) |
 
 ## Implemented
@@ -53,6 +55,7 @@ into the viewport), one run, **PASS**, shots in `docs/gameplay02_controls/`:
 |---|---|
 | m_mouse | cursor visible in RTS; first person wants capture, still after a body spawns; menu shows it; resume recaptures; back to RTS visible |
 | e_escape | 3x open/close with a squad selected (selection kept) and 3x in first person |
+| f_steady | sight point frame to frame: median 0.5 mm, max 1.8 mm, range < 2 mm (before 2.5 / 13 / 21 mm); `f_steady_light.png`, `f_steady_against_sun.png` |
 | f_weapon | weapon at camera (0.06, -0.29, -0.38) - in view (before: (0.14, +1.44, -0.45)); `f_weapon_hip.png` |
 | u_scale | 125 %: canvas 922x518, 175 %: 658x370, command panel on screen in both; settings panel opens |
 | s_speed | paused: sim clock +0.00 s, camera moved 52 m; 1-4 = 1/2/4/8 x; possession -> 1 x, unpaused, key 4 ignored |
@@ -75,6 +78,6 @@ All scripts compile (`tools/check_scripts.gd`). No regression suites run (brief:
 `scripts/core/game_controller.gd`, `scripts/player/fps_controller.gd`, `scripts/game/core_demo.gd`, `scripts/ui/pause_menu.gd`,
 `scripts/ui/main_menu.gd`, `scripts/ui/settings_panel.gd` (new), `scripts/ui/ui_settings.gd` (new), `scripts/ui/game_hud.gd`,
 `scripts/ui/tactical_panel.gd`, `scripts/rts/rts_controller.gd`, `scripts/rts/rts_camera.gd`, `scripts/core/time_compression.gd`,
-`scripts/characters/infantry_character.gd`, `scripts/combat/viewmodel.gd`, `scripts/core/squad_positions.gd`,
+`scripts/characters/infantry_character.gd`, `scripts/combat/viewmodel.gd`, `scripts/units/unit_visuals.gd`, `scripts/core/squad_positions.gd`,
 `scripts/core/squad_control.gd`, `scripts/core/squad_state.gd`, `scripts/core/squad_tactics.gd`,
 `scripts/construction/build_costs.gd`, `scripts/debug/controls_selftest.gd` (new), `README.md`, this report.

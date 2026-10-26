@@ -124,6 +124,7 @@ func _ready() -> void:
 	vegetation = world.get_node_or_null("Vegetation")
 	WorldLook.apply(world)
 	GroundLook.apply(world)
+	UnitVisuals.no_body_shadow_on(world)
 	var collider_streamer: InstanceColliderStreamer = world.get_node_or_null("InstanceColliderStreamer")
 	var diagnostics: WorldDiagnostics = world.get_node_or_null("WorldDiagnostics")
 	# The world's free exploration body is replaced by possessable soldiers.

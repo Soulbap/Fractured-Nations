@@ -8,6 +8,8 @@
 ## e_escape  Esc opens and closes the in-game menu several times in a row, with squads selected in the tactical view and in first
 ##           person (the hidden menu used to swallow every later Esc)
 ## f_weapon  the first squad's soldier possessed like Tab: the first-person weapon is drawn in front of the camera
+## f_steady the first-person weapon standing still and walking: its movement in camera space frame to frame (mm), the spread
+##           of the sight point; zoomed shots of the arms in the light (the shadow on them)
 ## u_scale   the interface scale (125 %, 175 %, back): the window's content scale factor, the HUD laid out on the smaller canvas
 ## s_speed   Space pauses (the simulation clock stops, the view still moves), 1-4 set 1/2/4/8 x and resume, first person is 1 x
 ## d_drag    a right-drag across the front of the player's squad: preview, the order, every soldier's place, spacing, the places
@@ -17,7 +19,7 @@
 class_name ControlsSelfTest
 extends GameplaySelfTest
 
-const CHECKS_C: Array[String] = ["m_mouse", "e_escape", "f_weapon", "u_scale", "s_speed", "d_drag", "b_build"]
+const CHECKS_C: Array[String] = ["m_mouse", "e_escape", "f_weapon", "f_steady", "u_scale", "s_speed", "d_drag", "b_build"]
 
 
 func run(args: PackedStringArray) -> void:
@@ -389,4 +391,60 @@ func _b_build() -> Dictionary:
 	demo.rts_camera.frame(at, demo.rts_camera.yaw, 30.0)
 	await _seconds(1.0)
 	_png("b_build_done")
+	return out
+
+
+## Weapon root and sight point in camera space for n rendered frames: the largest step between frames and the range (mm).
+func _vm_track(b: SoldierBody, n: int) -> Dictionary:
+	var vm := b.viewmodel
+	var last := Vector3.INF
+	var max_step := 0.0
+	var lo := Vector3.INF
+	var hi := -Vector3.INF
+	var steps: Array = []
+	for i in n:
+		await tree.process_frame
+		if vm == null or vm._weapon_root == null:
+			break
+		var inv := b.camera.global_transform.affine_inverse()
+		var sp: Vector3 = inv * (vm._weapon_root.global_transform * Vector3(vm._eye.x, vm._eye.y, 0.0))
+		if last.is_finite():
+			var st := (sp - last).length() * 1000.0
+			max_step = maxf(max_step, st)
+			steps.append(st)
+		last = sp
+		lo = lo.min(sp)
+		hi = hi.max(sp)
+	steps.sort()
+	return {"max_step_mm": snappedf(max_step, 0.01), "median_step_mm": snappedf(steps[steps.size() / 2], 0.01) if not steps.is_empty() else -1.0,
+		"range_mm": str(((hi - lo) * 1000.0).snapped(Vector3.ONE * 0.1)), "fps": Engine.get_frames_per_second()}
+
+
+func _f_steady() -> Dictionary:
+	var u: UnitState = await _possess_first()
+	if u == null:
+		return {}
+	var b := demo.sim.body_of(u.id) as SoldierBody
+	b.rotation.y = 2.4
+	b.head.rotation.x = deg_to_rad(-4.0)
+	await _seconds(1.5)
+	var out := {}
+	out["still_hip"] = await _vm_track(b, 120)
+	Input.action_press("aim")
+	await _seconds(1.0)
+	out["still_ads"] = await _vm_track(b, 120)
+	Input.action_release("aim")
+	await _seconds(0.6)
+	Input.action_press("move_forward")
+	await _seconds(0.5)
+	out["walk_hip"] = await _vm_track(b, 120)
+	Input.action_release("move_forward")
+	await _seconds(0.6)
+	_png("f_steady_light")
+	b.rotation.y = 2.4 + PI
+	await _seconds(0.8)
+	_png("f_steady_against_sun")
+	out["body_meshes"] = UnitVisuals.mesh_instances(b.visual).map(func(mi: MeshInstance3D) -> String: return "%s:%d" % [mi.name, mi.layers])
+	var ads: Dictionary = out.still_ads
+	_expect(float(ads.max_step_mm) < 2.0, "f_steady: the sight moves %.1f mm a frame while aiming still" % float(ads.max_step_mm))
 	return out
