@@ -1134,7 +1134,9 @@ func _e_fps_operation() -> Dictionary:
 		return out
 	await _fps_shot_at(body, obj.position + Vector3.UP * 1.0)
 	# A loaded gun and a fresh trigger pull (the trigger re-arms after a release).
-	if gunner.mag <= 0 and not gunner.is_reloading():
+	# AI-ASSAULT-01: "loaded" means enough for the 15-round burst checked below - a gunner arriving with 14 rounds left in his
+	# belt (his fire missions are timed differently since then) failed the check with a burst that emptied it.
+	if gunner.mag < 30 and not gunner.is_reloading():
 		demo.sim.combat.request_reload(gunner.id)
 	await _warp(8.0, 1.0, 12.0, func() -> bool: return not gunner.is_reloading() and gunner.mag > 0)
 	Input.action_release("fire")

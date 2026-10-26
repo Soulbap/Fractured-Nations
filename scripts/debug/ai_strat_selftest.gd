@@ -60,6 +60,8 @@ func run(args: PackedStringArray) -> void:
 ## Shared setup of the strategy suites: arguments, references, signal recorders, watchdog, world data, AI paused.
 func _strat_setup(args: PackedStringArray, shot_dir: String) -> void:
 	shots = "--shots" in args
+	# AI-ASSAULT-01: record a CombatDiag of every attack in this suite too.
+	diag_on = diag_on or "--diag" in args
 	_shot_dir = shot_dir
 	for a in args:
 		if a.begins_with("--shot-dir="):

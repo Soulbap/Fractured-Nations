@@ -52,7 +52,7 @@ var assault_hold_s := 35.0
 ## many seconds after each other; the support covers with fire while the nearest assault squad is between these distances.
 var assault_line_m := 250.0
 var assault_spread_m := 50.0
-var assault_stagger_s := 14.0
+var assault_stagger_s := 6.0
 var cover_fire_far_m := 290.0
 var cover_fire_near_m := 35.0
 ## No assault squad got 10 m closer for this long: commit everything once, then withdraw.
@@ -60,6 +60,27 @@ var progress_stall_s := 75.0
 ## GAMEPLAY-03C: no squad of the operation is actually attacking (all idle, depleted or out of ammunition): the same decision
 ## after this long instead (the Haugen trace sat 70 s with nobody moving before the 75 s rule fired).
 var idle_commit_s := 40.0
+## AI-ASSAULT-01: the assault squads close on the objective together. Inside sync_m (the defenders' effective rifle range) no
+## squad's next bound may end more than line_lead_m ahead of the rearmost squad still attacking (a phase line, recomputed every
+## second from the squads' positions); a squad that holds there longer than line_wait_max_s goes on, and one that has not got
+## line_stuck_m closer for line_stuck_s does not hold the others back. Measured before: N8 reached the defenders at 128 s, N7 at
+## 176 s, N6 at 197 s - eight defenders beat 24 attackers one squad at a time.
+var sync_m := 170.0
+var line_lead_m := 30.0
+var line_wait_max_s := 40.0
+var line_stuck_s := 35.0
+var line_stuck_m := 10.0
+var line_holds := 0
+## AI-ASSAULT-01: a fire support squad that has seen nothing and taken no fire for support_blind_s while the assault runs moves up
+## to support_move_f of its distance (not closer than support_near_m), at most support_moves times - Haugen: the 8-man support
+## stood unseeing at 181 m for over 100 s while the assault squads were shot up 100 m ahead of it.
+var support_blind_s := 30.0
+var support_move_f := 0.65
+var support_near_m := 100.0
+var support_moves := 2
+var support_displaced := 0
+var _blind_since := {}
+var _moves := {}
 
 var ws: WarSim
 var sim: WorldSim
@@ -76,6 +97,11 @@ var _tries := {}
 ## op id -> since when no squad of the operation has seen an enemy.
 var _clear_since := {}
 var _idle_since := {}
+## Derived each second (never saved): op id -> {squad id: distance} of the squads that set the phase line; squad id -> [best
+## distance, at]; squad id -> since when it holds at the line.
+var _line := {}
+var _line_best := {}
+var _held_since := {}
 
 
 func _init(p_ws: WarSim) -> void:
@@ -329,6 +355,90 @@ func _slot(obj: ObjectiveState, k: int) -> Vector3:
 	return ws._slot_in(obj, k)
 
 
+# --- Phase line (AI-ASSAULT-01) -------------------------------------------------------------------------------
+
+## The squads that set the phase line and their distances from the objective: assault and maneuver squads still attacking.
+## Squads waiting for their staggered start count (they are about to come); a depleted squad or one that has stopped gaining
+## ground does not hold the others back.
+func _line_squads(op: OperationState, obj: ObjectiveState, sqs: Array, now: float) -> Dictionary:
+	var out := {}
+	for sq: SquadState in sqs:
+		var role: int = int(op.roles.get(sq.id, SquadState.OpRole.NONE))
+		if role != SquadState.OpRole.ASSAULT and role != SquadState.OpRole.MANEUVER:
+			continue
+		if _depleted(sq) or (not op.assault_at.has(sq.id) and sq.tactic != SquadState.Tactic.ASSAULT and sq.tactic != SquadState.Tactic.FLANK):
+			continue
+		var d := _flat(sim.squads._centroid(sq), obj.position)
+		var b: Array = _line_best.get(sq.id, [INF, now])
+		if d < float(b[0]) - line_stuck_m:
+			b = [d, now]
+			_line_best[sq.id] = b
+		if not op.assault_at.has(sq.id) and now - float(b[1]) > line_stuck_s:
+			continue
+		out[sq.id] = d
+	return out
+
+
+## Called by SquadTactics before an assault squad's next bound of `step_m`: how far it may go (step_m, or less to end at the phase
+## line), 0 when it waits there (`why` in the second element).
+func line_step(sq: SquadState, step_m: float) -> Array:
+	var op := ws.war.operation(sq.op_id) if sq.op_id >= 0 else null
+	if op == null or op.stage != OperationState.Stage.ASSAULT or op.phase == OperationState.Phase.SECURING:
+		_held_since.erase(sq.id)
+		return [step_m, ""]
+	var obj := ws.war.objective(op.target_objective)
+	# The line: the rearmost of the *other* squads plus line_lead_m (the rearmost squad itself never waits).
+	var line := -1.0
+	var ds: Dictionary = _line.get(op.id, {})
+	for sid in ds:
+		if sid != sq.id:
+			line = maxf(line, float(ds[sid]) - line_lead_m)
+	if obj == null or line < 0.0:
+		_held_since.erase(sq.id)
+		return [step_m, ""]
+	var d := _flat(sim.squads._centroid(sq), obj.position)
+	var next := d - step_m
+	if next >= line or next >= sync_m or d < 50.0:
+		_held_since.erase(sq.id)
+		return [step_m, ""]
+	# Behind the line: it closes up to it.
+	if d - line >= 12.0:
+		_held_since.erase(sq.id)
+		return [d - line, ""]
+	var now := sim.state.time
+	var since := float(_held_since.get(sq.id, now))
+	_held_since[sq.id] = since
+	if now - since > line_wait_max_s:
+		return [step_m, ""]  # waited long enough: goes on (the entry stays until it is no longer at the line)
+	if now == since:
+		line_holds += 1
+	return [0.0, "holds at the phase line %.0f m from %s for the other assault squads (%.0f s)" % [line + line_lead_m, obj.obj_name, now - since]]
+
+
+## AI-ASSAULT-01: see support_blind_s. Reads only the squad's own assessment (what it sees, whether it is fired on).
+func _displace_support(op: OperationState, obj: ObjectiveState, sq: SquadState, now: float) -> void:
+	var a := sim.tactics.assessment(sq)
+	if a.is_empty() or int(a.get("seen_n", 0)) > 0 or int(a.get("under_fire", 0)) > 0 or sq.tactic_phase < SquadTactics.PH_HOLD:
+		_blind_since.erase(sq.id)
+		return
+	if not _blind_since.has(sq.id):
+		_blind_since[sq.id] = now
+		return
+	var moves := int(_moves.get(sq.id, 0))
+	if now - float(_blind_since[sq.id]) < support_blind_s or moves >= support_moves:
+		return
+	var d := _flat(sim.squads._centroid(sq), obj.position)
+	var nd := maxf(d * support_move_f, support_near_m)
+	if d - nd < 30.0:
+		return
+	_blind_since.erase(sq.id)
+	_moves[sq.id] = moves + 1
+	var res := sim.tactics.assign_for_operation(sq, SquadState.Tactic.SUPPRESS, _fire_target(op, obj), "operation #%d: fire support moves up to %.0f m (nothing seen from %.0f m for %d s)" % [op.id, nd, d, int(support_blind_s)], {"standoff": nd})
+	if res.ok:
+		support_displaced += 1
+		op.stage_why = "%s moves up to %.0f m: it saw nothing from %.0f m" % [sq.squad_name, nd, d]
+
+
 # --- Stages ----------------------------------------------------------------------------------------------
 
 func _update_deploy(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dictionary, now: float) -> void:
@@ -395,6 +505,7 @@ func _update_assault(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dic
 				closest_fit = minf(closest_fit, _flat(sim.squads._centroid(sq), obj_pos))
 	# GAMEPLAY-02A: the support covers with fire while the assault crosses the ground the defenders can reach.
 	op.cover_fire = closest <= cover_fire_far_m and closest >= cover_fire_near_m
+	_line[op.id] = _line_squads(op, obj, sqs, now)
 	if now < op.reassess_at:
 		return
 	op.reassess_at = now + 4.0
@@ -416,7 +527,9 @@ func _update_assault(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dic
 				elif sq.tactic == SquadState.Tactic.NONE and now >= float(_cool.get(sq.id, 0.0)) and obj.owner != op.faction:
 					_cool[sq.id] = now + 10.0
 					var f := _fitness(sq)
-					if _depleted(sq) and _flat(sim.squads._centroid(sq), obj_pos) > 60.0:
+					# AI-ASSAULT-01: a squad that is not depleted but unfit (ammunition, suppression) is handled the same way - it
+					# used to fall through both branches and stood idle for 90 s as an "assault" squad.
+					if (_depleted(sq) or f < 0.3) and _flat(sim.squads._centroid(sq), obj_pos) > 60.0:
 						# GAMEPLAY-02A: half the squad is gone - it does not walk in again on its own; it supports from where it is.
 						if _to_support(op, obj, sq):
 							op.stage_why = "%s (%d of %d left) supports the others from %.0f m instead of assaulting again" % [sq.squad_name, sq.members.size(),
@@ -443,6 +556,8 @@ func _update_assault(op: OperationState, obj: ObjectiveState, sqs: Array, a: Dic
 					if sq.tactic == SquadState.Tactic.SUPPRESS or sq.tactic == SquadState.Tactic.NONE:
 						_send_assault(op, sq, obj, k + 3)
 						op.stage_why = "assault on the objective: %s lifts fire and moves in" % sq.squad_name
+				elif sq.tactic == SquadState.Tactic.SUPPRESS:
+					_displace_support(op, obj, sq, now)
 				elif sq.tactic == SquadState.Tactic.NONE and now >= float(_cool.get(sq.id, 0.0)):
 					_cool[sq.id] = now + 10.0
 					if _fitness(sq) >= 0.3 and sq.members.size() >= min_squad_n:
@@ -905,5 +1020,5 @@ func explain(op: OperationState) -> Array[String]:
 
 
 func summary() -> Dictionary:
-	return {"updates": updates, "stage_changes": stage_changes, "role_changes": role_changes, "withdrawals": withdrawals, "timeouts": timeouts,
+	return {"updates": updates, "stage_changes": stage_changes, "role_changes": role_changes, "withdrawals": withdrawals, "timeouts": timeouts, "line_holds": line_holds, "support_displaced": support_displaced,
 		"us_avg": snappedf(float(usec) / maxi(updates, 1), 0.1), "us_max": usec_max}

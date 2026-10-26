@@ -10,7 +10,15 @@ stable branch, updated only with the product owner's approval), one canonical de
 branches are contained in `develop` and stay as history. See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest finished: **COMBAT-POLISH-01** (AI cover, prone on slopes, readable relief) — AI factions' squads now end their moves in
+Newest finished: **AI-ASSAULT-01** (coordinated infantry assaults) — after research into Arma, Company of Heroes, F.E.A.R.,
+Killzone and others, operations' assault squads now close on an objective together (a phase line instead of one squad at a time),
+the team that halts covers from cover it can fire from, covering fire goes to reported enemy positions and follows the movement,
+the last 120 m are crossed in short rushes, a blind fire support moves up, rifle fire missions are paced so the ammunition lasts,
+and soldiers spread their fire over several targets. The Haugen attack (3 squads against 1) is taken in 3 of 3 runs instead of 1 of 3
+(`--combat02-test --only a_haugen`), `--ai-strat-test a_assault` passes. `CombatDiag` has a hit log (`--diag` in the strategy suite).
+See [docs/AI-ASSAULT-01_REPORT.md](docs/AI-ASSAULT-01_REPORT.md) and [docs/AI-ASSAULT-01_RESEARCH.md](docs/AI-ASSAULT-01_RESEARCH.md).
+
+Before that: **COMBAT-POLISH-01** (AI cover, prone on slopes, readable relief) — AI factions' squads now end their moves in
 cover like the player's COMBAT squads (operation slots, garrisons, reinforcements; 5 of 6 protected against 0 before;
 `--no-ai-end-cover`), and settle again when the threat swings round. Prone soldiers lie along the slope under them instead of
 hanging their legs in the air or burying their heads, and the rifle points at the target within a degree. Hollows and ditch bottoms

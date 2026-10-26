@@ -55,6 +55,11 @@ var flank_timeout_s := 160.0
 ## Bounding / advancing leg length (m) and how long a leg may take (s).
 var leg_m := 30.0
 var leg_timeout_s := 18.0
+## AI-ASSAULT-01: an advancing leg ending this close to the enemy chooses posts the team can fire from (cover_fire).
+var cover_fire_m := 300.0
+## AI-ASSAULT-01: inside close_rush_m of the target, under fire, an assault's legs are at most rush_m long.
+var close_rush_m := 120.0
+var rush_m := 22.0
 var flank_lateral_m := 75.0
 var flank_max_detour := 2.3
 ## A flank must expose the maneuver team this much less than going straight in.
@@ -335,7 +340,15 @@ func _track_compromise(sq: SquadState, a: Dictionary, now: float) -> void:
 func behaviour_now(sq: SquadState) -> int:
 	if sq == null:
 		return SquadBehaviour.AWARE
-	return SquadBehaviour.effective(sq.behaviour, assessment(sq), sim.state.time < float(_meta(sq, "compromised_until", -1.0)))
+	var a := assessment(sq)
+	var b := SquadBehaviour.effective(sq.behaviour, a, sim.state.time < float(_meta(sq, "compromised_until", -1.0)))
+	# AI-ASSAULT-01: an AWARE squad fighting under an operation's command acts as COMBAT once it is in contact (Arma's groups go
+	# from AWARE to COMBAT on contact): low behind cover near the believed enemy instead of standing (the Haugen attackers stood in
+	# their cover while the crouched defenders hit 23 % of their shots).
+	if b == SquadBehaviour.AWARE and sq.tactic_owner == SquadState.Owner.OPERATION and not a.is_empty() \
+			and (int(a.get("under_fire", 0)) > 0 or bool(a.get("in_contact", false))):
+		return SquadBehaviour.COMBAT
+	return b
 
 
 ## Distance from the squad to the threat it believes in (INF: none) - from the last assessment, never the world.
@@ -682,7 +695,9 @@ func _assess_squad(sq: SquadState) -> Dictionary:
 	a.enemy_est = est
 	var size_f: float = float(n) / maxi(int(a.n0), 1)
 	var supp_f: float = 1.0 - 0.6 * float(a.supp)
-	var ammo_f: float = clampf(float(a.ammo) / 0.5, 0.0, 1.0)
+	# AI-ASSAULT-01: a squad still carrying a third of its rounds (50 a rifleman) can fight; the old /0.5 made squads at 40 %
+	# "unfit" and the operation withdrew or idled full-strength squads.
+	var ammo_f: float = clampf(float(a.ammo) / 0.35, 0.0, 1.0)
 	var threat_f: float = clampf(1.0 - 0.3 * maxf(est / maxi(n, 1) - 1.0, 0.0), 0.5, 1.0)
 	if n <= 2:
 		size_f *= 0.7
@@ -2403,14 +2418,15 @@ func _leg_ready(sq: SquadState, team: int, now: float) -> bool:
 
 ## Sends one team to the next leg: cover posts near the leg's end, spread across the line of
 ## travel, away from reserved spots and recently used ones.
-func _begin_leg(sq: SquadState, team: int, dest: Vector3, threat: Vector3) -> void:
+## AI-ASSAULT-01: `mode` "cover_fire" for an advance within reach of the enemy - the team that halts there covers the next bound.
+func _begin_leg(sq: SquadState, team: int, dest: Vector3, threat: Vector3, mode := "cover") -> void:
 	var mu := _units(sq, team)
 	if mu.is_empty():
 		return
 	var now := sim.state.time
 	var from := _centroid(mu)
 	var dir := _dir_to(from, dest)
-	var posts := pos.find_posts(mu.size(), dest, 9.0, threat, {"mode": "cover", "reserved": _reserved(sq, dest, mu), "avoid": _avoid_list(sq), "unit_id": mu[0].id, "min_enemy_m": 20.0})
+	var posts := pos.find_posts(mu.size(), dest, 9.0, threat, {"mode": mode, "reserved": _reserved(sq, dest, mu), "avoid": _avoid_list(sq), "unit_id": mu[0].id, "min_enemy_m": 20.0})
 	posts = pos.fill_open(posts, mu.size(), dest, dir, 3.4)
 	_send_posts(sq, mu, posts, dir)
 	_set_meta(sq, "leg_team", team)
@@ -2475,7 +2491,8 @@ func _run_bound(sq: SquadState, a: Dictionary, now: float, withdrawing: bool) ->
 	if not withdrawing and threat.is_finite() and float(a.threat_conf) >= 0.5 and _flat(leg, threat) < 45.0:
 		_finish(sq, "stopped %.0f m short of the reported enemy" % _flat(leg, threat), SquadState.Tactic.NONE)
 		return
-	_begin_leg(sq, mover, leg, threat if threat.is_finite() else dest + sq.tactic_dir * 60.0)
+	var fight := not withdrawing and threat.is_finite() and _flat(leg, threat) < cover_fire_m
+	_begin_leg(sq, mover, leg, threat if threat.is_finite() else dest + sq.tactic_dir * 60.0, "cover_fire" if fight else "cover")
 
 
 # --- ASSAULT --------------------------------------------------------------------------------------------------------------
@@ -2525,7 +2542,7 @@ func _run_assault(sq: SquadState, a: Dictionary, now: float) -> void:
 			if not set_up:
 				return
 			if not support.is_empty():
-				_fire_on(support, target, _spread_for(sq), mission_s)
+				_cover_fire(sq, a, support, target)
 			# COMBAT-01: support fire gets a moment to land - unless nobody sees or shoots at the squad (no reason to wait).
 			var quiet_now: bool = int(a.seen_n) == 0 and int(a.under_fire) == 0
 			if now - sq.tactic_phase_since < (3.0 if not support.is_empty() and not quiet_now else 0.0):
@@ -2546,6 +2563,10 @@ func _run_assault(sq: SquadState, a: Dictionary, now: float) -> void:
 				return
 			var quiet_march: bool = int(a.seen_n) == 0 and int(a.under_fire) == 0
 			var step := (42.0 if sq.tactic_ext else 28.0) * (2.2 if quiet_march else 1.0)
+			# AI-ASSAULT-01: the last stretch under fire is crossed in short rushes (a few seconds up, then down in cover): a 42 m
+			# leg at 60 m from the defenders kept the moving team upright in their sights for seven seconds.
+			if not quiet_march and d < close_rush_m:
+				step = minf(step, rush_m)
 			if sq.teams.size() < 2:
 				_advance(sq, a, 0, target, now, step)
 			elif quiet_march and d > 160.0 and (not sq.tactic_dest.is_finite() or int(_meta(sq, "leg_team", 0)) < 0):
@@ -2568,7 +2589,7 @@ func _run_assault(sq: SquadState, a: Dictionary, now: float) -> void:
 					team = 0
 				# The covering team fires only where a rifle can reach the defenders (not from 300 m at a map position).
 				if front > 40.0 and (front < 260.0 or int(a.seen_n) > 0):
-					_fire_on(_units(sq, 1 - team), target, _spread_for(sq), mission_s)
+					_cover_fire(sq, a, _units(sq, 1 - team), target)
 				else:
 					_cease_fire(_units(sq))
 				_advance(sq, a, team, target, now, step)
@@ -2711,11 +2732,23 @@ func _advance(sq: SquadState, a: Dictionary, team: int, target: Vector3, now: fl
 	if team >= 0 and int(a.under_fire) > 0 and not _cover_ready(sq, 1 - team) and now - sq.tactic_leg_since < 6.0:
 		sq.tactic_rejected = "advance waits: the covering team is not firing yet"
 		return
+	# AI-ASSAULT-01: an operation's assault squads close together (OpCoordination phase line).
+	if sq.tactic_owner == SquadState.Owner.OPERATION and sim.war != null and sim.war.coord != null:
+		var ls: Array = sim.war.coord.line_step(sq, step_m)
+		if String(ls[1]) != "":
+			sq.tactic_rejected = ls[1]
+			return
+		step_m = float(ls[0])
+		if sq.tactic_rejected.begins_with("holds at the phase line"):
+			sq.tactic_rejected = ""
 	var dest := _next_dest(centre, target - _dir_to(centre, target) * 14.0, step_m)
 	if not dest.is_finite():
 		_fail(sq, a, "no walkable ground towards the target")
 		return
-	_begin_leg(sq, team, dest, target)
+	# AI-ASSAULT-01: the posts are judged against the enemy the squad believes in near the target (not the objective's map point)
+	# and, within reach of it, must let the halted team fire.
+	var threat: Vector3 = a.threat_pos if a.threat_pos.is_finite() and _flat(a.threat_pos, target) < 120.0 else target
+	_begin_leg(sq, team, dest, threat, "cover_fire" if _flat(dest, threat) < cover_fire_m else "cover")
 
 
 ## On the objective: everybody takes posts around it facing outward; done when most are there and
@@ -2819,12 +2852,12 @@ func _run_flank(sq: SquadState, a: Dictionary, now: float) -> void:
 				sq.tactic_leg = 0
 		PH_MOVE:
 			if not support.is_empty():
-				_fire_on(support, target, _spread_for(sq), mission_s)
+				_cover_fire(sq, a, support, target)
 			_flank_leg(sq, a, man, now)
 		PH_FINAL:
 			if not support.is_empty():
 				if _flat(_centroid(man), target) > 40.0:
-					_fire_on(support, target, _spread_for(sq), mission_s)
+					_cover_fire(sq, a, support, target)
 				else:
 					_cease_fire(support)
 			_advance(sq, a, 1, target, now, 26.0)
@@ -3060,6 +3093,48 @@ func _fire_on(units: Array, target: Vector3, spread: float, seconds: float) -> v
 		var g := pos.ground(p)
 		u.fire_at = Vector3(p.x, g.y, p.z)
 		u.fire_until = now + seconds
+
+
+## AI-ASSAULT-01: the covering fire of an assault's or flank's halted team - at the freshest reports of the enemy near the target
+## (one per soldier in turn, spread over a third of each report's uncertainty), else at the enemy the squad believes in near it,
+## else, close to the target, at the target itself; far out with nothing reported the team observes. Fire at the objective's map
+## point hit nobody where the defenders stood elsewhere (Haugen: 1347 mission rounds, mean suppression on the defenders 0.06).
+## The volume follows the movement: while the other team is on its bound every soldier fires at reports up to 25 s old; while
+## nobody moves, half of them fire, and only at an enemy reported in the last 8 s (seen or firing) - continuous fire during a
+## halt emptied the squads' magazines before the last 100 m. Soldiers who see an enemy shoot at him instead (aimed fire first).
+func _cover_fire(sq: SquadState, a: Dictionary, units: Array, target: Vector3) -> void:
+	if units.is_empty():
+		return
+	var now := sim.state.time
+	var bound := sq.tactic_dest.is_finite()
+	var max_age := 25.0 if bound else 8.0
+	var pts: Array[Vector3] = []
+	var spreads: Array[float] = []
+	if sim.war != null and sim.war.enabled:
+		var fresh: Array = []
+		for c: ContactState in sim.war.intel.contacts_near(sq.faction, target, 70.0):
+			if c.status != ContactState.Status.LOST and c.conf >= 0.3 and now - c.t_seen <= max_age:
+				fresh.append(c)
+		fresh.sort_custom(func(x: ContactState, y: ContactState) -> bool: return x.t_seen > y.t_seen)
+		for c: ContactState in fresh.slice(0, 3):
+			pts.append(c.pos)
+			spreads.append(clampf(c.unc * 0.3, 3.0, 10.0))
+	if pts.is_empty() and bound:
+		var th: Vector3 = a.threat_pos
+		if th.is_finite() and float(a.threat_conf) >= 0.3 and _flat(th, target) < 120.0:
+			pts.append(th)
+			spreads.append(8.0)
+		elif _flat(_centroid(units), target) < 130.0:
+			pts.append(target)
+			spreads.append(_spread_for(sq))
+	if pts.is_empty():
+		_cease_fire(units)
+		return
+	for i in units.size():
+		if not bound and i % 2 == 1:
+			_cease_fire([units[i]])
+			continue
+		_fire_on([units[i]], pts[i % pts.size()], spreads[i % pts.size()], mission_s)
 
 
 func _cease_fire(units: Array) -> void:

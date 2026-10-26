@@ -23,7 +23,7 @@ Norwegian; code, comments and docs are English.
   (`../fractured-nations-*`) are only kept until the product owner approves removing them
   (status: [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md)). Do not develop there.
 - **Session workflow:** open this project → read this file and the roadmap ([docs/AI_ROADMAP.md](docs/AI_ROADMAP.md),
-  COMBAT-POLISH-01 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
+  AI-ASSAULT-01 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
   targeted tests + visual Godot validation → update the report / README → commit to `develop`.
 - Each milestone ends with a report in `docs/<MILESTONE>_REPORT.md` and an updated README.
 
@@ -308,6 +308,14 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   proxy) - presentation only, the record and its hit volumes stay level; the prone aim corrects itself from the rifle's bore.
   Relief readability is a concavity tint in `terrain_visual02.gdshader` and `grass_particles.gdshader` (`relief_tint`,
   `--no-relief-tint`). Checks: `--scenario=dev --combat-polish01-test [--shots] [--only p_prone,t_ground,a_ai_cover]`.
+- **Coordinated assaults (AI-ASSAULT-01).** `OpCoordination.line_step` is the phase line of an attack: inside `sync_m` no assault /
+  maneuver squad's bound ends more than `line_lead_m` ahead of the rearmost other attacking squad (derived each second, never saved;
+  wait cap, stuck squads ignored); a blind fire support moves up (`_displace_support`). `SquadTactics._cover_fire` is the covering fire
+  of ASSAULT / FLANK - at fresh *reports* near the target, full while the other team moves, half while nobody does; bounds near the enemy
+  take posts with `find_posts` mode `cover_fire`. An AWARE squad under an operation acts COMBAT in contact (`behaviour_now`). `CombatBrain`
+  spreads targets (`crowd_n`, `_aimers` from the frame grid), holds aimed fire on the move beyond `move_fire_m`, and paces rifle fire
+  missions (`rifle_mission_burst` / `_pause_s`). Measure with `--ai-strat-test --diag --only a_assault` and `--combat02-test --only
+  a_haugen,e_haugen --seeds=1,2,3` (stochastic: judge series, run one Godot at a time).
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are

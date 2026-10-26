@@ -155,6 +155,11 @@ var suppression_acquire_s := 0.9
 ## fraction of a full load below which they slow down / stop (a magazine is always kept).
 var mission_burst := 3
 var mission_pause_s := 1.3
+## AI-ASSAULT-01: a rifleman's fire mission is sustained fire - two rounds every ~2 s (about 60 a minute, a third of the
+## old rate, which emptied a rifleman's 150 rounds in a minute and left the assault without ammunition); machine guns and
+## marksman rifles keep their own bursts at mission_pause_s.
+var rifle_mission_burst := 2
+var rifle_mission_pause_s := 2.0
 var mission_slow_ammo := 0.5
 var mission_stop_ammo := 0.2
 ## Cover reactions of a soldier standing at a squad-assigned post stay within this (m).
@@ -163,6 +168,16 @@ var cover_radius_post := 3.5
 ## self_defence_m (self-defence).
 var self_defence_s := 6.0
 var self_defence_m := 100.0
+## AI-ASSAULT-01: target distribution - a newly seen enemy that crowd_n soldiers already shoot at is passed over for the next
+## visible one up to crowd_ratio times as far (never one that is shooting at this soldier); fire otherwise piles onto the
+## nearest man while the others shoot freely. Arma / CoH spread fire by target assignment; this is the cheap individual form.
+var crowd_n := 3
+var crowd_ratio := 1.6
+var crowd_skips := 0
+## AI-ASSAULT-01: a soldier on the move holds aimed fire at targets beyond move_fire_m (unless just hit): 143 shots on the move
+## at 300+ m hit nothing and emptied magazines before the assault. Both sides, the same rule.
+var move_fire_m := 120.0
+var move_holds := 0
 
 # --- Concealment and posture (COMBAT-01) ---------------------------------------------
 ## Grass at the target slows noticing it (never hides it): the share of its shape the grass covers (Concealment, against
@@ -244,6 +259,8 @@ var _lod_skip := {}
 ## Reserved cover spots [position, unit] (rebuilt with the grid every frame; a soldier
 ## walking to its cover is far from the spot, so the position grid does not find it).
 var _covers: Array = []
+## AI-ASSAULT-01: target id -> soldiers aiming at it with it in sight (rebuilt with the grid, once a physics frame).
+var _aimers := {}
 var _shots_left := 0
 var _ei := 0
 var budget_waits := 0
@@ -471,6 +488,8 @@ func _perceive(u: UnitState, budget: int) -> int:
 	# only among enemies clearly closer than the current one.
 	var best: UnitState = null
 	var best_aim := 1.0
+	var crowded: UnitState = null
+	var crowded_aim := 1.0
 	var tried := 0
 	var max_d := cur_dist * switch_ratio if cur_visible else sight
 	for c: UnitState in _candidates(u, max_d, max_candidates + 1):
@@ -478,6 +497,8 @@ func _perceive(u: UnitState, budget: int) -> int:
 			break
 		if c == cur:
 			continue
+		if crowded != null and _flat(u.position, c.position) > _flat(u.position, crowded.position) * crowd_ratio:
+			break
 		if not _line_warm(eye, c.position):
 			warm_waits += 1
 			continue
@@ -485,9 +506,18 @@ func _perceive(u: UnitState, budget: int) -> int:
 		var s := _see(eye, c, 1.55)
 		used += s.checks
 		if s.visible and _noticed(u, c, now):
+			if crowded == null and not cur_visible and c.target_id != u.id and int(_aimers.get(c.id, 0)) >= crowd_n:
+				crowded = c
+				crowded_aim = s.aim_y
+				continue
+			if crowded != null:
+				crowd_skips += 1
 			best = c
 			best_aim = s.aim_y
 			break
+	if best == null and crowded != null:
+		best = crowded
+		best_aim = crowded_aim
 	if best:
 		_acquire(u, best, best_aim)
 	elif cur and cur_visible and not cur_checked:
@@ -883,8 +913,11 @@ func _ensure_grid() -> void:
 	_grid.clear()
 	_fgrid.clear()
 	_covers.clear()
+	_aimers.clear()
 	for u: UnitState in sim.state.units.values():
 		if u.alive and u.kind == UnitState.Kind.SOLDIER and u.vehicle_id < 0:
+			if u.target_id > 0 and u.target_visible:
+				_aimers[u.target_id] = int(_aimers.get(u.target_id, 0)) + 1
 			if u.cover_pos.is_finite():
 				_covers.append([u.cover_pos, u])
 			if u.post_pos.is_finite():
@@ -1736,6 +1769,10 @@ func _engage(u: UnitState) -> void:
 	if dist > engage_reach(def):
 		u.ai_reason = "out of range"
 		return
+	if dist > move_fire_m and Vector2(u.velocity.x, u.velocity.z).length() > 1.0 and now - u.hit_at > self_defence_s:
+		move_holds += 1
+		u.ai_reason = "moving: holds fire at range"
+		return
 	if now < u.aim_ready_at:
 		u.ai_reason = "aiming"
 		return
@@ -1790,7 +1827,8 @@ func _fire_mission(u: UnitState, def: WeaponDef, now: float) -> bool:
 		if now < u.next_burst_at:
 			u.ai_reason = "mission: between bursts"
 			return true
-		u.burst_left = maxi(1, def.mission_burst - (1 if have / full < mission_slow_ammo else 0))
+		var mb := rifle_mission_burst if def.role == &"rifle" else def.mission_burst
+		u.burst_left = maxi(1, mb - (1 if have / full < mission_slow_ammo else 0))
 	# Scatter over the area the report covers (deterministic: world seed, soldier, shot).
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash([sim.state.world_seed, u.id, u.shot_counter + 1, 4177])
@@ -1843,7 +1881,8 @@ func _try_fire(u: UnitState, aim: Vector3, dist: float, now: float, mission: boo
 		u.ai_reason = "mission" if mission else ""
 		u.burst_left -= 1
 		if u.burst_left <= 0:
-			u.next_burst_at = now + (mission_pause_s * (0.8 + 0.4 * _rand(u, 19)) if mission else _burst_pause(u, dist))
+			var mp := rifle_mission_pause_s if mission and sim.combat.weapon(u.weapon_id) != null and sim.combat.weapon(u.weapon_id).role == &"rifle" else mission_pause_s
+			u.next_burst_at = now + (mp * (0.8 + 0.4 * _rand(u, 19)) if mission else _burst_pause(u, dist))
 		return true
 	u.ai_reason = shot.get("reason", "")
 	u.burst_left = 0

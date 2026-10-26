@@ -220,6 +220,11 @@ func find_posts(count: int, center: Vector3, radius: float, threat: Vector3, opt
 			score += 3.5 if los else -6.0
 		else:
 			score += 0.0 if ev.protected else -1.0
+			# AI-ASSAULT-01: a bound's posts are where the team covers the next bound from - cover it can also fire from
+			# (judged by the same _evaluate_spot, no extra sight line). Plain cover hid the halted team from the enemy it was
+			# meant to cover against: 20 aimed shots from halted attackers in a whole assault.
+			if mode == "cover_fire" and ev.can_fire:
+				score += 2.0
 		score -= 0.045 * _flat(p, center)
 		match String(c.kind):
 			"structure":

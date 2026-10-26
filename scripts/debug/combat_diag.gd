@@ -43,6 +43,10 @@ var _slots := {}
 var def_line_max := 0
 var contested_s := 0.0
 var objective: ObjectiveState
+## AI-ASSAULT-01: every hit between the sides (time, side, distance, shooter / target moving and posture, target's tactic and
+## squad tactic) and aimed shots by side and range band, to see who wins the exchanges and why.
+var hit_log: Array = []
+var aimed := {}
 
 
 func start(p_sim: WorldSim, p_op: OperationState, attackers: Array, defenders: Array, objective_pos: Vector3, objective_r := 0.0) -> void:
@@ -90,6 +94,12 @@ func _on_shot(shot: Dictionary) -> void:
 		first_contact = sim.state.time - t0
 	if s.fire_at.is_finite() and sim.state.time < s.fire_until and s.target_id < 0:
 		totals[side + "_mission_shots"] = float(totals.get(side + "_mission_shots", 0.0)) + 1
+	else:
+		var t := sim.state.get_unit(s.target_id)
+		if t:
+			var band := "%s_%d" % [side, mini(int(_flat(s.position, t.position) / 100.0), 4) * 100]
+			var mv := "mv" if Vector2(s.velocity.x, s.velocity.z).length() > 0.6 else "st"
+			aimed[band + "_" + mv] = int(aimed.get(band + "_" + mv, 0)) + 1
 	if String(shot.get("blocker", "")) == "structure":
 		totals[side + "_struct_hits"] += 1
 
@@ -103,6 +113,17 @@ func _on_damaged(t: UnitState, _amount: float, _zone: int, source: int) -> void:
 		totals[side + "_hits"] += 1
 		if not first_hit.has(side):
 			first_hit[side] = snappedf(sim.state.time - t0, 0.1)
+		var band := "%s_%d" % [side, mini(int(_flat(s.position, t.position) / 100.0), 4) * 100]
+		var mv := "mv" if Vector2(s.velocity.x, s.velocity.z).length() > 0.6 else "st"
+		aimed[band + "_" + mv + "_hit"] = int(aimed.get(band + "_" + mv + "_hit", 0)) + 1
+		if hit_log.size() < 150:
+			var tsq := sim.state.squad_of(t.id)
+			var ssq := sim.state.squad_of(s.id)
+			hit_log.append("%.0f %s d=%.0f shooter %s/%s/%s tgt %s/%s/%s %s(%s)" % [sim.state.time - t0, side, _flat(s.position, t.position),
+				"mv" if Vector2(s.velocity.x, s.velocity.z).length() > 0.6 else "st", Posture.NAMES[Posture.current(s, sim.state.time)],
+				ssq.tactic_name() if ssq else "-", "mv" if Vector2(t.velocity.x, t.velocity.z).length() > 0.6 else "st",
+				Posture.NAMES[Posture.current(t, sim.state.time)], UnitState.Tactic.keys()[t.tactic],
+				tsq.squad_name if tsq else "-", tsq.tactic_name() if tsq else "-"])
 
 
 func _on_died(u: UnitState) -> void:
@@ -114,6 +135,10 @@ func _on_died(u: UnitState) -> void:
 		totals[side + "_kills"] += 1
 		if not first_kill.has(side):
 			first_kill[side] = snappedf(sim.state.time - t0, 0.1)
+
+
+static func _flat(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x - b.x, a.z - b.z).length()
 
 
 func _dist(sq: SquadState) -> float:
@@ -179,7 +204,8 @@ func sample() -> void:
 			var a := sim.tactics.assessment(sq)
 			parts.append({"sq": sq.squad_name, "role": SquadState.OP_ROLE_NAMES[sq.op_role], "tac": "%s/%d" % [sq.tactic_name(), sq.tactic_phase], "order": sq.order_name(),
 				"n": sq.members.size(), "d": roundi(_dist(sq)), "supp": snappedf(float(a.get("supp", 0.0)), 0.01), "eff": snappedf(float(a.get("eff", 0.0)), 0.01),
-				"ammo": snappedf(float(a.get("ammo", 1.0)), 0.01), "seen": int(a.get("seen_n", 0))})
+				"ammo": snappedf(float(a.get("ammo", 1.0)), 0.01), "seen": int(a.get("seen_n", 0)),
+				"rej": sq.tactic_rejected.left(90), "leg": sq.tactic_leg, "dest": sq.tactic_dest.is_finite()})
 		rows.append({"t": roundi(now - t0), "stage": op.stage_name() if op else "-", "wait": op.wait_reason if op else "", "sq": parts,
 			"att_supp_avg": snappedf(side_supp.att / maxi(side_n.att, 1), 0.01), "def_supp_avg": snappedf(side_supp.def / maxi(side_n.def, 1), 0.01)})
 
@@ -242,7 +268,7 @@ func result() -> Dictionary:
 		"def_supp_avg": snappedf(float(totals.att_supp_given) / dur / maxf(_count(defs, true), 1.0), 0.01),
 		"att_supp_avg": snappedf(float(totals.def_supp_given) / dur / maxf(_count(att, true), 1.0), 0.01),
 		"att_accuracy": snappedf(float(totals.att_hits) / maxf(float(totals.att_shots), 1.0), 0.003), "def_accuracy": snappedf(float(totals.def_hits) / maxf(float(totals.def_shots), 1.0), 0.003),
-		"squads": per, "stages": stages, "withdraw_why": op.withdraw_why if op else "", "outcome": op.outcome if op else "", "rows": rows,
+		"squads": per, "stages": stages, "aimed": aimed, "hit_log": hit_log, "withdraw_why": op.withdraw_why if op else "", "outcome": op.outcome if op else "", "rows": rows,
 		"defence": {"first_seen": seen, "first_hit": first_hit, "def_exposed_s": roundi(def_exposed_s), "def_inside_s": roundi(def_inside_s),
 			"def_slot_s": roundi(def_slot_s), "def_post_changes": def_post_changes, "def_slots_left": def_slots_left, "def_line_max": def_line_max,
 			"contested_s": roundi(contested_s), "garrison_kept": defs.filter(func(q: SquadState) -> bool: return sim.state.get_squad(q.id) != null and q.garrison_base >= 0).size()}}
