@@ -10,14 +10,14 @@ const SHAPES := {
 	&"infantry": "<rect x='2' y='5' width='20' height='14'/><path d='M2 5L22 19M22 5L2 19'/>",
 	# Movement orders.
 	&"move": "<path d='M4 20L19 5M10 5H19V14'/>",
-	&"bound": "<path d='M4 6L10 12L4 18M12 6L18 12L12 18'/>",
-	&"follow": "<circle cx='17' cy='7' r='3'/><path d='M3 21L12 12M7 12H12V17'/>",
-	&"hold": "<rect x='5' y='5' width='14' height='14'/><path d='M10 9V15M14 9V15'/>",
+	&"bound": "<path d='M3 8H12M9 5L12 8L9 11M10 16H20M17 13L20 16L17 19'/>",
+	&"follow": "<circle cx='18' cy='6' r='3'/><path d='M3 21L5.5 18.5M8 16L10.5 13.5M13 11L15 9'/>",
+	&"hold": "<path d='M8 3H16L21 8V16L16 21H8L3 16V8Z M8 12H16'/>",
 	&"regroup": "<path d='M3 3L9 9M9 4V9H4M21 3L15 9M15 4V9H20M3 21L9 15M9 20V15H4M21 21L15 15M15 20V15H20'/>",
 	# Combat.
-	&"assault": "<path d='M3 12H16M11 7L16 12L11 17M20 4V20'/>",
-	&"suppress": "<path d='M3 7H8M11 7H14M17 7H21M3 12H10M13 12H21M3 17H8M11 17H14M17 17H21'/>",
-	&"flank": "<path d='M5 21V13A8 8 0 0 1 13 5H20M16 1L20 5L16 9'/>",
+	&"assault": "<circle cx='17' cy='12' r='4'/><path d='M2 12H14M10 8L14 12L10 16'/>",
+	&"suppress": "<path d='M3 12L19 5M3 12H19M3 12L19 19M21 4V7M21 10.5V13.5M21 17V20'/>",
+	&"flank": "<rect x='15' y='10' width='6' height='6'/><path d='M3 21C3 9 7 5 13 5H20M17 2L20 5L17 8'/>",
 	# Defence.
 	&"defend": "<path d='M12 3L20 6V12C20 16.5 16.5 19.5 12 21C7.5 19.5 4 16.5 4 12V6Z'/>",
 	&"withdraw": "<path d='M20 21V12A7 7 0 0 0 13 5H4M8 1L4 5L8 9'/>",
@@ -78,6 +78,14 @@ const SHAPES := {
 	&"locked": "<rect x='5' y='11' width='14' height='10'/><path d='M8 11V7A4 4 0 0 1 16 7V11'/>",
 	&"mission": "<path d='M5 21V3M5 4H19L16 8L19 12H5'/><circle cx='12' cy='8' r='1'/>",
 	&"equipment": "<path d='M3 9H14L16 7H21V10H17L15.5 12H11L10 16H7L8 12H3Z M5 19H19'/>",
+	# QOL-01 behaviour modes and camera focus.
+	&"beh_safe": "<circle cx='12' cy='4' r='2'/><path d='M12 7V14M12 14L8 21M12 14L16 21M8 10H16'/>",
+	&"beh_aware": "<path d='M2 12C6 5 18 5 22 12C18 19 6 19 2 12Z'/><circle cx='12' cy='12' r='3'/>",
+	&"beh_combat": "<path d='M12 2L14 9L21 7L16 12L21 17L14 15L12 22L10 15L3 17L8 12L3 7L10 9Z'/>",
+	&"beh_stealth": "<path d='M3 8C7 12 17 12 21 8M6 11L4.5 13M12 12V14.5M18 11L19.5 13M3 21H21M7 21L8 17M12 21V17M17 21L16 17'/>",
+	&"garrison": "<path d='M4 21V11L12 6L20 11V21Z M12 6V2H16L15 3.5L16 5H12 M10 21V16H14V21'/>",
+	&"rearm": "<rect x='3' y='11' width='18' height='10'/><path d='M7 11V5L8 3L9 5V11M11 11V5L12 3L13 5V11M15 11V5L16 3L17 5V11'/>",
+	&"focus": "<path d='M3 8V3H8M16 3H21V8M21 16V21H16M8 21H3V16'/><circle cx='12' cy='12' r='3'/>",
 }
 
 ## Icons are rasterised larger than drawn and shrunk with mipmaps: the canvas is scaled up to the

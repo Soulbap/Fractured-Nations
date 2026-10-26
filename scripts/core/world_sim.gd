@@ -33,6 +33,8 @@ var state := WorldState.new()
 var squads := SquadControl.new(self)
 ## AI-SQUAD-01: fire teams and squad tactics (defend, suppress, assault, flank, bound, withdraw).
 var tactics := SquadTactics.new(self)
+## QOL-01: notices about the player's squads (under fire, casualties, arrived, blocked, interrupted / resumed).
+var reports := SquadReports.new(self)
 ## LOGISTICS-01: driving of every vehicle record (both tiers), routes and the player's wheel.
 var vehicles := VehicleSim.new(self)
 ## LOGISTICS-01: depots, vehicle jobs, resupply, automation.
@@ -160,6 +162,7 @@ func _ready() -> void:
 	state.roads.changed.connect(func(rect: Rect2) -> void: routing.invalidate("roads changed", rect.grow(60.0)))
 	brain.connect_signals()
 	tactics.connect_signals()
+	reports.connect_signals()
 	# COMBAT-02: shots find nearby soldiers through the brain's grid.
 	combat.line.unit_index = brain
 
@@ -220,6 +223,7 @@ func _physics_process(delta: float) -> void:
 	squads.update(delta)
 	var t1t := Time.get_ticks_usec()
 	tactics.update(delta)
+	reports.update(delta)
 	var t2 := Time.get_ticks_usec()
 	vehicles.update(delta)
 	logistics.update(delta)
@@ -750,6 +754,9 @@ func pace_of(u: UnitState) -> int:
 			return UnitState.Pace.JOG
 	if sq.pace >= 0:
 		return sq.pace
+	# QOL-01: a STEALTH squad near the threat it believes in walks briskly (with its crouch); far from it, it jogs like the rest.
+	if tactics.behaviour_now(sq) == SquadBehaviour.STEALTH and tactics.threat_dist(sq) <= SquadBehaviour.LOW_M[SquadBehaviour.STEALTH]:
+		return UnitState.Pace.BRISK
 	if sq.garrison_base >= 0:
 		return UnitState.Pace.WALK
 	return UnitState.Pace.JOG

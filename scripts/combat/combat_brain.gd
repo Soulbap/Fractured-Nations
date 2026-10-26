@@ -1076,7 +1076,20 @@ func _choose_posture(u: UnitState) -> void:
 	var now := sim.state.time
 	var moving := (u.order == UnitState.Order.MOVE and u.move_state == UnitState.MoveState.MOVING) \
 		or (u.is_reacting() and u.react_state == UnitState.ReactState.MOVING)
-	if moving or Posture.busy(u, now):
+	if Posture.busy(u, now):
+		return
+	# QOL-01: the squad's behaviour mode (what it acts on now) and how near the threat it believes in is.
+	var sq := sim.state.squad_of(u.id)
+	var beh := sim.tactics.behaviour_now(sq) if sq else SquadBehaviour.AWARE
+	var near := sq != null and SquadBehaviour.LOW_M[beh] > 0.0 and sim.tactics.threat_dist(sq) <= SquadBehaviour.LOW_M[beh]
+	if moving:
+		# STEALTH near a believed enemy walks crouched (concealment delays noticing); up again once the threat is behind it.
+		# Never prone on the move, never against a reaction's dash (reactions run upright).
+		if beh == SquadBehaviour.STEALTH and not u.is_reacting():
+			var mw := Posture.CROUCH if near else Posture.STAND
+			if mw != u.posture and u.posture != Posture.PRONE and Posture.request(u, mw, now):
+				posture_changes += 1
+				u.posture_hold_until = now + posture_hold_s
 		return
 	var want := Posture.STAND
 	var mode := order_mode(u)
@@ -1087,8 +1100,15 @@ func _choose_posture(u: UnitState) -> void:
 		var engaged := u.target_id > 0 and now - u.target_seen_at < 4.0
 		var alert := engaged or now < u.under_fire_until or now < u.watch_until or supp >= suppressed_at \
 			or (u.fire_at.is_finite() and now < u.fire_until)
-		if u.tactic == UnitState.Tactic.IN_COVER or alert:
+		if beh == SquadBehaviour.SAFE:
+			# SAFE (nothing seen, nobody shooting): upright; only fire taken brings it down.
+			alert = now < u.under_fire_until or supp >= suppressed_at
+		if u.tactic == UnitState.Tactic.IN_COVER or alert or near:
 			want = Posture.CROUCH
+		if beh == SquadBehaviour.STEALTH and near and not alert and (mode == "hold" or mode == "post") and not _moves_soon(u, mode) \
+				and sq.status != SquadState.Status.MOVING and not sim.squads.marching(sq) \
+				and sim.tactics.threat_dist(sq) <= SquadBehaviour.STEALTH_PRONE_M and prone_ground_ok(u):
+			want = Posture.PRONE
 		if alert and u.tactic != UnitState.Tactic.IN_COVER:
 			var wdef := sim.combat.weapon(u.weapon_id)
 			var steady_weapon := wdef != null and (wdef.role == &"lmg" or wdef.role == &"dmr")
@@ -1104,6 +1124,14 @@ func _choose_posture(u: UnitState) -> void:
 		posture_changes += 1
 		u.posture_hold_until = now + (prone_hold_s if want == Posture.PRONE else posture_hold_s)
 		_event(u, Posture.NAMES[want])
+
+
+## QOL-01: a STEALTH squad that has not been found holds fire at a target beyond STEALTH_FIRE_M (a shot is heard and gives
+## the squad away); a soldier just hit, or a target that close, is fired at. Fired on (compromised) the squad fights as COMBAT.
+func _stealth_holds(u: UnitState, sq: SquadState, dist: float, now: float) -> bool:
+	if sq == null or sq.behaviour != SquadBehaviour.STEALTH or sim.tactics.behaviour_now(sq) != SquadBehaviour.STEALTH:
+		return false
+	return dist > SquadBehaviour.STEALTH_FIRE_M and now - u.hit_at > self_defence_s
 
 
 ## The squad is about to move this soldier (an assault, flank, bound or withdrawal it is not holding a post in).
@@ -1179,8 +1207,11 @@ func _start_search(u: UnitState, mode: String) -> void:
 				u.anchor_pos = u.position
 			center = u.anchor_pos
 		"move":
-			radius = cover_radius_move
-			limit = react_s_move
+			# QOL-01: how far a soldier on the move goes for cover and how long he stays, by the squad's behaviour (COMBAT and a
+			# compromised STEALTH squad dash farther and stay longer, SAFE takes the nearest and moves on).
+			var b := sim.tactics.behaviour_now(sim.state.squad_of(u.id))
+			radius = cover_radius_move * SquadBehaviour.REACT_RADIUS[b]
+			limit = react_s_move * SquadBehaviour.REACT_TIME[b]
 		"follow":
 			radius = cover_radius_follow
 			limit = react_s_follow
@@ -1537,6 +1568,11 @@ func _engage(u: UnitState) -> void:
 			u.burst_left = 0
 			return
 		u.ai_reason = "self-defence"
+	elif _stealth_holds(u, sq, dist, now):
+		u.ai_state = UnitState.AiState.OBSERVING
+		u.ai_reason = "stealth: not giving the position away"
+		u.burst_left = 0
+		return
 	u.ai_state = UnitState.AiState.ENGAGING
 	if dist > engage_reach(def):
 		u.ai_reason = "out of range"
@@ -1570,6 +1606,10 @@ func _engage(u: UnitState) -> void:
 ## Returns true when it handled the soldier this frame (fired, waited or held).
 func _fire_mission(u: UnitState, def: WeaponDef, now: float) -> bool:
 	var sq := sim.state.squad_of(u.id)
+	# QOL-01: a STEALTH squad that has not been found fires no missions either.
+	if _stealth_holds(u, sq, _flat(u.position, u.fire_at), now):
+		u.ai_reason = "stealth: no fire mission"
+		return false
 	if sq and sq.roe == SquadState.Roe.HOLD_FIRE:
 		return false
 	var full := float(def.magazine_size + def.reserve_start)
@@ -1762,6 +1802,8 @@ func _support_weapons(u: UnitState, t: UnitState, now: float) -> bool:
 		return false
 	var sq := sim.state.squad_of(u.id)
 	if sq and sq.roe == SquadState.Roe.HOLD_FIRE:
+		return false
+	if t and _stealth_holds(u, sq, _flat(u.position, t.position), now):
 		return false
 	if u.suppression_at(now) >= 0.85:
 		return false

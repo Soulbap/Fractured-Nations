@@ -5,12 +5,17 @@ class_name FNUnitRow
 extends PanelContainer
 
 signal activated(shift: bool)
+## A double click (QOL-01: the roster frames the camera on the unit).
+signal focused
 
 var emblem: FNUnitEmblem
 var callsign: Label
 var strength: Label
 var status: FNStatusIndicator
 var flag: TextureRect
+## QOL-01: an optional mode icon before the flag (the squad's behaviour).
+var mode_icon: TextureRect
+var _mode := &""
 var selected := false:
 	set(v):
 		if v != selected:
@@ -40,6 +45,10 @@ func _init() -> void:
 	status = FNStatusIndicator.new(FNUI.ICON_S, FNUI.LABEL)
 	status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	h.add_child(status)
+	mode_icon = FNIcons.rect(&"beh_aware", FNUI.ICON_S, FNUI.INK_2)
+	mode_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	mode_icon.visible = false
+	h.add_child(mode_icon)
 	flag = FNIcons.rect(&"roe_hold", FNUI.ICON_S, FNUI.ARMED)
 	flag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	flag.visible = false
@@ -56,7 +65,18 @@ func _init() -> void:
 func _gui_input(ev: InputEvent) -> void:
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
 		activated.emit(ev.shift_pressed)
+		if ev.double_click:
+			focused.emit()
 		accept_event()
+
+
+## Shows icon (&"" hides it) in tint.
+func set_mode(icon: StringName, tint: Color) -> void:
+	mode_icon.visible = icon != &""
+	if icon != &"" and icon != _mode:
+		mode_icon.texture = FNIcons.texture(icon, FNUI.ICON_S)
+	_mode = icon
+	mode_icon.modulate = tint
 
 
 ## Strength as "alive/total", coloured by the share still fighting.

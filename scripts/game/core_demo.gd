@@ -448,6 +448,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--asset-integration-test" in args:
 		_gameplay_selftest = AssetIntegrationSelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)
+	elif "--qol01-test" in args:
+		_gameplay_selftest = Qol01SelfTest.new(self)
+		_gameplay_selftest.run.call_deferred(args)
 	elif "--combat01-test" in args:
 		_gameplay_selftest = Combat01SelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)
@@ -763,6 +766,8 @@ func toggle_map() -> void:
 	rts.set_active(false)
 	rts_camera.set_process(false)
 	rts_camera.set_process_unhandled_input(false)
+	# QOL-01: the map opens with the tactical view's squads selected, and hands its selection back when it closes.
+	strategic_map.select_squads_from(rts.selected_squads())
 	strategic_map.visible = true
 	if sim.state.war.active:
 		sim.state.war.guide["map"] = true  # GAMEPLAY-04A: the introduction notes that the map was used
@@ -770,6 +775,9 @@ func toggle_map() -> void:
 
 
 func _on_map_closed() -> void:
+	var sel := strategic_map.selected_squads.duplicate()
+	if not sel.is_empty() and sel != rts.selected_squads():
+		rts.select_squads(sel)
 	if game.mode == GameController.Mode.RTS:
 		rts_camera.set_active(true)
 		rts.set_active(true)

@@ -159,6 +159,16 @@ var born_at := 0.0
 var recover_site := -1
 var recover_why := ""
 var home_pos := Vector3.INF
+## QOL-01: the behaviour mode the owner chose (SquadBehaviour SAFE / AWARE / COMBAT / STEALTH; saved). Reactions never
+## change it; what the squad does right now is SquadBehaviour.effective.
+var behaviour := SquadBehaviour.AWARE
+## QOL-01: the squad's own tactic interrupted a move (of the player); it resumes the move (prev_order / prev_target, the
+## move's final goal) when the contact is over. interrupts counts them for the current order, interrupt_until is the end of
+## the cooldown after a resume, prev_pace the move's pace. Saved.
+var interrupted := false
+var interrupts := 0
+var interrupt_until := 0.0
+var prev_pace := -1
 
 
 func tactic_name() -> String:
@@ -219,6 +229,7 @@ func to_dict() -> Dictionary:
 		"tactic_replans": tactic_replans, "tactic_leg": tactic_leg, "op_role": op_role, "defence_role": defence_role, "tactic_ext": tactic_ext, "recover_until": recover_until, "tactic_op": tactic_op, "tactic_leg_since": tactic_leg_since, "formation_auto": formation_auto, "tactic_cooldown_until": tactic_cooldown_until, "tactic_commit_until": tactic_commit_until,
 		"prev_order": prev_order, "prev_target": prev_target, "prev_yaw": prev_yaw, "tactic_why": tactic_why, "tactic_rejected": tactic_rejected,
 		"origin": origin, "born_at": born_at, "recover_site": recover_site, "recover_why": recover_why, "home_pos": home_pos,
+		"behaviour": behaviour, "interrupted": interrupted, "interrupts": interrupts, "interrupt_until": interrupt_until, "prev_pace": prev_pace,
 	}
 
 
@@ -292,4 +303,13 @@ static func from_dict(d: Dictionary) -> SquadState:
 	s.recover_site = d.get("recover_site", -1)
 	s.recover_why = d.get("recover_why", "")
 	s.home_pos = d.get("home_pos", Vector3.INF)
+	s.behaviour = int(d.get("behaviour", SquadBehaviour.AWARE))
+	s.interrupted = bool(d.get("interrupted", false))
+	s.interrupts = int(d.get("interrupts", 0))
+	s.interrupt_until = float(d.get("interrupt_until", 0.0))
+	s.prev_pace = int(d.get("prev_pace", -1))
 	return s
+
+
+func behaviour_name() -> String:
+	return SquadBehaviour.name_of(behaviour)

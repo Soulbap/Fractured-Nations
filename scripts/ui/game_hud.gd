@@ -395,17 +395,36 @@ func _on_war_event(e: Dictionary) -> void:
 		"op_failed":
 			col = FNUI.DANGER
 			icon = &"blocked"
+		# QOL-01 squad notices (SquadReports) and vehicle failures.
+		"squad_under_attack", "squad_interrupted":
+			col = FNUI.ALERT
+			icon = &"under_fire"
+		"squad_casualties":
+			col = FNUI.DANGER
+			icon = &"soldiers"
+		"squad_blocked", "vehicle":
+			col = FNUI.DANGER
+			icon = &"blocked"
+		"squad_withdrawing", "squad_pressing_on":
+			col = FNUI.WARN
+			icon = &"withdraw" if e.kind == "squad_withdrawing" else &"moving"
+		"squad_arrived", "squad_resumed":
+			col = FNUI.OK
+			icon = &"check" if e.kind == "squad_arrived" else &"moving"
 	var l := PanelContainer.new()
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var epos: Vector3 = e.get("pos", Vector3.INF)
-	if epos.is_finite() and e.kind in ["threat", "attack", "contested", "captured", "base", "garrison"]:
-		# GAMEPLAY-01D: the warning's place - a click moves the tactical camera there.
+	var about := int(e.get("squad", -1)) >= 0 or int(e.get("unit", -1)) >= 0
+	if (epos.is_finite() and e.kind in ["threat", "attack", "contested", "captured", "base", "garrison"]) or about:
+		# GAMEPLAY-01D: the warning's place - a click moves the tactical camera there. QOL-01: a notice about a squad or a
+		# vehicle selects it and frames it where it is now.
 		l.mouse_filter = Control.MOUSE_FILTER_STOP
 		l.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		l.tooltip_text = "Click: go there"
+		l.tooltip_text = "Click: select and show" if about else "Click: go there"
+		var ev_copy := e.duplicate()
 		l.gui_input.connect(func(ev: InputEvent) -> void:
-			if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT and game and game.rts_camera:
-				game.rts_camera.frame(epos, game.rts_camera.yaw, 120.0))
+			if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+				show_event(ev_copy))
 	var sb := FNUI.panel_style(FNUI.S3)
 	sb.border_width_left = 2
 	sb.border_color = col
@@ -424,6 +443,28 @@ func _on_war_event(e: Dictionary) -> void:
 	while _notes.size() > 4:
 		_notes[0][0].queue_free()
 		_notes.pop_front()
+
+
+## QOL-01: what a click on a notification does - the squad or vehicle it is about is selected and framed where it is now
+## (the tactical view first, from first person or driving); one that no longer exists, or a place, frames the event's place.
+## Returns true when it selected something.
+func show_event(e: Dictionary) -> bool:
+	if game == null or rts == null:
+		return false
+	if game.mode != GameController.Mode.RTS:
+		game.enter_rts()
+	var sid := int(e.get("squad", -1))
+	var uid := int(e.get("unit", -1))
+	if sid >= 0 and rts.show_squad(sid):
+		return true
+	var u := sim.state.get_unit(uid) if uid >= 0 else null
+	if u and u.alive:
+		rts.select([uid])
+		return rts.focus_selection()
+	var epos: Vector3 = e.get("pos", Vector3.INF)
+	if epos.is_finite() and game.rts_camera:
+		game.rts_camera.frame(epos, game.rts_camera.yaw, 120.0)
+	return false
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -474,10 +515,11 @@ func _process(_delta: float) -> void:
 	var floor_y := vp.y - 12.0
 	squad_panel.max_bottom = vp.y - FNUI.EDGE
 	if tactical_panel.visible:
-		tactical_panel.position = Vector2(maxf(roundf((vp.x - tactical_panel.size.x) * 0.5), 8.0), vp.y - tactical_panel.size.y - FNUI.EDGE)
-		floor_y = tactical_panel.position.y - 8.0
+		# QOL-01: bottom right (the compact command grid), clear of the roster and the message box on the left.
+		tactical_panel.position = Vector2(maxf(vp.x - tactical_panel.size.x - FNUI.EDGE, 8.0), vp.y - tactical_panel.size.y - FNUI.EDGE)
 		if tactical_panel.position.x < squad_panel.position.x + squad_panel.size.x + 12.0:
 			squad_panel.max_bottom = tactical_panel.position.y - 12.0
+			floor_y = tactical_panel.position.y - 8.0
 	elif construction and construction.active and construction.panel._context.visible:
 		floor_y = construction.panel._context.position.y - 8.0
 	elif _hints.visible:

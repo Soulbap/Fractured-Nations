@@ -38,7 +38,28 @@ var weight := PackedFloat32Array()
 var road := PackedByteArray()
 ## 1 = water (lake / river)
 var water := PackedByteArray()
+## QOL-01: forest density of the cell 0..255 (the world's vegetation.png red channel, area-averaged: the map the trees were
+## scattered from), the concealment a route through it offers. Zero where the world has no vegetation map.
+var cover := PackedByteArray()
 var astar := AStarGrid2D.new()
+## QOL-01 behaviour route profiles (SquadBehaviour.ROUTE): the same grid, solid cells and bridges, other weights - per metre
+## a road cell costs `road`, any other cell its slope weight x (open + forest x density), so "stealth" prefers woods and
+## avoids roads, "safe" keeps to roads. "aware" is the ordinary grid (astar). threat: the extra cost of a cell in the
+## believed enemy's area (StrategicInfluence, per unit of believed strength x confidence, capped at 4); detour: the longest a
+## profile route may be against the ordinary route of the same request before the ordinary one is taken instead.
+const PROFILES := {
+	"safe": {"road": 0.32, "open": 1.0, "forest": 0.35, "threat": 0.6, "detour": 1.2},
+	"aware": {"threat": 1.5, "detour": 1.25},
+	"combat": {"road": 0.95, "open": 1.25, "forest": -0.5, "threat": 3.0, "detour": 1.4},
+	"stealth": {"road": 1.6, "open": 1.6, "forest": -0.95, "threat": 4.0, "detour": 1.75},
+}
+## Profile grids built on first use (name -> AStarGrid2D), their build times (ms) and route statistics.
+var _profile_grids := {}
+var profile_build_ms := {}
+var profile_routes := {}
+var profile_fallbacks := 0
+## The last profiled route's facts (tests, the report): profile, lengths, fallback reason.
+var last_profile := {}
 var ready := false
 var build_ms := 0.0
 var loaded_from_cache := false
@@ -86,6 +107,10 @@ func setup(terrain: Terrain3D, half: float, src: String, cache_path: String, p_n
 	if not _load_cache(cache_path):
 		_build(terrain, src)
 		_save_cache(cache_path)
+	elif cover.size() != size.x * size.y:
+		# QOL-01: a grid cached before the cover layer existed: add it, keep the rest.
+		_mark_cover(src)
+		_save_cache(cache_path)
 	_base_solid = solid.duplicate()
 	_base_weight = weight.duplicate()
 	_base_road = road.duplicate()
@@ -105,7 +130,7 @@ func setup(terrain: Terrain3D, half: float, src: String, cache_path: String, p_n
 ## Times and sizes of the files the grid is derived from.
 static func fingerprint(src: String) -> String:
 	var parts := []
-	var paths: Array = (["roads.json", "water.json", "height.r32"] as Array).map(func(f: String) -> String: return src + f)
+	var paths: Array = (["roads.json", "water.json", "height.r32", "vegetation.png"] as Array).map(func(f: String) -> String: return src + f)
 	# WORLD-SETTLEMENT-02: the settlement layer changes roads and heights.
 	paths.append_array(Array(SettlementLayer.files(src.trim_suffix("/").get_base_dir().get_file())))
 	for path: String in paths:
@@ -190,6 +215,124 @@ func _sync_point(c: Vector2i) -> void:
 	astar.set_point_solid(c, solid[i] == 1)
 	if solid[i] == 0:
 		astar.set_point_weight_scale(c, weight[i])
+	for pname: String in _profile_grids:
+		var g: AStarGrid2D = _profile_grids[pname]
+		g.set_point_solid(c, solid[i] == 1)
+		if solid[i] == 0:
+			g.set_point_weight_scale(c, _profile_weight(PROFILES[pname], i))
+
+
+# --- Behaviour profiles (QOL-01) ------------------------------------------------------
+
+## Weight of cell i in a profile grid: roads at the profile's road cost, other ground its slope weight x (open + forest x
+## density). Never below 0.25 (the octile heuristic stays useful).
+func _profile_weight(p: Dictionary, i: int) -> float:
+	if road[i] == 1:
+		return maxf(float(p.road), 0.25)
+	var f := float(cover[i]) / 255.0 if i < cover.size() else 0.0
+	return maxf(weight[i] * (float(p.open) + float(p.forest) * f), 0.25)
+
+
+## The A* grid of a profile ("aware" / unknown: the ordinary grid), built on first use (a pass over the grid, ~0.1 s).
+func profile_grid(pname: String) -> AStarGrid2D:
+	if pname == "" or pname == "aware" or not PROFILES.has(pname) or not PROFILES[pname].has("road"):
+		return astar
+	if _profile_grids.has(pname):
+		return _profile_grids[pname]
+	var t0 := Time.get_ticks_usec()
+	var p: Dictionary = PROFILES[pname]
+	var g := AStarGrid2D.new()
+	g.region = astar.region
+	g.cell_size = astar.cell_size
+	g.diagonal_mode = astar.diagonal_mode
+	g.default_compute_heuristic = astar.default_compute_heuristic
+	g.default_estimate_heuristic = astar.default_estimate_heuristic
+	g.update()
+	for z in size.y:
+		for x in size.x:
+			var i := z * size.x + x
+			if solid[i]:
+				g.set_point_solid(Vector2i(x, z), true)
+			else:
+				g.set_point_weight_scale(Vector2i(x, z), _profile_weight(p, i))
+	_profile_grids[pname] = g
+	profile_build_ms[pname] = snappedf((Time.get_ticks_usec() - t0) / 1000.0, 0.1)
+	return g
+
+
+## A route for a behaviour profile: the profile's grid, cells in the believed enemy's area (`threat`: StrategicInfluence
+## cells {Vector2i: strength}) made dearer for this one search, then the detour limit against the ordinary route (taken
+## instead when the profile route is too long, or found none). Facts in last_profile.
+func route_profiled(from: Vector3, to: Vector3, terrain: Terrain3D, pname: String, threat := {}) -> PackedVector3Array:
+	var p: Dictionary = PROFILES.get(pname, PROFILES.aware)
+	var g := profile_grid(pname)
+	var touched := _apply_threat(g, from, to, threat, float(p.threat))
+	var r := route(from, to, terrain, g)
+	for i: int in touched:
+		_restore_cell(g, pname, i)
+	var info := {"profile": pname, "threat_cells": touched.size(), "length": snappedf(route_length(r), 0.1), "fallback": ""}
+	if g != astar or not touched.is_empty():
+		var base := route(from, to, terrain)
+		var lb := route_length(base)
+		info["base_length"] = snappedf(lb, 0.1)
+		if r.size() < 2 and base.size() >= 2:
+			info.fallback = "no %s route: the ordinary one" % pname
+		elif base.size() >= 2 and route_length(r) > lb * float(p.detour) + 100.0:
+			info.fallback = "%s route %.0f m against %.0f m (more than %.2fx): the ordinary one" % [pname, route_length(r), lb, float(p.detour)]
+		if info.fallback != "":
+			profile_fallbacks += 1
+			r = base
+			info.length = snappedf(lb, 0.1)
+	profile_routes[pname] = int(profile_routes.get(pname, 0)) + 1
+	last_profile = info
+	return r
+
+
+## Makes the cells under the believed threat dearer in grid g (only where the request can go: its box grown by 2 km).
+## Returns the cell indices changed.
+func _apply_threat(g: AStarGrid2D, from: Vector3, to: Vector3, threat: Dictionary, k: float) -> PackedInt32Array:
+	var out := PackedInt32Array()
+	if threat.is_empty() or k <= 0.0:
+		return out
+	var box := Rect2(Vector2(from.x, from.z), Vector2.ZERO).expand(Vector2(to.x, to.z)).grow(2000.0)
+	var per := int(StrategicInfluence.CELL / CELL)
+	# The cautious profiles (threat >= 3: combat, stealth) also keep off the ring of influence cells round the threat, at a
+	# third of the cost: a route that only leaves the 250 m cell still passes within rifle range of it.
+	var cells := {}
+	for tc: Vector2i in threat:
+		var s0 := minf(float(threat[tc]), 4.0)
+		cells[tc] = maxf(float(cells.get(tc, 0.0)), s0)
+		if k >= 3.0:
+			for dz in [-1, 0, 1]:
+				for dx in [-1, 0, 1]:
+					var nb := tc + Vector2i(dx, dz)
+					if nb != tc and not threat.has(nb):
+						cells[nb] = maxf(float(cells.get(nb, 0.0)), s0 / 3.0)
+	for tc: Vector2i in cells:
+		var s := float(cells[tc])
+		if s <= 0.05:
+			continue
+		var wx := tc.x * StrategicInfluence.CELL
+		var wz := tc.y * StrategicInfluence.CELL
+		if not box.intersects(Rect2(wx, wz, StrategicInfluence.CELL, StrategicInfluence.CELL)):
+			continue
+		var c0 := world_to_cell(Vector3(wx + 1.0, 0, wz + 1.0))
+		for dz in per:
+			for dx in per:
+				var c := c0 + Vector2i(dx, dz)
+				if not _in(c):
+					continue
+				var i := c.y * size.x + c.x
+				if solid[i] == 1:
+					continue
+				g.set_point_weight_scale(c, g.get_point_weight_scale(c) * (1.0 + k * s))
+				out.append(i)
+	return out
+
+
+func _restore_cell(g: AStarGrid2D, pname: String, i: int) -> void:
+	var c := Vector2i(i % size.x, i / size.x)
+	g.set_point_weight_scale(c, weight[i] if g == astar else _profile_weight(PROFILES[pname], i))
 
 
 func _setup_astar() -> void:
@@ -244,6 +387,25 @@ func _build(terrain: Terrain3D, src: String) -> void:
 				weight[i] = 1.0 + 2.5 * s * s
 	_mark_water(src)
 	_mark_roads()
+	_mark_cover(src)
+
+
+## QOL-01: forest density per cell from the world's vegetation map (red channel), averaged over the cell by a mipmapped
+## downscale to the grid size (image rows run along +z from -half like the grid).
+func _mark_cover(src: String) -> void:
+	cover.resize(size.x * size.y)
+	cover.fill(0)
+	var path := src + "vegetation.png"
+	if not FileAccess.file_exists(path):
+		return
+	var img := Image.load_from_file(path)
+	if img == null or img.is_empty():
+		return
+	img.convert(Image.FORMAT_RGBA8)
+	img.resize(size.x, size.y, Image.INTERPOLATE_TRILINEAR)
+	var data := img.get_data()
+	for i in size.x * size.y:
+		cover[i] = data[i * 4]
 
 
 func _mark_water(src: String) -> void:
@@ -365,6 +527,7 @@ func _load_cache(path: String) -> bool:
 	weight = d.weight
 	road = d.road
 	water = d.water
+	cover = d.get("cover", PackedByteArray())
 	loaded_from_cache = true
 	return true
 
@@ -373,7 +536,7 @@ func _save_cache(path: String) -> void:
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f:
-		f.store_var({"version": VERSION, "size": size, "fingerprint": _fingerprint, "solid": solid, "weight": weight, "road": road, "water": water})
+		f.store_var({"version": VERSION, "size": size, "fingerprint": _fingerprint, "solid": solid, "weight": weight, "road": road, "water": water, "cover": cover})
 		f.close()
 
 
@@ -429,7 +592,8 @@ func nearest_passable(p: Vector3, max_r := 12) -> Vector2i:
 var native_astar_max_ms := 0.0
 
 
-func route(from: Vector3, to: Vector3, terrain: Terrain3D) -> PackedVector3Array:
+## QOL-01: grid - a behaviour profile's grid (profile_grid), else the ordinary one.
+func route(from: Vector3, to: Vector3, terrain: Terrain3D, grid: AStarGrid2D = null) -> PackedVector3Array:
 	var t0 := Time.get_ticks_usec()
 	var out := PackedVector3Array()
 	var a := nearest_passable(from)
@@ -438,7 +602,7 @@ func route(from: Vector3, to: Vector3, terrain: Terrain3D) -> PackedVector3Array
 		_fail_count(t0, from, to, "no passable endpoint")
 		return out
 	var astar_started := Time.get_ticks_usec()
-	var cells := astar.get_id_path(a, b)
+	var cells := (grid if grid != null else astar).get_id_path(a, b)
 	native_astar_max_ms = maxf(native_astar_max_ms, (Time.get_ticks_usec() - astar_started) / 1000.0)
 	if cells.is_empty():
 		_fail_count(t0, from, to, "disconnected passable cells")
@@ -598,17 +762,24 @@ class Runner:
 	var from: Vector3
 	var to: Vector3
 	var terrain: Terrain3D
+	## QOL-01: behaviour profile ("" = the ordinary route) and the believed threat cells it avoids.
+	var profile := ""
+	var threat := {}
 	var result := {}
 
-	func _init(p_routes: StrategicRoutes, p_from: Vector3, p_to: Vector3, p_terrain: Terrain3D) -> void:
+	func _init(p_routes: StrategicRoutes, p_from: Vector3, p_to: Vector3, p_terrain: Terrain3D, p_profile := "", p_threat := {}) -> void:
 		routes = p_routes
 		from = p_from
 		to = p_to
 		terrain = p_terrain
+		profile = p_profile
+		threat = p_threat
 
 	func step(_deadline_us: int) -> bool:
-		var r := routes.route(from, to, terrain)
+		var r := routes.route(from, to, terrain) if profile == "" else routes.route_profiled(from, to, terrain, profile, threat)
 		result = {"ok": r.size() >= 2, "route": r, "reason": "" if r.size() >= 2 else String(routes.last_failure.get("reason", "no route"))}
+		if profile != "":
+			result["profile"] = routes.last_profile.duplicate()
 		return true
 
 	func reset() -> void:
@@ -616,7 +787,9 @@ class Runner:
 
 
 ## The dedupe key of a route search: requests from the same 50 m cell to the same 50 m cell are one search.
-func job_key(from: Vector3, to: Vector3) -> String:
+## QOL-01: tag - a behaviour profile (and the threat picture's revision) the route was planned for: a stealth route is not
+## shared with an ordinary one, nor reused after the believed threat moved.
+func job_key(from: Vector3, to: Vector3, tag := "") -> String:
 	var a := world_to_cell(from)
 	var b := world_to_cell(to)
-	return "inf:%d,%d>%d,%d" % [a.x, a.y, b.x, b.y]
+	return "inf:%d,%d>%d,%d%s" % [a.x, a.y, b.x, b.y, (":" + tag) if tag != "" else ""]

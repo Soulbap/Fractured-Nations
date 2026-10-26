@@ -1,10 +1,11 @@
-## The tactical view's selection and command panel (AI-SQUAD-01, UI-01C): one integrated surface at the
-## bottom centre, shown only while at least one squad is selected.
+## The tactical view's selection and command panel (AI-SQUAD-01, UI-01C, QOL-01): one compact surface at the
+## bottom right, shown only while at least one squad is selected.
 ##
 ## Left: the selection - emblem, callsign (or the number of squads), soldiers, what it is doing now,
 ## health / ammunition / suppression of the living members, formation and rules of engagement.
-## Right: the orders that exist in the game, grouped MOVE / COMBAT / DEFENCE / SQUAD, each with its
-## icon and hotkey. A tactic button arms the order (the next left click gives its target; Esc or a
+## Right: the orders that exist in the game as a grid of icon tiles (hotkey in the corner, name and help in the tooltip),
+## one row each for MOVE / COMBAT / SQUAD and the behaviour MODE (QOL-01: one long bar of labelled buttons left the
+## panel wide and half empty). A tactic button arms the order (the next left click gives its target; Esc or a
 ## right click cancels); the hotkeys give the same order at the cursor at once. Every button calls the
 ## RTSController function its key calls, so what the player commands is what the squads do on their
 ## own. The footer says what is armed, whether the last order was accepted and, if not, why.
@@ -26,6 +27,10 @@ var _settings: Label
 var _support_text := ""
 var _feedback: FNStatusIndicator
 var _timer := 0.0
+## QOL-01: the order line under the status (SquadControl.describe_order) and the BEHAVIOUR group (its aside says when the
+## situation makes the squad act in another mode).
+var _order: Label
+var _mode_note: Label
 var _fb_text := ""
 var _fb_until := 0.0
 
@@ -37,23 +42,31 @@ const FORMATION := -5
 const ROE := -6
 ## GAMEPLAY-04D: open the equipment screen for the selected squad.
 const EQUIP := -7
+## QOL-01: behaviour mode buttons are BEHAVIOUR - mode (SquadBehaviour SAFE..STEALTH -> -20..-23).
+const BEHAVIOUR := -20
+## QOL-01: the rows of the command grid, in order.
+const ROWS := ["MOVE", "COMBAT", "SQUAD", "MODE"]
 
 ## [group, key, icon, title, hotkey, tooltip]
 const ENTRIES := [
-	["MOVE", SquadState.Tactic.BOUND, &"bound", "Bound", "Shift+RMB", "BOUND\nMove in bounds: one fire team covers from where it stands while the other moves, then they swap. Slower than a move, safer near the enemy. Shift+right click on the ground, or arm and click."],
+	["MOVE", SquadState.Tactic.BOUND, &"bound", "Bound", "", "BOUND\nMove in bounds: one fire team covers from where it stands while the other moves, then they swap. Slower than a move, safer near the enemy. Shift+right click on the ground, or arm and click."],
 	["MOVE", FOLLOW, &"follow", "Follow", "F", "FOLLOW\nKeep behind a soldier or squad (click the one to follow) until given another order."],
 	["MOVE", HOLD, &"hold", "Hold", "H", "HOLD\nStop where the squad stands and stay there; soldiers still return fire and take cover nearby. Cancels the current order or tactic."],
 	["MOVE", REGROUP, &"regroup", "Regroup", "G", "REGROUP\nReassemble on the leader once it is calm (Shift+G: at the cursor). Use after a fight has scattered the squad."],
 	["COMBAT", SquadState.Tactic.ASSAULT, &"assault", "Assault", "Z", "ASSAULT\nMove toward the target using coordinated fire and movement: one fire team suppresses while the other advances, then the squad clears and occupies the position. Z at the cursor, or arm and click."],
 	["COMBAT", SquadState.Tactic.SUPPRESS, &"suppress", "Suppress", "K", "SUPPRESS\nPin the area with fire from a covered post that has a line to it; enemies there keep their heads down and shoot worse. Uses ammunition steadily. K at the cursor, or arm and click."],
 	["COMBAT", SquadState.Tactic.FLANK, &"flank", "Flank", "L", "FLANK\nOne fire team keeps the position pinned while the other goes round it by a covered route and attacks from the side. L at the cursor, or arm and click."],
-	["DEFENCE", SquadState.Tactic.DEFEND, &"defend", "Defend", "J", "DEFEND\nHold the selected area: the squad takes firing posts, fortification slots first, facing the known threat, and falls back a line if it must. J at the cursor, or arm and click."],
-	["DEFENCE", SquadState.Tactic.WITHDRAW, &"withdraw", "Withdraw", "Bksp", "WITHDRAW\nBreak contact toward the spot (or the nearest safe place): one team covers while the other pulls back. Backspace at the cursor, or arm and click."],
-	["DEFENCE", RTSController.GARRISON, &"base", "Garrison", "O", "GARRISON\nAssign the squad to one of your bases (click it): it mans towers, positions and walls and defends the base until given another order."],
-	["SQUAD", FORMATION, &"formation", "Line", "V", "FORMATION\nV: line / column. Shift+V cycles line, column, wedge, staggered, dispersed and auto (auto spreads out in contact). [ and ] change the spacing."],
-	["SQUAD", ROE, &"roe_free", "Fire free", "Y", "RULES OF ENGAGEMENT\nWeapons free: soldiers engage enemies they see. Hold fire: they observe and report, and only fire when hit."],
-	["SUPPLY", RTSController.REARM, &"cargo", "Rearm", "R", "REARM\nSearch nearby equipment and ammunition (caches, stashes, the fallen, your base stores within 30 m), refill the soldiers and carry spare weapons in the squad cargo. Hand found weapons in at a base with a Supply Depot to register them. R at the cursor, or arm and click."],
-	["SUPPLY", EQUIP, &"equipment", "Equip", "", "EQUIP\nChange soldiers' roles and weapons: from the squad cargo anywhere, from the armoury or procured at a base."],
+	["COMBAT", SquadState.Tactic.DEFEND, &"defend", "Defend", "J", "DEFEND\nHold the selected area: the squad takes firing posts, fortification slots first, facing the known threat, and falls back a line if it must. J at the cursor, or arm and click."],
+	["COMBAT", SquadState.Tactic.WITHDRAW, &"withdraw", "Withdraw", "BS", "WITHDRAW\nBreak contact toward the spot (or the nearest safe place): one team covers while the other pulls back. Backspace at the cursor, or arm and click."],
+	["SQUAD", RTSController.GARRISON, &"garrison", "Garrison", "O", "GARRISON\nAssign the squad to one of your bases (click it): it mans towers, positions and walls and defends the base until given another order."],
+	["SQUAD", RTSController.REARM, &"rearm", "Rearm", "R", "REARM\nSearch nearby equipment and ammunition (caches, stashes, the fallen, your base stores within 30 m), refill the soldiers and carry spare weapons in the squad cargo. Hand found weapons in at a base with a Supply Depot to register them. R at the cursor, or arm and click."],
+	["SQUAD", EQUIP, &"equipment", "Equip", "", "EQUIP\nChange soldiers' roles and weapons: from the squad cargo anywhere, from the armoury or procured at a base."],
+	["SQUAD", FORMATION, &"formation", "Form", "V", "FORMATION\nV: line / column. Shift+V cycles line, column, wedge, staggered, dispersed and auto (auto spreads out in contact). [ and ] change the spacing."],
+	["SQUAD", ROE, &"roe_free", "Fire", "Y", "RULES OF ENGAGEMENT\nWeapons free: soldiers engage enemies they see. Hold fire: they observe and report, and only fire when hit."],
+	["MODE", BEHAVIOUR - 0, &"beh_safe", "Safe", "", SquadBehaviour.HINTS[0]],
+	["MODE", BEHAVIOUR - 1, &"beh_aware", "Aware", "", SquadBehaviour.HINTS[1]],
+	["MODE", BEHAVIOUR - 2, &"beh_combat", "Combat", "", SquadBehaviour.HINTS[2]],
+	["MODE", BEHAVIOUR - 3, &"beh_stealth", "Stealth", "", SquadBehaviour.HINTS[3]],
 ]
 const TACTICS := [SquadState.Tactic.BOUND, SquadState.Tactic.ASSAULT, SquadState.Tactic.SUPPRESS, SquadState.Tactic.FLANK,
 	SquadState.Tactic.DEFEND, SquadState.Tactic.WITHDRAW]
@@ -99,7 +112,7 @@ func _ready() -> void:
 func _build_summary() -> Control:
 	var v := VBoxContainer.new()
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.custom_minimum_size = Vector2(184, 0)
+	v.custom_minimum_size = Vector2(200, 0)
 	v.add_theme_constant_override("separation", FNUI.S3 - 1)
 	var head := HBoxContainer.new()
 	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -122,6 +135,11 @@ func _build_summary() -> Control:
 	names.add_child(_subtitle)
 	_status = FNStatusIndicator.new(FNUI.ICON_M, FNUI.BODY)
 	v.add_child(_status)
+	_order = FNUI.label("", FNUI.CAPTION + 1, FNUI.INK_2, "body")
+	_order.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_order.max_lines_visible = 2
+	_order.custom_minimum_size = Vector2(200, 0)
+	v.add_child(_order)
 	_health = FNMeter.new("Health", FNUI.OK)
 	_ammo = FNMeter.new("Ammunition", FNUI.INFO)
 	_supp = FNMeter.new("Suppression", FNUI.ALERT)
@@ -136,20 +154,27 @@ func _build_commands() -> Control:
 	var v := VBoxContainer.new()
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
-	var groups := HBoxContainer.new()
-	groups.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	groups.add_theme_constant_override("separation", FNUI.S4 + 2)
-	v.add_child(groups)
-	var by_name := {}
+	v.add_theme_constant_override("separation", FNUI.S2)
+	var rows := {}
+	for n: String in ROWS:
+		var h := HBoxContainer.new()
+		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		h.add_theme_constant_override("separation", FNUI.S2)
+		var cap := FNUI.label(n if n != "MODE" else "MODE  X", FNUI.CAPTION - 1, FNUI.INK_3, "caps")
+		cap.custom_minimum_size = Vector2(52, 0)
+		cap.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		h.add_child(cap)
+		v.add_child(h)
+		rows[n] = h
 	for e: Array in ENTRIES:
-		if not by_name.has(e[0]):
-			by_name[e[0]] = FNCommandGroup.new(e[0])
-			groups.add_child(by_name[e[0]])
 		var key: int = e[1]
-		var b := FNCommandButton.new(e[2], e[3], e[4], e[5])
+		var b := FNCommandButton.new(e[2], e[3], e[4], e[5], true)
 		b.pressed.connect(_on_button.bind(key))
-		by_name[e[0]].add(b)
+		(rows[e[0]] as HBoxContainer).add_child(b)
 		_buttons[key] = b
+	_mode_note = FNUI.label("", FNUI.CAPTION - 1, FNUI.ALERT, "caps")
+	_mode_note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	(rows["MODE"] as HBoxContainer).add_child(_mode_note)
 	return v
 
 
@@ -169,6 +194,8 @@ func _on_button(key: int) -> void:
 			var hud := get_parent() as GameHUD
 			if hud and hud.equipment:
 				hud.equipment.open_for(rts.selected_squads()[0] if not rts.selected_squads().is_empty() else -1)
+		_ when key <= BEHAVIOUR and key > BEHAVIOUR - 4:
+			rts.set_behaviour(BEHAVIOUR - key)
 		_:
 			rts.arm_tactic(key)
 	_timer = 0.0
@@ -191,6 +218,7 @@ func _process(delta: float) -> void:
 		return
 	_refresh_summary(squads)
 	_refresh_buttons(squads)
+	_refresh_order(squads)
 	_refresh_feedback()
 	size = Vector2.ZERO
 
@@ -284,6 +312,26 @@ func _refresh_summary(squads: Array[SquadState]) -> void:
 " + _support_text
 
 
+## QOL-01: what the order is doing in words (the first squad's), and the mode the situation makes it act in.
+func _refresh_order(squads: Array[SquadState]) -> void:
+	var first := squads[0]
+	var d := sim.squads.describe_order(first)
+	var text: String = d.text
+	if squads.size() > 1:
+		text = "%s: %s (+%d)" % [first.squad_name, text, squads.size() - 1]
+	_order.text = text
+	_order.tooltip_text = text
+	var col: Color = FNUI.INK_2
+	match String(d.state):
+		"interrupted":
+			col = FNUI.ALERT
+		"blocked", "route_blocked":
+			col = FNUI.DANGER
+	_order.add_theme_color_override("font_color", col)
+	var now_b := sim.tactics.behaviour_now(first)
+	_mode_note.text = ("acting %s" % SquadBehaviour.name_of(now_b)) if now_b != first.behaviour else ""
+
+
 func _refresh_buttons(squads: Array[SquadState]) -> void:
 	# Tactics need the squad on its feet: a squad with a soldier aboard a vehicle never runs one.
 	var can_tactic := false
@@ -319,9 +367,15 @@ func _refresh_buttons(squads: Array[SquadState]) -> void:
 					now = now or sq.rearm_at.is_finite()
 				EQUIP:
 					pass
+				_ when key <= BEHAVIOUR and key > BEHAVIOUR - 4:
+					now = now or sq.behaviour == BEHAVIOUR - key
 				_:
 					now = now or sq.tactic == key
 		b.current = now
+		if key <= BEHAVIOUR and key > BEHAVIOUR - 4:
+			# QOL-01: the chosen mode reads at a glance (accent icon on the selected surface), not only by its underline.
+			b.icon_rect.modulate = FNUI.ACCENT if now else FNUI.INK_2
+			b.add_theme_stylebox_override("normal", FNUI.state_style(&"selected" if now else &"normal"))
 	var first := squads[0]
 	var hold_fire := first.roe == SquadState.Roe.HOLD_FIRE
 	var roe_b: FNCommandButton = _buttons[ROE]

@@ -94,6 +94,11 @@ var replans := 0
 ## Recent decisions of all squads, newest last: {t, text}.
 var events: Array = []
 const MAX_EVENTS := 200
+## QOL-01: something the squad's owner should hear about (kind: interrupted, resumed, pressing_on, withdrawing); SquadReports
+## turns it into a notification for the player's squads.
+signal notice(sq: SquadState, kind: String, text: String)
+var interruptions := 0
+var resumes := 0
 
 const PH_SETUP := 0
 const PH_SUPPORT := 1
@@ -181,18 +186,112 @@ func _step(sq: SquadState) -> void:
 			and sq.status == SquadState.Status.DONE and sq.tactic_owner == SquadState.Owner.NONE:
 		_resume_previous(sq)
 	var a := _assess_squad(sq)
+	_track_compromise(sq, a, now)
 	if sq.formation_auto and sq.tactic == SquadState.Tactic.NONE and sq.order == SquadState.Order.MOVE:
 		_formation_for_contact(sq, a, now)
 	if sq.tactic != SquadState.Tactic.NONE:
 		_run(sq, a)
 	elif sq.garrison_base >= 0 and sq.order != SquadState.Order.REGROUP:
 		_garrison_step(sq, a, now)
+	elif autonomous and a.in_contact and now >= float(_next_eval.get(sq.id, 0.0)) and _may_interrupt(sq, a, now):
+		_next_eval[sq.id] = now + eval_s
+		_interrupt(sq, a, now)
 	elif autonomous and a.in_contact and now >= float(_next_eval.get(sq.id, 0.0)) and now >= sq.tactic_cooldown_until and _autonomy_ok(sq):
 		_next_eval[sq.id] = now + eval_s
 		_consider(sq, a)
 	elif not a.in_contact and now >= float(_next_build.get(sq.id, 0.0)):
 		_next_build[sq.id] = now + build_check_s
 		_auto_build(sq, a.center, build_auto_m)
+
+
+# --- Behaviour modes (QOL-01) --------------------------------------------------------------------
+
+## A squad was found: fired on, or its own soldiers opened fire (gunfire is heard). Kept COMPROMISED_S, for STEALTH.
+func _track_compromise(sq: SquadState, a: Dictionary, now: float) -> void:
+	if int(a.under_fire) > 0 or int(a.engaged) > 0:
+		_set_meta(sq, "compromised_until", now + SquadBehaviour.COMPROMISED_S)
+
+
+## The behaviour the squad acts on right now (SquadBehaviour.effective): its chosen mode, raised by the situation.
+func behaviour_now(sq: SquadState) -> int:
+	if sq == null:
+		return SquadBehaviour.AWARE
+	return SquadBehaviour.effective(sq.behaviour, assessment(sq), sim.state.time < float(_meta(sq, "compromised_until", -1.0)))
+
+
+## Distance from the squad to the threat it believes in (INF: none) - from the last assessment, never the world.
+func threat_dist(sq: SquadState) -> float:
+	var a := assessment(sq)
+	return float(a.get("dist", INF)) if not a.is_empty() else INF
+
+
+## A squad of the player's side (every squad outside the war): its moves may be interrupted and resumed. AI factions' squads
+## keep the behaviour they had (their moves belong to WarSim).
+func _player_squad(sq: SquadState) -> bool:
+	var war := sim.state.war
+	return not war.active or sq.faction == war.player_faction
+
+
+## A move of the player's squad meets contact: whether the squad stops to fight, by its behaviour mode (SquadBehaviour.
+## interrupts), at most MAX_INTERRUPTS times per order and, after a resume, only when pinned during the cooldown.
+func _may_interrupt(sq: SquadState, a: Dictionary, now: float) -> bool:
+	if sq.order != SquadState.Order.MOVE or sq.op_id >= 0 or sq.garrison_base >= 0 or sq.station_objective >= 0 or not _player_squad(sq):
+		return false
+	if sq.status != SquadState.Status.MOVING and not sim.squads.marching(sq):
+		return false
+	if now < sq.tactic_cooldown_until:
+		return false
+	var goal := sim.squads.move_goal(sq)
+	if not goal.is_finite() or _flat(a.center, goal) < 40.0:
+		return false
+	var pinned := int(a.pinned) * 2 >= maxi(int(a.n), 1)
+	if sq.interrupts >= SquadBehaviour.MAX_INTERRUPTS:
+		if not bool(_meta(sq, "pressing_on", false)):
+			_set_meta(sq, "pressing_on", true)
+			notice.emit(sq, "pressing_on", "%s: in contact again after %d halts - pressing on to the destination" % [sq.squad_name, sq.interrupts])
+		return false
+	if now < sq.interrupt_until and not pinned:
+		return false
+	return SquadBehaviour.interrupts(sq.behaviour, a)
+
+
+## The squad halts its move to deal with the contact: the ordinary choice (_consider: defend, suppress, withdraw - and for
+## COMBAT a bound past a contact off to the side). The move is kept as the order to resume (start() records its goal).
+func _interrupt(sq: SquadState, a: Dictionary, now: float) -> void:
+	_set_meta(sq, "interrupting", true)
+	_set_meta(sq, "pressing_on", false)
+	_consider(sq, a)
+	_set_meta(sq, "interrupting", false)
+	if sq.tactic == SquadState.Tactic.NONE:
+		return
+	interruptions += 1
+	sq.interrupts += 1
+	_set_meta(sq, "quiet_since", now)
+	if sq.tactic == SquadState.Tactic.WITHDRAW:
+		# Pulled back under fire: the move is not resumed into the same fire. The squad holds at the fallback and says so.
+		sq.interrupted = false
+		sq.prev_order = SquadState.Order.HOLD
+		notice.emit(sq, "withdrawing", "%s: move broken off - %s" % [sq.squad_name, status_tag(sq) if status_tag(sq) != "" else "withdrawing under fire"])
+		return
+	sq.interrupted = true
+	notice.emit(sq, "interrupted", "%s: contact on the move - %s; resumes when it is over" % [sq.squad_name, sq.tactic_name().to_upper()])
+
+
+## An interrupted move resumes once the squad has been out of contact for its mode's RESUME_CALM_S (a defence or
+## suppression it chose itself; a bound ends at its goal). Returns true when the tactic ended here.
+func _resume_check(sq: SquadState, a: Dictionary, now: float) -> bool:
+	if not sq.interrupted or sq.tactic_owner != SquadState.Owner.SQUAD:
+		return false
+	if not (sq.tactic in [SquadState.Tactic.DEFEND, SquadState.Tactic.SUPPRESS, SquadState.Tactic.REPOSITION]):
+		return false
+	if a.in_contact or int(a.under_fire) > 0:
+		_set_meta(sq, "quiet_since", now)
+		return false
+	var calm: float = SquadBehaviour.RESUME_CALM_S[clampi(sq.behaviour, 0, 3)]
+	if now - float(_meta(sq, "quiet_since", now)) < calm or now - sq.tactic_since < 6.0:
+		return false
+	_finish(sq, "contact over (%.0f s quiet)" % calm, SquadState.Tactic.NONE)
+	return true
 
 
 ## A squad on the move that picks its own formation spreads out when it comes into contact and
@@ -526,8 +625,11 @@ func _consider(sq: SquadState, a: Dictionary) -> void:
 					_flat(a.center, f), cause, eff, parts.size, parts.suppression, parts.ammo]})
 		else:
 			rej.append("withdraw: no fallback position clear of known enemy")
-	# SUPPRESS: a reported but unseen enemy within reach.
-	if int(a.seen_n) == 0 and threat.is_finite() and float(a.threat_conf) >= 0.4 and float(a.dist) >= 45.0 and float(a.dist) <= 230.0 \
+	# SUPPRESS: a reported but unseen enemy within reach. QOL-01: not by a STEALTH squad that has not been found.
+	var hidden := sq.behaviour == SquadBehaviour.STEALTH and behaviour_now(sq) == SquadBehaviour.STEALTH
+	if hidden:
+		rej.append("suppress: stealth - firing would give the squad away")
+	elif int(a.seen_n) == 0 and threat.is_finite() and float(a.threat_conf) >= 0.4 and float(a.dist) >= 45.0 and float(a.dist) <= 230.0 \
 			and float(a.ammo) >= 0.5 and eff >= 0.45 and a.contact != null:
 		cands.append({"t": SquadState.Tactic.SUPPRESS, "score": 0.55 + 0.1 * float(a.threat_conf), "target": threat,
 			"why": "enemy %s %.0f m away, not visible: pin it with fire" % [a.threat_src, a.dist]})
@@ -539,6 +641,18 @@ func _consider(sq: SquadState, a: Dictionary) -> void:
 		d_score += 0.1
 	cands.append({"t": SquadState.Tactic.DEFEND, "score": d_score, "target": Vector3.INF,
 		"why": "%s in contact (%s, %.0f m): take firing posts" % ["garrison" if post == 1 else "squad", a.threat_src, a.dist]})
+	# QOL-01: a COMBAT squad whose move meets a contact off to the side of its line of march bounds on to its destination
+	# (one fire team covers the other) instead of stopping; a contact ahead is fought first (defend / suppress, then resume).
+	if bool(_meta(sq, "interrupting", false)) and sq.behaviour == SquadBehaviour.COMBAT and threat.is_finite():
+		var goal := sim.squads.move_goal(sq)
+		if goal.is_finite() and eff >= 0.5 and pinned_n * 2 < int(a.n):
+			var dg := _flat(a.center, goal)
+			var off := rad_to_deg(absf(_dir_to(a.center, goal).signed_angle_to(_dir_to(a.center, threat), Vector3.UP)))
+			if dg >= 40.0 and dg <= 400.0 and off >= 60.0:
+				cands.append({"t": SquadState.Tactic.BOUND, "score": 0.72, "target": goal,
+					"why": "contact %.0f deg off the line of march: bound on to the destination (%.0f m)" % [off, dg]})
+			else:
+				rej.append("bound on: %s" % ("the contact is ahead (%.0f deg): deal with it first" % off if off < 60.0 else "destination %.0f m away" % dg))
 	# OFFENSIVE: only an operation or the player attacks; a squad on its own does not go looking.
 	if post == 2 and threat.is_finite() and eff >= 0.5:
 		cands.append({"t": SquadState.Tactic.ASSAULT, "score": 0.7, "target": threat, "why": "the operation is attacking here, enemy %.0f m away" % a.dist})
@@ -600,8 +714,11 @@ func start(sq: SquadState, tactic: int, owner: int, target := Vector3.INF, conta
 	# Commit.
 	if sq.tactic == SquadState.Tactic.NONE and sq.order != SquadState.Order.TACTIC:
 		sq.prev_order = sq.order
-		sq.prev_target = sq.order_target
+		# QOL-01: a move on a route is remembered by its final goal, not the leg it was on (the route is dropped below; resuming
+		# to the leg's waypoint stopped the squad half way).
+		sq.prev_target = sim.squads.move_goal(sq) if sq.order == SquadState.Order.MOVE else sq.order_target
 		sq.prev_yaw = sq.order_yaw
+		sq.prev_pace = sq.pace
 	elif sq.tactic != SquadState.Tactic.NONE:
 		_clear_units(sq)
 	_internal = true
@@ -837,12 +954,14 @@ func _restore(sq: SquadState) -> void:
 	_internal = true
 	if sq.order == SquadState.Order.TACTIC:
 		if prev == SquadState.Order.MOVE and target.is_finite() and sq.op_id < 0 and _flat(_centroid(_units(sq)), target) > 25.0:
-			sim.squads.order_move([sq.id], target)
+			sim.squads.order_move([sq.id], target, sq.prev_pace)
+			_resumed(sq, target)
 		else:
 			sim.squads.order_hold([sq.id])
 			_set_meta(sq, "tactic_hold", true)
 	_internal = false
 	sq.prev_order = SquadState.Order.NONE
+	sq.interrupted = false
 	sim.state.squad_changed.emit(sq)
 
 
@@ -853,8 +972,20 @@ func _resume_previous(sq: SquadState) -> void:
 	sq.prev_order = SquadState.Order.NONE
 	if prev == SquadState.Order.MOVE and target.is_finite() and sq.op_id < 0 and _flat(_centroid(_units(sq)), target) > 25.0:
 		_internal = true
-		sim.squads.order_move([sq.id], target)
+		sim.squads.order_move([sq.id], target, sq.prev_pace)
 		_internal = false
+		_resumed(sq, target)
+	sq.interrupted = false
+
+
+## QOL-01: an interrupted move goes on; it is not interrupted again by fire for a while (only by being pinned).
+func _resumed(sq: SquadState, target: Vector3) -> void:
+	if not sq.interrupted:
+		return
+	sq.interrupt_until = sim.state.time + SquadBehaviour.INTERRUPT_COOLDOWN_S
+	resumes += 1
+	_log(sq, "%s resumes its move to %s (%s)" % [sq.squad_name, _xz(target), sq.behaviour_name().to_upper()])
+	notice.emit(sq, "resumed", "%s: contact over, resuming the move (%.0f m)" % [sq.squad_name, _flat(_centroid(_units(sq)), target)])
 
 
 ## Public: ends whatever tactic the squad has (the player cancels, a refusal, a test).
@@ -871,6 +1002,10 @@ func on_order(sq: SquadState) -> void:
 	if _internal:
 		return
 	_set_meta(sq, "tactic_hold", false)
+	# QOL-01: a new order replaces any interrupted one (nothing to resume) and gets its own interruption budget.
+	sq.interrupted = false
+	sq.interrupts = 0
+	sq.interrupt_until = 0.0
 	# GAMEPLAY-01B: a new order replaces a march to a construction site.
 	_set_meta(sq, "build_goal", null)
 	# GAMEPLAY-04D: and a REARM search (SquadEquipment sets its own after the move it orders).
@@ -980,6 +1115,8 @@ func _run(sq: SquadState, a: Dictionary) -> void:
 			_finish(sq, "the operation ended", SquadState.Tactic.NONE)
 			return
 	if int(a.n) == 0:
+		return
+	if _resume_check(sq, a, now):
 		return
 	_face_all(sq, a)
 	_tend_forts(sq, a, now)
@@ -2641,10 +2778,17 @@ func _run_regroup(sq: SquadState, a: Dictionary, now: float) -> void:
 		sim.squads.order_regroup([sq.id], point if point.is_finite() else Vector3.INF)
 		_set_meta(sq, "tactic_hold", true)
 	else:
-		if sq.order == SquadState.Order.TACTIC:
+		# QOL-01: an interrupted move that is still far from its goal goes on from here.
+		var resumed := false
+		if sq.interrupted and sq.prev_order == SquadState.Order.MOVE and sq.prev_target.is_finite() and _flat(centre, sq.prev_target) > 25.0 and sq.op_id < 0:
+			_resume_previous(sq)
+			_internal = true
+			resumed = true
+		if not resumed and sq.order == SquadState.Order.TACTIC:
 			sim.squads.order_hold([sq.id])
 			_set_meta(sq, "tactic_hold", true)
 		sq.prev_order = SquadState.Order.NONE
+		sq.interrupted = false
 	_internal = false
 	finished[SquadState.Tactic.REGROUP] = int(finished.get(SquadState.Tactic.REGROUP, 0)) + 1
 

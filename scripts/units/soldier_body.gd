@@ -520,6 +520,14 @@ func _character_layers() -> void:
 	else:
 		character.aim_point = Vector3.INF
 	character.alert = unit.ai_state != UnitState.AiState.IDLE or now < unit.watch_until or now < unit.under_fire_until
+	# QOL-01: weapon readiness by the squad's behaviour - SAFE relaxed unless fighting or shot at, COMBAT / STEALTH always ready.
+	var sq := sim.state.squad_of(unit.id)
+	if sq:
+		match sim.tactics.behaviour_now(sq):
+			SquadBehaviour.SAFE:
+				character.alert = unit.ai_state == UnitState.AiState.ENGAGING or now < unit.under_fire_until
+			SquadBehaviour.COMBAT, SquadBehaviour.STEALTH:
+				character.alert = true
 	if unit.shot_counter != _seen_shots:
 		if _seen_shots >= 0:
 			character.fire()

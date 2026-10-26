@@ -143,7 +143,10 @@ func update(sim: WorldSim, u: UnitState) -> void:
 		var sn := SquadPanel.strength(sq)
 		_sq_count.text = "%d/%d" % [sn.x, sn.y]
 		_sq_status.set_status(st.icon, "Order: " + st.text, st.color)
-		_sq_lead.visible = sq.leader_id == u.id
+		# QOL-01: the squad's behaviour mode under the order (the leader line keeps its own row).
+		_sq_lead.text = ("You lead · " if sq.leader_id == u.id else "") + sq.behaviour_name().to_upper()
+		_sq_lead.add_theme_color_override("font_color", FNUI.ACCENT if sq.leader_id == u.id else FNUI.INK_2)
+		_sq_lead.visible = true
 		_squad.size = Vector2.ZERO
 		_squad.position = Vector2(vp.x - _squad.size.x - FNUI.EDGE, FNUI.EDGE)
 	# Contextual prompt under the crosshair.

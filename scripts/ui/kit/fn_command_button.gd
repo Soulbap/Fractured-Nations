@@ -35,11 +35,13 @@ func _make_custom_tooltip(for_text: String) -> Object:
 	return v
 
 
-func _init(icon_name: StringName, title: String, key: String, tip := "") -> void:
+## QOL-01 compact: a small tile for a command grid - icon over the name, the hotkey in the corner, the full help in the
+## tooltip.
+func _init(icon_name: StringName, title: String, key: String, tip := "", compact := false) -> void:
 	focus_mode = Control.FOCUS_NONE
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	tooltip_text = tip
-	custom_minimum_size = Vector2(45, 46)
+	custom_minimum_size = Vector2(46, 38) if compact else Vector2(45, 46)
 	var v := VBoxContainer.new()
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -58,7 +60,25 @@ func _init(icon_name: StringName, title: String, key: String, tip := "") -> void
 	key_label = FNUI.keycap(key, 8)
 	key_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	key_label.visible = key != ""
-	v.add_child(key_label)
+	if compact:
+		# Icon over a short name; the hotkey small in the top right corner.
+		v.offset_top = 3
+		v.offset_bottom = -2
+		v.add_theme_constant_override("separation", 1)
+		title_label.add_theme_font_size_override("font_size", 8)
+		key_label = FNUI.label(key, 7, FNUI.INK_3, "caps")
+		key_label.visible = key != ""
+		key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		key_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		key_label.anchor_left = 1.0
+		key_label.anchor_right = 1.0
+		key_label.offset_left = -20.0
+		key_label.offset_right = -3.0
+		key_label.offset_top = 1.0
+		key_label.offset_bottom = 10.0
+		add_child(key_label)
+	else:
+		v.add_child(key_label)
 	mouse_entered.connect(_restyle)
 	mouse_exited.connect(_restyle)
 

@@ -186,8 +186,10 @@ func update(delta: float) -> void:
 
 ## faction: who learns about it (-1 = everyone). kind: attack, contested, captured,
 ## reinforcements, op_done, op_failed, threat, info.
-func log_event(faction: int, kind: String, text: String, pos := Vector3.INF) -> void:
+## QOL-01: extra - what the event is about, for a click on its notification: {"squad": id} or {"unit": id} (a vehicle).
+func log_event(faction: int, kind: String, text: String, pos := Vector3.INF, extra := {}) -> void:
 	var e := {"t": snappedf(sim.state.time, 0.1), "faction": faction, "kind": kind, "text": text, "pos": pos}
+	e.merge(extra)
 	war.events.append(e)
 	if war.events.size() > WarState.MAX_LOG:
 		war.events.pop_front()

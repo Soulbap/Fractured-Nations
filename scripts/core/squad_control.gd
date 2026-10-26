@@ -93,6 +93,8 @@ var route_block_reason := {}
 var route_requests := 0
 var route_failures := 0
 var _bridge_wait := {}
+## QOL-01: squad id -> the facts of its last behaviour route (StrategicRoutes.last_profile: profile, length, fallback); runtime.
+var route_profile := {}
 
 
 ## A bridge was closed or disabled: squads on a route over its deck plan again from where they stand, or stop with a reason when
@@ -149,8 +151,9 @@ func _reroute_around(sq: SquadState, b: RoadNetwork.Bridge) -> void:
 ## operation reads `route_block_reason` through WarSim; a player squad shows it in the log).
 func _stop_for_bridge(sq: SquadState, b: RoadNetwork.Bridge) -> void:
 	bridge_blocked += 1
-	route_block_reason[sq.id] = "%s is %s and no other crossing is reachable" % [b.name, b.state_name()]
 	clear_route(sq)
+	# After clear_route: a dropped route request clears the report (QOL-01), this one is the new report.
+	route_block_reason[sq.id] = "%s is %s and no other crossing is reachable" % [b.name, b.state_name()]
 	sq.order = SquadState.Order.HOLD
 	sq.order_target = Vector3.INF
 	for id in sq.members:
@@ -245,8 +248,18 @@ func _submit_wait(sq: SquadState) -> void:
 	var routes: StrategicRoutes = sim.war.routes
 	var from := _centroid(sq)
 	var goal := sq.route_wait_goal
-	var job := sim.routing.submit(&"infantry", "squad:%d" % sq.id, route_priority(sq), routes.job_key(from, goal),
-		StrategicRoutes.Runner.new(routes, from, goal, sim.terrain), _on_route_job.bind(sq.id), from, goal)
+	# QOL-01: an order's route (and its replans) follows the squad's behaviour mode and keeps clear of the faction's believed
+	# threat; an operation's march ("op") is planned as before - the operation weighs its own route risk.
+	var profile := ""
+	var threat := {}
+	var tag := ""
+	if sq.route_wait_kind != "op":
+		profile = SquadBehaviour.ROUTE[clampi(sq.behaviour, 0, 3)]
+		if sim.war and sim.war.influence:
+			threat = sim.war.influence.threat.get(sq.faction, {})
+		tag = profile if threat.is_empty() else "%s.%d" % [profile, sim.war.influence.refreshes]
+	var job := sim.routing.submit(&"infantry", "squad:%d" % sq.id, route_priority(sq), routes.job_key(from, goal, tag),
+		StrategicRoutes.Runner.new(routes, from, goal, sim.terrain, profile, threat), _on_route_job.bind(sq.id), from, goal)
 	sq.route_job = job.id
 	if job.is_done():
 		_on_route_job(job, sq.id)
@@ -264,6 +277,8 @@ func marching(sq: SquadState) -> bool:
 
 ## Forgets a route request (a new order replaced it); its search is cancelled, a late answer is ignored.
 func drop_route_wait(sq: SquadState) -> void:
+	# QOL-01: a new order (or a new route) ends a "march stopped" report.
+	route_block_reason.erase(sq.id)
 	if not sq.route_wait_goal.is_finite():
 		return
 	sim.routing.cancel_owner("squad:%d" % sq.id, "squad order replaced")
@@ -291,6 +306,8 @@ func _on_route_job(job: RouteService.Job, sq_id: int) -> void:
 			r[0] = job.from
 		r[r.size() - 1] = goal
 	var why := job.reason if job.reason != "" else "no route"
+	if job.ok() and job.result.has("profile"):
+		route_profile[sq.id] = job.result.profile
 	match kind:
 		"move":
 			if r.size() < 2:
@@ -442,7 +459,7 @@ func _update_route(sq: SquadState) -> void:
 			clear_route(sq)
 		return
 	if last:
-		if finished or _flat(_centroid(sq), target) <= reach + sq.spacing * sq.members.size() * 0.5:
+		if finished or _flat(_centroid(sq), target) <= reach + _gap(sq) * sq.members.size() * 0.5:
 			clear_route(sq)
 			route_finished.emit(sq)
 		return
@@ -560,6 +577,102 @@ func set_spacing(squad_ids: Array, spacing: float) -> void:
 	for sq: SquadState in _squads(squad_ids):
 		sq.spacing = clampf(spacing, 1.5, 10.0)
 		_reapply(sq)
+
+
+## QOL-01: the squads' behaviour mode (SquadBehaviour). Not an order: the current order, tactic and route stay; a march under
+## way is re-planned for the new mode from where the squad stands (walking the old route until the new one comes), and the
+## formation takes the mode's spacing. Returns the number of squads changed.
+func set_behaviour(squad_ids: Array, b: int) -> int:
+	var n := 0
+	for sq: SquadState in _squads(squad_ids):
+		if sq.behaviour == b:
+			continue
+		sq.behaviour = clampi(b, 0, 3)
+		n += 1
+		if sq.op_id < 0 and sq.order == SquadState.Order.MOVE and not sq.route.is_empty() and not route_waiting(sq):
+			request_route(sq, sq.route[sq.route.size() - 1], "replan", sq.formation)
+		elif sq.order == SquadState.Order.MOVE and sq.route.is_empty() and not route_waiting(sq) and sq.status == SquadState.Status.MOVING:
+			_send_to_slots(sq, sq.order_target, sq.order_yaw, false)
+		sim.state.squad_changed.emit(sq)
+	return n
+
+
+## QOL-01: where the squad's move is finally going: the end of its route, the goal of the route it waits for, else the move
+## target (INF when it has no move).
+func move_goal(sq: SquadState) -> Vector3:
+	if sq.route_wait_goal.is_finite() and (sq.route_wait_kind == "move" or sq.route.is_empty()):
+		return sq.route_wait_goal
+	if not sq.route.is_empty():
+		return sq.route[sq.route.size() - 1]
+	if sq.order == SquadState.Order.MOVE:
+		return sq.order_target
+	return Vector3.INF
+
+
+## QOL-01: what the squad's order is doing, from the records only (order, status, route, tactic, the reasons the systems
+## wrote): {state, text, goal, left_m}. state: planning, moving, interrupted, blocked, route_blocked, arrived, holding,
+## following, regrouping, tactic, garrison, aboard, idle. Every UI surface and the order notices read this; nothing here
+## estimates a progress the records do not hold.
+func describe_order(sq: SquadState) -> Dictionary:
+	var c := _centroid(sq)
+	var goal := move_goal(sq)
+	var left := _flat(c, goal) if goal.is_finite() else -1.0
+	var out := {"state": "idle", "text": "No order", "goal": goal, "left_m": left}
+	for id in sq.members:
+		var u := sim.state.get_unit(id)
+		if u and u.vehicle_id >= 0:
+			out.state = "aboard"
+			out.text = "Aboard a vehicle"
+			return out
+	if route_block_reason.has(sq.id) and sq.order == SquadState.Order.HOLD:
+		out.state = "route_blocked"
+		out.text = "Route blocked: %s" % route_block_reason[sq.id]
+		return out
+	if sq.interrupted and sq.tactic != SquadState.Tactic.NONE:
+		var g := sq.prev_target
+		out.state = "interrupted"
+		out.goal = g
+		out.left_m = _flat(c, g) if g.is_finite() else -1.0
+		out.text = "Move interrupted: %s - resumes when the contact is over (%.0f m to go)" % [sq.tactic_name().to_lower(), out.left_m]
+		return out
+	if sq.tactic != SquadState.Tactic.NONE:
+		out.state = "garrison" if sq.garrison_base >= 0 else "tactic"
+		out.text = sq.tactic_why if sq.tactic_why != "" else sq.tactic_name()
+		return out
+	match sq.order:
+		SquadState.Order.MOVE:
+			if route_waiting(sq) and sq.route.is_empty():
+				out.state = "planning"
+				out.text = "Planning the route (%.0f m)" % left
+			elif sq.status == SquadState.Status.PARTIAL:
+				out.state = "blocked"
+				var why := ""
+				for id in sq.blocked:
+					var u := sim.state.get_unit(id)
+					if u and u.nav_reason != "":
+						why = u.nav_reason
+						break
+				out.text = "%s cannot reach %s%s" % ["1 soldier" if sq.blocked.size() == 1 else "%d soldiers" % sq.blocked.size(), "his place" if sq.blocked.size() == 1 else "their places", (": " + why) if why != "" else ""]
+			elif sq.status == SquadState.Status.MOVING:
+				out.state = "moving"
+				var how := ""
+				if not sq.route.is_empty():
+					how = " by route, leg %d of %d" % [sq.route_i + 1, sq.route.size()]
+				out.text = "Moving, %.0f m to go%s" % [left, how]
+			else:
+				out.state = "arrived"
+				out.text = "Arrived"
+		SquadState.Order.HOLD:
+			out.state = "holding"
+			out.text = "Holding position"
+		SquadState.Order.FOLLOW:
+			var t := follow_target(sq)
+			out.state = "following"
+			out.text = "Following %s" % (t.unit_name if t else "-")
+		SquadState.Order.REGROUP:
+			out.state = "regrouping"
+			out.text = "Regrouping" if sq.status == SquadState.Status.MOVING else "Regrouped"
+	return out
 
 
 ## AI-SQUAD-01: the formation a squad with formation_auto takes for a movement towards `at`:
@@ -730,7 +843,7 @@ func _update_follow(sq: SquadState, force: bool) -> void:
 	var lead := _slot_count(sq)
 	var anchor := t.position + Vector3(t.velocity.x, 0.0, t.velocity.z) * follow_lead_s - dir * follow_distance
 	if sq.formation == SquadState.Formation.LINE:
-		anchor -= dir * sq.spacing * 0.5
+		anchor -= dir * _gap(sq) * 0.5
 	sq.order_target = anchor
 	sq.order_yaw = yaw
 	var slots := _slots(sq, anchor, yaw)
@@ -821,10 +934,10 @@ func _slots(sq: SquadState, centre: Vector3, yaw: float) -> Array:
 			SquadState.Formation.LINE:
 				# Slot 0 (leader) in the middle, then alternating right / left.
 				var k := (i + 1) / 2 * (1 if i % 2 == 1 else -1)
-				off = right * k * sq.spacing
+				off = right * k * _gap(sq)
 			SquadState.Formation.WEDGE, SquadState.Formation.DISPERSED:
 				# Leader at the point, the others alternately right and left, a rank back each.
-				var gap := sq.spacing if sq.formation == SquadState.Formation.WEDGE else maxf(sq.spacing * 1.8, 5.5)
+				var gap := _gap(sq) if sq.formation == SquadState.Formation.WEDGE else maxf(_gap(sq) * 1.8, 5.5)
 				var rank := (i + 1) / 2
 				var side := 1 if i % 2 == 1 else -1
 				off = right * side * rank * gap * 0.9 - fwd * rank * gap * 0.8
@@ -832,9 +945,9 @@ func _slots(sq: SquadState, centre: Vector3, yaw: float) -> Array:
 				# Two files offset against each other.
 				var row := i / 2
 				var side2 := -1 if i % 2 == 0 else 1
-				off = right * side2 * sq.spacing * 0.6 - fwd * (row * sq.spacing * 1.4 + (0.0 if i % 2 == 0 else sq.spacing * 0.7))
+				off = right * side2 * _gap(sq) * 0.6 - fwd * (row * _gap(sq) * 1.4 + (0.0 if i % 2 == 0 else _gap(sq) * 0.7))
 			_:
-				off = -fwd * i * sq.spacing
+				off = -fwd * i * _gap(sq)
 		out.append(_free_ground(centre + off))
 	return out
 
@@ -920,15 +1033,21 @@ func _ground(p: Vector3) -> Vector3:
 	return p
 
 
+## QOL-01: the distance between neighbouring slots: the squad's spacing x its behaviour mode's (COMBAT and STEALTH spread
+## out). The selected mode, not the situation: the shape does not change with every reaction.
+func _gap(sq: SquadState) -> float:
+	return sq.spacing * SquadBehaviour.SPACING[clampi(sq.behaviour, 0, 3)]
+
+
 func _width(sq: SquadState) -> float:
 	match sq.formation:
 		SquadState.Formation.LINE:
-			return (_slot_count(sq) - 1) * sq.spacing
+			return (_slot_count(sq) - 1) * _gap(sq)
 		SquadState.Formation.WEDGE:
-			return _slot_count(sq) * 0.5 * sq.spacing * 1.8
+			return _slot_count(sq) * 0.5 * _gap(sq) * 1.8
 		SquadState.Formation.DISPERSED:
-			return _slot_count(sq) * 0.5 * maxf(sq.spacing * 1.8, 5.5) * 1.8
-	return sq.spacing
+			return _slot_count(sq) * 0.5 * maxf(_gap(sq) * 1.8, 5.5) * 1.8
+	return _gap(sq)
 
 
 func _centroid(sq: SquadState) -> Vector3:

@@ -86,6 +86,7 @@ func _add_row(sq: SquadState) -> void:
 	row.emblem.color = WorldState.faction_color(sq.faction)
 	var sid := sq.id
 	row.activated.connect(func(shift: bool) -> void: rts.select_squads([sid], shift))
+	row.focused.connect(func() -> void: rts.show_squad(sid))
 	_list.add_child(row)
 	_rows[sq.id] = row
 
@@ -99,7 +100,13 @@ func _refresh_row(row: FNUnitRow, sq: SquadState, is_selected: bool) -> void:
 	row.status.set_status(st.icon, st.text, st.color)
 	row.emblem.frame_color = st.color if st.engaged else Color.TRANSPARENT
 	row.flag.visible = sq.roe == SquadState.Roe.HOLD_FIRE
-	row.tooltip_text = "%s · %s · %s · %s formation%s" % [sq.squad_name, st.text.capitalize(), sq.roe_name(), sq.formation_name(),
+	# QOL-01: the behaviour mode (AWARE, the default, unmarked; amber while the situation makes the squad act otherwise).
+	var now_b := sim.tactics.behaviour_now(sq)
+	row.set_mode(&"" if sq.behaviour == SquadBehaviour.AWARE and now_b == sq.behaviour else SquadBehaviour.ICONS[sq.behaviour],
+		FNUI.ALERT if now_b != sq.behaviour else FNUI.INK_2)
+	var d := sim.squads.describe_order(sq)
+	row.tooltip_text = "%s · %s · %s%s\n%s · %s · %s formation%s\nDouble click: frame the camera on it" % [sq.squad_name, st.text.capitalize(), sq.behaviour_name().to_upper(),
+		(" (acting %s)" % SquadBehaviour.name_of(now_b)) if now_b != sq.behaviour else "", d.text, sq.roe_name(), sq.formation_name(),
 		" · in an operation" if sq.op_id >= 0 else ""]
 
 
@@ -141,11 +148,20 @@ static func squad_status(p_sim: WorldSim, sq: SquadState, brief := false) -> Dic
 		return {"icon": &"base", "text": ("GARRISON" if brief else "GARRISON · %s" % bname).to_upper(), "color": FNUI.INFO, "engaged": false}
 	if sq.tactic != SquadState.Tactic.NONE:
 		var what := sq.tactic_name() if brief else p_sim.tactics.short_text(sq)
+		if sq.interrupted:
+			# QOL-01: a move halted by contact (resumes by itself).
+			return {"icon": TACTIC_ICONS.get(sq.tactic, &"tactic"), "text": ("HALTED · " + what).to_upper(), "color": FNUI.ALERT, "engaged": true}
 		return {"icon": TACTIC_ICONS.get(sq.tactic, &"tactic"), "text": what.to_upper(), "color": FNUI.INFO, "engaged": false}
+	var d := p_sim.squads.describe_order(sq)
+	if d.state == "route_blocked":
+		return {"icon": &"blocked", "text": "ROUTE BLOCKED", "color": FNUI.DANGER, "engaged": false}
 	match sq.order:
 		SquadState.Order.MOVE:
+			if d.state == "planning":
+				return {"icon": &"route", "text": "PLANNING ROUTE", "color": FNUI.INFO, "engaged": false}
 			if sq.status == SquadState.Status.MOVING:
-				return {"icon": &"moving", "text": "MOVING", "color": FNUI.OK, "engaged": false}
+				var left: float = d.left_m
+				return {"icon": &"moving", "text": "MOVING" if brief or left < 0.0 else "MOVING · %s" % _dist(left), "color": FNUI.OK, "engaged": false}
 			return {"icon": &"move", "text": "ARRIVED", "color": FNUI.NEUTRAL, "engaged": false}
 		SquadState.Order.HOLD:
 			return {"icon": &"hold", "text": "HOLD", "color": FNUI.NEUTRAL, "engaged": false}
@@ -177,6 +193,10 @@ static func capture_status(p_sim: WorldSim, sq: SquadState) -> Dictionary:
 			"losing":
 				return {"icon": &"objective", "text": "BEING TAKEN %d%%" % pct, "color": FNUI.ALERT, "engaged": true}
 	return {}
+
+
+static func _dist(m: float) -> String:
+	return "%.1f KM" % (m / 1000.0) if m >= 1000.0 else "%d M" % roundi(m)
 
 
 const TACTIC_ICONS := {

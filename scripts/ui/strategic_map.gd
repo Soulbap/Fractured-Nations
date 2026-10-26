@@ -833,14 +833,21 @@ func _refresh_events() -> void:
 		h.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		h.add_theme_constant_override("separation", FNUI.S3)
 		var epos: Vector3 = e.get("pos", Vector3.INF)
+		var esq := int(e.get("squad", -1))
 		if epos.is_finite():
-			# GAMEPLAY-01D: a warning with a place - a click centres the map on it.
+			# GAMEPLAY-01D: a warning with a place - a click centres the map on it. QOL-01: a notice about a squad selects it too
+			# (centred where it is now).
 			h.mouse_filter = Control.MOUSE_FILTER_STOP
 			h.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-			h.tooltip_text = "Click: show on the map"
+			h.tooltip_text = "Click: select the squad and show it" if esq >= 0 else "Click: show on the map"
 			h.gui_input.connect(func(ev: InputEvent) -> void:
 				if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
-					focus_on(epos))
+					var sq := sim.state.get_squad(esq)
+					if sq and not sq.members.is_empty():
+						select_squads_from([esq])
+						focus_on(sim.war.squad_center(sq))
+					else:
+						focus_on(epos))
 		var tl := FNUI.label("%02d:%02d" % [int(e.t / 3600.0) % 24, int(e.t / 60.0) % 60], FNUI.CAPTION, FNUI.INK_3, "number")
 		tl.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		h.add_child(tl)
@@ -908,6 +915,22 @@ static func _fac(f: int) -> String:
 
 
 # --- Orders -----------------------------------------------------------------------------
+
+## QOL-01: the map's selection becomes these squads (the tactical view's selection when the map opens, a notice clicked).
+func select_squads_from(ids: Array) -> void:
+	selected_squads.clear()
+	for sid in ids:
+		var sq := sim.state.get_squad(sid)
+		if sq and not sq.members.is_empty() and sq.faction == faction:
+			selected_squads.append(sid)
+	selected_op = -1
+	selected_objective = -1
+	selected_vehicles.clear()
+	selected_structure = -1
+	pending_order = -1
+	_refresh_panel()
+	queue_redraw()
+
 
 func select_operation(op_id: int) -> void:
 	selected_op = op_id

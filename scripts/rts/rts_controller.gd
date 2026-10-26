@@ -182,6 +182,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		change_spacing(0.5)
 	elif event.is_action_pressed("squad_roe"):
 		toggle_roe()
+	elif event.is_action_pressed("squad_behaviour"):
+		cycle_behaviour(-1 if Input.is_key_pressed(KEY_SHIFT) else 1)
+	elif event.is_action_pressed("squad_focus"):
+		focus_selection()
 	elif event.is_action_pressed("vehicle_board"):
 		order_board()
 	elif event.is_action_pressed("vehicle_unload"):
@@ -317,6 +321,8 @@ func order_move(hit: Vector3) -> int:
 		var at := hit if sqs.is_empty() else hit + _beside_squads(sqs)
 		n += sim.state.issue_individual_moves(loose, at, formation_spacing)
 	n += order_vehicles(hit)
+	if not sqs.is_empty():
+		_ack_move(sqs, hit)
 	if n > 0:
 		last_order_target = hit
 		_marker.global_position = hit + Vector3.UP * 0.1
@@ -552,6 +558,9 @@ func order_hold() -> void:
 		sim.state.detach(id)
 		sim.state.halt(id)
 	_say("Hold" if not selected.is_empty() else "Nothing selected")
+	if not selected_squads().is_empty():
+		tactic_feedback = "%s: holding position - fire from where they stand, cover close by" % _names(selected_squads())
+		tactic_feedback_ok = true
 
 
 ## F (or the command panel): wait for the click on the soldier or squad to follow.
@@ -592,6 +601,78 @@ func order_regroup(at := Vector3.INF) -> int:
 	var n := sim.squads.order_regroup(sqs, at)
 	_say("Regroup %s" % ("at the cursor" if at.is_finite() else "on the leader"))
 	return n
+
+
+## QOL-01: the acknowledgement of a move order in the command panel: who goes, how far, how (route planning, behaviour).
+func _ack_move(sqs: Array, hit: Vector3) -> void:
+	var parts: Array[String] = []
+	for sid in sqs:
+		var sq := sim.state.get_squad(sid)
+		if sq == null:
+			continue
+		var d := sim.squads.describe_order(sq)
+		var how := "route being planned" if d.state == "planning" else ("by route" if not sq.route.is_empty() else "direct")
+		parts.append("%s %s, %.0f m %s" % [sq.squad_name, sq.behaviour_name().to_upper(), SquadControl._flat(sim.squads._centroid(sq), hit), how])
+	tactic_feedback = "Move accepted: " + " · ".join(parts)
+	tactic_feedback_ok = true
+
+
+func _names(sqs: Array) -> String:
+	return ", ".join(sqs.map(func(id: int) -> String: return sim.state.get_squad(id).squad_name))
+
+
+## QOL-01: the behaviour mode of the selected squads (SquadBehaviour). Changes how they operate, not what they were told:
+## their current order goes on (a march re-plans its route for the new mode).
+func set_behaviour(b: int) -> int:
+	var sqs := selected_squads()
+	if sqs.is_empty():
+		_say("Behaviour: select a squad first")
+		return 0
+	sim.squads.set_behaviour(sqs, b)
+	var msg := "%s: %s - %s" % [_names(sqs), SquadBehaviour.name_of(b).to_upper(), SquadBehaviour.HINTS[b].get_slice("\n", 1).get_slice(":", 0).get_slice(".", 0).to_lower()]
+	tactic_feedback = msg + " (current order continues)"
+	tactic_feedback_ok = true
+	_say(msg)
+	return sqs.size()
+
+
+## X / Shift+X: the next / previous behaviour mode for the selected squads (the first one decides).
+func cycle_behaviour(step := 1) -> void:
+	var sqs := selected_squads()
+	if sqs.is_empty():
+		_say("Behaviour: select a squad first")
+		return
+	set_behaviour(posmod(sim.state.get_squad(sqs[0]).behaviour + step, SquadBehaviour.NAMES.size()))
+
+
+## C (or a double click in the roster): the tactical camera frames the selected squads (or vehicle, or soldier).
+func focus_selection() -> bool:
+	var pts: Array[Vector3] = []
+	for sid in selected_squads():
+		pts.append(sim.squads._centroid(sim.state.get_squad(sid)))
+	if pts.is_empty():
+		for id in selected:
+			var u := sim.state.get_unit(id)
+			if u and u.alive:
+				pts.append(u.position)
+	if pts.is_empty() or rig == null:
+		_say("Nothing selected to show")
+		return false
+	var c := Vector3.ZERO
+	for p in pts:
+		c += p
+	rig.frame(c / pts.size(), rig.yaw, 120.0)
+	return true
+
+
+## QOL-01: select a squad and frame the camera on it (a notification, the roster's double click). False when it is gone.
+func show_squad(squad_id: int) -> bool:
+	var sq := sim.state.get_squad(squad_id)
+	if sq == null or sq.members.is_empty():
+		_say("That squad no longer exists")
+		return false
+	select_squads([squad_id])
+	return focus_selection()
 
 
 func toggle_formation() -> void:
@@ -733,7 +814,7 @@ static func _ensure_squad_actions() -> void:
 	var binds := {"vehicle_board": KEY_T, "vehicle_unload": KEY_U, "squad_follow": KEY_F, "squad_regroup": KEY_G, "squad_formation": KEY_V,
 		"squad_spacing_down": KEY_BRACKETLEFT, "squad_spacing_up": KEY_BRACKETRIGHT, "squad_roe": KEY_Y,
 		"squad_assault": KEY_Z, "squad_suppress": KEY_K, "squad_flank": KEY_L, "squad_defend": KEY_J, "squad_withdraw": KEY_BACKSPACE, "squad_garrison": KEY_O,
-		"squad_rearm": KEY_R}
+		"squad_rearm": KEY_R, "squad_behaviour": KEY_X, "squad_focus": KEY_C}
 	for action in binds:
 		if InputMap.has_action(action):
 			continue

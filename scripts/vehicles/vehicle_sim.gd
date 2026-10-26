@@ -1171,7 +1171,7 @@ func _fail(u: UnitState, reason: String, keep_speed := false) -> void:
 
 func _event(u: UnitState, text: String) -> void:
 	if sim.war:
-		sim.war.log_event(u.faction, "vehicle", "%s: %s" % [u.unit_name, text])
+		sim.war.log_event(u.faction, "vehicle", "%s: %s" % [u.unit_name, text], u.position, {"unit": u.id})
 
 
 ## What holds a vehicle up right now (tests and debugging): the first route point ahead that

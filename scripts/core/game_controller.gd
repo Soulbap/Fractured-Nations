@@ -133,6 +133,10 @@ func enter_rts() -> void:
 		mode_changed.emit(mode)
 		return
 	var body := possessed_body()
+	# QOL-01: back from first person with nothing selected, the soldier's squad is the selection (its orders and
+	# behaviour are in the command panel at once).
+	if rts and rts.selected.is_empty() and sim.state.squad_of(possessed_id) != null:
+		rts.select_squads([sim.state.squad_of(possessed_id).id])
 	if body:
 		body.player_controlled = false
 		rts_camera.frame(body.global_position, body.rotation.y)
