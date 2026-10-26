@@ -42,9 +42,34 @@ static func apply_faction(root: Node, faction: int) -> void:
 
 ## While a body is possessed its mesh must not sit in front of the first-person camera;
 ## keeping the shadow preserves the soldier's presence on the ground.
+## GAMEPLAY-02 (controls): render layer of the possessed soldier's upper body; the sun's shadow_caster_mask leaves it out
+## (no_body_shadow_on). Lying where the first-person arms and weapon are, its shadow speckled them (shadow acne).
+const FP_NO_SHADOW_LAYER := 1 << 19
+const LOWER_BODY := ["trouser", "boot", "pant", "leg", "shoe"]
+
+
 static func set_shadows_only(root: Node, enabled: bool) -> void:
 	for mi in mesh_instances(root):
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY if enabled else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		# first person: only the legs keep their shadow on the ground
+		if enabled and not _lower_body(mi):
+			mi.layers = FP_NO_SHADOW_LAYER
+		elif not enabled and mi.layers == FP_NO_SHADOW_LAYER:
+			mi.layers = 1
+
+
+static func _lower_body(mi: MeshInstance3D) -> bool:
+	var n := String(mi.name).to_lower()
+	for k: String in LOWER_BODY:
+		if n.contains(k):
+			return true
+	return false
+
+
+## The directional lights under `root` cast no shadow from FP_NO_SHADOW_LAYER.
+static func no_body_shadow_on(root: Node) -> void:
+	for l in root.find_children("*", "DirectionalLight3D", true, false):
+		(l as DirectionalLight3D).shadow_caster_mask &= ~FP_NO_SHADOW_LAYER
 
 
 static func make_ring_material() -> StandardMaterial3D:

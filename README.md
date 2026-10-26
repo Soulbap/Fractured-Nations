@@ -378,6 +378,8 @@ Then press **F5**. The start screen (GAMEPLAY-01B) offers:
   barracks and take objectives for income. The supply strip (top) and a dismissible hint guide the first steps.
 - **Continue** — the saved game (F5 saves, F9 loads, or **Esc** → Save Game / Load Game; one slot in `user://saves/ref_20km/`).
   Esc → Main Menu returns here without starting anything.
+- **Settings** (also in the Esc menu) — GAMEPLAY-02 (controls): the interface scale, 75–175 % (default 125 %), for every menu,
+  the HUD and tooltips; kept in `user://settings.cfg`.
 - **Development Scenario** — the full three-faction war as before: you are North (blue) in the tactical view over
   your HQ with five squads, free and instant construction and the starting stockpile; South (orange, aggressive) and
   East (green, defensive) plan and launch their own operations.
@@ -401,7 +403,7 @@ own with that layout.
 | RMB | Order the selected squads: on an enemy or neutral objective = **attack**, on your own = **reinforce**, on open ground = **move** (all as operations with planned routes); cancels a pending button order |
 | Buttons | Attack / Defend / Reinforce the target (or click one after the button), Move (then click the ground), Cancel op, View |
 | G, "Go" in the operation list | Jump the tactical camera there (closes the map) |
-| , and . | Time compression 1 / 2 / 4 / 8 / 16 x (first person always runs at 1 x); the HUD shows the speed reached when the machine falls short |
+| Space, 1-4, , and . | Pause / resume; 1 / 2 / 4 / 8 x (, and . step 1-16 x; first person always runs at 1 x); the HUD shows the speed reached when the machine falls short |
 | F5 / F9 | Save / load the whole war |
 
 The map shows territory (each objective's area in its owner's colour), objectives with capture
@@ -435,7 +437,8 @@ thumbnails come from `tools/ui/make_structure_thumbs.gd`.
 
 | Key | First person (possessing a soldier) |
 |---|---|
-| Mouse | Look (click to capture, Esc to release) |
+| Mouse | Look (the mouse is captured in first person; a click takes it back after another window had focus) |
+| Esc | In-game menu (the game pauses, the cursor shows; Esc / Resume returns to first person) |
 | W A S D / Shift / Space | Move / sprint / jump |
 | LMB (hold in auto) / RMB | Fire / aim (narrower view) |
 | R / V | Reload / semi or automatic fire |
@@ -456,7 +459,10 @@ thumbnails come from `tools/ui/make_structure_thumbs.gd`.
 | **B** | Construction mode (see below) |
 | Left click / drag box, Shift+click | Select soldiers and vehicles / add to selection, Ctrl+A all soldiers |
 | Ctrl+click, squad panel (left) | Select a soldier's whole squad; Shift adds more squads. Rows show order, progress, living + fallen, engaging / under fire / in cover; the list scrolls when it would reach the HUD text |
-| Right click | Move: selected squads walk in formation to the point (side by side if several); a move over 150 m, or one that would cross water or a cliff, follows a strategic route (roads, bridges) in column and takes the formation again at the end; other selected soldiers get individual orders and leave their squad's order until its next one |
+| Right click (short) | Move: selected squads walk in formation to the point (side by side if several); a move over 150 m, or one that would cross water or a cliff, follows a strategic route (roads, bridges) in column and takes the formation again at the end; other selected soldiers get individual orders and leave their squad's order until its next one |
+| **Right-drag** | GAMEPLAY-02 (controls) placement: hold RMB and drag a frontage (along a wall, behind a building, across a field edge); the preview shows every soldier's place (filled dot = in cover) and the facing arrow (away from where the squad stands); release orders it. Places snap to cover near the line, never closer than 1.3 m; a short drag packs the soldiers in ranks. Several selected squads share the line. The squad stays where it was put (no automatic end-of-move cover); Esc while dragging cancels |
+| **Space** | GAMEPLAY-02 (controls): pause / resume the simulation (the view, selection and orders keep working while paused) |
+| **1 / 2 / 3 / 4** | Speed 1 / 2 / 4 / 8 x (also resumes); the chip at the top shows PAUSED or the speed |
 | H | Hold: selected squads stop and stay; other selected soldiers stop |
 | F, then click a soldier | Selected squads follow that soldier, or its squad (its leader) |
 | G / Shift+G | Regroup selected squads on their leader / at the cursor |
@@ -466,7 +472,7 @@ thumbnails come from `tools/ui/make_structure_thumbs.gd`.
 | **R**, Rearm button | GAMEPLAY-04D: the selected squads search a cache, stash or your base at the cursor (or clicked after the button) for ammunition and spare weapons; found weapons ride in the squad's cargo and are handed in at a base with a Supply Depot (an unknown type is registered) |
 | **EQUIP** button | GAMEPLAY-04D: the equipment screen of the selected squad - change soldiers' roles with weapons from the cargo, the armoury or procurement |
 | **F2** | GAMEPLAY-04B: Military Development (start / cancel projects, see what each unlocks and why it is locked) |
-| Esc (nothing selected) | GAMEPLAY-01G in-game menu: Resume, Save Game, Load Game, Main Menu, Quit Game (the game is paused) |
+| Esc | GAMEPLAY-01G in-game menu: Resume, Save Game, Load Game, Settings, Main Menu, Quit Game (the game is paused); an armed order or a right-drag is cancelled first, the selection stays |
 | P, Enter or double-click | Possess the selected soldier (first person) |
 | **Tab** | Return to the soldier you last controlled |
 

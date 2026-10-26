@@ -72,9 +72,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		rotate_y(-event.relative.x * mouse_sensitivity)
 		head.rotation.x = clampf(head.rotation.x - event.relative.y * mouse_sensitivity,
 				-deg_to_rad(max_pitch_deg), deg_to_rad(max_pitch_deg))
-	elif event.is_action_pressed("ui_cancel"):
+	elif GameController.current == null and event.is_action_pressed("ui_cancel"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+	elif GameController.current == null and event is InputEventMouseButton and event.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	elif event.is_action_pressed("toggle_fly"):
 		set_flying(not flying)
@@ -144,6 +144,11 @@ func _fly(delta: float) -> void:
 
 func _update_mouse_mode() -> void:
 	if DisplayServer.get_name() == "headless":
+		return
+	# GAMEPLAY-02 (controls): in the game the mouse mode is GameController's policy; a body only asks it to look again
+	# (a soldier body streamed in used to free the captured mouse, the world's exploration body captured it at launch).
+	if GameController.current != null:
+		GameController.current.refresh_mouse()
 		return
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if player_controlled else Input.MOUSE_MODE_VISIBLE
 

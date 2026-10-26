@@ -285,6 +285,76 @@ func fill_open(posts: Array, count: int, center: Vector3, dir: Vector3, spacing 
 	return out
 
 
+## GAMEPLAY-02 (controls): positions for `count` soldiers placed by the player along the frontage a -> b (a right-drag), facing
+## `facing`. The soldiers are spread evenly along it (never closer than PLACE_GAP: a drag shorter than the squad gives ranks
+## behind it - a cluster); each place moves to protected cover within reach of it (a wall, a building's corner, a rock, a log, a
+## rise of the ground: CombatBrain.cover_spots against a threat straight ahead of the line, judged by _evaluate_spot) when there
+## is one no other soldier took, else it stays on the line (on valid ground). Returns [{p, kind, protected, can_fire}] in the
+## order along the line. Bounded: one cover search per call.
+const PLACE_GAP := 1.3
+
+
+func placement(count: int, a: Vector3, b: Vector3, facing: Vector3, cover := true) -> Array:
+	var out: Array = []
+	if count <= 0:
+		return out
+	var f := Vector3(facing.x, 0.0, facing.z)
+	f = f.normalized() if f.length() > 0.01 else Vector3.FORWARD
+	var seg := Vector3(b.x - a.x, 0.0, b.z - a.z)
+	var length := seg.length()
+	var along := seg / length if length > 0.3 else Vector3(-f.z, 0.0, f.x)
+	var mid := ground((a + b) * 0.5)
+	# The line's places; a short line takes several ranks behind it.
+	var per_rank := count if count <= 1 or length >= PLACE_GAP * (count - 1) else maxi(1, floori(length / PLACE_GAP) + 1)
+	var ranks := ceili(float(count) / per_rank)
+	var gap := length / (per_rank - 1) if per_rank > 1 else 0.0
+	var nominal: Array = []
+	for i in count:
+		var r := i / per_rank
+		var k := i % per_rank
+		var in_rank := mini(per_rank, count - r * per_rank)
+		var start := a + along * ((per_rank - in_rank) * gap * 0.5) if per_rank > 1 else mid
+		nominal.append(ground(start + along * k * gap - f * r * PLACE_GAP * 1.2))
+	# Cover near the places, against a threat straight ahead of the line.
+	var snap := clampf(gap * 0.45, 1.2, 3.0) if ranks == 1 else 1.2
+	var threat := mid + f * 120.0
+	var cands: Array = []
+	if cover and sim.brain != null:
+		for c: Dictionary in sim.brain.cover_spots(mid, length * 0.5 + snap + 1.0, threat, mid, max_candidates * 2):
+			var p: Vector3 = ground(c.p)
+			if not valid_ground(p):
+				continue
+			var ev := sim.brain._evaluate_spot(null, p, threat)
+			if bool(ev.protected):
+				cands.append({"p": p, "kind": String(c.kind), "protected": true, "can_fire": bool(ev.can_fire)})
+	var taken: Array = []
+	for i in count:
+		var want: Vector3 = nominal[i]
+		var best := {}
+		var best_s := -INF
+		for c: Dictionary in cands:
+			var d := _flat(c.p, want)
+			if d > snap or _near_any(c.p, taken, PLACE_GAP):
+				continue
+			var s := (1.5 if c.can_fire else 0.0) - d * 0.8
+			if s > best_s:
+				best_s = s
+				best = c
+		if best.is_empty():
+			var p := want if valid_ground(want) else nearest_valid(want, 4.0)
+			if not p.is_finite():
+				p = want
+			# never two soldiers on one spot: step along the line until it is free
+			var guard := 0
+			while _near_any(p, taken, PLACE_GAP * 0.9) and guard < 6:
+				guard += 1
+				p = ground(p + along * PLACE_GAP * (1 if guard % 2 == 1 else -1) * guard)
+			best = {"p": p, "kind": "open", "protected": false, "can_fire": true}
+		taken.append(best.p)
+		out.append(best)
+	return out
+
+
 ## Pairs soldiers with posts so the paths cross little: both sorted across `axis` (the lateral
 ## axis of the plan); returns post indices per soldier index.
 func assign(unit_positions: Array, posts: Array, axis: Vector3) -> Array:

@@ -105,7 +105,7 @@ func _ready() -> void:
 	_feedback.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	foot.add_child(_feedback)
 	foot.add_child(FNKeyHint.new("RMB", "Move"))
-	foot.add_child(FNKeyHint.new("Esc", "Deselect"))
+	foot.add_child(FNKeyHint.new("RMB drag", "Place"))
 	foot.add_child(FNKeyHint.new("F1", "Controls"))
 
 

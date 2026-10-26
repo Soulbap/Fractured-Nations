@@ -207,6 +207,83 @@ func order_move(squad_ids: Array, target: Vector3, pace := -1) -> int:
 	return n
 
 
+## GAMEPLAY-02 (controls): the player's right-drag placement. The squads' soldiers are put along the frontage a -> b facing
+## `facing` (several squads share it, side by side in order, each its share by size): SquadPositions.placement chooses each
+## soldier's place (cover near the line, spread, never two on one spot), `positions` (unit id -> Vector3, from a preview the
+## player saw) may give them instead. It is a squad Move (route, pace, interruption as any Move) whose slots are those places:
+## SquadState.placed keeps them for every re-send of the order, and the end-of-move cover step leaves them alone. Each soldier's
+## place is his post (reactions stay near it). Returns the soldiers ordered.
+func order_place(squad_ids: Array, a: Vector3, b: Vector3, facing: Vector3, positions := {}, pace := -1) -> int:
+	var sqs := _squads(squad_ids)
+	if sqs.is_empty() or not a.is_finite() or not b.is_finite():
+		return 0
+	var plan := positions if not positions.is_empty() else place_plan(squad_ids, a, b, facing)
+	var yaw := atan2(-facing.x, -facing.z)
+	var n := 0
+	for sq: SquadState in sqs:
+		sim.tactics.on_order(sq)
+		drop_route_wait(sq)
+		var ids := _active_members(sq)
+		var centre := Vector3.ZERO
+		var k := 0
+		for id in ids:
+			if plan.has(id):
+				sq.placed[id] = plan[id]
+				centre += plan[id]
+				k += 1
+		if k == 0:
+			continue
+		centre /= k
+		sq.order = SquadState.Order.MOVE
+		sq.order_target = centre
+		sq.pace = pace
+		sq.order_yaw = yaw
+		sq.follow_unit_id = -1
+		sq.follow_squad_id = -1
+		if _routed_move(sq, centre):
+			n += ids.size()
+			continue
+		n += _send_to_slots(sq, centre, yaw, true)
+	return n
+
+
+## The places order_place would give (unit id -> Vector3): the frontage split between the squads by their size, in the order given.
+## `in_cover` (optional) is filled with unit id -> true for the soldiers whose place is protected cover.
+func place_plan(squad_ids: Array, a: Vector3, b: Vector3, facing: Vector3, cover := true, in_cover := {}) -> Dictionary:
+	var sqs := _squads(squad_ids)
+	var out := {}
+	var total := 0
+	for sq: SquadState in sqs:
+		total += _active_members(sq).size()
+	if total == 0:
+		return out
+	var done := 0
+	var gap_k := 0.0 if sqs.size() == 1 else squad_gap / maxf(a.distance_to(b), squad_gap * sqs.size())
+	for sq: SquadState in sqs:
+		var ids := _active_members(sq)
+		if ids.is_empty():
+			continue
+		var t0 := float(done) / total
+		var t1 := float(done + ids.size()) / total
+		done += ids.size()
+		var sa := a.lerp(b, minf(t0 + (gap_k * 0.5 if t0 > 0.0 else 0.0), t1))
+		var sb := a.lerp(b, maxf(t1 - (gap_k * 0.5 if t1 < 1.0 else 0.0), t0))
+		var places: Array = sim.tactics.pos.placement(ids.size(), sa, sb, facing, cover)
+		# soldiers to places along the line in the order they stand across it (paths cross little)
+		var axis := Vector3(sb.x - sa.x, 0.0, sb.z - sa.z)
+		if axis.length() < 0.3:
+			axis = Vector3(-facing.z, 0.0, facing.x)
+		var ups: Array = []
+		for id in ids:
+			ups.append(sim.state.get_unit(id).position)
+		var idx := sim.tactics.pos.assign(ups, places, axis)
+		for i in ids.size():
+			out[ids[i]] = (places[idx[i]] as Dictionary).p + Vector3.UP * 0.25
+			if bool(places[idx[i]].protected):
+				in_cover[ids[i]] = true
+	return out
+
+
 ## WORLD-PLAYTEST-01: the same strategic routes the war's operations use, for a player's
 ## (or anybody's) Move order that is long or would cross water or a cliff in a straight
 ## line. Before, such an order walked straight: into the river far from any bridge, or up
@@ -895,11 +972,17 @@ func _send_to_slots(sq: SquadState, centre: Vector3, yaw: float, reset: bool, le
 	var ids := _active_members(sq)
 	var slots := _slots(sq, centre, yaw)
 	var order := _assign(sq, ids, slots, yaw)
+	# GAMEPLAY-02 (controls): the order's own destination with soldiers the player placed: each goes to his place (his post).
+	var placed := not sq.placed.is_empty() and sq.order == SquadState.Order.MOVE and _flat(centre, sq.order_target) < 0.5
 	for i in ids.size():
 		var u := sim.state.get_unit(ids[i])
 		if leader_stays and u.id == sq.leader_id:
 			sim.state.halt(u.id)
 			u.move_state = UnitState.MoveState.ARRIVED
+			continue
+		if placed and sq.placed.has(u.id):
+			sim.state.issue_move(u.id, sq.placed[u.id])
+			u.post_pos = sq.placed[u.id]
 			continue
 		sim.state.issue_move(u.id, slots[order[i]])
 	sim.state.squad_changed.emit(sq)

@@ -207,6 +207,21 @@ void fragment() {
 			mi.set_surface_override_material(si, m)
 
 
+static var _soft_cloth := {}
+
+
+func _soften_cloth(mi: MeshInstance3D) -> void:
+	for si in mi.mesh.get_surface_count():
+		var mat := mi.get_active_material(si) as StandardMaterial3D
+		if mat == null or mat.normal_texture == null:
+			continue
+		if not _soft_cloth.has(mat):
+			var soft := mat.duplicate() as StandardMaterial3D
+			soft.normal_scale = mat.normal_scale * 0.3
+			_soft_cloth[mat] = soft
+		mi.set_surface_override_material(si, _soft_cloth[mat])
+
+
 ## Optic glass for the first-person view: nearly clear, so the sight picture is visible.
 static func _lens() -> StandardMaterial3D:
 	if _lens_mat == null:
@@ -239,6 +254,7 @@ func _build_arms() -> bool:
 		return false
 	var c := InfantryCharacter.new()
 	c.name = "Arms"
+	c.ground_tilt = false
 	add_child(c)
 	c.setup(loadout, faction, false)
 	var keep := {}
@@ -255,6 +271,10 @@ func _build_arms() -> bool:
 						# ASSET-INTEGRATION-01: a weapon with its optic built in (the WEAPON-ASSETS-01 pack) is looked through its glass
 						elif it.slot == "weapon" and String(mi.name).ends_with("_LOD0"):
 							_clear_lens(mi)
+						# GAMEPLAY-02 (controls): the sleeves and gloves 30 cm from the eye: the cloth's ripstop normal map read as a
+						# grid of dots there; a softer copy for the first person only
+						elif shown and not it.slot.begins_with("weapon"):
+							_soften_cloth(mi)
 		if it.slot == "weapon" and not c.pieces.get(it.id, []).is_empty():
 			_weapon_root = c.pieces[it.id][0]
 			_eye = it.aim_eye
@@ -281,6 +301,9 @@ func _build_arms() -> bool:
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	arms = c
 	arms.alert = true
+	# GAMEPLAY-02 (controls): placed once the skeleton has this frame's pose (animation and grip IK). Placed in _process from
+	# the previous frame's pose, the arms lagged the breathing idle by a frame: the sight shook 2-13 mm a frame, also aiming.
+	c.skeleton.skeleton_updated.connect(_place_arms)
 	muzzle = c.muzzle() if c.muzzle() else _weapon_root
 	if held_piece and _weapon_root:
 		var tip := _weapon_root.find_child("ATT_Muzzle", true, false) as Node3D
@@ -295,10 +318,9 @@ const HIP_OFFSET := Vector3(0.075, -0.12, -0.14)
 const HIP_TURN := Vector3(1.0, 4.0, -5.0)  # pitch, yaw (+ = muzzle left), roll (deg)
 
 
-func _place_arms(delta: float) -> void:
-	_ads = move_toward(_ads, 1.0 if aiming and not reloading else 0.0, delta * 4.5)
-	arms.aim_point = arms.global_position + arms.global_basis * Vector3(0, 1.45, -100.0)
-	arms.reloading = reloading
+func _place_arms() -> void:
+	if arms == null or _weapon_root == null or not is_instance_valid(_weapon_root):
+		return
 	var inv := arms.global_transform.affine_inverse()
 	var w := inv * _weapon_root.global_transform
 	var wb := w.basis.orthonormalized()
@@ -309,7 +331,6 @@ func _place_arms(delta: float) -> void:
 	var xf := hip.interpolate_with(ads, smoothstep(0.0, 1.0, _ads))
 	# ASSET-INTEGRATION-01: placed from the moving weapon, a reload would swing the body up to the camera (sleeves fill the
 	# view); while it runs the arms keep the hold they had, so the weapon visibly comes down and back.
-	_reload_k = move_toward(_reload_k, 1.0 if reloading else 0.0, delta * 6.0)
 	if _reload_k <= 0.0:
 		_steady = xf
 	# halfway between: the body stays below the view and the weapon stays in it
@@ -325,7 +346,11 @@ func _place_arms(delta: float) -> void:
 func _process(delta: float) -> void:
 	_kick = maxf(_kick - delta * 12.0, 0.0)
 	if arms:
-		_place_arms(delta)
+		# the blends advance here, once a frame; the placement follows the pose (_place_arms on skeleton_updated)
+		_ads = move_toward(_ads, 1.0 if aiming and not reloading else 0.0, delta * 4.5)
+		_reload_k = move_toward(_reload_k, 1.0 if reloading else 0.0, delta * 6.0)
+		arms.aim_point = arms.global_position + arms.global_basis * Vector3(0, 1.45, -100.0)
+		arms.reloading = reloading
 		return
 	var target := ADS if aiming else HIP
 	position = position.lerp(target, clampf(delta * 14.0, 0.0, 1.0)) + Vector3(0, 0.004, 0.035) * _kick

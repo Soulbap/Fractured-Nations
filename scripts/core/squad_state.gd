@@ -96,6 +96,9 @@ var garrison_base := -1
 ## posts round the defended objective. A defence that cannot hold falls back a line (SquadTactics) before it would leave;
 ## a fresh DEFEND starts at 0. Saved.
 var defence_line := 0
+## GAMEPLAY-02 (controls): the player's right-drag placement - unit id -> the position he chose for that soldier on the squad's
+## current Move (SquadControl.order_place). Empty for an ordinary move; any new squad order clears it (SquadTactics.on_order).
+var placed := {}
 
 # --- Fire teams and tactics (AI-SQUAD-01). Persisted with the squad. ---
 ## Fire teams: member ids per team (one team for small squads, two otherwise), the team
@@ -221,7 +224,7 @@ func to_dict() -> Dictionary:
 		"follow_unit": follow_unit_id, "follow_squad": follow_squad_id,
 		"formation": formation, "spacing": spacing, "detached": Array(detached),
 		"status": status, "blocked": Array(blocked), "fallen": Array(fallen), "roe": roe,
-		"op": op_id, "route": Array(route), "route_i": route_i, "route_wait": [route_wait_goal, route_wait_kind, route_wait_form], "station": station_objective, "cargo": cargo.duplicate(), "rearm_at": rearm_at, "rearm_s": rearm_s, "garrison_base": garrison_base, "defence_line": defence_line, "pace": pace, "pace3": true,
+		"op": op_id, "route": Array(route), "route_i": route_i, "route_wait": [route_wait_goal, route_wait_kind, route_wait_form], "station": station_objective, "cargo": cargo.duplicate(), "rearm_at": rearm_at, "rearm_s": rearm_s, "garrison_base": garrison_base, "defence_line": defence_line, "placed": placed.duplicate(), "pace": pace, "pace3": true,
 		"teams": teams.map(func(t: PackedInt32Array) -> Array: return Array(t)), "team_leaders": Array(team_leaders), "team_roles": Array(team_roles),
 		"tactic": tactic, "tactic_owner": tactic_owner, "tactic_phase": tactic_phase, "tactic_since": tactic_since,
 		"tactic_phase_since": tactic_phase_since, "tactic_target": tactic_target, "tactic_contact": tactic_contact, "tactic_site": tactic_site,
@@ -269,6 +272,8 @@ static func from_dict(d: Dictionary) -> SquadState:
 	s.rearm_s = d.get("rearm_s", 0.0)
 	s.garrison_base = d.get("garrison_base", -1)
 	s.defence_line = d.get("defence_line", 0)
+	for k in d.get("placed", {}):
+		s.placed[int(k)] = d.placed[k]
 	for t in d.get("teams", []):
 		s.teams.append(PackedInt32Array(t))
 	s.team_leaders = PackedInt32Array(d.get("team_leaders", []))

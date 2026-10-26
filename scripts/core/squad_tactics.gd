@@ -241,6 +241,9 @@ func _settle(sq: SquadState, a: Dictionary, now: float) -> void:
 	if not settle_enabled or (ai and not settle_ai) or sq.status != SquadState.Status.DONE or not sq.route.is_empty() or sim.squads.marching(sq) \
 			or sim.squads.route_waiting(sq) or sq.interrupted or not sq.order_target.is_finite():
 		return
+	# GAMEPLAY-02 (controls): soldiers the player placed one by one stay where he put them (no end-of-move cover search).
+	if not sq.placed.is_empty():
+		return
 	if ai and sq.op_id >= 0:
 		# An operation still on its approach hands out roles (tactics) the moment its squads arrive: nothing to settle into.
 		var op := sim.state.war.operation(sq.op_id)
@@ -1150,6 +1153,8 @@ func on_order(sq: SquadState) -> void:
 	if _internal:
 		return
 	_set_meta(sq, "tactic_hold", false)
+	# GAMEPLAY-02 (controls): a new order ends the player's placement of the soldiers (order_place sets its own after this call).
+	sq.placed.clear()
 	# QOL-01: a new order replaces any interrupted one (nothing to resume) and gets its own interruption budget.
 	sq.interrupted = false
 	sq.interrupts = 0

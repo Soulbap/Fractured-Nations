@@ -39,6 +39,25 @@ var possessed_id := -1
 ## LOGISTICS-01: vehicle the player drives in Mode.DRIVE (-1 = none).
 var driving_id := -1
 var drive_camera: DriveCamera
+## GAMEPLAY-02 (controls): keys 1-4 jump to the sites only in the old scripted worlds; the sandbox uses them for the
+## simulation speed (CoreDemo).
+var site_keys := true
+
+## GAMEPLAY-02 (controls): the one mouse-mode policy of the game. The mouse is captured only in first person with no
+## menu or dialog open (`ui_holds`: reason -> true, e.g. "pause", "menu"); everything else shows the cursor. Every
+## writer (mode changes, menus, a body's possession setter, window focus) calls refresh_mouse() instead of setting
+## Input.mouse_mode itself. `current` is set on entering the tree, before any body's _ready can ask.
+static var current: GameController
+var ui_holds := {}
+
+
+func _enter_tree() -> void:
+	current = self
+
+
+func _exit_tree() -> void:
+	if current == self:
+		current = null
 
 
 func _ready() -> void:
@@ -46,6 +65,33 @@ func _ready() -> void:
 	drive_camera = DriveCamera.new()
 	drive_camera.name = "DriveCamera"
 	add_child(drive_camera)
+	refresh_mouse()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		refresh_mouse()
+
+
+## A menu / dialog opens (on) or closes: while any is open the cursor is shown, also in first person.
+func hold_mouse(reason: String, on: bool) -> void:
+	if on:
+		ui_holds[reason] = true
+	else:
+		ui_holds.erase(reason)
+	refresh_mouse()
+
+
+func wants_capture() -> bool:
+	return mode == Mode.FPS and ui_holds.is_empty() and possessed_body() != null
+
+
+func refresh_mouse() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	var want := Input.MOUSE_MODE_CAPTURED if wants_capture() else Input.MOUSE_MODE_VISIBLE
+	if Input.mouse_mode != want:
+		Input.mouse_mode = want
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -55,7 +101,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("possess_next") and not sites.is_empty():
 		possess_next()
 		get_viewport().set_input_as_handled()
-	elif event is InputEventKey and event.pressed and not event.echo and not sites.is_empty():
+	elif event is InputEventMouseButton and event.pressed and mode == Mode.FPS and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		# first person lost the capture (another window had focus): a click takes it back (the click does not fire, SoldierBody)
+		refresh_mouse()
+	elif site_keys and event is InputEventKey and event.pressed and not event.echo and not sites.is_empty():
 		var i: int = event.physical_keycode - KEY_1
 		if i >= 0 and i < sites.size():
 			jump_to_site(i)
@@ -112,6 +161,7 @@ func possess(id: int) -> bool:
 	if diagnostics:
 		diagnostics.player = body
 	mode = Mode.FPS
+	refresh_mouse()
 	mode_changed.emit(mode)
 	possessed_changed.emit(id)
 	return true
@@ -130,6 +180,7 @@ func enter_rts() -> void:
 		_set_active_camera(rts_camera.camera)
 		if rts:
 			rts.set_active(true)
+		refresh_mouse()
 		mode_changed.emit(mode)
 		return
 	var body := possessed_body()
@@ -148,6 +199,7 @@ func enter_rts() -> void:
 	_set_active_camera(rts_camera.camera)
 	if rts:
 		rts.set_active(true)
+	refresh_mouse()
 	mode_changed.emit(mode)
 
 
@@ -169,7 +221,6 @@ func drive(id: int) -> bool:
 		var old := possessed_body()
 		if old:
 			old.player_controlled = false
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_leave_driving()
 	if rts:
 		rts.set_active(false)
@@ -180,6 +231,7 @@ func drive(id: int) -> bool:
 	_set_active_camera(drive_camera.camera)
 	if collider_streamer and not detail:
 		collider_streamer.target = body
+	refresh_mouse()
 	mode_changed.emit(mode)
 	driving_changed.emit(id)
 	return true
@@ -255,7 +307,6 @@ func on_unit_died(u: UnitState) -> void:
 	if u.id != possessed_id:
 		return
 	if mode == Mode.FPS:
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		enter_rts()
 	possessed_died.emit(u.id)
 

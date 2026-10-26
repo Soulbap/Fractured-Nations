@@ -110,15 +110,21 @@ var continue_result := {}
 ## GAMEPLAY-01G: the in-game menu (Esc) and the request to show the start screen after the scene is reloaded (Main Menu).
 var pause_menu: PauseMenu
 static var return_to_menu := false
-var _pause_mouse := Input.MOUSE_MODE_VISIBLE
+## GAMEPLAY-02 (controls): Space pauses the simulation in the tactical view and on the map (the scene tree is paused like
+## under the in-game menu, but the view, the orders, the HUD and the world's streaming keep running: _presentation()).
+var sim_paused := false
+## The game's keys (Esc, Space, 1-4, M, speed) are read by this child, which runs while the tree is paused.
+var _keys: KeyRelay
 
 
 func _ready() -> void:
+	UISettings.apply_at_start(get_tree())
 	terrain = world.get_node("Terrain3D")
 	config = world.get_node("WorldBuilder").config
 	vegetation = world.get_node_or_null("Vegetation")
 	WorldLook.apply(world)
 	GroundLook.apply(world)
+	UnitVisuals.no_body_shadow_on(world)
 	var collider_streamer: InstanceColliderStreamer = world.get_node_or_null("InstanceColliderStreamer")
 	var diagnostics: WorldDiagnostics = world.get_node_or_null("WorldDiagnostics")
 	# The world's free exploration body is replaced by possessable soldiers.
@@ -314,6 +320,15 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	# WORLD-SANDBOX-01: the game is the three-faction war unless an earlier milestone's
 	# scripted test asks for its own fixed layout.
 	sandbox = not Array(args).any(func(a: String) -> bool: return LEGACY_TESTS.has(a))
+	# GAMEPLAY-02 (controls): the key relay is the first child, so it reads a key after every panel and controller had it
+	# (as CoreDemo's own handler did); 1-4 are the simulation speed in the sandbox, the site jumps only in the old worlds.
+	_keys = KeyRelay.new()
+	_keys.name = "GameKeys"
+	_keys.demo = self
+	add_child(_keys)
+	move_child(_keys, 0)
+	game.site_keys = not sandbox
+	game.mode_changed.connect(_on_mode_changed)
 	var resume := false
 	if sandbox:
 		# GAMEPLAY-01B: the scenario comes from --scenario=<id> / --continue, else (a normal launch) the start screen;
@@ -485,6 +500,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--visual02-test" in args:
 		_gameplay_selftest = Visual02SelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)
+	elif "--controls-test" in args:
+		_gameplay_selftest = ControlsSelfTest.new(self)
+		_gameplay_selftest.run.call_deferred(args)
 	elif "--gameplay05-test" in args:
 		_gameplay_selftest = Gameplay05SelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)
@@ -610,6 +628,7 @@ func _run_menu() -> String:
 	menu = MainMenu.new()
 	menu.save_info = peek_save()
 	add_child(menu)
+	game.hold_mouse("menu", true)
 	hud.visible = false
 	if game.diagnostics:
 		game.diagnostics.set_overlay_visible(false)
@@ -632,6 +651,7 @@ func _run_menu() -> String:
 		await get_tree().process_frame
 	menu.queue_free()
 	menu = null
+	game.hold_mouse("menu", false)
 	hud.visible = true
 	rts_camera.set_process(true)
 	rts_camera.set_process_unhandled_input(true)
@@ -705,7 +725,7 @@ func start_focus() -> Vector3:
 # --- In-game menu (GAMEPLAY-01G) -----------------------------------------------------------------------------------------
 
 ## Esc: pauses the game (the tree, so the simulation stops) and shows the in-game menu; Esc / Resume closes it and gives the
-## view back its mouse mode.
+## view back its mouse mode (GameController.refresh_mouse: the menu holds the cursor visible while it is open).
 func toggle_pause() -> void:
 	if pause_menu != null and pause_menu.visible:
 		_close_pause()
@@ -720,17 +740,63 @@ func toggle_pause() -> void:
 	pause_menu.save_info = peek_save()
 	pause_menu.refresh()
 	pause_menu.say("Game time %s  ·  %s" % [MainMenu._clock(sim.state.time), scenario.title if scenario else ""])
-	_pause_mouse = Input.mouse_mode
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	pause_menu.visible = true
-	get_tree().paused = true
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+	game.hold_mouse("pause", true)
+	_apply_pause()
 
 
 func _close_pause() -> void:
 	if pause_menu:
 		pause_menu.visible = false
-	get_tree().paused = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if game.mode == GameController.Mode.FPS else _pause_mouse
+	game.hold_mouse("pause", false)
+	_apply_pause()
+
+
+## First person and driving run in real time: leaving the tactical view resumes the simulation at 1 x.
+func _on_mode_changed(mode: int) -> void:
+	if mode != GameController.Mode.RTS and sandbox:
+		apply_time_scale(1.0)
+		if sim_paused:
+			set_sim_paused(false)
+
+
+func menu_open() -> bool:
+	return pause_menu != null and pause_menu.visible
+
+
+## Space: the simulation stops (or goes on) in the tactical view; first person and driving always run.
+func set_sim_paused(on: bool) -> void:
+	sim_paused = on and game.mode == GameController.Mode.RTS
+	TimeCompression.paused = sim_paused
+	_apply_pause()
+
+
+## The tree is paused while the menu is open or the simulation is paused; only in the second case the presentation keeps running
+## (the menu freezes the view behind it as before).
+func _apply_pause() -> void:
+	var menu_up := menu_open()
+	get_tree().paused = sim_paused or menu_up
+	var live := Node.PROCESS_MODE_ALWAYS if sim_paused and not menu_up else Node.PROCESS_MODE_INHERIT
+	for n in _presentation():
+		if n != null and is_instance_valid(n):
+			n.process_mode = live
+
+
+## What runs while the simulation is paused: the cameras and controls, the HUD and overlays, and the world's look and streaming
+## around the camera (terrain, vegetation, ground collision). WorldSim, the bodies, the detail tier and navigation stop.
+func _presentation() -> Array:
+	return [rts_camera, rts, game, hud, construction, tactics_overlay, contact_markers, world, get_node_or_null("GroundCollision"),
+		strategic_map.get_parent() if strategic_map else null, _road_overlay, _route_overlay]
+
+
+## 1-4 in the tactical view: 1, 2, 4, 8 x (also resumes a paused simulation).
+func set_speed_level(i: int) -> void:
+	if game.mode != GameController.Mode.RTS:
+		return
+	apply_time_scale([1.0, 2.0, 4.0, 8.0][clampi(i, 0, 3)])
+	if sim_paused:
+		set_sim_paused(false)
 
 
 func _on_pause_chosen(action: String) -> void:
@@ -760,6 +826,8 @@ func _on_pause_chosen(action: String) -> void:
 				pause_menu.say("Cannot load: %s" % r.reason, false)
 		"main_menu":
 			return_to_menu = true
+			sim_paused = false
+			TimeCompression.paused = false
 			get_tree().paused = false
 			apply_time_scale(1.0)
 			get_tree().reload_current_scene()
@@ -790,7 +858,6 @@ func toggle_map() -> void:
 		strategic_map.close()
 		return
 	if game.mode != GameController.Mode.RTS:
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		game.enter_rts()
 	if construction and construction.active:
 		construction.set_active(false)
@@ -858,7 +925,12 @@ func toggle_road_overlay() -> void:
 	_road_overlay.rebuild()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+## GAMEPLAY-02 (controls): the game's keys, read by KeyRelay (runs while the tree is paused). Esc: the map closes, else the in-game
+## menu opens (the panels that close on Esc take it first). Space: pause / resume (tactical view and map; in first person it is
+## the jump). 1-4: 1 x, 2 x, 4 x, 8 x (tactical view; first person always runs at 1 x). , . step the speed as before.
+func _on_key(event: InputEvent) -> void:
+	if menu_open() or menu != null:
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F6:
 		toggle_route_overlay()
 		get_viewport().set_input_as_handled()
@@ -873,6 +945,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not sandbox or not (event is InputEventKey) or not event.pressed or event.echo:
 		return
+	var rts_view := game.mode == GameController.Mode.RTS
 	match event.physical_keycode:
 		KEY_M:
 			toggle_map()
@@ -880,9 +953,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_ESCAPE:
 			if strategic_map and strategic_map.visible:
 				strategic_map.close()
-				get_viewport().set_input_as_handled()
-			elif menu == null:
+			else:
 				toggle_pause()
+			get_viewport().set_input_as_handled()
+		KEY_SPACE:
+			if rts_view:
+				set_sim_paused(not sim_paused)
+				get_viewport().set_input_as_handled()
+		KEY_1, KEY_2, KEY_3, KEY_4:
+			if rts_view:
+				set_speed_level(event.physical_keycode - KEY_1)
 				get_viewport().set_input_as_handled()
 		KEY_COMMA:
 			set_time_speed(-1)
@@ -894,9 +974,21 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(_delta: float) -> void:
 	TimeCompression.sample(sim.state.time)
-	# First person always runs in real time.
-	if sandbox and game.mode != GameController.Mode.RTS and Engine.time_scale != 1.0:
+	# First person always runs in real time (and never paused).
+	if sandbox and game.mode != GameController.Mode.RTS and (Engine.time_scale != 1.0 or sim_paused):
 		apply_time_scale(1.0)
+		set_sim_paused(false)
+
+
+## Reads the game's keys for CoreDemo while the tree is paused (CoreDemo itself stops with the simulation).
+class KeyRelay extends Node:
+	var demo: CoreDemo
+
+	func _ready() -> void:
+		process_mode = Node.PROCESS_MODE_ALWAYS
+
+	func _unhandled_input(event: InputEvent) -> void:
+		demo._on_key(event)
 
 
 func _spawn_large_world() -> void:
