@@ -10,7 +10,20 @@ stable branch, updated only with the product owner's approval), one canonical de
 branches are contained in `develop` and stay as history. See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest finished: **WORLD-VISUALS-01** (Scandinavian environment overhaul, on `develop`) — new trees, ground, rocks and light
+Newest finished: **QOL-01** (tactical controls, squad behaviour and command feedback, on `develop`) — every squad has a
+behaviour mode, **SAFE / AWARE / COMBAT / STEALTH** (after Arma 3's AI behaviour; **X** cycles, or the MODE row of the
+command panel), that the existing systems read: route choice (SAFE keeps to roads, STEALTH goes through woods and off roads,
+COMBAT and STEALTH keep wide of the enemy their faction believes in, with detour limits), posture (STEALTH walks crouched
+and lies low near a reported enemy, SAFE stays up until shot at), cover reactions, spacing, weapon readiness and fire
+discipline (STEALTH does not give itself away at range until it is found). AWARE is the default and the old behaviour.
+A player squad whose move meets contact halts and fights, then **resumes the move to its original destination** (a HOLD
+or a new order wins; at most three halts per order). The command panel is now a compact grid at the bottom right with the
+order in words ("Moving, 640 m to go by route", "Move interrupted: defend - resumes when the contact is over"); squad
+notices (under fire, casualties, halted / resumed, arrived, blocked, vehicle stuck) are clickable - a click selects the
+squad and frames the camera on it; **C** frames the selection, a double click in the roster too. The selection follows you
+through first person, the tactical view and the map. Tests: `--qol01-test [--shots]`. See [docs/QOL-01_REPORT.md](docs/QOL-01_REPORT.md).
+
+Before that: **WORLD-VISUALS-01** (Scandinavian environment overhaul, on `develop`) — new trees, ground, rocks and light
 on the unchanged `ref_20km` (manifest OK). Norway spruce, Scots pine and birch are rebuilt in Blender from CC0 scanned sprigs
 and bark (Poly Haven): 24 tree variants across the existing library ids (each instance draws one variant by its position;
 chunk data, colliders and navigation untouched), a mid LOD and impostor atlases per id; rocks, stumps and logs from CC0
@@ -166,7 +179,8 @@ when nobody commands them and only from what they saw or what their faction has 
 objectives with the same tactics. You command them from the tactical view: select a squad and press **Z** assault,
 **K** suppress, **L** flank, **J** defend, **Backspace** withdraw (at the cursor, or arm from the bottom-right bar and
 click), **Shift + right click** moves by bounds, **Shift+V** cycles formations (V still toggles line / column; auto: column on roads and in woods, wedge in
-the open, dispersed under fire); **F7** shows fire teams, posts, fire missions and flank routes. Four new Blender cover
+the open, dispersed under fire); **F7** shows fire teams, posts, fire missions and flank routes. QOL-01 adds **X** /
+**Shift+X** (behaviour mode) and **C** (frame the selected squads). Four new Blender cover
 props (sandbag fighting position, log barricade, boulder group, earth berm) are in the construction menu under Defences.
 `--squad-demo` starts a ready-made encounter (a defended position, two attacking squads) in the real game. See
 [docs/AI-SQUAD-01_REPORT.md](docs/AI-SQUAD-01_REPORT.md).

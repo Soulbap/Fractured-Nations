@@ -23,7 +23,7 @@ Norwegian; code, comments and docs are English.
   (`../fractured-nations-*`) are only kept until the product owner approves removing them
   (status: [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md)). Do not develop there.
 - **Session workflow:** open this project → read this file and the roadmap ([docs/AI_ROADMAP.md](docs/AI_ROADMAP.md),
-  ASSET-INTEGRATION-01 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
+  QOL-01 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
   targeted tests + visual Godot validation → update the report / README → commit to `develop`.
 - Each milestone ends with a report in `docs/<MILESTONE>_REPORT.md` and an updated README.
 
@@ -263,6 +263,17 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   `BaseSim.VEHICLES` and `all_ids()` stay truck / APC); `VehicleVisual` poses their GLB pivots from the sidecar's axes. The
   Development Scenario's armoury (`DevArmoury`, rule `dev_armoury`, F10) gives roles through `CombatSim.give_role`. Tests:
   `--asset-integration-test [--shots] [--only r_registry,w_weapons,f_fps,p_posture,v_switch,v_vehicles,v_drive,v_transport,s_persist]`.
+- **Squad behaviour modes and order feedback (QOL-01).** `SquadState.behaviour` (SAFE / AWARE / COMBAT / STEALTH, saved) is the
+  owner's choice; `SquadBehaviour` (`scripts/core/squad_behaviour.gd`) is the table every system reads; what a squad acts on now
+  is `SquadTactics.behaviour_now` (derived, never written back: SAFE under fire acts COMBAT, a found STEALTH squad acts COMBAT).
+  AWARE is the default and the pre-QOL-01 behaviour - keep AI squads on it unless a change is meant for them. Routes: an order's
+  route (`SquadControl._submit_wait`, not "op") uses `StrategicRoutes.route_profiled` (lazy profile grids from the grid's
+  `cover` layer = vegetation.png forest density, believed-threat cells from `StrategicInfluence` made dearer per search, detour
+  limit against the ordinary route). A moving player squad meeting contact is interrupted through the ordinary `_consider`
+  (`SquadState.interrupted`, `prev_target` = the move's *final* goal via `SquadControl.move_goal`) and resumes after
+  `RESUME_CALM_S`; any player order clears it. `SquadControl.describe_order` is the one order description every UI surface and
+  `SquadReports` (notices, `war.log_event(..., {"squad": id})`, clickable via `GameHUD.show_event`) read. Tests:
+  `--qol01-test [--shots] [--only r_routes,b_modes,p_posture,i_interrupt,n_notices,c_views,z_shots,q_perf]`.
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are
