@@ -10,7 +10,16 @@ stable branch, updated only with the product owner's approval), one canonical de
 branches are contained in `develop` and stay as history. See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest finished: **WORLD-COVER-01** (natural terrain cover) — 32 067 boulders, rock groups and ridges, thick fallen logs,
+Newest finished: **WORLD-COVER-01.1** (terrain microrelief, cover at the end of a move, fitted colliders) — 13 773 natural
+terrain features over `ref_20km` (shallow hollows, swells, low earth folds, field-edge banks and 112 km of roadside drainage ditches)
+added to the terrain in memory at start (`worlds/relief/ref_20km.relief.json`; `--no-terrain-relief` for the old ground), every
+gradient within what a truck climbs, nothing under roads, bridges, buildings or cover objects. Soldiers find spots in hollows and
+behind folds and go prone where only that protects, stand to fire over tall cover; a COMBAT or STEALTH squad ordered near a known
+enemy ends its move in cover around the ordered point. Rock groups, ridges, logs, root plates and walls got colliders fitted per
+variant. A crash at quit after some tests (a navmesh bake still running) is fixed. Tests `--scenario=dev --world-cover11-test
+[--shots]`. See [docs/WORLD-COVER-01_1_REPORT.md](docs/WORLD-COVER-01_1_REPORT.md).
+
+Before that: **WORLD-COVER-01** (natural terrain cover) — 32 067 boulders, rock groups and ridges, thick fallen logs,
 wind-thrown root plates, dry stone field walls and timber stacks across `ref_20km` (new scan-based assets, library ids 24-30),
 placed by rules from the world's own maps (forest density, rockiness, field edges, forest roads; never on roads, bridges,
 water, objectives or bases) as a read-only layer over the unchanged world (`worlds/cover/ref_20km.cover.json`;

@@ -23,7 +23,7 @@ Norwegian; code, comments and docs are English.
   (`../fractured-nations-*`) are only kept until the product owner approves removing them
   (status: [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md)). Do not develop there.
 - **Session workflow:** open this project → read this file and the roadmap ([docs/AI_ROADMAP.md](docs/AI_ROADMAP.md),
-  QOL-01 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
+  WORLD-COVER-01.1 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
   targeted tests + visual Godot validation → update the report / README → commit to `develop`.
 - Each milestone ends with a report in `docs/<MILESTONE>_REPORT.md` and an updated README.
 
@@ -286,6 +286,22 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   ~0.95 m off it) and a walk to a post (`UnitState.post_pos`) arrives with the reaction tolerance. Tests: `--scenario=dev
   --world-cover-test [--shots] [--only v_kinds,b_ballistic,a_open,b_forest,c_road,d_two_threats,e_modes,n_vehicles,q_perf,z_fight]`
   (with `--no-natural-cover` for before numbers).
+- **Terrain microrelief, end-of-move cover, fitted colliders (WORLD-COVER-01.1).** `TerrainRelief` (`scripts/world/terrain_relief.gd`,
+  data `worlds/relief/<world>.relief.json`: hollows, swells, folds, steps, field-edge banks, roadside ditches as parameters / polylines)
+  adds its heights to Terrain3DData in memory at game start after the settlement layer and the road shoulders and before the route
+  grid, collision, navmesh and LineOfFire read the terrain (cached per file hash in `user://terrain/`; route grid cache keyed by it;
+  `--no-terrain-relief` off); vegetation chunks are moved with the ground (`TerrainRelief.fix_chunk`, before RoadShoulders'). Features
+  never touch roads and their shoulder band, bridges, water, settlements, objectives, bases, cover objects or added buildings (the
+  builder drops any that would). Rebuild: `--scenario=dev --no-terrain-relief --build-terrain-relief [--area=x,z,r]` (~40 s); keep
+  every gradient under `MAX_GRADE` + `BASE_GRADE` (0.40, the truck). Cover spots on it come from the feature list
+  (`CombatBrain._relief_candidates`); a spot that protects only lying down is "low" (`_evaluate_spot`) and the soldier goes prone
+  there (`_low_cover`); behind cover taller than his crouched eye a fighting soldier stands to fire (`_stand_to_fire`). A player
+  squad's move ends in cover near the ordered point when a believed threat is near (`SquadTactics._settle`: COMBAT / AWARE firing
+  posts with protection, STEALTH least-seen posts; once per order; `--no-end-cover` off). Box ids may have per-variant boxes
+  (`VegetationMeshDef.parts`, measured by `tools/world_cover/measure_cover_colliders.gd --write`; every box reader goes through
+  `boxes_of`; `--single-box-colliders` off). `AreaNavigation.drain()` (from `CoreDemo.shutdown_cleanup`) waits for running
+  navmesh bakes: one left running at quit crashed the process. Tests: `--scenario=dev --world-cover11-test [--shots] [--only
+  r_global,r_survey,k_colliders,b_hollow,c_ridge,v_same,d_combat_move,e_stealth_move,f_road,g_two_threats,a_open,q_perf]`.
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are
