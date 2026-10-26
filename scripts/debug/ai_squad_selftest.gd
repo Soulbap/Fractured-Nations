@@ -479,7 +479,8 @@ func _c_flank() -> Dictionary:
 		phases[n.tactic_name() + ":" + str(n.tactic_phase)] = true
 		if route.size() > 0 and n.teams.size() >= 2:
 			closest_to_route_end = minf(closest_to_route_end, _flat(_centroid_of(n.teams[1]), route[route.size() - 1]))
-			if n.tactic == SquadState.Tactic.FLANK:
+			# The support's role ends when the flank has won and the whole squad occupies the target (PH_OCCUPY).
+			if n.tactic == SquadState.Tactic.FLANK and n.tactic_phase != SquadTactics.PH_OCCUPY:
 				support_moved = maxf(support_moved, _flat(_centroid_of(n.teams[0]), support_start))
 	var out := {"order": res.get("text", ""), "started_as": started_as, "route": route.size(), "route_len_m": snappedf(_route_len(route, man_start), 1.0),
 		"man_closest_to_stage_m": snappedf(closest_to_route_end, 0.1), "support_max_move_m": snappedf(support_moved, 0.1),

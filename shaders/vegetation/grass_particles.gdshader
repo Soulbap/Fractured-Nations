@@ -59,6 +59,10 @@ group_uniforms plant_types;
 uniform bool plant_types = false;
 uniform float type_patch_scale = 0.045;
 
+// COMBAT-POLISH-01: tufts in hollows and ditch bottoms take the ground's damp darker tone (terrain_visual02 relief_tint). 0 = off.
+uniform float relief_tint = 0.0;
+uniform vec3 relief_damp : source_color = vec3(0.78, 0.82, 0.76);
+
 group_uniforms private;
 uniform float max_dist = 1.;
 uniform vec3 camera_position = vec3(0.);
@@ -239,6 +243,18 @@ void start() {
 		c[2] * weights[2] +
 		c[3] * weights[3] ;
 	COLOR = color_map;
+	if (relief_tint > 0.0) {
+		// Local concavity: the ground here against the mean of rings 4.5 m and 10 m round it (the ground shader's rule).
+		float c = 0.0;
+		for (int i = 0; i < 6; i++) {
+			float a = float(i) * 1.0471976;
+			vec2 d = vec2(cos(a), sin(a)) * _vertex_density;
+			c += 0.6 * texelFetch(_height_maps, get_index_coord(floor(pos.xz * _vertex_density + d * 4.5 + 0.5), VERTEX_PASS), 0).r;
+			c += 0.4 * texelFetch(_height_maps, get_index_coord(floor(pos.xz * _vertex_density + d.yx * 10.0 + 0.5), VERTEX_PASS), 0).r;
+		}
+		c = pos.y - c / 6.0;
+		COLOR.rgb *= mix(vec3(1.0), relief_damp, smoothstep(0.06, 0.34, -c) * relief_tint);
+	}
 	float lum = dot(color_map.rgb, vec3(0.3, 0.5, 0.2));
 	// lum 1 = open ground, ~0.55 = dense forest tint.
 	float keep = 1.0 - forest_thinning * clamp((1.0 - lum) * 2.2, 0.0, 1.0);

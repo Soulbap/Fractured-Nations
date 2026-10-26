@@ -143,6 +143,13 @@ uniform float verge_gravel_layer = 5.0;
 uniform float verge_uv_scale = 0.42;
 uniform vec3 verge_tint : source_color = vec3(0.95, 0.9, 0.82);
 uniform float verge_dirt_layer = 2.0;
+// COMBAT-POLISH-01: ground relief made readable - hollows and ditch bottoms damp and darker (soil showing where deepest), low
+// crests drier, from the height map's local concavity (no extra data: the microrelief is in the heights). 0 = off.
+uniform float relief_tint = 1.0;
+uniform vec3 relief_damp : source_color = vec3(0.74, 0.78, 0.72);
+uniform vec3 relief_soil : source_color = vec3(0.36, 0.31, 0.24);
+uniform vec3 relief_dry : source_color = vec3(1.08, 1.05, 0.90);
+uniform float relief_far = 900.0;
 
 // Varyings & Types
 
@@ -259,6 +266,23 @@ vec2 rotate_vec2(const vec2 v, const vec2 cs) {
 }
 
 // 2-4 lookups ( 2-6 with dual scaling )
+// COMBAT-POLISH-01: the terrain height at region coordinates uv2 (bilinear within its region; 0 outside the regions).
+float relief_height(const vec2 uv2) {
+	vec3 r = get_index_uv(uv2);
+	return r.z > -1.0 ? textureLod(_height_maps, r, 0.0).r : 0.0;
+}
+
+// How far the ground at uv2 lies below (-) or above (+) the mean of a ring of six points r_m metres round it.
+float relief_concavity(const vec2 uv2, const float h0, const float r_m, const float turn) {
+	float d = r_m * _vertex_density * _region_texel_size;
+	float sum = 0.0;
+	for (int i = 0; i < 6; i++) {
+		float a = turn + float(i) * 1.0471976;
+		sum += relief_height(uv2 + vec2(cos(a), sin(a)) * d);
+	}
+	return h0 - sum / 6.0;
+}
+
 void accumulate_material(const vec3 base_ddx, const vec3 base_ddy, const float weight, const ivec3 index,
 			const uint control, const vec2 texture_weight, const ivec2 texture_id, const vec3 i_normal,
 			const float h, inout material mat) {
@@ -654,6 +678,22 @@ void fragment() {
 	float heath_w = (1.0 - smoothstep(0.42, 0.62, dot(color_map.rgb, vec3(0.3, 0.5, 0.2)))) * open_all * (1.0 - clamp(mat.kind.x, 0.0, 1.0));
 	ALBEDO *= mix(vec3(1.0), heath_tint, heath_w);
 
+	// COMBAT-POLISH-01: hollows, ditches and folds of the microrelief read on the ground: damp darker bottoms (bare soil in
+	// patches where deepest), slightly drier crests. Two scales: ditches and small hollows (4.5 m), folds and wide hollows (10 m).
+	float relief_damp_w = 0.0;
+	if (relief_tint > 0.0 && v_vertex_xz_dist < relief_far && region_uv.z > -1.0) {
+		float h0 = relief_height(uv2);
+		float c = 0.6 * relief_concavity(uv2, h0, 4.5, 0.0) + 0.4 * relief_concavity(uv2, h0, 10.0, 0.52);
+		float fade = (1.0 - smoothstep(relief_far * 0.6, relief_far, v_vertex_xz_dist)) * relief_tint;
+		float rn = texture(v2_noise, wp / 5.3 + vec2(0.31, 0.77)).r;
+		relief_damp_w = smoothstep(0.06, 0.34, -c + (rn - 0.5) * 0.08) * fade;
+		float crest = smoothstep(0.10, 0.45, c) * fade;
+		float soil = smoothstep(0.22, 0.42, -c) * smoothstep(0.45, 0.70, rn) * fade * (1.0 - clamp(mat.kind.x, 0.0, 1.0));
+		ALBEDO *= mix(vec3(1.0), relief_damp, relief_damp_w);
+		ALBEDO = mix(ALBEDO, relief_soil * (0.85 + 0.3 * rn), soil * 0.55);
+		ALBEDO *= mix(vec3(1.0), relief_dry, crest * 0.8);
+	}
+
 	// WORLD-VISUALS-01: gravel verge along roads (under the road mesh it is hidden; beyond it a 1-2 m shoulder fraying into
 	// the grass). Noise shifts the edge so it is not a ruled line.
 	if (verge_enabled) {
@@ -682,7 +722,7 @@ void fragment() {
 		canopy *= clamp(color_map.rgb / vec3(0.40, 0.50, 0.30), vec3(0.75), vec3(1.25));
 		ALBEDO = mix(ALBEDO, canopy, forest_w);
 	}
-	ROUGHNESS = mix(roughness, 0.95, forest_w);
+	ROUGHNESS = mix(roughness * (1.0 - 0.25 * relief_damp_w), 0.95, forest_w);
 	SPECULAR = 1. - mat.normal_rough.a;
 	// Repack final normal map value.
 	NORMAL_MAP = fma(normalize(mat.normal_rough.xzy), vec3(0.5), vec3(0.5));

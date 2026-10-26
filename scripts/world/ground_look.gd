@@ -27,6 +27,10 @@ static func apply(world: Node) -> void:
 	mat.shader_override_enabled = true
 	var noise := noise_texture()
 	mat.set_shader_param(&"v2_noise", noise)
+	# COMBAT-POLISH-01: the relief tint (hollows / ditches damp, crests drier), on the ground and its grass tufts;
+	# `--no-relief-tint` for comparisons.
+	var relief := 0.0 if "--no-relief-tint" in OS.get_cmdline_user_args() else 1.0
+	mat.set_shader_param(&"relief_tint", relief)
 	if textures_v3:
 		# The scanned forest floor is litter-brown; seen from above it shows between the tree tops: canopy colour from nearer.
 		mat.set_shader_param(&"canopy_start", 150.0)
@@ -34,6 +38,7 @@ static func apply(world: Node) -> void:
 	# The grass tufts follow the same ground colour (shaders/environment/grass_tuft.gdshader).
 	var grass := world.get_node_or_null("Grass") as GrassLayer
 	if grass:
+		grass.set_process_param(&"relief_tint", relief)
 		# WORLD-VISUALS-01 road verges: the ground shader follows the grass layer's road mask, also after later edits.
 		var set_mask := func(tex: Texture2D, origin: Vector2, size_m: float) -> void:
 			mat.set_shader_param(&"road_mask", tex)

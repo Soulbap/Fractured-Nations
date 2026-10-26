@@ -10,7 +10,14 @@ stable branch, updated only with the product owner's approval), one canonical de
 branches are contained in `develop` and stay as history. See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest finished: **WORLD-COVER-01.1** (terrain microrelief, cover at the end of a move, fitted colliders) — 13 773 natural
+Newest finished: **COMBAT-POLISH-01** (AI cover, prone on slopes, readable relief) — AI factions' squads now end their moves in
+cover like the player's COMBAT squads (operation slots, garrisons, reinforcements; 5 of 6 protected against 0 before;
+`--no-ai-end-cover`), and settle again when the threat swings round. Prone soldiers lie along the slope under them instead of
+hanging their legs in the air or burying their heads, and the rifle points at the target within a degree. Hollows and ditch bottoms
+read on the ground as damp, darker soil, crests slightly drier (`--no-relief-tint`). An ordered flank over open ground is no longer
+refused (`c_flank` passes). Tests `--scenario=dev --combat-polish01-test [--shots]`. See [docs/COMBAT-POLISH-01_REPORT.md](docs/COMBAT-POLISH-01_REPORT.md).
+
+Before that: **WORLD-COVER-01.1** (terrain microrelief, cover at the end of a move, fitted colliders) — 13 773 natural
 terrain features over `ref_20km` (shallow hollows, swells, low earth folds, field-edge banks and 112 km of roadside drainage ditches)
 added to the terrain in memory at start (`worlds/relief/ref_20km.relief.json`; `--no-terrain-relief` for the old ground), every
 gradient within what a truck climbs, nothing under roads, bridges, buildings or cover objects. Soldiers find spots in hollows and

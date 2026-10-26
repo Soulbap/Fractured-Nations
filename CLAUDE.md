@@ -23,7 +23,7 @@ Norwegian; code, comments and docs are English.
   (`../fractured-nations-*`) are only kept until the product owner approves removing them
   (status: [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md)). Do not develop there.
 - **Session workflow:** open this project → read this file and the roadmap ([docs/AI_ROADMAP.md](docs/AI_ROADMAP.md),
-  WORLD-COVER-01.1 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
+  COMBAT-POLISH-01 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
   targeted tests + visual Godot validation → update the report / README → commit to `develop`.
 - Each milestone ends with a report in `docs/<MILESTONE>_REPORT.md` and an updated README.
 
@@ -302,6 +302,12 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   `boxes_of`; `--single-box-colliders` off). `AreaNavigation.drain()` (from `CoreDemo.shutdown_cleanup`) waits for running
   navmesh bakes: one left running at quit crashed the process. Tests: `--scenario=dev --world-cover11-test [--shots] [--only
   r_global,r_survey,k_colliders,b_hollow,c_ridge,v_same,d_combat_move,e_stealth_move,f_road,g_two_threats,a_open,q_perf]`.
+- **AI cover, prone slopes, relief look (COMBAT-POLISH-01).** `SquadTactics._settle` is the one end-of-move cover step for player
+  and AI squads (AI as COMBAT; not while an operation is still approaching; re-settles when the believed threat swings > 75°;
+  `--no-ai-end-cover`). A prone body is tilted onto the ground (`InfantryCharacter.slope_at` / `tilt_basis`, near body and far
+  proxy) - presentation only, the record and its hit volumes stay level; the prone aim corrects itself from the rifle's bore.
+  Relief readability is a concavity tint in `terrain_visual02.gdshader` and `grass_particles.gdshader` (`relief_tint`,
+  `--no-relief-tint`). Checks: `--scenario=dev --combat-polish01-test [--shots] [--only p_prone,t_ground,a_ai_cover]`.
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are

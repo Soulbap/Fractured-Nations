@@ -1083,6 +1083,11 @@ func _choose_posture(u: UnitState) -> void:
 	var sq := sim.state.squad_of(u.id)
 	var beh := sim.tactics.behaviour_now(sq) if sq else SquadBehaviour.AWARE
 	var near := sq != null and SquadBehaviour.LOW_M[beh] > 0.0 and sim.tactics.threat_dist(sq) <= SquadBehaviour.LOW_M[beh]
+	# COMBAT-POLISH-01: an AI faction's soldier at the post his squad settled into at the end of a move (SquadTactics._settle,
+	# which places AI squads as COMBAT) keeps low against the believed threat like a COMBAT squad of the player's.
+	if sq != null and not near and sq.tactic == SquadState.Tactic.NONE and u.post_pos.is_finite() and _flat(u.position, u.post_pos) < 2.0 \
+			and not sim.tactics._player_squad(sq) and sim.tactics.threat_dist(sq) <= SquadBehaviour.LOW_M[SquadBehaviour.COMBAT]:
+		near = true
 	if moving:
 		# STEALTH close to a believed enemy walks crouched (concealment delays noticing); upright again further off, and always
 		# upright when it sprints across open ground or dashes for cover (QOL-01.1: no crouch-walking the whole approach).

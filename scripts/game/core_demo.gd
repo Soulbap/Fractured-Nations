@@ -455,6 +455,9 @@ func _start_large_world(collider_streamer: InstanceColliderStreamer) -> void:
 	elif "--asset-integration-test" in args:
 		_gameplay_selftest = AssetIntegrationSelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)
+	elif "--combat-polish01-test" in args:
+		_gameplay_selftest = CombatPolish01SelfTest.new(self)
+		_gameplay_selftest.run.call_deferred(args)
 	elif "--world-cover11-test" in args:
 		_gameplay_selftest = WorldCover11SelfTest.new(self)
 		_gameplay_selftest.run.call_deferred(args)

@@ -214,7 +214,14 @@ var settle_radius_m := 18.0
 var settle_enabled := not "--no-end-cover" in OS.get_cmdline_user_args()
 ## A believed threat within this distance makes the squad settle into cover, by behaviour (SAFE never).
 const SETTLE_THREAT_M := {SquadBehaviour.AWARE: 150.0, SquadBehaviour.COMBAT: 350.0, SquadBehaviour.STEALTH: 450.0}
+## COMBAT-POLISH-01: AI factions' squads settle the same way at the end of their moves (an engaged operation's slots, stationed
+## squads, arrived reinforcements); `--no-ai-end-cover` keeps them in their formation slots.
+var settle_ai := not "--no-ai-end-cover" in OS.get_cmdline_user_args()
+## A settled squad whose believed threat has swung this far round (degrees) takes its positions again, at most every resettle_s.
+var resettle_deg := 75.0
+var resettle_s := 30.0
 var settles := 0
+var settle_waits := 0
 
 
 ## A player squad's move has arrived: COMBAT (and AWARE close to a threat) spreads its soldiers over the best firing positions
@@ -222,18 +229,33 @@ var settles := 0
 ## that also shield where they can. Once per order (keyed by its target), from the same post search a defence uses
 ## (SquadPositions.find_posts -> CombatBrain.cover_spots); soldiers walk there with ordinary moves to a post (precise arrival).
 ## Nothing within reach that is better than the formation slots: the order ends as it is. Never on HOLD, FOLLOW or a tactic.
+## COMBAT-POLISH-01: AI squads too (they fight as COMBAT; one that arrived before any threat settles when one is reported), and
+## a settled squad whose threat has swung round (resettle_deg) takes its positions again for the new direction.
 func _settle(sq: SquadState, a: Dictionary, now: float) -> void:
-	if not settle_enabled or sq.status != SquadState.Status.DONE or not sq.route.is_empty() or sim.squads.marching(sq) or sim.squads.route_waiting(sq) \
-			or sq.interrupted or not _player_squad(sq) or not sq.order_target.is_finite():
+	var ai := not _player_squad(sq)
+	if not settle_enabled or (ai and not settle_ai) or sq.status != SquadState.Status.DONE or not sq.route.is_empty() or sim.squads.marching(sq) \
+			or sim.squads.route_waiting(sq) or sq.interrupted or not sq.order_target.is_finite():
 		return
+	if ai and sq.op_id >= 0:
+		# An operation still on its approach hands out roles (tactics) the moment its squads arrive: nothing to settle into.
+		var op := sim.state.war.operation(sq.op_id)
+		if op != null and op.is_active() and op.phase < OperationState.Phase.ENGAGING:
+			return
 	var key := "%d_%d" % [roundi(sq.order_target.x), roundi(sq.order_target.z)]
-	if String(_meta(sq, "settled_key", "")) == key:
-		return
-	var beh := behaviour_now(sq)
 	var threat: Vector3 = a.get("threat_pos", Vector3.INF)
+	if String(_meta(sq, "settled_key", "")) == key:
+		# Settled here already: only a threat from a clearly different side moves the soldiers again.
+		var last: Dictionary = _meta(sq, "settled", {})
+		if not threat.is_finite() or not last.has("dir") or now - float(last.get("t", now)) < resettle_s:
+			return
+		if rad_to_deg(absf((last.dir as Vector3).signed_angle_to(_dir_to(sq.order_target, threat), Vector3.UP))) < resettle_deg:
+			return
+	var beh := SquadBehaviour.COMBAT if ai else behaviour_now(sq)
 	var reach: float = SETTLE_THREAT_M.get(beh, 0.0)
 	if not threat.is_finite() or _flat(sq.order_target, threat) > reach:
-		_set_meta(sq, "settled_key", key)
+		# The player's squad ends its order as it is; an AI squad keeps watching while it stays here.
+		if not ai:
+			_set_meta(sq, "settled_key", key)
 		return
 	var centre := sq.order_target
 	var r := settle_radius_m
@@ -244,6 +266,7 @@ func _settle(sq: SquadState, a: Dictionary, now: float) -> void:
 			_set_meta(sq, "settle_wait", now)
 			w0 = now
 		if now - w0 < 5.0:
+			settle_waits += 1
 			sim.brain.cover_spots(centre, r, threat, centre, 1)
 			return
 	_set_meta(sq, "settle_wait", -1.0)
@@ -294,7 +317,7 @@ func _settle(sq: SquadState, a: Dictionary, now: float) -> void:
 		u.post_pos = e.p
 		moved += 1
 	settles += 1
-	_set_meta(sq, "settled", {"t": now, "moved": moved, "posts": good.size(), "mode": SquadBehaviour.NAMES[beh],
+	_set_meta(sq, "settled", {"t": now, "moved": moved, "posts": good.size(), "mode": SquadBehaviour.NAMES[beh], "dir": _dir_to(centre, threat), "ai": ai,
 		"protected": good.slice(0, units.size()).filter(func(e: Dictionary) -> bool: return bool(e.protected)).size()})
 	if moved > 0:
 		_log(sq, "%s takes %d positions at the end of the move (%s, facing the believed threat)" % [sq.squad_name, moved, "concealed" if stealth else "cover"])
@@ -963,7 +986,11 @@ func _plan(sq: SquadState, a: Dictionary, tactic: int, target: Vector3, _owner: 
 				plans.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return x.exposure + (x.detour - 1.0) * 0.15 < y.exposure + (y.detour - 1.0) * 0.15)
 				if not plans.is_empty():
 					var p0: Dictionary = plans[0]
-					var viable: bool = p0.detour <= flank_max_detour and p0.exposure <= 0.55 and (p0.exposure <= frontal - flank_gain or (want_flank and p0.exposure <= frontal + 0.05))
+					# COMBAT-POLISH-01: an ordered flank (player, operation) is carried out over open ground too when it is no more
+					# exposed than going straight in (on open ground every route is seen; the flank still comes from the side). A flank
+					# the squad would choose itself instead of an assault must be clearly safer.
+					var viable: bool = p0.detour <= flank_max_detour and (p0.exposure <= 0.55 or want_flank) \
+							and (p0.exposure <= frontal - flank_gain or (want_flank and p0.exposure <= frontal + 0.05))
 					if viable and (want_flank or frontal >= 0.4):
 						best = p0
 						report = "flank %s: exposure %d%% against %d%% straight in, %.0f m route (%.1fx the direct way)" % [p0.name, roundi(p0.exposure * 100.0), roundi(frontal * 100.0), p0.length, p0.detour]
@@ -3255,7 +3282,7 @@ func status_tag(sq: SquadState) -> String:
 func summary() -> Dictionary:
 	return {"ticks": ticks, "steps": steps, "step_us_avg": snappedf(float(step_usec) / maxi(ticks, 1), 0.1), "step_us_max": step_usec_max,
 		"judged_plans": {"per_tick_max": plans_tick_max, "plan_us_max": plan_usec_max, "tick_us_max": plan_tick_usec_max, "deferred": deferred},
-		"started": started.duplicate(), "finished": finished.duplicate(), "decisions": decisions, "refusals": refusals, "replans": replans, "posts_given_up": posts_given_up,
+		"started": started.duplicate(), "finished": finished.duplicate(), "decisions": decisions, "refusals": refusals, "replans": replans, "posts_given_up": posts_given_up, "settles": settles, "settle_waits": settle_waits,
 		"posts": {"searches": pos.searches, "evals": pos.evals, "us_avg": snappedf(float(pos.usec) / maxi(pos.searches, 1), 0.1), "us_max": pos.usec_max,
 			"flank_plans": pos.flank_plans, "flank_us_avg": snappedf(float(pos.flank_usec) / maxi(pos.flank_plans, 1), 0.1),
 			"slot_searches": pos.slot_searches, "slot_us_avg": snappedf(float(pos.slot_usec) / maxi(pos.slot_searches, 1), 0.1), "slot_us_max": pos.slot_usec_max}}

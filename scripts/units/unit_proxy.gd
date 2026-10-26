@@ -21,6 +21,8 @@ var _vehicle_visual: VehicleVisual
 ## COMBAT-01a: the marker shows a casualty (lying, dark, no ring) once the unit is dead.
 var _shows_dead := false
 var _shown_posture := 0
+## Where the prone mesh's tilt was measured (INF: to measure; ZERO: upright).
+var _tilt_at := Vector3.ZERO
 
 
 func bind(p_unit: UnitState, p_sim: WorldSim) -> void:
@@ -86,6 +88,14 @@ func _process(_delta: float) -> void:
 			var pm := InfantryProxyMesh.get_mesh(unit.loadout, unit.faction, p)
 			if pm:
 				_marker.mesh = pm
+			_tilt_at = Vector3.INF
+		# COMBAT-POLISH-01: a prone mesh lies along the slope under it, like the near body (measured again after a move).
+		if p == Posture.PRONE and (not _tilt_at.is_finite() or _tilt_at.distance_squared_to(unit.position) > 0.25):
+			_tilt_at = unit.position
+			_marker.basis = InfantryCharacter.tilt_basis(InfantryCharacter.slope_at(sim.terrain.data if sim and sim.terrain else null, unit.position, unit.yaw))
+		elif p != Posture.PRONE and _tilt_at != Vector3.ZERO:
+			_tilt_at = Vector3.ZERO
+			_marker.basis = Basis.IDENTITY
 	if not unit.alive and not _shows_dead:
 		_show_dead()
 	if ring.visible:

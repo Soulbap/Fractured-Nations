@@ -76,6 +76,13 @@ var posture_to := 0
 var posture_k := 1.0
 var _prone_amount := 0.0
 var _trans_amount := 0.0
+## COMBAT-POLISH-01: the ground under the prone body (x: pitch along it, + = head end higher; y: roll, + = right side higher;
+## radians), set by the body (SoldierBody._prone_slope). The lying body is laid onto it about the point under the hips.
+var ground_slope := Vector2.ZERO
+var _tilt := Vector2.ZERO
+var _aim_fix := Vector2.ZERO
+## Steepest tilt shown (radians): beyond it the body lies at this angle (the AI does not lie on ground steeper than ~26 deg).
+const MAX_TILT := Vector2(0.45, 0.26)
 static var _has_prone := false
 static var _prone_len := {}
 static var _crawl_stride := 1.08
@@ -742,6 +749,7 @@ func _apply_params(delta: float, snap: bool) -> void:
 	_was_reloading = reloading
 	if _has_prone:
 		_apply_prone(delta, snap, speed)
+		_apply_tilt(delta, snap)
 	if _grip:
 		_support_amount = move_toward(_support_amount, 0.0 if reloading else 1.0, step * 5.0)
 		_grip.aim_w = _aim_amount
@@ -751,16 +759,32 @@ func _apply_params(delta: float, snap: bool) -> void:
 		_flinch_mod.yaw = _flinch.x
 		_flinch_mod.pitch = _flinch.y
 	if _aim_mod:
-		# prone, the whole body points the rifle: the spine turns only a little towards the aim point
-		_aim_mod.influence = _aim_amount * (1.0 - 0.75 * _prone_amount)
+		# Prone, the whole body points the rifle: the spine turns only a little sideways towards the aim point, but it bends up or
+		# down as far as the body lying on a slope needs (COMBAT-POLISH-01: the body follows the ground, the rifle the target).
+		_aim_mod.influence = _aim_amount
 		if aim_point.is_finite():
-			var chest := global_position + Vector3.UP * 1.4
+			var chest := global_position + global_basis.orthonormalized().y * lerpf(lerpf(1.4, 1.0, _crouch_amount), 0.3, _prone_amount)
 			var d := global_basis.orthonormalized().inverse() * (aim_point - chest)
-			var want_yaw := clampf(atan2(-d.x, -d.z), -1.2, 1.2)
-			var want_pitch := clampf(atan2(d.y, Vector2(d.x, d.z).length()), -0.8, 0.8)
+			var max_yaw := lerpf(1.2, 0.3, _prone_amount)
+			var want_yaw := clampf(atan2(-d.x, -d.z), -max_yaw, max_yaw)
+			var max_pitch := lerpf(0.8, 0.45, _prone_amount)
+			var want_pitch := clampf(atan2(d.y, Vector2(d.x, d.z).length()), -max_pitch, max_pitch)
+			# Prone, the spine bent over a slope does not turn the rifle by exactly its bend (the clip's arms hold it a little off
+			# the body's line): the rifle's own bore, measured after the last frame's pose, corrects the bend until it points at
+			# the aim point.
+			var m := muzzle() if _prone_amount > 0.5 and _aim_amount > 0.9 and _trans_amount < 0.1 else null
+			if m:
+				var inv := global_basis.orthonormalized().inverse()
+				var bore := inv * -m.global_basis.z.normalized()
+				var want := inv * (aim_point - m.global_position).normalized()
+				var g := clampf(delta * 4.0, 0.0, 1.0)
+				_aim_fix.x = clampf(_aim_fix.x + wrapf(atan2(-want.x, -want.z) - atan2(-bore.x, -bore.z), -PI, PI) * g, -0.25, 0.25)
+				_aim_fix.y = clampf(_aim_fix.y + (asin(clampf(want.y, -1.0, 1.0)) - asin(clampf(bore.y, -1.0, 1.0))) * g, -0.3, 0.3)
+			else:
+				_aim_fix = _aim_fix.move_toward(Vector2.ZERO, delta)
 			var s := 1.0 if snap else clampf(delta * 8.0, 0.0, 1.0)
-			_aim_mod.yaw = lerpf(_aim_mod.yaw, want_yaw, s)
-			_aim_mod.pitch = lerpf(_aim_mod.pitch, want_pitch, s)
+			_aim_mod.yaw = lerpf(_aim_mod.yaw, want_yaw + _aim_fix.x, s)
+			_aim_mod.pitch = lerpf(_aim_mod.pitch, want_pitch + _aim_fix.y, s)
 
 
 ## COMBAT-01: the prone branch's weights and the change of posture's clip time.
@@ -783,6 +807,47 @@ func _apply_prone(delta: float, snap: bool, speed: float) -> void:
 	anim_tree.set("parameters/p_aim/blend_amount", _aim_amount)
 	anim_tree.set("parameters/p_move/blend_amount", clampf((speed - 0.1) / 0.3, 0.0, 1.0))
 	anim_tree.set("parameters/p_cscale/scale", maxf(speed, 0.2) / maxf(_crawl_stride, 0.1) * float(_prone_len.get("crawl_s", 40.0 / 30.0)))
+
+
+## COMBAT-POLISH-01: lays the prone body onto the slope under it (ground_slope), turning the whole character about its origin
+## (the ground under the hips): head and feet follow the ground instead of hanging over it or sinking into it. Weighted by how far
+## the body is down (the change of posture's progress), so standing and crouched soldiers stay upright.
+func _apply_tilt(delta: float, snap: bool) -> void:
+	var w := 0.0
+	if posture_to == 2:
+		w = posture_k if posture_from != 2 else 1.0
+	elif posture_from == 2:
+		w = 1.0 - posture_k
+	var want := ground_slope.clamp(-MAX_TILT, MAX_TILT) * w
+	_tilt = want if snap else _tilt.lerp(want, clampf(delta * 6.0, 0.0, 1.0))
+	if _tilt.length_squared() < 1e-6:
+		if transform.basis != Basis.IDENTITY:
+			transform = Transform3D.IDENTITY
+		return
+	transform = Transform3D(tilt_basis(_tilt), Vector3.ZERO)
+
+
+## The ground under a soldier lying at `p` facing `yaw`, along his body (x: pitch, + = the head end higher) and across it (y: roll,
+## + = his right side higher), radians, from the terrain heights at his head, feet and both sides (Terrain3DData, the microrelief
+## included). Presentation only: the record and its hit volumes (Posture) stay level.
+static func slope_at(data: Terrain3DData, p: Vector3, yaw: float) -> Vector2:
+	if data == null:
+		return Vector2.ZERO
+	var f := Vector3(-sin(yaw), 0.0, -cos(yaw))
+	var r := Vector3(-f.z, 0.0, f.x)
+	var hf := data.get_height(p + f * 0.75)
+	var hb := data.get_height(p - f * 0.85)
+	var hr := data.get_height(p + r * 0.35)
+	var hl := data.get_height(p - r * 0.35)
+	if is_nan(hf) or is_nan(hb) or is_nan(hr) or is_nan(hl):
+		return Vector2.ZERO
+	return Vector2(atan2(hf - hb, 1.6), atan2(hr - hl, 0.7))
+
+
+## The turn that lays a body (facing -Z) onto `slope` (slope_at), clamped to MAX_TILT.
+static func tilt_basis(slope: Vector2) -> Basis:
+	var t := slope.clamp(-MAX_TILT, MAX_TILT)
+	return Basis(Vector3.RIGHT, t.x) * Basis(Vector3.BACK, t.y)
 
 
 ## Current animation state for tests/diagnostics.

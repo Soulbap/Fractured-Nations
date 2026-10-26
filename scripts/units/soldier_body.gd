@@ -200,7 +200,13 @@ func _physics_process(delta: float) -> void:
 		var now := sim.state.time
 		character.set_posture(unit.posture_from, unit.posture, Posture.progress(unit, now))
 		character.crouched = Posture.current(unit, now) == Posture.CROUCH or (not player_controlled and unit.work_until > now)
+		character.ground_slope = _prone_slope() if unit.posture == Posture.PRONE or unit.posture_from == Posture.PRONE else Vector2.ZERO
 		_character_layers()
+
+
+## COMBAT-POLISH-01: the slope under the lying soldier (InfantryCharacter.slope_at); the character lays the prone body onto it.
+func _prone_slope() -> Vector2:
+	return InfantryCharacter.slope_at(sim.terrain.data, global_position, rotation.y) if sim and sim.terrain else Vector2.ZERO
 
 
 ## GAMEPLAY-01C: in a fortification slot the body stands exactly where the record says (on a tower platform too), without
