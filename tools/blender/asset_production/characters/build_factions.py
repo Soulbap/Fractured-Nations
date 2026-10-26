@@ -22,6 +22,8 @@ import sys
 import tempfile
 import time
 
+import numpy as np
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 CHAR = os.path.abspath(os.path.join(HERE, "..", "..", "character"))
 AP = os.path.abspath(os.path.join(HERE, ".."))
@@ -179,10 +181,28 @@ def _skin(b, key, o, smooth=2):
     b.pieces[key] = o
 
 
+def _head_to_body_space(o):
+    """B.to_body_space for head pieces: B.unwarp_z (np.interp) clamps every height above the reference HeadTop knot
+    to the body's crown, which pressed the top ~35 mm of the helmets onto one plane (flat crown). Above the last knot
+    the last segment's slope is extended instead."""
+    new, ref = B._WARP_NEW, B._WARP_REF
+    slope = (new[-1] - new[-2]) / (ref[-1] - ref[-2])
+    me = o.data
+    co = np.empty(len(me.vertices) * 3, dtype=np.float64)
+    me.vertices.foreach_get("co", co)
+    co = co.reshape(-1, 3)
+    z = co[:, 2]
+    co[:, 2] = np.where(z > ref[-1], new[-1] + (z - ref[-1]) * slope, B.unwarp_z(z))
+    me.vertices.foreach_set("co", co.ravel())
+    me.update()
+
+
 def _rigid(b, key, o, bone):
     if bone == "ATT_Head":
         o.data.transform(B.head_fit_matrix())
-    B.to_body_space(o)
+        _head_to_body_space(o)
+    else:
+        B.to_body_space(o)
     M.apply_box_uvs(o)
     att = b.arm.data.bones[bone].matrix_local
     o.data.transform(att.inverted())

@@ -140,7 +140,13 @@ def build_helmet(coll, mats, fac, voxel=0.0018):
             L.rounded_box(bm, (0.012, 0.018, 0.055), (sd * 0.108, -0.012, 1.722), 0.004, segs=1)
         L.tube_along(bm, [(-0.115, 0.012, 1.662), (-0.088, 0.062, 1.640), (-0.036, 0.090, 1.625)], [0.003] * 3, segs=6)
         L.bm_sphere(bm, 0.008, (-0.031, 0.094, 1.624), segs=8, rings=6)
-        L.rounded_box(bm, (0.020, 0.012, 0.032), (0.045, c.y - r[1] + 0.03, 1.835), 0.004, segs=1)
+        # IR strobe seated on the cover at the back of the crown, along the shell normal.
+        sx, sy = 0.040, c.y - r[1] + 0.035
+        u = 1.0 - (sx / r[0]) ** 2 - ((sy - c.y) / r[1]) ** 2
+        sz = c.z + r[2] * math.sqrt(u)
+        n = Vector((sx / r[0] ** 2, (sy - c.y) / r[1] ** 2, (sz - c.z) / r[2] ** 2)).normalized()
+        L.rounded_box(bm, (0.020, 0.032, 0.014), Vector((sx, sy, sz)) + n * 0.008, 0.004,
+                      rot=Vector((0, 0, 1)).rotation_difference(n).to_matrix(), segs=1)
         parts.append(L.new_object("Helmet_headset", bm, coll, [mats["Polymer_Tan"]]))
     elif fac == "ru":
         # Goggles resting on the brow of the helmet: strap around the shell, frame, lenses.
