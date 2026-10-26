@@ -105,8 +105,9 @@ own cover reactions, the squad tactics' posts (SquadPositions / SquadTactics) an
 
 Change-impact checks: `--controls-test --only d_drag` PASS, `--combat01-test --only f_gunplay` PASS, `--ai-combat02-test --only p_placed`
 PASS (550 rounds, places kept), `--world-cover-test --only b_ballistic` PASS, `--world-detail-test --only b_ballistic,c_cover` PASS.
-`--ai-combat02-test --only b_firefight` fails (0 rounds): its site, when the check runs alone, has no sight line in any of its 12
-directions; the unchanged code fails identically (A/B run), so it is the test's site choice, not this milestone.
+`--ai-combat02-test --only b_firefight`: its site picker tried only the nearest cover object, which (run alone) had no sight line in any of its 12
+directions (0 rounds; the unchanged code failed identically, A/B run). Fixed after the milestone (`_firefight_site`: the
+nearest of 40 open cover objects with a mutual sight line over dry, gentle ground): PASS, 800 rounds, 1 stalemate break, 1 reposition.
 
 Screenshots (`docs/combat_cover03/`): `d_click_preview.png` (single-click preview behind the house), `d_click_arrived.png`,
 `f_drag_preview.png`, `f_drag_arrived.png`, `c_corner.png`, `g_fight.png`, `a_fps_against_wall.png`.
@@ -120,4 +121,3 @@ Screenshots (`docs/combat_cover03/`): `d_click_preview.png` (single-click previe
 - Behind a building the preview honestly shows "0 can fire"; the player chooses corners by dragging past the ends.
 - Fire is judged against the believed threat point; a crest near the enemy may still block once there.
 - Weapon spread (not aim error) can still drop a round short; facing / animation were not reworked.
-- `b_firefight` (AI-COMBAT-02) needs a better site picker.

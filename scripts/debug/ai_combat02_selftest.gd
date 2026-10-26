@@ -382,18 +382,12 @@ func _p_placed() -> Dictionary:
 
 func _b_firefight() -> Dictionary:
 	var out := {}
-	var centre := _place_for(false)
-	if not centre.is_finite():
-		centre = _site.def
-	var line := demo.sim.combat.line
-	var dir := Vector3(1, 0, 0.3).normalized()
-	for k in 12:
-		var d := Vector3(cos(k * TAU / 12.0), 0, sin(k * TAU / 12.0))
-		var pa := demo.on_ground(centre.x - d.x * 70.0, centre.z - d.z * 70.0, 0.0)
-		var pb := demo.on_ground(centre.x + d.x * 70.0, centre.z + d.z * 70.0, 0.0)
-		if line.sight(pa + Vector3.UP * 1.6, pb + Vector3.UP * 1.1).visible:
-			dir = d
-			break
+	var pick := _firefight_site()
+	_expect(not pick.is_empty(), "b_firefight: no open cover object with a sight line across it (precondition)")
+	if pick.is_empty():
+		return out
+	var centre: Vector3 = pick.centre
+	var dir: Vector3 = pick.dir
 	var pa := demo.on_ground(centre.x - dir.x * 70.0, centre.z - dir.z * 70.0, 0.0)
 	var pb := demo.on_ground(centre.x + dir.x * 70.0, centre.z + dir.z * 70.0, 0.0)
 	var a := _cs.spawn(0, pa - dir * 10.0, dir, 8, "FA")
@@ -437,6 +431,33 @@ func _b_firefight() -> Dictionary:
 			"b_firefight: nobody moved with a purpose in 100 s %s" % str(mv))
 	await _clear_squads([a, b])
 	return out
+
+
+## The firefight's ground: a cover-layer object on open ground (forest cover under 0.2), nearest the test site first, with a
+## direction across it where both sides stand on dry, gentle ground 70 m out and see each other (eye to chest). Only the nearest
+## object used to be tried: run alone, the check got a hollow with no sight line in any direction and no fight. {centre, dir} or {}.
+func _firefight_site() -> Dictionary:
+	var routes: StrategicRoutes = demo.sim.war.routes
+	var line := demo.sim.combat.line
+	var cands: Array = []
+	for rec: Dictionary in _layer.values():
+		var t: Array = rec.transform
+		var p := Vector3(t[9], t[10], t[11])
+		if routes.cover_at(p) > 0.2 or absf(p.x) > 9000.0 or absf(p.z) > 9000.0:
+			continue
+		cands.append([Vector2(p.x - _site.def.x, p.z - _site.def.z).length(), p])
+	cands.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	for e: Array in cands.slice(0, 40):
+		var centre: Vector3 = e[1]
+		for k in 12:
+			var d := Vector3(cos(k * TAU / 12.0), 0, sin(k * TAU / 12.0))
+			var pa := demo.on_ground(centre.x - d.x * 70.0, centre.z - d.z * 70.0, 0.0)
+			var pb := demo.on_ground(centre.x + d.x * 70.0, centre.z + d.z * 70.0, 0.0)
+			if not _cs._dry(pa, 6.0) or not _cs._dry(pb, 6.0) or _cs._slope(pa, 5.0) > 12.0 or _cs._slope(pb, 5.0) > 12.0:
+				continue
+			if line.sight(pa + Vector3.UP * 1.6, pb + Vector3.UP * 1.1).visible and line.sight(pb + Vector3.UP * 1.6, pa + Vector3.UP * 1.1).visible:
+				return {"centre": centre, "dir": d}
+	return {}
 
 
 ## Removes single soldiers (their one-man squads may already be gone), and the contact picture they made.
