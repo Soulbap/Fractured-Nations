@@ -38,6 +38,14 @@ const FAR := 2
 ## the instance's local frame at scale 1, turned with it. Measured from the meshes by tools/world_cover/measure_cover_colliders.gd.
 ## Empty (or no list for a variant): the id's one `box`. Every reader of box solids goes through boxes_of().
 @export var parts: Array[PackedFloat32Array] = []
+## COMBAT-COVER-03: height of the bottom of every box above the instance origin (m, scale 1; negative = below). A settlement
+## building's foundation reaches 0.55 m under its origin so it meets sloping ground; its solids must too, or shots and sight lines
+## pass under the downhill wall. Box heights (`box.y`, part heights) are measured from this base.
+@export var box_base := 0.0
+## COMBAT-COVER-03: how a soldier behind this solid is judged (CoverEval): 0 by its shape (a box, a rock and a building are heavy
+## cover, a trunk light), 1 always light (round bales, pallets, yard goods: they stop a bullet in this game, but a player should not
+## read them as a concrete wall). Ballistics are the same either way.
+@export var cover_class := 0
 ## WORLD-VISUALS-01: more scenes of the same kind of plant or rock (variant 1..n; `scene` is variant 0), same size class and
 ## trunk / footprint, so the collider above fits all of them. Each stored instance draws one variant, chosen from its position
 ## (variant_of): the chunk data stays as it is.
@@ -180,15 +188,16 @@ func solid_spec() -> PackedFloat32Array:
 func boxes_of(xf: Transform3D) -> Array:
 	var s := xf.basis.get_scale().x
 	var yaw := yaw_of(xf)
+	var o := xf.origin + Vector3.UP * box_base * s
 	var v := variant_of(xf.origin.x, xf.origin.z, variant_count()) if parts.size() > 1 else 0
 	if use_parts and v < parts.size() and parts[v].size() >= 6:
 		var p: PackedFloat32Array = parts[v]
 		var b := Basis(Vector3.UP, yaw)
 		var out: Array = []
 		for i in range(0, p.size() - 5, 6):
-			out.append([xf.origin + b * Vector3(p[i + 1], 0.0, p[i + 2]) * s, yaw, p[i + 3] * s, p[i + 4] * s, p[i + 5] * s])
+			out.append([o + b * Vector3(p[i + 1], 0.0, p[i + 2]) * s, yaw, p[i + 3] * s, p[i + 4] * s, p[i + 5] * s])
 		return out
-	return [[xf.origin, yaw, box.x * s, box.y * s, box.z * s]]
+	return [[o, yaw, box.x * s, box.y * s, box.z * s]]
 
 
 ## `--single-box-colliders`: every box id uses its one box again (comparison runs).

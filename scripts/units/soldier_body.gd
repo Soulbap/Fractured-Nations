@@ -633,13 +633,17 @@ func _player_weapon(delta: float) -> void:
 			if sdef and sdef.role == &"gl":
 				var look := sim.combat.line.trace(camera.global_position, camera.global_position - camera.global_basis.z * sdef.max_range, unit.id)
 				aim_dist = look.distance
-			var r := sim.combat.fire_secondary(unit.id, camera.global_position, -camera.global_basis.z, CombatSim.Source.PLAYER, aim_dist)
+			var ms := sim.combat.muzzle_shot(unit.id, camera.global_position, -camera.global_basis.z, muzzle_position())
+			var r := sim.combat.fire_secondary(unit.id, ms.origin, ms.dir, CombatSim.Source.PLAYER, aim_dist)
 			if r.get("fired", false):
 				_recoil()
 		return
 	if not unit.fire_auto and not Input.is_action_just_pressed("fire"):
 		return
-	var shot := sim.combat.request_fire(unit.id, camera.global_position, -camera.global_basis.z, CombatSim.Source.PLAYER)
+	# COMBAT-COVER-03: the round leaves the muzzle towards the point under the crosshair (CombatSim.muzzle_shot), not the camera.
+	var wdef := sim.combat.weapon(unit.weapon_id)
+	var ms := sim.combat.muzzle_shot(unit.id, camera.global_position, -camera.global_basis.z, muzzle_position(), wdef.max_range if wdef else 1200.0)
+	var shot := sim.combat.request_fire(unit.id, ms.origin, ms.dir, CombatSim.Source.PLAYER)
 	if shot.get("fired", false):
 		_recoil()
 

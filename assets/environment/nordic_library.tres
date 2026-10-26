@@ -297,7 +297,10 @@ scene = ExtResource("17_nbre4")
 near_range = 250.0
 max_range = 1800.0
 fade_m = 100.0
-collider = Vector3(1, 4, 0)
+collider = Vector3(2, 7.004, 0)
+box = Vector3(4.0, 7.95, 5.75)
+parts = Array[PackedFloat32Array]([PackedFloat32Array(2.0, 0, 0, 4.0, 5.95, 5.75, 2.0, 0, 0, 2.0, 7.95, 5.75)])
+box_base = -0.55
 
 [sub_resource type="Resource" id="Resource_0p0xr"]
 script = ExtResource("1_xbpqk")
@@ -307,7 +310,10 @@ scene = ExtResource("18_3wjxs")
 near_range = 250.0
 max_range = 1800.0
 fade_m = 100.0
-collider = Vector3(1, 5, 0)
+collider = Vector3(2, 13.477, 0)
+box = Vector3(8.75, 9.25, 10.25)
+parts = Array[PackedFloat32Array]([PackedFloat32Array(2.0, 0, 0, 5.25, 6.55, 10.25, 2.0, 0, 0, 2.75, 9.25, 10.25, 2.0, 7.0, 0, 1.75, 1.95, 2.2)])
+box_base = -0.55
 
 [sub_resource type="Resource" id="Resource_m4sfk"]
 script = ExtResource("1_xbpqk")
@@ -316,7 +322,10 @@ name = "Shed"
 scene = ExtResource("19_xaqt8")
 near_range = 120.0
 max_range = 900.0
-collider = Vector3(1, 1.8, 0)
+collider = Vector3(2, 3.052, 0)
+box = Vector3(1.75, 3.5, 2.5)
+parts = Array[PackedFloat32Array]([PackedFloat32Array(2.0, 0, 0, 1.75, 2.55, 2.5, 2.0, 0, 0, 0.9, 3.5, 2.5)])
+box_base = -0.55
 
 [sub_resource type="Resource" id="Resource_2j4ml"]
 script = ExtResource("1_xbpqk")
@@ -466,6 +475,7 @@ max_range = 800.0
 collider = Vector3(2, 2.561, 0)
 box = Vector3(2.490, 1.150, 0.600)
 variants = Array[PackedScene]([ExtResource("wd2_round_bales_green")])
+cover_class = 1
 
 [sub_resource type="Resource" id="Resource_wd2_32"]
 script = ExtResource("1_xbpqk")
@@ -558,6 +568,7 @@ max_range = 700.0
 collider = Vector3(2, 2.290, 0)
 box = Vector3(1.950, 1.296, 1.200)
 parts = Array[PackedFloat32Array]([PackedFloat32Array(2.000, -1.350, 0.000, 0.600, 1.152, 0.400, 2.000, 0.000, -0.100, 0.600, 1.224, 0.400, 2.000, 1.350, 0.050, 0.600, 1.296, 0.400, 2.000, 0.700, 0.750, 0.450, 0.950, 0.450)])
+cover_class = 1
 
 [sub_resource type="Resource" id="Resource_wd2_40"]
 script = ExtResource("1_xbpqk")
@@ -659,6 +670,7 @@ collider = Vector3(2, 0.863, 0)
 box = Vector3(0.610, 1.160, 0.610)
 parts = Array[PackedFloat32Array]([PackedFloat32Array(2.000, 0.000, 0.000, 0.600, 1.160, 0.500), PackedFloat32Array(2.000, 0.000, 0.000, 0.610, 1.030, 0.610), PackedFloat32Array(2.000, 0.000, 0.000, 0.600, 1.050, 0.400), PackedFloat32Array(2.000, 0.000, 0.000, 0.600, 0.900, 0.400)])
 variants = Array[PackedScene]([ExtResource("wd2_drum_pallet"), ExtResource("wd2_supply_pallet"), ExtResource("wd2_crate_large")])
+cover_class = 1
 
 [sub_resource type="Resource" id="Resource_wd2_49"]
 script = ExtResource("1_xbpqk")

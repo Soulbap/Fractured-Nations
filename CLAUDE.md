@@ -23,7 +23,7 @@ Norwegian; code, comments and docs are English.
   (`../fractured-nations-*`) are only kept until the product owner approves removing them
   (status: [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md)). Do not develop there.
 - **Session workflow:** open this project → read this file and the roadmap ([docs/AI_ROADMAP.md](docs/AI_ROADMAP.md),
-  AI-COMBAT-02 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
+  COMBAT-COVER-03 is done - see its report; the next milestone is defined with the product owner) → read the systems you will touch (owners below) → implement →
   targeted tests + visual Godot validation → update the report / README → commit to `develop`.
 - Each milestone ends with a report in `docs/<MILESTONE>_REPORT.md` and an updated README.
 
@@ -337,6 +337,17 @@ groundwork, blocking footprints) · `RoadAudit` (`--road-audit`, overlay F8). Na
   `tools/blender/sandbag_geo.py` (pillow bags in running bond; `ap_kit.bag_wall / bag_ring / bag_layer`) - never spheres or boxes.
   Culvert ends are seated at the foot of the road fill at start by `CulvertSeat` (memory only; ends without a fill are hidden;
   `--legacy-culverts`). Check: `--scenario=dev --world-detail-test [--shots] [--only r_loaded,r_roads,b_ballistic,c_cover,v_shots,v_culverts]`.
+- **Cover and line of fire (COMBAT-COVER-03).** `CoverEval` (`scripts/combat/cover_eval.gd`, `CombatBrain.cover_eval`) is the one cover
+  judgement: level HEAVY / LIGHT / NONE / UNKNOWN against believed threats (both shoulder lines, hard vs light solids -
+  `VegetationMeshDef.cover_class`, low cover, foliage concealment) and fire CLEAR / BLOCKED (eye line up to `fire_check_m`, standing
+  over tall cover). `_evaluate_spot`, SquadPositions, the placement preview all read it; `CoverEval.box_spots` gives the spots along
+  lee faces and corners of box solids and structure boxes. Settlement buildings (ids 16-18) are box solids with parts and
+  `box_base` -0.55 (`tools/cover03/measure_buildings.gd`); LineOfFire files boxes wider than `REACH` in every bucket they touch
+  (`copy_of`). The possessed soldier fires through `CombatSim.muzzle_shot` (muzzle to the crosshair point); AI fires only along a free
+  line (`CombatBrain._lof`, stands up, `lof_stuck` -> a firing-position search, `_fighting` keeps him there), never with the aim error
+  into the ground in front. Player single click near cover / right-drag: `SquadPositions.cover_line_near` + `placement(..., opts)`
+  (threats from `threats_for`, snap by zoom `RTSController.cover_snap`); places are player-authoritative (a placed squad's own SUPPRESS
+  uses its places). Check: `--scenario=dev --cover03-test [--shots] [--only ...]`.
 - **Building must work on uneven terrain**: groundwork in `StructureManager`, never
   flat-site hunting.
 - Large generated worlds: one `RoadContainer` per ~50 RoadPoints (O(n²)); foliage cards are

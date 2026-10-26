@@ -76,6 +76,19 @@ var rdrag_facing := Vector3.ZERO
 ## The previewed places (unit id -> Vector3) and which of them are in cover (unit id -> true).
 var rdrag_plan := {}
 var rdrag_cover := {}
+## COMBAT-COVER-03: each previewed place's judgement (unit id -> SquadPositions.placement record: level, fire, kind ...) and the
+## believed threats it was judged against (empty: the facing was assumed) - the HUD colours the places from these.
+var rdrag_info := {}
+var rdrag_threats: Array = []
+## COMBAT-COVER-03 single click near cover: while squads are selected and the cursor rests within cover_snap() of a wall, a
+## building, sandbags, a rock or a log, the line along it the squad would take (SquadPositions.cover_line_near) and the places
+## (same shapes as the drag preview). A right click there gives exactly this placement; in the open it stays a plain move.
+var hover_cover := {}
+var hover_plan := {}
+var hover_info := {}
+var hover_threats: Array = []
+var _hover_cover_at := Vector3.INF
+var _hover_cover_ms := 0
 var _rdrag_plan_b := Vector3.INF
 var _rdrag_plan_ms := 0
 var _rdrag_cover_b := Vector3.INF
@@ -125,6 +138,8 @@ func _process(_delta: float) -> void:
 	_update_hover()
 	if rdrag_on:
 		_update_rdrag(false)
+	else:
+		_update_hover_cover()
 
 
 ## GAMEPLAY-02 (controls): the unit under the cursor (a commandable one, or another side's soldier the player can see) and the
@@ -165,6 +180,8 @@ func _rdrag_reset() -> void:
 	rdrag_on = false
 	rdrag_plan = {}
 	rdrag_cover = {}
+	rdrag_info = {}
+	rdrag_threats = []
 	rdrag_a = Vector3.INF
 	rdrag_b = Vector3.INF
 	_rdrag_plan_b = Vector3.INF
@@ -217,13 +234,93 @@ func _update_rdrag(final: bool) -> void:
 		_rdrag_plan_ms = now
 		_rdrag_cover_b = rdrag_b
 	rdrag_cover = {}
-	rdrag_plan = sim.squads.place_plan(who.squads, rdrag_a, rdrag_b, rdrag_facing, cover_due, rdrag_cover) if not who.squads.is_empty() else {}
+	rdrag_info = {}
+	# COMBAT-COVER-03: judged against what the squad believes (contacts, its assessed threat); the snap grows with the zoom.
+	rdrag_threats = order_threats(who.squads, ids, mid)
+	var gap := SquadControl._flat(rdrag_a, rdrag_b) / maxf(ids.size() - 1, 1)
+	var opts := {"threats": rdrag_threats, "snap": maxf(clampf(gap * 0.45, 1.2, 3.0), cover_snap() * 0.8), "overflow": cover_snap() + 4.0}
+	rdrag_plan = sim.squads.place_plan(who.squads, rdrag_a, rdrag_b, rdrag_facing, cover_due, rdrag_cover, opts, rdrag_info) if not who.squads.is_empty() else {}
 	if not who.loose.is_empty():
-		var places: Array = sim.tactics.pos.placement(who.loose.size(), rdrag_a, rdrag_b, rdrag_facing, cover_due)
+		var places: Array = sim.tactics.pos.placement(who.loose.size(), rdrag_a, rdrag_b, rdrag_facing, cover_due, opts)
 		for i in who.loose.size():
 			rdrag_plan[who.loose[i]] = (places[i] as Dictionary).p + Vector3.UP * 0.25
+			rdrag_info[who.loose[i]] = places[i]
 			if bool(places[i].protected):
 				rdrag_cover[who.loose[i]] = true
+
+
+## COMBAT-COVER-03: how far from the cursor cover is looked for (m): a few metres close up, more when zoomed out (about the same
+## screen distance stays as forgiving).
+func cover_snap() -> float:
+	return clampf((rig.zoom if rig else 60.0) * 0.06, 3.0, 8.0)
+
+
+## The believed threats an order near p is judged against: the squads' assessed threat and their faction's contacts (IntelSim).
+func order_threats(squad_ids: Array, unit_ids: Array, p: Vector3) -> Array:
+	var faction := player_faction
+	var extra := Vector3.INF
+	for sid in squad_ids:
+		var sq := sim.state.get_squad(sid)
+		if sq == null:
+			continue
+		faction = sq.faction
+		var tp := sim.tactics.threat_pos(sq)
+		if tp.is_finite() and SquadControl._flat(tp, p) < 450.0:
+			extra = tp
+			break
+	if squad_ids.is_empty() and not unit_ids.is_empty():
+		var u := sim.state.get_unit(unit_ids[0])
+		if u:
+			faction = u.faction
+	return sim.tactics.pos.threats_for(faction, p, 350.0, 3, extra)
+
+
+## COMBAT-COVER-03: the single-click cover preview under the cursor (at most every 150 ms, when the cursor moved 0.6 m).
+func _update_hover_cover() -> void:
+	var sqs := selected_squads() if not selected.is_empty() else []
+	if sqs.is_empty() or not hover_ground.is_finite() or not selected_vehicles().is_empty() or not loose_selected().is_empty():
+		if not hover_cover.is_empty():
+			_hover_clear()
+		return
+	var now := Time.get_ticks_msec()
+	if now - _hover_cover_ms < 150 or (_hover_cover_at.is_finite() and _hover_cover_at.distance_to(hover_ground) < 0.6):
+		return
+	_hover_cover_ms = now
+	_hover_cover_at = hover_ground
+	var r := cover_plan_at(hover_ground, sqs)
+	hover_cover = r.get("line", {})
+	hover_plan = r.get("plan", {})
+	hover_info = r.get("info", {})
+	hover_threats = r.get("threats", [])
+
+
+func _hover_clear() -> void:
+	hover_cover = {}
+	hover_plan = {}
+	hover_info = {}
+	hover_threats = []
+	_hover_cover_at = Vector3.INF
+
+
+## The placement a right click at `at` gives the squads when it lands near cover: {line, plan, info, threats}, or {} in the open.
+func cover_plan_at(at: Vector3, sqs: Array) -> Dictionary:
+	var ids: Array = []
+	for sid in sqs:
+		ids.append_array(sim.squads._active_members(sim.state.get_squad(sid)))
+	if ids.is_empty():
+		return {}
+	var c := Vector3.ZERO
+	for id in ids:
+		c += sim.state.get_unit(id).position
+	c /= ids.size()
+	var line := sim.tactics.pos.cover_line_near(at, c, ids.size(), cover_snap())
+	if line.is_empty():
+		return {}
+	var threats := order_threats(sqs, ids, at)
+	var info := {}
+	var opts := {"threats": threats, "snap": 2.2, "overflow": cover_snap() + 4.0}
+	var plan := sim.squads.place_plan(sqs, line.a, line.b, line.facing, true, {}, opts, info)
+	return {"line": line, "plan": plan, "info": info, "threats": threats}
 
 
 ## Release of a right-drag: the soldiers go to the places of the preview (a final cover search first).
@@ -234,7 +331,8 @@ func _finish_rdrag() -> int:
 	var a := rdrag_a
 	var b := rdrag_b
 	var facing := rdrag_facing
-	var cover_n := rdrag_cover.size()
+	var info := rdrag_info.duplicate()
+	var threats := rdrag_threats.duplicate()
 	_rdrag_reset()
 	if plan.is_empty():
 		return 0
@@ -255,7 +353,7 @@ func _finish_rdrag() -> int:
 		order_flash_pos = mid
 		order_flash_at = Time.get_ticks_msec()
 		var names := _names(who.squads) if not who.squads.is_empty() else "%d soldier%s" % [n, "" if n == 1 else "s"]
-		tactic_feedback = "Placed: %s along %.0f m, %d of %d in cover" % [names, SquadControl._flat(a, b), cover_n, plan.size()]
+		tactic_feedback = "Placed: %s along %.0f m, %s" % [names, SquadControl._flat(a, b), cover_summary(info, plan.size(), threats.is_empty())]
 		tactic_feedback_ok = true
 		_say(tactic_feedback)
 		order_issued.emit(n, mid)
@@ -492,6 +590,14 @@ func order_move(hit: Vector3) -> int:
 			order_issued.emit(tn, hit)
 			return tn
 	var sqs := selected_squads()
+	# COMBAT-COVER-03: a click near cover places the squads along it (the preview the player saw under the cursor, else the same
+	# search now); in the open it stays the ordinary move.
+	if not sqs.is_empty() and loose_selected().is_empty() and selected_vehicles().is_empty():
+		var cp := {"line": hover_cover, "plan": hover_plan, "info": hover_info, "threats": hover_threats}
+		if hover_cover.is_empty() or not _hover_cover_at.is_finite() or _hover_cover_at.distance_to(hit) >= 0.8:
+			cp = cover_plan_at(hit, sqs)
+		if not cp.is_empty() and not (cp.plan as Dictionary).is_empty():
+			return _order_cover(sqs, cp, hit)
 	_player_takes(sqs)
 	# QOL-01.1: on ordinary orders the squads choose WALK / RUN / SPRINT from the situation; Ctrl+right-click = sprint,
 	# Alt+right-click = walk (the player's pace, kept for the whole move).
@@ -515,6 +621,48 @@ func order_move(hit: Vector3) -> int:
 		_marker_until = Time.get_ticks_msec() / 1000.0 + 2.5
 		order_issued.emit(n, hit)
 	return n
+
+
+## COMBAT-COVER-03: the squads take the places of a single-click cover plan (an order_place: player-authoritative places).
+func _order_cover(sqs: Array, cp: Dictionary, hit: Vector3) -> int:
+	_player_takes(sqs)
+	var pace := -1
+	if Input.is_key_pressed(KEY_CTRL):
+		pace = UnitState.Pace.SPRINT
+	elif Input.is_key_pressed(KEY_ALT):
+		pace = UnitState.Pace.WALK
+	var line: Dictionary = cp.line
+	var plan: Dictionary = cp.plan
+	var n := sim.squads.order_place(sqs, line.a, line.b, line.facing, plan, pace)
+	_hover_clear()
+	if n > 0:
+		last_order_target = hit
+		order_flash_pos = hit
+		order_flash_at = Time.get_ticks_msec()
+		var what := "structure" if line.kind == "structure" else ("rock" if line.kind == "rock" else "wall")
+		tactic_feedback = "%s: into cover at the %s - %s" % [_names(sqs), what, cover_summary(cp.info, plan.size(), (cp.threats as Array).is_empty())]
+		tactic_feedback_ok = true
+		_say(tactic_feedback)
+		order_issued.emit(n, hit)
+	return n
+
+
+## "5 heavy, 2 light, 1 exposed, 6 can fire" (front assumed when no threat is known).
+func cover_summary(info: Dictionary, total: int, assumed: bool) -> String:
+	var heavy := 0
+	var light := 0
+	var fire := 0
+	for id in info:
+		var r: Dictionary = info[id]
+		match int(r.get("level", -1)):
+			CoverEval.Level.HEAVY:
+				heavy += 1
+			CoverEval.Level.LIGHT:
+				light += 1
+		if int(r.get("fire", -1)) == CoverEval.Fire.CLEAR:
+			fire += 1
+	var s := "%d heavy, %d light, %d exposed, %d can fire" % [heavy, light, total - heavy - light, fire]
+	return s + (" (front assumed)" if assumed else "")
 
 
 ## Squads of the selection board vehicles of the selection (in order, while seats last);

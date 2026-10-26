@@ -53,6 +53,9 @@ var _buckets := {}
 var _loaded_cells := {}
 ## Last trace cost breakdown (usec) for measurements.
 var last_cost := {}
+## COMBAT-COVER-03: the type code of the vegetation solid the last _trees_hit stopped at (0 trunk, 1 rock, 2 box, 2.5 light box -
+## VegetationMeshDef.cover_class 1); trace() returns it as "solid".
+var _hit_type := -1.0
 ## COMBAT-01b sight through foliage (see sight()): a tree whose trunk stands within
 ## foliage_m of the line counts as one layer of leaves / undergrowth; trees closer than
 ## foliage_skip_m to either end do not count (a soldier at a forest edge looks past the
@@ -86,7 +89,7 @@ func setup(p_state: WorldState, p_terrain: Terrain3D, p_vegetation: VegetationSt
 
 ## Resolves a straight shot. exclude_id: the shooter (never hit). Returns
 ## {distance, point, blocker ("" / "terrain" / "tree" / "structure" / "unit" / "range"),
-##  hit_unit, zone, structure_id}.
+##  hit_unit, zone, structure_id}; a "tree" blocker (any vegetation solid) also has "solid" (_hit_type).
 func trace(from: Vector3, to: Vector3, exclude_id := -1, hit_units := true) -> Dictionary:
 	var length := from.distance_to(to)
 	var res := {"distance": length, "point": to, "blocker": "range", "hit_unit": -1, "zone": Zone.NONE, "structure_id": -1}
@@ -109,6 +112,7 @@ func trace(from: Vector3, to: Vector3, exclude_id := -1, hit_units := true) -> D
 	if tr < res.distance:
 		res.distance = tr
 		res.blocker = "tree"
+		res["solid"] = _hit_type
 	if hit_units:
 		var u := _units_hit(from, to, res.distance, exclude_id)
 		if u.d < res.distance:
@@ -286,13 +290,17 @@ func _trees_hit(from: Vector3, to: Vector3, limit: float) -> float:
 			var h: float = data[i + 4]
 			var top := base + h
 			if data[i + 5] > 1.5:  # WORLD-COVER-01 box: the segment in the box's own frame
-				best = minf(best, _box_hit(from, end, data, i))
+				var bd := _box_hit(from, end, data, i)
+				if bd < best:
+					best = bd
+					_hit_type = data[i + 5]
 				continue
 			if data[i + 5] > 0.5:  # sphere (rocks): centre at base + 0.3 r, height test by sphere
 				var c := Vector3(data[i], base + r * 0.3, data[i + 1])
 				var hs := Geometry3D.segment_intersects_sphere(from, end, c, r)
-				if not hs.is_empty():
-					best = minf(best, from.distance_to(hs[0]))
+				if not hs.is_empty() and from.distance_to(hs[0]) < best:
+					best = from.distance_to(hs[0])
+					_hit_type = 1.0
 				continue
 			if y < base - 0.05 or y > top:
 				# The line may enter the trunk's height range further along inside the circle.
@@ -301,7 +309,9 @@ func _trees_hit(from: Vector3, to: Vector3, limit: float) -> float:
 				if (y < base and y2 < base) or (y > top and y2 > top):
 					continue
 			var d3 := t * sqrt(1.0 + dy_per_m * dy_per_m)
-			best = minf(best, d3)
+			if d3 < best:
+				best = d3
+				_hit_type = 0.0
 	return best
 
 
@@ -337,6 +347,12 @@ func _buckets_along(a: Vector2, b: Vector2) -> Array:
 	for q: Vector2 in [a - n * REACH, b + n * REACH]:
 		out[Vector2i(floori(q.x / BUCKET), floori(q.y / BUCKET))] = true
 	return out.keys()
+
+
+## COMBAT-COVER-03: true when the solid at data[i] of bucket `key` is a copy of a large box filed under another bucket (its centre
+## lies elsewhere) - readers that list solids handle it once, in its centre's bucket.
+static func copy_of(data: PackedFloat32Array, i: int, key: Vector2i) -> bool:
+	return data[i + 5] > 1.5 and Vector2i(floori(data[i] / BUCKET), floori(data[i + 1] / BUCKET)) != key
 
 
 ## Vegetation cells (128 m) a line from `from` to `to` reads, including the trunk margin.
@@ -383,10 +399,21 @@ func _fill_cell(cell: Vector2i) -> void:
 			# WORLD-COVER-01.1: one record per box of the instance's variant (VegetationMeshDef.boxes_of).
 			for bx: Array in vegetation.library.get_def(inst[0]).boxes_of(xf):
 				var o: Vector3 = bx[0]
-				var bkey := Vector2i(floori(o.x / BUCKET), floori(o.z / BUCKET))
-				if not fresh.has(bkey):
-					fresh[bkey] = []
-				fresh[bkey].append_array([o.x, o.z, o.y, Vector2(bx[2], bx[4]).length(), bx[3], 2.0, bx[1], bx[2], bx[4]])
+				var rad := Vector2(bx[2], bx[4]).length()
+				var rec := [o.x, o.z, o.y, rad, bx[3], 2.5 if vegetation.library.get_def(inst[0]).cover_class == 1 else 2.0, bx[1], bx[2], bx[4]]
+				# COMBAT-COVER-03: a box wider than REACH (a house, a barn) is filed in every bucket its circle touches, not only its
+				# centre's: a line is only tested against the solids of the buckets it crosses (+ REACH), and the ends of a 20 m barn
+				# lay beyond that - shots went through them. Readers that list solids (cover_spots) skip the copies (copy_of).
+				var keys := [Vector2i(floori(o.x / BUCKET), floori(o.z / BUCKET))]
+				if rad > REACH - 0.5:
+					for kx in range(floori((o.x - rad) / BUCKET), floori((o.x + rad) / BUCKET) + 1):
+						for kz in range(floori((o.z - rad) / BUCKET), floori((o.z + rad) / BUCKET) + 1):
+							if not keys.has(Vector2i(kx, kz)):
+								keys.append(Vector2i(kx, kz))
+				for bkey: Vector2i in keys:
+					if not fresh.has(bkey):
+						fresh[bkey] = []
+					fresh[bkey].append_array(rec)
 			continue
 		var sc := xf.basis.get_scale()
 		var r := spec[1] * sc.x
@@ -404,7 +431,14 @@ func _fill_cell(cell: Vector2i) -> void:
 ## Construction cleared vegetation: forget the affected cells (and their buckets).
 func _on_clearings_changed(cells: Array) -> void:
 	var per := int(round(vegetation.cell_size_m / BUCKET))
+	# COMBAT-COVER-03: a large box of a neighbouring cell has copies in this cell's buckets: forget the neighbours too, so a refill
+	# files them again.
+	var all := {}
 	for cell: Vector2i in cells:
+		for dx in range(-1, 2):
+			for dz in range(-1, 2):
+				all[cell + Vector2i(dx, dz)] = true
+	for cell: Vector2i in all:
 		if not _loaded_cells.has(cell):
 			continue
 		_loaded_cells.erase(cell)

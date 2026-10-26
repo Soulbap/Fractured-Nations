@@ -110,23 +110,8 @@ class Overlay extends Control:
 					if dir != Vector2.ZERO:
 						var side := Vector2(-dir.y, dir.x)
 						draw_colored_polygon(PackedVector2Array([pt + dir * 6.0, pt + side * 4.5, pt - side * 4.5]), FNUI.ACCENT)
-			for id in rts.rdrag_plan:
-				var u := hud.sim.state.get_unit(id)
-				var p3: Vector3 = rts.rdrag_plan[id] + Vector3.UP * 0.1
-				if u == null or cam.is_position_behind(p3):
-					continue
-				var pp := cam.unproject_position(p3)
-				var from3 := u.position + Vector3.UP * 0.3
-				if not cam.is_position_behind(from3):
-					draw_line(cam.unproject_position(from3), pp, Color(FNUI.INK, 0.28), 1.0)
-				var in_cover: bool = rts.rdrag_cover.has(id)
-				draw_circle(pp, 5.5, shade)
-				if in_cover:
-					draw_circle(pp, 4.0, FNUI.OK)
-				else:
-					draw_arc(pp, 3.6, 0.0, TAU, 16, FNUI.INK, 1.8)
-			var cn: int = rts.rdrag_cover.size()
-			_pointer_tag(get_local_mouse_position() + Vector2(16, 18), "PLACE %d  ·  %d IN COVER" % [rts.rdrag_plan.size(), cn], FNUI.ACCENT)
+			_draw_places(cam, shade, rts.rdrag_plan, rts.rdrag_info, rts.rdrag_threats, rts.rdrag_facing, 1.0)
+			_pointer_tag(get_local_mouse_position() + Vector2(16, 18), "PLACE %d  ·  %s" % [rts.rdrag_plan.size(), _cover_tag(rts.rdrag_info, rts.rdrag_threats)], FNUI.ACCENT)
 		elif rts.hover_unit > 0:
 			var u := hud.sim.state.get_unit(rts.hover_unit)
 			if u:
@@ -152,6 +137,15 @@ class Overlay extends Control:
 						text = "ENEMY %s%s" % ["SOLDIER" if u.kind == UnitState.Kind.SOLDIER else "VEHICLE", "  ·  Z ASSAULT  K SUPPRESS" if have_sel else ""]
 						shape = Input.CURSOR_CROSS if have_sel else Input.CURSOR_ARROW
 					_pointer_tag(Vector2(r.get_center().x, r.position.y - 6.0), text, col, true)
+		elif have_sel and not rts.hover_cover.is_empty() and not rts.hover_plan.is_empty():
+			# COMBAT-COVER-03: the cursor rests near cover - where a right click would put the soldiers, judged like a drag.
+			var la: Vector3 = rts.hover_cover.a + Vector3.UP * 0.15
+			var lb: Vector3 = rts.hover_cover.b + Vector3.UP * 0.15
+			if not cam.is_position_behind(la) and not cam.is_position_behind(lb):
+				draw_line(cam.unproject_position(la), cam.unproject_position(lb), Color(FNUI.OK, 0.45), 2.0)
+			_draw_places(cam, shade, rts.hover_plan, rts.hover_info, rts.hover_threats, rts.hover_cover.facing, 0.8)
+			_pointer_tag(get_local_mouse_position() + Vector2(16, 18), "RMB COVER  ·  %s" % _cover_tag(rts.hover_info, rts.hover_threats), FNUI.OK)
+			shape = Input.CURSOR_CROSS
 		elif have_sel and rts.hover_ground.is_finite() and not cam.is_position_behind(rts.hover_ground):
 			var pg := cam.unproject_position(rts.hover_ground + Vector3.UP * 0.1)
 			draw_arc(pg, 7.0, 0.0, TAU, 20, shade, 3.5)
@@ -166,6 +160,73 @@ class Overlay extends Control:
 			var k := age / 0.6
 			draw_arc(po, 6.0 + 22.0 * k, 0.0, TAU, 28, Color(FNUI.OK, 1.0 - k), 2.5)
 		Input.set_default_cursor_shape(shape)
+
+	## COMBAT-COVER-03: the previewed places, Company of Heroes style. Each soldier's place is a dot coloured by its protection
+	## (CoverEval: green heavy, yellow light, red exposed; white-outlined when no threat is known - the facing is only assumed)
+	## with a short tick towards the threat for its fire: solid = a line of fire, a crossed stub = blocked (green cover, nothing
+	## to shoot at). A thin line joins the soldier to his place.
+	func _draw_places(cam: Camera3D, shade: Color, plan: Dictionary, info: Dictionary, threats: Array, facing: Vector3, alpha: float) -> void:
+		var assumed := threats.is_empty()
+		for id in plan:
+			var u := hud.sim.state.get_unit(id)
+			var p3: Vector3 = plan[id] + Vector3.UP * 0.1
+			if u == null or cam.is_position_behind(p3):
+				continue
+			var pp := cam.unproject_position(p3)
+			var from3 := u.position + Vector3.UP * 0.3
+			if not cam.is_position_behind(from3):
+				draw_line(cam.unproject_position(from3), pp, Color(FNUI.INK, 0.28 * alpha), 1.0)
+			var r: Dictionary = info.get(id, {})
+			var level := int(r.get("level", CoverEval.Level.UNKNOWN))
+			var col := FNUI.INK
+			match level:
+				CoverEval.Level.HEAVY:
+					col = FNUI.OK
+				CoverEval.Level.LIGHT:
+					col = FNUI.WARN
+				CoverEval.Level.NONE:
+					col = FNUI.NEUTRAL if assumed else FNUI.DANGER
+			# fire tick towards the (nearest believed / assumed) threat
+			var tdir := facing
+			if not assumed:
+				var best := INF
+				for q: Vector3 in threats:
+					var dq := SquadControl._flat(q, p3)
+					if dq < best:
+						best = dq
+						tdir = Vector3(q.x - p3.x, 0.0, q.z - p3.z).normalized()
+			var tip3 := p3 + tdir * 1.6
+			var fire := int(r.get("fire", CoverEval.Fire.UNKNOWN))
+			if fire != CoverEval.Fire.UNKNOWN and not cam.is_position_behind(tip3):
+				var pt := cam.unproject_position(tip3)
+				var d2 := pt - pp
+				if d2.length() > 0.5:
+					# outside the dot: from its rim 8 px out
+					var n2 := d2.normalized()
+					var base := pp + n2 * 6.5
+					var tip := pp + n2 * 15.0
+					if fire == CoverEval.Fire.CLEAR:
+						draw_line(base, tip, shade, 4.5)
+						draw_line(base, tip, Color(FNUI.INK, 0.95 * alpha), 2.2)
+					else:
+						var sd := Vector2(-n2.y, n2.x) * 3.5
+						var stop := pp + n2 * 10.5
+						draw_line(base, stop, shade, 4.0)
+						draw_line(base, stop, Color(FNUI.INK, 0.7 * alpha), 1.6)
+						draw_line(stop - sd, stop + sd, shade, 4.5)
+						draw_line(stop - sd, stop + sd, Color(FNUI.DANGER, alpha), 2.4)
+			draw_circle(pp, 6.0, Color(shade, shade.a * alpha))
+			if level == CoverEval.Level.UNKNOWN or (level == CoverEval.Level.NONE and assumed):
+				draw_arc(pp, 3.8, 0.0, TAU, 16, Color(FNUI.INK, alpha), 1.8)
+			else:
+				draw_circle(pp, 4.4, Color(col, alpha))
+
+	## "4 HEAVY · 2 LIGHT · 1 OPEN" (+ "FRONT ASSUMED" when no threat is known).
+	func _cover_tag(info: Dictionary, threats: Array) -> String:
+		var n := [0, 0, 0]
+		for id in info:
+			n[clampi(int((info[id] as Dictionary).get("level", 0)), 0, 2)] += 1
+		return "%d HEAVY · %d LIGHT · %d OPEN%s" % [n[2], n[1], n[0], "  ·  FRONT ASSUMED" if threats.is_empty() else ""]
 
 	## A small tag with a dark plate (centred above `at` when centre, else to the lower right of it).
 	func _pointer_tag(at: Vector2, text: String, col: Color, centre := false) -> void:

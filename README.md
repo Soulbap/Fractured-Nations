@@ -10,7 +10,19 @@ stable branch, updated only with the product owner's approval), one canonical de
 branches are contained in `develop` and stay as history. See [docs/PROJECT-CONSOLIDATION-01_REPORT.md](docs/PROJECT-CONSOLIDATION-01_REPORT.md) and
 [CLAUDE.md](CLAUDE.md).
 
-Newest finished: **AI-COMBAT-02** (dynamic combat, realistic perception, difficulty). Spotting is now a process: shape and
+Newest finished: **COMBAT-COVER-03** (Company of Heroes-style cover on real geometry). Settlement houses, barns and sheds stop
+bullets and sight over their whole shape (they were spheres: a fifth of the lines through a house passed its corners and ends). The
+first-person round leaves the muzzle towards the point under the crosshair, so a camera beside a wall no longer shoots through it.
+AI soldiers fire only along a free line (no rounds into walls, hillsides or the ground in front), stand up or step to a corner when
+blocked, and switch to an enemy they can actually hit. One cover judgement (`CoverEval`: **heavy / light / exposed** against the
+believed threats, plus whether the spot has a line of fire) drives the soldiers' cover, the squad posts and the player's preview.
+**Right-click near a wall, building, sandbags or a rock**: the preview under the cursor shows where each soldier will stand
+(green / yellow / red dots, a tick for a line of fire, a red stub for none) and the click puts the squad there; in the open it stays a
+plain move. **Right-drag** roughly along cover spreads the squad along it and over nearby cover, no stacking. Placed soldiers keep
+their places. Check `--scenario=dev --cover03-test [--shots] [--only a_building,b_terrain,c_corner,d_click,e_direction,f_drag,g_fight,q_perf]`.
+See [docs/COMBAT-COVER-03_REPORT.md](docs/COMBAT-COVER-03_REPORT.md).
+
+Before that: **AI-COMBAT-02** (dynamic combat, realistic perception, difficulty). Spotting is now a process: shape and
 distance, posture, movement, where you are in the observer's field of view, tree crowns in between and the observer's own state all
 add to the time an enemy needs to notice you. Soldiers turn towards something suspicious before they see it, lose you when you break
 line of sight, and do not pick you up again at once if you moved. Gunfire gives a bearing, not your position, and shared reports are

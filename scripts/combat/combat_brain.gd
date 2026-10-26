@@ -127,8 +127,11 @@ var calm_s := 10.0
 ## protection re-checked this often.
 var min_dwell_s := 6.0
 var recheck_s := 4.0
-## Cover candidate evaluations per physics frame for all soldiers together.
+## Cover candidate evaluations per physics frame for all soldiers together (in units of eval_cost).
 var cover_budget := 16
+## COMBAT-COVER-03: what one evaluation costs of cover_budget - CoverEval.judge follows the eye line up to fire_check_m and
+## both shoulders (~0.27 ms against ~0.1 ms before), so the budget per frame stays about the same in time.
+var eval_cost := 2
 ## Cover counts when the blocker is this close to the soldier (m): structures, rocks and
 ## trunks / terrain (a reverse slope protects from a little farther).
 var cover_contact_m := 6.0
@@ -302,8 +305,13 @@ const FGRID := 128.0
 const MAX_EVENTS := 200
 
 
+## COMBAT-COVER-03: the one cover judgement (protection level, fire) shared with the squad tactics and the player's placement.
+var cover_eval: CoverEval
+
+
 func _init(p_sim: WorldSim) -> void:
 	sim = p_sim
+	cover_eval = CoverEval.new(p_sim)
 	_apply_aim_args(OS.get_cmdline_user_args())
 	conceal_on = not "--no-concealment" in OS.get_cmdline_user_args()
 	if "--legacy-perception" in OS.get_cmdline_user_args():
@@ -556,6 +564,8 @@ func _perceive(u: UnitState, budget: int) -> int:
 	var crowded_aim := 1.0
 	var tried := 0
 	var max_d := cur_dist * switch_ratio if cur_visible else sight
+	if cur_visible and _lof_blocked_on(u, cur.id, now):
+		max_d = sight  # COMBAT-COVER-03: seen but not shootable: any other enemy in sight may take its place
 	for c: UnitState in _candidates(u, max_d, max_candidates + 1):
 		if used >= budget or tried >= max_candidates:
 			break
@@ -1141,8 +1151,10 @@ func _tactics(u: UnitState) -> void:
 				u.clear_reaction()
 			if threatened and now >= u.tactic_cooldown_until and not _searches.has(u.id):
 				_start_search(u, mode)
+			elif _lof_move_ok(u, mode, now):
+				_lof_move(u, mode, now)
 			elif (mode == "hold" or mode == "post") and not threatened and now - u.threat_at > calm_s and u.anchor_pos.is_finite() \
-					and _flat(u.position, u.anchor_pos) > 2.5 and now >= u.tactic_cooldown_until:
+					and _flat(u.position, u.anchor_pos) > 2.5 and now >= u.tactic_cooldown_until and not _fighting(u, now):
 				# A reaction that ended away from the held spot (cover not reached, cover no
 				# longer useful): walk back once it is calm.
 				u.tactic = UnitState.Tactic.RETURNING
@@ -1171,7 +1183,7 @@ func _tactics(u: UnitState) -> void:
 			if now > u.react_until:
 				u.cover_note = "reaction time over: order resumes"
 				_end_reaction(u, move_react_cooldown_s)
-			elif now - u.threat_at > calm_s:
+			elif now - u.threat_at > calm_s and not _fighting(u, now):
 				var anchor := u.anchor_pos
 				if (mode == "hold" or mode == "post") and anchor.is_finite() and _flat(u.position, anchor) > 2.0:
 					u.tactic = UnitState.Tactic.RETURNING
@@ -1190,6 +1202,8 @@ func _tactics(u: UnitState) -> void:
 				if not ev.protected and now - u.tactic_since >= min_dwell_s:
 					u.cover_note = "cover no longer protects: looking again"
 					_end_reaction(u, 0.0)
+				elif _lof_move_ok(u, mode, now):
+					_lof_move(u, mode, now)
 				elif ev.protected and not ev.can_fire and _wants_firing_spot(u, now):
 					# AI-COMBAT-02: safe but useless - full cover with no line to the enemy, nobody in sight for a while: a short
 					# move to nearby cover he can fire from (he keeps this cover when there is none).
@@ -1407,7 +1421,37 @@ func _wants_firing_spot(u: UnitState, now: float) -> bool:
 	return sq == null or sq.roe != SquadState.Roe.HOLD_FIRE
 
 
-func _start_search(u: UnitState, mode: String, need_fire := false) -> void:
+## COMBAT-COVER-03: nobody shooting at him is not calm while he fights - a target seen within 4 s, or a fire mission he has a line
+## for (he moved to a firing position for it): he stays where he can fire instead of walking back behind the wall.
+func _fighting(u: UnitState, now: float) -> bool:
+	if u.target_id > 0 and now - u.target_seen_at < 4.0:
+		return true
+	return u.fire_at.is_finite() and now < u.fire_until and not lof_stuck(u, now)
+
+
+## COMBAT-COVER-03: a soldier whose line of fire keeps being blocked (lof_stuck) moves to a nearby firing position: not while
+## dashing, suppressed or holding fire, at most every lof_retry_s.
+func _lof_move_ok(u: UnitState, mode: String, now: float) -> bool:
+	if not firing_moves or mode == "dash" or _searches.has(u.id) or not lof_stuck(u, now):
+		return false
+	if now < float(_fire_retry.get(u.id, 0.0)) or u.suppression_at(now) >= suppressed_at:
+		return false
+	var sq := sim.state.squad_of(u.id)
+	return sq == null or sq.roe != SquadState.Roe.HOLD_FIRE
+
+
+func _lof_move(u: UnitState, mode: String, now: float) -> void:
+	_fire_retry[u.id] = now + lof_retry_s
+	var e: Array = _lof_block.get(u.id, [])
+	var tgt := sim.state.get_unit(int(e[4])) if not e.is_empty() else null
+	var threat := u.target_last_pos if tgt != null and u.target_last_pos.is_finite() else (u.fire_at if u.fire_at.is_finite() else u.threat_pos)
+	_lof_block.erase(u.id)
+	lof_moves += 1
+	_start_search(u, mode, true, threat)
+
+
+func _start_search(u: UnitState, mode: String, need_fire := false, threat := Vector3.INF) -> void:
+	var th := threat if threat.is_finite() else u.threat_pos
 	var center := u.position
 	var radius := cover_radius_hold
 	var limit := INF
@@ -1437,19 +1481,33 @@ func _start_search(u: UnitState, mode: String, need_fire := false) -> void:
 		"regroup":
 			radius = cover_radius_regroup
 			limit = react_s_regroup
-	var cands := _cover_candidates(u, center, radius, u.threat_pos)
+	if not th.is_finite():
+		return
+	var cands := _cover_candidates(u, center, radius, th)
 	if cands.is_empty():
 		u.cover_note = "waiting for vegetation data"
 		return
+	var open_ok := false
 	if need_fire:
 		# Somewhere else: his own spot and the ones within a metre of it are what he is leaving.
 		cands = cands.filter(func(c: Dictionary) -> bool: return c.kind != "here" and _flat(c.p, u.position) > 1.5)
+		# COMBAT-COVER-03: a step or two sideways (past a corner, past a friend in the way) before anything farther.
+		var tdir := Vector3(th.x - u.position.x, 0.0, th.z - u.position.z).normalized()
+		var lat := Vector3(-tdir.z, 0.0, tdir.x)
+		var steps: Array = []
+		for s: float in [2.0, -2.0, 3.5, -3.5]:
+			_add_candidate(steps, u.position, center, radius, u.position + lat * s, "step")
+		cands = steps + cands
+		# COMBAT-COVER-03: a firing spot without protection against this threat (past a corner, a step out from behind a wall) is
+		# taken when nothing protected can fire - the soldier fights from the corner; under fire his reaction takes him back into
+		# cover (protected spots score higher, _cover_score).
+		open_ok = true
 		if cands.is_empty():
 			u.cover_note = "no other cover near: stays (no line of fire)"
 			return
 	cover_searches += 1
 	_searches[u.id] = {"cands": cands, "i": 0, "accepted": [],
-		"mode": mode, "limit": limit, "threat": u.threat_pos, "rejects": {}, "need_fire": need_fire}
+		"mode": mode, "limit": limit, "threat": th, "rejects": {}, "need_fire": need_fire, "open_ok": open_ok}
 	if need_fire:
 		u.cover_note = "no line of fire: looking for a firing position (%s, %.0f m)" % [mode, radius]
 		return  # keeps his cover (IN_COVER) until a better spot is found
@@ -1474,14 +1532,14 @@ func _search_step() -> void:
 		while s.i < cands.size() and budget > 0:
 			var c: Dictionary = cands[s.i]
 			s.i += 1
-			budget -= 1
+			budget -= eval_cost
 			cover_evals += 1
 			var why := _reject(u, c.p)
 			if why != "":
 				s.rejects[why] = s.rejects.get(why, 0) + 1
 				continue
 			var ev := _evaluate_spot(u, c.p, s.threat)
-			if not ev.protected:
+			if not ev.protected and not (bool(s.get("open_ok", false)) and ev.can_fire):
 				s.rejects["no protection from the threat"] = s.rejects.get("no protection from the threat", 0) + 1
 				continue
 			if bool(s.get("need_fire", false)) and not ev.can_fire:
@@ -1571,11 +1629,18 @@ func cover_spots(center: Vector3, radius: float, threat: Vector3, origin: Vector
 					var s := st.state.get_structure(e.x)
 					if s == null or (s.is_line() and s.is_removed(e.y)) or e.y >= s.instances.size():
 						continue
-					var o: Vector3 = s.instances[e.y].origin
-					if _flat(o, center) > radius + 6.0:
+					var xf: Transform3D = s.instances[e.y]
+					if _flat(xf.origin, center) > radius + _half_extent(s.type_id) + 2.0:
 						continue
-					var p := o - tdir * (_half_extent(s.type_id) + 0.6)
-					_add_candidate(out, origin, center, radius, p, "structure")
+					# COMBAT-COVER-03: spots along every collision box of the structure (a fighting position, a HESCO line, a
+					# bunker: several soldiers along its lee face and at its corners), not one spot behind its middle.
+					var def := StructureCatalog.get_def(s.type_id)
+					if def == null:
+						continue
+					for box: AABB in def.get_collision_boxes():
+						var bc := xf * Vector3(box.get_center().x, box.position.y, box.get_center().z)
+						for q: Vector3 in CoverEval.box_spots(bc, xf.basis.orthonormalized(), box.size.x * 0.5, box.size.z * 0.5, box.size.y, tdir, 0.6):
+							_add_candidate(out, origin, center, radius, q, "structure")
 	var line := sim.combat.line
 	if line.vegetation:
 		var b0 := Vector2i(floori((center.x - radius - 2.0) / LineOfFire.BUCKET), floori((center.z - radius - 2.0) / LineOfFire.BUCKET))
@@ -1593,6 +1658,7 @@ func cover_spots(center: Vector3, radius: float, threat: Vector3, origin: Vector
 						_warm_queue.append(cc)
 		if missing:
 			return []
+		var seen := {}
 		for bx in range(b0.x, b1.x + 1):
 			for bz in range(b0.y, b1.y + 1):
 				var data: PackedFloat32Array = line._buckets.get(Vector2i(bx, bz), PackedFloat32Array())
@@ -1600,6 +1666,12 @@ func cover_spots(center: Vector3, radius: float, threat: Vector3, origin: Vector
 					var r: float = data[i + 3]
 					var c := Vector3(data[i], data[i + 2], data[i + 1])
 					if data[i + 5] > 1.5:
+						# COMBAT-COVER-03: a large box (a house) is filed in several buckets: once.
+						if LineOfFire.copy_of(data, i, Vector2i(bx, bz)):
+							var key := Vector4(data[i], data[i + 1], data[i + 6], data[i + 7])
+							if seen.has(key):
+								continue
+							seen[key] = true
 						_box_candidates(out, origin, center, radius, data, i, tdir)
 						continue
 					var rock := data[i + 5] > 0.5
@@ -1634,7 +1706,7 @@ func cover_spots(center: Vector3, radius: float, threat: Vector3, origin: Vector
 						rise = maxf(rise, hh - h)
 				if rise >= 0.55:
 					_add_candidate(out, origin, center, radius, p, "terrain")
-	var rank := {"structure": 1, "rock": 2, "box": 2, "terrain": 3, "tree": 4}
+	var rank := {"structure": 1, "building": 1, "rock": 2, "box": 2, "terrain": 3, "tree": 4, "step": 0}
 	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return a.d + rank[a.kind] * 3.0 < b.d + rank[b.kind] * 3.0)
 	return out.slice(0, max_cover_candidates if limit < 0 else limit)
@@ -1693,20 +1765,14 @@ const COVER_GAP := 1.0
 ## threat lies along its length, behind its far end.
 func _box_candidates(out: Array, origin: Vector3, center: Vector3, radius: float, data: PackedFloat32Array, i: int, tdir: Vector3) -> void:
 	var c := Vector3(data[i], data[i + 2], data[i + 1])
-	var basis := Basis(Vector3.UP, data[i + 6])
 	var hx: float = data[i + 7]
 	var hz: float = data[i + 8]
-	if hx < 0.3 or data[i + 4] < 0.45:
+	if _flat(c, center) > radius + Vector2(hx, hz).length() + COVER_GAP + 0.5:
 		return
-	var lt := basis.inverse() * tdir
-	if absf(lt.z) >= absf(lt.x) * 0.6:
-		var back := -signf(lt.z) * (hz + COVER_GAP)
-		var n := maxi(1, floori((hx * 2.0 - 0.6) / 1.4) + 1)
-		for k in n:
-			var s := -hx + 0.3 + (hx * 2.0 - 0.6) * (0.5 if n == 1 else float(k) / (n - 1))
-			_add_candidate(out, origin, center, radius, c + basis * Vector3(s, 0.0, back), "box")
-	else:
-		_add_candidate(out, origin, center, radius, c + basis * Vector3(-signf(lt.x) * (hx + COVER_GAP), 0.0, 0.0), "box")
+	# COMBAT-COVER-03: every lee face, corners of tall solids (CoverEval.box_spots); a building's walls are "building" spots.
+	var kind := "building" if data[i + 4] >= 2.5 and maxf(hx, hz) >= 1.5 else "box"
+	for q: Vector3 in CoverEval.box_spots(c, Basis(Vector3.UP, data[i + 6]), hx, hz, data[i + 4], tdir, COVER_GAP, 1.4):
+		_add_candidate(out, origin, center, radius, q, kind)
 
 
 ## True while vegetation cells within radius of center are missing (queued for filling).
@@ -1732,6 +1798,9 @@ func _add_candidate(out: Array, origin: Vector3, center: Vector3, radius: float,
 		if _flat(c.p, g) < 1.0:
 			return
 	if not sim.squads._usable(g + Vector3.UP * 0.25):
+		return
+	# COMBAT-COVER-03: a spot behind one part of a solid can lie inside another (a house's roof box, the next module of a wall).
+	if sim.structures and sim.structures.blocks_trunk(Vector2(g.x, g.z), 0.45):
 		return
 	out.append({"p": g, "kind": kind, "d": _flat(origin, g)})
 
@@ -1765,36 +1834,10 @@ func _reject(u: UnitState, p: Vector3) -> String:
 	return ""
 
 
-## Protection of a spot against a threat: short lines from the soldier's torso and eye
-## at the spot towards the threat. Cover counts when something solid stops the torso
-## line close to the spot; the eye line tells whether the soldier can fire from there.
-func _evaluate_spot(u: UnitState, p: Vector3, threat: Vector3, low_ok := true) -> Dictionary:
-	var line := sim.combat.line
-	var t_eye := threat + Vector3.UP * CombatSim.EYE_HEIGHT
-	# COMBAT-01: judged for the soldier crouched behind it (what it does in cover): low cover now counts.
-	var torso := p + Vector3.UP * Posture.AIM_TORSO[Posture.CROUCH].y
-	var eye := p + Vector3.UP * Posture.EYE[Posture.CROUCH].y
-	var reach := minf(maxf(cover_contact_m, cover_terrain_m), _flat(p, threat) - 1.0)
-	if reach <= 0.5:
-		return {"protected": false, "can_fire": true}
-	var r1 := line.trace(torso, torso + (t_eye - torso).normalized() * reach, -1, false)
-	var limit := cover_terrain_m if r1.blocker == "terrain" else cover_contact_m
-	var protected: bool = r1.blocker in ["structure", "terrain", "tree"] and r1.distance <= limit
-	if not protected:
-		if not low_ok:
-			return {"protected": false, "can_fire": true}
-		# WORLD-COVER-01.1: low cover - a hollow, a bank, a log, the back of a fold - protects a soldier lying down ("low":
-		# he goes prone there, _choose_posture). The eye line tells whether he can fire from the ground.
-		var pt := p + Vector3.UP * Posture.AIM_TORSO[Posture.PRONE].y
-		var rp := line.trace(pt, pt + (t_eye - pt).normalized() * reach, -1, false)
-		var lim := cover_terrain_m if rp.blocker == "terrain" else cover_contact_m
-		if not (rp.blocker in ["structure", "terrain", "tree"] and rp.distance <= lim):
-			return {"protected": false, "can_fire": true}
-		var pe := p + Vector3.UP * Posture.EYE[Posture.PRONE].y
-		var rpe := line.trace(pe, pe + (t_eye - pe).normalized() * reach, -1, false)
-		return {"protected": true, "low": true, "can_fire": rpe.blocker == "range", "blocker": rp.blocker}
-	var r2 := line.trace(eye, eye + (t_eye - eye).normalized() * reach, -1, false)
-	return {"protected": true, "can_fire": r2.blocker == "range", "blocker": r1.blocker}
+## Protection of a spot against a threat (COMBAT-COVER-03: CoverEval.judge, the same judgement the player's placement preview
+## shows): {protected, low, can_fire, level, fire, partial, concealed, stand, blocker}.
+func _evaluate_spot(_u: UnitState, p: Vector3, threat: Vector3, low_ok := true) -> Dictionary:
+	return cover_eval.judge(p, threat, low_ok)
 
 
 func _cover_score(u: UnitState, c: Dictionary, ev: Dictionary) -> float:
@@ -1803,11 +1846,19 @@ func _cover_score(u: UnitState, c: Dictionary, ev: Dictionary) -> float:
 	var score := 10.0 if ev.can_fire else 7.0
 	if hold_fire:
 		score = 9.0 if ev.can_fire else 10.0
+	# COMBAT-COVER-03: heavy cover beats light (a corner, a trunk, low cover); a suppressed soldier values it over a line of fire.
+	var supp := u.suppression_at(sim.state.time) >= suppressed_at
+	if int(ev.get("level", CoverEval.Level.LIGHT)) == CoverEval.Level.HEAVY:
+		score += 2.5 if supp else 1.5
+	if supp and ev.can_fire:
+		score -= 1.5
+	if not bool(ev.get("protected", true)):
+		score -= 3.0
 	score -= 0.35 * c.d
 	match c.kind:
 		"here":
 			score += 2.0
-		"structure":
+		"structure", "building":
 			score += 1.0
 		"rock", "box":
 			score += 0.5
@@ -1930,7 +1981,22 @@ func _engage(u: UnitState) -> void:
 			u.next_burst_at = now + 0.8 + 1.2 * supp
 			return
 		u.burst_left = maxi(1, roundi(_burst_size(u, dist) * def.burst_mult))
-	var aim := Posture.aim_point(t, u.target_aim_y > 1.3) - Vector3(t.velocity.x, 0.0, t.velocity.z) * track_lag_s
+	var lag := Vector3(t.velocity.x, 0.0, t.velocity.z) * track_lag_s
+	var aim := Posture.aim_point(t, u.target_aim_y > 1.3) - lag
+	# COMBAT-COVER-03: seen is not shootable - the weapon's line to the aim point must be free (the target's cover, a crest, the
+	# ground in front of a prone soldier). The other aim point (head / torso), then standing up, else no round is wasted.
+	var eye := CombatSim.eye_of(u)
+	var lof := _lof(u, eye, aim, lof_slack_m)
+	if not lof.clear:
+		var alt := Posture.aim_point(t, not (u.target_aim_y > 1.3)) - lag
+		if _lof(u, eye, alt, lof_slack_m).clear:
+			aim = alt
+		elif _stand_for_line(u, aim, now):
+			return
+		else:
+			_lof_blocked(u, now, String(lof.blocker), t.id)
+			return
+	_lof_free(u)
 	_try_fire(u, aim, dist, now, false)
 
 
@@ -1972,6 +2038,23 @@ func _fire_mission(u: UnitState, def: WeaponDef, now: float) -> bool:
 	rng.seed = hash([sim.state.world_seed, u.id, u.shot_counter + 1, 4177])
 	var scatter := Vector3(rng.randfn(0.0, 2.5), 0.0, rng.randfn(0.0, 2.5))
 	var aim := u.fire_at + scatter + Vector3.UP * 0.9
+	# COMBAT-COVER-03: area fire may strike the cover round the report (that is what suppresses), never a wall, a house or a
+	# hillside well short of it: the scatter point, else the report itself, else standing up, else the round is kept.
+	var eye := CombatSim.eye_of(u)
+	var lof := _lof(u, eye, aim, lof_mission_slack_m)
+	if not lof.clear:
+		var centre := u.fire_at + Vector3.UP * 0.9
+		if _lof(u, eye, centre, lof_mission_slack_m).clear:
+			aim = centre
+		elif _stand_for_line(u, centre, now):
+			return true
+		else:
+			_lof_blocked(u, now, String(lof.blocker), -1)
+			u.ai_reason = "mission: no line of fire (%s in the way)" % _blocker_name(String(lof.blocker))
+			u.burst_left = 0
+			u.next_burst_at = now + 0.8
+			return true
+	_lof_free(u)
 	if _try_fire(u, aim, dist, now, true):
 		mission_shots += 1
 	return true
@@ -1981,7 +2064,15 @@ func _fire_mission(u: UnitState, def: WeaponDef, now: float) -> bool:
 ## in the line of fire, the frame's shot budget, the weapon. Returns true when a round left.
 func _try_fire(u: UnitState, aim: Vector3, dist: float, now: float, mission: bool) -> bool:
 	var origin := CombatSim.eye_of(u)
-	var dir := _aim_error(u, (aim - origin).normalized(), dist)
+	var ideal := (aim - origin).normalized()
+	var dir := _aim_error(u, ideal, dist)
+	# COMBAT-COVER-03: the aim error never puts the round into the ground right in front of the muzzle (a prone soldier's 0.36 m
+	# eye, a crouched one on a slope): the ideal line clears the first metres, so the error's downward part is dropped there.
+	if dir.y < ideal.y and minf(dist, ground_check_m) > 2.0:
+		var near := minf(dist, ground_check_m)
+		if sim.combat.line._terrain_hit(origin, origin + dir * near, near) < near and sim.combat.line._terrain_hit(origin, origin + ideal * near, near) >= near:
+			dir = Vector3(dir.x, ideal.y, dir.z).normalized()
+			ground_saves += 1
 	# COMBAT-02: from cover, the actual shot (with its aim error) must clear the soldier's
 	# own cover; otherwise wait for the next one instead of firing into the wall.
 	if u.tactic != UnitState.Tactic.NONE:
@@ -2002,6 +2093,7 @@ func _try_fire(u: UnitState, aim: Vector3, dist: float, now: float, mission: boo
 		var hit := sim.state.get_unit(p.get("hit_unit", -1))
 		if (hit and hit.faction == u.faction) or _friend_on_ray(u, origin, dir, minf(dist, p.get("distance", dist))):
 			friendly_holds += 1
+			_lof_blocked(u, now, "friend", u.target_id)
 			u.ai_reason = "friendly in line of fire"
 			u.burst_left = 0
 			u.next_burst_at = now + 0.4
@@ -2024,6 +2116,94 @@ func _try_fire(u: UnitState, aim: Vector3, dist: float, now: float, mission: boo
 		return true
 	u.ai_reason = shot.get("reason", "")
 	u.burst_left = 0
+	return false
+
+
+## COMBAT-COVER-03 line-of-fire discipline. A line counts as free when nothing solid stops it more than `slack` short of the aim
+## point (aimed fire: lof_slack_m - the target's own cover right in front of him; area fire: lof_mission_slack_m - the cover round
+## the report is what area fire strikes). Repeated holds within lof_window_s (lof_moves_after of them) send the soldier to a nearby
+## firing position (_tactics -> _start_search need_fire, sidesteps included); while his current target stays blocked, any other
+## enemy he sees may replace it (_perceive).
+var lof_slack_m := 1.5
+var lof_mission_slack_m := 6.0
+var lof_window_s := 5.0
+var lof_moves_after := 3
+var lof_retry_s := 12.0
+var lof_holds := 0
+var lof_stands := 0
+## Rounds whose aim error would have struck the ground within ground_check_m of the muzzle (levelled, _try_fire).
+var ground_check_m := 30.0
+var ground_saves := 0
+var lof_moves := 0
+## unit id -> [first hold, holds, last hold, blocker, target id]
+var _lof_block := {}
+
+
+func _lof(u: UnitState, from: Vector3, to: Vector3, slack: float) -> Dictionary:
+	var d := from.distance_to(to)
+	var r := sim.combat.line.trace(from, to, u.id, false)
+	return {"clear": r.blocker == "range" or float(r.distance) >= d - slack, "blocker": r.blocker, "d": r.distance}
+
+
+func _lof_blocked(u: UnitState, now: float, blocker: String, target_id: int) -> void:
+	lof_holds += 1
+	var e: Array = _lof_block.get(u.id, [])
+	if e.is_empty() or now - float(e[2]) > lof_window_s:
+		e = [now, 0, now, blocker, target_id]
+	e[1] = int(e[1]) + 1
+	e[2] = now
+	e[3] = blocker
+	e[4] = target_id
+	_lof_block[u.id] = e
+	u.burst_left = 0
+	u.next_burst_at = maxf(u.next_burst_at, now + 0.5)
+	u.ai_reason = "no line of fire (%s in the way)" % _blocker_name(blocker)
+
+
+func _lof_free(u: UnitState) -> void:
+	if _lof_block.has(u.id):
+		_lof_block.erase(u.id)
+
+
+## The soldier has been holding fire for a blocked line long enough to move for it.
+func lof_stuck(u: UnitState, now: float) -> bool:
+	var e: Array = _lof_block.get(u.id, [])
+	return not e.is_empty() and int(e[1]) >= lof_moves_after and now - float(e[2]) < 2.0 and now - float(e[0]) >= 1.0
+
+
+## His current target is the one his line keeps being blocked to.
+func _lof_blocked_on(u: UnitState, target_id: int, now: float) -> bool:
+	var e: Array = _lof_block.get(u.id, [])
+	return not e.is_empty() and int(e[4]) == target_id and int(e[1]) >= 2 and now - float(e[2]) < lof_window_s
+
+
+static func _blocker_name(b: String) -> String:
+	match b:
+		"structure":
+			return "a structure"
+		"terrain":
+			return "the ground"
+		"tree":
+			return "a solid"
+		"friend":
+			return "a friend"
+	return b
+
+
+## Crouched or prone behind something his standing eye clears: he stands to fire (held longer than a normal choice, so he does not
+## bob up and down every burst). Not while suppressed, not while the posture is changing anyway.
+func _stand_for_line(u: UnitState, aim: Vector3, now: float) -> bool:
+	if u.posture == Posture.STAND or Posture.busy(u, now) or u.suppression_at(now) >= suppressed_at:
+		return false
+	var se := u.position + Vector3.UP * Posture.EYE[Posture.STAND].y
+	if not _lof(u, se, aim, lof_slack_m).clear:
+		return false
+	if Posture.request(u, Posture.STAND, now):
+		lof_stands += 1
+		posture_changes += 1
+		u.posture_hold_until = now + posture_hold_s * 2.0
+		u.ai_reason = "stands to fire over cover"
+		return true
 	return false
 
 

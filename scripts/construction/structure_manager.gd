@@ -1874,10 +1874,15 @@ func _trees_in(cell: Vector2i) -> Array:
 		if _tree_boxes.has(inst[0]):
 			# WORLD-COVER-01: a box (log, wall) as circles of its half depth along its length, not one circle round all of it;
 			# WORLD-COVER-01.1: for every box of the instance's variant.
-			var axis := xf.basis.x.normalized()
 			for bx: Array in (_tree_boxes[inst[0]] as VegetationMeshDef).boxes_of(xf):
 				var hx: float = bx[2]
 				var rr := maxf(float(bx[4]), 0.25)
+				var axis := xf.basis.x.normalized()
+				if float(bx[4]) > hx:
+					# COMBAT-COVER-03: a box deeper than long (a house, a barn) as circles along its depth.
+					axis = xf.basis.z.normalized()
+					rr = maxf(hx, 0.25)
+					hx = float(bx[4])
 				var n := maxi(1, ceili(hx / rr))
 				for k in n + 1:
 					var p: Vector3 = bx[0] + axis * lerpf(-hx + minf(rr, hx), hx - minf(rr, hx), float(k) / n)

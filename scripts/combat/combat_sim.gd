@@ -223,6 +223,26 @@ func request_fire(unit_id: int, origin: Vector3, direction: Vector3, source := S
 	return shot
 
 
+## COMBAT-COVER-03: where a possessed soldier's round leaves and where it goes. The camera only says what the player aims at:
+## the point under the crosshair (the first thing the view line meets, `reach` at most); the round leaves the weapon's muzzle
+## and flies to that point. A camera looking past a corner no longer fires through the wall beside it, and a muzzle low behind a
+## sandbag hits the sandbag. When the barrel itself pokes through something (the soldier presses against a wall) the round
+## starts where the barrel meets it. Returns {origin, dir, aim}.
+func muzzle_shot(unit_id: int, eye: Vector3, view: Vector3, muzzle: Vector3, reach := 1200.0) -> Dictionary:
+	view = view.normalized()
+	var look := line.trace(eye, eye + view * reach, unit_id)
+	var aim: Vector3 = look.point
+	if not muzzle.is_finite() or eye.distance_to(muzzle) > 2.0:
+		return {"origin": eye, "dir": view, "aim": aim}
+	var barrel := line.trace(eye, muzzle, unit_id, false)
+	if barrel.blocker != "range":
+		var to_m := (muzzle - eye).normalized()
+		return {"origin": eye + to_m * maxf(float(barrel.distance) - 0.02, 0.0), "dir": view, "aim": aim}
+	var d := aim - muzzle
+	# Closer than half a metre (a wall in the face) the muzzle-to-point direction swings wildly: the view line's direction.
+	return {"origin": muzzle, "dir": d.normalized() if d.length() > 0.5 and d.dot(view) > 0.0 else view, "aim": aim}
+
+
 ## Resolves the travel and the damage of one shot (no ammo or cooldown handling).
 func resolve(u: UnitState, def: WeaponDef, origin: Vector3, dir: Vector3) -> Dictionary:
 	var t0 := Time.get_ticks_usec()

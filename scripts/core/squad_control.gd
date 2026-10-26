@@ -248,8 +248,10 @@ func order_place(squad_ids: Array, a: Vector3, b: Vector3, facing: Vector3, posi
 
 
 ## The places order_place would give (unit id -> Vector3): the frontage split between the squads by their size, in the order given.
-## `in_cover` (optional) is filled with unit id -> true for the soldiers whose place is protected cover.
-func place_plan(squad_ids: Array, a: Vector3, b: Vector3, facing: Vector3, cover := true, in_cover := {}) -> Dictionary:
+## `in_cover` (optional) is filled with unit id -> true for the soldiers whose place is protected cover; COMBAT-COVER-03: `info`
+## (optional) with unit id -> the place's judgement (SquadPositions.placement record: level, fire, kind ...); `opts` goes to
+## SquadPositions.placement (threats, snap, overflow).
+func place_plan(squad_ids: Array, a: Vector3, b: Vector3, facing: Vector3, cover := true, in_cover := {}, opts := {}, info := {}) -> Dictionary:
 	var sqs := _squads(squad_ids)
 	var out := {}
 	var total := 0
@@ -268,7 +270,9 @@ func place_plan(squad_ids: Array, a: Vector3, b: Vector3, facing: Vector3, cover
 		done += ids.size()
 		var sa := a.lerp(b, minf(t0 + (gap_k * 0.5 if t0 > 0.0 else 0.0), t1))
 		var sb := a.lerp(b, maxf(t1 - (gap_k * 0.5 if t1 < 1.0 else 0.0), t0))
-		var places: Array = sim.tactics.pos.placement(ids.size(), sa, sb, facing, cover)
+		var o2 := opts.duplicate()
+		o2["ids"] = ids
+		var places: Array = sim.tactics.pos.placement(ids.size(), sa, sb, facing, cover, o2)
 		# soldiers to places along the line in the order they stand across it (paths cross little)
 		var axis := Vector3(sb.x - sa.x, 0.0, sb.z - sa.z)
 		if axis.length() < 0.3:
@@ -279,6 +283,7 @@ func place_plan(squad_ids: Array, a: Vector3, b: Vector3, facing: Vector3, cover
 		var idx := sim.tactics.pos.assign(ups, places, axis)
 		for i in ids.size():
 			out[ids[i]] = (places[idx[i]] as Dictionary).p + Vector3.UP * 0.25
+			info[ids[i]] = places[idx[i]]
 			if bool(places[idx[i]].protected):
 				in_cover[ids[i]] = true
 	return out

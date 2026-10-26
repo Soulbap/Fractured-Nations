@@ -987,6 +987,16 @@ func _plan(sq: SquadState, a: Dictionary, tactic: int, target: Vector3, _owner: 
 			if float(a.ammo) < 0.25:
 				return {"ok": false, "reason": "not enough ammunition left for suppressive fire (%.0f%%)" % (float(a.ammo) * 100.0)}
 			var dir := _dir_to(c, target)
+			if player_placed(sq) and _owner != SquadState.Owner.PLAYER:
+				# COMBAT-COVER-03: a squad the player placed suppresses from the places he gave (as AI-COMBAT-02's DEFEND does); a
+				# soldier there without a line moves only within his post radius (CombatBrain post mode).
+				var own: Array = []
+				for u: UnitState in units:
+					if sq.placed.has(u.id):
+						own.append({"p": sq.placed[u.id], "protected": false, "unit": u.id})
+				if own.size() == units.size():
+					return {"ok": true, "tactic": tactic, "target": target, "dir": dir, "posts": own, "commit": 10.0, "placed": true,
+						"why": "suppress %s from the places you gave" % _xz(target)}
 			var standoff: float = extra.get("standoff", 150.0)
 			var from := c if d <= standoff + 40.0 else target - dir * standoff
 			var posts := pos.find_posts(count, from, 28.0, target, {"mode": "fire", "los": target, "reserved": _reserved(sq, from), "avoid": _avoid_list(sq), "unit_id": uid, "min_enemy_m": 40.0})
@@ -1096,7 +1106,14 @@ func _enter(sq: SquadState, a: Dictionary, plan: Dictionary) -> void:
 				_send_posts(sq, _units(sq), plan.posts, sq.tactic_dir)
 		SquadState.Tactic.SUPPRESS:
 			_set_roles(sq, SquadState.TeamRole.SUPPORT, SquadState.TeamRole.SUPPORT)
-			_send_posts(sq, _units(sq), plan.posts, sq.tactic_dir)
+			if bool(plan.get("placed", false)):
+				# COMBAT-COVER-03: each soldier fires from his own place.
+				for u: UnitState in _units(sq):
+					u.post_pos = sq.placed.get(u.id, u.post_pos)
+					if u.post_pos.is_finite() and _flat(u.position, u.post_pos) > 1.2 and not u.is_reacting():
+						sim.state.issue_move(u.id, u.post_pos, true)
+			else:
+				_send_posts(sq, _units(sq), plan.posts, sq.tactic_dir)
 		SquadState.Tactic.BOUND, SquadState.Tactic.WITHDRAW, SquadState.Tactic.FLANK:
 			_set_roles(sq, SquadState.TeamRole.SUPPORT, SquadState.TeamRole.MANEUVER)
 		SquadState.Tactic.ASSAULT:
@@ -1146,7 +1163,13 @@ func _restore(sq: SquadState) -> void:
 	var target := sq.prev_target
 	sq.tactic_owner = SquadState.Owner.NONE
 	_internal = true
-	if sq.order == SquadState.Order.TACTIC:
+	if sq.order == SquadState.Order.TACTIC and prev == SquadState.Order.MOVE and not sq.placed.is_empty() and target.is_finite() \
+			and _flat(_centroid(_units(sq)), target) <= 25.0:
+		# COMBAT-COVER-03: the player's placement stays his order (the soldiers keep their places; player_placed stays true).
+		sq.order = SquadState.Order.MOVE
+		sq.order_target = target
+		sq.status = SquadState.Status.DONE
+	elif sq.order == SquadState.Order.TACTIC:
 		if prev == SquadState.Order.MOVE and target.is_finite() and sq.op_id < 0 and _flat(_centroid(_units(sq)), target) > 25.0:
 			sim.squads.order_move([sq.id], target, sq.prev_pace)
 			_resumed(sq, target)
@@ -2417,7 +2440,8 @@ func _run_suppress(sq: SquadState, a: Dictionary, now: float) -> void:
 			return
 	var why := _suppress_over(sq, a, now)
 	if why != "":
-		_finish(sq, why, SquadState.Tactic.REGROUP)
+		# COMBAT-COVER-03: a squad the player placed does not regroup off its places.
+		_finish(sq, why, SquadState.Tactic.NONE if player_placed(sq) else SquadState.Tactic.REGROUP)
 		return
 	if sq.tactic_owner == SquadState.Owner.OPERATION:
 		_support_fire(sq, a, units, target, now)
